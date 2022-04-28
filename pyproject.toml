@@ -37,7 +37,7 @@ classifiers = [  #! Update me
 python = "^3.7"
 importlib_metadata = {version = "^4.5.0", python = "<3.8"}
 typer = {extras = ["all"], version = "^0.4.0"}
-rich = "^10.14.0"
+rich = "^12.3.0"
 click = "8.0.2"
 
 [tool.poetry.dev-dependencies]
