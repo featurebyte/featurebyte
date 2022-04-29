@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.7", "3.9"]
+        python-version: ["3.7"]
 
     steps:
     - uses: actions/checkout@v3
@@ -24,6 +24,7 @@ jobs:
       with:
         path: .venv
         key: venv-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('poetry.lock') }}
+
     - name: Install dependencies
       run: |
         poetry config virtualenvs.in-project true
@@ -32,6 +33,10 @@ jobs:
     - name: Run style checks
       run: |
         make check-codestyle
+
+    - name: Run static typing checks
+      run: |
+        make mypy
 
     - name: Run tests
       run: |
