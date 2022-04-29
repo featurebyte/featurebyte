@@ -1,4 +1,3 @@
-# type: ignore[attr-defined]
 """Python Library for FeatureOps"""
 
 import sys
@@ -11,7 +10,7 @@ else:
 
 def get_version() -> str:
     try:
-        return importlib_metadata.version(__name__)
+        return str(importlib_metadata.version(__name__))
     except importlib_metadata.PackageNotFoundError:  # pragma: no cover
         return "unknown"
 
