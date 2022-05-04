@@ -40,6 +40,8 @@ jobs:
         poetry install -E docs
 
     - name: Build documentation
+      env:
+        SPHINX_GITHUB_CHANGELOG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         mkdir gh-pages
         touch gh-pages/.nojekyll
