@@ -1,4 +1,4 @@
-name: Docs2Pages
+name: build-docs
 on:
   push:
     tags: '*'
@@ -6,20 +6,39 @@ on:
     branches:
       - main
 
+permissions: write-all
+
 jobs:
   build-docs:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.7"]
+
     steps:
     - name: Checkout
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    - uses: actions/setup-python@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3.1.2
       with:
-        python-version: 3.9
-    - uses: abatilo/actions-poetry@v3.1.2
-    - name: install
-      run: poetry install -E docs
+        python-version: ${{ matrix.python-version }}
+
+    - uses: abatilo/actions-poetry@v2.1.4
+
+    - name: Set up cache
+      uses: actions/cache@v3.0.2
+      with:
+        path: .venv
+        key: venv-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('poetry.lock') }}-docs
+
+    - name: Install dependencies
+      run: |
+        poetry config virtualenvs.in-project true
+        poetry install -E docs
+
     - name: Build documentation
       run: |
         mkdir gh-pages
@@ -27,8 +46,8 @@ jobs:
         cd docs/
         poetry run sphinx-build -b html source _build
         cp -r _build/* ../gh-pages/
+
     - name: Deploy documentation
-      if: ${{ github.event_name == 'push' }}
       uses: JamesIves/github-pages-deploy-action@4.1.4
       with:
         branch: gh-pages

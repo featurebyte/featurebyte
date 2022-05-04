@@ -5,18 +5,16 @@
 
 Welcome to FeatureByte!
 =======================================
-FeatureByte is a Python (3.7+) library for FeatureOps management in Data Science workflows.
+FeatureByte is a Python (3.7+) library to author, manage and serve Machine Learning Features for Data Science applications.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+
+   api
 
 .. changelog::
-    :changelog-url: https://featurebyte.readthedocs.io/en/stable/#changelog
+    :changelog-url: https://featurebyte.github.io/featurebyte/#changelog
     :github: https://github.com/featurebyte/featurebyte/releases/
-
-.. autosummary::
-   :toctree: _autosummary
 
 Indices and tables
 ==================

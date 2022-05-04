@@ -41,11 +41,11 @@ rich = "^12.3.0"
 click = "8.1.3"
 Sphinx = {version = "^4.5.0", optional = true}
 sphinx-rtd-theme = {version = "^1.0.0", optional = true}
-sphinxcontrib-napoleon = {version = "^0.7", optional = true}
 sphinx-github-changelog = {version = "^1.2.0", optional = true}
+numpydoc = {version = "^1.3.1", optional = true}
 
 [tool.poetry.extras]
-docs = ["Sphinx", "sphinx-rtd-theme", "sphinxcontrib-napoleon", "sphinx-github-changelog"]
+docs = ["Sphinx", "sphinx-rtd-theme", "sphinx-github-changelog", "numpydoc"]
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.1"

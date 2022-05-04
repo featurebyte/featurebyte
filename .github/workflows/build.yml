@@ -1,6 +1,6 @@
 name: build
 
-on: [push]
+on: [pull_request]
 
 jobs:
   build:
@@ -16,8 +16,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install poetry
-      run: make poetry-download
+    - uses: abatilo/actions-poetry@v2.1.4
 
     - name: Set up cache
       uses: actions/cache@v3.0.2
