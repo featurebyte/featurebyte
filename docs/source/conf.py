@@ -11,6 +11,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.abspath("../.."))
@@ -23,7 +24,11 @@ copyright = "2022, FeatureByte Inc"
 author = "FeatureByte Inc"
 
 # The full version, including alpha/beta/rc tags
-release = "0.1.0"
+release = (
+    subprocess.run(["poetry", "version", "--short"], stdout=subprocess.PIPE)
+    .stdout.decode("utf-8")
+    .strip()
+)
 
 
 # -- General configuration ---------------------------------------------------

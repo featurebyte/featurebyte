@@ -1,0 +1,50 @@
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    name: Build release binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.7"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3.1.2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - uses: abatilo/actions-poetry@v2.1.4
+      - name: Build artifacts
+        run: |
+          poetry build
+
+      - name: Upload wheel artifact
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./dist/featurebyte-${{ steps.get_release.outputs.tag_name }}-py3-none-any.whl
+          asset_name: featurebyte-${{ steps.get_release.outputs.tag_name }}-py3-none-any.whl
+          asset_content_type: application/octet-stream
+
+      - name: Upload tar artifact
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./dist/featurebyte-${{ steps.get_release.outputs.tag_name }}-.tar.gz
+          asset_name: featurebyte-${{ steps.get_release.outputs.tag_name }}-.tar.gz
+          asset_content_type: application/octet-stream

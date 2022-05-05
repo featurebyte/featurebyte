@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "featurebyte"
-version = "0.1.0"
+version = "0.1.0-alpha"
 description = "Python Library for FeatureOps"
 readme = "README.md"
 authors = ["FeatureByte <it-admin@featurebyte.com>"]
