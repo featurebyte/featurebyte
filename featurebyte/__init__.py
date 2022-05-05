@@ -9,6 +9,12 @@ else:
 
 
 def get_version() -> str:
+    """
+    Retrieve module version
+
+    Returns:
+        str: module version
+    """
     try:
         return str(importlib_metadata.version(__name__))
     except importlib_metadata.PackageNotFoundError:  # pragma: no cover
