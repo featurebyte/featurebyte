@@ -50,6 +50,7 @@ jobs:
         cp -r _build/* ../gh-pages/
 
     - name: Deploy documentation
+      if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
       uses: JamesIves/github-pages-deploy-action@v4.3.3
       with:
         branch: gh-pages
