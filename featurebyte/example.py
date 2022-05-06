@@ -12,7 +12,7 @@ def hello(name: str) -> str:
 
     Returns
     -------
-    message : str
+    str
         Greeting message
 
     Examples
