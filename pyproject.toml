@@ -107,8 +107,15 @@ pretty = true
 show_traceback = true
 color_output = true
 
+# Needed because of bug in MyPy
+disallow_subclassing_any = false
+
+#Plugins
+plugins = "numpy.typing.mypy_plugin"
+
 allow_redefinition = false
 check_untyped_defs = true
+disallow_untyped_defs = true
 disallow_any_generics = true
 disallow_incomplete_defs = true
 ignore_missing_imports = true
@@ -125,7 +132,6 @@ warn_return_any = true
 warn_unreachable = true
 warn_unused_configs = true
 warn_unused_ignores = true
-
 
 [tool.pytest.ini_options]
 # https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml
