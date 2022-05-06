@@ -35,7 +35,18 @@ console = Console()
 
 
 def version_callback(print_version: bool) -> None:
-    """Print the version of the package."""
+    """Print the version of the package.
+
+    Parameters
+    ----------
+    print_version : bool
+        Whether to print version
+
+    Raises
+    ------
+    Exit
+        If print_version is True
+    """
     if print_version:
         console.print(f"[yellow]featurebyte[/] version: [bold blue]{version}[/]")
         raise typer.Exit()
@@ -61,7 +72,17 @@ def main(
         help="Prints the version of the featurebyte package.",
     ),
 ) -> None:
-    """Print a greeting with a giving name."""
+    """Print a greeting with a giving name.
+
+    Parameters
+    ----------
+    name : str
+        Name to print
+    color : Color
+        Color to use
+    print_version : bool
+        Whether to print version
+    """
     if color is None:
         color = choice(list(Color))
 
