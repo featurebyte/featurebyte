@@ -1,3 +1,6 @@
+"""
+Sample code for CLI implementation
+"""
 from typing import Optional
 
 from enum import Enum
@@ -11,12 +14,16 @@ from featurebyte.example import hello
 
 
 class Color(str, Enum):
-    white = "white"
-    red = "red"
-    cyan = "cyan"
-    magenta = "magenta"
-    yellow = "yellow"
-    green = "green"
+    """
+    Enum for color options
+    """
+
+    WHITE = "white"
+    RED = "red"
+    CYAN = "cyan"
+    MAGENTA = "magenta"
+    YELLOW = "yellow"
+    GREEN = "green"
 
 
 app = typer.Typer(
@@ -45,7 +52,7 @@ def main(
         case_sensitive=False,
         help="Color for print. If not specified then choice will be random.",
     ),
-    print_version: bool = typer.Option(
+    print_version: bool = typer.Option(  # pylint: disable=W0613
         None,
         "-v",
         "--version",
