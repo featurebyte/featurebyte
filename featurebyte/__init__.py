@@ -12,8 +12,10 @@ def get_version() -> str:
     """
     Retrieve module version
 
-    Returns:
-        str: module version
+    Returns
+    --------
+    str
+        Module version
     """
     try:
         return str(importlib_metadata.version(__name__))

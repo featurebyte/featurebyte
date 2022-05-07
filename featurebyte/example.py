@@ -2,18 +2,22 @@
 
 
 def hello(name: str) -> str:
-    """Just an greetings example.
+    """
+    Just an greetings example.
 
-    Args:
-        name (str): Name to greet.
+    Parameters
+    ----------
+    name : str
+        Name to greet.
 
-    Returns:
-        str: greeting message
+    Returns
+    -------
+    str
+        Greeting message
 
-    Examples:
-        .. code:: python
-
-            >>> hello("Roman")
-            'Hello Roman!'
+    Examples
+    --------
+    >>> hello("Roman")
+    'Hello Roman!'
     """
     return f"Hello {name}!"

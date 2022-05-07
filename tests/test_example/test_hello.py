@@ -18,6 +18,6 @@ from featurebyte.example import hello
         ("Isabella", "Hello Isabella!"),
     ],
 )
-def test_hello(name, expected):
+def test_hello(name: str, expected: str) -> None:
     """Example test with parametrization."""
     assert hello(name) == expected
