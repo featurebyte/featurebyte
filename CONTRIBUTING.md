@@ -39,9 +39,23 @@ Before submitting your code please do the following steps:
 1. Run `make codestyle` to format your changes.
 1. Run `make lint` to ensure that types, security and docstrings are okay.
 
-### Makefile usage
+## Creating a Pull Request
 
-[`Makefile`](https://github.com/featurebyte/featurebyte/blob/master/Makefile) contains a lot of functions for faster development.
+We use [`Release Drafter`](https://github.com/marketplace/actions/release-drafter) to draft release notes from pull requests as they get merged. Label your pull request according to the table below to track changes under the correct category.
+
+|        **Pull Request Label**         | **Category in Release Notes** |
+|:-------------------------------------:|:-----------------------------:|
+|       `enhancement`, `feature`        |          🚀 Features          |
+| `bug`, `refactoring`, `bugfix`, `fix` |    🔧 Fixes & Refactoring     |
+|       `build`, `ci`, `testing`        |    📦 Build System & CI/CD    |
+|              `breaking`               |      💥 Breaking Changes      |
+|            `documentation`            |       📝 Documentation        |
+|            `dependencies`             |    ⬆️ Dependencies updates    |
+
+
+## Makefile usage
+
+[`Makefile`](https://github.com/featurebyte/featurebyte/blob/main/Makefile) contains a lot of functions for faster development.
 
 <details>
 <summary>1. Download and remove Poetry</summary>
