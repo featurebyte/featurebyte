@@ -48,7 +48,7 @@ check-codestyle:
 
 .PHONY: mypy
 mypy:
-	poetry run mypy --config-file pyproject.toml ./
+	poetry run mypy --config-file pyproject.toml ./ --exclude tests
 
 .PHONY: check-safety
 check-safety:
