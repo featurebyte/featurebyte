@@ -1,11 +1,12 @@
 """
-Unit Test Cases for SnowflakeConfig.
+Unit Test Cases for SnowflakeConfig
 """
 
 from unittest import mock
 
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 from featurebyte.config import SnowflakeConfig
 
@@ -44,11 +45,20 @@ def test_get_table_metadata(mock_df, test_snowflake):
     )
     dataframe = test_snowflake.get_table_metadata()
 
+    sql = (
+        " select COLUMN_NAME, DATA_TYPE from table(%s) "
+        " where table_name = %s and table_schema = %s "
+    )
+    mock_df.assert_called_with(sql, ("database.information_schema.columns", "TABLE", "SCHEMA"))
     assert len(dataframe) == 2
-    assert dataframe[dataframe["COLUMN_NAME"] == "col1"].DATA_TYPE.iloc[0] == "TEXT"
-    assert dataframe[dataframe["COLUMN_NAME"] == "col1"].VARIABLE_TYPE.iloc[0] == "string"
-    assert dataframe[dataframe["COLUMN_NAME"] == "col2"].DATA_TYPE.iloc[0] == "NUMBER"
-    assert dataframe[dataframe["COLUMN_NAME"] == "col2"].VARIABLE_TYPE.iloc[0] == "numeric"
+    expected_df = pd.DataFrame(
+        {
+            "COLUMN_NAME": ["col1", "col2"],
+            "DATA_TYPE": ["TEXT", "NUMBER"],
+            "VARIABLE_TYPE": ["string", "numeric"],
+        }
+    )
+    assert_frame_equal(dataframe, expected_df)
 
 
 @mock.patch("featurebyte.config.snowflake.SnowflakeConfig._execute_df")
@@ -63,9 +73,11 @@ def test_get_table_sample_data(mock_df, test_snowflake):
     Returns:
 
     """
-    mock_df.return_value = pd.DataFrame(
-        {"id": ["id1", "id2", "id3"], "name": ["name1", "name2", "name3"]}
-    )
+    return_df = pd.DataFrame({"id": ["id1", "id2", "id3"], "name": ["name1", "name2", "name3"]})
+    mock_df.return_value = return_df
     dataframe = test_snowflake.get_table_sample_data()
+
+    mock_df.assert_called_with("select * from table(%s) limit %s", ("table", 10))
     assert len(dataframe) == 3
     assert len(dataframe.columns) == 2
+    assert_frame_equal(dataframe, return_df)

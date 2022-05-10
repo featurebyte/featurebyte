@@ -74,8 +74,8 @@ class SnowflakeConfig:
 
         Returns
         -------
-            dataframe: Dataframe
-                pandas Dataframe for sample records
+        dataframe: Dataframe
+            pandas Dataframe for sample records
 
         """
         sql = "select * from table(%s) limit %s"
@@ -90,8 +90,8 @@ class SnowflakeConfig:
 
         Returns
         -------
-            dataframe: Dataframe
-                pandas Dataframe for metadata
+        dataframe: Dataframe
+            pandas Dataframe for metadata
         """
 
         sql = (
@@ -130,8 +130,8 @@ class SnowflakeConfig:
 
         Returns
         -------
-            dataframe: Dataframe
-                result dataframe from input sql
+        dataframe: Dataframe
+            result dataframe from input sql
         """
         cursor = self.conn.cursor()
         try:
