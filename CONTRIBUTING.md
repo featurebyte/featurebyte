@@ -1,9 +1,15 @@
 # How to contribute
 
+## Python
+Python 3.8 and higher is required.
+
 ## Dependencies
 
 We use `poetry` to manage the [dependencies](https://github.com/python-poetry/poetry).
-If you dont have `poetry`, you should install with `make poetry-download`.
+
+If you dont have `poetry`, you should install with `make poetry-download`. Make sure the poetry binary is included in `PATH` so it's accessible in the terminal.
+
+
 
 To install dependencies and prepare [`pre-commit`](https://pre-commit.com/) hooks you would need to run `install` command:
 
@@ -66,6 +72,7 @@ To download and install Poetry run:
 ```bash
 make poetry-download
 ```
+Add Poetry binary to `PATH` to make it easily accessible. 
 
 To uninstall
 
@@ -121,6 +128,8 @@ Update all dev libraries to the latest version using one comand
 ```bash
 make update-dev-deps
 ```
+</p>
+</details>
 
 <details>
 <summary>4. Code security</summary>
@@ -135,9 +144,6 @@ This command launches `Poetry` integrity checks as well as identifies security i
 ```bash
 make check-safety
 ```
-
-</p>
-</details>
 
 </p>
 </details>
@@ -187,9 +193,38 @@ make test && make check-codestyle && make mypy && make check-safety
 </p>
 </details>
 
+<details>
+<summary>8. Build Artifacts</summary>
+<p>
+
+Build distribution artifacts:
+
+```bash
+make build-artifacts
+```
+
+Artifacts will be created in the folder `dist`
+
+</p>
+</details>
 
 <details>
-<summary>8. Cleanup</summary>
+<summary>9. Build Documentation</summary>
+<p>
+
+Build documentation:
+
+```bash
+make build-docs
+```
+
+The documentation will be created in the folder `build/docs`
+
+</p>
+</details>
+
+<details>
+<summary>10. Cleanup</summary>
 <p>
 Delete pycache files
 

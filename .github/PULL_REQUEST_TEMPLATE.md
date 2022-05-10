@@ -10,19 +10,24 @@
 
 <!-- Mark with an `x` all the checkboxes that apply (like `[x]`) -->
 
-- [ ] 📚 Examples / docs / tutorials / dependencies update
-- [ ] 🔧 Bug fix (non-breaking change which fixes an issue)
-- [ ] 🥂 Improvement (non-breaking change which improves an existing feature)
-- [ ] 🚀 New feature (non-breaking change which adds functionality)
-- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to change)
-- [ ] 🔐 Security fix
+Label this pull request to place it under the correct category in Release Notes:
+
+|        **Pull Request Label**         | **Category in Release Notes** |
+|:-------------------------------------:|:-----------------------------:|
+|       `enhancement`, `feature`        |          🚀 Features          |
+| `bug`, `refactoring`, `bugfix`, `fix` |    🔧 Fixes & Refactoring     |
+|       `build`, `ci`, `testing`        |    📦 Build System & CI/CD    |
+|              `breaking`               |      💥 Breaking Changes      |
+|            `documentation`            |       📝 Documentation        |
+|            `dependencies`             |    ⬆️ Dependencies updates    |
+
+
 
 ## Checklist
 
 <!-- Mark with an `x` all the checkboxes that apply (like `[x]`) -->
 
-- [ ] I've read the [`CODE_OF_CONDUCT.md`](https://github.com/featurebyte/featurebyte/blob/main/CODE_OF_CONDUCT.md) document.
-- [ ] I've read the [`CONTRIBUTING.md`](https://github.com/featurebyte/featurebyte/blob/main/CONTRIBUTING.md) guide.
-- [ ] I've updated the code style using `make codestyle`.
-- [ ] I've written tests for all new methods and classes that I created.
-- [ ] I've written the docstring in [numpydoc format](https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard) for all the methods and classes that I used.
+- [ ] I have read the [`CODE_OF_CONDUCT.md`](https://github.com/featurebyte/featurebyte/blob/main/CODE_OF_CONDUCT.md) and [`CONTRIBUTING.md`](https://github.com/featurebyte/featurebyte/blob/main/CONTRIBUTING.md) guides.
+- [ ] I have written tests for the changes made.
+- [ ] I have written docstrings in [NumpyDoc format](https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard)
+- [ ] I have labeled my Pull Request correctly

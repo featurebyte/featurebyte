@@ -23,22 +23,10 @@ Manage and serve Machine Learning Features for Data Science applications
 pip install -U featurebyte
 ```
 
-or install with `Poetry`
-
-```bash
-poetry add featurebyte
-```
-
 Then you can run
 
 ```bash
 featurebyte --help
-```
-
-or with `Poetry`:
-
-```bash
-poetry run featurebyte --help
 ```
 
 ### Install from source
@@ -60,9 +48,13 @@ Install module:
 make install
 ```
 
+## 📝 Documentation
+
+Read the latest [documentation](https://featurebyte.github.io/featurebyte/).
+
 ## 🚀 Features
 
-- Supports for `Python 3.7` and higher.
+- Supports for `Python 3.8` and higher.
 
 ## 📈 Releases
 
@@ -87,6 +79,13 @@ This project is licensed under the terms of the `Apache Software License 2.0` li
   howpublished = {\url{https://github.com/featurebyte/featurebyte}}
 }
 ```
+
+## Issues Reporting
+Request a feature or report a bug using [Github Issues](https://github.com/featurebyte/featurebyte/issues).
+
+## Contributing
+All contributions are welcomed. Please adhere to the [CODE_OF_CONDUCT](https://github.com/featurebyte/featurebyte/blob/main/CODE_OF_CONDUCT.md) and read the 
+[Developer's Guide](https://github.com/featurebyte/featurebyte/blob/main/CONTRIBUTING.md) to get started.
 
 ## Credits [![🚀 Your next Python package needs a bleeding-edge project structure.](https://img.shields.io/badge/python--package--template-%F0%9F%9A%80-brightgreen)](https://github.com/TezRomacH/python-package-template)
 

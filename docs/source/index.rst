@@ -5,7 +5,7 @@
 
 Welcome to FeatureByte!
 =======================================
-FeatureByte is a Python (3.7+) library to author, manage and serve Machine Learning Features for Data Science applications.
+FeatureByte is a Python (3.8+) library to author, manage and serve Machine Learning Features for Data Science applications.
 
 .. toctree::
    :maxdepth: 2

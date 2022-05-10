@@ -72,17 +72,7 @@ def main(
         help="Prints the version of the featurebyte package.",
     ),
 ) -> None:
-    """Print a greeting with a giving name.
-
-    Parameters
-    ----------
-    name : str
-        Name to print
-    color : Color
-        Color to use
-    print_version : bool
-        Whether to print version
-    """
+    """Print a greeting with a giving name."""
     if color is None:
         color = choice(list(Color))
 

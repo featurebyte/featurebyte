@@ -15,9 +15,9 @@ poetry-remove:
 #* Installation
 .PHONY: install
 install:
-	poetry lock -n && poetry export --without-hashes > requirements.txt
+	poetry lock -n
 	poetry install -n
-	-poetry run mypy --install-types --non-interactive ./
+	-poetry run mypy --config-file pyproject.toml --install-types --non-interactive ./
 
 .PHONY: pre-commit-install
 pre-commit-install:
@@ -48,7 +48,7 @@ check-codestyle:
 
 .PHONY: mypy
 mypy:
-	poetry run mypy --config-file pyproject.toml ./ --exclude tests
+	poetry run mypy --config-file pyproject.toml ./
 
 .PHONY: check-safety
 check-safety:
@@ -87,7 +87,16 @@ pytestcache-remove:
 
 .PHONY: build-remove
 build-remove:
-	rm -rf build/
+	rm -rf dist docs/build
 
 .PHONY: cleanup
 cleanup: pycache-remove dsstore-remove mypycache-remove ipynbcheckpoints-remove pytestcache-remove
+
+# Build Artifacts
+build-artifacts:
+	poetry build
+
+# Docs Generation
+build-docs: build-remove
+	poetry install -E docs
+	poetry run sphinx-build -b html docs/source docs/build
