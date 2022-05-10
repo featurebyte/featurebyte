@@ -48,7 +48,7 @@ jobs:
         mkdir gh-pages
         touch gh-pages/.nojekyll
         make build-docs
-        cp -r docs/build/* ../gh-pages/
+        cp -r docs/build/* gh-pages/
 
     - name: Deploy documentation
       if: github.event_name == 'push'
