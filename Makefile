@@ -15,7 +15,7 @@ poetry-remove:
 #* Installation
 .PHONY: install
 install:
-	poetry lock -n && poetry export --without-hashes > requirements.txt
+	poetry lock -n
 	poetry install -n
 	-poetry run mypy --config-file pyproject.toml --install-types --non-interactive ./
 
