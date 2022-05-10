@@ -1104,7 +1104,7 @@ docs = ["Sphinx", "sphinx-rtd-theme", "sphinx-github-changelog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "85de8cd1f02437b03505c404c1ef04665d8fff7e947f5ffd73d5a1885ff5b1ea"
+content-hash = "4baba36d7f6b172d4282ec39e352d2a8fbe6b5fa7003a0a5a9a19ab11c8d615b"
 
 [metadata.files]
 alabaster = [

@@ -54,7 +54,7 @@ Read the latest [documentation](https://featurebyte.github.io/featurebyte/).
 
 ## 🚀 Features
 
-- Supports for `Python 3.7` and higher.
+- Supports for `Python 3.8` and higher.
 
 ## 📈 Releases
 
