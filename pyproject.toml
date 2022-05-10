@@ -107,6 +107,7 @@ python_version = 3.7
 pretty = true
 show_traceback = true
 color_output = true
+exclude = ['tests']
 
 # Needed because of bug in MyPy
 disallow_subclassing_any = false
