@@ -23,22 +23,10 @@ Manage and serve Machine Learning Features for Data Science applications
 pip install -U featurebyte
 ```
 
-or install with `Poetry`
-
-```bash
-poetry add featurebyte
-```
-
 Then you can run
 
 ```bash
 featurebyte --help
-```
-
-or with `Poetry`:
-
-```bash
-poetry run featurebyte --help
 ```
 
 ### Install from source
@@ -59,6 +47,10 @@ Install module:
 ```bash
 make install
 ```
+
+## 📝 Documentation
+
+Read the latest [documentation](https://featurebyte.github.io/featurebyte/).
 
 ## 🚀 Features
 
