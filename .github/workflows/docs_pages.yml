@@ -35,13 +35,12 @@ jobs:
       with:
         path: .venv
         key: venv-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('poetry.lock') }}-docs
-      run: |
-        poetry config virtualenvs.in-project true
 
     - name: Build documentation
       env:
         SPHINX_GITHUB_CHANGELOG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
+        poetry config virtualenvs.in-project true
         mkdir gh-pages
         touch gh-pages/.nojekyll
         make build-docs

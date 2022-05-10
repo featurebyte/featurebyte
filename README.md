@@ -80,6 +80,13 @@ This project is licensed under the terms of the `Apache Software License 2.0` li
 }
 ```
 
+## Issues Reporting
+Request a feature or report a bug using [Github Issues](https://github.com/featurebyte/featurebyte/issues).
+
+## Contributing
+All contributions are welcomed. Please adhere to the [CODE_OF_CONDUCT](https://github.com/featurebyte/featurebyte/blob/main/CODE_OF_CONDUCT.md) and read the 
+[Developer's Guide](https://github.com/featurebyte/featurebyte/blob/main/CONTRIBUTING.md) to get started.
+
 ## Credits [![🚀 Your next Python package needs a bleeding-edge project structure.](https://img.shields.io/badge/python--package--template-%F0%9F%9A%80-brightgreen)](https://github.com/TezRomacH/python-package-template)
 
 This project was generated with [`python-package-template`](https://github.com/TezRomacH/python-package-template)
