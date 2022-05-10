@@ -1,5 +1,8 @@
 # How to contribute
 
+## Python
+Python 3.7 and higher is required.
+
 ## Dependencies
 
 We use `poetry` to manage the [dependencies](https://github.com/python-poetry/poetry).
