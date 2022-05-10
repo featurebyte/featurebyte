@@ -27,7 +27,7 @@ jobs:
       - uses: abatilo/actions-poetry@v2.1.4
       - name: Build artifacts
         run: |
-          poetry build
+          make build-artifacts
 
       - name: Upload wheel artifact
         uses: actions/upload-release-asset@v1.0.2

@@ -87,7 +87,16 @@ pytestcache-remove:
 
 .PHONY: build-remove
 build-remove:
-	rm -rf build/
+	rm -rf dist docs/build
 
 .PHONY: cleanup
 cleanup: pycache-remove dsstore-remove mypycache-remove ipynbcheckpoints-remove pytestcache-remove
+
+# Build Artifacts
+build-artifacts:
+	poetry build
+
+# Docs Generation
+build-docs: build-remove
+	poetry install -E docs
+	poetry run sphinx-build -b html docs/source docs/build
