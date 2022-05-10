@@ -3,7 +3,10 @@
 ## Dependencies
 
 We use `poetry` to manage the [dependencies](https://github.com/python-poetry/poetry).
-If you dont have `poetry`, you should install with `make poetry-download`.
+
+If you dont have `poetry`, you should install with `make poetry-download`. Make sure the poetry binary is included in `PATH` so it's accessible in the terminal.
+
+
 
 To install dependencies and prepare [`pre-commit`](https://pre-commit.com/) hooks you would need to run `install` command:
 
@@ -66,6 +69,7 @@ To download and install Poetry run:
 ```bash
 make poetry-download
 ```
+Add Poetry binary to `PATH` to make it easily accessible. 
 
 To uninstall
 
