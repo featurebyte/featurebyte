@@ -26,7 +26,7 @@ def test_search_sources(tinydb_op, test_localdb):
     Test Case for search_sources
     """
     tinydb_op.return_value = [{"name": "fb", "author": "author2", "status": "DRAFT"}]
-    docs = test_localdb.search_sources(name="fb", author="author2")
+    docs = test_localdb.search_sources(exact_match=False, name="fb", author="author2")
     query_str = (
         "(query.name.matches('fb', flags=re.IGNORECASE))&"
         "(query.author.matches('author2', flags=re.IGNORECASE))"
@@ -43,7 +43,7 @@ def test_search_sources_with_empty_query(test_localdb):
     """
     Test Case for search_sources with empty query params
     """
-    test_localdb.search_sources()
+    test_localdb.search_sources(exact_match=False)
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -51,7 +51,7 @@ def test_search_sources_with_unsupported_query(test_localdb):
     """
     Test Case for search_sources with unsupported query params
     """
-    test_localdb.search_sources(a=1)
+    test_localdb.search_sources(exact_match=False, a=1)
 
 
 @mock.patch("featurebyte.access.LocalSourceDBManager.search_sources")

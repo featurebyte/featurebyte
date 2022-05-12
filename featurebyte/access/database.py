@@ -16,7 +16,6 @@ query_path_map = {
     "author": "author",
     "origin_wh": "source.type",
     "origin_table": "source.connection.table",
-    "exact": False,
 }
 
 
@@ -32,12 +31,14 @@ class LocalSourceDBManager:
         fb_path = os.path.join(os.path.expanduser("~"), ".featurebyte_db.json")
         self._tinydb = TinyDB(fb_path)
 
-    def search_sources(self, **kwargs: Any) -> Any:
+    def search_sources(self, exact_match: bool, **kwargs: Any) -> Any:
         """
         Search document by the attributes specified in query_path_map
 
         Parameters
         ----------
+        exact_match: bool
+            whether the query parameters should be exactly matched or not
         kwargs
             Arbitrary keyword arguments for search query
 
@@ -56,14 +57,9 @@ class LocalSourceDBManager:
         if len(kwargs) == 0:
             raise AttributeError("Search parameter cannot be empty")
 
-        keys = kwargs.keys()
         q_str = ""
-        exact_match = kwargs.get("exact", False)
-
-        for key in keys:
-            if key == "exact":
-                continue
-
+        q_list = []
+        for key in kwargs.keys():
             if key not in query_path_map:
                 raise ValueError(f"search parameter {key} is not supported")
 
@@ -72,16 +68,13 @@ class LocalSourceDBManager:
 
             if isinstance(value, str):
                 if exact_match:
-                    q_str += f"(query.{q_key} == '{value}')"
+                    q_list.append(f"(query.{q_key} == '{value}')")
                 else:
-                    q_str += f"(query.{q_key}.matches('{value}', flags=re.IGNORECASE))"
+                    q_list.append(f"(query.{q_key}.matches('{value}', flags=re.IGNORECASE))")
             else:
-                q_str += f"(query.{q_key} == {value})"
+                q_list.append(f"(query.{q_key} == {value})")
 
-            q_str += "&"
-
-        if q_str.endswith("&"):
-            q_str = q_str[:-1]
+            q_str = "&".join(q_list)
 
         docs = self._tinydb_op("query", None, query_str=q_str)
 
@@ -96,16 +89,14 @@ class LocalSourceDBManager:
         doc: dict
             Json config document for the event source to be inserted into local database
         """
-        r_docs = self.search_sources(name=doc["name"], exact=True)
+        r_docs = self.search_sources(exact_match=True, name=doc["name"])
         if len(r_docs) > 0:
             logger.info(f"{doc['name']} already existed in local db. Doing update")
             doc["updated"] = str(datetime.now())
-            # self._tinydb.update(doc, Query().name == doc["name"])
             self._tinydb_op("update", doc)
         else:
             logger.info(f"Creating {doc['name']} json document in local db")
             doc["created"] = str(datetime.now())
-            # self._tinydb.insert(doc)
             self._tinydb_op("insert", doc)
 
     def _tinydb_op(self, operation: str, doc: Any, query_str: str = "") -> Any:
