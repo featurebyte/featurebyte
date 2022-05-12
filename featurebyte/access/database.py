@@ -4,6 +4,7 @@ This module implements the Insert, Update and Search of EventSource JSON config 
 
 from typing import Any, Dict
 
+import copy
 import os
 import re
 from datetime import datetime
@@ -51,33 +52,50 @@ class LocalSourceDBManager:
         ------
         AttributeError
             if search parameters is empty
-        ValueError
-            if the search parameter is not supported
         """
         if len(kwargs) == 0:
             raise AttributeError("Search parameter cannot be empty")
 
-        q_str = ""
-        q_list = []
+        requirements = {}
         for key, value in kwargs.items():
-            if key not in query_path_map:
-                raise ValueError(f"search parameter {key} is not supported")
+            requirements[query_path_map[key]] = value
 
-            q_key = query_path_map[key]
-
-            if isinstance(value, str):
-                if exact_match:
-                    q_list.append(f"(query.{q_key} == '{value}')")
-                else:
-                    q_list.append(f"(query.{q_key}.matches('{value}', flags=re.IGNORECASE))")
-            else:
-                q_list.append(f"(query.{q_key} == {value})")
-
-            q_str = "&".join(q_list)
-
-        docs = self._tinydb_op("query", None, query_str=q_str)
+        requirements["exact"] = exact_match
+        docs = self._tinydb_op("query", None, query_params=requirements)
 
         return docs
+
+    @staticmethod
+    def predicate(input_object: Any, requirements: Dict[str, str], exact_match: bool) -> bool:
+        """
+        Predicate to retrieve data from local TinyDB
+
+        Parameters
+        ----------
+        input_object: Any
+            existing json object from tinydb
+        requirements: dict
+            dict of query parameters
+        exact_match: bool
+            whether exact_match is required or not
+
+        Returns
+        -------
+        bool
+        """
+        condition = True
+
+        for r_key, r_value in requirements.items():
+            exist_value = copy.deepcopy(input_object)
+            for key in r_key.split("."):
+                exist_value = exist_value[key]
+
+            if exact_match:
+                condition &= exist_value == r_value
+            else:
+                condition &= re.match(r_value, exist_value, re.IGNORECASE) is not None
+
+        return condition is True
 
     def insert_source(self, doc: Dict[Any, Any]) -> None:
         """
@@ -98,12 +116,10 @@ class LocalSourceDBManager:
             doc["created"] = str(datetime.now())
             self._tinydb_op("insert", doc)
 
-    def _tinydb_op(self, operation: str, doc: Any, query_str: str = "") -> Any:
+    def _tinydb_op(self, operation: str, doc: Any, query_params: Any = None) -> Any:
         if operation == "query":
-            query = Query()
-            logger.debug(f"re.IGNORECASE: {re.IGNORECASE} and query: {query}")
-            # pylint: disable=W0123
-            return eval(f"self._tinydb.search({query_str})")  # nosec B307
+            exact_match = query_params.pop("exact")
+            return self._tinydb.search(lambda obj: self.predicate(obj, query_params, exact_match))
 
         if operation == "insert":
             self._tinydb.insert(doc)
