@@ -82,6 +82,7 @@ class LocalSourceDBManager:
         Returns
         -------
         bool
+            whether the predicate is true or not
         """
         condition = True
 
@@ -95,7 +96,7 @@ class LocalSourceDBManager:
             else:
                 condition &= re.match(r_value, exist_value, re.IGNORECASE) is not None
 
-        return condition is True
+        return condition
 
     def insert_source(self, doc: Dict[Any, Any]) -> None:
         """
