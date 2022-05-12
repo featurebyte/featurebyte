@@ -9,7 +9,7 @@ from snowflake import connector
 
 class SnowflakeConfig:
     """
-    This class implmenents both Retrieval From and Updating to the specified Snowflake database.
+    This class implements both Retrieval From and Updating to the specified Snowflake database.
     """
 
     def __init__(
