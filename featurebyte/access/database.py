@@ -59,11 +59,10 @@ class LocalSourceDBManager:
 
         q_str = ""
         q_list = []
-        for key in kwargs.keys():
+        for key, value in kwargs.items():
             if key not in query_path_map:
                 raise ValueError(f"search parameter {key} is not supported")
 
-            value = kwargs[key]
             q_key = query_path_map[key]
 
             if isinstance(value, str):
