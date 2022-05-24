@@ -44,3 +44,17 @@ def test_getitem__series_input(source_df):
 def test_getitem__not_implemented(source_df, item):
     with pytest.raises(TypeError):
         _ = source_df[item]
+
+
+def test_setitem(source_df):
+    source_df["amount"] = source_df["feat"]
+    assert source_df.node == Node(
+        id="ASSIGN_1", type=NodeType.ASSIGN, parameters={}, output_type=NodeOutputType.DataFrame
+    )
+    assert source_df.execution_graph.backward_edges["ASSIGN_1"] == ["INPUT_1", "PROJECT_1"]
+
+
+@pytest.mark.parametrize("item", [1, "string", True])
+def test_setitem__not_implemented(source_df, item):
+    with pytest.raises(TypeError):
+        source_df["amount"] = item

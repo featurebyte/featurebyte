@@ -38,11 +38,13 @@ class Node:
 class Graph(metaclass=SingletonMeta):
     def __init__(self):
         self.edges = defaultdict(list)
+        self.backward_edges = defaultdict(list)
         self.nodes = {}
         self._node_type_counter = defaultdict(int)
 
     def add_edge(self, parent: Node, child: Node) -> None:
         self.edges[parent.id].append(child.id)
+        self.backward_edges[child.id].append(parent.id)
 
     def _generate_node_id(self, node_type: str) -> str:
         self._node_type_counter[node_type] += 1

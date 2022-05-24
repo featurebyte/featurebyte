@@ -30,6 +30,9 @@ class NodeType(str, Enum):
     PROJECT = "PROJECT"
     FILTER = "FILTER"
 
+    # other operations
+    ASSIGN = "ASSIGN"
+
     # operations with side effect
     INPUT = "INPUT"
 

@@ -49,3 +49,14 @@ class DataFrame:
             )
             return DataFrame(node)
         raise TypeError
+
+    def __setitem__(self, key, value):
+        if not isinstance(key, str) or not isinstance(value, Series):
+            raise TypeError
+
+        self.node = self.execution_graph.add_operation(
+            node_type=NodeType.ASSIGN,
+            node_params={},
+            node_output_type=NodeOutputType.DataFrame,
+            input_nodes=[self.node, value.node],
+        )
