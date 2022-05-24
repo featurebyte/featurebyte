@@ -27,8 +27,15 @@ def query_graph_single_node(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    assert graph.to_dict(exclude_name=True) == {
-        "nodes": {"input_1": {"type": "input", "parameters": {}, "output_type": "frame"}},
+    assert graph.to_dict() == {
+        "nodes": {
+            "input_1": {
+                "name": "input_1",
+                "type": "input",
+                "parameters": {},
+                "output_type": "frame",
+            }
+        },
         "edges": {},
     }
     assert node_input == Node(name="input_1", type="input", parameters={}, output_type="frame")
