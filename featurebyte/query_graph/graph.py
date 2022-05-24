@@ -1,7 +1,7 @@
 """
 Implement graph data structure for execution graph
 """
-from typing import List
+from typing import Any, Dict, List, Optional
 
 import json
 from collections import defaultdict
@@ -16,15 +16,15 @@ class SingletonMeta(type):
     Singleton Metaclass for Singleton construction
     """
 
-    _instances = {}
+    _instances: Dict[Any, Any] = {}
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls, *args: Any, **kwargs: Any) -> Any:
         if cls not in cls._instances:
             instance = super().__call__(*args, **kwargs)
             cls._instances[cls] = instance
         return cls._instances[cls]
 
-    def clear(cls):
+    def clear(cls) -> None:
         """
         Remove the singleton instance for the recreation of the new singleton
         """
@@ -42,7 +42,7 @@ class Node:
 
     name: str
     type: str
-    parameters: dict
+    parameters: Dict[str, Any]
     output_type: str
 
 
@@ -51,11 +51,11 @@ class Graph(metaclass=SingletonMeta):
     Graph data structure
     """
 
-    def __init__(self):
-        self.edges = defaultdict(list)
-        self.backward_edges = defaultdict(list)
-        self.nodes = {}
-        self._node_type_counter = defaultdict(int)
+    def __init__(self) -> None:
+        self.edges: Dict[str, List[str]] = defaultdict(list)
+        self.backward_edges: Dict[str, List[str]] = defaultdict(list)
+        self.nodes: Dict[str, Dict[str, Any]] = {}
+        self._node_type_counter: Dict[str, int] = defaultdict(int)
 
     def add_edge(self, parent: Node, child: Node) -> None:
         """
@@ -77,7 +77,7 @@ class Graph(metaclass=SingletonMeta):
         return f"{node_type}_{self._node_type_counter[node_type]}"
 
     def add_node(
-        self, node_type: NodeType, node_params: dict, node_output_type: NodeOutputType
+        self, node_type: NodeType, node_params: Dict[str, Any], node_output_type: NodeOutputType
     ) -> Node:
         """
         Add node to the graph by specifying node type, parameters & output type
@@ -109,7 +109,7 @@ class Graph(metaclass=SingletonMeta):
         }
         return node
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """
         Convert the graph into dictionary format
 
@@ -120,7 +120,7 @@ class Graph(metaclass=SingletonMeta):
         """
         return {"nodes": self.nodes, "edges": dict(self.edges)}
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
 
 
@@ -129,15 +129,15 @@ class QueryGraph(Graph):
     Graph used to store the pandas like operations for the SQL query construction
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.node_name_to_ref = {}
-        self.ref_to_node_name = {}
+        self.node_name_to_ref: Dict[str, int] = {}
+        self.ref_to_node_name: Dict[int, str] = {}
 
     def add_operation(
         self,
         node_type: NodeType,
-        node_params: dict,
+        node_params: Dict[str, Any],
         node_output_type: NodeOutputType,
         input_nodes: List[Node],
     ) -> Node:
