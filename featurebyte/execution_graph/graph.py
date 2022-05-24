@@ -26,6 +26,7 @@ class Node:
     id: str
     type: str
     parameters: Dict
+    output_type: str
 
 
 class Graph(metaclass=SingletonMeta):
@@ -41,13 +42,18 @@ class Graph(metaclass=SingletonMeta):
         self._node_type_counter[node_type] += 1
         return f"{node_type}_{self._node_type_counter[node_type]}"
 
-    def add_node(self, node_type: str, node_params: Dict) -> Node:
+    def add_node(self, node_type: str, node_params: Dict, node_output_type: str) -> Node:
         node = Node(
             id=self._generate_node_id(node_type),
             type=node_type,
             parameters=node_params,
+            output_type=node_output_type,
         )
-        self.nodes[node.id] = {"type": node_type, "parameters": node_params}
+        self.nodes[node.id] = {
+            "type": node_type,
+            "parameters": node_params,
+            "output_type": node_output_type,
+        }
         return node
 
     def to_dict(self):
@@ -63,11 +69,13 @@ class ExecutionGraph(Graph):
         self.node_to_ref_id = {}
         self.ref_to_node_id = {}
 
-    def add_operation(self, node_type: str, node_params: Dict, input_nodes: List[Node]) -> Node:
+    def add_operation(
+        self, node_type: str, node_params: Dict, node_output_type: str, input_nodes: List[Node]
+    ) -> Node:
         input_node_refs = tuple(self.node_to_ref_id[node.id] for node in input_nodes)
-        node_ref = hash_node(node_type, node_params, input_node_refs)
+        node_ref = hash_node(node_type, node_params, node_output_type, input_node_refs)
         if node_ref not in self.ref_to_node_id:
-            node = self.add_node(node_type, node_params)
+            node = self.add_node(node_type, node_params, node_output_type)
             for input_node in input_nodes:
                 self.add_edge(input_node, node)
 
