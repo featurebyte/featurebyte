@@ -3,6 +3,7 @@ Unit test for execution graph
 """
 import pytest
 
+from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 
@@ -15,7 +16,7 @@ def query_graph():
 @pytest.fixture(scope="module")
 def query_graph_single_node(query_graph):
     node_input = query_graph.add_operation(
-        node_type="input", node_params={}, node_output_type="DataFrame", input_nodes=[]
+        node_type="input", node_params={}, node_output_type=NodeOutputType.FRAME, input_nodes=[]
     )
     assert query_graph.to_dict() == {
         "nodes": {"input_1": {"type": "input", "parameters": {}, "output_type": "DataFrame"}},
@@ -31,7 +32,7 @@ def query_graph_two_nodes(query_graph_single_node):
     node_proj = query_graph.add_operation(
         node_type="project",
         node_params={"columns": ["a"]},
-        node_output_type="Series",
+        node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
     expected_graph = {
@@ -58,7 +59,7 @@ def query_graph_three_nodes(query_graph_two_nodes):
     node_eq = query_graph.add_operation(
         node_type="equal",
         node_params={"value": 1},
-        node_output_type="Series",
+        node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_proj],
     )
     expected_graph = {
@@ -89,7 +90,7 @@ def query_graph_four_nodes(query_graph_three_nodes):
     node_filter = query_graph.add_operation(
         node_type="filter",
         node_params={},
-        node_output_type="DataFrame",
+        node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, node_eq],
     )
     expected_graph = {
@@ -119,7 +120,7 @@ def test_add_operation__add_duplicated_node_on_two_nodes_graph(query_graph_two_n
     node_duplicated = query_graph.add_operation(
         node_type="project",
         node_params={"columns": ["a"]},
-        node_output_type="Series",
+        node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
     expected_graph = {
@@ -142,7 +143,7 @@ def test_add_operation__add_duplicated_node_on_four_nodes_graph(query_graph_four
     node_duplicated = query_graph.add_operation(
         node_type="equal",
         node_params={"value": 1},
-        node_output_type="Series",
+        node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_proj],
     )
     expected_graph = {

@@ -9,5 +9,5 @@ class NodeOutputType(str, Enum):
     Query graph node output type
     """
 
-    DataFrame = "DataFrame"
-    Series = "Series"
+    FRAME = "DataFrame"
+    SERIES = "Series"
