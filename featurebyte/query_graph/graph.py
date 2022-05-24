@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 import json
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.util import hash_node
@@ -98,27 +98,34 @@ class Graph(metaclass=SingletonMeta):
         """
         node = Node(
             name=self._generate_node_name(node_type),
-            type=node_type,
+            type=node_type.value,
             parameters=node_params,
-            output_type=node_output_type,
+            output_type=node_output_type.value,
         )
-        self.nodes[node.name] = {
-            "type": node_type.value,
-            "parameters": node_params,
-            "output_type": node_output_type.value,
-        }
+        self.nodes[node.name] = asdict(node)
         return node
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, exclude_name: bool = False) -> Dict[str, Any]:
         """
         Convert the graph into dictionary format
+
+        Parameters
+        ----------
+        exclude_name: bool
+            whether to exclude name for each node
 
         Returns
         -------
         output: Dict[str, Any]
 
         """
-        return {"nodes": self.nodes, "edges": dict(self.edges)}
+        nodes = self.nodes
+        if exclude_name:
+            nodes = {
+                key: {field: val for field, val in node.items() if field != "name"}
+                for key, node in self.nodes.items()
+            }
+        return {"nodes": nodes, "edges": dict(self.edges)}
 
     def __repr__(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
@@ -172,5 +179,5 @@ class QueryGraph(Graph):
             self.node_name_to_ref[node.name] = node_ref
         else:
             name = self.ref_to_node_name[node_ref]
-            node = Node(name=name, **self.nodes[name])
+            node = Node(**self.nodes[name])
         return node

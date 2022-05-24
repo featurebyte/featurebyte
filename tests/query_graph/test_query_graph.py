@@ -27,7 +27,7 @@ def query_graph_single_node(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    assert graph.to_dict() == {
+    assert graph.to_dict(exclude_name=True) == {
         "nodes": {"input_1": {"type": "input", "parameters": {}, "output_type": "frame"}},
         "edges": {},
     }
@@ -58,7 +58,7 @@ def query_graph_two_nodes(graph_single_node):
         },
         "edges": {"input_1": ["project_1"]},
     }
-    assert graph.to_dict() == expected_graph
+    assert graph.to_dict(exclude_name=True) == expected_graph
     assert node_proj == Node(
         name="project_1", type="project", parameters={"columns": ["a"]}, output_type="series"
     )
@@ -92,7 +92,7 @@ def query_graph_three_nodes(graph_two_nodes):
             "project_1": ["eq_1"],
         },
     }
-    assert graph.to_dict() == expected_graph
+    assert graph.to_dict(exclude_name=True) == expected_graph
     assert node_eq == Node(name="eq_1", type="eq", parameters={"value": 1}, output_type="series")
     yield graph, node_input, node_proj, node_eq
 
@@ -126,7 +126,7 @@ def query_graph_four_nodes(graph_three_nodes):
             "eq_1": ["filter_1"],
         },
     }
-    assert graph.to_dict() == expected_graph
+    assert graph.to_dict(exclude_name=True) == expected_graph
     assert node_filter == Node(name="filter_1", type="filter", parameters={}, output_type="frame")
     yield graph, node_input, node_proj, node_eq, node_filter
 
@@ -153,7 +153,7 @@ def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
         },
         "edges": {"input_1": ["project_1"]},
     }
-    assert graph.to_dict() == expected_graph
+    assert graph.to_dict(exclude_name=True) == expected_graph
     assert node_duplicated == node_proj
 
 
@@ -185,5 +185,5 @@ def test_add_operation__add_duplicated_node_on_four_nodes_graph(graph_four_nodes
             "eq_1": ["filter_1"],
         },
     }
-    assert graph.to_dict() == expected_graph
+    assert graph.to_dict(exclude_name=True) == expected_graph
     assert node_duplicated == node_eq
