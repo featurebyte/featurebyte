@@ -1,11 +1,13 @@
 """
 Implement graph data structure for execution graph
 """
-from typing import Dict
+from typing import Dict, List
 
 import json
 from collections import defaultdict
 from dataclasses import dataclass
+
+from featurebyte.execution_graph.util import hash_node
 
 
 class SingletonMeta(type):
@@ -49,7 +51,29 @@ class Graph(metaclass=SingletonMeta):
         return node
 
     def to_dict(self):
-        return {"nodes": self.nodes, "edges": self.edges}
+        return {"nodes": self.nodes, "edges": dict(self.edges)}
 
     def __repr__(self):
         return json.dumps(self.to_dict(), indent=4)
+
+
+class ExecutionGraph(Graph):
+    def __init__(self):
+        super().__init__()
+        self.node_to_ref_id = {}
+        self.ref_to_node_id = {}
+
+    def add_operation(self, node_type: str, node_params: Dict, input_nodes: List[Node]) -> Node:
+        input_node_refs = tuple(self.node_to_ref_id[node.id] for node in input_nodes)
+        node_ref = hash_node(node_type, node_params, input_node_refs)
+        if node_ref not in self.ref_to_node_id:
+            node = self.add_node(node_type, node_params)
+            for input_node in input_nodes:
+                self.add_edge(input_node, node)
+
+            self.ref_to_node_id[node_ref] = node.id
+            self.node_to_ref_id[node.id] = node_ref
+        else:
+            node_id = self.ref_to_node_id[node_ref]
+            node = Node(id=node_id, **self.nodes[node_id])
+        return node
