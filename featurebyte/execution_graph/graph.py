@@ -20,6 +20,12 @@ class SingletonMeta(type):
             cls._instances[cls] = instance
         return cls._instances[cls]
 
+    def clear(cls):
+        try:
+            del SingletonMeta._instances[cls]
+        except KeyError:
+            pass
+
 
 @dataclass()
 class Node:

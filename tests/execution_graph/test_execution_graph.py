@@ -8,6 +8,7 @@ from featurebyte.execution_graph.graph import ExecutionGraph, Node
 
 @pytest.fixture(scope="module")
 def execution_graph():
+    ExecutionGraph.clear()
     yield ExecutionGraph()
 
 
