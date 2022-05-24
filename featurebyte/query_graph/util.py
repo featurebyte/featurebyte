@@ -21,7 +21,7 @@ def hash_node(
     ----------
     node_type: NodeType
         node type
-    node_params: Dict
+    node_params: Dict[str, Any]
         node parameters
     node_output_type: NodeOutputType
         node output data type

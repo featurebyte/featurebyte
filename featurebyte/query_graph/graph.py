@@ -1,7 +1,7 @@
 """
 Implement graph data structure for execution graph
 """
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import json
 from collections import defaultdict
@@ -86,7 +86,7 @@ class Graph(metaclass=SingletonMeta):
         ----------
         node_type: NodeType
             node type
-        node_params: dict
+        node_params: Dict[str, Any]
             parameters in dictionary format
         node_output_type: NodeOutputType
             node output type
@@ -115,7 +115,7 @@ class Graph(metaclass=SingletonMeta):
 
         Returns
         -------
-        output: dict
+        output: Dict[str, Any]
 
         """
         return {"nodes": self.nodes, "edges": dict(self.edges)}
