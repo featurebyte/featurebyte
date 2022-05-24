@@ -7,7 +7,7 @@ import json
 from collections import defaultdict
 from dataclasses import dataclass
 
-from featurebyte.query_graph.enum import NodeOutputType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.util import hash_node
 
 
@@ -40,7 +40,7 @@ class Node:
     Graph Node
     """
 
-    id: str
+    name: str
     type: str
     parameters: Dict
     output_type: str
@@ -61,27 +61,29 @@ class Graph(metaclass=SingletonMeta):
         """
         Add edge to the graph by specifying a parent node & a child node
         """
-        self.edges[parent.id].append(child.id)
-        self.backward_edges[child.id].append(parent.id)
+        self.edges[parent.name].append(child.name)
+        self.backward_edges[child.name].append(parent.name)
 
-    def _generate_node_id(self, node_type: str) -> str:
+    def _generate_node_name(self, node_type: NodeType) -> str:
         self._node_type_counter[node_type] += 1
         return f"{node_type}_{self._node_type_counter[node_type]}"
 
-    def add_node(self, node_type: str, node_params: Dict, node_output_type: str) -> Node:
+    def add_node(
+        self, node_type: NodeType, node_params: Dict, node_output_type: NodeOutputType
+    ) -> Node:
         """
         Add node to the graph by specifying node type, parameters & output type
         """
         node = Node(
-            id=self._generate_node_id(node_type),
+            name=self._generate_node_name(node_type),
             type=node_type,
             parameters=node_params,
             output_type=node_output_type,
         )
-        self.nodes[node.id] = {
-            "type": node_type,
+        self.nodes[node.name] = {
+            "type": node_type.value,
             "parameters": node_params,
-            "output_type": node_output_type,
+            "output_type": node_output_type.value,
         }
         return node
 
@@ -102,12 +104,12 @@ class QueryGraph(Graph):
 
     def __init__(self):
         super().__init__()
-        self.node_to_ref_id = {}
-        self.ref_to_node_id = {}
+        self.node_name_to_ref = {}
+        self.ref_to_node_name = {}
 
     def add_operation(
         self,
-        node_type: str,
+        node_type: NodeType,
         node_params: Dict,
         node_output_type: NodeOutputType,
         input_nodes: List[Node],
@@ -132,16 +134,16 @@ class QueryGraph(Graph):
             operation node of the given input
 
         """
-        input_node_refs = tuple(self.node_to_ref_id[node.id] for node in input_nodes)
+        input_node_refs = tuple(self.node_name_to_ref[node.name] for node in input_nodes)
         node_ref = hash_node(node_type, node_params, node_output_type, input_node_refs)
-        if node_ref not in self.ref_to_node_id:
+        if node_ref not in self.ref_to_node_name:
             node = self.add_node(node_type, node_params, node_output_type)
             for input_node in input_nodes:
                 self.add_edge(input_node, node)
 
-            self.ref_to_node_id[node_ref] = node.id
-            self.node_to_ref_id[node.id] = node_ref
+            self.ref_to_node_name[node_ref] = node.name
+            self.node_name_to_ref[node.name] = node_ref
         else:
-            node_id = self.ref_to_node_id[node_ref]
-            node = Node(id=node_id, **self.nodes[node_id])
+            name = self.ref_to_node_name[node_ref]
+            node = Node(name=name, **self.nodes[name])
         return node

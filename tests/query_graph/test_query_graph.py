@@ -3,7 +3,7 @@ Unit test for execution graph
 """
 import pytest
 
-from featurebyte.query_graph.enum import NodeOutputType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 
@@ -16,13 +16,16 @@ def query_graph():
 @pytest.fixture(scope="module")
 def query_graph_single_node(query_graph):
     node_input = query_graph.add_operation(
-        node_type="input", node_params={}, node_output_type=NodeOutputType.FRAME, input_nodes=[]
+        node_type=NodeType.INPUT,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
     )
     assert query_graph.to_dict() == {
-        "nodes": {"input_1": {"type": "input", "parameters": {}, "output_type": "DataFrame"}},
+        "nodes": {"input_1": {"type": "input", "parameters": {}, "output_type": "frame"}},
         "edges": {},
     }
-    assert node_input == Node(id="input_1", type="input", parameters={}, output_type="DataFrame")
+    assert node_input == Node(name="input_1", type="input", parameters={}, output_type="frame")
     yield query_graph, node_input
 
 
@@ -30,25 +33,25 @@ def query_graph_single_node(query_graph):
 def query_graph_two_nodes(query_graph_single_node):
     query_graph, node_input = query_graph_single_node
     node_proj = query_graph.add_operation(
-        node_type="project",
+        node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
     expected_graph = {
         "nodes": {
-            "input_1": {"type": "input", "parameters": {}, "output_type": "DataFrame"},
+            "input_1": {"type": "input", "parameters": {}, "output_type": "frame"},
             "project_1": {
                 "type": "project",
                 "parameters": {"columns": ["a"]},
-                "output_type": "Series",
+                "output_type": "series",
             },
         },
         "edges": {"input_1": ["project_1"]},
     }
     assert query_graph.to_dict() == expected_graph
     assert node_proj == Node(
-        id="project_1", type="project", parameters={"columns": ["a"]}, output_type="Series"
+        name="project_1", type="project", parameters={"columns": ["a"]}, output_type="series"
     )
     yield query_graph, node_input, node_proj
 
@@ -57,30 +60,28 @@ def query_graph_two_nodes(query_graph_single_node):
 def query_graph_three_nodes(query_graph_two_nodes):
     query_graph, node_input, node_proj = query_graph_two_nodes
     node_eq = query_graph.add_operation(
-        node_type="equal",
+        node_type=NodeType.EQ,
         node_params={"value": 1},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_proj],
     )
     expected_graph = {
         "nodes": {
-            "input_1": {"type": "input", "parameters": {}, "output_type": "DataFrame"},
+            "input_1": {"type": "input", "parameters": {}, "output_type": "frame"},
             "project_1": {
                 "type": "project",
                 "parameters": {"columns": ["a"]},
-                "output_type": "Series",
+                "output_type": "series",
             },
-            "equal_1": {"type": "equal", "parameters": {"value": 1}, "output_type": "Series"},
+            "eq_1": {"type": "eq", "parameters": {"value": 1}, "output_type": "series"},
         },
         "edges": {
             "input_1": ["project_1"],
-            "project_1": ["equal_1"],
+            "project_1": ["eq_1"],
         },
     }
     assert query_graph.to_dict() == expected_graph
-    assert node_eq == Node(
-        id="equal_1", type="equal", parameters={"value": 1}, output_type="Series"
-    )
+    assert node_eq == Node(name="eq_1", type="eq", parameters={"value": 1}, output_type="series")
     yield query_graph, node_input, node_proj, node_eq
 
 
@@ -88,48 +89,48 @@ def query_graph_three_nodes(query_graph_two_nodes):
 def query_graph_four_nodes(query_graph_three_nodes):
     query_graph, node_input, node_proj, node_eq = query_graph_three_nodes
     node_filter = query_graph.add_operation(
-        node_type="filter",
+        node_type=NodeType.FILTER,
         node_params={},
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, node_eq],
     )
     expected_graph = {
         "nodes": {
-            "input_1": {"type": "input", "parameters": {}, "output_type": "DataFrame"},
+            "input_1": {"type": "input", "parameters": {}, "output_type": "frame"},
             "project_1": {
                 "type": "project",
                 "parameters": {"columns": ["a"]},
-                "output_type": "Series",
+                "output_type": "series",
             },
-            "equal_1": {"type": "equal", "parameters": {"value": 1}, "output_type": "Series"},
-            "filter_1": {"type": "filter", "parameters": {}, "output_type": "DataFrame"},
+            "eq_1": {"type": "eq", "parameters": {"value": 1}, "output_type": "series"},
+            "filter_1": {"type": "filter", "parameters": {}, "output_type": "frame"},
         },
         "edges": {
             "input_1": ["project_1", "filter_1"],
-            "project_1": ["equal_1"],
-            "equal_1": ["filter_1"],
+            "project_1": ["eq_1"],
+            "eq_1": ["filter_1"],
         },
     }
     assert query_graph.to_dict() == expected_graph
-    assert node_filter == Node(id="filter_1", type="filter", parameters={}, output_type="DataFrame")
+    assert node_filter == Node(name="filter_1", type="filter", parameters={}, output_type="frame")
     yield query_graph, node_input, node_proj, node_eq, node_filter
 
 
 def test_add_operation__add_duplicated_node_on_two_nodes_graph(query_graph_two_nodes):
     query_graph, node_input, node_proj = query_graph_two_nodes
     node_duplicated = query_graph.add_operation(
-        node_type="project",
+        node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
     expected_graph = {
         "nodes": {
-            "input_1": {"type": "input", "parameters": {}, "output_type": "DataFrame"},
+            "input_1": {"type": "input", "parameters": {}, "output_type": "frame"},
             "project_1": {
                 "type": "project",
                 "parameters": {"columns": ["a"]},
-                "output_type": "Series",
+                "output_type": "series",
             },
         },
         "edges": {"input_1": ["project_1"]},
@@ -141,26 +142,26 @@ def test_add_operation__add_duplicated_node_on_two_nodes_graph(query_graph_two_n
 def test_add_operation__add_duplicated_node_on_four_nodes_graph(query_graph_four_nodes):
     query_graph, _, node_proj, node_eq, _ = query_graph_four_nodes
     node_duplicated = query_graph.add_operation(
-        node_type="equal",
+        node_type=NodeType.EQ,
         node_params={"value": 1},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_proj],
     )
     expected_graph = {
         "nodes": {
-            "input_1": {"type": "input", "parameters": {}, "output_type": "DataFrame"},
+            "input_1": {"type": "input", "parameters": {}, "output_type": "frame"},
             "project_1": {
                 "type": "project",
                 "parameters": {"columns": ["a"]},
-                "output_type": "Series",
+                "output_type": "series",
             },
-            "equal_1": {"type": "equal", "parameters": {"value": 1}, "output_type": "Series"},
-            "filter_1": {"type": "filter", "parameters": {}, "output_type": "DataFrame"},
+            "eq_1": {"type": "eq", "parameters": {"value": 1}, "output_type": "series"},
+            "filter_1": {"type": "filter", "parameters": {}, "output_type": "frame"},
         },
         "edges": {
             "input_1": ["project_1", "filter_1"],
-            "project_1": ["equal_1"],
-            "equal_1": ["filter_1"],
+            "project_1": ["eq_1"],
+            "eq_1": ["filter_1"],
         },
     }
     assert query_graph.to_dict() == expected_graph
