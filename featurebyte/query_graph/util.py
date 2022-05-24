@@ -7,6 +7,9 @@ import json
 
 
 def hash_node(node_type: str, node_params: Dict, node_output_type: str, input_node_refs: Tuple):
+    """
+    Hash function to construct the signature of the node
+    """
     return hash(
         (node_type, json.dumps(node_params, sort_keys=True), node_output_type, input_node_refs)
     )

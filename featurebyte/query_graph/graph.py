@@ -7,10 +7,14 @@ import json
 from collections import defaultdict
 from dataclasses import dataclass
 
+from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.util import hash_node
 
 
 class SingletonMeta(type):
+    """
+    Singleton Metaclass for Singleton construction
+    """
 
     _instances = {}
 
@@ -21,6 +25,9 @@ class SingletonMeta(type):
         return cls._instances[cls]
 
     def clear(cls):
+        """
+        Remove the singleton instance for the recreation of the new singleton
+        """
         try:
             del SingletonMeta._instances[cls]
         except KeyError:
@@ -29,6 +36,10 @@ class SingletonMeta(type):
 
 @dataclass()
 class Node:
+    """
+    Graph Node
+    """
+
     id: str
     type: str
     parameters: Dict
@@ -36,6 +47,10 @@ class Node:
 
 
 class Graph(metaclass=SingletonMeta):
+    """
+    Graph data structure
+    """
+
     def __init__(self):
         self.edges = defaultdict(list)
         self.backward_edges = defaultdict(list)
@@ -43,6 +58,9 @@ class Graph(metaclass=SingletonMeta):
         self._node_type_counter = defaultdict(int)
 
     def add_edge(self, parent: Node, child: Node) -> None:
+        """
+        Add edge to the graph by specifying a parent node & a child node
+        """
         self.edges[parent.id].append(child.id)
         self.backward_edges[child.id].append(parent.id)
 
@@ -51,6 +69,9 @@ class Graph(metaclass=SingletonMeta):
         return f"{node_type}_{self._node_type_counter[node_type]}"
 
     def add_node(self, node_type: str, node_params: Dict, node_output_type: str) -> Node:
+        """
+        Add node to the graph by specifying node type, parameters & output type
+        """
         node = Node(
             id=self._generate_node_id(node_type),
             type=node_type,
@@ -65,6 +86,9 @@ class Graph(metaclass=SingletonMeta):
         return node
 
     def to_dict(self):
+        """
+        Convert the graph into dictionary format
+        """
         return {"nodes": self.nodes, "edges": dict(self.edges)}
 
     def __repr__(self):
@@ -72,14 +96,42 @@ class Graph(metaclass=SingletonMeta):
 
 
 class QueryGraph(Graph):
+    """
+    Graph used to store the pandas like operations for the SQL query construction
+    """
+
     def __init__(self):
         super().__init__()
         self.node_to_ref_id = {}
         self.ref_to_node_id = {}
 
     def add_operation(
-        self, node_type: str, node_params: Dict, node_output_type: str, input_nodes: List[Node]
+        self,
+        node_type: str,
+        node_params: Dict,
+        node_output_type: NodeOutputType,
+        input_nodes: List[Node],
     ) -> Node:
+        """
+        Add operation to the query graph. If the exact operation exists in the graph, return the existing
+        node in the graph. Otherwise, a new node is created and adds to the graph.
+
+        Parameters
+        ----------
+        node_type: str
+        node_params: dict
+            parameters used for the node operation
+        node_output_type: NodeOutputType
+            node output type
+        input_nodes: List[Node]
+            list of input nodes
+
+        Returns
+        -------
+        node: Node
+            operation node of the given input
+
+        """
         input_node_refs = tuple(self.node_to_ref_id[node.id] for node in input_nodes)
         node_ref = hash_node(node_type, node_params, node_output_type, input_node_refs)
         if node_ref not in self.ref_to_node_id:
