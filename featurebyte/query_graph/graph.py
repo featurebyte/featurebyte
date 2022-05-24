@@ -1,7 +1,7 @@
 """
 Implement graph data structure for execution graph
 """
-from typing import Dict, List
+from typing import List
 
 import json
 from collections import defaultdict
@@ -42,7 +42,7 @@ class Node:
 
     name: str
     type: str
-    parameters: Dict
+    parameters: dict
     output_type: str
 
 
@@ -60,6 +60,14 @@ class Graph(metaclass=SingletonMeta):
     def add_edge(self, parent: Node, child: Node) -> None:
         """
         Add edge to the graph by specifying a parent node & a child node
+
+        Parameters
+        ----------
+        parent: Node
+            parent node
+        child: Node
+            child node
+
         """
         self.edges[parent.name].append(child.name)
         self.backward_edges[child.name].append(parent.name)
@@ -69,10 +77,24 @@ class Graph(metaclass=SingletonMeta):
         return f"{node_type}_{self._node_type_counter[node_type]}"
 
     def add_node(
-        self, node_type: NodeType, node_params: Dict, node_output_type: NodeOutputType
+        self, node_type: NodeType, node_params: dict, node_output_type: NodeOutputType
     ) -> Node:
         """
         Add node to the graph by specifying node type, parameters & output type
+
+        Parameters
+        ----------
+        node_type: NodeType
+            node type
+        node_params: dict
+            parameters in dictionary format
+        node_output_type: NodeOutputType
+            node output type
+
+        Returns
+        -------
+        node: Node
+
         """
         node = Node(
             name=self._generate_node_name(node_type),
@@ -90,6 +112,11 @@ class Graph(metaclass=SingletonMeta):
     def to_dict(self):
         """
         Convert the graph into dictionary format
+
+        Returns
+        -------
+        output: dict
+
         """
         return {"nodes": self.nodes, "edges": dict(self.edges)}
 
@@ -110,17 +137,17 @@ class QueryGraph(Graph):
     def add_operation(
         self,
         node_type: NodeType,
-        node_params: Dict,
+        node_params: dict,
         node_output_type: NodeOutputType,
         input_nodes: List[Node],
     ) -> Node:
         """
-        Add operation to the query graph. If the exact operation exists in the graph, return the existing
-        node in the graph. Otherwise, a new node is created and adds to the graph.
+        Add operation to the query graph.
 
         Parameters
         ----------
-        node_type: str
+        node_type: NodeType
+            node type
         node_params: dict
             parameters used for the node operation
         node_output_type: NodeOutputType
@@ -130,11 +157,11 @@ class QueryGraph(Graph):
 
         Returns
         -------
-        node: Node
+        Node
             operation node of the given input
 
         """
-        input_node_refs = tuple(self.node_name_to_ref[node.name] for node in input_nodes)
+        input_node_refs = [self.node_name_to_ref[node.name] for node in input_nodes]
         node_ref = hash_node(node_type, node_params, node_output_type, input_node_refs)
         if node_ref not in self.ref_to_node_name:
             node = self.add_node(node_type, node_params, node_output_type)

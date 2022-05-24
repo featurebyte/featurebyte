@@ -7,32 +7,41 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(name="graph", scope="module")
 def query_graph():
+    """
+    Empty query graph fixture
+    """
     QueryGraph.clear()
     yield QueryGraph()
 
 
-@pytest.fixture(scope="module")
-def query_graph_single_node(query_graph):
-    node_input = query_graph.add_operation(
+@pytest.fixture(name="graph_single_node", scope="module")
+def query_graph_single_node(graph):
+    """
+    Query graph with a single node
+    """
+    node_input = graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={},
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    assert query_graph.to_dict() == {
+    assert graph.to_dict() == {
         "nodes": {"input_1": {"type": "input", "parameters": {}, "output_type": "frame"}},
         "edges": {},
     }
     assert node_input == Node(name="input_1", type="input", parameters={}, output_type="frame")
-    yield query_graph, node_input
+    yield graph, node_input
 
 
-@pytest.fixture(scope="module")
-def query_graph_two_nodes(query_graph_single_node):
-    query_graph, node_input = query_graph_single_node
-    node_proj = query_graph.add_operation(
+@pytest.fixture(name="graph_two_nodes", scope="module")
+def query_graph_two_nodes(graph_single_node):
+    """
+    Query graph with two nodes
+    """
+    graph, node_input = graph_single_node
+    node_proj = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
@@ -49,17 +58,20 @@ def query_graph_two_nodes(query_graph_single_node):
         },
         "edges": {"input_1": ["project_1"]},
     }
-    assert query_graph.to_dict() == expected_graph
+    assert graph.to_dict() == expected_graph
     assert node_proj == Node(
         name="project_1", type="project", parameters={"columns": ["a"]}, output_type="series"
     )
-    yield query_graph, node_input, node_proj
+    yield graph, node_input, node_proj
 
 
-@pytest.fixture(scope="module")
-def query_graph_three_nodes(query_graph_two_nodes):
-    query_graph, node_input, node_proj = query_graph_two_nodes
-    node_eq = query_graph.add_operation(
+@pytest.fixture(name="graph_three_nodes", scope="module")
+def query_graph_three_nodes(graph_two_nodes):
+    """
+    Query graph with three nodes
+    """
+    graph, node_input, node_proj = graph_two_nodes
+    node_eq = graph.add_operation(
         node_type=NodeType.EQ,
         node_params={"value": 1},
         node_output_type=NodeOutputType.SERIES,
@@ -80,15 +92,18 @@ def query_graph_three_nodes(query_graph_two_nodes):
             "project_1": ["eq_1"],
         },
     }
-    assert query_graph.to_dict() == expected_graph
+    assert graph.to_dict() == expected_graph
     assert node_eq == Node(name="eq_1", type="eq", parameters={"value": 1}, output_type="series")
-    yield query_graph, node_input, node_proj, node_eq
+    yield graph, node_input, node_proj, node_eq
 
 
-@pytest.fixture(scope="module")
-def query_graph_four_nodes(query_graph_three_nodes):
-    query_graph, node_input, node_proj, node_eq = query_graph_three_nodes
-    node_filter = query_graph.add_operation(
+@pytest.fixture(name="graph_four_nodes", scope="module")
+def query_graph_four_nodes(graph_three_nodes):
+    """
+    Query graph with four nodes
+    """
+    graph, node_input, node_proj, node_eq = graph_three_nodes
+    node_filter = graph.add_operation(
         node_type=NodeType.FILTER,
         node_params={},
         node_output_type=NodeOutputType.FRAME,
@@ -111,14 +126,17 @@ def query_graph_four_nodes(query_graph_three_nodes):
             "eq_1": ["filter_1"],
         },
     }
-    assert query_graph.to_dict() == expected_graph
+    assert graph.to_dict() == expected_graph
     assert node_filter == Node(name="filter_1", type="filter", parameters={}, output_type="frame")
-    yield query_graph, node_input, node_proj, node_eq, node_filter
+    yield graph, node_input, node_proj, node_eq, node_filter
 
 
-def test_add_operation__add_duplicated_node_on_two_nodes_graph(query_graph_two_nodes):
-    query_graph, node_input, node_proj = query_graph_two_nodes
-    node_duplicated = query_graph.add_operation(
+def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
+    """
+    Test add operation by adding a duplicated node on a 2-node graph
+    """
+    graph, node_input, node_proj = graph_two_nodes
+    node_duplicated = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
@@ -135,13 +153,16 @@ def test_add_operation__add_duplicated_node_on_two_nodes_graph(query_graph_two_n
         },
         "edges": {"input_1": ["project_1"]},
     }
-    assert query_graph.to_dict() == expected_graph
+    assert graph.to_dict() == expected_graph
     assert node_duplicated == node_proj
 
 
-def test_add_operation__add_duplicated_node_on_four_nodes_graph(query_graph_four_nodes):
-    query_graph, _, node_proj, node_eq, _ = query_graph_four_nodes
-    node_duplicated = query_graph.add_operation(
+def test_add_operation__add_duplicated_node_on_four_nodes_graph(graph_four_nodes):
+    """
+    Test add operation by adding a duplicated node on a 4-node graph
+    """
+    graph, _, node_proj, node_eq, _ = graph_four_nodes
+    node_duplicated = graph.add_operation(
         node_type=NodeType.EQ,
         node_params={"value": 1},
         node_output_type=NodeOutputType.SERIES,
@@ -164,5 +185,5 @@ def test_add_operation__add_duplicated_node_on_four_nodes_graph(query_graph_four
             "eq_1": ["filter_1"],
         },
     }
-    assert query_graph.to_dict() == expected_graph
+    assert graph.to_dict() == expected_graph
     assert node_duplicated == node_eq

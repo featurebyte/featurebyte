@@ -1,15 +1,43 @@
 """
 Utility functions
 """
-from typing import Dict, Tuple
+from typing import Dict, List
 
 import json
 
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
-def hash_node(node_type: str, node_params: Dict, node_output_type: str, input_node_refs: Tuple):
+
+def hash_node(
+    node_type: NodeType,
+    node_params: Dict,
+    node_output_type: NodeOutputType,
+    input_node_refs: List[int],
+):
     """
-    Hash function to construct the signature of the node
+    Hash the node related parameters for generating the node signature.
+
+    Parameters
+    ----------
+    node_type: NodeType
+        node type
+    node_params: Dict
+        node parameters
+    node_output_type: NodeOutputType
+        node output data type
+    input_node_refs: List[int]
+        input nodes hashed values
+
+    Returns
+    -------
+    int
+
     """
     return hash(
-        (node_type, json.dumps(node_params, sort_keys=True), node_output_type, input_node_refs)
+        (
+            node_type,
+            json.dumps(node_params, sort_keys=True),
+            node_output_type,
+            tuple(input_node_refs),
+        )
     )
