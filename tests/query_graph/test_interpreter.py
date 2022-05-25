@@ -1,4 +1,5 @@
 import pytest
+import textwrap
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -18,7 +19,11 @@ def test_graph_interpreter_super_simple(graph):
     query_graph = graph
     node_input = query_graph.add_operation(
         node_type=NodeType.INPUT,
-        node_params={"columns": ["ts", "cust_id", "a", "b"], "timestamp": "ts"},
+        node_params={
+            "columns": ["ts", "cust_id", "a", "b"],
+            "timestamp": "ts",
+            "dbtable": "event_table",
+        },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
@@ -37,16 +42,39 @@ def test_graph_interpreter_super_simple(graph):
     sql_nodes = {}
     construct_sql_nodes(query_graph.nodes[assign.name], sql_nodes, query_graph)
     sql_tree = sql_nodes["assign_1"].sql
-    assert sql_tree.sql() == (
-        "SELECT ts, cust_id, a, b, a AS a_copy FROM (SELECT ts, cust_id, a, b FROM event_table WHERE ts >= FBT_START_DATE AND ts < FBT_END_DATE)"
-    )
+    expected = textwrap.dedent(
+        """
+        SELECT
+          ts,
+          cust_id,
+          a,
+          b,
+          a AS a_copy
+        FROM (
+            SELECT
+              ts,
+              cust_id,
+              a,
+              b
+            FROM event_table
+            WHERE
+              ts >= CAST(FBT_START_DATE AS TIMESTAMP)
+              AND ts < CAST(FBT_END_DATE AS TIMESTAMP)
+        )
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
 
 
 def test_graph_interpreter_multi_assign(graph):
     query_graph = graph
     node_input = query_graph.add_operation(
         node_type=NodeType.INPUT,
-        node_params={"columns": ["ts", "cust_id", "a", "b"], "timestamp": "ts"},
+        node_params={
+            "columns": ["ts", "cust_id", "a", "b"],
+            "timestamp": "ts",
+            "dbtable": "event_table",
+        },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
@@ -86,16 +114,48 @@ def test_graph_interpreter_multi_assign(graph):
     sql_nodes = {}
     construct_sql_nodes(query_graph.nodes[assign_node_2.name], sql_nodes, query_graph)
     sql_tree = sql_nodes["assign_2"].sql
-    assert sql_tree.sql() == (
-        "SELECT ts, cust_id, a, b, c, c AS c2 FROM (SELECT ts, cust_id, a, b, a + b AS c FROM (SELECT ts, cust_id, a, b FROM event_table WHERE ts >= FBT_START_DATE AND ts < FBT_END_DATE))"
-    )
+    expected = textwrap.dedent(
+        """
+        SELECT
+          ts,
+          cust_id,
+          a,
+          b,
+          c,
+          c AS c2
+        FROM (
+            SELECT
+              ts,
+              cust_id,
+              a,
+              b,
+              a + b AS c
+            FROM (
+                SELECT
+                  ts,
+                  cust_id,
+                  a,
+                  b
+                FROM event_table
+                WHERE
+                  ts >= CAST(FBT_START_DATE AS TIMESTAMP)
+                  AND ts < CAST(FBT_END_DATE AS TIMESTAMP)
+            )
+        )
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
 
 
-def test_graph_interpreter(graph):
+def test_graph_interpreter_tile_gen(graph):
     query_graph = graph
     node_input = query_graph.add_operation(
         node_type=NodeType.INPUT,
-        node_params={"columns": ["ts", "cust_id", "a", "b"], "timestamp": "ts"},
+        node_params={
+            "columns": ["ts", "cust_id", "a", "b"],
+            "timestamp": "ts",
+            "dbtable": "event_table",
+        },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
@@ -144,3 +204,39 @@ def test_graph_interpreter(graph):
 
     print()
     print(transpile(sql.sql(), pretty=True)[0])
+
+
+def test_graph_interpreter_snowflake(graph):
+    query_graph = graph
+    node_input = query_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "columns": ["SERVER_TIMESTAMP", "CUST_ID"],
+            "timestamp": "SERVER_TIMESTAMP",
+            "dbtable": '"FB_SIMULATE"."PUBLIC"."BROWSING_TS"',
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    _groupby_node = query_graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params={
+            "key": "CUST_ID",
+            "parent": "*",
+            "agg_func": "COUNT",
+            "frequency": 3600,
+            "blind_spot": 1,
+            "timestamp": "SERVER_TIMESTAMP",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input],
+    )
+    interpreter = GraphInterpreter(query_graph)
+    tile_gen_sql = interpreter.construct_tile_gen_sql()
+    assert len(tile_gen_sql) == 1
+    sql_tree = tile_gen_sql[0].sql
+    sql_template = sql_tree.sql(pretty=True)
+    sql_template = sql_template.replace("FBT_START_DATE", "'2022-04-18'")
+    sql_template = sql_template.replace("FBT_END_DATE", "'2022-04-19'")
+    print()
+    print(sql_template)

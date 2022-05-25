@@ -17,7 +17,7 @@ class SQLNode:
 
 @dataclass
 class InputNode(SQLNode):
-    columns: list[str]
+    columns: List[str]
     timestamp: str
     input: SQLNode
 
@@ -31,8 +31,26 @@ class InputNode(SQLNode):
         else:
             s = s.from_(self.input.sql.subquery())
         # TODO: this is only for tile-gen sql
-        s = s.where(f"{self.timestamp} >= FBT_START_DATE", f"{self.timestamp} < FBT_END_DATE")
+        s = s.where(
+            f"{self.timestamp} >= CAST(FBT_START_DATE AS TIMESTAMP)",
+            f"{self.timestamp} < CAST(FBT_END_DATE AS TIMESTAMP)",
+        )
         return s
+
+
+@dataclass
+class FilterNode(SQLNode):
+    input: SQLNode
+    exprs: List[sqlglot.Expression]
+
+    def __post_init__(self):
+        # TODO: need to check input node type
+        if hasattr(self.input, 'columns'):
+            self.columns = self.input.columns
+
+    @property
+    def sql(self):
+        return select("*").from_(self.input.sql.subquery()).where(*self.exprs)
 
 
 @dataclass
@@ -97,17 +115,22 @@ class GroupByNode:
 
     def tile_sql(self):
         start_date_placeholder = "FBT_START_DATE"
+        start_date_placeholder_epoch = f"DATE_PART(EPOCH_SECOND, CAST({start_date_placeholder} AS TIMESTAMP))"
+        timestamp_epoch = f"DATE_PART(EPOCH_SECOND, {self.timestamp})"
         input_tiled = select(
-            "*", f"({self.timestamp} - {start_date_placeholder}) / {self.frequency} AS tile_index"
+            "*",
+            f"FLOOR(({timestamp_epoch} - {start_date_placeholder_epoch}) / {self.frequency}) AS tile_index"
         ).from_(self.input.sql.subquery())
         groupby_sql = (
             select(
-                f"(max(tile_index) + 1) * {self.frequency} + {start_date_placeholder} AS end_date",
+                "tile_index",
                 self.key,
                 f"{self.agg_func}({self.parent}) AS value",
             )
-                .from_(input_tiled.subquery())
-                .group_by(f"tile_index", self.key)
+            .from_(input_tiled.subquery())
+            # TODO: composite join keys
+            .group_by("tile_index", self.key)
+            .order_by("tile_index")
         )
         return groupby_sql
 
@@ -133,7 +156,7 @@ class TileSQLGenerator:
         sqls = []
         for node in tile_generating_nodes:
             sql = self.tile_sql(node)
-            tile_table_id = str(hash(json.dumps(node["parameters"])))  # TODO
+            tile_table_id = str(abs(hash(json.dumps(node["parameters"]))))  # TODO
             frequency = node["parameters"]["frequency"]
             blind_spot = node["parameters"]["blind_spot"]
             info = TileGenSql(
@@ -171,7 +194,7 @@ def construct_sql_nodes(cur_node, sql_nodes, g: QueryGraph):
         sql_node = InputNode(
             columns=parameters["columns"],
             timestamp=parameters["timestamp"],
-            input=ExpressionNode(parse_one("event_table")),
+            input=ExpressionNode(parameters["dbtable"]),
         )
 
     elif node_type == NodeType.ASSIGN:
