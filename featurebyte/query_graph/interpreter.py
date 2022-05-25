@@ -1,10 +1,11 @@
-from typing import Optional
+from typing import Optional, List
 
 from dataclasses import dataclass
+import json
 
 import sqlglot
 from sqlglot import Expression, expressions, parse_one, select
-from .graph import QueryGraph
+from .graph import Node, QueryGraph
 from .enum import NodeType
 
 
@@ -15,7 +16,7 @@ class SQLNode:
 
 
 @dataclass
-class TableNode(SQLNode):
+class InputNode(SQLNode):
     columns: list[str]
     timestamp: str
     input: SQLNode
@@ -65,7 +66,7 @@ class Project(SQLNode):
 
 @dataclass
 class AssignNode(SQLNode):
-    table: TableNode  # TODO: can also be AssignNode. FilterNode?
+    table: InputNode  # TODO: can also be AssignNode. FilterNode?
     column: ExpressionNode
     name: str
 
@@ -119,6 +120,35 @@ class TileGenSql:
     blind_spot: int
 
 
+class TileSQLGenerator:
+
+    def __init__(self, g: QueryGraph):
+        self.g = g
+
+    def construct_tile_gen_sql(self) -> list[TileGenSql]:
+        tile_generating_nodes = []
+        for node in self.g.nodes.values():
+            if node["type"] in {"groupby"}:
+                tile_generating_nodes.append(node)
+        sqls = []
+        for node in tile_generating_nodes:
+            sql = self.tile_sql(node)
+            tile_table_id = str(hash(json.dumps(node["parameters"])))  # TODO
+            frequency = node["parameters"]["frequency"]
+            blind_spot = node["parameters"]["blind_spot"]
+            info = TileGenSql(
+                sql=sql, tile_table_id=tile_table_id, frequency=frequency, blind_spot=blind_spot
+            )
+            sqls.append(info)
+        return sqls
+
+    def tile_sql(self, groupby_node: dict):
+        sql_nodes = {}
+        groupby_sql_node = construct_sql_nodes(groupby_node, sql_nodes, self.g)
+        res = groupby_sql_node.tile_sql()
+        return res
+
+
 def construct_sql_nodes(cur_node, sql_nodes, g: QueryGraph):
 
     cur_node_id = cur_node["name"]
@@ -138,7 +168,7 @@ def construct_sql_nodes(cur_node, sql_nodes, g: QueryGraph):
     parameters = cur_node["parameters"]
 
     if node_type == NodeType.INPUT:
-        sql_node = TableNode(
+        sql_node = InputNode(
             columns=parameters["columns"],
             timestamp=parameters["timestamp"],
             input=ExpressionNode(parse_one("event_table")),
@@ -179,28 +209,8 @@ class GraphInterpreter:
         self.g = g
 
     def construct_tile_gen_sql(self) -> list[TileGenSql]:
-        tile_generating_nodes = []
-        for node in self.g.nodes.values():
-            if node["type"] in {"groupby"}:
-                tile_generating_nodes.append(node)
-        sqls = []
-        for node in tile_generating_nodes:
-            sql = self.tile_sql(node)
-            import json
-            tile_table_id = str(hash(json.dumps(node["parameters"])))  # TODO
-            frequency = node["parameters"]["frequency"]
-            blind_spot = node["parameters"]["blind_spot"]
-            info = TileGenSql(
-                sql=sql, tile_table_id=tile_table_id, frequency=frequency, blind_spot=blind_spot
-            )
-            sqls.append(info)
-        return sqls
-
-    def tile_sql(self, groupby_node):
-        sql_nodes = {}
-        groupby_sql_node = construct_sql_nodes(groupby_node, sql_nodes, self.g)
-        res = groupby_sql_node.tile_sql()
-        return res
+        generator = TileSQLGenerator(self.g)
+        return generator.construct_tile_gen_sql()
 
     def construct_feature_from_tile_sql(self):
         raise NotImplementedError()
