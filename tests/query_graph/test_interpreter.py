@@ -187,7 +187,7 @@ def test_graph_interpreter_tile_gen(graph):
         node_type=NodeType.GROUPBY,
         node_params={
             "key": "cust_id",
-            "parent": "amount",
+            "parent": "a",
             "agg_func": "sum",
             "window_end": 5,
             "frequency": 30,
@@ -200,11 +200,6 @@ def test_graph_interpreter_tile_gen(graph):
     interpreter = GraphInterpreter(query_graph)
     tile_gen_sql = interpreter.construct_tile_gen_sql()
     assert len(tile_gen_sql) == 1
-    sql = tile_gen_sql[0].sql
-    from sqlglot import transpile
-
-    #print()
-    #print(transpile(sql.sql(), pretty=True)[0])
 
 
 def test_graph_interpreter_snowflake(graph):
@@ -237,9 +232,36 @@ def test_graph_interpreter_snowflake(graph):
     tile_gen_sql = interpreter.construct_tile_gen_sql()
     assert len(tile_gen_sql) == 1
     sql_template = tile_gen_sql[0].sql
-    print()
-    print(sql_template)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(FBT_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS tile_start_date,
+          CUST_ID,
+          COUNT(*) AS value
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, SERVER_TIMESTAMP) - DATE_PART(EPOCH_SECOND, CAST(FBT_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+            FROM (
+                SELECT
+                  SERVER_TIMESTAMP,
+                  CUST_ID
+                FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
+                WHERE
+                  SERVER_TIMESTAMP >= CAST(FBT_START_DATE AS TIMESTAMP)
+                  AND SERVER_TIMESTAMP < CAST(FBT_END_DATE AS TIMESTAMP)
+            )
+        )
+        GROUP BY
+          tile_index,
+          CUST_ID
+        ORDER BY
+          tile_index
+        """
+    ).strip()
+    assert sql_template == expected
 
+    # runnable directly in snowflake for testing
     sql_template = sql_template.replace("FBT_START_DATE", "'2022-04-18 00:00:00'")
     sql_template = sql_template.replace("FBT_END_DATE", "'2022-04-19 00:00:00'")
     print()
