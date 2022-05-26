@@ -3,8 +3,6 @@ Series class
 """
 from __future__ import annotations
 
-from typing import List
-
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph import Node, QueryGraph
 

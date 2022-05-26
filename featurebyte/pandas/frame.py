@@ -3,8 +3,6 @@ DataFrame class
 """
 from __future__ import annotations
 
-from typing import Dict, List, Type, Union
-
 import copy
 
 from featurebyte.enum import DBVarType
@@ -53,7 +51,7 @@ class DataFrame:
                 var_type=self.column_var_type_map[item],
                 row_index_lineage=lineage,
             )
-        elif isinstance(item, list) and all(isinstance(elem, str) for elem in item):
+        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             not_found_columns = [elem for elem in item if elem not in self.column_var_type_map]
             if not_found_columns:
                 raise KeyError(f"Columns {not_found_columns} not found!")
@@ -69,9 +67,9 @@ class DataFrame:
             return DataFrame(
                 node=node, column_var_type_map=column_var_type_map, row_index_lineage=lineage
             )
-        elif isinstance(item, Series):
+        if isinstance(item, Series):
             if item.var_type != DBVarType.BOOL:
-                raise TypeError(f"Only boolean Series filtering is supported!")
+                raise TypeError("Only boolean Series filtering is supported!")
             node = self.graph.add_operation(
                 node_type=NodeType.FILTER,
                 node_params={},
