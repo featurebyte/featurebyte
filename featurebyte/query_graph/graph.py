@@ -1,5 +1,5 @@
 """
-Implement graph data structure for execution graph
+Implement graph data structure for query graph
 """
 from typing import Any, Dict, List
 

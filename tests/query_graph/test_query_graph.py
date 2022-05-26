@@ -1,5 +1,5 @@
 """
-Unit test for execution graph
+Unit test for query graph
 """
 import pytest
 
