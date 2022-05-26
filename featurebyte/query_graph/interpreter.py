@@ -44,64 +44,78 @@ class TileSQLGenerator:
         return sqls
 
     def tile_sql(self, groupby_node: dict):
-        sql_nodes = {}
-        groupby_sql_node = construct_sql_nodes(groupby_node, sql_nodes, self.g)
+        groupby_sql_node = SQLOperationGraph(self.g).build(groupby_node)
         res = groupby_sql_node.tile_sql()
         return res
 
 
-def construct_sql_nodes(cur_node, sql_nodes, g: QueryGraph):
+class SQLOperationGraph:
 
-    cur_node_id = cur_node["name"]
-    assert cur_node_id not in sql_nodes
+    def __init__(self, g: QueryGraph):
+        self.sql_nodes = {}
+        self.g = g
 
-    inputs = g.backward_edges[cur_node_id]
-    input_sql_nodes = []
-    for input_node_id in inputs:
-        if input_node_id not in sql_nodes:
-            input_node = g.nodes[input_node_id]
-            construct_sql_nodes(input_node, sql_nodes, g)
-        input_sql_node = sql_nodes[input_node_id]
-        input_sql_nodes.append(input_sql_node)
+    def build(self, starting_node):
+        sql_node = self._construct_sql_nodes(starting_node)
+        return sql_node
 
-    node_id = cur_node["name"]
-    node_type = cur_node["type"]
-    parameters = cur_node["parameters"]
+    def get_node(self, name):
+        return self.sql_nodes[name]
 
-    if node_type == NodeType.INPUT:
-        sql_node = InputNode(
-            columns=parameters["columns"],
-            timestamp=parameters["timestamp"],
-            input=ExpressionNode(parameters["dbtable"]),
-        )
+    def _construct_sql_nodes(self, cur_node):
 
-    elif node_type == NodeType.ASSIGN:
-        assert len(input_sql_nodes) == 2
-        sql_node = AssignNode(
-            table=input_sql_nodes[0], column=input_sql_nodes[1], name=parameters["name"]
-        )
+        cur_node_id = cur_node["name"]
+        assert cur_node_id not in self.sql_nodes
 
-    elif node_type == NodeType.PROJECT:
-        sql_node = Project(parameters["columns"])
+        # Recursively build input sql nodes first
+        inputs = self.g.backward_edges[cur_node_id]
+        input_sql_nodes = []
+        for input_node_id in inputs:
+            if input_node_id not in self.sql_nodes:
+                input_node = self.g.nodes[input_node_id]
+                self._construct_sql_nodes(input_node)
+            input_sql_node = self.sql_nodes[input_node_id]
+            input_sql_nodes.append(input_sql_node)
 
-    elif node_type == NodeType.ADD:
-        sql_node = AddNode(input_sql_nodes[0], input_sql_nodes[1])
+        # Now that input sql nodes are ready, build the current sql node
+        node_id = cur_node["name"]
+        node_type = cur_node["type"]
+        parameters = cur_node["parameters"]
 
-    elif node_type == NodeType.GROUPBY:
-        sql_node = BuildTileNode(
-            input=input_sql_nodes[0],
-            key=parameters["key"],
-            parent=parameters["parent"],
-            timestamp=parameters["timestamp"],
-            agg_func=parameters["agg_func"],
-            frequency=parameters["frequency"],
-        )
+        if node_type == NodeType.INPUT:
+            sql_node = InputNode(
+                columns=parameters["columns"],
+                timestamp=parameters["timestamp"],
+                input=ExpressionNode(parameters["dbtable"]),
+            )
 
-    else:
-        raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
+        elif node_type == NodeType.ASSIGN:
+            assert len(input_sql_nodes) == 2
+            sql_node = AssignNode(
+                table=input_sql_nodes[0], column=input_sql_nodes[1], name=parameters["name"]
+            )
 
-    sql_nodes[node_id] = sql_node
-    return sql_node
+        elif node_type == NodeType.PROJECT:
+            sql_node = Project(parameters["columns"])
+
+        elif node_type == NodeType.ADD:
+            sql_node = AddNode(input_sql_nodes[0], input_sql_nodes[1])
+
+        elif node_type == NodeType.GROUPBY:
+            sql_node = BuildTileNode(
+                input=input_sql_nodes[0],
+                key=parameters["key"],
+                parent=parameters["parent"],
+                timestamp=parameters["timestamp"],
+                agg_func=parameters["agg_func"],
+                frequency=parameters["frequency"],
+            )
+
+        else:
+            raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
+
+        self.sql_nodes[node_id] = sql_node
+        return sql_node
 
 
 class GraphInterpreter:

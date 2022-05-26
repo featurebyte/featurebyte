@@ -3,7 +3,7 @@ import textwrap
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.interpreter import GraphInterpreter, construct_sql_nodes
+from featurebyte.query_graph.interpreter import GraphInterpreter, SQLOperationGraph
 
 
 @pytest.fixture(name="graph", scope="function")
@@ -36,12 +36,12 @@ def test_graph_interpreter_super_simple(graph):
     assign = query_graph.add_operation(
         node_type=NodeType.ASSIGN,
         node_params={"name": "a_copy"},
-        node_output_type=NodeOutputType.SERIES,
+        node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, proj_a],
     )
-    sql_nodes = {}
-    construct_sql_nodes(query_graph.nodes[assign.name], sql_nodes, query_graph)
-    sql_tree = sql_nodes["assign_1"].sql
+    sql_graph = SQLOperationGraph(query_graph)
+    sql_graph.build(query_graph.nodes[assign.name])
+    sql_tree = sql_graph.get_node(assign.name).sql
     expected = textwrap.dedent(
         """
         SELECT
@@ -111,9 +111,10 @@ def test_graph_interpreter_multi_assign(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, proj_c],
     )
-    sql_nodes = {}
-    construct_sql_nodes(query_graph.nodes[assign_node_2.name], sql_nodes, query_graph)
-    sql_tree = sql_nodes["assign_2"].sql
+    name = assign_node_2.name
+    sql_graph = SQLOperationGraph(query_graph)
+    sql_graph.build(query_graph.nodes[name])
+    sql_tree = sql_graph.get_node(name).sql
     expected = textwrap.dedent(
         """
         SELECT

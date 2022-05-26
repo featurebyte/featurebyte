@@ -6,7 +6,6 @@ from sqlglot import expressions, parse_one, select
 
 
 __all__ = [
-    'SQLNode',
     'InputNode',
     'FilterNode',
     'ExpressionNode',
