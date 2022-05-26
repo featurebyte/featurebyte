@@ -3,12 +3,11 @@ This module contains the list of SQL operations to be used by the Query Graph In
 """
 # pylint: disable=W0511
 # pylint: disable=R0903
-from typing import List
+from typing import Any, List
 
 from dataclasses import dataclass
 
-import sqlglot
-from sqlglot import expressions, parse_one, select
+from sqlglot import Expression, expressions, parse_one, select
 
 
 class SQLNode:
@@ -20,7 +19,7 @@ class SQLNode:
     """
 
     @property
-    def sql(self):
+    def sql(self) -> Expression:
         """Construct a sql expression"""
         raise NotImplementedError()
 
@@ -34,7 +33,7 @@ class InputNode(SQLNode):
     input: SQLNode
 
     @property
-    def sql(self):
+    def sql(self) -> Expression:
         """Construct a sql expression"""
         select_expr = select(*self.columns)
         if isinstance(self.input, ExpressionNode):
@@ -53,10 +52,10 @@ class InputNode(SQLNode):
 class ExpressionNode(SQLNode):
     """Expression node"""
 
-    expr: sqlglot.Expression
+    expr: Expression
 
     @property
-    def sql(self):
+    def sql(self) -> Expression:
         return self.expr
 
 
@@ -64,11 +63,11 @@ class ExpressionNode(SQLNode):
 class AddNode(SQLNode):
     """Add node"""
 
-    left: ExpressionNode
-    right: ExpressionNode
+    left: SQLNode
+    right: SQLNode
 
     @property
-    def sql(self):
+    def sql(self) -> Expression:
         return parse_one(f"{self.left.sql.sql()} + {self.right.sql.sql()}")
 
 
@@ -76,10 +75,10 @@ class AddNode(SQLNode):
 class Project(SQLNode):
     """Project node"""
 
-    columns: list[str]
+    columns: List[str]
 
     @property
-    def sql(self):
+    def sql(self) -> Expression:
         assert len(self.columns) == 1
         return parse_one(self.columns[0])
 
@@ -88,16 +87,18 @@ class Project(SQLNode):
 class AssignNode(SQLNode):
     """Assign node"""
 
-    table: InputNode  # TODO: can also be AssignNode. FilterNode?
-    column: ExpressionNode
+    table: Any
+    column: SQLNode
     name: str
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
+        if self.table.columns is None:
+            raise RuntimeError(f"{self.table} has no columns attribute")
         self.columns = [x for x in self.table.columns if x not in self.name] + [self.name]
 
     @property
-    def sql(self):
-        existing_columns = [col for col in self.table.columns if self != self.name]
+    def sql(self) -> Expression:
+        existing_columns = [col for col in self.table.columns if col != self.name]
         select_expr = select(*existing_columns)
         select_expr = select_expr.select(expressions.alias_(self.column.sql, self.name))
         select_expr = select_expr.from_(self.table.sql.subquery())
@@ -118,11 +119,11 @@ class BuildTileNode(SQLNode):
     agg_func: str
     frequency: int
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.columns = ["tile_start_date", self.key, "value"]
 
     @property
-    def sql(self):
+    def sql(self) -> Expression:
         start_date_placeholder = "FBT_START_DATE"
         start_date_placeholder_epoch = (
             f"DATE_PART(EPOCH_SECOND, CAST({start_date_placeholder} AS TIMESTAMP))"

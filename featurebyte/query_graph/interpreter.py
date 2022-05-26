@@ -2,13 +2,13 @@
 This module contains the Query Graph Interpreter
 """
 # pylint: disable=W0511
-from typing import List
+from typing import Any, Dict, List
 
 from dataclasses import dataclass
 
 from .enum import NodeType
 from .graph import QueryGraph
-from .sql import AddNode, AssignNode, BuildTileNode, ExpressionNode, InputNode, Project
+from .sql import AddNode, AssignNode, BuildTileNode, ExpressionNode, InputNode, Project, SQLNode
 
 
 class SQLOperationGraph:
@@ -20,11 +20,11 @@ class SQLOperationGraph:
         Query Graph representing user's intention
     """
 
-    def __init__(self, query_graph: QueryGraph):
-        self.sql_nodes = {}
+    def __init__(self, query_graph: QueryGraph) -> None:
+        self.sql_nodes: Dict[str, SQLNode] = {}
         self.query_graph = query_graph
 
-    def build(self, starting_node: dict):
+    def build(self, starting_node: Dict[str, Any]) -> Any:
         """Build the graph from a given query Node, working backwards
 
         Parameters
@@ -32,27 +32,39 @@ class SQLOperationGraph:
         starting_node : dict
             Dict representation of Query Graph Node. Build graph from this node backwards. This is
             typically the last node in the Query Graph, but can also be an intermediate node.
+
+        Returns
+        -------
+        SQLNode
         """
         sql_node = self._construct_sql_nodes(starting_node)
         return sql_node
 
-    def get_node(self, name: str):
+    def get_node(self, name: str) -> SQLNode:
         """Get a node by name
 
         Parameters
         ----------
         name : str
             Node name
+
+        Returns
+        -------
+        SQLNode
         """
         return self.sql_nodes[name]
 
-    def _construct_sql_nodes(self, cur_node):
+    def _construct_sql_nodes(self, cur_node: Dict[str, Any]) -> Any:
         """Recursively construct the nodes
 
         Parameters
         ----------
         cur_node : dict
             Dictionary representation of Query Graph Node
+
+        Returns
+        -------
+        SQLNode
         """
         cur_node_id = cur_node["name"]
         assert cur_node_id not in self.sql_nodes
@@ -72,6 +84,7 @@ class SQLOperationGraph:
         node_type = cur_node["type"]
         parameters = cur_node["parameters"]
 
+        sql_node: Any
         if node_type == NodeType.INPUT:
             sql_node = InputNode(
                 columns=parameters["columns"],
@@ -156,7 +169,7 @@ class TileSQLGenerator:
 
         return sqls
 
-    def make_one_tile_sql(self, groupby_node: dict):
+    def make_one_tile_sql(self, groupby_node: Dict[str, Any]) -> TileGenSql:
         """Construct tile building SQL for a specific groupby query graph node
 
         Parameters
@@ -200,10 +213,10 @@ class GraphInterpreter:
         generator = TileSQLGenerator(self.query_graph)
         return generator.construct_tile_gen_sql()
 
-    def construct_feature_from_tile_sql(self):
+    def construct_feature_from_tile_sql(self) -> None:
         """Construct SQL that computes feature from tile table"""
         raise NotImplementedError()
 
-    def construct_feature_brute_force_sql(self):
+    def construct_feature_brute_force_sql(self) -> None:
         """Construct SQL that computes feature without using tiling optimization"""
         raise NotImplementedError()
