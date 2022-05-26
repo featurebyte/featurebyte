@@ -119,6 +119,9 @@ class BuildTileNode:
     agg_func: str
     frequency: int
 
+    def __post_init__(self):
+        self.columns = ["tile_start_date", self.key, "value"]
+
     def tile_sql(self):
         start_date_placeholder = "FBT_START_DATE"
         start_date_placeholder_epoch = f"DATE_PART(EPOCH_SECOND, CAST({start_date_placeholder} AS TIMESTAMP))"

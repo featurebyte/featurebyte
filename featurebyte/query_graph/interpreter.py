@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-import json
+from typing import List
 
-from .graph import QueryGraph, Node
+from .graph import QueryGraph
 from .enum import NodeType
 from .sql import *
 
@@ -105,9 +105,9 @@ class SQLOperationGraph:
 
 @dataclass
 class TileGenSql:
-    tile_table_id: str
+    # tile_table_id: str  # TODO
     sql: str
-    # columns: List[str]  # TODO
+    columns: List[str]  # TODO
     window_end: int
     frequency: int
     blind_spot: int
@@ -143,26 +143,25 @@ class TileSQLGenerator:
 
         sqls = []
         for node in tile_generating_nodes:
-            sql = self.tile_sql(node)
-            tile_table_id = str(abs(hash(json.dumps(node["parameters"]))))  # TODO
-            frequency = node["parameters"]["frequency"]
-            blind_spot = node["parameters"]["blind_spot"]
-            window_end = node["parameters"]["window_end"]
-            info = TileGenSql(
-                sql=sql.sql(pretty=True),
-                tile_table_id=tile_table_id,
-                window_end=window_end,
-                frequency=frequency,
-                blind_spot=blind_spot,
-            )
+            info = self.make_one_tile_sql(node)
             sqls.append(info)
 
         return sqls
 
-    def tile_sql(self, groupby_node: dict):
+    def make_one_tile_sql(self, groupby_node: dict):
         groupby_sql_node = SQLOperationGraph(self.g).build(groupby_node)
-        res = groupby_sql_node.tile_sql()
-        return res
+        sql = groupby_sql_node.tile_sql()
+        frequency = groupby_node["parameters"]["frequency"]
+        blind_spot = groupby_node["parameters"]["blind_spot"]
+        window_end = groupby_node["parameters"]["window_end"]
+        info = TileGenSql(
+            sql=sql.sql(pretty=True),
+            columns=groupby_sql_node.columns,
+            window_end=window_end,
+            frequency=frequency,
+            blind_spot=blind_spot
+        )
+        return info
 
 
 class GraphInterpreter:

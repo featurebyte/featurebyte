@@ -1,3 +1,4 @@
+from dataclasses import asdict
 import pytest
 import textwrap
 
@@ -199,8 +200,18 @@ def test_graph_interpreter_tile_gen(graph):
         input_nodes=[assign_node],
     )
     interpreter = GraphInterpreter(query_graph)
-    tile_gen_sql = interpreter.construct_tile_gen_sql()
-    assert len(tile_gen_sql) == 1
+    tile_gen_sqls = interpreter.construct_tile_gen_sql()
+    assert len(tile_gen_sqls) == 1
+
+    info = tile_gen_sqls[0]
+    info_dict = asdict(info)
+    info_dict.pop('sql')
+    assert info_dict == {
+        "columns": ['tile_start_date', 'cust_id', 'value'],
+        "window_end": 5,
+        "frequency": 30,
+        "blind_spot": 1
+    }
 
 
 def test_graph_interpreter_snowflake(graph):
