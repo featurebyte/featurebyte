@@ -7,7 +7,6 @@ from sqlglot import expressions, parse_one, select
 
 __all__ = [
     'InputNode',
-    'FilterNode',
     'ExpressionNode',
     'AddNode',
     'Project',
@@ -43,21 +42,6 @@ class InputNode(SQLNode):
             f"{self.timestamp} < CAST(FBT_END_DATE AS TIMESTAMP)",
         )
         return s
-
-
-@dataclass
-class FilterNode(SQLNode):
-    input: SQLNode
-    exprs: List[sqlglot.Expression]
-
-    def __post_init__(self):
-        # TODO: need to check input node type
-        if hasattr(self.input, 'columns'):
-            self.columns = self.input.columns
-
-    @property
-    def sql(self):
-        return select("*").from_(self.input.sql.subquery()).where(*self.exprs)
 
 
 @dataclass
