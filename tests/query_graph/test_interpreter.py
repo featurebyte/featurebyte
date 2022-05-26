@@ -1,6 +1,7 @@
-from dataclasses import asdict
-import pytest
 import textwrap
+from dataclasses import asdict
+
+import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -92,7 +93,10 @@ def test_graph_interpreter_multi_assign(graph):
         input_nodes=[node_input],
     )
     sum_node = query_graph.add_operation(
-        node_type=NodeType.ADD, node_params={}, node_output_type=NodeOutputType.SERIES, input_nodes=[proj_a, proj_b]
+        node_type=NodeType.ADD,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a, proj_b],
     )
     assign_node = query_graph.add_operation(
         node_type=NodeType.ASSIGN,
@@ -205,12 +209,12 @@ def test_graph_interpreter_tile_gen(graph):
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop('sql')
+    info_dict.pop("sql")
     assert info_dict == {
-        "columns": ['tile_start_date', 'cust_id', 'value'],
+        "columns": ["tile_start_date", "cust_id", "value"],
         "window_end": 5,
         "frequency": 30,
-        "blind_spot": 1
+        "blind_spot": 1,
     }
 
 

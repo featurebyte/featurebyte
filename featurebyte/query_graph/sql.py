@@ -1,17 +1,17 @@
 from typing import List
+
 from dataclasses import dataclass
 
 import sqlglot
 from sqlglot import expressions, parse_one, select
 
-
 __all__ = [
-    'InputNode',
-    'ExpressionNode',
-    'AddNode',
-    'Project',
-    'AssignNode',
-    'BuildTileNode',
+    "InputNode",
+    "ExpressionNode",
+    "AddNode",
+    "Project",
+    "AssignNode",
+    "BuildTileNode",
 ]
 
 
@@ -108,25 +108,29 @@ class BuildTileNode:
 
     def tile_sql(self):
         start_date_placeholder = "FBT_START_DATE"
-        start_date_placeholder_epoch = f"DATE_PART(EPOCH_SECOND, CAST({start_date_placeholder} AS TIMESTAMP))"
+        start_date_placeholder_epoch = (
+            f"DATE_PART(EPOCH_SECOND, CAST({start_date_placeholder} AS TIMESTAMP))"
+        )
         timestamp_epoch = f"DATE_PART(EPOCH_SECOND, {self.timestamp})"
 
         input_tiled = select(
             "*",
-            f"FLOOR(({timestamp_epoch} - {start_date_placeholder_epoch}) / {self.frequency}) AS tile_index"
+            f"FLOOR(({timestamp_epoch} - {start_date_placeholder_epoch}) / {self.frequency}) AS tile_index",
         ).from_(self.input.sql.subquery())
 
-        tile_start_date = f"TO_TIMESTAMP({start_date_placeholder_epoch} + tile_index * {self.frequency})"
+        tile_start_date = (
+            f"TO_TIMESTAMP({start_date_placeholder_epoch} + tile_index * {self.frequency})"
+        )
         groupby_sql = (
             select(
                 f"{tile_start_date} AS tile_start_date",
                 self.key,
                 f"{self.agg_func}({self.parent}) AS value",
             )
-                .from_(input_tiled.subquery())
-                # TODO: composite join keys
-                .group_by("tile_index", self.key)
-                .order_by("tile_index")
+            .from_(input_tiled.subquery())
+            # TODO: composite join keys
+            .group_by("tile_index", self.key)
+            .order_by("tile_index")
         )
 
         return groupby_sql

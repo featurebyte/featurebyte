@@ -1,13 +1,14 @@
-from dataclasses import dataclass
 from typing import List
 
-from .graph import QueryGraph
+from dataclasses import dataclass
+
 from .enum import NodeType
+from .graph import QueryGraph
 from .sql import *
 
 
 class SQLOperationGraph:
-    """ Construct a tree of SQL operations given a QueryGraph
+    """Construct a tree of SQL operations given a QueryGraph
 
     Parameters
     ----------
@@ -20,7 +21,7 @@ class SQLOperationGraph:
         self.g = g
 
     def build(self, starting_node: dict):
-        """ Build the graph from a given query Node, working backwards
+        """Build the graph from a given query Node, working backwards
 
         Parameters
         ----------
@@ -32,7 +33,7 @@ class SQLOperationGraph:
         return sql_node
 
     def get_node(self, name: str):
-        """ Get a node by name
+        """Get a node by name
 
         Parameters
         ----------
@@ -42,7 +43,7 @@ class SQLOperationGraph:
         return self.sql_nodes[name]
 
     def _construct_sql_nodes(self, cur_node):
-        """ Recursively construct the nodes
+        """Recursively construct the nodes
 
         Parameters
         ----------
@@ -107,14 +108,14 @@ class SQLOperationGraph:
 class TileGenSql:
     # tile_table_id: str  # TODO
     sql: str
-    columns: List[str]  # TODO
+    columns: List[str]
     window_end: int
     frequency: int
     blind_spot: int
 
 
 class TileSQLGenerator:
-    """ Generator for Tile-building SQL
+    """Generator for Tile-building SQL
 
     Parameters
     ----------
@@ -125,7 +126,7 @@ class TileSQLGenerator:
         self.g = g
 
     def construct_tile_gen_sql(self) -> list[TileGenSql]:
-        """ Construct a list of tile building SQLs for the given Query Graph
+        """Construct a list of tile building SQLs for the given Query Graph
 
         There can be more than one tile table to build if the feature depends on more than one
         groupby operations. However, before we support complex features, there will only be one tile
@@ -159,23 +160,24 @@ class TileSQLGenerator:
             columns=groupby_sql_node.columns,
             window_end=window_end,
             frequency=frequency,
-            blind_spot=blind_spot
+            blind_spot=blind_spot,
         )
         return info
 
 
 class GraphInterpreter:
-    """ Interprets a given Query Graph and generates SQL for different purposes
+    """Interprets a given Query Graph and generates SQL for different purposes
 
     Parameters
     ----------
     g : QueryGraph
     """
+
     def __init__(self, g: QueryGraph):
         self.g = g
 
     def construct_tile_gen_sql(self) -> list[TileGenSql]:
-        """ Construct a list of tile building SQLs for the given Query Graph
+        """Construct a list of tile building SQLs for the given Query Graph
 
         Returns
         -------
