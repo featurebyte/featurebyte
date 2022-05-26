@@ -189,6 +189,7 @@ def test_graph_interpreter_tile_gen(graph):
             "key": "cust_id",
             "parent": "amount",
             "agg_func": "sum",
+            "window_end": 5,
             "frequency": 30,
             "blind_spot": 1,
             "timestamp": "ts",
@@ -202,8 +203,8 @@ def test_graph_interpreter_tile_gen(graph):
     sql = tile_gen_sql[0].sql
     from sqlglot import transpile
 
-    print()
-    print(transpile(sql.sql(), pretty=True)[0])
+    #print()
+    #print(transpile(sql.sql(), pretty=True)[0])
 
 
 def test_graph_interpreter_snowflake(graph):
@@ -224,6 +225,7 @@ def test_graph_interpreter_snowflake(graph):
             "key": "CUST_ID",
             "parent": "*",
             "agg_func": "COUNT",
+            "window_end": 600,
             "frequency": 3600,
             "blind_spot": 1,
             "timestamp": "SERVER_TIMESTAMP",
@@ -234,9 +236,11 @@ def test_graph_interpreter_snowflake(graph):
     interpreter = GraphInterpreter(query_graph)
     tile_gen_sql = interpreter.construct_tile_gen_sql()
     assert len(tile_gen_sql) == 1
-    sql_tree = tile_gen_sql[0].sql
-    sql_template = sql_tree.sql(pretty=True)
-    sql_template = sql_template.replace("FBT_START_DATE", "'2022-04-18'")
-    sql_template = sql_template.replace("FBT_END_DATE", "'2022-04-19'")
+    sql_template = tile_gen_sql[0].sql
+    print()
+    print(sql_template)
+
+    sql_template = sql_template.replace("FBT_START_DATE", "'2022-04-18 00:00:00'")
+    sql_template = sql_template.replace("FBT_END_DATE", "'2022-04-19 00:00:00'")
     print()
     print(sql_template)

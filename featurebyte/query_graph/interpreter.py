@@ -117,13 +117,16 @@ class GroupByNode:
         start_date_placeholder = "FBT_START_DATE"
         start_date_placeholder_epoch = f"DATE_PART(EPOCH_SECOND, CAST({start_date_placeholder} AS TIMESTAMP))"
         timestamp_epoch = f"DATE_PART(EPOCH_SECOND, {self.timestamp})"
+
         input_tiled = select(
             "*",
             f"FLOOR(({timestamp_epoch} - {start_date_placeholder_epoch}) / {self.frequency}) AS tile_index"
         ).from_(self.input.sql.subquery())
+
+        tile_start_date = f"TO_TIMESTAMP({start_date_placeholder_epoch} + tile_index * {self.frequency})"
         groupby_sql = (
             select(
-                "tile_index",
+                f"{tile_start_date} AS tile_start_date",
                 self.key,
                 f"{self.agg_func}({self.parent}) AS value",
             )
@@ -132,13 +135,16 @@ class GroupByNode:
             .group_by("tile_index", self.key)
             .order_by("tile_index")
         )
+
         return groupby_sql
 
 
 @dataclass
 class TileGenSql:
     tile_table_id: str
-    sql: Expression
+    sql: str
+    # columns: List[str]  # TODO
+    window_end: int
     frequency: int
     blind_spot: int
 
@@ -159,8 +165,13 @@ class TileSQLGenerator:
             tile_table_id = str(abs(hash(json.dumps(node["parameters"]))))  # TODO
             frequency = node["parameters"]["frequency"]
             blind_spot = node["parameters"]["blind_spot"]
+            window_end = node["parameters"]["window_end"]
             info = TileGenSql(
-                sql=sql, tile_table_id=tile_table_id, frequency=frequency, blind_spot=blind_spot
+                sql=sql.sql(pretty=True),
+                tile_table_id=tile_table_id,
+                window_end=window_end,
+                frequency=frequency,
+                blind_spot=blind_spot,
             )
             sqls.append(info)
         return sqls
