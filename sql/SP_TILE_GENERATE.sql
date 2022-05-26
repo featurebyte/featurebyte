@@ -1,4 +1,4 @@
-create or replace procedure SP_TILE_GENERATE(SQL varchar, WINDOW_END_MINUTE float, FREQUENCY_MINUTE float, COLUMN_NAMES VARCHAR, START_TS VARCHAR, END_TS VARCHAR, TABLE_NAME varchar)
+create or replace procedure SP_TILE_GENERATE(SQL varchar, WINDOW_END_MINUTE float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME varchar)
 returns string
 language javascript
 as
@@ -16,16 +16,15 @@ $$
     var tile_exist = result.getColumnValue(1)
     debug = debug + " - tile_exist: " + tile_exist
 
-    col_list = COLUMN_NAMES.split(",").filter(item => item.toUpperCase() !== "TILE_START_TS")
+    var col_list = COLUMN_NAMES.split(",").filter(item => item.toUpperCase() !== "TILE_START_TS")
     col_list_str = col_list.join(',')
     debug = debug + " - col_list_str: " + col_list_str
     
     //replace SQL template with start and end date strings for tile generation sql    
-    var tile_sql = SQL.replace("FB_START_TS", START_TS).replace("FB_END_TS", END_TS)
-    tile_sql = `
+    var tile_sql = `
         select 
             F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${WINDOW_END_MINUTE}, ${FREQUENCY_MINUTE}) as INDEX, ${col_list_str}
-        from (${tile_sql})
+        from (${SQL})
     `
 
     if (tile_exist === false) {
