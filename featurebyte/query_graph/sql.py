@@ -1,3 +1,8 @@
+"""
+This module contains the list of SQL operations to be used by the Query Graph Interpreter
+"""
+# pylint: disable=W0511
+# pylint: disable=R0903
 from typing import List
 
 from dataclasses import dataclass
@@ -5,47 +10,49 @@ from dataclasses import dataclass
 import sqlglot
 from sqlglot import expressions, parse_one, select
 
-__all__ = [
-    "InputNode",
-    "ExpressionNode",
-    "AddNode",
-    "Project",
-    "AssignNode",
-    "BuildTileNode",
-]
-
 
 class SQLNode:
+    """Base class of a node in the SQL operations tree
+
+    Query Graph Interpreter constructs a tree that represents the list of SQL operations conveyed by
+    the Query Graph. Each SQL operation can be represented as a node in this tree. This is the
+    interface that a node in this tree should implement.
+    """
+
     @property
     def sql(self):
+        """Construct a sql expression"""
         raise NotImplementedError()
 
 
 @dataclass
 class InputNode(SQLNode):
+    """Input data node used when building tiles"""
+
     columns: List[str]
     timestamp: str
     input: SQLNode
 
     @property
     def sql(self):
-        s = select()
-        for c in self.columns:
-            s = s.select(c)
+        """Construct a sql expression"""
+        select_expr = select(*self.columns)
         if isinstance(self.input, ExpressionNode):
-            s = s.from_(self.input.sql)
+            select_expr = select_expr.from_(self.input.sql)
         else:
-            s = s.from_(self.input.sql.subquery())
+            select_expr = select_expr.from_(self.input.sql.subquery())
         # TODO: this is only for tile-gen sql
-        s = s.where(
+        select_expr = select_expr.where(
             f"{self.timestamp} >= CAST(FBT_START_DATE AS TIMESTAMP)",
             f"{self.timestamp} < CAST(FBT_END_DATE AS TIMESTAMP)",
         )
-        return s
+        return select_expr
 
 
 @dataclass
 class ExpressionNode(SQLNode):
+    """Expression node"""
+
     expr: sqlglot.Expression
 
     @property
@@ -55,6 +62,8 @@ class ExpressionNode(SQLNode):
 
 @dataclass
 class AddNode(SQLNode):
+    """Add node"""
+
     left: ExpressionNode
     right: ExpressionNode
 
@@ -65,6 +74,8 @@ class AddNode(SQLNode):
 
 @dataclass
 class Project(SQLNode):
+    """Project node"""
+
     columns: list[str]
 
     @property
@@ -75,6 +86,8 @@ class Project(SQLNode):
 
 @dataclass
 class AssignNode(SQLNode):
+    """Assign node"""
+
     table: InputNode  # TODO: can also be AssignNode. FilterNode?
     column: ExpressionNode
     name: str
@@ -84,18 +97,20 @@ class AssignNode(SQLNode):
 
     @property
     def sql(self):
-        s = select()
-        for col in self.table.columns:
-            if col == self.name:
-                continue
-            s = s.select(col)
-        s = s.select(expressions.alias_(self.column.sql, self.name))
-        s = s.from_(self.table.sql.subquery())
-        return s
+        existing_columns = [col for col in self.table.columns if self != self.name]
+        select_expr = select(*existing_columns)
+        select_expr = select_expr.select(expressions.alias_(self.column.sql, self.name))
+        select_expr = select_expr.from_(self.table.sql.subquery())
+        return select_expr
 
 
 @dataclass
-class BuildTileNode:
+class BuildTileNode(SQLNode):
+    """Tile builder node
+
+    This node is responsible for generating the tile building SQL for a groupby operation.
+    """
+
     input: SQLNode
     key: str
     parent: str
@@ -106,7 +121,8 @@ class BuildTileNode:
     def __post_init__(self):
         self.columns = ["tile_start_date", self.key, "value"]
 
-    def tile_sql(self):
+    @property
+    def sql(self):
         start_date_placeholder = "FBT_START_DATE"
         start_date_placeholder_epoch = (
             f"DATE_PART(EPOCH_SECOND, CAST({start_date_placeholder} AS TIMESTAMP))"

@@ -1,3 +1,6 @@
+"""
+This module contains the tests for the Query Graph Interpreter
+"""
 import textwrap
 from dataclasses import asdict
 
@@ -18,8 +21,8 @@ def query_graph():
 
 
 def test_graph_interpreter_super_simple(graph):
-    query_graph = graph
-    node_input = query_graph.add_operation(
+    """Test using a simple query graph"""
+    node_input = graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
@@ -29,20 +32,20 @@ def test_graph_interpreter_super_simple(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    proj_a = query_graph.add_operation(
+    proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
-    assign = query_graph.add_operation(
+    assign = graph.add_operation(
         node_type=NodeType.ASSIGN,
         node_params={"name": "a_copy"},
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, proj_a],
     )
-    sql_graph = SQLOperationGraph(query_graph)
-    sql_graph.build(query_graph.nodes[assign.name])
+    sql_graph = SQLOperationGraph(graph)
+    sql_graph.build(graph.nodes[assign.name])
     sql_tree = sql_graph.get_node(assign.name).sql
     expected = textwrap.dedent(
         """
@@ -69,8 +72,8 @@ def test_graph_interpreter_super_simple(graph):
 
 
 def test_graph_interpreter_multi_assign(graph):
-    query_graph = graph
-    node_input = query_graph.add_operation(
+    """Test using a slightly more complex graph (multiple assigns)"""
+    node_input = graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
@@ -80,45 +83,45 @@ def test_graph_interpreter_multi_assign(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    proj_a = query_graph.add_operation(
+    proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
-    proj_b = query_graph.add_operation(
+    proj_b = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["b"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
-    sum_node = query_graph.add_operation(
+    sum_node = graph.add_operation(
         node_type=NodeType.ADD,
         node_params={},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a, proj_b],
     )
-    assign_node = query_graph.add_operation(
+    assign_node = graph.add_operation(
         node_type=NodeType.ASSIGN,
         node_params={"name": "c"},
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, sum_node],
     )
-    proj_c = query_graph.add_operation(
+    proj_c = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["c"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[assign_node],
     )
-    assign_node_2 = query_graph.add_operation(
+    assign_node_2 = graph.add_operation(
         node_type=NodeType.ASSIGN,
         node_params={"name": "c2"},
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, proj_c],
     )
     name = assign_node_2.name
-    sql_graph = SQLOperationGraph(query_graph)
-    sql_graph.build(query_graph.nodes[name])
+    sql_graph = SQLOperationGraph(graph)
+    sql_graph.build(graph.nodes[name])
     sql_tree = sql_graph.get_node(name).sql
     expected = textwrap.dedent(
         """
@@ -154,8 +157,8 @@ def test_graph_interpreter_multi_assign(graph):
 
 
 def test_graph_interpreter_tile_gen(graph):
-    query_graph = graph
-    node_input = query_graph.add_operation(
+    """Test tile building SQL"""
+    node_input = graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
@@ -165,31 +168,31 @@ def test_graph_interpreter_tile_gen(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    proj_a = query_graph.add_operation(
+    proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
-    proj_b = query_graph.add_operation(
+    proj_b = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["b"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
-    sum_node = query_graph.add_operation(
+    sum_node = graph.add_operation(
         node_type=NodeType.ADD,
         node_params={},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a, proj_b],
     )
-    assign_node = query_graph.add_operation(
+    assign_node = graph.add_operation(
         node_type=NodeType.ASSIGN,
         node_params={"name": "c"},
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, sum_node],
     )
-    _groupby_node = query_graph.add_operation(
+    _groupby_node = graph.add_operation(
         node_type=NodeType.GROUPBY,
         node_params={
             "key": "cust_id",
@@ -203,7 +206,7 @@ def test_graph_interpreter_tile_gen(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node],
     )
-    interpreter = GraphInterpreter(query_graph)
+    interpreter = GraphInterpreter(graph)
     tile_gen_sqls = interpreter.construct_tile_gen_sql()
     assert len(tile_gen_sqls) == 1
 
@@ -219,8 +222,8 @@ def test_graph_interpreter_tile_gen(graph):
 
 
 def test_graph_interpreter_snowflake(graph):
-    query_graph = graph
-    node_input = query_graph.add_operation(
+    """Test tile building SQL and generates a SQL runnable on Snowflake"""
+    node_input = graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
             "columns": ["SERVER_TIMESTAMP", "CUST_ID"],
@@ -230,7 +233,7 @@ def test_graph_interpreter_snowflake(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    _groupby_node = query_graph.add_operation(
+    _groupby_node = graph.add_operation(
         node_type=NodeType.GROUPBY,
         node_params={
             "key": "CUST_ID",
@@ -244,7 +247,7 @@ def test_graph_interpreter_snowflake(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],
     )
-    interpreter = GraphInterpreter(query_graph)
+    interpreter = GraphInterpreter(graph)
     tile_gen_sql = interpreter.construct_tile_gen_sql()
     assert len(tile_gen_sql) == 1
     sql_template = tile_gen_sql[0].sql

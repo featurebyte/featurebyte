@@ -1,10 +1,14 @@
+"""
+This module contains the Query Graph Interpreter
+"""
+# pylint: disable=W0511
 from typing import List
 
 from dataclasses import dataclass
 
 from .enum import NodeType
 from .graph import QueryGraph
-from .sql import *
+from .sql import AddNode, AssignNode, BuildTileNode, ExpressionNode, InputNode, Project
 
 
 class SQLOperationGraph:
@@ -12,13 +16,13 @@ class SQLOperationGraph:
 
     Parameters
     ----------
-    g : QueryGraph
+    query_graph : QueryGraph
         Query Graph representing user's intention
     """
 
-    def __init__(self, g: QueryGraph):
+    def __init__(self, query_graph: QueryGraph):
         self.sql_nodes = {}
-        self.g = g
+        self.query_graph = query_graph
 
     def build(self, starting_node: dict):
         """Build the graph from a given query Node, working backwards
@@ -54,11 +58,11 @@ class SQLOperationGraph:
         assert cur_node_id not in self.sql_nodes
 
         # Recursively build input sql nodes first
-        inputs = self.g.backward_edges[cur_node_id]
+        inputs = self.query_graph.backward_edges[cur_node_id]
         input_sql_nodes = []
         for input_node_id in inputs:
             if input_node_id not in self.sql_nodes:
-                input_node = self.g.nodes[input_node_id]
+                input_node = self.query_graph.nodes[input_node_id]
                 self._construct_sql_nodes(input_node)
             input_sql_node = self.sql_nodes[input_node_id]
             input_sql_nodes.append(input_sql_node)
@@ -106,7 +110,10 @@ class SQLOperationGraph:
 
 @dataclass
 class TileGenSql:
-    # tile_table_id: str  # TODO
+    """Information about a tile building SQL"""
+
+    # TODO: tile_table_id likely should be determined by interpreter as well
+    # tile_table_id: str
     sql: str
     columns: List[str]
     window_end: int
@@ -119,11 +126,11 @@ class TileSQLGenerator:
 
     Parameters
     ----------
-    g : QueryGraph
+    query_graph : QueryGraph
     """
 
-    def __init__(self, g: QueryGraph):
-        self.g = g
+    def __init__(self, query_graph: QueryGraph):
+        self.query_graph = query_graph
 
     def construct_tile_gen_sql(self) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
@@ -138,7 +145,7 @@ class TileSQLGenerator:
         """
         # Groupby operations requires building tiles (assuming the aggregation type supports tiling)
         tile_generating_nodes = []
-        for node in self.g.nodes.values():
+        for node in self.query_graph.nodes.values():
             if node["type"] in {"groupby"}:
                 tile_generating_nodes.append(node)
 
@@ -150,8 +157,15 @@ class TileSQLGenerator:
         return sqls
 
     def make_one_tile_sql(self, groupby_node: dict):
-        groupby_sql_node = SQLOperationGraph(self.g).build(groupby_node)
-        sql = groupby_sql_node.tile_sql()
+        """Construct tile building SQL for a specific groupby query graph node
+
+        Parameters
+        ----------
+        groupby_node: dict
+            Dict representation of a groupby query graph node
+        """
+        groupby_sql_node = SQLOperationGraph(self.query_graph).build(groupby_node)
+        sql = groupby_sql_node.sql
         frequency = groupby_node["parameters"]["frequency"]
         blind_spot = groupby_node["parameters"]["blind_spot"]
         window_end = groupby_node["parameters"]["window_end"]
@@ -170,11 +184,11 @@ class GraphInterpreter:
 
     Parameters
     ----------
-    g : QueryGraph
+    query_graph : QueryGraph
     """
 
-    def __init__(self, g: QueryGraph):
-        self.g = g
+    def __init__(self, query_graph: QueryGraph):
+        self.query_graph = query_graph
 
     def construct_tile_gen_sql(self) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
@@ -183,11 +197,13 @@ class GraphInterpreter:
         -------
         list[TileGenSql]
         """
-        generator = TileSQLGenerator(self.g)
+        generator = TileSQLGenerator(self.query_graph)
         return generator.construct_tile_gen_sql()
 
     def construct_feature_from_tile_sql(self):
+        """Construct SQL that computes feature from tile table"""
         raise NotImplementedError()
 
     def construct_feature_brute_force_sql(self):
+        """Construct SQL that computes feature without using tiling optimization"""
         raise NotImplementedError()
