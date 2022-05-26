@@ -65,6 +65,11 @@ class SQLOperationGraph:
         Returns
         -------
         SQLNode
+
+        Raises
+        ------
+        NotImplementedError
+            If a query node is not yet supported
         """
         cur_node_id = cur_node["name"]
         assert cur_node_id not in self.sql_nodes
@@ -176,6 +181,10 @@ class TileSQLGenerator:
         ----------
         groupby_node: dict
             Dict representation of a groupby query graph node
+
+        Returns
+        -------
+        TileGenSql
         """
         groupby_sql_node = SQLOperationGraph(self.query_graph).build(groupby_node)
         sql = groupby_sql_node.sql
@@ -214,9 +223,21 @@ class GraphInterpreter:
         return generator.construct_tile_gen_sql()
 
     def construct_feature_from_tile_sql(self) -> None:
-        """Construct SQL that computes feature from tile table"""
+        """Construct SQL that computes feature from tile table
+
+        Raises
+        ------
+        NotImplementedError
+            Not implemented yet
+        """
         raise NotImplementedError()
 
     def construct_feature_brute_force_sql(self) -> None:
-        """Construct SQL that computes feature without using tiling optimization"""
+        """Construct SQL that computes feature without using tiling optimization
+
+        Raises
+        ------
+        NotImplementedError
+            Not implemented yet
+        """
         raise NotImplementedError()

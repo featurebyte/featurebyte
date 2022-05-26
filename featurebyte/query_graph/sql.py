@@ -1,16 +1,17 @@
 """
 This module contains the list of SQL operations to be used by the Query Graph Interpreter
 """
-# pylint: disable=W0511
-# pylint: disable=R0903
 from typing import Any, List
 
+# pylint: disable=W0511
+# pylint: disable=R0903
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from sqlglot import Expression, expressions, parse_one, select
 
 
-class SQLNode:
+class SQLNode(ABC):
     """Base class of a node in the SQL operations tree
 
     Query Graph Interpreter constructs a tree that represents the list of SQL operations conveyed by
@@ -19,9 +20,15 @@ class SQLNode:
     """
 
     @property
+    @abstractmethod
     def sql(self) -> Expression:
-        """Construct a sql expression"""
-        raise NotImplementedError()
+        """Construct a sql expression
+
+        Returns
+        -------
+        Expression
+            A sqlglot Expression object
+        """
 
 
 @dataclass
@@ -34,7 +41,13 @@ class InputNode(SQLNode):
 
     @property
     def sql(self) -> Expression:
-        """Construct a sql expression"""
+        """Construct a sql expression
+
+        Returns
+        -------
+        Expression
+            A sqlglot Expression object
+        """
         select_expr = select(*self.columns)
         if isinstance(self.input, ExpressionNode):
             select_expr = select_expr.from_(self.input.sql)
