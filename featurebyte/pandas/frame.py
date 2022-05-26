@@ -25,7 +25,7 @@ class DataFrame:
         self.row_index_lineage = tuple(row_index_lineage)
 
     @classmethod
-    def _db_var_type_from(cls, py_type: type[str | int | float | bool]):
+    def _db_var_type_from(cls, py_type: type[str | int | float | bool]) -> DBVarType:
         type_map = {
             str: DBVarType.VARCHAR,
             int: DBVarType.INT,
@@ -34,7 +34,7 @@ class DataFrame:
         }
         return type_map[py_type]
 
-    def __getitem__(self, item: str | list[str] | Series):
+    def __getitem__(self, item: str | list[str] | Series) -> Series | DataFrame:
         lineage = list(self.row_index_lineage)
         if isinstance(item, str):
             if item not in self.column_var_type_map:
@@ -84,7 +84,7 @@ class DataFrame:
             )
         raise TypeError(f"Type {type(item)} not supported!")
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         if isinstance(key, str) and isinstance(value, (int, float, str, bool)):
             self.node = self.graph.add_operation(
                 node_type=NodeType.ASSIGN,
