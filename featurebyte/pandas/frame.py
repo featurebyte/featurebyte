@@ -24,16 +24,6 @@ class DataFrame:
         self.column_var_type_map = column_var_type_map
         self.row_index_lineage = tuple(row_index_lineage)
 
-    @classmethod
-    def _db_var_type_from(cls, py_type: type[str | int | float | bool]) -> DBVarType:
-        type_map = {
-            str: DBVarType.VARCHAR,
-            int: DBVarType.INT,
-            float: DBVarType.FLOAT,
-            bool: DBVarType.BOOL,
-        }
-        return type_map[py_type]
-
     def __getitem__(self, item: str | list[str] | Series) -> Series | DataFrame:
         lineage = list(self.row_index_lineage)
         if isinstance(item, str):
@@ -83,6 +73,16 @@ class DataFrame:
                 row_index_lineage=lineage,
             )
         raise TypeError(f"Type {type(item)} not supported!")
+
+    @classmethod
+    def _db_var_type_from(cls, py_type: type[str | int | float | bool]) -> DBVarType:
+        type_map = {
+            str: DBVarType.VARCHAR,
+            int: DBVarType.INT,
+            float: DBVarType.FLOAT,
+            bool: DBVarType.BOOL,
+        }
+        return type_map[py_type]
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         if isinstance(key, str) and isinstance(value, (int, float, str, bool)):
