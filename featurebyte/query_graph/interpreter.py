@@ -132,7 +132,7 @@ class TileSQLGenerator:
     def __init__(self, query_graph: QueryGraph):
         self.query_graph = query_graph
 
-    def construct_tile_gen_sql(self) -> list[TileGenSql]:
+    def construct_tile_gen_sql(self) -> List[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
 
         There can be more than one tile table to build if the feature depends on more than one
@@ -190,12 +190,12 @@ class GraphInterpreter:
     def __init__(self, query_graph: QueryGraph):
         self.query_graph = query_graph
 
-    def construct_tile_gen_sql(self) -> list[TileGenSql]:
+    def construct_tile_gen_sql(self) -> List[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
 
         Returns
         -------
-        list[TileGenSql]
+        List[TileGenSql]
         """
         generator = TileSQLGenerator(self.query_graph)
         return generator.construct_tile_gen_sql()
