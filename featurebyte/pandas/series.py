@@ -138,15 +138,11 @@ class Series:
             f"Not supported operation '{node_type}' between {self.var_type} and {other_type}!"
         )
 
-    def __eq__(self, other: object) -> bool | Series:
-        if isinstance(other, (int, float, str, bool, Series)):
-            return self._relational_binary_op(other, NodeType.EQ)
-        return super().__eq__(other)
+    def __eq__(self, other: int | float | str | bool | Series) -> Series:
+        return self._relational_binary_op(other, NodeType.EQ)
 
-    def __ne__(self, other: int | float | str | bool | Series) -> bool | Series:
-        if isinstance(other, (int, float, str, bool, Series)):
-            return self._relational_binary_op(other, NodeType.NE)
-        return super().__ne__(other)
+    def __ne__(self, other: int | float | str | bool | Series) -> Series:
+        return self._relational_binary_op(other, NodeType.NE)
 
     def __lt__(self, other: int | float | str | bool | Series) -> Series:
         return self._relational_binary_op(other, NodeType.LT)
