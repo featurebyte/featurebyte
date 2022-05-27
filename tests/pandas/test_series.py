@@ -43,6 +43,15 @@ def test__getitem__row_index_not_aligned(int_series, bool_series):
     assert "Row index not aligned!" in str(exc.value)
 
 
+def test__getitem__type_not_supported(int_series):
+    """
+    Test retrieval with unsupported type
+    """
+    with pytest.raises(TypeError) as exc:
+        _ = int_series[True]
+    assert "Type <class 'bool'> not supported!" in str(exc.value)
+
+
 @pytest.mark.parametrize(
     "column,value",
     [

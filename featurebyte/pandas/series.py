@@ -24,7 +24,7 @@ class Series:
         self.var_type = var_type
         self.row_index_lineage = tuple(row_index_lineage)
 
-    def __getitem__(self, item: Series):
+    def __getitem__(self, item: Series) -> Series:
         if isinstance(item, Series):
             if item.var_type != DBVarType.BOOL:
                 raise TypeError("Only boolean Series filtering is supported!")
@@ -41,8 +41,9 @@ class Series:
             return Series(
                 node=node, name=self.name, var_type=self.var_type, row_index_lineage=lineage
             )
+        raise TypeError(f"Type {type(item)} not supported!")
 
-    def _is_valid_assignment(self, py_type: type[int | float | str | bool]):
+    def _is_valid_assignment(self, py_type: type[int | float | str | bool]) -> bool:
         valid_assignment_map = {
             DBVarType.BOOL: {bool},
             DBVarType.CHAR: {},
@@ -96,14 +97,6 @@ class Series:
             )
             return Series(node=node, name=None, var_type=output_var_type, row_index_lineage=lineage)
 
-    def _raise_not_supported_operation(self, other, node_type):
-        other_type = f"{type(other)}"
-        if isinstance(other, Series):
-            other_type = f"{other_type}[{other.var_type}]"
-        raise TypeError(
-            f"Not supported operation '{node_type}' between {self.var_type} and {other_type}!"
-        )
-
     def _logical_binary_op(self, other: bool | Series, node_type: NodeType) -> Series:
         if self.var_type == DBVarType.BOOL:
             if isinstance(other, bool) or (
@@ -112,7 +105,13 @@ class Series:
                 return self._binary_op(
                     other=other, node_type=node_type, output_var_type=DBVarType.BOOL
                 )
-        self._raise_not_supported_operation(other=other, node_type=node_type)
+
+        other_type = f"{type(other)}"
+        if isinstance(other, Series):
+            other_type = f"{other_type}[{other.var_type}]"
+        raise TypeError(
+            f"Not supported operation '{node_type}' between {self.var_type} and {other_type}!"
+        )
 
     def __and__(self, other: bool | Series) -> Series:
         return self._logical_binary_op(other, NodeType.AND)
@@ -131,7 +130,13 @@ class Series:
             or (self.var_type == DBVarType.BOOL and isinstance(other, bool))
         ):
             return self._binary_op(other=other, node_type=node_type, output_var_type=self.var_type)
-        self._raise_not_supported_operation(other=other, node_type=node_type)
+
+        other_type = f"{type(other)}"
+        if isinstance(other, Series):
+            other_type = f"{other_type}[{other.var_type}]"
+        raise TypeError(
+            f"Not supported operation '{node_type}' between {self.var_type} and {other_type}!"
+        )
 
     def __eq__(self, other: int | float | str | bool | Series) -> Series:
         return self._relational_binary_op(other, NodeType.EQ)
