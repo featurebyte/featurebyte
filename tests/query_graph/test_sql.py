@@ -2,7 +2,6 @@
 Tests for the featurebyte.query_graph.sql module
 """
 import pytest
-import sqlglot
 
 from featurebyte.query_graph import sql
 
@@ -13,7 +12,7 @@ def input_node_fixture():
     return sql.InputNode(
         columns=["col_1", "col_2", "col_3"],
         timestamp="ts",
-        input=sql.ExpressionNode(sqlglot.parse_one("dbtable")),
+        input=sql.ExpressionNode("dbtable"),
     )
 
 

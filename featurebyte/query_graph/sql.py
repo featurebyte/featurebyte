@@ -65,11 +65,11 @@ class InputNode(SQLNode):
 class ExpressionNode(SQLNode):
     """Expression node"""
 
-    expr: Expression
+    expr: str
 
     @property
     def sql(self) -> Expression:
-        return self.expr
+        return parse_one(self.expr)
 
 
 @dataclass
