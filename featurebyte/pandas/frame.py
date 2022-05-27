@@ -60,6 +60,8 @@ class DataFrame:
         if isinstance(item, Series):
             if item.var_type != DBVarType.BOOL:
                 raise TypeError("Only boolean Series filtering is supported!")
+            if self.row_index_lineage != item.row_index_lineage:
+                raise ValueError("Row index not aligned!")
             node = self.graph.add_operation(
                 node_type=NodeType.FILTER,
                 node_params={},
@@ -88,7 +90,7 @@ class DataFrame:
         if isinstance(key, str) and isinstance(value, (int, float, str, bool)):
             self.node = self.graph.add_operation(
                 node_type=NodeType.ASSIGN,
-                node_params={"value": value},
+                node_params={"value": value, "name": key},
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node],
             )
@@ -98,7 +100,7 @@ class DataFrame:
                 raise ValueError("Row index not aligned!")
             self.node = self.graph.add_operation(
                 node_type=NodeType.ASSIGN,
-                node_params={},
+                node_params={"name": key},
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node, value.node],
             )

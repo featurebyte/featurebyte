@@ -9,9 +9,9 @@ class DBVarType(str, Enum):
     Database variable type
     """
 
+    BOOL = "BOOL"
     CHAR = "CHAR"
-    VARCHAR = "VARCHAR"
-    INT = "INT"
     DATE = "DATE"
     FLOAT = "FLOAT"
-    BOOL = "BOOL"
+    INT = "INT"
+    VARCHAR = "VARCHAR"
