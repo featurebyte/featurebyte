@@ -3,7 +3,7 @@ OpsMixin class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -20,7 +20,7 @@ class OpsMixin:
     """
 
     @property
-    def pytype_dbtype_map(self):
+    def pytype_dbtype_map(self) -> dict[Any, Any]:
         """
         Supported python builtin scalar type to database type mapping
 
@@ -37,7 +37,7 @@ class OpsMixin:
         }
 
     @property
-    def dbtype_pytype_map(self):
+    def dbtype_pytype_map(self) -> dict[Any, Any]:
         """
         Supported database type mapping to python builtin scalar type
 
