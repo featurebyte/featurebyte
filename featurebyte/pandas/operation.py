@@ -36,7 +36,7 @@ class OpsMixin:
         """
         Supported database type mapping to python builtin scalar type
         """
-        return {val: key for key, val in self.pytype_dbtype_map}
+        return {val: key for key, val in self.pytype_dbtype_map.items()}
 
     @staticmethod
     def _add_filter_operation(

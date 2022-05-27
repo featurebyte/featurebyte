@@ -70,16 +70,6 @@ class DataFrame(OpsMixin):
             )
         raise TypeError(f"Type {type(item)} not supported!")
 
-    @classmethod
-    def _db_var_type_from(cls, py_type: type[str | int | float | bool]) -> DBVarType:
-        type_map = {
-            str: DBVarType.VARCHAR,
-            int: DBVarType.INT,
-            float: DBVarType.FLOAT,
-            bool: DBVarType.BOOL,
-        }
-        return type_map[py_type]
-
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         if isinstance(key, str) and isinstance(value, (int, float, str, bool)):
             self.node = self.graph.add_operation(
@@ -88,7 +78,7 @@ class DataFrame(OpsMixin):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node],
             )
-            self.column_var_type_map[key] = self._db_var_type_from(type(value))
+            self.column_var_type_map[key] = self.pytype_dbtype_map[type(value)]
         elif isinstance(key, str) and isinstance(value, Series):
             if self.row_index_lineage != value.row_index_lineage:
                 raise ValueError("Row index not aligned!")

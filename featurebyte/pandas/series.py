@@ -114,15 +114,10 @@ class Series(OpsMixin):
     def _relational_binary_op(
         self, other: int | float | str | bool | Series, node_type: NodeType
     ) -> Series:
-        var_type_map = {
-            DBVarType.INT: int,
-            DBVarType.FLOAT: float,
-            DBVarType.VARCHAR: str,
-            DBVarType.BOOL: bool,
-        }
-        is_supported_scalar_type = self.var_type in var_type_map
+        is_supported_scalar_type = self.var_type in self.dbtype_pytype_map
         if (isinstance(other, Series) and other.var_type == self.var_type) or (
-            is_supported_scalar_type and isinstance(other, var_type_map.get(self.var_type, Series))
+            is_supported_scalar_type
+            and isinstance(other, self.dbtype_pytype_map.get(self.var_type, Series))
         ):
             return self._binary_op(other=other, node_type=node_type, output_var_type=self.var_type)
 
