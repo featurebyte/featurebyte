@@ -1,3 +1,6 @@
+"""
+Tests for the featurebyte.query_graph.sql module
+"""
 import pytest
 import sqlglot
 
@@ -6,6 +9,7 @@ from featurebyte.query_graph import sql
 
 @pytest.fixture(name="input_node")
 def input_node_fixture():
+    """Fixture for a generic InputNode"""
     return sql.InputNode(
         columns=["col_1", "col_2", "col_3"],
         timestamp="ts",
