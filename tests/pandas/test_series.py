@@ -166,6 +166,7 @@ def test_relational_operators__series_other(bool_series, int_series, float_serie
     """
     Test relational operators with other as Series type
     """
+    # pylint: disable=R0124
     # series_bool_eq = bool_series == bool_series
     # series_int_ne = int_series != int_series
     series_float_lt = float_series < float_series
