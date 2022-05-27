@@ -1032,6 +1032,14 @@ lint = ["flake8", "mypy", "docutils-stubs"]
 test = ["pytest"]
 
 [[package]]
+name = "sqlglot"
+version = "2.3.2"
+description = "An easily customizable SQL parser and transpiler"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "stevedore"
 version = "3.5.0"
 description = "Manage dynamic plugins for Python applications"
@@ -1158,7 +1166,7 @@ docs = ["Sphinx", "sphinx-rtd-theme", "sphinx-github-changelog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "cf95dfddc7720a4e4594be92d92d9b7421406659c0c20ac2e9f180292b9ee47a"
+content-hash = "5b9c4c0dbcdee86369ac04fc13c5be5a5f896a3bf36dc7726d7ea7170f0ecb4b"
 
 [metadata.files]
 alabaster = [
@@ -1831,6 +1839,10 @@ sphinxcontrib-qthelp = [
 sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib-serializinghtml-1.1.5.tar.gz", hash = "sha256:aa5f6de5dfdf809ef505c4895e51ef5c9eac17d0f287933eb49ec495280b6952"},
     {file = "sphinxcontrib_serializinghtml-1.1.5-py2.py3-none-any.whl", hash = "sha256:352a9a00ae864471d3a7ead8d7d79f5fc0b57e8b3f95e9867eb9eb28999b92fd"},
+]
+sqlglot = [
+    {file = "sqlglot-2.3.2-py3-none-any.whl", hash = "sha256:6a8389531e79595baef1d8953e62399f36eb0c57c177e1d14b28ef2b68479c26"},
+    {file = "sqlglot-2.3.2.tar.gz", hash = "sha256:605d7e94daef4a1814b8f7aa1a8a53e3ee0b48f9aed9bda6332594334819a7fe"},
 ]
 stevedore = [
     {file = "stevedore-3.5.0-py3-none-any.whl", hash = "sha256:a547de73308fd7e90075bb4d301405bebf705292fa90a90fc3bcf9133f58616c"},
