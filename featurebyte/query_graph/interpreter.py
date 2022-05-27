@@ -6,9 +6,17 @@ from typing import Any, Dict, List
 
 from dataclasses import dataclass
 
-from .enum import NodeType
-from .graph import QueryGraph
-from .sql import AddNode, AssignNode, BuildTileNode, ExpressionNode, InputNode, Project, SQLNode
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.sql import (
+    AddNode,
+    AssignNode,
+    BuildTileNode,
+    ExpressionNode,
+    InputNode,
+    Project,
+    SQLNode,
+)
 
 
 class SQLOperationGraph:
@@ -24,12 +32,12 @@ class SQLOperationGraph:
         self.sql_nodes: Dict[str, SQLNode] = {}
         self.query_graph = query_graph
 
-    def build(self, starting_node: Dict[str, Any]) -> Any:
+    def build(self, target_node: Dict[str, Any]) -> Any:
         """Build the graph from a given query Node, working backwards
 
         Parameters
         ----------
-        starting_node : dict
+        target_node : dict
             Dict representation of Query Graph Node. Build graph from this node backwards. This is
             typically the last node in the Query Graph, but can also be an intermediate node.
 
@@ -37,7 +45,7 @@ class SQLOperationGraph:
         -------
         SQLNode
         """
-        sql_node = self._construct_sql_nodes(starting_node)
+        sql_node = self._construct_sql_nodes(target_node)
         return sql_node
 
     def get_node(self, name: str) -> SQLNode:
@@ -128,7 +136,24 @@ class SQLOperationGraph:
 
 @dataclass
 class TileGenSql:
-    """Information about a tile building SQL"""
+    """Information about a tile building SQL
+
+    This information is required by the Tile Manager to perform tile related operations such as
+    scheduling tile computation jobs.
+
+    Parameters
+    ----------
+    sql : str
+        Templated SQL code for building tiles
+    columns : List[str]
+        List of columns in the tile table after executing the SQL code
+    window_end : int
+        Offset used to determine the time for jobs scheduling. Should be smaller than frequency.
+    frequency : int
+        Job frequency. Needed for job scheduling.
+    blind_spot : int
+        Blind spot. Needed for job scheduling.
+    """
 
     # TODO: tile_table_id likely should be determined by interpreter as well
     # tile_table_id: str
