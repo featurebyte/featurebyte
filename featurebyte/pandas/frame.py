@@ -6,12 +6,13 @@ from __future__ import annotations
 import copy
 
 from featurebyte.enum import DBVarType
+from featurebyte.pandas.operation import OpsMixin
 from featurebyte.pandas.series import Series
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 
-class DataFrame:
+class DataFrame(OpsMixin):
     """
     Implement Pandas DataFrame like operations to manipulate database table
     """
@@ -58,15 +59,8 @@ class DataFrame:
                 node=node, column_var_type_map=column_var_type_map, row_index_lineage=lineage
             )
         if isinstance(item, Series):
-            if item.var_type != DBVarType.BOOL:
-                raise TypeError("Only boolean Series filtering is supported!")
-            if self.row_index_lineage != item.row_index_lineage:
-                raise ValueError("Row index not aligned!")
-            node = self.graph.add_operation(
-                node_type=NodeType.FILTER,
-                node_params={},
-                node_output_type=NodeOutputType.FRAME,
-                input_nodes=[self.node, item.node],
+            node = self._add_filter_operation(
+                item=self, mask=item, node_output_type=NodeOutputType.FRAME
             )
             lineage.append(node.name)
             return DataFrame(

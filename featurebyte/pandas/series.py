@@ -4,11 +4,12 @@ Series class
 from __future__ import annotations
 
 from featurebyte.enum import DBVarType
+from featurebyte.pandas.operation import OpsMixin
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 
-class Series:
+class Series(OpsMixin):
     """
     Implement Pandas Series like operations to manipulate database column
     """
@@ -24,15 +25,8 @@ class Series:
 
     def __getitem__(self, item: Series) -> Series:
         if isinstance(item, Series):
-            if item.var_type != DBVarType.BOOL:
-                raise TypeError("Only boolean Series filtering is supported!")
-            if self.row_index_lineage != item.row_index_lineage:
-                raise ValueError("Row index not aligned!")
-            node = self.graph.add_operation(
-                node_type=NodeType.FILTER,
-                node_params={},
-                node_output_type=NodeOutputType.SERIES,
-                input_nodes=[self.node, item.node],
+            node = self._add_filter_operation(
+                item=self, mask=item, node_output_type=NodeOutputType.SERIES
             )
             lineage = list(self.row_index_lineage)
             lineage.append(node.name)
