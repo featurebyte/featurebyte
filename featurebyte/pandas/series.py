@@ -3,8 +3,6 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Dict, Optional, Set, Type
-
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
@@ -88,14 +86,14 @@ class Series:
                 input_nodes=[self.node],
             )
             return Series(node=node, name=None, var_type=output_var_type, row_index_lineage=lineage)
-        if isinstance(other, Series):
-            node = self.graph.add_operation(
-                node_type=node_type,
-                node_params={},
-                node_output_type=NodeOutputType.SERIES,
-                input_nodes=[self.node, other.node],
-            )
-            return Series(node=node, name=None, var_type=output_var_type, row_index_lineage=lineage)
+
+        node = self.graph.add_operation(
+            node_type=node_type,
+            node_params={},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[self.node, other.node],
+        )
+        return Series(node=node, name=None, var_type=output_var_type, row_index_lineage=lineage)
 
     def _logical_binary_op(self, other: bool | Series, node_type: NodeType) -> Series:
         if self.var_type == DBVarType.BOOL:
@@ -122,12 +120,15 @@ class Series:
     def _relational_binary_op(
         self, other: int | float | str | bool | Series, node_type: NodeType
     ) -> Series:
-        if (
-            (isinstance(other, Series) and other.var_type == self.var_type)
-            or (self.var_type == DBVarType.INT and isinstance(other, int))
-            or (self.var_type == DBVarType.FLOAT and isinstance(other, float))
-            or (self.var_type == DBVarType.VARCHAR and isinstance(other, str))
-            or (self.var_type == DBVarType.BOOL and isinstance(other, bool))
+        var_type_map = {
+            DBVarType.INT: int,
+            DBVarType.FLOAT: float,
+            DBVarType.VARCHAR: str,
+            DBVarType.BOOL: bool,
+        }
+        is_supported_scalar_type = self.var_type in var_type_map
+        if (isinstance(other, Series) and other.var_type == self.var_type) or (
+            is_supported_scalar_type and isinstance(other, var_type_map.get(self.var_type, Series))
         ):
             return self._binary_op(other=other, node_type=node_type, output_var_type=self.var_type)
 
@@ -138,11 +139,11 @@ class Series:
             f"Not supported operation '{node_type}' between {self.var_type} and {other_type}!"
         )
 
-    def __eq__(self, other: int | float | str | bool | Series) -> Series:
-        return self._relational_binary_op(other, NodeType.EQ)
+    # def __eq__(self, other: int | float | str | bool | Series) -> Series:
+    #     return self._relational_binary_op(other, NodeType.EQ)
 
-    def __ne__(self, other: int | float | str | bool | Series) -> Series:
-        return self._relational_binary_op(other, NodeType.NE)
+    # def __ne__(self, other: int | float | str | bool | Series) -> Series:
+    #     return self._relational_binary_op(other, NodeType.NE)
 
     def __lt__(self, other: int | float | str | bool | Series) -> Series:
         return self._relational_binary_op(other, NodeType.LT)
