@@ -14,9 +14,9 @@ from sqlglot import Expression, expressions, parse_one, select
 class SQLNode(ABC):
     """Base class of a node in the SQL operations tree
 
-    Query Graph Interpreter constructs a tree that represents the list of SQL operations conveyed by
-    the Query Graph. Each SQL operation can be represented as a node in this tree. This is the
-    interface that a node in this tree should implement.
+    Query Graph Interpreter constructs a tree that represents the list of SQL operations required to
+    produce the feature described by the Query Graph. Each SQL operation can be represented as a
+    node in this tree. This is the interface that a node in this tree should implement.
     """
 
     @property
@@ -107,7 +107,7 @@ class AssignNode(SQLNode):
     def __post_init__(self) -> None:
         if self.table.columns is None:
             raise RuntimeError(f"{self.table} has no columns attribute")
-        self.columns = [x for x in self.table.columns if x not in self.name] + [self.name]
+        self.columns = [x for x in self.table.columns if x != self.name] + [self.name]
 
     @property
     def sql(self) -> Expression:
