@@ -14,12 +14,12 @@ def input_node_fixture():
 
 
 def test_assign_node__replace(input_node):
-    # replace an existing column
+    """Test assign node replacing an existing column"""
     node = sql.AssignNode(table=input_node, column=sql.Project(columns=["a"]), name="col_1")
     assert node.columns == ["col_2", "col_3", "col_1"]
 
 
 def test_assign_node__new_column(input_node):
-    # add a new column
+    """Test assign node adding a new column"""
     node = sql.AssignNode(table=input_node, column=sql.Project(columns=["a"]), name="col_11")
     assert node.columns == ["col_1", "col_2", "col_3", "col_11"]
