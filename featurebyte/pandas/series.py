@@ -108,7 +108,7 @@ class Series(OpsMixin):
             is_supported_scalar_type
             and isinstance(other, self.dbtype_pytype_map.get(self.var_type, Series))
         ):
-            return self._binary_op(other=other, node_type=node_type, output_var_type=self.var_type)
+            return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
         other_type = f"{type(other)}"
         if isinstance(other, Series):

@@ -198,3 +198,36 @@ def test__setitem__type_not_supported(dataframe):
         dataframe[1.234] = True
     expected_msg = "Key type <class 'float'> with value type <class 'bool'> not supported!"
     assert expected_msg in str(exc.value)
+
+
+def test_multiple_statements(dataframe):
+    """
+    Test multiple statements
+    """
+    dataframe = dataframe[dataframe["MASK"]]
+    dataframe["amount"] = dataframe["CUST_ID"] + dataframe["VALUE"]
+    dataframe["vip_customer"] = (dataframe["CUST_ID"] < 1000) & (dataframe["amount"] > 1000.0)
+
+    assert dataframe.column_var_type_map == {
+        "CUST_ID": DBVarType.INT,
+        "PRODUCT_ACTION": DBVarType.VARCHAR,
+        "VALUE": DBVarType.FLOAT,
+        "MASK": DBVarType.BOOL,
+        "amount": DBVarType.FLOAT,
+        "vip_customer": DBVarType.BOOL,
+    }
+    assert dataframe.row_index_lineage == ("input_1", "filter_1")
+    assert dict(dataframe.graph.edges) == {
+        "input_1": ["project_1", "filter_1"],
+        "project_1": ["filter_1"],
+        "filter_1": ["project_2", "project_3", "assign_1"],
+        "project_2": ["add_1"],
+        "project_3": ["add_1"],
+        "add_1": ["assign_1"],
+        "assign_1": ["project_4", "project_5", "assign_2"],
+        "project_4": ["lt_1"],
+        "project_5": ["gt_1"],
+        "lt_1": ["and_1"],
+        "gt_1": ["and_1"],
+        "and_1": ["assign_2"],
+    }

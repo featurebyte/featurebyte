@@ -182,10 +182,10 @@ def test_relational_operators__series_other(bool_series, int_series, float_serie
     assert series_int_ge.node == Node(name="ge_1", type=NodeType.GE, **node_kwargs)
     # assert series_bool_eq.var_type == DBVarType.BOOL
     # assert series_int_ne.var_type == DBVarType.INT
-    assert series_float_lt.var_type == DBVarType.FLOAT
-    assert series_varchar_le.var_type == DBVarType.VARCHAR
+    assert series_float_lt.var_type == DBVarType.BOOL
+    assert series_varchar_le.var_type == DBVarType.BOOL
     assert series_bool_gt.var_type == DBVarType.BOOL
-    assert series_int_ge.var_type == DBVarType.INT
+    assert series_int_ge.var_type == DBVarType.BOOL
 
 
 def test_relational_operators__scalar_other(bool_series, int_series, float_series, varchar_series):
@@ -217,12 +217,12 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
     assert scalar_varchar_ge.node == Node(
         name="ge_1", type=NodeType.GE, parameters={"value": "world"}, **kwargs
     )
-    # assert scalar_float_eq.var_type == DBVarType.FLOAT
-    # assert scalar_varchar_ne.var_type == DBVarType.VARCHAR
+    # assert scalar_float_eq.var_type == DBVarType.BOOL
+    # assert scalar_varchar_ne.var_type == DBVarType.BOOL
     assert scalar_bool_lt.var_type == DBVarType.BOOL
-    assert scalar_int_le.var_type == DBVarType.INT
-    assert scalar_float_gt.var_type == DBVarType.FLOAT
-    assert scalar_varchar_ge.var_type == DBVarType.VARCHAR
+    assert scalar_int_le.var_type == DBVarType.BOOL
+    assert scalar_float_gt.var_type == DBVarType.BOOL
+    assert scalar_varchar_ge.var_type == DBVarType.BOOL
 
     with pytest.raises(TypeError) as exc:
         _ = int_series > varchar_series
