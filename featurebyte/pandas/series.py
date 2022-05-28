@@ -139,7 +139,7 @@ class Series(OpsMixin):
         supported_types = {DBVarType.INT, DBVarType.FLOAT}
         if self.var_type not in supported_types:
             raise TypeError(f"{self.var_type} does not support operation '{node_type}'.")
-        if (isinstance(other, Series) and other.var_type not in supported_types) or isinstance(
+        if (isinstance(other, Series) and other.var_type in supported_types) or isinstance(
             other, (int, float)
         ):
             output_var_type = DBVarType.FLOAT

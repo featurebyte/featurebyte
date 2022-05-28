@@ -228,3 +228,44 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
         _ = int_series > varchar_series
     expected_msg = "Not supported operation 'gt' between INT and <class 'featurebyte.pandas.series.Series'>[VARCHAR]!"
     assert expected_msg in str(exc.value)
+
+
+def test_arithmetic_operators(int_series, float_series):
+    """
+    Test arithmetic operators with other as series or scalar type
+    """
+    series_int_float_add = int_series + float_series
+    series_int_int_sub = int_series - int_series
+    series_float_int_mul = float_series * int_series
+    series_float_float_div = float_series / float_series
+    node_kwargs = {"parameters": {}, "output_type": NodeOutputType.SERIES}
+    assert series_int_float_add.var_type == DBVarType.FLOAT
+    assert series_int_int_sub.var_type == DBVarType.INT
+    assert series_float_int_mul.var_type == DBVarType.FLOAT
+    assert series_float_float_div.var_type == DBVarType.FLOAT
+    assert series_int_float_add.node == Node(name="add_1", type=NodeType.ADD, **node_kwargs)
+    assert series_int_int_sub.node == Node(name="sub_1", type=NodeType.SUB, **node_kwargs)
+    assert series_float_int_mul.node == Node(name="mul_1", type=NodeType.MUL, **node_kwargs)
+    assert series_float_float_div.node == Node(name="div_1", type=NodeType.DIV, **node_kwargs)
+
+    scalar_int_float_add = int_series + 1.23
+    scalar_int_int_sub = int_series - 1
+    scalar_float_int_mul = float_series * 2
+    scalar_float_float_div = float_series / 2.34
+    kwargs = {"output_type": NodeOutputType.SERIES}
+    assert scalar_int_float_add.var_type == DBVarType.FLOAT
+    assert scalar_int_int_sub.var_type == DBVarType.INT
+    assert scalar_float_int_mul.var_type == DBVarType.FLOAT
+    assert scalar_float_float_div.var_type == DBVarType.FLOAT
+    assert scalar_int_float_add.node == Node(
+        name="add_2", type=NodeType.ADD, parameters={"value": 1.23}, **kwargs
+    )
+    assert scalar_int_int_sub.node == Node(
+        name="sub_2", type=NodeType.SUB, parameters={"value": 1}, **kwargs
+    )
+    assert scalar_float_int_mul.node == Node(
+        name="mul_2", type=NodeType.MUL, parameters={"value": 2}, **kwargs
+    )
+    assert scalar_float_float_div.node == Node(
+        name="div_2", type=NodeType.DIV, parameters={"value": 2.34}, **kwargs
+    )
