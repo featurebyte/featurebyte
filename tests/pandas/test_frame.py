@@ -223,6 +223,9 @@ def test_multiple_statements(dataframe):
         "amount": DBVarType.FLOAT,
         "vip_customer": DBVarType.BOOL,
     }
+    assert dataframe.node == Node(
+        name="assign_2", parameters={"name": "vip_customer"}, output_type=NodeOutputType.FRAME
+    )
     assert dataframe.row_index_lineage == ("input_1", "filter_1")
     assert dict(dataframe.graph.edges) == {
         "input_1": ["project_1", "filter_1"],
