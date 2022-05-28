@@ -88,3 +88,30 @@ class OpsMixin:
             input_nodes=[item.node, mask.node],
         )
         return node
+
+    @staticmethod
+    def _is_assignment_valid(left_dbtype: DBVarType, right_value: Any) -> bool:
+        """
+        Check whether the right value python builtin type can be assigned to left value database type.
+
+        Parameters
+        ----------
+        left_dbtype: DBVarType
+            database variable type
+        right_value: Any
+            value to be checked whether its type can be assigned to DBVarType
+
+        Returns
+        -------
+        bool
+            boolean value to indicate the whether the assignment is valid or not
+        """
+        valid_assignment_map = {
+            DBVarType.BOOL: (bool,),
+            DBVarType.INT: (int,),
+            DBVarType.FLOAT: (int, float),
+            DBVarType.CHAR: (),
+            DBVarType.VARCHAR: (str,),
+            DBVarType.DATE: (),
+        }
+        return isinstance(right_value, valid_assignment_map[left_dbtype])

@@ -35,24 +35,13 @@ class Series(OpsMixin):
             )
         raise TypeError(f"Type {type(item)} not supported!")
 
-    def _is_valid_assignment(self, py_type: type[int | float | str | bool]) -> bool:
-        valid_assignment_map = {
-            DBVarType.BOOL: {bool},
-            DBVarType.CHAR: {},
-            DBVarType.DATE: {},
-            DBVarType.FLOAT: {int, float},
-            DBVarType.INT: {int},
-            DBVarType.VARCHAR: {str},
-        }
-        return py_type in valid_assignment_map[self.var_type]
-
     def __setitem__(self, key: Series, value: int | float | str | bool) -> None:
         if isinstance(key, Series) and isinstance(value, (int, float, str, bool)):
             if self.row_index_lineage != key.row_index_lineage:
                 raise ValueError("Row index not aligned!")
             if key.var_type != DBVarType.BOOL:
                 raise TypeError("Only boolean Series filtering is supported!")
-            if not self._is_valid_assignment(type(value)):
+            if not self._is_assignment_valid(self.var_type, value):
                 raise ValueError(
                     f"Key type {type(key)} with value type {type(value)} not supported!"
                 )
