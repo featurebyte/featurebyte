@@ -230,7 +230,7 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
     assert expected_msg in str(exc.value)
 
 
-def test_arithmetic_operators(int_series, float_series):
+def test_arithmetic_operators(int_series, float_series, varchar_series):
     """
     Test arithmetic operators with other as series or scalar type
     """
@@ -269,3 +269,12 @@ def test_arithmetic_operators(int_series, float_series):
     assert scalar_float_float_div.node == Node(
         name="div_2", type=NodeType.DIV, parameters={"value": 2.34}, **kwargs
     )
+
+    with pytest.raises(TypeError) as exc:
+        _ = varchar_series * 1
+    assert "VARCHAR does not support operation 'mul'." in str(exc.value)
+
+    with pytest.raises(TypeError) as exc:
+        _ = int_series * varchar_series
+    expected_msg = "Not supported operation 'mul' between INT and <class 'featurebyte.pandas.series.Series'>[VARCHAR]!"
+    assert expected_msg in str(exc.value)
