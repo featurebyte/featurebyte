@@ -25,6 +25,9 @@ class DataFrame(OpsMixin):
         self.column_var_type_map = column_var_type_map
         self.row_index_lineage = tuple(row_index_lineage)
 
+    def __repr__(self) -> str:
+        return f"DataFrame(node={self.node})"
+
     def __getitem__(self, item: str | list[str] | Series) -> Series | DataFrame:
         lineage = list(self.row_index_lineage)
         if isinstance(item, str):

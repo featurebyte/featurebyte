@@ -23,6 +23,9 @@ class Series(OpsMixin):
         self.var_type = var_type
         self.row_index_lineage = tuple(row_index_lineage)
 
+    def __repr__(self) -> str:
+        return f"Series[{self.var_type}](name={self.name}, node={self.node})"
+
     def __getitem__(self, item: Series) -> Series:
         if isinstance(item, Series):
             node = self._add_filter_operation(
