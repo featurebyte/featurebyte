@@ -3,8 +3,8 @@ This module contains the list of SQL operations to be used by the Query Graph In
 """
 from typing import Any, List
 
-# pylint: disable=W0511
-# pylint: disable=R0903
+# pylint: disable=W0511 (fixme)
+# pylint: disable=R0903 (too-few-public-methods)
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -32,12 +32,23 @@ class SQLNode(ABC):
 
 
 @dataclass
-class InputNode(SQLNode):
+class ExpressionNode(SQLNode):
+    """Expression node"""
+
+    expr: str
+
+    @property
+    def sql(self) -> Expression:
+        return parse_one(self.expr)
+
+
+@dataclass
+class BuildTileInputNode(SQLNode):
     """Input data node used when building tiles"""
 
     columns: List[str]
     timestamp: str
-    input: SQLNode
+    input: ExpressionNode
 
     @property
     def sql(self) -> Expression:
@@ -49,27 +60,12 @@ class InputNode(SQLNode):
             A sqlglot Expression object
         """
         select_expr = select(*self.columns)
-        if isinstance(self.input, ExpressionNode):
-            select_expr = select_expr.from_(self.input.sql)
-        else:
-            select_expr = select_expr.from_(self.input.sql.subquery())
-        # TODO: this is only for tile-gen sql
+        select_expr = select_expr.from_(self.input.sql)
         select_expr = select_expr.where(
             f"{self.timestamp} >= CAST(FBT_START_DATE AS TIMESTAMP)",
             f"{self.timestamp} < CAST(FBT_END_DATE AS TIMESTAMP)",
         )
         return select_expr
-
-
-@dataclass
-class ExpressionNode(SQLNode):
-    """Expression node"""
-
-    expr: str
-
-    @property
-    def sql(self) -> Expression:
-        return parse_one(self.expr)
 
 
 @dataclass

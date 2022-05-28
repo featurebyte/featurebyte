@@ -11,9 +11,9 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql import (
     AddNode,
     AssignNode,
+    BuildTileInputNode,
     BuildTileNode,
     ExpressionNode,
-    InputNode,
     Project,
     SQLNode,
 )
@@ -99,7 +99,7 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
-            sql_node = InputNode(
+            sql_node = BuildTileInputNode(
                 columns=parameters["columns"],
                 timestamp=parameters["timestamp"],
                 input=ExpressionNode(parameters["dbtable"]),
