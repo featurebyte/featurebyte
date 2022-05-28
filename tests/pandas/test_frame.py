@@ -212,9 +212,18 @@ def test_multiple_statements(dataframe):
     Test multiple statements
     """
     dataframe = dataframe[dataframe["MASK"]]
-    dataframe["amount"] = dataframe["CUST_ID"] + dataframe["VALUE"]
-    dataframe["vip_customer"] = (dataframe["CUST_ID"] < 1000) & (dataframe["amount"] > 1000.0)
+    cust_id = dataframe["CUST_ID"]
+    dataframe["amount"] = cust_id + dataframe["VALUE"]
+    dataframe["vip_customer"] = (cust_id < 1000) & (dataframe["amount"] > 1000.0)
 
+    assert cust_id.name == "CUST_ID"
+    assert cust_id.node == Node(
+        name="project_2",
+        type=NodeType.PROJECT,
+        parameters={"columns": ["CUST_ID"]},
+        output_type=NodeOutputType.SERIES,
+    )
+    assert cust_id.row_index_lineage == ("input_1", "filter_1")
     assert dataframe.column_var_type_map == {
         "CUST_ID": DBVarType.INT,
         "PRODUCT_ACTION": DBVarType.VARCHAR,
@@ -224,19 +233,21 @@ def test_multiple_statements(dataframe):
         "vip_customer": DBVarType.BOOL,
     }
     assert dataframe.node == Node(
-        name="assign_2", parameters={"name": "vip_customer"}, output_type=NodeOutputType.FRAME
+        name="assign_2",
+        type=NodeType.ASSIGN,
+        parameters={"name": "vip_customer"},
+        output_type=NodeOutputType.FRAME,
     )
     assert dataframe.row_index_lineage == ("input_1", "filter_1")
     assert dict(dataframe.graph.edges) == {
         "input_1": ["project_1", "filter_1"],
         "project_1": ["filter_1"],
         "filter_1": ["project_2", "project_3", "assign_1"],
-        "project_2": ["add_1"],
+        "project_2": ["add_1", "lt_1"],
         "project_3": ["add_1"],
         "add_1": ["assign_1"],
-        "assign_1": ["project_4", "project_5", "assign_2"],
-        "project_4": ["lt_1"],
-        "project_5": ["gt_1"],
+        "assign_1": ["project_4", "assign_2"],
+        "project_4": ["gt_1"],
         "lt_1": ["and_1"],
         "gt_1": ["and_1"],
         "and_1": ["assign_2"],
