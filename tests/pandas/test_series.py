@@ -230,7 +230,7 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
     assert expected_msg in str(exc.value)
 
 
-def test_arithmetic_operators(int_series, float_series, varchar_series):
+def test_arithmetic_operators(int_series, float_series):
     """
     Test arithmetic operators with other as series or scalar type
     """
@@ -270,6 +270,11 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         name="div_2", type=NodeType.DIV, parameters={"value": 2.34}, **kwargs
     )
 
+
+def test_arithmetic_operators__types_not_supported(varchar_series, int_series):
+    """
+    Test arithmetic operators on not supported types
+    """
     with pytest.raises(TypeError) as exc:
         _ = varchar_series * 1
     assert "VARCHAR does not support operation 'mul'." in str(exc.value)
