@@ -134,3 +134,43 @@ class Series(OpsMixin):
 
     def __ge__(self, other: int | float | str | bool | Series) -> Series:
         return self._relational_binary_op(other, NodeType.GE)
+
+    def _arithmetic_binary_op(self, other: int | float | Series, node_type: NodeType) -> Series:
+        supported_types = {DBVarType.INT, DBVarType.FLOAT}
+        if self.var_type not in supported_types:
+            raise TypeError(f"{self.var_type} does not support operation '{node_type}'.")
+        if (isinstance(other, Series) and other.var_type not in supported_types) or isinstance(
+            other, (int, float)
+        ):
+            output_var_type = DBVarType.FLOAT
+            if (
+                self.var_type == DBVarType.INT
+                and (
+                    isinstance(other, int)
+                    or (isinstance(other, Series) and other.var_type == DBVarType.INT)
+                )
+                and node_type not in {NodeType.DIV}
+            ):
+                output_var_type = DBVarType.INT
+            return self._binary_op(
+                other=other, node_type=node_type, output_var_type=output_var_type
+            )
+
+        other_type = f"{type(other)}"
+        if isinstance(other, Series):
+            other_type = f"{other_type}[{other.var_type}]"
+        raise TypeError(
+            f"Not supported operation '{node_type}' between {self.var_type} and {other_type}!"
+        )
+
+    def __add__(self, other: int | float | Series) -> Series:
+        return self._arithmetic_binary_op(other, NodeType.ADD)
+
+    def __sub__(self, other: int | float | Series) -> Series:
+        return self._arithmetic_binary_op(other, NodeType.SUB)
+
+    def __mul__(self, other: int | float | Series) -> Series:
+        return self._arithmetic_binary_op(other, NodeType.MUL)
+
+    def __truediv__(self, other: int | float | Series) -> Series:
+        return self._arithmetic_binary_op(other, NodeType.DIV)
