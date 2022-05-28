@@ -77,7 +77,7 @@ class AddNode(SQLNode):
 
     @property
     def sql(self) -> Expression:
-        return parse_one(f"{self.left.sql.sql()} + {self.right.sql.sql()}")
+        return expressions.Add(this=self.left.sql, expression=self.right.sql)
 
 
 @dataclass
