@@ -24,7 +24,7 @@ class Series(OpsMixin):
         self.row_index_lineage = tuple(row_index_lineage)
 
     def __repr__(self) -> str:
-        return f"Series[{self.var_type}](name={self.name}, node={self.node})"
+        return f"Series[{self.var_type}](name={self.name}, node.name={self.node.name})"
 
     def __getitem__(self, item: Series) -> Series:
         if isinstance(item, Series):
@@ -36,18 +36,16 @@ class Series(OpsMixin):
             return Series(
                 node=node, name=self.name, var_type=self.var_type, row_index_lineage=lineage
             )
-        raise TypeError(f"Type {type(item)} not supported!")
+        raise KeyError(f"Series indexing with value '{item}' not supported!")
 
     def __setitem__(self, key: Series, value: int | float | str | bool) -> None:
         if isinstance(key, Series) and isinstance(value, (int, float, str, bool)):
             if self.row_index_lineage != key.row_index_lineage:
-                raise ValueError("Row index not aligned!")
+                raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
             if key.var_type != DBVarType.BOOL:
                 raise TypeError("Only boolean Series filtering is supported!")
             if not self._is_assignment_valid(self.var_type, value):
-                raise ValueError(
-                    f"Key type {type(key)} with value type {type(value)} not supported!"
-                )
+                raise ValueError(f"Setting key '{key}' with value '{value}' not supported!")
             self.node = self.graph.add_operation(
                 node_type=NodeType.COND_ASSIGN,
                 node_params={"value": value},
@@ -55,7 +53,7 @@ class Series(OpsMixin):
                 input_nodes=[self.node, key.node],
             )
         else:
-            raise TypeError(f"Key type {type(key)} with value type {type(value)} not supported!")
+            raise TypeError(f"Key '{key}' not supported!")
 
     def _binary_op(
         self,
@@ -90,12 +88,7 @@ class Series(OpsMixin):
                     other=other, node_type=node_type, output_var_type=DBVarType.BOOL
                 )
 
-        other_type = f"{type(other)}"
-        if isinstance(other, Series):
-            other_type = f"{other_type}[{other.var_type}]"
-        raise TypeError(
-            f"Not supported operation '{node_type}' between {self.var_type} and {other_type}!"
-        )
+        raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
     def __and__(self, other: bool | Series) -> Series:
         return self._logical_binary_op(other, NodeType.AND)
@@ -113,12 +106,7 @@ class Series(OpsMixin):
         ):
             return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
-        other_type = f"{type(other)}"
-        if isinstance(other, Series):
-            other_type = f"{other_type}[{other.var_type}]"
-        raise TypeError(
-            f"Not supported operation '{node_type}' between {self.var_type} and {other_type}!"
-        )
+        raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
     # def __eq__(self, other: int | float | str | bool | Series) -> Series:
     #     return self._relational_binary_op(other, NodeType.EQ)
@@ -141,7 +129,7 @@ class Series(OpsMixin):
     def _arithmetic_binary_op(self, other: int | float | Series, node_type: NodeType) -> Series:
         supported_types = {DBVarType.INT, DBVarType.FLOAT}
         if self.var_type not in supported_types:
-            raise TypeError(f"{self.var_type} does not support operation '{node_type}'.")
+            raise TypeError(f"{self} does not support operation '{node_type}'.")
         if (isinstance(other, Series) and other.var_type in supported_types) or isinstance(
             other, (int, float)
         ):
@@ -159,12 +147,7 @@ class Series(OpsMixin):
                 other=other, node_type=node_type, output_var_type=output_var_type
             )
 
-        other_type = f"{type(other)}"
-        if isinstance(other, Series):
-            other_type = f"{other_type}[{other.var_type}]"
-        raise TypeError(
-            f"Not supported operation '{node_type}' between {self.var_type} and {other_type}!"
-        )
+        raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
     def __add__(self, other: int | float | Series) -> Series:
         return self._arithmetic_binary_op(other, NodeType.ADD)

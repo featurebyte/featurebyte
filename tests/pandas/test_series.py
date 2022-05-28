@@ -40,16 +40,20 @@ def test__getitem__row_index_not_aligned(int_series, bool_series):
     assert filtered_bool_series.var_type == DBVarType.BOOL
     with pytest.raises(ValueError) as exc:
         _ = int_series[filtered_bool_series]
-    assert "Row index not aligned!" in str(exc.value)
+    expected_msg = (
+        "Row indices between 'Series[INT](name=CUST_ID, node.name=project_1)' and "
+        "'Series[BOOL](name=MASK, node.name=filter_1)' are not aligned!"
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test__getitem__type_not_supported(int_series):
     """
     Test retrieval with unsupported type
     """
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(KeyError) as exc:
         _ = int_series[True]
-    assert "Type <class 'bool'> not supported!" in str(exc.value)
+    assert "Series indexing with value 'True' not supported!" in str(exc.value)
 
 
 @pytest.mark.parametrize(
@@ -102,7 +106,23 @@ def test__setitem__row_index_not_aligned(int_series, bool_series):
     filtered_bool_series = bool_series[bool_series]
     with pytest.raises(ValueError) as exc:
         int_series[filtered_bool_series] = 1
-    assert "Row index not aligned!" in str(exc.value)
+    expected_msg = (
+        "Row indices between 'Series[INT](name=CUST_ID, node.name=project_1)' and "
+        "'Series[BOOL](name=MASK, node.name=filter_1)' are not aligned!"
+    )
+    assert expected_msg in str(exc.value)
+
+
+def test__setitem__value_type_not_correct(int_series, bool_series):
+    """
+    Test conditional assignment when the assigned value not valid for given Series type
+    """
+    with pytest.raises(ValueError) as exc:
+        int_series[bool_series] = "abc"
+    expected_msg = (
+        "Setting key 'Series[BOOL](name=MASK, node.name=project_2)' with value 'abc' not supported!"
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test__setitem__non_boolean_series_type_not_supported(int_series, bool_series):
@@ -112,6 +132,15 @@ def test__setitem__non_boolean_series_type_not_supported(int_series, bool_series
     with pytest.raises(TypeError) as exc:
         bool_series[int_series] = True
     assert "Only boolean Series filtering is supported!" in str(exc.value)
+
+
+def test__setitem__key_type_not_supported(int_series):
+    """
+    Test assignment with non-supported key type
+    """
+    with pytest.raises(TypeError) as exc:
+        int_series[1] = True
+    assert "Key '1' not supported!" in str(exc.value)
 
 
 def test_logical_operators(bool_series, int_series):
@@ -154,11 +183,15 @@ def test_logical_operators(bool_series, int_series):
 
     with pytest.raises(TypeError) as exc:
         _ = bool_series & "string"
-    assert "Not supported operation 'and' between BOOL and <class 'str'>!" in str(exc.value)
+    expected_msg = "Not supported operation 'and' between 'Series[BOOL](name=MASK, node.name=project_1)' and 'string'!"
+    assert expected_msg in str(exc.value)
 
     with pytest.raises(TypeError) as exc:
         _ = bool_series | int_series
-    expected_msg = "Not supported operation 'or' between BOOL and <class 'featurebyte.pandas.series.Series'>[INT]!"
+    expected_msg = (
+        "Not supported operation 'or' between 'Series[BOOL](name=MASK, node.name=project_1)' and "
+        "'Series[INT](name=CUST_ID, node.name=project_2)'!"
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -226,7 +259,10 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
 
     with pytest.raises(TypeError) as exc:
         _ = int_series > varchar_series
-    expected_msg = "Not supported operation 'gt' between INT and <class 'featurebyte.pandas.series.Series'>[VARCHAR]!"
+    expected_msg = (
+        "Not supported operation 'gt' between 'Series[INT](name=CUST_ID, node.name=project_2)' and "
+        "'Series[VARCHAR](name=PRODUCT_ACTION, node.name=project_4)'!"
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -277,9 +313,13 @@ def test_arithmetic_operators__types_not_supported(varchar_series, int_series):
     """
     with pytest.raises(TypeError) as exc:
         _ = varchar_series * 1
-    assert "VARCHAR does not support operation 'mul'." in str(exc.value)
+    expected_msg = "Series[VARCHAR](name=PRODUCT_ACTION, node.name=project_1) does not support operation 'mul'."
+    assert expected_msg in str(exc.value)
 
     with pytest.raises(TypeError) as exc:
         _ = int_series * varchar_series
-    expected_msg = "Not supported operation 'mul' between INT and <class 'featurebyte.pandas.series.Series'>[VARCHAR]!"
+    expected_msg = (
+        "Not supported operation 'mul' between 'Series[INT](name=CUST_ID, node.name=project_2)' and "
+        "'Series[VARCHAR](name=PRODUCT_ACTION, node.name=project_1)'!"
+    )
     assert expected_msg in str(exc.value)

@@ -26,7 +26,7 @@ class DataFrame(OpsMixin):
         self.row_index_lineage = tuple(row_index_lineage)
 
     def __repr__(self) -> str:
-        return f"DataFrame(node={self.node})"
+        return f"DataFrame(node.name={self.node.name})"
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | DataFrame:
         lineage = list(self.row_index_lineage)
@@ -71,7 +71,7 @@ class DataFrame(OpsMixin):
                 column_var_type_map=copy.deepcopy(self.column_var_type_map),
                 row_index_lineage=lineage,
             )
-        raise TypeError(f"Type {type(item)} not supported!")
+        raise TypeError(f"DataFrame indexing with value '{item}' not supported!")
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         if isinstance(key, str) and isinstance(value, (int, float, str, bool)):
@@ -84,7 +84,7 @@ class DataFrame(OpsMixin):
             self.column_var_type_map[key] = self.pytype_dbtype_map[type(value)]
         elif isinstance(key, str) and isinstance(value, Series):
             if self.row_index_lineage != value.row_index_lineage:
-                raise ValueError("Row index not aligned!")
+                raise ValueError(f"Row indices between '{self}' and '{value}' are not aligned!")
             self.node = self.graph.add_operation(
                 node_type=NodeType.ASSIGN,
                 node_params={"name": key},
@@ -93,4 +93,4 @@ class DataFrame(OpsMixin):
             )
             self.column_var_type_map[key] = value.var_type
         else:
-            raise TypeError(f"Key type {type(key)} with value type {type(value)} not supported!")
+            raise TypeError(f"Key '{key}' not supported!")

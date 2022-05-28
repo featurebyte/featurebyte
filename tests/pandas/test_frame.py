@@ -107,7 +107,11 @@ def test__getitem__series_type_row_index_not_aligned(dataframe, bool_series):
     filtered_bool_series = dataframe[bool_series]["MASK"]
     with pytest.raises(ValueError) as exc:
         _ = dataframe[filtered_bool_series]
-    assert "Row index not aligned!" in str(exc.value)
+    expected_msg = (
+        "Row indices between 'DataFrame(node.name=input_1)' and "
+        "'Series[BOOL](name=MASK, node.name=project_2)' are not aligned!"
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test__getitem__type_not_supported(dataframe):
@@ -116,7 +120,7 @@ def test__getitem__type_not_supported(dataframe):
     """
     with pytest.raises(TypeError) as exc:
         _ = dataframe[True]
-    assert "Type <class 'bool'> not supported!" in str(exc.value)
+    assert "DataFrame indexing with value 'True' not supported!" in str(exc.value)
 
 
 @pytest.mark.parametrize(
@@ -187,17 +191,20 @@ def test__setitem__str_key_series_value__row_index_not_aligned(dataframe, bool_s
     assert value.row_index_lineage == ("input_1", "filter_1")
     with pytest.raises(ValueError) as exc:
         dataframe["new_column"] = value
-    assert "Row index not aligned!" in str(exc.value)
+    expected_msg = (
+        "Row indices between 'DataFrame(node.name=input_1)' and "
+        "'Series[VARCHAR](name=PRODUCT_ACTION, node.name=project_2)' are not aligned!"
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test__setitem__type_not_supported(dataframe):
     """
-    Test assignment with non-supported type
+    Test assignment with non-supported key type
     """
     with pytest.raises(TypeError) as exc:
         dataframe[1.234] = True
-    expected_msg = "Key type <class 'float'> with value type <class 'bool'> not supported!"
-    assert expected_msg in str(exc.value)
+    assert "Key '1.234' not supported!" in str(exc.value)
 
 
 def test_multiple_statements(dataframe):
