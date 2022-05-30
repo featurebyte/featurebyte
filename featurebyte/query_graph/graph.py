@@ -141,6 +141,22 @@ class QueryGraph(Graph):
         self.node_name_to_ref: Dict[str, int] = {}
         self.ref_to_node_name: Dict[int, str] = {}
 
+    def get_node_by_name(self, node_name: str) -> Node:
+        """
+        Retrieve the node given node name
+
+        Parameters
+        ----------
+        node_name: str
+            Node name
+
+        Returns
+        -------
+        Node
+
+        """
+        return Node(**self.nodes[node_name])
+
     def add_operation(
         self,
         node_type: NodeType,

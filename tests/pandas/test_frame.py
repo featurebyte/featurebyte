@@ -32,6 +32,7 @@ def test__getitem__str_key(dataframe, item, expected_type):
         parameters={"columns": [item]},
         output_type=NodeOutputType.SERIES,
     )
+    assert series.lineage == ("input_1", "project_1")
     assert series.row_index_lineage == ("input_1",)
     assert dict(series.graph.edges) == {"input_1": ["project_1"]}
 
@@ -58,6 +59,10 @@ def test__getitem__list_of_str_key(dataframe):
         parameters={"columns": ["CUST_ID", "VALUE"]},
         output_type=NodeOutputType.FRAME,
     )
+    assert sub_dataframe.column_lineage_map == {
+        "CUST_ID": ("input_1", "project_1"),
+        "VALUE": ("input_1", "project_1"),
+    }
     assert sub_dataframe.row_index_lineage == ("input_1",)
     assert dict(sub_dataframe.graph.edges) == {"input_1": ["project_1"]}
 
@@ -84,6 +89,12 @@ def test__getitem__series_key(dataframe, bool_series):
         parameters={},
         output_type=NodeOutputType.FRAME,
     )
+    assert sub_dataframe.column_lineage_map == {
+        "CUST_ID": ("input_1", "filter_1"),
+        "PRODUCT_ACTION": ("input_1", "filter_1"),
+        "VALUE": ("input_1", "filter_1"),
+        "MASK": ("input_1", "filter_1"),
+    }
     assert sub_dataframe.row_index_lineage == ("input_1", "filter_1")
     assert dict(sub_dataframe.graph.edges) == {
         "input_1": ["project_1", "filter_1"],
@@ -188,6 +199,7 @@ def test__setitem__str_key_series_value__row_index_not_aligned(dataframe, bool_s
     """
     value = dataframe[bool_series]["PRODUCT_ACTION"]
     assert isinstance(value, Series)
+    assert value.lineage == ("input_1", "filter_1", "project_2")
     assert value.row_index_lineage == ("input_1", "filter_1")
     with pytest.raises(ValueError) as exc:
         dataframe["new_column"] = value
@@ -214,7 +226,7 @@ def test_multiple_statements(dataframe):
     dataframe = dataframe[dataframe["MASK"]]
     cust_id = dataframe["CUST_ID"]
     dataframe["amount"] = cust_id + dataframe["VALUE"]
-    dataframe["vip_customer"] = (cust_id < 1000) & (dataframe["amount"] > 1000.0)
+    dataframe["vip_customer"] = (dataframe["CUST_ID"] < 1000) & (dataframe["amount"] > 1000.0)
 
     assert cust_id.name == "CUST_ID"
     assert cust_id.node == Node(
@@ -223,6 +235,7 @@ def test_multiple_statements(dataframe):
         parameters={"columns": ["CUST_ID"]},
         output_type=NodeOutputType.SERIES,
     )
+    assert cust_id.lineage == ("input_1", "filter_1", "project_2")
     assert cust_id.row_index_lineage == ("input_1", "filter_1")
     assert dataframe.column_var_type_map == {
         "CUST_ID": DBVarType.INT,
@@ -238,6 +251,14 @@ def test_multiple_statements(dataframe):
         parameters={"name": "vip_customer"},
         output_type=NodeOutputType.FRAME,
     )
+    assert dataframe.column_lineage_map == {
+        "CUST_ID": ("input_1", "filter_1"),
+        "PRODUCT_ACTION": ("input_1", "filter_1"),
+        "VALUE": ("input_1", "filter_1"),
+        "MASK": ("input_1", "filter_1"),
+        "amount": ("assign_1",),
+        "vip_customer": ("assign_2",),
+    }
     assert dataframe.row_index_lineage == ("input_1", "filter_1")
     assert dict(dataframe.graph.edges) == {
         "input_1": ["project_1", "filter_1"],

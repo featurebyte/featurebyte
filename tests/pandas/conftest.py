@@ -37,7 +37,10 @@ def dataframe_fixture(graph):
         input_nodes=[],
     )
     yield DataFrame(
-        node=node, column_var_type_map=column_var_type_map, row_index_lineage=[node.name]
+        node=node,
+        column_var_type_map=column_var_type_map,
+        column_lineage_map={col: (node.name,) for col in column_var_type_map},
+        row_index_lineage=(node.name,),
     )
 
 

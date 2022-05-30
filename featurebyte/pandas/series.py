@@ -15,13 +15,19 @@ class Series(OpsMixin):
     """
 
     def __init__(
-        self, node: Node, name: str | None, var_type: DBVarType, row_index_lineage: list[str]
+        self,
+        node: Node,
+        name: str | None,
+        var_type: DBVarType,
+        lineage: tuple[str, ...],
+        row_index_lineage: tuple[str, ...],
     ):
         self.graph = QueryGraph()
         self.node = node
         self.name = name
         self.var_type = var_type
-        self.row_index_lineage = tuple(row_index_lineage)
+        self.lineage = lineage
+        self.row_index_lineage = row_index_lineage
 
     def __repr__(self) -> str:
         return f"Series[{self.var_type}](name={self.name}, node.name={self.node.name})"
@@ -31,10 +37,12 @@ class Series(OpsMixin):
             node = self._add_filter_operation(
                 item=self, mask=item, node_output_type=NodeOutputType.SERIES
             )
-            lineage = list(self.row_index_lineage)
-            lineage.append(node.name)
             return Series(
-                node=node, name=self.name, var_type=self.var_type, row_index_lineage=lineage
+                node=node,
+                name=self.name,
+                var_type=self.var_type,
+                lineage=self._append_to_lineage(self.lineage, node.name),
+                row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
             )
         raise KeyError(f"Series indexing with value '{item}' not supported!")
 
@@ -52,6 +60,7 @@ class Series(OpsMixin):
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[self.node, key.node],
             )
+            self.lineage = self._append_to_lineage(self.lineage, self.node.name)
         else:
             raise TypeError(f"Key '{key}' not supported!")
 
@@ -61,7 +70,6 @@ class Series(OpsMixin):
         node_type: NodeType,
         output_var_type: DBVarType,
     ) -> Series:
-        lineage = list(self.row_index_lineage)
         if isinstance(other, (int, float, str, bool)):
             node = self.graph.add_operation(
                 node_type=node_type,
@@ -69,7 +77,13 @@ class Series(OpsMixin):
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[self.node],
             )
-            return Series(node=node, name=None, var_type=output_var_type, row_index_lineage=lineage)
+            return Series(
+                node=node,
+                name=None,
+                var_type=output_var_type,
+                lineage=self._append_to_lineage(self.lineage, node.name),
+                row_index_lineage=self.row_index_lineage,
+            )
 
         node = self.graph.add_operation(
             node_type=node_type,
@@ -77,7 +91,13 @@ class Series(OpsMixin):
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[self.node, other.node],
         )
-        return Series(node=node, name=None, var_type=output_var_type, row_index_lineage=lineage)
+        return Series(
+            node=node,
+            name=None,
+            var_type=output_var_type,
+            lineage=self._append_to_lineage(self.lineage, node.name),
+            row_index_lineage=self.row_index_lineage,
+        )
 
     def _logical_binary_op(self, other: bool | Series, node_type: NodeType) -> Series:
         if self.var_type == DBVarType.BOOL:
