@@ -2,7 +2,7 @@
 This module contains the Query Graph Interpreter
 """
 # pylint: disable=W0511
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from dataclasses import dataclass
 
@@ -16,6 +16,7 @@ from featurebyte.query_graph.sql import (
     ExpressionNode,
     Project,
     SQLNode,
+    TableNode,
 )
 
 
@@ -29,7 +30,7 @@ class SQLOperationGraph:
     """
 
     def __init__(self, query_graph: QueryGraph) -> None:
-        self.sql_nodes: Dict[str, SQLNode] = {}
+        self.sql_nodes: Dict[str, Union[SQLNode, TableNode]] = {}
         self.query_graph = query_graph
 
     def build(self, target_node: Dict[str, Any]) -> Any:
@@ -100,7 +101,7 @@ class SQLOperationGraph:
         sql_node: Any
         if node_type == NodeType.INPUT:
             sql_node = BuildTileInputNode(
-                columns=parameters["columns"],
+                column_names=parameters["columns"],
                 timestamp=parameters["timestamp"],
                 input=ExpressionNode(parameters["dbtable"]),
             )

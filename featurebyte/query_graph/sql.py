@@ -1,7 +1,7 @@
 """
 This module contains the list of SQL operations to be used by the Query Graph Interpreter
 """
-from typing import Any, List
+from typing import Any, List, Union
 
 # pylint: disable=W0511 (fixme)
 # pylint: disable=R0903 (too-few-public-methods)
@@ -21,7 +21,7 @@ class SQLNode(ABC):
 
     @property
     @abstractmethod
-    def sql(self) -> Expression:
+    def sql(self) -> Union[Expression, expressions.Subqueryable]:
         """Construct a sql expression
 
         Returns
@@ -29,6 +29,21 @@ class SQLNode(ABC):
         Expression
             A sqlglot Expression object
         """
+
+
+class TableNode(SQLNode, ABC):
+    """Nodes that produce table-like output that can be used as nested input"""
+
+    @property
+    @abstractmethod
+    def columns(self):
+        """Columns that are available in this table"""
+
+    def sql_nested(self) -> Expression:
+        """SQL expression that can be used within from_() to form a nested query"""
+        sql = self.sql
+        assert isinstance(sql, expressions.Subqueryable)
+        return sql.subquery()
 
 
 @dataclass
@@ -43,12 +58,16 @@ class ExpressionNode(SQLNode):
 
 
 @dataclass
-class BuildTileInputNode(SQLNode):
+class BuildTileInputNode(TableNode):
     """Input data node used when building tiles"""
 
-    columns: List[str]
+    column_names: List[str]
     timestamp: str
     input: ExpressionNode
+
+    @property
+    def columns(self):
+        return self.column_names
 
     @property
     def sql(self) -> Expression:
@@ -93,43 +112,43 @@ class Project(SQLNode):
 
 
 @dataclass
-class AssignNode(SQLNode):
+class AssignNode(TableNode):
     """Assign node"""
 
-    table: Any
+    table: TableNode
     column: SQLNode
     name: str
 
-    def __post_init__(self) -> None:
-        if self.table.columns is None:
-            raise RuntimeError(f"{self.table} has no columns attribute")
-        self.columns = [x for x in self.table.columns if x != self.name] + [self.name]
+    @property
+    def columns(self):
+        return [x for x in self.table.columns if x != self.name] + [self.name]
 
     @property
     def sql(self) -> Expression:
         existing_columns = [col for col in self.table.columns if col != self.name]
         select_expr = select(*existing_columns)
         select_expr = select_expr.select(expressions.alias_(self.column.sql, self.name))
-        select_expr = select_expr.from_(self.table.sql.subquery())
+        select_expr = select_expr.from_(self.table.sql_nested())
         return select_expr
 
 
 @dataclass
-class BuildTileNode(SQLNode):
+class BuildTileNode(TableNode):
     """Tile builder node
 
     This node is responsible for generating the tile building SQL for a groupby operation.
     """
 
-    input: SQLNode
+    input: TableNode
     key: str
     parent: str
     timestamp: str
     agg_func: str
     frequency: int
 
-    def __post_init__(self) -> None:
-        self.columns = ["tile_start_date", self.key, "value"]
+    @property
+    def columns(self) -> List[str]:
+        return ["tile_start_date", self.key, "value"]
 
     @property
     def sql(self) -> Expression:
@@ -142,7 +161,7 @@ class BuildTileNode(SQLNode):
         input_tiled = select(
             "*",
             f"FLOOR(({timestamp_epoch} - {start_date_placeholder_epoch}) / {self.frequency}) AS tile_index",
-        ).from_(self.input.sql.subquery())
+        ).from_(self.input.sql_nested())
 
         tile_start_date = (
             f"TO_TIMESTAMP({start_date_placeholder_epoch} + tile_index * {self.frequency})"

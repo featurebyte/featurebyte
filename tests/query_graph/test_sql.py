@@ -10,7 +10,7 @@ from featurebyte.query_graph import sql
 def input_node_fixture():
     """Fixture for a generic InputNode"""
     return sql.BuildTileInputNode(
-        columns=["col_1", "col_2", "col_3"],
+        column_names=["col_1", "col_2", "col_3"],
         timestamp="ts",
         input=sql.ExpressionNode("dbtable"),
     )
