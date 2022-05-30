@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class OpsMixin:
     """
-    OpsMixin contains common properties & operations shared between DataFrame & Series
+    OpsMixin contains common properties & operations shared between Frame & Series
     """
 
     @property

@@ -22,7 +22,7 @@ def query_graph():
 @pytest.fixture(name="dataframe")
 def dataframe_fixture(graph):
     """
-    DataFrame test fixture
+    Frame test fixture
     """
     column_var_type_map = {
         "CUST_ID": DBVarType.INT,
