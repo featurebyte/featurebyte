@@ -75,7 +75,7 @@ class SnowflakeConfig:
         Returns
         -------
         dataframe: Dataframe
-            pandas Dataframe for sample records
+            core Dataframe for sample records
 
         """
         sql = "select * from table(%s) limit %s"
@@ -91,7 +91,7 @@ class SnowflakeConfig:
         Returns
         -------
         dataframe: Dataframe
-            pandas Dataframe for metadata
+            core Dataframe for metadata
         """
 
         sql = (
@@ -119,7 +119,7 @@ class SnowflakeConfig:
 
     def _execute_df(self, sql: str, params: Tuple[Any, ...]) -> pd.DataFrame:
         """
-        Execute input sql and return pandas Dataframe as result
+        Execute input sql and return core Dataframe as result
 
         Parameters
         ----------

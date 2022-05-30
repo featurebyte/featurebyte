@@ -1,18 +1,18 @@
 """
-DataFrame class
+Frame class
 """
 from __future__ import annotations
 
 import copy
 
+from featurebyte.core.operation import OpsMixin
+from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
-from featurebyte.pandas.operation import OpsMixin
-from featurebyte.pandas.series import Series
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 
-class DataFrame(OpsMixin):
+class Frame(OpsMixin):
     """
     Implement Pandas DataFrame like operations to manipulate database table
     """
@@ -31,9 +31,9 @@ class DataFrame(OpsMixin):
         self.row_index_lineage = row_index_lineage
 
     def __repr__(self) -> str:
-        return f"DataFrame(node.name={self.node.name})"
+        return f"Frame(node.name={self.node.name})"
 
-    def __getitem__(self, item: str | list[str] | Series) -> Series | DataFrame:
+    def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
         if isinstance(item, str):
             if item not in self.column_var_type_map:
                 raise KeyError(f"Column {item} not found!")
@@ -68,7 +68,7 @@ class DataFrame(OpsMixin):
                 column_lineage_map[col] = self._append_to_lineage(
                     self.column_lineage_map[col], node.name
                 )
-            return DataFrame(
+            return Frame(
                 node=node,
                 column_var_type_map=column_var_type_map,
                 column_lineage_map=column_lineage_map,
@@ -81,13 +81,13 @@ class DataFrame(OpsMixin):
             column_lineage_map = {}
             for col, lineage in self.column_lineage_map.items():
                 column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
-            return DataFrame(
+            return Frame(
                 node=node,
                 column_var_type_map=copy.deepcopy(self.column_var_type_map),
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
             )
-        raise TypeError(f"DataFrame indexing with value '{item}' not supported!")
+        raise TypeError(f"Frame indexing with value '{item}' not supported!")
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         if isinstance(key, str) and isinstance(value, (int, float, str, bool)):

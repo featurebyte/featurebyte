@@ -10,8 +10,8 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 if TYPE_CHECKING:
-    from featurebyte.pandas.frame import DataFrame
-    from featurebyte.pandas.series import Series
+    from featurebyte.core.frame import Frame
+    from featurebyte.core.series import Series
 
 
 class OpsMixin:
@@ -50,14 +50,14 @@ class OpsMixin:
 
     @staticmethod
     def _add_filter_operation(
-        item: DataFrame | Series, mask: Series, node_output_type: NodeOutputType
+        item: Frame | Series, mask: Series, node_output_type: NodeOutputType
     ) -> Node:
         """
         Add filter node into the graph & return the node
 
         Parameters
         ----------
-        item: DataFrame | Series
+        item: Frame | Series
             object to be filtered
         mask: Series
             mask used to filter the item object

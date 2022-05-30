@@ -1,10 +1,10 @@
 """
-Unit test for DataFrame
+Unit test for Frame
 """
 import pytest
 
+from featurebyte.core.frame import Frame, Series
 from featurebyte.enum import DBVarType
-from featurebyte.pandas.frame import DataFrame, Series
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
 
@@ -51,7 +51,7 @@ def test__getitem__list_of_str_key(dataframe):
     Test list of columns retrieval
     """
     sub_dataframe = dataframe[["CUST_ID", "VALUE"]]
-    assert isinstance(sub_dataframe, DataFrame)
+    assert isinstance(sub_dataframe, Frame)
     assert sub_dataframe.column_var_type_map == {"CUST_ID": DBVarType.INT, "VALUE": DBVarType.FLOAT}
     assert sub_dataframe.node == Node(
         name="project_1",
@@ -81,7 +81,7 @@ def test__getitem__series_key(dataframe, bool_series):
     Test filtering using boolean Series
     """
     sub_dataframe = dataframe[bool_series]
-    assert isinstance(sub_dataframe, DataFrame)
+    assert isinstance(sub_dataframe, Frame)
     assert sub_dataframe.column_var_type_map == dataframe.column_var_type_map
     assert sub_dataframe.node == Node(
         name="filter_1",
@@ -119,7 +119,7 @@ def test__getitem__series_type_row_index_not_aligned(dataframe, bool_series):
     with pytest.raises(ValueError) as exc:
         _ = dataframe[filtered_bool_series]
     expected_msg = (
-        "Row indices between 'DataFrame(node.name=input_1)' and "
+        "Row indices between 'Frame(node.name=input_1)' and "
         "'Series[BOOL](name=MASK, node.name=project_2)' are not aligned!"
     )
     assert expected_msg in str(exc.value)
@@ -131,7 +131,7 @@ def test__getitem__type_not_supported(dataframe):
     """
     with pytest.raises(TypeError) as exc:
         _ = dataframe[True]
-    assert "DataFrame indexing with value 'True' not supported!" in str(exc.value)
+    assert "Frame indexing with value 'True' not supported!" in str(exc.value)
 
 
 @pytest.mark.parametrize(
@@ -204,7 +204,7 @@ def test__setitem__str_key_series_value__row_index_not_aligned(dataframe, bool_s
     with pytest.raises(ValueError) as exc:
         dataframe["new_column"] = value
     expected_msg = (
-        "Row indices between 'DataFrame(node.name=input_1)' and "
+        "Row indices between 'Frame(node.name=input_1)' and "
         "'Series[VARCHAR](name=PRODUCT_ACTION, node.name=project_2)' are not aligned!"
     )
     assert expected_msg in str(exc.value)

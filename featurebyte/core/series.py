@@ -3,8 +3,8 @@ Series class
 """
 from __future__ import annotations
 
+from featurebyte.core.operation import OpsMixin
 from featurebyte.enum import DBVarType
-from featurebyte.pandas.operation import OpsMixin
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 

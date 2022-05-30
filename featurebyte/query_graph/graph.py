@@ -133,7 +133,7 @@ class Graph(metaclass=SingletonMeta):
 
 class QueryGraph(Graph):
     """
-    Graph used to store the pandas like operations for the SQL query construction
+    Graph used to store the core like operations for the SQL query construction
     """
 
     def __init__(self) -> None:

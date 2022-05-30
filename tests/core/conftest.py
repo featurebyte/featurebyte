@@ -1,11 +1,11 @@
 """
-Common test fixtures used across test files in pandas directory
+Common test fixtures used across test files in core directory
 """
 import pytest
 
+from featurebyte.core.frame import Frame
+from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
-from featurebyte.pandas.frame import DataFrame
-from featurebyte.pandas.series import Series
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 
@@ -36,7 +36,7 @@ def dataframe_fixture(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    yield DataFrame(
+    yield Frame(
         node=node,
         column_var_type_map=column_var_type_map,
         column_lineage_map={col: (node.name,) for col in column_var_type_map},
