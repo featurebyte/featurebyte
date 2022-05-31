@@ -34,6 +34,43 @@ class Frame(OpsMixin):
         return f"Frame(node.name={self.node.name})"
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
+        """
+        Extract column or perform row filtering on the table.
+
+        When the item has a `str` or `list[str]` type, column(s) projection is expected. When single column
+        projection happens, the last node of the Series lineage (`self.column_lineage_map[item][-1]`) is used
+        rather than the DataFrame's last node (`self.node`). This is to prevent adding redundant project node
+        to the graph when the value of the column does not change. Consider the following case if `self.node`
+        is used:
+
+        >>> df["c"] = df["b"]
+        >>> b = df["b"]
+        >>> dict(df.graph.edges)
+        {
+            "input_1": ["project_1", "assign_1"],
+            "project_1": ["assign_1"],
+            "assign_1": ["project_2"]
+        }
+
+        Current implementation uses the last node of each lineage, it results in a simpler graph:
+
+        >>> dict(df.graph.edges)
+        {
+            "input_1": ["project_1", "assign_1"],
+            "project_1": ["assign_1"],
+        }
+
+        When the item has a boolean `Series` type, row filtering operation is expected.
+
+        Parameters
+        ----------
+        item: str | list[str] | Series
+            input item used to perform column(s) projection or row filtering
+
+        Returns
+        -------
+
+        """
         if isinstance(item, str):
             if item not in self.column_var_type_map:
                 raise KeyError(f"Column {item} not found!")
