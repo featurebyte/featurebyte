@@ -128,11 +128,11 @@ class Series(OpsMixin):
 
         raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
-    # def __eq__(self, other: int | float | str | bool | Series) -> Series:
-    #     return self._relational_binary_op(other, NodeType.EQ)
+    def __eq__(self, other: int | float | str | bool | Series) -> Series:  # type: ignore
+        return self._relational_binary_op(other, NodeType.EQ)
 
-    # def __ne__(self, other: int | float | str | bool | Series) -> Series:
-    #     return self._relational_binary_op(other, NodeType.NE)
+    def __ne__(self, other: int | float | str | bool | Series) -> Series:  # type: ignore
+        return self._relational_binary_op(other, NodeType.NE)
 
     def __lt__(self, other: int | float | str | bool | Series) -> Series:
         return self._relational_binary_op(other, NodeType.LT)

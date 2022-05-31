@@ -200,21 +200,21 @@ def test_relational_operators__series_other(bool_series, int_series, float_serie
     Test relational operators with other as Series type
     """
     # pylint: disable=R0124
-    # series_bool_eq = bool_series == bool_series
-    # series_int_ne = int_series != int_series
+    series_bool_eq = bool_series == bool_series
+    series_int_ne = int_series != int_series
     series_float_lt = float_series < float_series
     series_varchar_le = varchar_series <= varchar_series
     series_bool_gt = bool_series > bool_series
     series_int_ge = int_series >= int_series
     node_kwargs = {"parameters": {}, "output_type": NodeOutputType.SERIES}
-    # assert series_bool_eq.node == Node(name="eq_1", type=NodeType.EQ, **node_kwargs)
-    # assert series_int_ne.node == Node(name="ne_1", type=NodeType.NE, **node_kwargs)
+    assert series_bool_eq.node == Node(name="eq_1", type=NodeType.EQ, **node_kwargs)
+    assert series_int_ne.node == Node(name="ne_1", type=NodeType.NE, **node_kwargs)
     assert series_float_lt.node == Node(name="lt_1", type=NodeType.LT, **node_kwargs)
     assert series_varchar_le.node == Node(name="le_1", type=NodeType.LE, **node_kwargs)
     assert series_bool_gt.node == Node(name="gt_1", type=NodeType.GT, **node_kwargs)
     assert series_int_ge.node == Node(name="ge_1", type=NodeType.GE, **node_kwargs)
-    # assert series_bool_eq.var_type == DBVarType.BOOL
-    # assert series_int_ne.var_type == DBVarType.INT
+    assert series_bool_eq.var_type == DBVarType.BOOL
+    assert series_int_ne.var_type == DBVarType.INT
     assert series_float_lt.var_type == DBVarType.BOOL
     assert series_varchar_le.var_type == DBVarType.BOOL
     assert series_bool_gt.var_type == DBVarType.BOOL
