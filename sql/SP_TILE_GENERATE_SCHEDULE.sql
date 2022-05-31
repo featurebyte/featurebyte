@@ -65,5 +65,18 @@ $$
     result.next()
     debug = debug + " - SP_TILE_MONITOR: " + result.getColumnValue(1)
 
+    if (tile_type === "OFFLINE") {
+        // remove stale online tiles
+        var table_name = FEATURE_NAME.toUpperCase() + "_TILE_ONLINE"
+        var stored_proc = `call SP_TILE_REPLACE_ONLINE_TILE('${end_ts}', ${WINDOW_END_MINUTE}, ${FREQUENCY_MINUTE}, '${table_name}')`
+        result = snowflake.execute(
+            {
+                sqlText: stored_proc
+            }
+        )
+        result.next()
+        debug = debug + " - SP_TILE_REPLACE_ONLINE_TILE: " + result.getColumnValue(1)
+    }
+
     return debug
 $$;
