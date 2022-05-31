@@ -36,19 +36,7 @@ class OpsMixin:
             str: DBVarType.VARCHAR,
         }
 
-    @property
-    def dbtype_pytype_map(self) -> dict[Any, Any]:
-        """
-        Supported database type mapping to python builtin scalar type
-
-        Returns
-        -------
-        dict
-            mapping from DB type to supported builtin type
-        """
-        return {val: key for key, val in self.pytype_dbtype_map.items()}
-
-    def _is_supported_scalar_pytype(self, item: Any) -> bool:
+    def is_supported_scalar_pytype(self, item: Any) -> bool:
         """
         Check whether the input item is from the supported scalar types
 

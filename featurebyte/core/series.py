@@ -76,7 +76,7 @@ class Series(OpsMixin):
         return isinstance(right_value, valid_assignment_map[left_dbtype])
 
     def __setitem__(self, key: Series, value: int | float | str | bool) -> None:
-        if isinstance(key, Series) and self._is_supported_scalar_pytype(value):
+        if isinstance(key, Series) and self.is_supported_scalar_pytype(value):
             if self.row_index_lineage != key.row_index_lineage:
                 raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
             if key.var_type != DBVarType.BOOL:
@@ -135,7 +135,7 @@ class Series(OpsMixin):
         Series
             output of the binary operation
         """
-        if self._is_supported_scalar_pytype(other):
+        if self.is_supported_scalar_pytype(other):
             node = self.graph.add_operation(
                 node_type=node_type,
                 node_params={"value": other},
@@ -199,30 +199,6 @@ class Series(OpsMixin):
     def __or__(self, other: bool | Series) -> Series:
         return self._binary_logical_op(other, NodeType.OR)
 
-    def _is_scalar_type_comparison_valid(self, var_type: DBVarType, item: Any) -> bool:
-        """
-        Check whether the scalar comparison between target database variable type and specified item are valid
-
-        Parameters
-        ----------
-        var_type: DBVarType
-            left item database variable type
-        item: Any
-            right item to be used for comparison
-
-        Returns
-        -------
-        bool
-            whether the comparison operation is valid in terms of variable type
-        """
-        # first check whether item is from supported scalar type
-        is_supported_scalar_type = self._is_supported_scalar_pytype(item)
-        if is_supported_scalar_type:
-            # check whether mapped python type is the same as the input variable type
-            # if no mapping value is found, use Series (non-scalar type) for comparison
-            return isinstance(item, self.dbtype_pytype_map.get(var_type, Series))
-        return False
-
     def _binary_relational_op(
         self, other: int | float | str | bool | Series, node_type: NodeType
     ) -> Series:
@@ -247,7 +223,7 @@ class Series(OpsMixin):
             if the left value type of the operator is not consistent with the right value type
         """
         if self._is_a_series_of_var_type(other, self.var_type) or (
-            self._is_scalar_type_comparison_valid(self.var_type, other)
+            self.pytype_dbtype_map.get(type(other)) == self.var_type
         ):
             return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
