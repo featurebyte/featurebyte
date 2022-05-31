@@ -1,5 +1,5 @@
 """
-Implement graph data structure for execution graph
+Implement graph data structure for query graph
 """
 from typing import Any, Dict, List
 
@@ -133,13 +133,29 @@ class Graph(metaclass=SingletonMeta):
 
 class QueryGraph(Graph):
     """
-    Graph used to store the pandas like operations for the SQL query construction
+    Graph used to store the core like operations for the SQL query construction
     """
 
     def __init__(self) -> None:
         super().__init__()
         self.node_name_to_ref: Dict[str, int] = {}
         self.ref_to_node_name: Dict[int, str] = {}
+
+    def get_node_by_name(self, node_name: str) -> Node:
+        """
+        Retrieve the node given node name
+
+        Parameters
+        ----------
+        node_name: str
+            Node name
+
+        Returns
+        -------
+        Node
+
+        """
+        return Node(**self.nodes[node_name])
 
     def add_operation(
         self,
