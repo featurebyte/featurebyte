@@ -52,6 +52,18 @@ class Series(OpsMixin):
     def _is_assignment_valid(left_dbtype: DBVarType, right_value: Any) -> bool:
         """
         Check whether the right value python builtin type can be assigned to left value database type.
+
+        Parameters
+        ----------
+        left_dbtype: DBVarType
+            target database variable type
+        right_value: Any
+            value to be assigned to the left object
+
+        Returns
+        -------
+        bool
+            whether the assignment operation is valid in terms of variable type
         """
         valid_assignment_map = {
             DBVarType.BOOL: (bool,),
@@ -64,7 +76,7 @@ class Series(OpsMixin):
         return isinstance(right_value, valid_assignment_map[left_dbtype])
 
     def __setitem__(self, key: Series, value: int | float | str | bool) -> None:
-        if isinstance(key, Series) and self._is_supported_scalar_type(value):
+        if isinstance(key, Series) and self._is_supported_scalar_pytype(value):
             if self.row_index_lineage != key.row_index_lineage:
                 raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
             if key.var_type != DBVarType.BOOL:
@@ -85,6 +97,18 @@ class Series(OpsMixin):
     def _is_a_series_of_var_type(item: Any, var_type: DBVarType) -> bool:
         """
         Check whether the input item is Series type and has the specified variable type
+
+        Parameters
+        ----------
+        item: Any
+            input item
+        var_type: DBVarType
+            specified database variable type
+
+        Returns
+        -------
+        bool
+            whether the input item is a Series with the specified database variable type
         """
         return isinstance(item, Series) and item.var_type == var_type
 
@@ -96,8 +120,20 @@ class Series(OpsMixin):
     ) -> Series:
         """
         Apply binary operation between self & other objects
+
+        Parameters
+        ----------
+        other: int | float | str | bool | Series
+            right value of the binary operator
+        node_type: NodeType
+            binary operator node type
+
+        Returns
+        -------
+        Series
+            output of the binary operation
         """
-        if self._is_supported_scalar_type(other):
+        if self._is_supported_scalar_pytype(other):
             node = self.graph.add_operation(
                 node_type=node_type,
                 node_params={"value": other},
@@ -126,9 +162,21 @@ class Series(OpsMixin):
             row_index_lineage=self.row_index_lineage,
         )
 
-    def _logical_binary_op(self, other: bool | Series, node_type: NodeType) -> Series:
+    def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:
         """
         Apply binary logical operation between self & other objects
+
+        Parameters
+        ----------
+        other: bool | Series
+            right value of the binary logical operator
+        node_type: NodeType
+            binary logical operator node type
+
+        Returns
+        -------
+        Series
+            output of the binary logical operation
         """
         if self.var_type == DBVarType.BOOL:
             if isinstance(other, bool) or self._is_a_series_of_var_type(other, DBVarType.BOOL):
@@ -139,47 +187,93 @@ class Series(OpsMixin):
         raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
     def __and__(self, other: bool | Series) -> Series:
-        return self._logical_binary_op(other, NodeType.AND)
+        return self._binary_logical_op(other, NodeType.AND)
 
     def __or__(self, other: bool | Series) -> Series:
-        return self._logical_binary_op(other, NodeType.OR)
+        return self._binary_logical_op(other, NodeType.OR)
 
-    def _relational_binary_op(
+    def _is_scalar_type_comparison_valid(self, var_type: DBVarType, item: Any) -> bool:
+        """
+        Check whether the scalar comparison between target database variable type and specified item are valid
+
+        Parameters
+        ----------
+        var_type: DBVarType
+            left item database variable type
+        item: Any
+            right item to be used for comparison
+
+        Returns
+        -------
+        bool
+            whether the comparison operation is valid in terms of variable type
+        """
+        # first check whether item is from supported scalar type
+        is_supported_scalar_type = self._is_supported_scalar_pytype(item)
+        if is_supported_scalar_type:
+            # check whether mapped python type is the same as the input variable type
+            # if no mapping value is found, use Series (non-scalar type) for comparison
+            return isinstance(item, self.dbtype_pytype_map.get(var_type, Series))
+        return False
+
+    def _binary_relational_op(
         self, other: int | float | str | bool | Series, node_type: NodeType
     ) -> Series:
         """
         Apply binary relational operation between self & other objects
+
+        Parameters
+        ----------
+        other: int | float | str | bool | Series
+            right value of the binary relational operator
+        node_type: NodeType
+            binary relational operator node type
+
+        Returns
+        -------
+        Series
+            output of the binary relational operation
         """
-        is_supported_scalar_type = self.var_type in self.dbtype_pytype_map
         if self._is_a_series_of_var_type(other, self.var_type) or (
-            is_supported_scalar_type
-            and isinstance(other, self.dbtype_pytype_map.get(self.var_type, Series))
+            self._is_scalar_type_comparison_valid(self.var_type, other)
         ):
             return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
         raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
     def __eq__(self, other: int | float | str | bool | Series) -> Series:  # type: ignore
-        return self._relational_binary_op(other, NodeType.EQ)
+        return self._binary_relational_op(other, NodeType.EQ)
 
     def __ne__(self, other: int | float | str | bool | Series) -> Series:  # type: ignore
-        return self._relational_binary_op(other, NodeType.NE)
+        return self._binary_relational_op(other, NodeType.NE)
 
     def __lt__(self, other: int | float | str | bool | Series) -> Series:
-        return self._relational_binary_op(other, NodeType.LT)
+        return self._binary_relational_op(other, NodeType.LT)
 
     def __le__(self, other: int | float | str | bool | Series) -> Series:
-        return self._relational_binary_op(other, NodeType.LE)
+        return self._binary_relational_op(other, NodeType.LE)
 
     def __gt__(self, other: int | float | str | bool | Series) -> Series:
-        return self._relational_binary_op(other, NodeType.GT)
+        return self._binary_relational_op(other, NodeType.GT)
 
     def __ge__(self, other: int | float | str | bool | Series) -> Series:
-        return self._relational_binary_op(other, NodeType.GE)
+        return self._binary_relational_op(other, NodeType.GE)
 
-    def _arithmetic_binary_op(self, other: int | float | Series, node_type: NodeType) -> Series:
+    def _binary_arithmetic_op(self, other: int | float | Series, node_type: NodeType) -> Series:
         """
         Apply binary arithmetic operation between self & other objects
+
+        Parameters
+        ----------
+        other: int | float | Series
+            right value of the binary arithmetic operator
+        node_type: NodeType
+            binary arithmetic operator node type
+
+        Returns
+        -------
+        Series
+            output of the binary arithmetic operation
         """
         supported_types = {DBVarType.INT, DBVarType.FLOAT}
         if self.var_type not in supported_types:
@@ -201,13 +295,13 @@ class Series(OpsMixin):
         raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
     def __add__(self, other: int | float | Series) -> Series:
-        return self._arithmetic_binary_op(other, NodeType.ADD)
+        return self._binary_arithmetic_op(other, NodeType.ADD)
 
     def __sub__(self, other: int | float | Series) -> Series:
-        return self._arithmetic_binary_op(other, NodeType.SUB)
+        return self._binary_arithmetic_op(other, NodeType.SUB)
 
     def __mul__(self, other: int | float | Series) -> Series:
-        return self._arithmetic_binary_op(other, NodeType.MUL)
+        return self._binary_arithmetic_op(other, NodeType.MUL)
 
     def __truediv__(self, other: int | float | Series) -> Series:
-        return self._arithmetic_binary_op(other, NodeType.DIV)
+        return self._binary_arithmetic_op(other, NodeType.DIV)

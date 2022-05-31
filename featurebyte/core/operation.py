@@ -48,7 +48,7 @@ class OpsMixin:
         """
         return {val: key for key, val in self.pytype_dbtype_map.items()}
 
-    def _is_supported_scalar_type(self, item: Any) -> bool:
+    def _is_supported_scalar_pytype(self, item: Any) -> bool:
         """
         Check whether the input item is from the supported scalar types
 
