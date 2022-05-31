@@ -3,6 +3,8 @@ Series class
 """
 from __future__ import annotations
 
+from typing import Any
+
 from featurebyte.core.operation import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -46,8 +48,23 @@ class Series(OpsMixin):
             )
         raise KeyError(f"Series indexing with value '{item}' not supported!")
 
+    @staticmethod
+    def _is_assignment_valid(left_dbtype: DBVarType, right_value: Any) -> bool:
+        """
+        Check whether the right value python builtin type can be assigned to left value database type.
+        """
+        valid_assignment_map = {
+            DBVarType.BOOL: (bool,),
+            DBVarType.INT: (int,),
+            DBVarType.FLOAT: (int, float),
+            DBVarType.CHAR: (),
+            DBVarType.VARCHAR: (str,),
+            DBVarType.DATE: (),
+        }
+        return isinstance(right_value, valid_assignment_map[left_dbtype])
+
     def __setitem__(self, key: Series, value: int | float | str | bool) -> None:
-        if isinstance(key, Series) and isinstance(value, (int, float, str, bool)):
+        if isinstance(key, Series) and self._is_supported_scalar_type(value):
             if self.row_index_lineage != key.row_index_lineage:
                 raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
             if key.var_type != DBVarType.BOOL:
@@ -64,13 +81,23 @@ class Series(OpsMixin):
         else:
             raise TypeError(f"Key '{key}' not supported!")
 
+    @staticmethod
+    def _is_a_series_of_var_type(item: Any, var_type: DBVarType) -> bool:
+        """
+        Check whether the input item is Series type and has the specified variable type
+        """
+        return isinstance(item, Series) and item.var_type == var_type
+
     def _binary_op(
         self,
         other: int | float | str | bool | Series,
         node_type: NodeType,
         output_var_type: DBVarType,
     ) -> Series:
-        if isinstance(other, (int, float, str, bool)):
+        """
+        Apply binary operation between self & other objects
+        """
+        if self._is_supported_scalar_type(other):
             node = self.graph.add_operation(
                 node_type=node_type,
                 node_params={"value": other},
@@ -100,10 +127,11 @@ class Series(OpsMixin):
         )
 
     def _logical_binary_op(self, other: bool | Series, node_type: NodeType) -> Series:
+        """
+        Apply binary logical operation between self & other objects
+        """
         if self.var_type == DBVarType.BOOL:
-            if isinstance(other, bool) or (
-                isinstance(other, Series) and other.var_type == DBVarType.BOOL
-            ):
+            if isinstance(other, bool) or self._is_a_series_of_var_type(other, DBVarType.BOOL):
                 return self._binary_op(
                     other=other, node_type=node_type, output_var_type=DBVarType.BOOL
                 )
@@ -119,8 +147,11 @@ class Series(OpsMixin):
     def _relational_binary_op(
         self, other: int | float | str | bool | Series, node_type: NodeType
     ) -> Series:
+        """
+        Apply binary relational operation between self & other objects
+        """
         is_supported_scalar_type = self.var_type in self.dbtype_pytype_map
-        if (isinstance(other, Series) and other.var_type == self.var_type) or (
+        if self._is_a_series_of_var_type(other, self.var_type) or (
             is_supported_scalar_type
             and isinstance(other, self.dbtype_pytype_map.get(self.var_type, Series))
         ):
@@ -147,6 +178,9 @@ class Series(OpsMixin):
         return self._relational_binary_op(other, NodeType.GE)
 
     def _arithmetic_binary_op(self, other: int | float | Series, node_type: NodeType) -> Series:
+        """
+        Apply binary arithmetic operation between self & other objects
+        """
         supported_types = {DBVarType.INT, DBVarType.FLOAT}
         if self.var_type not in supported_types:
             raise TypeError(f"{self} does not support operation '{node_type}'.")
@@ -156,10 +190,7 @@ class Series(OpsMixin):
             output_var_type = DBVarType.FLOAT
             if (
                 self.var_type == DBVarType.INT
-                and (
-                    isinstance(other, int)
-                    or (isinstance(other, Series) and other.var_type == DBVarType.INT)
-                )
+                and (isinstance(other, int) or self._is_a_series_of_var_type(other, DBVarType.INT))
                 and node_type not in {NodeType.DIV}
             ):
                 output_var_type = DBVarType.INT

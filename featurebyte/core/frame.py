@@ -90,7 +90,7 @@ class Frame(OpsMixin):
         raise TypeError(f"Frame indexing with value '{item}' not supported!")
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
-        if isinstance(key, str) and isinstance(value, (int, float, str, bool)):
+        if isinstance(key, str) and self._is_supported_scalar_type(value):
             self.node = self.graph.add_operation(
                 node_type=NodeType.ASSIGN,
                 node_params={"value": value, "name": key},

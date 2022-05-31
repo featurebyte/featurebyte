@@ -214,7 +214,7 @@ def test_relational_operators__series_other(bool_series, int_series, float_serie
     assert series_bool_gt.node == Node(name="gt_1", type=NodeType.GT, **node_kwargs)
     assert series_int_ge.node == Node(name="ge_1", type=NodeType.GE, **node_kwargs)
     assert series_bool_eq.var_type == DBVarType.BOOL
-    assert series_int_ne.var_type == DBVarType.INT
+    assert series_int_ne.var_type == DBVarType.BOOL
     assert series_float_lt.var_type == DBVarType.BOOL
     assert series_varchar_le.var_type == DBVarType.BOOL
     assert series_bool_gt.var_type == DBVarType.BOOL
