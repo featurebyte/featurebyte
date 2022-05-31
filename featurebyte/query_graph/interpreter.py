@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql import (
+    BINARY_OPERATION_NODE_TYPES,
     AssignNode,
     BuildTileInputNode,
     BuildTileNode,
@@ -18,13 +19,6 @@ from featurebyte.query_graph.sql import (
     TableNode,
     make_binary_operation_node,
 )
-
-BINARY_OPERATION_NODE_TYPES = {
-    NodeType.ADD,
-    NodeType.SUB,
-    NodeType.MUL,
-    NodeType.DIV,
-}
 
 
 class SQLOperationGraph:

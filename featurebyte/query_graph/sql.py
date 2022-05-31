@@ -207,6 +207,22 @@ class BuildTileNode(TableNode):
         return groupby_sql
 
 
+BINARY_OPERATION_NODE_TYPES = {
+    NodeType.ADD,
+    NodeType.SUB,
+    NodeType.MUL,
+    NodeType.DIV,
+    NodeType.EQ,
+    NodeType.NE,
+    NodeType.LT,
+    NodeType.LE,
+    NodeType.GT,
+    NodeType.GE,
+    NodeType.AND,
+    NodeType.OR,
+}
+
+
 def make_literal_value(value: Any) -> expressions.Literal:
     """Create a sqlglot literal value
 
@@ -266,6 +282,7 @@ def make_binary_operation_node(
         NodeType.AND: expressions.And,
         NodeType.OR: expressions.Or,
     }
+    assert sorted(node_type_to_expression_cls.keys()) == sorted(BINARY_OPERATION_NODE_TYPES)
     expression_cls = node_type_to_expression_cls.get(node_type)
 
     if expression_cls is None:

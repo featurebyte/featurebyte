@@ -156,6 +156,81 @@ def test_graph_interpreter_multi_assign(graph):
     assert sql_tree.sql(pretty=True) == expected
 
 
+@pytest.mark.parametrize(
+    "node_type, expected_expr",
+    [
+        (NodeType.ADD, "a + 123"),
+        (NodeType.SUB, "a - 123"),
+        (NodeType.MUL, "a * 123"),
+        (NodeType.DIV, "a / 123"),
+        (NodeType.EQ, "a = 123"),
+        (NodeType.NE, "a <> 123"),
+        (NodeType.LT, "a < 123"),
+        (NodeType.LE, "a <= 123"),
+        (NodeType.GT, "a > 123"),
+        (NodeType.GE, "a >= 123"),
+        (NodeType.AND, "a AND 123"),
+        (NodeType.OR, "a OR 123"),
+    ],
+)
+def test_graph_interpreter_binary_operations(graph, node_type, expected_expr):
+    """Test graph with binary operation nodes"""
+    node_input = graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "columns": ["ts", "cust_id", "a", "b"],
+            "timestamp": "ts",
+            "dbtable": "event_table",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    binary_node = graph.add_operation(
+        node_type=node_type,
+        node_params={"value": 123},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a],
+    )
+    assign_node = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "a2"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, binary_node],
+    )
+    name = assign_node.name
+    sql_graph = SQLOperationGraph(graph)
+    sql_graph.build(graph.nodes[name])
+    sql_tree = sql_graph.get_node(name).sql
+    expected = textwrap.dedent(
+        f"""
+        SELECT
+          ts,
+          cust_id,
+          a,
+          b,
+          {expected_expr} AS a2
+        FROM (
+            SELECT
+              ts,
+              cust_id,
+              a,
+              b
+            FROM event_table
+            WHERE
+              ts >= CAST(FBT_START_DATE AS TIMESTAMP)
+              AND ts < CAST(FBT_END_DATE AS TIMESTAMP)
+        )
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
+
+
 def test_graph_interpreter_tile_gen(graph):
     """Test tile building SQL"""
     node_input = graph.add_operation(
