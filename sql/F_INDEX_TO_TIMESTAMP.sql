@@ -1,4 +1,4 @@
-CREATE FUNCTION F_INDEX_TO_TIMESTAMP(tile_index INTEGER, window_end_seconds INTEGER, frequency_minute INTEGER)
+CREATE OR REPLACE FUNCTION F_INDEX_TO_TIMESTAMP(tile_index INTEGER, window_end_seconds INTEGER, frequency_minute INTEGER)
   RETURNS VARCHAR
   AS
   $$

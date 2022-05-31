@@ -3,6 +3,10 @@ returns string
 language javascript
 as
 $$
+    /*
+        Stored Procedure to remove Stale Online Tiles after Offline Tiles are generated
+    */
+    
     var debug = "Debug"
 
     var delete_sql = `
@@ -10,9 +14,10 @@ $$
     ` 
     snowflake.execute(
         {
-        sqlText: insert_sql
+            sqlText: delete_sql
         }
-    ) 
+    )
+    debug = debug + " - delete_sql: " + delete_sql
 
     return debug
 $$;
