@@ -216,7 +216,7 @@ def test__setitem__type_not_supported(dataframe):
     """
     with pytest.raises(TypeError) as exc:
         dataframe[1.234] = True
-    assert "Key '1.234' not supported!" in str(exc.value)
+    assert "Setting key '1.234' with value 'True' not supported!" in str(exc.value)
 
 
 def test_multiple_statements(dataframe):

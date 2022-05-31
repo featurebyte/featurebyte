@@ -69,7 +69,15 @@ class Frame(OpsMixin):
 
         Returns
         -------
+        Series | Frame:
+            output of the operation
 
+        Raises
+        ------
+        KeyError
+            When the selected column does not exist
+        TypeError
+            When the item type does not support
         """
         if isinstance(item, str):
             if item not in self.column_var_type_map:
@@ -129,6 +137,23 @@ class Frame(OpsMixin):
         raise TypeError(f"Frame indexing with value '{item}' not supported!")
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
+        """
+        Assign a scalar value or Series object of the same `var_type` to the `Frame` object
+
+        Parameters
+        ----------
+        key: str
+            column name to store the item
+        value: int | float | str | bool | Series
+            value to be assigned to the column
+
+        Raises
+        ------
+        ValueError
+            when the row indices between the Frame object & value object are not aligned
+        TypeError
+            when the key type & value type combination is not supported
+        """
         if isinstance(key, str) and self.is_supported_scalar_pytype(value):
             self.node = self.graph.add_operation(
                 node_type=NodeType.ASSIGN,
@@ -154,4 +179,4 @@ class Frame(OpsMixin):
                 self.column_lineage_map.get(key, tuple()), self.node.name
             )
         else:
-            raise TypeError(f"Key '{key}' not supported!")
+            raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
