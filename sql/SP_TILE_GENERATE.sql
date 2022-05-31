@@ -1,4 +1,4 @@
-create or replace procedure SP_TILE_GENERATE(SQL varchar, WINDOW_END_MINUTE float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME varchar)
+create or replace procedure SP_TILE_GENERATE(SQL varchar, WINDOW_END_SECONDS float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME varchar)
 returns string
 language javascript
 as
@@ -23,7 +23,7 @@ $$
     //replace SQL template with start and end date strings for tile generation sql    
     var tile_sql = `
         select 
-            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${WINDOW_END_MINUTE}, ${FREQUENCY_MINUTE}) as INDEX, ${col_list_str}
+            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${WINDOW_END_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX, ${col_list_str}
         from (${SQL})
     `
 

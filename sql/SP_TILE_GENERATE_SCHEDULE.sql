@@ -1,17 +1,18 @@
-create or replace procedure SP_TILE_GENERATE_SCHEDULE(FEATURE_NAME varchar, WINDOW_END_MINUTE float, BLINDSPOT_RESIDUE_SECONDS float, FREQUENCY_MINUTE float, SQL varchar, COLUMN_NAMES varchar, TYPE varchar, MONITOR_PERIODS float, END_TS varchar)
+create or replace procedure SP_TILE_GENERATE_SCHEDULE(FEATURE_NAME varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, CRON_RESIDUE_SECONDS float, FREQUENCY_MINUTE float, SQL varchar, COLUMN_NAMES varchar, TYPE varchar, MONITOR_PERIODS float, END_TS varchar)
 returns string
 language javascript
 as
 $$
     var debug = "Debug"
 
-    sleep_seconds = BLINDSPOT_RESIDUE_SECONDS % 60
     snowflake.execute(
         {
-            sqlText: `call system$wait(${sleep_seconds})`
+            sqlText: `call system$wait(${CRON_RESIDUE_SECONDS})`
         }
     );
-    debug = debug + " - sleep_seconds: " + sleep_seconds
+
+    window_end_seconds = TIME_MODULO_FREQUENCY_SECONDS - BLIND_SPOT_SECONDS
+    debug = debug + " - window_end_seconds: " + window_end_seconds
 
     var tile_type = TYPE.toUpperCase()
 
@@ -46,7 +47,7 @@ $$
 
     var table_name = FEATURE_NAME.toUpperCase() + "_TILE_" + tile_type
     var input_sql = SQL.replace("FB_START_TS", "\\'"+start_ts_str+"\\'::timestamp_ntz").replace("FB_END_TS", "\\'"+end_ts_str+"\\'::timestamp_ntz")
-    var generate_stored_proc = `call SP_TILE_GENERATE('${input_sql}', ${WINDOW_END_MINUTE}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}')`
+    var generate_stored_proc = `call SP_TILE_GENERATE('${input_sql}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}')`
     var result = snowflake.execute(
         {
             sqlText: generate_stored_proc
@@ -56,7 +57,7 @@ $$
     debug = debug + " - SP_TILE_GENERATE: " + result.getColumnValue(1)
 
     var monitor_input_sql = SQL.replace("FB_START_TS", "\\'"+monitor_start_ts_str+"\\'::timestamp_ntz").replace("FB_END_TS", "\\'"+end_ts_str+"\\'::timestamp_ntz")
-    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', ${WINDOW_END_MINUTE}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}')`
+    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}')`
     result = snowflake.execute(
         {
             sqlText: monitor_stored_proc
@@ -68,7 +69,7 @@ $$
     if (tile_type === "OFFLINE") {
         // remove stale online tiles
         var table_name = FEATURE_NAME.toUpperCase() + "_TILE_ONLINE"
-        var stored_proc = `call SP_TILE_REPLACE_ONLINE_TILE('${end_ts}', ${WINDOW_END_MINUTE}, ${FREQUENCY_MINUTE}, '${table_name}')`
+        var stored_proc = `call SP_TILE_REPLACE_ONLINE_TILE('${end_ts}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${table_name}')`
         result = snowflake.execute(
             {
                 sqlText: stored_proc
