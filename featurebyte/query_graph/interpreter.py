@@ -115,6 +115,7 @@ class SQLOperationGraph:
 
         elif node_type == NodeType.ASSIGN:
             assert len(input_sql_nodes) == 2
+            assert isinstance(input_sql_nodes[0], TableNode)
             sql_node = AssignNode(
                 table=input_sql_nodes[0], column=input_sql_nodes[1], name=parameters["name"]
             )
@@ -126,6 +127,7 @@ class SQLOperationGraph:
             sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)
 
         elif node_type == NodeType.GROUPBY:
+            assert isinstance(input_sql_nodes[0], TableNode)
             sql_node = BuildTileNode(
                 input=input_sql_nodes[0],
                 key=parameters["key"],

@@ -39,6 +39,7 @@ def test_assign_node__new_column(input_node):
     ],
 )
 def test_binary_operation_node__series(node_type, expected):
+    """Test binary operation node when another side is Series"""
     column1 = sql.StrExpressionNode("a")
     column2 = sql.StrExpressionNode("b")
     input_nodes = [column1, column2]
@@ -56,7 +57,8 @@ def test_binary_operation_node__series(node_type, expected):
         (NodeType.DIV, 1.0, "a / 1.0"),
     ],
 )
-def test_binary_operation_node__series(node_type, value, expected):
+def test_binary_operation_node__scalar(node_type, value, expected):
+    """Test binary operation node when another side is scalar"""
     column1 = sql.StrExpressionNode("a")
     input_nodes = [column1]
     parameters = {"value": value}

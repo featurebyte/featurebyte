@@ -1,7 +1,7 @@
 """
 This module contains the list of SQL operations to be used by the Query Graph Interpreter
 """
-from typing import List, Type, Union
+from typing import Any, Dict, List, Type, Union
 
 # pylint: disable=W0511 (fixme)
 # pylint: disable=R0903 (too-few-public-methods)
@@ -11,34 +11,6 @@ from dataclasses import dataclass
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.query_graph.enum import NodeType
-
-
-def make_literal_value(value):
-    if isinstance(value, str):
-        return expressions.Literal.string(value)
-    return expressions.Literal.number(value)
-
-
-def make_binary_operation_node(node_type, input_sql_nodes, parameters):
-    node_type_to_expression_cls = {
-        NodeType.ADD: expressions.Add,
-        NodeType.SUB: expressions.Sub,
-        NodeType.MUL: expressions.Mul,
-        NodeType.DIV: expressions.Div,
-    }
-    expression_cls = node_type_to_expression_cls.get(node_type)
-    if expression_cls is None:
-        raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
-    left = input_sql_nodes[0]
-    if len(input_sql_nodes) == 1:
-        # Series <> scalar
-        literal_value = make_literal_value(parameters["value"])
-        right = ExpressionNode(literal_value)
-    else:
-        # Series <> Series
-        right = input_sql_nodes[1]
-    output_node = BinaryOp(left=left, right=right, op=expression_cls)
-    return output_node
 
 
 class SQLNode(ABC):
@@ -66,11 +38,23 @@ class TableNode(SQLNode, ABC):
 
     @property
     @abstractmethod
-    def columns(self):
-        """Columns that are available in this table"""
+    def columns(self) -> List[str]:
+        """Columns that are available in this table
+
+        Returns
+        -------
+        List[str]
+            List of column names
+        """
 
     def sql_nested(self) -> Expression:
-        """SQL expression that can be used within from_() to form a nested query"""
+        """SQL expression that can be used within from_() to form a nested query
+
+        Returns
+        -------
+        Expression
+            Expression that can be used within from_()
+        """
         sql = self.sql
         assert isinstance(sql, expressions.Subqueryable)
         return sql.subquery()
@@ -107,7 +91,7 @@ class BuildTileInputNode(TableNode):
     input: StrExpressionNode
 
     @property
-    def columns(self):
+    def columns(self) -> List[str]:
         return self.column_names
 
     @property
@@ -134,11 +118,11 @@ class BinaryOp(SQLNode):
 
     left: SQLNode
     right: SQLNode
-    op: Type[expressions.Expression]
+    operation: Type[expressions.Expression]
 
     @property
     def sql(self) -> Expression:
-        return self.op(this=self.left.sql, expression=self.right.sql)
+        return self.operation(this=self.left.sql, expression=self.right.sql)
 
 
 @dataclass
@@ -162,7 +146,7 @@ class AssignNode(TableNode):
     name: str
 
     @property
-    def columns(self):
+    def columns(self) -> List[str]:
         return [x for x in self.table.columns if x != self.name] + [self.name]
 
     @property
@@ -221,3 +205,67 @@ class BuildTileNode(TableNode):
         )
 
         return groupby_sql
+
+
+def make_literal_value(value: Any) -> expressions.Literal:
+    """Create a sqlglot literal value
+
+    Parameters
+    ----------
+    value : Any
+        The literal value
+
+    Returns
+    -------
+    expressions.Literal
+    """
+    if isinstance(value, str):
+        return expressions.Literal.string(value)
+    return expressions.Literal.number(value)
+
+
+def make_binary_operation_node(
+    node_type: NodeType,
+    input_sql_nodes: List[SQLNode],
+    parameters: Dict[str, Any],
+) -> BinaryOp:
+    """Create a BinaryOp node for eligible query node types
+
+    Parameters
+    ----------
+    node_type : NodeType
+        Node type
+    input_sql_nodes : List[SQLNode]
+        List of input SQL nodes
+    parameters : dict
+        Query node parameters
+
+    Returns
+    -------
+    BinaryOp
+
+    Raises
+    ------
+    NotImplementedError
+        For incompatible node types
+    """
+    node_type_to_expression_cls = {
+        NodeType.ADD: expressions.Add,
+        NodeType.SUB: expressions.Sub,
+        NodeType.MUL: expressions.Mul,
+        NodeType.DIV: expressions.Div,
+    }
+    expression_cls = node_type_to_expression_cls.get(node_type)
+    if expression_cls is None:
+        raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
+    left = input_sql_nodes[0]
+    right: Any
+    if len(input_sql_nodes) == 1:
+        # Series <> scalar
+        literal_value = make_literal_value(parameters["value"])
+        right = ExpressionNode(literal_value)
+    else:
+        # Series <> Series
+        right = input_sql_nodes[1]
+    output_node = BinaryOp(left=left, right=right, operation=expression_cls)
+    return output_node
