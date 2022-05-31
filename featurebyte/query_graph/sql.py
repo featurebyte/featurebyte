@@ -250,14 +250,27 @@ def make_binary_operation_node(
         For incompatible node types
     """
     node_type_to_expression_cls = {
+        # Arithmetic
         NodeType.ADD: expressions.Add,
         NodeType.SUB: expressions.Sub,
         NodeType.MUL: expressions.Mul,
         NodeType.DIV: expressions.Div,
+        # Relational
+        NodeType.EQ: expressions.EQ,
+        NodeType.NE: expressions.NEQ,
+        NodeType.LT: expressions.LT,
+        NodeType.LE: expressions.LTE,
+        NodeType.GT: expressions.GT,
+        NodeType.GE: expressions.GTE,
+        # Logical
+        NodeType.AND: expressions.And,
+        NodeType.OR: expressions.Or,
     }
     expression_cls = node_type_to_expression_cls.get(node_type)
+
     if expression_cls is None:
         raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
+
     left = input_sql_nodes[0]
     right: Any
     if len(input_sql_nodes) == 1:
@@ -267,5 +280,6 @@ def make_binary_operation_node(
     else:
         # Series <> Series
         right = input_sql_nodes[1]
+
     output_node = BinaryOp(left=left, right=right, operation=expression_cls)
     return output_node

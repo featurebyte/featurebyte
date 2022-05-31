@@ -36,6 +36,14 @@ def test_assign_node__new_column(input_node):
         (NodeType.SUB, "a - b"),
         (NodeType.MUL, "a * b"),
         (NodeType.DIV, "a / b"),
+        (NodeType.EQ, "a = b"),
+        (NodeType.NE, "a <> b"),
+        (NodeType.LT, "a < b"),
+        (NodeType.LE, "a <= b"),
+        (NodeType.GT, "a > b"),
+        (NodeType.GE, "a >= b"),
+        (NodeType.AND, "a AND b"),
+        (NodeType.OR, "a OR b"),
     ],
 )
 def test_binary_operation_node__series(node_type, expected):
