@@ -9,15 +9,22 @@ from dataclasses import dataclass
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql import (
-    AddNode,
     AssignNode,
     BuildTileInputNode,
     BuildTileNode,
-    ExpressionNode,
     Project,
     SQLNode,
+    StrExpressionNode,
     TableNode,
+    make_binary_operation_node,
 )
+
+BINARY_OPERATION_NODE_TYPES = {
+    NodeType.ADD,
+    NodeType.SUB,
+    NodeType.MUL,
+    NodeType.DIV,
+}
 
 
 class SQLOperationGraph:
@@ -103,7 +110,7 @@ class SQLOperationGraph:
             sql_node = BuildTileInputNode(
                 column_names=parameters["columns"],
                 timestamp=parameters["timestamp"],
-                input=ExpressionNode(parameters["dbtable"]),
+                input=StrExpressionNode(parameters["dbtable"]),
             )
 
         elif node_type == NodeType.ASSIGN:
@@ -115,8 +122,8 @@ class SQLOperationGraph:
         elif node_type == NodeType.PROJECT:
             sql_node = Project(parameters["columns"])
 
-        elif node_type == NodeType.ADD:
-            sql_node = AddNode(input_sql_nodes[0], input_sql_nodes[1])
+        elif node_type in BINARY_OPERATION_NODE_TYPES:
+            sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)
 
         elif node_type == NodeType.GROUPBY:
             sql_node = BuildTileNode(

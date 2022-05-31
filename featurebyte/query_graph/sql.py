@@ -1,7 +1,7 @@
 """
 This module contains the list of SQL operations to be used by the Query Graph Interpreter
 """
-from typing import Any, List, Union
+from typing import List, Type, Union
 
 # pylint: disable=W0511 (fixme)
 # pylint: disable=R0903 (too-few-public-methods)
@@ -9,6 +9,36 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from sqlglot import Expression, expressions, parse_one, select
+
+from featurebyte.query_graph.enum import NodeType
+
+
+def make_literal_value(value):
+    if isinstance(value, str):
+        return expressions.Literal.string(value)
+    return expressions.Literal.number(value)
+
+
+def make_binary_operation_node(node_type, input_sql_nodes, parameters):
+    node_type_to_expression_cls = {
+        NodeType.ADD: expressions.Add,
+        NodeType.SUB: expressions.Sub,
+        NodeType.MUL: expressions.Mul,
+        NodeType.DIV: expressions.Div,
+    }
+    expression_cls = node_type_to_expression_cls.get(node_type)
+    if expression_cls is None:
+        raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
+    left = input_sql_nodes[0]
+    if len(input_sql_nodes) == 1:
+        # Series <> scalar
+        literal_value = make_literal_value(parameters["value"])
+        right = ExpressionNode(literal_value)
+    else:
+        # Series <> Series
+        right = input_sql_nodes[1]
+    output_node = BinaryOp(left=left, right=right, op=expression_cls)
+    return output_node
 
 
 class SQLNode(ABC):
@@ -47,8 +77,8 @@ class TableNode(SQLNode, ABC):
 
 
 @dataclass
-class ExpressionNode(SQLNode):
-    """Expression node"""
+class StrExpressionNode(SQLNode):
+    """Expression node created from string"""
 
     expr: str
 
@@ -58,12 +88,23 @@ class ExpressionNode(SQLNode):
 
 
 @dataclass
+class ExpressionNode(SQLNode):
+    """Expression node"""
+
+    expr: Expression
+
+    @property
+    def sql(self) -> Expression:
+        return self.expr
+
+
+@dataclass
 class BuildTileInputNode(TableNode):
     """Input data node used when building tiles"""
 
     column_names: List[str]
     timestamp: str
-    input: ExpressionNode
+    input: StrExpressionNode
 
     @property
     def columns(self):
@@ -88,15 +129,16 @@ class BuildTileInputNode(TableNode):
 
 
 @dataclass
-class AddNode(SQLNode):
-    """Add node"""
+class BinaryOp(SQLNode):
+    """Binary operation node"""
 
     left: SQLNode
     right: SQLNode
+    op: Type[expressions.Expression]
 
     @property
     def sql(self) -> Expression:
-        return expressions.Add(this=self.left.sql, expression=self.right.sql)
+        return self.op(this=self.left.sql, expression=self.right.sql)
 
 
 @dataclass
