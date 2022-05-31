@@ -13,7 +13,7 @@ from featurebyte.query_graph.graph import Node, QueryGraph
 
 class Series(OpsMixin):
     """
-    Implement Pandas Series like operations to manipulate database column
+    Implement operations to manipulate database column
     """
 
     def __init__(
@@ -91,7 +91,7 @@ class Series(OpsMixin):
             )
             self.lineage = self._append_to_lineage(self.lineage, self.node.name)
         else:
-            raise TypeError(f"Key '{key}' not supported!")
+            raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
 
     @staticmethod
     def _is_a_series_of_var_type(item: Any, var_type: DBVarType) -> bool:

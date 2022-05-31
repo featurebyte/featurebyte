@@ -140,7 +140,7 @@ def test__setitem__key_type_not_supported(int_series):
     """
     with pytest.raises(TypeError) as exc:
         int_series[1] = True
-    assert "Key '1' not supported!" in str(exc.value)
+    assert "Setting key '1' with value 'True' not supported!" in str(exc.value)
 
 
 def test_logical_operators(bool_series, int_series):
@@ -225,19 +225,19 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
     """
     Test relational operators with other as scalar type
     """
-    # scalar_float_eq = float_series == 1.234
-    # scalar_varchar_ne = varchar_series != "hello"
+    scalar_float_eq = float_series == 1.234
+    scalar_varchar_ne = varchar_series != "hello"
     scalar_bool_lt = bool_series < True
     scalar_int_le = int_series <= 100
     scalar_float_gt = float_series > 1.234
     scalar_varchar_ge = varchar_series >= "world"
     kwargs = {"output_type": NodeOutputType.SERIES}
-    # assert scalar_float_eq.node == Node(
-    #     name="eq_1", type=NodeType.EQ, parameters={"value": 1.234}, **kwargs
-    # )
-    # assert scalar_varchar_ne.node == Node(
-    #     name="ne_1", type=NodeType.NE, parameters={"value": "hello"}, **kwargs
-    # )
+    assert scalar_float_eq.node == Node(
+        name="eq_1", type=NodeType.EQ, parameters={"value": 1.234}, **kwargs
+    )
+    assert scalar_varchar_ne.node == Node(
+        name="ne_1", type=NodeType.NE, parameters={"value": "hello"}, **kwargs
+    )
     assert scalar_bool_lt.node == Node(
         name="lt_1", type=NodeType.LT, parameters={"value": True}, **kwargs
     )
@@ -250,8 +250,8 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
     assert scalar_varchar_ge.node == Node(
         name="ge_1", type=NodeType.GE, parameters={"value": "world"}, **kwargs
     )
-    # assert scalar_float_eq.var_type == DBVarType.BOOL
-    # assert scalar_varchar_ne.var_type == DBVarType.BOOL
+    assert scalar_float_eq.var_type == DBVarType.BOOL
+    assert scalar_varchar_ne.var_type == DBVarType.BOOL
     assert scalar_bool_lt.var_type == DBVarType.BOOL
     assert scalar_int_le.var_type == DBVarType.BOOL
     assert scalar_float_gt.var_type == DBVarType.BOOL

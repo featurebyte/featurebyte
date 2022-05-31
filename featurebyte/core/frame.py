@@ -14,7 +14,7 @@ from featurebyte.query_graph.graph import Node, QueryGraph
 
 class Frame(OpsMixin):
     """
-    Implement Pandas DataFrame like operations to manipulate database table
+    Implement operations to manipulate database table
     """
 
     def __init__(
@@ -37,6 +37,8 @@ class Frame(OpsMixin):
         if isinstance(item, str):
             if item not in self.column_var_type_map:
                 raise KeyError(f"Column {item} not found!")
+            # when doing projection, use the last updated node of the column rather than using
+            # the last updated dataframe node to prevent adding redundant project node to the graph.
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
                 node_params={"columns": [item]},
