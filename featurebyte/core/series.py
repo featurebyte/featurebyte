@@ -127,6 +127,8 @@ class Series(OpsMixin):
             right value of the binary operator
         node_type: NodeType
             binary operator node type
+        output_var_type: DBVarType
+            output of the variable type
 
         Returns
         -------
@@ -152,7 +154,7 @@ class Series(OpsMixin):
             node_type=node_type,
             node_params={},
             node_output_type=NodeOutputType.SERIES,
-            input_nodes=[self.node, other.node],
+            input_nodes=[self.node, other.node],  # type: ignore
         )
         return Series(
             node=node,
@@ -177,6 +179,11 @@ class Series(OpsMixin):
         -------
         Series
             output of the binary logical operation
+
+        Raises
+        ------
+        TypeError
+            if the left value or right value of the operator are not boolean
         """
         if self.var_type == DBVarType.BOOL:
             if isinstance(other, bool) or self._is_a_series_of_var_type(other, DBVarType.BOOL):
@@ -233,6 +240,11 @@ class Series(OpsMixin):
         -------
         Series
             output of the binary relational operation
+
+        Raises
+        ------
+        TypeError
+            if the left value type of the operator is not consistent with the right value type
         """
         if self._is_a_series_of_var_type(other, self.var_type) or (
             self._is_scalar_type_comparison_valid(self.var_type, other)
@@ -274,6 +286,11 @@ class Series(OpsMixin):
         -------
         Series
             output of the binary arithmetic operation
+
+        Raises
+        ------
+        TypeError
+            if the arithmetic operation between left value and right value is not supported
         """
         supported_types = {DBVarType.INT, DBVarType.FLOAT}
         if self.var_type not in supported_types:
