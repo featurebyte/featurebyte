@@ -63,6 +63,7 @@ def test_binary_operation_node__series(node_type, expected):
         (NodeType.SUB, 1, "a - 1"),
         (NodeType.MUL, 1.0, "a * 1.0"),
         (NodeType.DIV, 1.0, "a / 1.0"),
+        (NodeType.EQ, "apple", "a = 'apple'"),
     ],
 )
 def test_binary_operation_node__scalar(node_type, value, expected):
