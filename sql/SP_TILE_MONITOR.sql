@@ -3,6 +3,11 @@ returns string
 language javascript
 as
 $$
+    /*
+        Stored Procedure to Monitor Tile records. The stored procedure will construct and trigger the MONITOR_SQL and compare 
+        the result with the already generated TILE values. Any difference found in the record values will be inserted into the tile monitor table
+    */
+
     var debug = "Debug"
 
     var col_list = COLUMN_NAMES.split(",").filter(item => item.toUpperCase() !== "TILE_START_TS")

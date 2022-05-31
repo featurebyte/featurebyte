@@ -3,6 +3,11 @@ returns string
 language javascript
 as
 $$
+    /*
+        Stored Procedure to generate Tile records for the target Feature. This stored procedure will trigger the input SQL 
+        and create the Tile table if it doesn’t exist, or insert the tile records if the Tile table already exists.
+    */
+
     var debug = "Debug"
 
     //check whether tile table for the feature already exists
