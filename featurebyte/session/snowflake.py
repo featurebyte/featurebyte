@@ -3,6 +3,8 @@ SnowflakeSession class
 """
 from __future__ import annotations
 
+from typing import Any, Optional
+
 import json
 import os
 from dataclasses import dataclass, field
@@ -23,11 +25,11 @@ class SnowflakeSession(AbstractSession):
 
     account: str
     warehouse: str
-    database: str = field(default=None)
-    schema: str = field(default=None)
+    database: str | None = field(default=None)
+    schema: str | None = field(default=None)
     source_type = SourceType.SNOWFLAKE
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.schema and self.database is None:
             raise ValueError("Database name is required if schema is set")
 
@@ -41,14 +43,14 @@ class SnowflakeSession(AbstractSession):
         )
         super().__post_init__()
 
-    def _list_databases(self):
+    def _list_databases(self) -> list[str]:
         if self.database:
             return [self.database]
         query_res = self.execute_query("SHOW DATABASES")
-        return query_res["name"].tolist()
+        return list(query_res["name"])
 
-    def _list_schemas(self):
-        if self.schema:
+    def _list_schemas(self) -> list[tuple[str, str]]:
+        if self.database and self.schema:
             return [(self.database, self.schema)]
         database_schemas = []
         for database in self._list_databases():
@@ -57,7 +59,7 @@ class SnowflakeSession(AbstractSession):
                 database_schemas.append((database, schema))
         return database_schemas
 
-    def _list_tables_or_views(self):
+    def _list_tables_or_views(self) -> list[tuple[str, str, str]]:
         table_or_views = []
         for full_schema in self._list_schemas():
             query_table_res = self.execute_query('SHOW TABLES IN SCHEMA "%s"."%s"' % full_schema)
@@ -70,7 +72,7 @@ class SnowflakeSession(AbstractSession):
         return table_or_views
 
     @staticmethod
-    def _get_db_var_type(snowflake_data_type):
+    def _get_db_var_type(snowflake_data_type: dict[str, Any]) -> DBVarType:
         if snowflake_data_type["type"] == SnowflakeDataType.FIXED:
             return DBVarType.INT
         if snowflake_data_type["type"] == SnowflakeDataType.REAL:
@@ -104,10 +106,11 @@ class SnowflakeSession(AbstractSession):
                 ["column_name", "data_type"]
             ].iterrows():
                 column_name_type_map[column_name] = self._get_db_var_type(json.loads(data_type))
-            output[full_table_path] = column_name_type_map
+            table_name = '"%s"."%s"."%s"' % full_table_path
+            output[table_name] = column_name_type_map
         return output
 
-    def execute_query(self, query: str) -> pd.DataFrame | None:
+    def execute_query(self, query: str) -> pd.DataFrame:
         cursor = self._connection.cursor()
         try:
             cursor.execute(query)

@@ -3,7 +3,7 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Dict, Tuple
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -13,21 +13,14 @@ import pandas as pd
 from featurebyte.enum import DBVarType
 from featurebyte.session.enum import SourceType
 
-TableName = tuple[str, ...]
-TableSchema = dict[str, DBVarType]
+TableName = str
+TableSchema = Dict[str, DBVarType]
 
 
-@dataclass
-class AbstractSession(ABC):
+class _AbstractSession(ABC):
     """
     Abstract session class to extract data warehouse table metadata & execute query
     """
-
-    source_type: SourceType = field(init=False)
-    database_metadata: dict[TableName, TableSchema] = field(init=False)
-
-    def __post_init__(self):
-        self.database_metadata = self.populate_database_metadata()
 
     @abstractmethod
     def populate_database_metadata(self) -> dict[TableName, TableSchema]:
@@ -41,12 +34,34 @@ class AbstractSession(ABC):
         """
 
     @abstractmethod
-    def execute_query(self, query: str):
+    def execute_query(self, query: str) -> pd.DataFrame:
         """
         Execute SQL query
 
         Returns
         -------
-        Optional[pd.DataFrame]
+        pd.DataFrame
             return pandas DataFrame if the query expect output
         """
+
+
+@dataclass
+class _SessionDataclassMixin:
+    """
+    Data class mixin
+    """
+
+    source_type: SourceType = field(init=False)
+    database_metadata: dict[TableName, TableSchema] = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.database_metadata = self.populate_database_metadata()
+
+    def populate_database_metadata(self) -> dict[TableName, TableSchema]:
+        raise NotImplementedError
+
+
+class AbstractSession(_SessionDataclassMixin, _AbstractSession):
+    """
+    Abstract session class to extract data warehouse table metadata & execute query
+    """
