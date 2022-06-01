@@ -20,11 +20,12 @@ $$
     result.next()
     var tile_exist = result.getColumnValue(1)
     debug = debug + " - tile_exist: " + tile_exist
+    
 
     var col_list = COLUMN_NAMES.split(",").filter(item => item.toUpperCase() !== "TILE_START_TS")
     col_list_str = col_list.join(',')
     debug = debug + " - col_list_str: " + col_list_str
-    
+        
     //replace SQL template with start and end date strings for tile generation sql    
     var tile_sql = `
         select 
@@ -48,7 +49,8 @@ $$
         //feature tile table already exists, insert tile records with the input tile sql
         insert_cols_str = ""
         for (element of col_list) {
-          insert_cols_str = insert_cols_str + "b." + element + ","
+            element = element.trim()
+            insert_cols_str = insert_cols_str + "b." + element + ","
         }
         insert_cols_str = insert_cols_str.slice(0, -1)
 

@@ -81,14 +81,14 @@ $$
     if (tile_type === "OFFLINE") {
         // remove stale online tiles whose tile_start_ts is less than end_ts
         var table_name = FEATURE_NAME.toUpperCase() + "_TILE_ONLINE"
-        var stored_proc = `call SP_TILE_REPLACE_ONLINE_TILE('${end_ts}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${table_name}')`
+        var stored_proc = `call SP_TILE_REMOVE_ONLINE_TILE('${end_ts}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${table_name}')`
         result = snowflake.execute(
             {
                 sqlText: stored_proc
             }
         )
         result.next()
-        debug = debug + " - SP_TILE_REPLACE_ONLINE_TILE: " + result.getColumnValue(1)
+        debug = debug + " - SP_TILE_REMOVE_ONLINE_TILE: " + result.getColumnValue(1)
     }
 
     return debug
