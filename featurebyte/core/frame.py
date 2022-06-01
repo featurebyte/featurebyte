@@ -3,8 +3,6 @@ Frame class
 """
 from __future__ import annotations
 
-from typing import Any
-
 import copy
 
 from featurebyte.core.operation import OpsMixin
@@ -35,22 +33,6 @@ class Frame(OpsMixin):
     def __repr__(self) -> str:
         return f"Frame(node.name={self.node.name})"
 
-    @staticmethod
-    def _is_list_of_str(item: Any) -> bool:
-        """
-        Check whether the input item has List[str] type
-
-        Parameters
-        ----------
-        item: Any
-
-        Returns
-        -------
-        bool
-            whether the specified item is List[str] type
-        """
-        return isinstance(item, list) and all(isinstance(elem, str) for elem in item)
-
     def _check_any_missing_column(self, item: str | list[str] | Series) -> None:
         """
         Check whether there is any unknown column from the specified item (single column or list of columns)
@@ -65,12 +47,10 @@ class Frame(OpsMixin):
         KeyError
             if the specified column does not exist
         """
-        if isinstance(item, Series):
-            return
         if isinstance(item, str):
             if item not in self.column_var_type_map:
                 raise KeyError(f"Column {item} not found!")
-        if self._is_list_of_str(item):
+        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             not_found_columns = [elem for elem in item if elem not in self.column_var_type_map]
             if not_found_columns:
                 raise KeyError(f"Columns {not_found_columns} not found!")
@@ -187,7 +167,7 @@ class Frame(OpsMixin):
                 lineage=self._append_to_lineage(self.column_lineage_map[item], node.name),
                 row_index_lineage=self.row_index_lineage,
             )
-        if self._is_list_of_str(item):
+        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
                 node_params={"columns": item},

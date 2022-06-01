@@ -28,11 +28,11 @@ class EventSource(Frame):
         return graph.get_node_by_name(self.row_index_lineage[0])
 
     @property
-    def timestamp_column(self) -> str:
+    def timestamp_column(self) -> str | None:
         """
         Timestamp column of the event source
         """
-        return self.inception_node.parameters["timestamp"]
+        return self.inception_node.parameters.get("timestamp")
 
     @property
     def entity_identifiers(self) -> list[str] | None:
@@ -46,7 +46,9 @@ class EventSource(Frame):
         """
         Special columns where its value should not be overridden
         """
-        columns = [self.timestamp_column]
+        columns = []
+        if self.timestamp_column:
+            columns.append(self.timestamp_column)
         if self.entity_identifiers:
             columns.extend(self.entity_identifiers)
         return set(columns)
@@ -129,50 +131,11 @@ class EventSource(Frame):
         )
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
-        """
-        Extract columns or perform row filtering on the event source
-
-        Parameters
-        ----------
-        item: str | list[str] | Series
-            input item used to perform column(s) projection or row filtering
-
-        Returns
-        -------
-        Series | EventSource
-            output of the operation
-
-        Raises
-        ------
-        KeyError
-            When the selected column does not exist
-        TypeError
-            When the item type does not support
-        """
-        if self._is_list_of_str(item):
+        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.protected_columns.union(item))
         return super().__getitem__(item)
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
-        """
-        Assign a scalar value or Series object of the same `var_type` to the `EventSource` object
-
-        Note that column of the `protected_columns` is not allowed to override
-
-        Parameters
-        ----------
-        key: str
-            column name to store the item
-        value: int | float | str | bool | Series
-            value to be assigned to the column
-
-        Raises
-        ------
-        ValueError
-            when the row indices between the Frame object & value object are not aligned
-        TypeError
-            when the key type & value type combination is not supported
-        """
         if key in self.protected_columns:
             raise ValueError("Not allow to override timestamp column or entity identifiers!")
         super().__setitem__(key, value)
