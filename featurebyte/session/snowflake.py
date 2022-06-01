@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from snowflake import connector
 
 from featurebyte.enum import DBVarType
-from featurebyte.session.base import BaseSession, TableKey, TableSchema
+from featurebyte.session.base import BaseSession, TableName, TableSchema
 from featurebyte.session.enum import SnowflakeDataType, SourceType
 
 
@@ -100,8 +100,8 @@ class SnowflakeSession(BaseSession):
             return DBVarType.TIMESTAMP
         raise ValueError(f"Not supported data type '{snowflake_data_type}'")
 
-    def populate_database_metadata(self) -> dict[TableKey, TableSchema]:
-        output: dict[TableKey, TableSchema] = {}
+    def populate_database_metadata(self) -> dict[TableName, TableSchema]:
+        output: dict[TableName, TableSchema] = {}
         for database, schema, table_or_view in self._list_tables_or_views():
             query_column_res = self.execute_query(
                 f'SHOW COLUMNS IN "{database}"."{schema}"."{table_or_view}"'
@@ -113,5 +113,5 @@ class SnowflakeSession(BaseSession):
                 column_name_type_map[column_name] = self._convert_to_db_var_type(
                     json.loads(data_type)
                 )
-            output[(database, schema, table_or_view)] = column_name_type_map
+            output[f'"{database}"."{schema}"."{table_or_view}"'] = column_name_type_map
         return output
