@@ -3,7 +3,7 @@ SnowflakeSession class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import json
 import os
@@ -54,21 +54,21 @@ class SnowflakeSession(AbstractSession):
             return [(self.database, self.schema)]
         database_schemas = []
         for database in self._list_databases():
-            query_res = self.execute_query("SHOW SCHEMAS IN DATABASE %s" % database)
+            query_res = self.execute_query(f"SHOW SCHEMAS IN DATABASE {database}")
             for schema in query_res["name"]:
                 database_schemas.append((database, schema))
         return database_schemas
 
     def _list_tables_or_views(self) -> list[tuple[str, str, str]]:
         table_or_views = []
-        for full_schema in self._list_schemas():
-            query_table_res = self.execute_query('SHOW TABLES IN SCHEMA "%s"."%s"' % full_schema)
-            for table_name in query_table_res["name"]:
-                table_or_views.append(full_schema + (table_name,))
+        for database, schema in self._list_schemas():
+            query_table_res = self.execute_query(f'SHOW TABLES IN SCHEMA "{database}"."{schema}"')
+            for table in query_table_res["name"]:
+                table_or_views.append((database, schema, table))
 
-            query_view_res = self.execute_query('SHOW VIEWS IN SCHEMA "%s"."%s"' % full_schema)
-            for view_name in query_view_res["name"]:
-                table_or_views.append(full_schema + (view_name,))
+            query_view_res = self.execute_query(f'SHOW VIEWS IN SCHEMA "{database}"."{schema}"')
+            for view in query_view_res["name"]:
+                table_or_views.append((database, schema, view))
         return table_or_views
 
     @staticmethod
@@ -97,17 +97,16 @@ class SnowflakeSession(AbstractSession):
 
     def populate_database_metadata(self) -> dict[TableName, TableSchema]:
         output = {}
-        for full_table_path in self._list_tables_or_views():
+        for database, schema, table_or_view in self._list_tables_or_views():
             query_column_res = self.execute_query(
-                'SHOW COLUMNS IN TABLE "%s"."%s"."%s"' % full_table_path
+                f'SHOW COLUMNS IN "{database}"."{schema}"."{table_or_view}"'
             )
             column_name_type_map = {}
             for _, (column_name, data_type) in query_column_res[
                 ["column_name", "data_type"]
             ].iterrows():
                 column_name_type_map[column_name] = self._get_db_var_type(json.loads(data_type))
-            table_name = '"%s"."%s"."%s"' % full_table_path
-            output[table_name] = column_name_type_map
+            output[f'"{database}"."{schema}"."{table_or_view}"'] = column_name_type_map
         return output
 
     def execute_query(self, query: str) -> pd.DataFrame:

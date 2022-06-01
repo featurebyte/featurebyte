@@ -3,7 +3,7 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Dict, Tuple
+from typing import Dict
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -58,6 +58,14 @@ class _SessionDataclassMixin:
         self.database_metadata = self.populate_database_metadata()
 
     def populate_database_metadata(self) -> dict[TableName, TableSchema]:
+        """
+        Extract database table schema info and store it to the database metadata
+
+        Returns
+        -------
+        dict[TableName, TableSchema]
+            database metadata dictionary which all table schema info
+        """
         raise NotImplementedError
 
 

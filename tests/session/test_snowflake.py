@@ -13,17 +13,24 @@ from featurebyte.session.snowflake import SnowflakeSession
 
 @pytest.fixture()
 def mock_snowflake_connector():
+    """
+    Mock snowflake connector in featurebyte.session.snowflake module
+    """
     with patch("featurebyte.session.snowflake.connector") as mock:
         yield mock
 
 
 @pytest.fixture()
 def mock_execute_query():
+    """
+    Mock execute_query in featurebyte.session.snowflake.SnowflakeSession class
+    """
+
     def side_effect(query):
         query_map = {
             'SHOW TABLES IN SCHEMA "database"."schema"': [{"name": "table"}],
             'SHOW VIEWS IN SCHEMA "database"."schema"': [{"name": "view"}],
-            'SHOW COLUMNS IN TABLE "database"."schema"."table"': [
+            'SHOW COLUMNS IN "database"."schema"."table"': [
                 {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED"})},
                 {"column_name": "col_float", "data_type": json.dumps({"type": "REAL"})},
                 {"column_name": "col_char", "data_type": json.dumps({"type": "TEXT", "length": 1})},
@@ -34,7 +41,7 @@ def mock_execute_query():
                 {"column_name": "col_binary", "data_type": json.dumps({"type": "BINARY"})},
                 {"column_name": "col_boolean", "data_type": json.dumps({"type": "BOOLEAN"})},
             ],
-            'SHOW COLUMNS IN TABLE "database"."schema"."view"': [
+            'SHOW COLUMNS IN "database"."schema"."view"': [
                 {"column_name": "col_date", "data_type": json.dumps({"type": "DATE"})},
                 {"column_name": "col_time", "data_type": json.dumps({"type": "TIME"})},
                 {
@@ -59,6 +66,9 @@ def mock_execute_query():
 
 
 def test_snowflake_session__specified_schema_without_specified_database():
+    """
+    Test snowflake session when schema is set whereas database is missing
+    """
     with pytest.raises(ValueError) as exc:
         SnowflakeSession(account="account", warehouse="warehouse", schema="schema")
     assert "Database name is required if schema is set" in str(exc.value)
@@ -66,6 +76,9 @@ def test_snowflake_session__specified_schema_without_specified_database():
 
 @pytest.mark.usefixtures("mock_snowflake_connector", "mock_execute_query")
 def test_snowflake_session():
+    """
+    Test snowflake session
+    """
     session = SnowflakeSession(
         account="account", warehouse="warehouse", database="database", schema="schema"
     )
