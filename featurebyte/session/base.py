@@ -38,6 +38,11 @@ class _AbstractSession(ABC):
         """
         Execute SQL query
 
+        Parameters
+        ----------
+        query: str
+            sql query to execute
+
         Returns
         -------
         pd.DataFrame
@@ -61,10 +66,10 @@ class _SessionDataclassMixin:
         """
         Extract database table schema info and store it to the database metadata
 
-        Returns
-        -------
-        dict[TableName, TableSchema]
-            database metadata dictionary which all table schema info
+        Raises
+        ------
+        NotImplementedError
+            if the child class not implement this method
         """
         raise NotImplementedError
 

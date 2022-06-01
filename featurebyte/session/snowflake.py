@@ -81,20 +81,18 @@ class SnowflakeSession(AbstractSession):
 
     @staticmethod
     def _get_db_var_type(snowflake_data_type: dict[str, Any]) -> DBVarType:
-        if snowflake_data_type["type"] == SnowflakeDataType.FIXED:
-            return DBVarType.INT
-        if snowflake_data_type["type"] == SnowflakeDataType.REAL:
-            return DBVarType.FLOAT
+        data_type_to_db_var_type_map = {
+            SnowflakeDataType.FIXED: DBVarType.INT,
+            SnowflakeDataType.REAL: DBVarType.FLOAT,
+            SnowflakeDataType.BINARY: DBVarType.BINARY,
+            SnowflakeDataType.BOOLEAN: DBVarType.BOOL,
+            SnowflakeDataType.DATE: DBVarType.DATE,
+            SnowflakeDataType.TIME: DBVarType.TIME,
+        }
+        if snowflake_data_type["type"] in data_type_to_db_var_type_map:
+            return data_type_to_db_var_type_map[snowflake_data_type["type"]]
         if snowflake_data_type["type"] == SnowflakeDataType.TEXT:
             return DBVarType.CHAR if snowflake_data_type["length"] == 1 else DBVarType.VARCHAR
-        if snowflake_data_type["type"] == SnowflakeDataType.BINARY:
-            return DBVarType.BINARY
-        if snowflake_data_type["type"] == SnowflakeDataType.BOOLEAN:
-            return DBVarType.BOOL
-        if snowflake_data_type["type"] == SnowflakeDataType.DATE:
-            return DBVarType.DATE
-        if snowflake_data_type["type"] == SnowflakeDataType.TIME:
-            return DBVarType.TIME
         if snowflake_data_type["type"] in {
             SnowflakeDataType.TIMESTAMP_LTZ,
             SnowflakeDataType.TIMESTAMP_NTZ,

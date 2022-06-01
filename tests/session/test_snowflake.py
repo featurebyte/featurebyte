@@ -11,7 +11,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.session.snowflake import SnowflakeSession
 
 
-@pytest.fixture()
+@pytest.fixture(name="snowflake_connector")
 def mock_snowflake_connector():
     """
     Mock snowflake connector in featurebyte.session.snowflake module
@@ -20,7 +20,7 @@ def mock_snowflake_connector():
         yield mock
 
 
-@pytest.fixture()
+@pytest.fixture(name="os_getenv")
 def mock_os_getenv():
     """
     Mock os.getenv in featurebyte.session.snowflake module
@@ -29,7 +29,7 @@ def mock_os_getenv():
         yield mock
 
 
-@pytest.fixture()
+@pytest.fixture(name="execute_query")
 def mock_execute_query():
     """
     Mock execute_query in featurebyte.session.snowflake.SnowflakeSession class
@@ -91,7 +91,7 @@ def test_snowflake_session__specified_schema_without_specified_database():
         {"SNOWFLAKE_PASSWORD": "password"},
     ],
 )
-def test_snowflake_session__user_or_password_not_set(mock_os_getenv, env):
+def test_snowflake_session__user_or_password_not_set(os_getenv, env):
     """
     Test snowflake session when schema is set whereas database is missing
     """
@@ -99,14 +99,14 @@ def test_snowflake_session__user_or_password_not_set(mock_os_getenv, env):
     def side_effect(var_name):
         return env.get(var_name)
 
-    mock_os_getenv.side_effect = side_effect
+    os_getenv.side_effect = side_effect
     with pytest.raises(ValueError) as exc:
         SnowflakeSession(account="account", warehouse="warehouse")
     expected_msg = "Environment variables 'SNOWFLAKE_USER' or 'SNOWFLAKE_PASSWORD' is not set"
     assert expected_msg in str(exc.value)
 
 
-@pytest.mark.usefixtures("mock_snowflake_connector", "mock_os_getenv", "mock_execute_query")
+@pytest.mark.usefixtures("snowflake_connector", "os_getenv", "execute_query")
 def test_snowflake_session():
     """
     Test snowflake session
