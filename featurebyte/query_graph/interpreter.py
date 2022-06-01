@@ -2,20 +2,22 @@
 This module contains the Query Graph Interpreter
 """
 # pylint: disable=W0511
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from dataclasses import dataclass
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql import (
-    AddNode,
+    BINARY_OPERATION_NODE_TYPES,
     AssignNode,
+    BuildTileInputNode,
     BuildTileNode,
-    ExpressionNode,
-    InputNode,
     Project,
     SQLNode,
+    StrExpressionNode,
+    TableNode,
+    make_binary_operation_node,
 )
 
 
@@ -29,7 +31,7 @@ class SQLOperationGraph:
     """
 
     def __init__(self, query_graph: QueryGraph) -> None:
-        self.sql_nodes: Dict[str, SQLNode] = {}
+        self.sql_nodes: Dict[str, Union[SQLNode, TableNode]] = {}
         self.query_graph = query_graph
 
     def build(self, target_node: Dict[str, Any]) -> Any:
@@ -99,27 +101,31 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
-            sql_node = InputNode(
-                columns=parameters["columns"],
+            sql_node = BuildTileInputNode(
+                column_names=parameters["columns"],
                 timestamp=parameters["timestamp"],
-                input=ExpressionNode(parameters["dbtable"]),
+                input_node=StrExpressionNode(parameters["dbtable"]),
             )
 
         elif node_type == NodeType.ASSIGN:
             assert len(input_sql_nodes) == 2
+            assert isinstance(input_sql_nodes[0], TableNode)
             sql_node = AssignNode(
-                table=input_sql_nodes[0], column=input_sql_nodes[1], name=parameters["name"]
+                table_node=input_sql_nodes[0],
+                column_node=input_sql_nodes[1],
+                name=parameters["name"],
             )
 
         elif node_type == NodeType.PROJECT:
             sql_node = Project(parameters["columns"])
 
-        elif node_type == NodeType.ADD:
-            sql_node = AddNode(input_sql_nodes[0], input_sql_nodes[1])
+        elif node_type in BINARY_OPERATION_NODE_TYPES:
+            sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)
 
         elif node_type == NodeType.GROUPBY:
+            assert isinstance(input_sql_nodes[0], TableNode)
             sql_node = BuildTileNode(
-                input=input_sql_nodes[0],
+                input_node=input_sql_nodes[0],
                 key=parameters["key"],
                 parent=parameters["parent"],
                 timestamp=parameters["timestamp"],

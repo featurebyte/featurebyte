@@ -54,7 +54,7 @@ mypy:
 check-safety:
 	poetry check
 	poetry run safety check --full-report
-	poetry run bandit -ll --recursive featurebyte tests
+	poetry run bandit -ll --recursive featurebyte
 
 .PHONY: lint
 lint: test check-codestyle mypy check-safety
