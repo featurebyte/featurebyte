@@ -104,14 +104,16 @@ class SQLOperationGraph:
             sql_node = BuildTileInputNode(
                 column_names=parameters["columns"],
                 timestamp=parameters["timestamp"],
-                input=StrExpressionNode(parameters["dbtable"]),
+                input_node=StrExpressionNode(parameters["dbtable"]),
             )
 
         elif node_type == NodeType.ASSIGN:
             assert len(input_sql_nodes) == 2
             assert isinstance(input_sql_nodes[0], TableNode)
             sql_node = AssignNode(
-                table=input_sql_nodes[0], column=input_sql_nodes[1], name=parameters["name"]
+                table_node=input_sql_nodes[0],
+                column_node=input_sql_nodes[1],
+                name=parameters["name"],
             )
 
         elif node_type == NodeType.PROJECT:
@@ -123,7 +125,7 @@ class SQLOperationGraph:
         elif node_type == NodeType.GROUPBY:
             assert isinstance(input_sql_nodes[0], TableNode)
             sql_node = BuildTileNode(
-                input=input_sql_nodes[0],
+                input_node=input_sql_nodes[0],
                 key=parameters["key"],
                 parent=parameters["parent"],
                 timestamp=parameters["timestamp"],

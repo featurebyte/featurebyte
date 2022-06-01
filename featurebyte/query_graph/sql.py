@@ -90,7 +90,7 @@ class BuildTileInputNode(TableNode):
 
     column_names: list[str]
     timestamp: str
-    input: StrExpressionNode
+    input_node: StrExpressionNode
 
     @property
     def columns(self) -> list[str]:
@@ -106,7 +106,7 @@ class BuildTileInputNode(TableNode):
             A sqlglot Expression object
         """
         select_expr = select(*self.columns)
-        select_expr = select_expr.from_(self.input.sql)
+        select_expr = select_expr.from_(self.input_node.sql)
         select_expr = select_expr.where(
             f"{self.timestamp} >= CAST(FBT_START_DATE AS TIMESTAMP)",
             f"{self.timestamp} < CAST(FBT_END_DATE AS TIMESTAMP)",
@@ -118,13 +118,13 @@ class BuildTileInputNode(TableNode):
 class BinaryOp(SQLNode):
     """Binary operation node"""
 
-    left: SQLNode
-    right: SQLNode
+    left_node: SQLNode
+    right_node: SQLNode
     operation: type[expressions.Expression]
 
     @property
     def sql(self) -> Expression:
-        return self.operation(this=self.left.sql, expression=self.right.sql)
+        return self.operation(this=self.left_node.sql, expression=self.right_node.sql)
 
 
 @dataclass
@@ -143,20 +143,20 @@ class Project(SQLNode):
 class AssignNode(TableNode):
     """Assign node"""
 
-    table: TableNode
-    column: SQLNode
+    table_node: TableNode
+    column_node: SQLNode
     name: str
 
     @property
     def columns(self) -> list[str]:
-        return [x for x in self.table.columns if x != self.name] + [self.name]
+        return [x for x in self.table_node.columns if x != self.name] + [self.name]
 
     @property
     def sql(self) -> Expression:
-        existing_columns = [col for col in self.table.columns if col != self.name]
+        existing_columns = [col for col in self.table_node.columns if col != self.name]
         select_expr = select(*existing_columns)
-        select_expr = select_expr.select(expressions.alias_(self.column.sql, self.name))
-        select_expr = select_expr.from_(self.table.sql_nested())
+        select_expr = select_expr.select(expressions.alias_(self.column_node.sql, self.name))
+        select_expr = select_expr.from_(self.table_node.sql_nested())
         return select_expr
 
 
@@ -167,7 +167,7 @@ class BuildTileNode(TableNode):
     This node is responsible for generating the tile building SQL for a groupby operation.
     """
 
-    input: TableNode
+    input_node: TableNode
     key: str
     parent: str
     timestamp: str
@@ -189,7 +189,7 @@ class BuildTileNode(TableNode):
         input_tiled = select(
             "*",
             f"FLOOR(({timestamp_epoch} - {start_date_placeholder_epoch}) / {self.frequency}) AS tile_index",
-        ).from_(self.input.sql_nested())
+        ).from_(self.input_node.sql_nested())
 
         tile_start_date = (
             f"TO_TIMESTAMP({start_date_placeholder_epoch} + tile_index * {self.frequency})"
@@ -290,15 +290,15 @@ def make_binary_operation_node(
     if expression_cls is None:
         raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
 
-    left = input_sql_nodes[0]
-    right: Any
+    left_node = input_sql_nodes[0]
+    right_node: Any
     if len(input_sql_nodes) == 1:
         # When the other value is a scalar
         literal_value = make_literal_value(parameters["value"])
-        right = ExpressionNode(literal_value)
+        right_node = ExpressionNode(literal_value)
     else:
         # When the other value is a Series
-        right = input_sql_nodes[1]
+        right_node = input_sql_nodes[1]
 
-    output_node = BinaryOp(left=left, right=right, operation=expression_cls)
+    output_node = BinaryOp(left_node=left_node, right_node=right_node, operation=expression_cls)
     return output_node
