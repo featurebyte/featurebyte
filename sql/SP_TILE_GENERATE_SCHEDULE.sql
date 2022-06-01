@@ -1,4 +1,4 @@
-create or replace procedure SP_TILE_GENERATE_SCHEDULE(FEATURE_NAME varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, SQL varchar, COLUMN_NAMES varchar, TYPE varchar, MONITOR_PERIODS float, END_TS varchar)
+create or replace procedure SP_TILE_GENERATE_SCHEDULE(FEATURE_NAME varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, OFFLINE_PERIOD float, SQL varchar, COLUMN_NAMES varchar, TYPE varchar, MONITOR_PERIODS float, END_TS varchar)
 returns string
 language javascript
 as
@@ -34,10 +34,15 @@ $$
     }
 
     var tile_type = TYPE.toUpperCase()
+    var monitor_periods = MONITOR_PERIODS + 1
+    lookback_period = FREQUENCY_MINUTE
     if (tile_type === "OFFLINE") {
         // offline schedule
-        end_ts.setDate(end_ts.getMinutes() - FREQUENCY_MINUTE)
+        lookback_period = OFFLINE_PERIOD
+        end_ts.setMinutes(end_ts.getMinutes() - lookback_period)
+        monitor_periods = 1
     }
+    debug = debug + " - monitor_periods: " + monitor_periods
 
     end_ts_str = end_ts.toISOString().split("T")
     end_ts_str = end_ts_str[0] + " " + end_ts_str[1].slice(0,8)
@@ -45,7 +50,7 @@ $$
 
     // trigger stored procedure to generate tiles
     var start_ts = new Date(end_ts.getTime())
-    start_ts.setMinutes(start_ts.getMinutes() - FREQUENCY_MINUTE)
+    start_ts.setMinutes(start_ts.getMinutes() - lookback_period)
     start_ts_str = start_ts.toISOString().split("T")
     start_ts_str = start_ts_str[0] + " " + start_ts_str[1].slice(0,8)
     debug = debug + " - start_ts_str: " + start_ts_str
@@ -63,13 +68,14 @@ $$
 
     // trigger stored procedure to monitor tiles
     var monitor_start_ts = new Date(end_ts.getTime())
-    monitor_start_ts.setMinutes(monitor_start_ts.getMinutes() - FREQUENCY_MINUTE * MONITOR_PERIODS)
+    monitor_start_ts.setMinutes(monitor_start_ts.getMinutes() - lookback_period * monitor_periods)
     monitor_start_ts_str = monitor_start_ts.toISOString().split("T")
     monitor_start_ts_str = monitor_start_ts_str[0] + " " + monitor_start_ts_str[1].slice(0,8)
     debug = debug + " - monitor_start_ts_str: " + monitor_start_ts_str
 
+    var table_name_prefix = FEATURE_NAME.toUpperCase() + "_TILE_"
     var monitor_input_sql = SQL.replace("FB_START_TS", "\\'"+monitor_start_ts_str+"\\'::timestamp_ntz").replace("FB_END_TS", "\\'"+end_ts_str+"\\'::timestamp_ntz")
-    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}')`
+    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name_prefix}', '${tile_type}')`
     result = snowflake.execute(
         {
             sqlText: monitor_stored_proc
@@ -79,9 +85,8 @@ $$
     debug = debug + " - SP_TILE_MONITOR: " + result.getColumnValue(1)
 
     if (tile_type === "OFFLINE") {
-        // remove stale online tiles whose tile_start_ts is less than end_ts
-        var table_name = FEATURE_NAME.toUpperCase() + "_TILE_ONLINE"
-        var stored_proc = `call SP_TILE_REMOVE_ONLINE_TILE('${end_ts}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${table_name}')`
+        // remove stale online tiles whose tile_start_ts is less than end_ts_str
+        var stored_proc = `call SP_TILE_REMOVE_ONLINE_TILE('${end_ts_str}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${table_name_prefix}')`
         result = snowflake.execute(
             {
                 sqlText: stored_proc
