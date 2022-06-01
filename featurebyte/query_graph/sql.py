@@ -1,7 +1,9 @@
 """
 This module contains the list of SQL operations to be used by the Query Graph Interpreter
 """
-from typing import Any, Dict, List, Type, Union
+from __future__ import annotations
+
+from typing import Any
 
 # pylint: disable=W0511 (fixme)
 # pylint: disable=R0903 (too-few-public-methods)
@@ -23,7 +25,7 @@ class SQLNode(ABC):
 
     @property
     @abstractmethod
-    def sql(self) -> Union[Expression, expressions.Subqueryable]:
+    def sql(self) -> Expression | expressions.Subqueryable:
         """Construct a sql expression
 
         Returns
@@ -38,7 +40,7 @@ class TableNode(SQLNode, ABC):
 
     @property
     @abstractmethod
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         """Columns that are available in this table
 
         Returns
@@ -86,12 +88,12 @@ class ExpressionNode(SQLNode):
 class BuildTileInputNode(TableNode):
     """Input data node used when building tiles"""
 
-    column_names: List[str]
+    column_names: list[str]
     timestamp: str
     input: StrExpressionNode
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         return self.column_names
 
     @property
@@ -118,7 +120,7 @@ class BinaryOp(SQLNode):
 
     left: SQLNode
     right: SQLNode
-    operation: Type[expressions.Expression]
+    operation: type[expressions.Expression]
 
     @property
     def sql(self) -> Expression:
@@ -129,7 +131,7 @@ class BinaryOp(SQLNode):
 class Project(SQLNode):
     """Project node"""
 
-    columns: List[str]
+    columns: list[str]
 
     @property
     def sql(self) -> Expression:
@@ -146,7 +148,7 @@ class AssignNode(TableNode):
     name: str
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         return [x for x in self.table.columns if x != self.name] + [self.name]
 
     @property
@@ -173,7 +175,7 @@ class BuildTileNode(TableNode):
     frequency: int
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         return ["tile_start_date", self.key, "value"]
 
     @property
@@ -242,8 +244,8 @@ def make_literal_value(value: Any) -> expressions.Literal:
 
 def make_binary_operation_node(
     node_type: NodeType,
-    input_sql_nodes: List[SQLNode],
-    parameters: Dict[str, Any],
+    input_sql_nodes: list[SQLNode],
+    parameters: dict[str, Any],
 ) -> BinaryOp:
     """Create a BinaryOp node for eligible query node types
 
@@ -291,11 +293,11 @@ def make_binary_operation_node(
     left = input_sql_nodes[0]
     right: Any
     if len(input_sql_nodes) == 1:
-        # Series <> scalar
+        # When the other value is a scalar
         literal_value = make_literal_value(parameters["value"])
         right = ExpressionNode(literal_value)
     else:
-        # Series <> Series
+        # When the other value is a Series
         right = input_sql_nodes[1]
 
     output_node = BinaryOp(left=left, right=right, operation=expression_cls)
