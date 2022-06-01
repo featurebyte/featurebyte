@@ -54,11 +54,11 @@ class SQLiteSession(BaseSession):
         raise ValueError(f"Not supported data type '{sqlite_data_type}'")
 
     def populate_database_metadata(self) -> dict[TableName, TableSchema]:
-        output = {}
+        output: dict[TableName, TableSchema] = {}
         for table in self._list_tables():
             query_column_res = self.execute_query(f"PRAGMA table_info('{table}')")
             column_name_type_map = {}
             for _, (column_name, data_type) in query_column_res[["name", "type"]].iterrows():
                 column_name_type_map[column_name] = self._convert_to_db_var_type(data_type)
-            output[table] = column_name_type_map
+            output[(table,)] = column_name_type_map
         return output

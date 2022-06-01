@@ -66,7 +66,7 @@ def test_sqlite_session(sqlite_db_filename):
     """
     session = SQLiteSession(filename=sqlite_db_filename)
     assert session.database_metadata == {
-        "type_table": {
+        ("type_table",): {
             "int": DBVarType.INT,
             "integer": DBVarType.INT,
             "tinyint": DBVarType.INT,

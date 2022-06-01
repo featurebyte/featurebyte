@@ -3,7 +3,7 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from dataclasses import dataclass, field
 
@@ -12,7 +12,7 @@ import pandas as pd
 from featurebyte.enum import DBVarType
 from featurebyte.session.enum import SourceType
 
-TableName = str
+TableName = Tuple[str, ...]
 TableSchema = Dict[str, DBVarType]
 
 

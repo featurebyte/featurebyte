@@ -115,7 +115,7 @@ def test_snowflake_session():
         account="account", warehouse="warehouse", database="database", schema="schema"
     )
     assert session.database_metadata == {
-        '"database"."schema"."table"': {
+        ("database", "schema", "table"): {
             "col_int": DBVarType.INT,
             "col_float": DBVarType.FLOAT,
             "col_char": DBVarType.CHAR,
@@ -123,7 +123,7 @@ def test_snowflake_session():
             "col_binary": DBVarType.BINARY,
             "col_boolean": DBVarType.BOOL,
         },
-        '"database"."schema"."view"': {
+        ("database", "schema", "view"): {
             "col_date": DBVarType.DATE,
             "col_time": DBVarType.TIME,
             "col_timestamp_ltz": DBVarType.TIMESTAMP,
