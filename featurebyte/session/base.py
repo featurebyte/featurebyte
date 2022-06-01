@@ -3,9 +3,8 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Dict
+from typing import Any, Dict
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import pandas as pd
@@ -17,23 +16,32 @@ TableName = str
 TableSchema = Dict[str, DBVarType]
 
 
-class _AbstractSession(ABC):
+@dataclass
+class BaseSession:
     """
     Abstract session class to extract data warehouse table metadata & execute query
     """
 
-    @abstractmethod
+    source_type: SourceType = field(init=False)
+    database_metadata: dict[TableName, TableSchema] = field(init=False)
+    _connection: Any = field(default=None, init=False)
+
+    def __post_init__(self) -> None:
+        if self._connection is None:
+            raise ConnectionError("Failed to established a database connection.")
+        self.database_metadata = self.populate_database_metadata()
+
     def populate_database_metadata(self) -> dict[TableName, TableSchema]:
         """
         Extract database table schema info and store it to the database metadata
 
-        Returns
-        -------
-        dict[TableName, TableSchema]
-            database metadata dictionary which all table schema info
+        Raises
+        ------
+        NotImplementedError
+            if the child class not implement this method
         """
+        raise NotImplementedError
 
-    @abstractmethod
     def execute_query(self, query: str) -> pd.DataFrame:
         """
         Execute SQL query
@@ -48,33 +56,11 @@ class _AbstractSession(ABC):
         pd.DataFrame
             return pandas DataFrame if the query expect output
         """
-
-
-@dataclass
-class _SessionDataclassMixin:
-    """
-    Data class mixin
-    """
-
-    source_type: SourceType = field(init=False)
-    database_metadata: dict[TableName, TableSchema] = field(init=False)
-
-    def __post_init__(self) -> None:
-        self.database_metadata = self.populate_database_metadata()
-
-    def populate_database_metadata(self) -> dict[TableName, TableSchema]:
-        """
-        Extract database table schema info and store it to the database metadata
-
-        Raises
-        ------
-        NotImplementedError
-            if the child class not implement this method
-        """
-        raise NotImplementedError
-
-
-class AbstractSession(_SessionDataclassMixin, _AbstractSession):
-    """
-    Abstract session class to extract data warehouse table metadata & execute query
-    """
+        cursor = self._connection.cursor()
+        try:
+            cursor.execute(query)
+            all_rows = cursor.fetchall()
+            columns = [row[0] for row in cursor.description]
+            return pd.DataFrame(all_rows, columns=columns)
+        finally:
+            cursor.close()

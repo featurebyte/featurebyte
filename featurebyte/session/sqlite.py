@@ -7,15 +7,13 @@ import os
 import sqlite3
 from dataclasses import dataclass
 
-import pandas as pd
-
 from featurebyte.enum import DBVarType
-from featurebyte.session.base import AbstractSession, TableName, TableSchema
+from featurebyte.session.base import BaseSession, TableName, TableSchema
 from featurebyte.session.enum import SourceType
 
 
 @dataclass
-class SQLiteSession(AbstractSession):
+class SQLiteSession(BaseSession):
     """
     SQLite session class
     """
@@ -64,13 +62,3 @@ class SQLiteSession(AbstractSession):
                 column_name_type_map[column_name] = self._get_db_var_type(data_type)
             output[table] = column_name_type_map
         return output
-
-    def execute_query(self, query: str) -> pd.DataFrame:
-        cursor = self._connection.cursor()
-        try:
-            cursor.execute(query)
-            all_rows = cursor.fetchall()
-            columns = [row[0] for row in cursor.description]
-            return pd.DataFrame(all_rows, columns=columns)
-        finally:
-            cursor.close()

@@ -9,16 +9,15 @@ import json
 import os
 from dataclasses import dataclass, field
 
-import pandas as pd
 from snowflake import connector
 
 from featurebyte.enum import DBVarType
-from featurebyte.session.base import AbstractSession, TableName, TableSchema
+from featurebyte.session.base import BaseSession, TableName, TableSchema
 from featurebyte.session.enum import SnowflakeDataType, SourceType
 
 
 @dataclass
-class SnowflakeSession(AbstractSession):
+class SnowflakeSession(BaseSession):
     """
     Snowflake session class
     """
@@ -114,13 +113,3 @@ class SnowflakeSession(AbstractSession):
                 column_name_type_map[column_name] = self._get_db_var_type(json.loads(data_type))
             output[f'"{database}"."{schema}"."{table_or_view}"'] = column_name_type_map
         return output
-
-    def execute_query(self, query: str) -> pd.DataFrame:
-        cursor = self._connection.cursor()
-        try:
-            cursor.execute(query)
-            all_rows = cursor.fetchall()
-            columns = [row[0] for row in cursor.description]
-            return pd.DataFrame(all_rows, columns=columns)
-        finally:
-            cursor.close()
