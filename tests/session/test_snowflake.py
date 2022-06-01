@@ -21,6 +21,15 @@ def mock_snowflake_connector():
 
 
 @pytest.fixture()
+def mock_os_getenv():
+    """
+    Mock os.getenv in featurebyte.session.snowflake module
+    """
+    with patch("featurebyte.session.snowflake.os.getenv") as mock:
+        yield mock
+
+
+@pytest.fixture()
 def mock_execute_query():
     """
     Mock execute_query in featurebyte.session.snowflake.SnowflakeSession class
@@ -74,7 +83,30 @@ def test_snowflake_session__specified_schema_without_specified_database():
     assert "Database name is required if schema is set" in str(exc.value)
 
 
-@pytest.mark.usefixtures("mock_snowflake_connector", "mock_execute_query")
+@pytest.mark.parametrize(
+    "env",
+    [
+        {},
+        {"SNOWFLAKE_USER": "user"},
+        {"SNOWFLAKE_PASSWORD": "password"},
+    ],
+)
+def test_snowflake_session__user_or_password_not_set(mock_os_getenv, env):
+    """
+    Test snowflake session when schema is set whereas database is missing
+    """
+
+    def side_effect(var_name):
+        return env.get(var_name)
+
+    mock_os_getenv.side_effect = side_effect
+    with pytest.raises(ValueError) as exc:
+        SnowflakeSession(account="account", warehouse="warehouse")
+    expected_msg = "Environment variables 'SNOWFLAKE_USER' or 'SNOWFLAKE_PASSWORD' is not set"
+    assert expected_msg in str(exc.value)
+
+
+@pytest.mark.usefixtures("mock_snowflake_connector", "mock_os_getenv", "mock_execute_query")
 def test_snowflake_session():
     """
     Test snowflake session

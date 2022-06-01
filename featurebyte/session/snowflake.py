@@ -33,9 +33,17 @@ class SnowflakeSession(AbstractSession):
         if self.schema and self.database is None:
             raise ValueError("Database name is required if schema is set")
 
+        user = os.getenv("SNOWFLAKE_USER")
+        password = os.getenv("SNOWFLAKE_PASSWORD")
+
+        if not user or not password:
+            raise ValueError(
+                "Environment variables 'SNOWFLAKE_USER' or 'SNOWFLAKE_PASSWORD' is not set"
+            )
+
         self._connection = connector.connect(
-            user=os.getenv("SNOWFLAKE_USER"),
-            password=os.getenv("SNOWFLAKE_PASSWORD"),
+            user=user,
+            password=password,
             account=self.account,
             warehouse=self.warehouse,
             database=self.database,
