@@ -3,7 +3,8 @@ EventSource class
 """
 from __future__ import annotations
 
-from featurebyte.core.frame import Frame, Series
+from featurebyte.core.frame import Frame
+from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
@@ -148,10 +149,8 @@ class EventSource(Frame):
         TypeError
             When the item type does not support
         """
-        self._check_any_missing_column(item)
-
         if self._is_list_of_str(item):
-            item = sorted(set(self.protected_columns).union(item))
+            item = sorted(self.protected_columns.union(item))
         return super().__getitem__(item)
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:

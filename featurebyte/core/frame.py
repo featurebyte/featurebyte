@@ -36,7 +36,7 @@ class Frame(OpsMixin):
         return f"Frame(node.name={self.node.name})"
 
     @staticmethod
-    def _is_list_of_str(item: Any):
+    def _is_list_of_str(item: Any) -> bool:
         """
         Check whether the input item has List[str] type
 
@@ -51,7 +51,7 @@ class Frame(OpsMixin):
         """
         return isinstance(item, list) and all(isinstance(elem, str) for elem in item)
 
-    def _check_any_missing_column(self, item: str | list[str]):
+    def _check_any_missing_column(self, item: str | list[str] | Series) -> None:
         """
         Check whether there is any unknown column from the specified item (single column or list of columns)
 
@@ -65,6 +65,8 @@ class Frame(OpsMixin):
         KeyError
             if the specified column does not exist
         """
+        if isinstance(item, Series):
+            return
         if isinstance(item, str):
             if item not in self.column_var_type_map:
                 raise KeyError(f"Column {item} not found!")
@@ -156,6 +158,19 @@ class Frame(OpsMixin):
         """
         self._check_any_missing_column(item)
 
+        if isinstance(item, Series):
+            node = self._add_filter_operation(
+                item=self, mask=item, node_output_type=NodeOutputType.FRAME
+            )
+            column_lineage_map = {}
+            for col, lineage in self.column_lineage_map.items():
+                column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
+            return self._construct_object(
+                node=node,
+                column_var_type_map=copy.deepcopy(self.column_var_type_map),
+                column_lineage_map=column_lineage_map,
+                row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+            )
         if isinstance(item, str):
             # when doing projection, use the last updated node of the column rather than using
             # the last updated dataframe node to prevent adding redundant project node to the graph.
@@ -192,19 +207,6 @@ class Frame(OpsMixin):
                 column_var_type_map=column_var_type_map,
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self.row_index_lineage,
-            )
-        if isinstance(item, Series):
-            node = self._add_filter_operation(
-                item=self, mask=item, node_output_type=NodeOutputType.FRAME
-            )
-            column_lineage_map = {}
-            for col, lineage in self.column_lineage_map.items():
-                column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
-            return self._construct_object(
-                node=node,
-                column_var_type_map=copy.deepcopy(self.column_var_type_map),
-                column_lineage_map=column_lineage_map,
-                row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
             )
         raise TypeError(f"Frame indexing with value '{item}' not supported!")
 
