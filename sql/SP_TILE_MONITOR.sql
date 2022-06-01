@@ -9,11 +9,11 @@ $$
     */
 
     var debug = "Debug"
-
+    
     var col_list = COLUMN_NAMES.split(",").filter(item => item.toUpperCase() !== "TILE_START_TS")
     col_list_str = col_list.join(',')
     debug = debug + " - col_list_str: " + col_list_str
-    
+
     //replace SQL template with start and end date strings for tile generation sql 
     var new_tile_sql = `
         select 
@@ -41,7 +41,7 @@ $$
 
 
     if (table_exist === false) {
-
+        // monitor table already exists, create table with new records
         var create_sql = `create table ${monitor_table_name} as ${compare_sql}`
         snowflake.execute(
             {
@@ -51,16 +51,29 @@ $$
         debug = debug + " - inside create monitor table"
 
     } else {
+        // monitor table already exists, insert new records
+        filter_cols_str = ""
+        insert_cols_str = ""
+        for (element of col_list) {
+            element = element.trim()
+            filter_cols_str = filter_cols_str + " AND a." + element + " = b."+ element
+            insert_cols_str = insert_cols_str + "b." + element + ","
+        }
+        insert_cols_str = insert_cols_str.slice(0, -1)
 
         var insert_sql = `
-            insert into ${monitor_table_name} ${compare_sql}
-        ` 
+            merge into ${monitor_table_name} a using (${compare_sql}) b
+                on a.INDEX = b.INDEX and a.NEW_VALUE = b.NEW_VALUE ${filter_cols_str}
+                when not matched then 
+                    insert values (b.INDEX, ${insert_cols_str}, b.NEW_VALUE, b.CREATED_AT)
+        `
+
         snowflake.execute(
             {
                 sqlText: insert_sql
             }
         ) 
-        debug = debug + " - inside insert monitor records"
+        debug = debug + " - inside insert monitor records: " + insert_sql
 
     }
 
