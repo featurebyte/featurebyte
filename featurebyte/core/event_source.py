@@ -22,6 +22,10 @@ class EventSource(Frame):
     def inception_node(self) -> Node:
         """
         Input node where the event source is introduced to the query graph
+
+        Returns
+        -------
+        Node
         """
         graph = QueryGraph()
         return graph.get_node_by_name(self.row_index_lineage[0])
@@ -30,13 +34,21 @@ class EventSource(Frame):
     def timestamp_column(self) -> str | None:
         """
         Timestamp column of the event source
+
+        Returns
+        -------
+        str | None
         """
         return self.inception_node.parameters.get("timestamp")
 
     @property
     def entity_identifiers(self) -> list[str] | None:
         """
-        Entity ids of the event source
+        Entity id columns of the event source
+
+        Returns
+        -------
+        list[str] | None
         """
         return self.inception_node.parameters.get("entity_identifiers")
 
@@ -44,6 +56,10 @@ class EventSource(Frame):
     def protected_columns(self) -> set[str]:
         """
         Special columns where its value should not be overridden
+
+        Returns
+        -------
+        set[str]
         """
         columns = []
         if self.timestamp_column:
@@ -67,7 +83,7 @@ class EventSource(Frame):
         ----------
         session: BaseSession
             database session object to retrieve database metadata
-        table_name: str
+        table_name: TableName
             table name of the event source
         timestamp_column: str
             timestamp column of the event source

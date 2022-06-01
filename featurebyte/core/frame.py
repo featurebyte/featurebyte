@@ -96,8 +96,6 @@ class Frame(OpsMixin):
 
         Raises
         ------
-        KeyError
-            When the selected column does not exist
         TypeError
             When the item type does not support
         """
