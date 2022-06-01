@@ -55,41 +55,6 @@ class Frame(OpsMixin):
             if not_found_columns:
                 raise KeyError(f"Columns {not_found_columns} not found!")
 
-    @classmethod
-    def _construct_object(
-        cls,
-        node: Node,
-        column_var_type_map: dict[str, DBVarType],
-        column_lineage_map: dict[str, tuple[str, ...]],
-        row_index_lineage: tuple[str, ...],
-    ) -> Frame:
-        """
-        Constructor used to construct returned `Frame` object in `__getitem__`. This can be used to control the
-        returned object type in child class.
-
-        Parameters
-        ----------
-        node: Node
-            node of the graph (this object represents the table after applying all operations till this node)
-        column_var_type_map: dict[str, DBVarType]
-            column name to var type mapping
-        column_lineage_map: dict[str, tuple[str, ...]]
-            column name to lineage mapping, each lineage represent list of operations to reach current value
-        row_index_lineage: tuple[str, ...]
-            row index lineage which represent list of operations to reach current row index
-
-        Returns
-        -------
-        Frame
-            constructed object given input parameters
-        """
-        return Frame(
-            node=node,
-            column_var_type_map=column_var_type_map,
-            column_lineage_map=column_lineage_map,
-            row_index_lineage=row_index_lineage,
-        )
-
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
         """
         Extract column or perform row filtering on the table
@@ -145,7 +110,7 @@ class Frame(OpsMixin):
             column_lineage_map = {}
             for col, lineage in self.column_lineage_map.items():
                 column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
-            return self._construct_object(
+            return type(self)(
                 node=node,
                 column_var_type_map=copy.deepcopy(self.column_var_type_map),
                 column_lineage_map=column_lineage_map,
@@ -182,7 +147,7 @@ class Frame(OpsMixin):
                 column_lineage_map[col] = self._append_to_lineage(
                     self.column_lineage_map[col], node.name
                 )
-            return self._construct_object(
+            return type(self)(
                 node=node,
                 column_var_type_map=column_var_type_map,
                 column_lineage_map=column_lineage_map,

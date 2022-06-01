@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from featurebyte.core.frame import Frame
 from featurebyte.core.series import Series
-from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.session.base import BaseSession, TableName
@@ -113,21 +112,6 @@ class EventSource(Frame):
             column_var_type_map=column_var_type_map,
             column_lineage_map={col: (node.name,) for col in column_var_type_map},
             row_index_lineage=(node.name,),
-        )
-
-    @classmethod
-    def _construct_object(
-        cls,
-        node: Node,
-        column_var_type_map: dict[str, DBVarType],
-        column_lineage_map: dict[str, tuple[str, ...]],
-        row_index_lineage: tuple[str, ...],
-    ) -> Frame:
-        return EventSource(
-            node=node,
-            column_var_type_map=column_var_type_map,
-            column_lineage_map=column_lineage_map,
-            row_index_lineage=row_index_lineage,
         )
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
