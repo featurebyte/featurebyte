@@ -3,8 +3,6 @@ EventSource class
 """
 from __future__ import annotations
 
-from typing import Optional
-
 from featurebyte.core.frame import Frame, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -36,14 +34,14 @@ class EventSource(Frame):
         return self.inception_node.parameters["timestamp"]
 
     @property
-    def entity_identifiers(self):
+    def entity_identifiers(self) -> list[str] | None:
         """
         Entity ids of the event source
         """
         return self.inception_node.parameters.get("entity_identifiers")
 
     @property
-    def protected_columns(self):
+    def protected_columns(self) -> set[str]:
         """
         Special columns where its value should not be overridden
         """
@@ -59,7 +57,7 @@ class EventSource(Frame):
         table_name: TableName,
         timestamp_column: str,
         entity_identifiers: list[str] | None = None,
-    ):
+    ) -> EventSource:
         """
         Construct an EventSource object using session object
 
