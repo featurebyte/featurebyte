@@ -27,3 +27,4 @@ class SourceType(str, Enum):
     """
 
     SNOWFLAKE = "snowflake"
+    SQLITE = "sqlite"

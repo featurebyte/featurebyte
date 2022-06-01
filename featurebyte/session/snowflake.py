@@ -68,16 +68,16 @@ class SnowflakeSession(AbstractSession):
         return database_schemas
 
     def _list_tables_or_views(self) -> list[tuple[str, str, str]]:
-        table_or_views = []
+        tables_or_views = []
         for database, schema in self._list_schemas():
             query_table_res = self.execute_query(f'SHOW TABLES IN SCHEMA "{database}"."{schema}"')
             for table in query_table_res["name"]:
-                table_or_views.append((database, schema, table))
+                tables_or_views.append((database, schema, table))
 
             query_view_res = self.execute_query(f'SHOW VIEWS IN SCHEMA "{database}"."{schema}"')
             for view in query_view_res["name"]:
-                table_or_views.append((database, schema, view))
-        return table_or_views
+                tables_or_views.append((database, schema, view))
+        return tables_or_views
 
     @staticmethod
     def _get_db_var_type(snowflake_data_type: dict[str, Any]) -> DBVarType:
