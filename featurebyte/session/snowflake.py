@@ -79,7 +79,7 @@ class SnowflakeSession(BaseSession):
         return tables_or_views
 
     @staticmethod
-    def _get_db_var_type(snowflake_data_type: dict[str, Any]) -> DBVarType:
+    def _convert_to_db_var_type(snowflake_data_type: dict[str, Any]) -> DBVarType:
         data_type_to_db_var_type_map = {
             SnowflakeDataType.FIXED: DBVarType.INT,
             SnowflakeDataType.REAL: DBVarType.FLOAT,
@@ -110,6 +110,8 @@ class SnowflakeSession(BaseSession):
             for _, (column_name, data_type) in query_column_res[
                 ["column_name", "data_type"]
             ].iterrows():
-                column_name_type_map[column_name] = self._get_db_var_type(json.loads(data_type))
+                column_name_type_map[column_name] = self._convert_to_db_var_type(
+                    json.loads(data_type)
+                )
             output[f'"{database}"."{schema}"."{table_or_view}"'] = column_name_type_map
         return output

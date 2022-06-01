@@ -33,7 +33,7 @@ class SQLiteSession(BaseSession):
         return list(query_table_res["name"])
 
     @staticmethod
-    def _get_db_var_type(sqlite_data_type: str) -> DBVarType:
+    def _convert_to_db_var_type(sqlite_data_type: str) -> DBVarType:
         if "INT" in sqlite_data_type:
             return DBVarType.INT
         if "CHAR" in sqlite_data_type or "TEXT" in sqlite_data_type:
@@ -59,6 +59,6 @@ class SQLiteSession(BaseSession):
             query_column_res = self.execute_query(f"PRAGMA table_info('{table}')")
             column_name_type_map = {}
             for _, (column_name, data_type) in query_column_res[["name", "type"]].iterrows():
-                column_name_type_map[column_name] = self._get_db_var_type(data_type)
+                column_name_type_map[column_name] = self._convert_to_db_var_type(data_type)
             output[table] = column_name_type_map
         return output
