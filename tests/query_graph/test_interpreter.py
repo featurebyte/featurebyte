@@ -410,10 +410,8 @@ def test_graph_interpreter_preview(graph):
     interpreter = GraphInterpreter(graph)
 
     sql_code = interpreter.construct_preview_sql("assign_2")
-    assert (
-        sql_code
-        == textwrap.dedent(
-            """
+    expected = textwrap.dedent(
+        """
         SELECT
           ts,
           cust_id,
@@ -439,14 +437,12 @@ def test_graph_interpreter_preview(graph):
         )
         LIMIT 10
         """
-        ).strip()
-    )
+    ).strip()
+    assert sql_code == expected
 
     sql_code = interpreter.construct_preview_sql("add_1", 5)
-    assert (
-        sql_code
-        == textwrap.dedent(
-            """
+    expected = textwrap.dedent(
+        """
         SELECT
           a + b
         FROM (
@@ -459,5 +455,5 @@ def test_graph_interpreter_preview(graph):
         )
         LIMIT 5
         """
-        ).strip()
-    )
+    ).strip()
+    assert sql_code == expected
