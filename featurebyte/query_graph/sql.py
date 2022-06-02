@@ -62,13 +62,21 @@ class TableNode(SQLNode, ABC):
         return sql.subquery()
 
 
-@dataclass
-class ExpressionNode(SQLNode):
+@dataclass  # type: ignore
+class ExpressionNode(SQLNode, ABC):
+    """Base class for all expression nodes (non-table)"""
 
     table_node: TableNode
 
     @property
     def sql_standalone(self) -> Expression:
+        """Construct a sql expression that produces a table output for preview purpose
+
+        Returns
+        -------
+        Expression
+            A sqlglot Expression object
+        """
         return select(self.sql).from_(self.table_node.sql_nested())
 
 

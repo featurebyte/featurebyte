@@ -20,7 +20,6 @@ from featurebyte.query_graph.sql import (
     GenericInputNode,
     Project,
     SQLNode,
-    StrExpressionNode,
     TableNode,
     make_binary_operation_node,
 )
@@ -114,6 +113,7 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
+            klass: Any
             if self.sql_type == SQLType.BUILD_TILE:
                 klass = BuildTileInputNode
             else:
@@ -134,6 +134,7 @@ class SQLOperationGraph:
             )
 
         elif node_type == NodeType.PROJECT:
+            assert isinstance(input_sql_nodes[0], TableNode)
             sql_node = Project(table_node=input_sql_nodes[0], columns=parameters["columns"])
 
         elif node_type in BINARY_OPERATION_NODE_TYPES:
@@ -299,19 +300,23 @@ class GraphInterpreter:
             Query graph node name
         num_rows : int
             Number of rows to include in the preview
+
+        Returns
+        -------
+        str
+            SQL code for preview purpose
         """
         sql_graph = SQLOperationGraph(self.query_graph, sql_type=SQLType.PREVIEW)
         sql_graph.build(self.query_graph.nodes[node_name])
 
         sql_node = sql_graph.get_node(node_name)
+        assert isinstance(sql_node, (TableNode, ExpressionNode))
         if isinstance(sql_node, TableNode):
             sql_tree = sql_node.sql
-        elif isinstance(sql_node, ExpressionNode):
-            sql_tree = sql_node.sql_standalone
         else:
-            raise NotImplementedError(f"Not supported node type: {type(sql_node)}")
+            sql_tree = sql_node.sql_standalone
 
         assert isinstance(sql_tree, sqlglot.expressions.Select)
-        sql_code = sql_tree.limit(num_rows).sql(pretty=True)
+        sql_code: str = sql_tree.limit(num_rows).sql(pretty=True)
 
         return sql_code
