@@ -43,7 +43,7 @@ class Node:
     """
 
     name: str
-    type: str
+    type: NodeType
     parameters: dict[str, Any]
     output_type: str
 
