@@ -1,4 +1,4 @@
-create or replace procedure SP_TILE_MONITOR(MONITOR_SQL varchar, WINDOW_END_SECONDS float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME_PREFIX varchar, TILE_TYPE varchar)
+create or replace procedure SP_TILE_MONITOR(MONITOR_SQL varchar, WINDOW_END_SECONDS float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME varchar, TILE_TYPE varchar)
 returns string
 language javascript
 as
@@ -10,8 +10,7 @@ $$
 
     var debug = "Debug"
 
-    var online_table_name = TABLE_NAME_PREFIX + "ONLINE"
-    var table_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_name = '${online_table_name}')`
+    var table_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_name = '${TABLE_NAME}')`
     var result = snowflake.execute(
         {
             sqlText: table_exist_sql
@@ -46,13 +45,13 @@ $$
 
     var compare_sql = `
         select a.*, b.VALUE as NEW_VALUE, '${TILE_TYPE}'::VARCHAR(8) as TILE_TYPE, sysdate() as CREATED_AT
-        from ${online_table_name} a, (${new_tile_sql}) b
+        from ${TABLE_NAME} a, (${new_tile_sql}) b
         where a.INDEX = b.INDEX ${filter_cols_str}
         and a.VALUE != b.VALUE
     `
     debug = debug + " - compare_sql: " + compare_sql
 
-    var monitor_table_name = TABLE_NAME_PREFIX + 'MONITOR'
+    var monitor_table_name = TABLE_NAME + '_MONITOR'
     table_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_name = '${monitor_table_name}')`
     result = snowflake.execute(
         {
