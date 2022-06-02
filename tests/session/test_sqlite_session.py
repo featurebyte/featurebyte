@@ -97,7 +97,7 @@ def test_sqlite_session(sqlite_db_filename):
 
 def test_execute_query__with_empty_return(sqlite_db_filename):
     """
-    Test execute query
+    Test execute query with empty result
     """
     session = SQLiteSession(filename=sqlite_db_filename)
     write_output = session.execute_query(
