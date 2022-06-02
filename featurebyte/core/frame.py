@@ -30,6 +30,17 @@ class Frame(OpsMixin):
         self.column_lineage_map = column_lineage_map
         self.row_index_lineage = row_index_lineage
 
+    @property
+    def columns(self) -> list[str]:
+        """
+        Columns of the object
+
+        Returns
+        -------
+        list
+        """
+        return sorted(self.column_var_type_map.keys())
+
     def __repr__(self) -> str:
         return f"Frame(node.name={self.node.name})"
 

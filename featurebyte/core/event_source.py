@@ -3,11 +3,16 @@ EventSource class
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from featurebyte.core.frame import Frame
 from featurebyte.core.series import Series
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.session.base import BaseSession, TableName
+
+if TYPE_CHECKING:
+    from featurebyte.core.groupby import EventSourceGroupBy
 
 
 class EventSource(Frame):
@@ -139,3 +144,21 @@ class EventSource(Frame):
         if key in self.protected_columns:
             raise ValueError("Not allow to override timestamp column or entity identifiers!")
         super().__setitem__(key, value)
+
+    def groupby(self, by: str | list[str]) -> EventSourceGroupBy:
+        """
+        Group EventSource using a column or list of columns of the EventSource object
+
+        Parameters
+        ----------
+        by: str | list[str]
+            used to define the groups for the `groupby` operation
+
+        Returns
+        -------
+        EventSourceGroupBy
+            a groupby object that contains information about the groups
+        """
+        from featurebyte.core.groupby import EventSourceGroupBy
+
+        return EventSourceGroupBy(obj=self, keys=by)

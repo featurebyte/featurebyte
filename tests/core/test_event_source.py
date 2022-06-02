@@ -1,64 +1,12 @@
 """
 Unit test for EventSource
 """
-
-from collections import namedtuple
-
 import pytest
 
 from featurebyte.core.event_source import EventSource
+from featurebyte.core.groupby import EventSourceGroupBy
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import Node
-
-
-@pytest.fixture(name="session")
-def fake_session():
-    """
-    Fake database session for testing
-    """
-    FakeSession = namedtuple("FakeSession", ["database_metadata", "source_type"])
-    database_metadata = {
-        '"trans"': {
-            "cust_id": DBVarType.INT,
-            "session_id": DBVarType.INT,
-            "event_type": DBVarType.VARCHAR,
-            "value": DBVarType.FLOAT,
-            "created_at": DBVarType.INT,
-        }
-    }
-    yield FakeSession(database_metadata=database_metadata, source_type="sqlite")
-
-
-@pytest.fixture(name="event_source")
-@pytest.mark.usefixtures("graph")
-def event_source_fixture(session):
-    """
-    EventSource fixture
-    """
-    event_source = EventSource.from_session(
-        session=session,
-        table_name='"trans"',
-        timestamp_column="created_at",
-        entity_identifiers=["cust_id"],
-    )
-    assert isinstance(event_source, EventSource)
-    expected_inception_node = Node(
-        name="input_1",
-        type=NodeType.INPUT,
-        parameters={
-            "columns": ["created_at", "cust_id", "event_type", "session_id", "value"],
-            "timestamp": "created_at",
-            "entity_identifiers": ["cust_id"],
-            "dbtable": '"trans"',
-        },
-        output_type=NodeOutputType.FRAME,
-    )
-    assert event_source.inception_node == expected_inception_node
-    assert event_source.timestamp_column == "created_at"
-    assert event_source.entity_identifiers == ["cust_id"]
-    yield event_source
 
 
 def test_event_source__table_key_not_found(session):
@@ -145,3 +93,12 @@ def test_setitem__override_protected_column(event_source, column):
         event_source[column] = 1
     expected_msg = "Not allow to override timestamp column or entity identifiers!"
     assert expected_msg in str(exc.value)
+
+
+@pytest.mark.parametrize("by", ["cust_id", ["cust_id", "session_id"]])
+def test_groupby(event_source, by):
+    """
+    Test EventSource groupby return correct object
+    """
+    grouped = event_source.groupby(by=by)
+    assert isinstance(grouped, EventSourceGroupBy)
