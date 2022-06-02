@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from featurebyte.core.frame import Frame
 from featurebyte.core.operation import EventSourceFeatureOpsMixin
+from featurebyte.core.protocol import HasInceptionNodeProtocol
 from featurebyte.core.series import Series
 
 
@@ -14,7 +15,7 @@ class FeatureMixin(EventSourceFeatureOpsMixin):
     """
 
     @property
-    def entity_identifiers(self) -> list[str] | None:
+    def entity_identifiers(self: HasInceptionNodeProtocol) -> list[str] | None:
         """
         Entity identifiers column names
         """
