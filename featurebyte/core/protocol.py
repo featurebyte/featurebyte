@@ -7,7 +7,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
-    from featurebyte.query_graph.graph import Node
+    from featurebyte.query_graph.graph import Node, QueryGraph
+    from featurebyte.session.base import BaseSession
 
 
 class HasRowIndexLineageProtocol(Protocol):
@@ -18,7 +19,7 @@ class HasRowIndexLineageProtocol(Protocol):
     @property
     def row_index_lineage(self) -> tuple[str, ...]:
         """
-        Attributes/property to indicate row index lineage
+        Attribute/property to indicate row index lineage
 
         Returns
         -------
@@ -34,9 +35,45 @@ class HasInceptionNodeProtocol(Protocol):
     @property
     def inception_node(self) -> Node:
         """
-        Attributes/property to indicate the first node in row_index_lineage
+        Attribute/property to indicate the first node in row_index_lineage
 
         Returns
         -------
         tuple[str, ...]
+        """
+
+
+class PreviewableProtocol(Protocol):
+    """
+    Class with query graph and session attributes/properties
+    """
+
+    @property
+    def graph(self) -> QueryGraph:
+        """
+        Query graph object
+
+        Returns
+        -------
+        QueryGraph
+        """
+
+    @property
+    def node(self) -> Node:
+        """
+        Current operation node
+
+        Returns
+        -------
+        Node
+        """
+
+    @property
+    def session(self) -> BaseSession:
+        """
+        Session to interface with database
+
+        Returns
+        -------
+        BaseSession
         """

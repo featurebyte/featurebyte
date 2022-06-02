@@ -5,10 +5,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from featurebyte.core.protocol import HasRowIndexLineageProtocol
+import pandas as pd
+
+from featurebyte.core.protocol import HasRowIndexLineageProtocol, PreviewableProtocol
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.interpreter import SQLOperationGraph
 
 if TYPE_CHECKING:
     from featurebyte.core.frame import Frame
@@ -115,6 +118,19 @@ class OpsMixin:
         output = list(lineage)
         output.append(node_name)
         return tuple(output)
+
+    def preview(self: PreviewableProtocol) -> pd.DataFrame | None:
+        """
+        To preview current node results
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+        sql_graph = SQLOperationGraph(self.graph)
+        sql_graph.build(self.graph.nodes[self.node.name])
+        sql_tree = sql_graph.get_node(self.node.name).sql
+        return self.session.execute_query(sql_tree.sql(pretty=True))
 
 
 class EventSourceFeatureOpsMixin:

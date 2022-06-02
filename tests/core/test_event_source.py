@@ -101,3 +101,11 @@ def test_groupby(event_source):
     """
     grouped = event_source.groupby(by_keys="cust_id")
     assert isinstance(grouped, EventSourceGroupBy)
+
+
+def test_experiment(event_source):
+    event_source["value"] = event_source["value"] + 2
+    output = event_source.preview()
+    import pdb
+
+    pdb.set_trace()

@@ -9,6 +9,7 @@ from featurebyte.core.operation import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.interpreter import SQLOperationGraph
 from featurebyte.session.base import BaseSession
 
 
@@ -304,3 +305,9 @@ class Series(OpsMixin):
 
     def __truediv__(self, other: int | float | Series) -> Series:
         return self._binary_arithmetic_op(other, NodeType.DIV)
+
+    def preview(self):
+        sql_graph = SQLOperationGraph(self.graph)
+        sql_graph.build(self.graph.nodes[self.node.name])
+        sql_tree = sql_graph.get_node(self.node.name).sql
+        return sql_tree.sql(pretty=True)
