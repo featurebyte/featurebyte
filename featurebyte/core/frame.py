@@ -114,19 +114,6 @@ class Frame(OpsMixin):
         """
         self._check_any_missing_column(item)
 
-        if isinstance(item, Series):
-            node = self._add_filter_operation(
-                item=self, mask=item, node_output_type=NodeOutputType.FRAME
-            )
-            column_lineage_map = {}
-            for col, lineage in self.column_lineage_map.items():
-                column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
-            return type(self)(
-                node=node,
-                column_var_type_map=copy.deepcopy(self.column_var_type_map),
-                column_lineage_map=column_lineage_map,
-                row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
-            )
         if isinstance(item, str):
             # when doing projection, use the last updated node of the column rather than using
             # the last updated dataframe node to prevent adding redundant project node to the graph.
@@ -163,6 +150,19 @@ class Frame(OpsMixin):
                 column_var_type_map=column_var_type_map,
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self.row_index_lineage,
+            )
+        if isinstance(item, Series):
+            node = self._add_filter_operation(
+                item=self, mask=item, node_output_type=NodeOutputType.FRAME
+            )
+            column_lineage_map = {}
+            for col, lineage in self.column_lineage_map.items():
+                column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
+            return type(self)(
+                node=node,
+                column_var_type_map=copy.deepcopy(self.column_var_type_map),
+                column_lineage_map=column_lineage_map,
+                row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
             )
         raise TypeError(f"Frame indexing with value '{item}' not supported!")
 
