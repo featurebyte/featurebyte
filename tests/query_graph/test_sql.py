@@ -13,14 +13,16 @@ def input_node_fixture():
     return sql.BuildTileInputNode(
         column_names=["col_1", "col_2", "col_3"],
         timestamp="ts",
-        input_node=sql.StrExpressionNode("dbtable"),
+        dbtable="dbtable",
     )
 
 
 def test_assign_node__replace(input_node):
     """Test assign node replacing an existing column"""
     node = sql.AssignNode(
-        table_node=input_node, column_node=sql.Project(columns=["a"]), name="col_1"
+        table_node=input_node,
+        column_node=sql.Project(table_node=input_node, columns=["a"]),
+        name="col_1",
     )
     assert node.columns == ["col_2", "col_3", "col_1"]
 
@@ -28,7 +30,9 @@ def test_assign_node__replace(input_node):
 def test_assign_node__new_column(input_node):
     """Test assign node adding a new column"""
     node = sql.AssignNode(
-        table_node=input_node, column_node=sql.Project(columns=["a"]), name="col_11"
+        table_node=input_node,
+        column_node=sql.Project(table_node=input_node, columns=["a"]),
+        name="col_11",
     )
     assert node.columns == ["col_1", "col_2", "col_3", "col_11"]
 
@@ -50,10 +54,10 @@ def test_assign_node__new_column(input_node):
         (NodeType.OR, "a OR b"),
     ],
 )
-def test_binary_operation_node__series(node_type, expected):
+def test_binary_operation_node__series(node_type, expected, input_node):
     """Test binary operation node when another side is Series"""
-    column1 = sql.StrExpressionNode("a")
-    column2 = sql.StrExpressionNode("b")
+    column1 = sql.StrExpressionNode(table_node=input_node, expr="a")
+    column2 = sql.StrExpressionNode(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
     parameters = {}
     node = sql.make_binary_operation_node(node_type, input_nodes, parameters)
@@ -70,9 +74,9 @@ def test_binary_operation_node__series(node_type, expected):
         (NodeType.EQ, "apple", "a = 'apple'"),
     ],
 )
-def test_binary_operation_node__scalar(node_type, value, expected):
+def test_binary_operation_node__scalar(node_type, value, expected, input_node):
     """Test binary operation node when another side is scalar"""
-    column1 = sql.StrExpressionNode("a")
+    column1 = sql.StrExpressionNode(table_node=input_node, expr="a")
     input_nodes = [column1]
     parameters = {"value": value}
     node = sql.make_binary_operation_node(node_type, input_nodes, parameters)

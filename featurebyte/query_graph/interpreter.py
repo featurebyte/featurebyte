@@ -5,6 +5,9 @@ This module contains the Query Graph Interpreter
 from typing import Any, Dict, List, Union
 
 from dataclasses import dataclass
+from enum import Enum
+
+import sqlglot
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -13,12 +16,20 @@ from featurebyte.query_graph.sql import (
     AssignNode,
     BuildTileInputNode,
     BuildTileNode,
+    ExpressionNode,
+    GenericInputNode,
     Project,
     SQLNode,
-    StrExpressionNode,
     TableNode,
     make_binary_operation_node,
 )
+
+
+class SQLType(Enum):
+    """Type of SQL code corresponding to different operations"""
+
+    BUILD_TILE = "build_tile"
+    PREVIEW = "preview"
 
 
 class SQLOperationGraph:
@@ -28,11 +39,14 @@ class SQLOperationGraph:
     ----------
     query_graph : QueryGraph
         Query Graph representing user's intention
+    sql_type : SQLType
+        Type of SQL to generate
     """
 
-    def __init__(self, query_graph: QueryGraph) -> None:
+    def __init__(self, query_graph: QueryGraph, sql_type: SQLType) -> None:
         self.sql_nodes: Dict[str, Union[SQLNode, TableNode]] = {}
         self.query_graph = query_graph
+        self.sql_type = sql_type
 
     def build(self, target_node: Dict[str, Any]) -> Any:
         """Build the graph from a given query Node, working backwards
@@ -101,10 +115,15 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
-            sql_node = BuildTileInputNode(
+            klass: Any
+            if self.sql_type == SQLType.BUILD_TILE:
+                klass = BuildTileInputNode
+            else:
+                klass = GenericInputNode
+            sql_node = klass(
                 column_names=parameters["columns"],
                 timestamp=parameters["timestamp"],
-                input_node=StrExpressionNode(parameters["dbtable"]),
+                dbtable=parameters["dbtable"],
             )
 
         elif node_type == NodeType.ASSIGN:
@@ -117,7 +136,8 @@ class SQLOperationGraph:
             )
 
         elif node_type == NodeType.PROJECT:
-            sql_node = Project(parameters["columns"])
+            assert isinstance(input_sql_nodes[0], TableNode)
+            sql_node = Project(table_node=input_sql_nodes[0], columns=parameters["columns"])
 
         elif node_type in BINARY_OPERATION_NODE_TYPES:
             sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)
@@ -217,7 +237,9 @@ class TileSQLGenerator:
         -------
         TileGenSql
         """
-        groupby_sql_node = SQLOperationGraph(self.query_graph).build(groupby_node)
+        groupby_sql_node = SQLOperationGraph(
+            query_graph=self.query_graph, sql_type=SQLType.BUILD_TILE
+        ).build(groupby_node)
         sql = groupby_sql_node.sql
         frequency = groupby_node["parameters"]["frequency"]
         blind_spot = groupby_node["parameters"]["blind_spot"]
@@ -272,3 +294,33 @@ class GraphInterpreter:
             Not implemented yet
         """
         raise NotImplementedError()
+
+    def construct_preview_sql(self, node_name: str, num_rows: int = 10) -> str:
+        """Construct SQL to preview a given node
+
+        Parameters
+        ----------
+        node_name : str
+            Query graph node name
+        num_rows : int
+            Number of rows to include in the preview
+
+        Returns
+        -------
+        str
+            SQL code for preview purpose
+        """
+        sql_graph = SQLOperationGraph(self.query_graph, sql_type=SQLType.PREVIEW)
+        sql_graph.build(self.query_graph.nodes[node_name])
+
+        sql_node = sql_graph.get_node(node_name)
+        assert isinstance(sql_node, (TableNode, ExpressionNode))
+        if isinstance(sql_node, TableNode):
+            sql_tree = sql_node.sql
+        else:
+            sql_tree = sql_node.sql_standalone
+
+        assert isinstance(sql_tree, sqlglot.expressions.Select)
+        sql_code: str = sql_tree.limit(num_rows).sql(pretty=True)
+
+        return sql_code
