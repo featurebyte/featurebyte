@@ -80,9 +80,8 @@ class SnowflakeSession(BaseSession):
                 tables_or_views.append((database, schema, table))
 
             query_view_res = self.execute_query(f'SHOW VIEWS IN SCHEMA "{database}"."{schema}"')
-            if query_view_res:
-                if query_view_res is None:
-                    continue
+            if query_view_res is None:
+                continue
             for view in query_view_res["name"]:
                 tables_or_views.append((database, schema, view))
         return tables_or_views
