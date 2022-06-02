@@ -98,4 +98,5 @@ class EventSourceGroupBy(OpsMixin):
             column_var_type_map=self.obj.column_var_type_map,  # fix me
             column_lineage_map=self.obj.column_lineage_map,  # fix me
             row_index_lineage=self._append_to_lineage(self.obj.row_index_lineage, node.name),
+            session=self.obj.session,
         )

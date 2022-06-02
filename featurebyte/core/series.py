@@ -9,6 +9,7 @@ from featurebyte.core.operation import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.session.base import BaseSession
 
 
 class Series(OpsMixin):
@@ -23,6 +24,7 @@ class Series(OpsMixin):
         var_type: DBVarType,
         lineage: tuple[str, ...],
         row_index_lineage: tuple[str, ...],
+        session: BaseSession | None = None,
     ):
         self.graph = QueryGraph()
         self.node = node
@@ -30,6 +32,7 @@ class Series(OpsMixin):
         self.var_type = var_type
         self.lineage = lineage
         self.row_index_lineage = row_index_lineage
+        self.session = session
 
     def __repr__(self) -> str:
         return f"Series[{self.var_type}](name={self.name}, node.name={self.node.name})"
@@ -45,6 +48,7 @@ class Series(OpsMixin):
                 var_type=self.var_type,
                 lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+                session=self.session,
             )
         raise KeyError(f"Series indexing with value '{item}' not supported!")
 
@@ -148,6 +152,7 @@ class Series(OpsMixin):
                 var_type=output_var_type,
                 lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self.row_index_lineage,
+                session=self.session,
             )
 
         node = self.graph.add_operation(
@@ -162,6 +167,7 @@ class Series(OpsMixin):
             var_type=output_var_type,
             lineage=self._append_to_lineage(self.lineage, node.name),
             row_index_lineage=self.row_index_lineage,
+            session=self.session,
         )
 
     def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:

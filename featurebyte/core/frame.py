@@ -10,6 +10,7 @@ from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.session.base import BaseSession
 
 
 class Frame(OpsMixin):
@@ -25,12 +26,14 @@ class Frame(OpsMixin):
         column_var_type_map: dict[str, DBVarType],
         column_lineage_map: dict[str, tuple[str, ...]],
         row_index_lineage: tuple[str, ...],
+        session: BaseSession | None = None,
     ):
         self.graph = QueryGraph()
         self.node = node
         self.column_var_type_map = column_var_type_map
         self.column_lineage_map = column_lineage_map
         self.row_index_lineage = row_index_lineage
+        self.session = session
 
     @property
     def columns(self) -> list[str]:
@@ -129,6 +132,7 @@ class Frame(OpsMixin):
                 var_type=self.column_var_type_map[item],
                 lineage=self._append_to_lineage(self.column_lineage_map[item], node.name),
                 row_index_lineage=self.row_index_lineage,
+                session=self.session,
             )
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             node = self.graph.add_operation(
@@ -150,6 +154,7 @@ class Frame(OpsMixin):
                 column_var_type_map=column_var_type_map,
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self.row_index_lineage,
+                session=self.session,
             )
         if isinstance(item, Series):
             node = self._add_filter_operation(
@@ -163,6 +168,7 @@ class Frame(OpsMixin):
                 column_var_type_map=copy.deepcopy(self.column_var_type_map),
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+                session=self.session,
             )
         raise TypeError(f"Frame indexing with value '{item}' not supported!")
 

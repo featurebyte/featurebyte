@@ -122,6 +122,7 @@ class EventSource(Frame, EventSourceFeatureOpsMixin):
             column_var_type_map=column_var_type_map,
             column_lineage_map={col: (node.name,) for col in column_var_type_map},
             row_index_lineage=(node.name,),
+            session=session,
         )
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
