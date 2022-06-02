@@ -63,6 +63,16 @@ class TableNode(SQLNode, ABC):
 
 
 @dataclass
+class ExpressionNode(SQLNode):
+
+    table_node: TableNode
+
+    @property
+    def sql_standalone(self) -> Expression:
+        return select(self.sql).from_(self.table_node.sql)
+
+
+@dataclass
 class StrExpressionNode(SQLNode):
     """Expression node created from string"""
 
@@ -74,7 +84,7 @@ class StrExpressionNode(SQLNode):
 
 
 @dataclass
-class ExpressionNode(SQLNode):
+class ParsedExpressionNode(SQLNode):
     """Expression node"""
 
     expr: Expression
@@ -115,11 +125,11 @@ class BuildTileInputNode(TableNode):
 
 
 @dataclass
-class BinaryOp(SQLNode):
+class BinaryOp(ExpressionNode):
     """Binary operation node"""
 
-    left_node: SQLNode
-    right_node: SQLNode
+    left_node: ExpressionNode
+    right_node: ExpressionNode
     operation: type[expressions.Expression]
 
     @property
@@ -128,7 +138,7 @@ class BinaryOp(SQLNode):
 
 
 @dataclass
-class Project(SQLNode):
+class Project(ExpressionNode):
     """Project node"""
 
     columns: list[str]
@@ -291,14 +301,20 @@ def make_binary_operation_node(
         raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
 
     left_node = input_sql_nodes[0]
+    assert isinstance(left_node, ExpressionNode)
     right_node: Any
     if len(input_sql_nodes) == 1:
         # When the other value is a scalar
         literal_value = make_literal_value(parameters["value"])
-        right_node = ExpressionNode(literal_value)
+        right_node = ParsedExpressionNode(literal_value)
     else:
         # When the other value is a Series
         right_node = input_sql_nodes[1]
 
-    output_node = BinaryOp(left_node=left_node, right_node=right_node, operation=expression_cls)
+    output_node = BinaryOp(
+        table_node=left_node.table_node,
+        left_node=left_node,
+        right_node=right_node,
+        operation=expression_cls,
+    )
     return output_node

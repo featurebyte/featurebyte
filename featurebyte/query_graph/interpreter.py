@@ -13,6 +13,7 @@ from featurebyte.query_graph.sql import (
     AssignNode,
     BuildTileInputNode,
     BuildTileNode,
+    ExpressionNode,
     Project,
     SQLNode,
     StrExpressionNode,
@@ -117,7 +118,7 @@ class SQLOperationGraph:
             )
 
         elif node_type == NodeType.PROJECT:
-            sql_node = Project(parameters["columns"])
+            sql_node = Project(table_node=input_sql_nodes[0], columns=parameters["columns"])
 
         elif node_type in BINARY_OPERATION_NODE_TYPES:
             sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)
@@ -272,3 +273,25 @@ class GraphInterpreter:
             Not implemented yet
         """
         raise NotImplementedError()
+
+    def construct_preview_sql(self, node_name: str, num_rows: int = 10) -> str:
+        """Construct SQL to preview a given node
+
+        Parameters
+        ----------
+        node_name : str
+            Query graph node name
+        num_rows : int
+            Number of rows to include in the preview
+        """
+        sql_graph = SQLOperationGraph(self.query_graph)
+        sql_graph.build(self.query_graph.nodes[node_name])
+        sql_node = sql_graph.get_node(node_name)
+        if isinstance(sql_node, TableNode):
+            sql_tree = sql_node.sql
+        elif isinstance(sql_node, ExpressionNode):
+            sql_tree = sql_node.sql_standalone
+        else:
+            raise NotImplementedError(f"Not supported node type: {type(sql_node)}")
+        sql_code = sql_tree.limit(num_rows).sql(pretty=True)
+        return sql_code
