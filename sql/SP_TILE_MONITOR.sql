@@ -45,7 +45,7 @@ $$
     `
 
     var compare_sql = `
-        select a.*, b.VALUE as NEW_VALUE, '${TILE_TYPE}' as TILE_TYPE, sysdate() as CREATED_AT
+        select a.*, b.VALUE as NEW_VALUE, '${TILE_TYPE}'::VARCHAR(8) as TILE_TYPE, sysdate() as CREATED_AT
         from ${online_table_name} a, (${new_tile_sql}) b
         where a.INDEX = b.INDEX ${filter_cols_str}
         and a.VALUE != b.VALUE
