@@ -17,6 +17,8 @@ class Frame(OpsMixin):
     Implement operations to manipulate database table
     """
 
+    series_class = Series
+
     def __init__(
         self,
         node: Node,
@@ -134,7 +136,7 @@ class Frame(OpsMixin):
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[self.graph.get_node_by_name(self.column_lineage_map[item][-1])],
             )
-            return Series(
+            return self.series_class(
                 node=node,
                 name=item,
                 var_type=self.column_var_type_map[item],

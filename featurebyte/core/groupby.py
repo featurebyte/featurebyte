@@ -4,11 +4,12 @@ This module contains groupby related class
 from __future__ import annotations
 
 from featurebyte.core.event_source import EventSource
-from featurebyte.core.feature import Feature, FeatureList
+from featurebyte.core.feature import FeatureList
+from featurebyte.core.operation import OpsMixin
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
-class EventSourceGroupBy:
+class EventSourceGroupBy(OpsMixin):
     """
     EventSourceGroupBy class
     """
@@ -51,10 +52,29 @@ class EventSourceGroupBy:
         window_end: str,
         schedule: str,
         feature_names: list[str],
-    ) -> Feature | FeatureList:
+    ) -> FeatureList:
+        """
+
+        Parameters
+        ----------
+        value_column
+        method
+        value_by_column
+        windows
+        timestamp_column
+        blind_spot
+        window_end
+        schedule
+        feature_names
+
+        Returns
+        -------
+
+        """
 
         assert len(self.keys) == 1  # multi-keys not implemented
         assert value_by_column is None  # value by column not implemented
+        assert len(windows) == len(feature_names)
 
         timestamp_column = timestamp_column or self.obj.timestamp_column
 
@@ -71,4 +91,11 @@ class EventSourceGroupBy:
             },
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[self.obj.node],
+        )
+
+        return FeatureList(
+            node=node,
+            column_var_type_map=self.obj.column_var_type_map,  # fix me
+            column_lineage_map=self.obj.column_lineage_map,  # fix me
+            row_index_lineage=self._append_to_lineage(self.obj.row_index_lineage, node.name),
         )
