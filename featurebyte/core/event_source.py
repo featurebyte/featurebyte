@@ -145,13 +145,13 @@ class EventSource(Frame):
             raise ValueError("Not allow to override timestamp column or entity identifiers!")
         super().__setitem__(key, value)
 
-    def groupby(self, by: str | list[str]) -> EventSourceGroupBy:
+    def groupby(self, by_keys: str | list[str]) -> EventSourceGroupBy:
         """
         Group EventSource using a column or list of columns of the EventSource object
 
         Parameters
         ----------
-        by: str | list[str]
+        by_keys: str | list[str]
             used to define the groups for the `groupby` operation
 
         Returns
@@ -159,6 +159,7 @@ class EventSource(Frame):
         EventSourceGroupBy
             a groupby object that contains information about the groups
         """
+        # pylint: disable=C0415
         from featurebyte.core.groupby import EventSourceGroupBy
 
-        return EventSourceGroupBy(obj=self, keys=by)
+        return EventSourceGroupBy(obj=self, keys=by_keys)

@@ -95,10 +95,9 @@ def test_setitem__override_protected_column(event_source, column):
     assert expected_msg in str(exc.value)
 
 
-@pytest.mark.parametrize("by", ["cust_id", ["cust_id", "session_id"]])
-def test_groupby(event_source, by):
+def test_groupby(event_source):
     """
     Test EventSource groupby return correct object
     """
-    grouped = event_source.groupby(by=by)
+    grouped = event_source.groupby(by_keys="cust_id")
     assert isinstance(grouped, EventSourceGroupBy)

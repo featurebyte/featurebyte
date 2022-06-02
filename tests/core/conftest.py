@@ -114,8 +114,7 @@ def fake_session():
 
 
 @pytest.fixture(name="event_source")
-@pytest.mark.usefixtures("graph")
-def event_source_fixture(session):
+def event_source_fixture(session, graph):
     """
     EventSource fixture
     """
@@ -137,7 +136,37 @@ def event_source_fixture(session):
         },
         output_type=NodeOutputType.FRAME,
     )
+    assert event_source.graph is graph
     assert event_source.inception_node == expected_inception_node
     assert event_source.timestamp_column == "created_at"
     assert event_source.entity_identifiers == ["cust_id"]
+    yield event_source
+
+
+@pytest.fixture(name="event_source_without_entity_ids")
+def event_source_without_entity_ids_fixture(session, graph):
+    """
+    EventSource fixture
+    """
+    event_source = EventSource.from_session(
+        session=session,
+        table_name='"trans"',
+        timestamp_column="created_at",
+    )
+    assert isinstance(event_source, EventSource)
+    expected_inception_node = Node(
+        name="input_1",
+        type=NodeType.INPUT,
+        parameters={
+            "columns": ["created_at", "cust_id", "event_type", "session_id", "value"],
+            "timestamp": "created_at",
+            "entity_identifiers": None,
+            "dbtable": '"trans"',
+        },
+        output_type=NodeOutputType.FRAME,
+    )
+    assert event_source.graph is graph
+    assert event_source.inception_node == expected_inception_node
+    assert event_source.timestamp_column == "created_at"
+    assert event_source.entity_identifiers is None
     yield event_source
