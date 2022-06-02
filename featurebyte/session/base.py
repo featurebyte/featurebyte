@@ -63,5 +63,6 @@ class BaseSession:
                 all_rows = cursor.fetchall()
                 columns = [row[0] for row in cursor.description]
                 return pd.DataFrame(all_rows, columns=columns)
+            return None
         finally:
             cursor.close()

@@ -30,6 +30,8 @@ class SQLiteSession(BaseSession):
 
     def _list_tables(self) -> list[str]:
         query_table_res = self.execute_query("SELECT name FROM sqlite_master WHERE type = 'table'")
+        if query_table_res is None:
+            return []
         return list(query_table_res["name"])
 
     @staticmethod
@@ -57,6 +59,8 @@ class SQLiteSession(BaseSession):
         output: dict[TableName, TableSchema] = {}
         for table in self._list_tables():
             query_column_res = self.execute_query(f'PRAGMA table_info("{table}")')
+            if query_column_res is None:
+                continue
             column_name_type_map = {}
             for _, (column_name, data_type) in query_column_res[["name", "type"]].iterrows():
                 column_name_type_map[column_name] = self._convert_to_db_var_type(data_type)

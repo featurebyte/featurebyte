@@ -54,6 +54,8 @@ class SnowflakeSession(BaseSession):
         if self.database:
             return [self.database]
         query_res = self.execute_query("SHOW DATABASES")
+        if query_res is None:
+            return []
         return list(query_res["name"])
 
     def _list_schemas(self) -> list[tuple[str, str]]:
@@ -62,6 +64,8 @@ class SnowflakeSession(BaseSession):
         database_schemas = []
         for database in self._list_databases():
             query_res = self.execute_query(f"SHOW SCHEMAS IN DATABASE {database}")
+            if query_res is None:
+                continue
             for schema in query_res["name"]:
                 database_schemas.append((database, schema))
         return database_schemas
@@ -70,10 +74,15 @@ class SnowflakeSession(BaseSession):
         tables_or_views = []
         for database, schema in self._list_schemas():
             query_table_res = self.execute_query(f'SHOW TABLES IN SCHEMA "{database}"."{schema}"')
+            if query_table_res is None:
+                continue
             for table in query_table_res["name"]:
                 tables_or_views.append((database, schema, table))
 
             query_view_res = self.execute_query(f'SHOW VIEWS IN SCHEMA "{database}"."{schema}"')
+            if query_view_res:
+                if query_view_res is None:
+                    continue
             for view in query_view_res["name"]:
                 tables_or_views.append((database, schema, view))
         return tables_or_views
@@ -106,6 +115,8 @@ class SnowflakeSession(BaseSession):
             query_column_res = self.execute_query(
                 f'SHOW COLUMNS IN "{database}"."{schema}"."{table_or_view}"'
             )
+            if query_column_res is None:
+                continue
             column_name_type_map = {}
             for _, (column_name, data_type) in query_column_res[
                 ["column_name", "data_type"]
