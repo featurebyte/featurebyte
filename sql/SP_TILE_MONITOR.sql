@@ -9,21 +9,33 @@ $$
     */
 
     var debug = "Debug"
+
+    var online_table_name = TABLE_NAME_PREFIX + "ONLINE"
+    var table_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_name = '${online_table_name}')`
+    var result = snowflake.execute(
+        {
+            sqlText: table_exist_sql
+        }
+    )
+    result.next()
+    var table_exist = result.getColumnValue(1)
+    debug = debug + " - online_tile_table_exist: " + table_exist
+    if (table_exist === false) {
+        // first-time execution that online tile table does not exist yet
+        return debug
+    }    
     
     var col_list = COLUMN_NAMES.split(",").filter(item => item.trim().toUpperCase() !== "TILE_START_TS")
     col_list_str = col_list.join(',')
     debug = debug + " - col_list_str: " + col_list_str
 
     filter_cols_str = ""
-    insert_cols_str = ""
     for (element of col_list) {
         element = element.trim()
         if (element.toUpperCase() !== 'VALUE') {
             filter_cols_str = filter_cols_str + " AND a." + element + " = b."+ element
-            insert_cols_str = insert_cols_str + "b." + element + ","
         }
-    }
-    insert_cols_str = insert_cols_str.slice(0, -1)    
+    }  
 
     //replace SQL template with start and end date strings for tile generation sql 
     var new_tile_sql = `
@@ -32,26 +44,24 @@ $$
         from (${MONITOR_SQL})
     `
 
-    var online_table_name = TABLE_NAME_PREFIX + "ONLINE"
     var compare_sql = `
-        select a.*, b.VALUE as NEW_VALUE, sysdate() as CREATED_AT
+        select a.*, b.VALUE as NEW_VALUE, '${TILE_TYPE}' as TILE_TYPE, sysdate() as CREATED_AT
         from ${online_table_name} a, (${new_tile_sql}) b
         where a.INDEX = b.INDEX ${filter_cols_str}
         and a.VALUE != b.VALUE
     `
     debug = debug + " - compare_sql: " + compare_sql
 
-    var monitor_table_name = TABLE_NAME_PREFIX + TILE_TYPE + '_MONITOR'
-    var table_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_name = '${monitor_table_name}')`
-    var result = snowflake.execute(
+    var monitor_table_name = TABLE_NAME_PREFIX + 'MONITOR'
+    table_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_name = '${monitor_table_name}')`
+    result = snowflake.execute(
         {
             sqlText: table_exist_sql
         }
     )
     result.next()
-    var table_exist = result.getColumnValue(1)
+    table_exist = result.getColumnValue(1)
     debug = debug + " - monitor_table_exist: " + table_exist
-
 
     if (table_exist === false) {
         // monitor table already exists, create table with new records
@@ -67,10 +77,7 @@ $$
         // monitor table already exists, insert new records
 
         var insert_sql = `
-            merge into ${monitor_table_name} a using (${compare_sql}) b
-                on a.INDEX = b.INDEX and a.NEW_VALUE = b.NEW_VALUE and a.VALUE = b.VALUE ${filter_cols_str}
-                when not matched then 
-                    insert values (b.INDEX, ${insert_cols_str}, b.VALUE, b.NEW_VALUE, b.CREATED_AT)
+            insert into ${monitor_table_name} ${compare_sql}
         `
         
         snowflake.execute(
