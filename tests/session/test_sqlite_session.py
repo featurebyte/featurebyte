@@ -93,3 +93,16 @@ def test_sqlite_session(sqlite_db_filename):
             "datetime": DBVarType.TIMESTAMP,
         }
     }
+
+
+def test_execute_query__with_empty_return(sqlite_db_filename):
+    """
+    Test execute query
+    """
+    session = SQLiteSession(filename=sqlite_db_filename)
+    write_output = session.execute_query(
+        """
+        CREATE TEMPORARY TABLE temp_table(int INT)
+        """
+    )
+    assert write_output is None

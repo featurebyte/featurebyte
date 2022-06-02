@@ -42,7 +42,7 @@ class BaseSession:
         """
         raise NotImplementedError
 
-    def execute_query(self, query: str) -> pd.DataFrame:
+    def execute_query(self, query: str) -> pd.DataFrame | None:
         """
         Execute SQL query
 
@@ -59,8 +59,9 @@ class BaseSession:
         cursor = self._connection.cursor()
         try:
             cursor.execute(query)
-            all_rows = cursor.fetchall()
-            columns = [row[0] for row in cursor.description]
-            return pd.DataFrame(all_rows, columns=columns)
+            if cursor.description:
+                all_rows = cursor.fetchall()
+                columns = [row[0] for row in cursor.description]
+                return pd.DataFrame(all_rows, columns=columns)
         finally:
             cursor.close()
