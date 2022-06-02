@@ -5,6 +5,9 @@ This module contains the Query Graph Interpreter
 from typing import Any, Dict, List, Union
 
 from dataclasses import dataclass
+from enum import Enum
+
+import sqlglot
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -14,12 +17,20 @@ from featurebyte.query_graph.sql import (
     BuildTileInputNode,
     BuildTileNode,
     ExpressionNode,
+    GenericInputNode,
     Project,
     SQLNode,
     StrExpressionNode,
     TableNode,
     make_binary_operation_node,
 )
+
+
+class SQLType(Enum):
+    """Type of SQL code corresponding to different operations"""
+
+    BUILD_TILE = "build_tile"
+    PREVIEW = "preview"
 
 
 class SQLOperationGraph:
@@ -31,9 +42,10 @@ class SQLOperationGraph:
         Query Graph representing user's intention
     """
 
-    def __init__(self, query_graph: QueryGraph) -> None:
+    def __init__(self, query_graph: QueryGraph, sql_type: SQLType = SQLType.BUILD_TILE) -> None:
         self.sql_nodes: Dict[str, Union[SQLNode, TableNode]] = {}
         self.query_graph = query_graph
+        self.sql_type = sql_type
 
     def build(self, target_node: Dict[str, Any]) -> Any:
         """Build the graph from a given query Node, working backwards
@@ -102,10 +114,14 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
-            sql_node = BuildTileInputNode(
+            if self.sql_type == SQLType.BUILD_TILE:
+                klass = BuildTileInputNode
+            else:
+                klass = GenericInputNode
+            sql_node = klass(
                 column_names=parameters["columns"],
                 timestamp=parameters["timestamp"],
-                input_node=StrExpressionNode(parameters["dbtable"]),
+                dbtable=parameters["dbtable"],
             )
 
         elif node_type == NodeType.ASSIGN:
@@ -284,8 +300,9 @@ class GraphInterpreter:
         num_rows : int
             Number of rows to include in the preview
         """
-        sql_graph = SQLOperationGraph(self.query_graph)
+        sql_graph = SQLOperationGraph(self.query_graph, sql_type=SQLType.PREVIEW)
         sql_graph.build(self.query_graph.nodes[node_name])
+
         sql_node = sql_graph.get_node(node_name)
         if isinstance(sql_node, TableNode):
             sql_tree = sql_node.sql
@@ -293,5 +310,8 @@ class GraphInterpreter:
             sql_tree = sql_node.sql_standalone
         else:
             raise NotImplementedError(f"Not supported node type: {type(sql_node)}")
+
+        assert isinstance(sql_tree, sqlglot.expressions.Select)
         sql_code = sql_tree.limit(num_rows).sql(pretty=True)
+
         return sql_code

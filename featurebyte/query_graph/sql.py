@@ -69,11 +69,11 @@ class ExpressionNode(SQLNode):
 
     @property
     def sql_standalone(self) -> Expression:
-        return select(self.sql).from_(self.table_node.sql)
+        return select(self.sql).from_(self.table_node.sql_nested())
 
 
 @dataclass
-class StrExpressionNode(SQLNode):
+class StrExpressionNode(ExpressionNode):
     """Expression node created from string"""
 
     expr: str
@@ -84,7 +84,7 @@ class StrExpressionNode(SQLNode):
 
 
 @dataclass
-class ParsedExpressionNode(SQLNode):
+class ParsedExpressionNode(ExpressionNode):
     """Expression node"""
 
     expr: Expression
@@ -95,12 +95,12 @@ class ParsedExpressionNode(SQLNode):
 
 
 @dataclass
-class BuildTileInputNode(TableNode):
-    """Input data node used when building tiles"""
+class GenericInputNode(TableNode):
+    """Input data node"""
 
     column_names: list[str]
     timestamp: str
-    input_node: StrExpressionNode
+    dbtable: str
 
     @property
     def columns(self) -> list[str]:
@@ -116,7 +116,25 @@ class BuildTileInputNode(TableNode):
             A sqlglot Expression object
         """
         select_expr = select(*self.columns)
-        select_expr = select_expr.from_(self.input_node.sql)
+        select_expr = select_expr.from_(self.dbtable)
+        return select_expr
+
+
+@dataclass
+class BuildTileInputNode(GenericInputNode):
+    """Input data node used when building tiles"""
+
+    @property
+    def sql(self) -> Expression:
+        """Construct a sql expression
+
+        Returns
+        -------
+        Expression
+            A sqlglot Expression object
+        """
+        select_expr = super().sql
+        assert isinstance(select_expr, expressions.Select)
         select_expr = select_expr.where(
             f"{self.timestamp} >= CAST(FBT_START_DATE AS TIMESTAMP)",
             f"{self.timestamp} < CAST(FBT_END_DATE AS TIMESTAMP)",
@@ -302,17 +320,18 @@ def make_binary_operation_node(
 
     left_node = input_sql_nodes[0]
     assert isinstance(left_node, ExpressionNode)
+    table_node = left_node.table_node
     right_node: Any
     if len(input_sql_nodes) == 1:
         # When the other value is a scalar
         literal_value = make_literal_value(parameters["value"])
-        right_node = ParsedExpressionNode(literal_value)
+        right_node = ParsedExpressionNode(table_node=table_node, expr=literal_value)
     else:
         # When the other value is a Series
         right_node = input_sql_nodes[1]
 
     output_node = BinaryOp(
-        table_node=left_node.table_node,
+        table_node=table_node,
         left_node=left_node,
         right_node=right_node,
         operation=expression_cls,

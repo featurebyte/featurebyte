@@ -8,7 +8,7 @@ import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.interpreter import GraphInterpreter, SQLOperationGraph
+from featurebyte.query_graph.interpreter import GraphInterpreter, SQLOperationGraph, SQLType
 
 
 @pytest.fixture(name="graph", scope="function")
@@ -44,7 +44,7 @@ def test_graph_interpreter_super_simple(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, proj_a],
     )
-    sql_graph = SQLOperationGraph(graph)
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.PREVIEW)
     sql_graph.build(graph.nodes[assign.name])
     sql_tree = sql_graph.get_node(assign.name).sql
     expected = textwrap.dedent(
@@ -62,9 +62,6 @@ def test_graph_interpreter_super_simple(graph):
               a,
               b
             FROM event_table
-            WHERE
-              ts >= CAST(FBT_START_DATE AS TIMESTAMP)
-              AND ts < CAST(FBT_END_DATE AS TIMESTAMP)
         )
         """
     ).strip()
@@ -360,3 +357,107 @@ def test_graph_interpreter_snowflake(graph):
     sql_template = sql_template.replace("FBT_END_DATE", "'2022-04-19 00:00:00'")
     print()
     print(sql_template)
+
+
+def test_graph_interpreter_preview(graph):
+    """Test graph preview"""
+    node_input = graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "columns": ["ts", "cust_id", "a", "b"],
+            "timestamp": "ts",
+            "dbtable": "event_table",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    proj_b = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["b"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    add_node = graph.add_operation(
+        node_type=NodeType.ADD,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a, proj_b],
+    )
+    assign_node = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "c"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, add_node],
+    )
+    proj_c = graph.add_operation(  # project_3
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["c"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[assign_node],
+    )
+    _assign_node_2 = graph.add_operation(  # assign_2
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "c2"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node, proj_c],
+    )
+    interpreter = GraphInterpreter(graph)
+
+    sql_code = interpreter.construct_preview_sql("assign_2")
+    assert (
+        sql_code
+        == textwrap.dedent(
+            """
+        SELECT
+          ts,
+          cust_id,
+          a,
+          b,
+          c,
+          c AS c2
+        FROM (
+            SELECT
+              ts,
+              cust_id,
+              a,
+              b,
+              a + b AS c
+            FROM (
+                SELECT
+                  ts,
+                  cust_id,
+                  a,
+                  b
+                FROM event_table
+            )
+        )
+        LIMIT 10
+        """
+        ).strip()
+    )
+
+    sql_code = interpreter.construct_preview_sql("add_1", 5)
+    assert (
+        sql_code
+        == textwrap.dedent(
+            """
+        SELECT
+          a + b
+        FROM (
+            SELECT
+              ts,
+              cust_id,
+              a,
+              b
+            FROM event_table
+        )
+        LIMIT 5
+        """
+        ).strip()
+    )
