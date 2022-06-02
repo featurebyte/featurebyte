@@ -6,34 +6,23 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from featurebyte.core.frame import Frame
+from featurebyte.core.operation import EventSourceFeatureOpsMixin
 from featurebyte.core.series import Series
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.session.base import BaseSession, TableName
 
 if TYPE_CHECKING:
     from featurebyte.core.groupby import EventSourceGroupBy
 
 
-class EventSource(Frame):
+class EventSource(Frame, EventSourceFeatureOpsMixin):
     """
     EventSource class
     """
 
     def __repr__(self) -> str:
         return f"EventSource(node.name={self.node.name})"
-
-    @property
-    def inception_node(self) -> Node:
-        """
-        Input node where the event source is introduced to the query graph
-
-        Returns
-        -------
-        Node
-        """
-        graph = QueryGraph()
-        return graph.get_node_by_name(self.row_index_lineage[0])
 
     @property
     def timestamp_column(self) -> str | None:

@@ -4,26 +4,35 @@ Feature and FeatureList classes
 from __future__ import annotations
 
 from featurebyte.core.frame import Frame
+from featurebyte.core.operation import EventSourceFeatureOpsMixin
 from featurebyte.core.series import Series
-from featurebyte.query_graph.graph import Node, QueryGraph
 
 
-class FeatureMixin:
+class FeatureMixin(EventSourceFeatureOpsMixin):
     """
     FeatureMixin contains common properties & operations shared between FeatureList & Feature
     """
 
     @property
-    def inception_node(self) -> Node:
+    def entity_identifiers(self) -> list[str] | None:
         """
-        Input node where the event source is introduced to the query graph
+        Entity identifiers column names
+        """
+        return self.inception_node.parameters.get("keys")
+
+    @property
+    def protected_columns(self) -> set[str]:
+        """
+        Special columns where its value should not be overridden
 
         Returns
         -------
-        Node
+        set[str]
         """
-        graph = QueryGraph()
-        return graph.get_node_by_name(self.row_index_lineage[0])
+        columns = []
+        if self.entity_identifiers:
+            columns.extend(self.entity_identifiers)
+        return set(columns)
 
     def publish(self) -> None:
         """
@@ -38,15 +47,29 @@ class Feature(FeatureMixin, Series):
     """
 
     def publish(self) -> None:
-        pass
+        """
+        Publish feature
+        """
 
 
-class FeatureList(FeatureMixin, Frame):
+class FeatureList(Frame, FeatureMixin):
     """
     FeatureList class
     """
 
     series_class = Feature
 
+    def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
+        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
+            item = sorted(self.protected_columns.union(item))
+        return super().__getitem__(item)
+
+    def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
+        if key in self.protected_columns:
+            raise ValueError("Not allow to override entity identifiers!")
+        super().__setitem__(key, value)
+
     def publish(self) -> None:
-        pass
+        """
+        Publish feature list
+        """

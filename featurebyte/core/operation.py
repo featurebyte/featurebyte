@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from featurebyte.core.protocol import HasRowIndexLineageProtocol
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
@@ -114,3 +115,21 @@ class OpsMixin:
         output = list(lineage)
         output.append(node_name)
         return tuple(output)
+
+
+class EventSourceFeatureOpsMixin:
+    """
+    ProtectedOpsMixin contains operation specific to classes with protected columns
+    """
+
+    @property
+    def inception_node(self: HasRowIndexLineageProtocol) -> Node:
+        """
+        Input node where the event source is introduced to the query graph
+
+        Returns
+        -------
+        Node
+        """
+        graph = QueryGraph()
+        return graph.get_node_by_name(self.row_index_lineage[0])
