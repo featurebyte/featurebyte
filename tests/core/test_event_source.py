@@ -1,5 +1,5 @@
 """
-Unit test for EventSource
+Unit test for EventSource class
 """
 import pytest
 

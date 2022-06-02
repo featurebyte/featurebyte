@@ -1,6 +1,7 @@
 """
 This module contains all protocol related classes
 """
+# pylint: disable=R0903
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
