@@ -117,7 +117,7 @@ def test_graph_interpreter_multi_assign(graph):
         input_nodes=[assign_node, proj_c],
     )
     name = assign_node_2.name
-    sql_graph = SQLOperationGraph(graph)
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE)
     sql_graph.build(graph.nodes[name])
     sql_tree = sql_graph.get_node(name).sql
     expected = textwrap.dedent(
@@ -201,7 +201,7 @@ def test_graph_interpreter_binary_operations(graph, node_type, expected_expr):
         input_nodes=[node_input, binary_node],
     )
     name = assign_node.name
-    sql_graph = SQLOperationGraph(graph)
+    sql_graph = SQLOperationGraph(graph, SQLType.BUILD_TILE)
     sql_graph.build(graph.nodes[name])
     sql_tree = sql_graph.get_node(name).sql
     expected = textwrap.dedent(

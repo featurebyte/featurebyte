@@ -39,9 +39,11 @@ class SQLOperationGraph:
     ----------
     query_graph : QueryGraph
         Query Graph representing user's intention
+    sql_type : SQLType
+        Type of SQL to generate
     """
 
-    def __init__(self, query_graph: QueryGraph, sql_type: SQLType = SQLType.BUILD_TILE) -> None:
+    def __init__(self, query_graph: QueryGraph, sql_type: SQLType) -> None:
         self.sql_nodes: Dict[str, Union[SQLNode, TableNode]] = {}
         self.query_graph = query_graph
         self.sql_type = sql_type
@@ -235,7 +237,9 @@ class TileSQLGenerator:
         -------
         TileGenSql
         """
-        groupby_sql_node = SQLOperationGraph(self.query_graph).build(groupby_node)
+        groupby_sql_node = SQLOperationGraph(
+            query_graph=self.query_graph, sql_type=SQLType.BUILD_TILE
+        ).build(groupby_node)
         sql = groupby_sql_node.sql
         frequency = groupby_node["parameters"]["frequency"]
         blind_spot = groupby_node["parameters"]["blind_spot"]
