@@ -8,8 +8,7 @@ $$
 
         1. derive cron_residue_seconds, window_end_seconds, start_ts and monitor_start_ts for online and offline Tile respectively
         2. call monitor tile stored procedure
-        3. call generate tile stored procedure
-        4. if tile_type is offline, remove stale online tiles
+        3. call generate tile stored procedure to create new or replace already existed tiles
     */
 
     var debug = "Debug"
@@ -60,8 +59,8 @@ $$
     debug = debug + " - tile_start_ts_str: " + tile_start_ts_str
 
     var input_sql = SQL.replace("FB_START_TS", "\\'"+tile_start_ts_str+"\\'::timestamp_ntz").replace("FB_END_TS", "\\'"+tile_end_ts_str+"\\'::timestamp_ntz")   
-    var table_name_prefix = FEATURE_NAME.toUpperCase() + "_TILE_"
-    var monitor_stored_proc = `call SP_TILE_MONITOR('${input_sql}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name_prefix}', '${tile_type}')`
+    var table_name = FEATURE_NAME.toUpperCase() + "_TILE"
+    var monitor_stored_proc = `call SP_TILE_MONITOR('${input_sql}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}')`
     result = snowflake.execute(
         {
             sqlText: monitor_stored_proc
@@ -71,7 +70,6 @@ $$
     debug = debug + " - SP_TILE_MONITOR: " + result.getColumnValue(1)
 
     // trigger stored procedure to generate tiles
-    var table_name = FEATURE_NAME.toUpperCase() + "_TILE_" + tile_type
     var generate_stored_proc = `call SP_TILE_GENERATE('${input_sql}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}')`
     var result = snowflake.execute(
         {
@@ -80,18 +78,6 @@ $$
     )
     result.next()
     debug = debug + " - SP_TILE_GENERATE: " + result.getColumnValue(1)
-
-    if (tile_type === "OFFLINE") {
-        // remove stale online tiles whose tile_start_ts is less than tile_end_ts_str
-        var stored_proc = `call SP_TILE_REMOVE_ONLINE_TILE('${tile_end_ts_str}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${table_name_prefix}')`
-        result = snowflake.execute(
-            {
-                sqlText: stored_proc
-            }
-        )
-        result.next()
-        debug = debug + " - SP_TILE_REMOVE_ONLINE_TILE: " + result.getColumnValue(1)
-    }
 
     return debug
 $$;
