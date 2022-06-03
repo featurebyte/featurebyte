@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 from sqlglot import Expression, expressions, parse_one, select
 
-from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
 class SQLNode(ABC):
@@ -360,3 +360,35 @@ def make_binary_operation_node(
         operation=expression_cls,
     )
     return output_node
+
+
+def make_project_node(
+    input_sql_nodes: list[SQLNode],
+    parameters: dict[str, Any],
+    output_type: NodeOutputType,
+) -> Project | ProjectMulti:
+    """Create a Project or ProjectMulti node
+
+    Parameters
+    ----------
+    input_sql_nodes : list[SQLNode]
+        List of input SQL nodes
+    parameters : dict[str, Any]
+        Query node parameters
+    output_type : NodeOutputType
+        Query node output type
+
+    Returns
+    -------
+    Project | ProjectMulti
+        The appropriate SQL node for projection
+    """
+    table_node = input_sql_nodes[0]
+    assert isinstance(table_node, TableNode)
+    columns = parameters["columns"]
+    sql_node: Project | ProjectMulti
+    if output_type == NodeOutputType.SERIES:
+        sql_node = Project(table_node=table_node, column_name=columns[0])
+    else:
+        sql_node = ProjectMulti(input_node=table_node, column_names=columns)
+    return sql_node
