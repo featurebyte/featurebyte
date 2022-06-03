@@ -4,8 +4,8 @@ Feature and FeatureList classes
 from __future__ import annotations
 
 from featurebyte.core.frame import Frame
-from featurebyte.core.mixin import EventSourceFeatureOpsMixin
-from featurebyte.core.protocol import HasInceptionNodeProtocol
+from featurebyte.core.mixin import EventSourceFeatureOpsMixin, WithProtectedColumnsFrameMixin
+from featurebyte.core.protocol import ProtectedPropertiesProtocol
 from featurebyte.core.series import Series
 
 
@@ -15,7 +15,7 @@ class FeatureMixin(EventSourceFeatureOpsMixin):
     """
 
     @property
-    def entity_identifiers(self: HasInceptionNodeProtocol) -> list[str] | None:
+    def entity_identifiers(self: ProtectedPropertiesProtocol) -> list[str] | None:
         """
         Entity identifiers column names
         """
@@ -24,7 +24,7 @@ class FeatureMixin(EventSourceFeatureOpsMixin):
     @property
     def protected_columns(self) -> set[str]:
         """
-        Special columns where its value should not be overridden
+        Special columns set where values of these columns should not be overridden
 
         Returns
         -------
@@ -53,22 +53,12 @@ class Feature(FeatureMixin, Series):
         """
 
 
-class FeatureList(Frame, FeatureMixin):
+class FeatureList(Frame, FeatureMixin, WithProtectedColumnsFrameMixin):
     """
     FeatureList class
     """
 
     series_class = Feature
-
-    def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
-        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
-            item = sorted(self.protected_columns.union(item))
-        return super().__getitem__(item)
-
-    def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
-        if key in self.protected_columns:
-            raise ValueError("Not allow to override entity identifiers!")
-        super().__setitem__(key, value)
 
     def publish(self) -> None:
         """

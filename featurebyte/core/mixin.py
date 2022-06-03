@@ -7,7 +7,11 @@ from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
-from featurebyte.core.protocol import HasRowIndexLineageProtocol, PreviewableProtocol
+from featurebyte.core.protocol import (
+    ProtectedPropertiesProtocol,
+    WithQueryGraphAndSessionProtocol,
+    WithQueryGraphProtocol,
+)
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
@@ -122,11 +126,12 @@ class OpsMixin:
 
 class EventSourceFeatureOpsMixin:
     """
-    ProtectedOpsMixin contains operation specific to classes with protected columns
+    EventSourceFeatureOpsMixin contains common properties & methods shared between EventSource, Feature &
+    FeatureList classes
     """
 
     @property
-    def inception_node(self: HasRowIndexLineageProtocol) -> Node:
+    def inception_node(self: WithQueryGraphProtocol) -> Node:
         """
         Input node where the event source is introduced to the query graph
 
@@ -138,12 +143,33 @@ class EventSourceFeatureOpsMixin:
         return graph.get_node_by_name(self.row_index_lineage[0])
 
 
+class WithProtectedColumnsFrameMixin:
+    """
+    WithProtectedColumnsFrameMixin contains common properties & methods shared between Frame child classes with
+    protected columns
+    """
+
+    def __getitem__(
+        self: ProtectedPropertiesProtocol, item: str | list[str] | Series
+    ) -> Series | Frame:
+        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
+            item = sorted(self.protected_columns.union(item))
+        return super().__getitem__(item)
+
+    def __setitem__(
+        self: ProtectedPropertiesProtocol, key: str, value: int | float | str | bool | Series
+    ) -> None:
+        if key in self.protected_columns:
+            raise ValueError(f"Not allow to override special column '{key}'!")
+        super().__setitem__(key, value)
+
+
 class PreviewableMixin:
     """
     PreviewableMixin provide methods to preview transformed table/column partial output
     """
 
-    def preview(self: PreviewableProtocol) -> pd.DataFrame | None:
+    def preview(self: WithQueryGraphAndSessionProtocol) -> pd.DataFrame | None:
         """
         Preview transformed table/column partial output
 

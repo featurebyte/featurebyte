@@ -1,7 +1,6 @@
 """
 This module contains all protocol related classes
 """
-# pylint: disable=R0903
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
@@ -11,23 +10,17 @@ if TYPE_CHECKING:
     from featurebyte.session.base import BaseSession
 
 
-class HasRowIndexLineageProtocol(Protocol):
+class WithQueryGraphProtocol(Protocol):
     """
-    Class with row_index_lineage property/attribute
+    Class contains query graph related attributes
     """
 
-    @property
-    def row_index_lineage(self) -> tuple[str, ...]:
-        """
-        Attribute/property to indicate row index lineage
-
-        Returns
-        -------
-        tuple[str, ...]
-        """
+    graph: QueryGraph
+    node: Node
+    row_index_lineage: tuple[str, ...]
 
 
-class HasInceptionNodeProtocol(Protocol):
+class ProtectedPropertiesProtocol(WithQueryGraphProtocol):
     """
     Class with inception_node property/attribute
     """
@@ -42,38 +35,20 @@ class HasInceptionNodeProtocol(Protocol):
         tuple[str, ...]
         """
 
+    @property
+    def protected_columns(self) -> set[str]:
+        """
+        Special columns set where values of these columns should not be overridden
 
-class PreviewableProtocol(Protocol):
+        Returns
+        -------
+        set[str]
+        """
+
+
+class WithQueryGraphAndSessionProtocol(WithQueryGraphProtocol):
     """
     Class with query graph and session attributes/properties
     """
 
-    @property
-    def graph(self) -> QueryGraph:
-        """
-        Query graph object
-
-        Returns
-        -------
-        QueryGraph
-        """
-
-    @property
-    def node(self) -> Node:
-        """
-        Current operation node
-
-        Returns
-        -------
-        Node
-        """
-
-    @property
-    def session(self) -> BaseSession:
-        """
-        Session to interface with database
-
-        Returns
-        -------
-        BaseSession
-        """
+    session: BaseSession
