@@ -6,6 +6,7 @@ from __future__ import annotations
 from featurebyte.core.event_source import EventSource
 from featurebyte.core.feature import FeatureList
 from featurebyte.core.mixin import OpsMixin
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
@@ -45,58 +46,68 @@ class EventSourceGroupBy(OpsMixin):
         self,
         value_column: str,
         method: str,
-        value_by_column: str | None,
         windows: list[str],
-        timestamp_column: str | None,
-        blind_spot: int,
-        window_end: str,
+        blind_spot: str,
         schedule: str,
         feature_names: list[str],
+        timestamp_column: str | None = None,
+        value_by_column: str | None = None,
     ) -> FeatureList:
         """
+        Aggregate given value_column for each group specified in keys
 
         Parameters
         ----------
-        value_column
-        method
-        value_by_column
-        windows
-        timestamp_column
-        blind_spot
-        window_end
-        schedule
-        feature_names
+        value_column: str
+            column to be aggregated
+        method: str
+            aggregation method
+        windows: list[str]
+            list of aggregation window sizes
+        blind_spot: str
+            historical gap introduced to the aggregation
+        schedule: str
+            schedule to run tile building job
+        feature_names: list[str]
+            output feature names
+        timestamp_column: str | None
+            timestamp column used to specify the window (if not specified, event source timestamp is used)
+        value_by_column: str | None
+            use this column to further split the data within a group
 
         Returns
         -------
-
+        FeatureList
         """
-
-        assert len(self.keys) == 1  # multi-keys not implemented
-        assert value_by_column is None  # value by column not implemented
-        assert len(windows) == len(feature_names)
-
-        timestamp_column = timestamp_column or self.obj.timestamp_column
-
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,
             node_params={
-                "key": self.keys[0],
+                "keys": self.keys,
                 "parent": value_column,
                 "agg_func": method,
-                "window_end": window_end,
+                "value_by": value_by_column,
+                "windows": windows,
+                "timestamp": timestamp_column or self.obj.timestamp_column,
                 "blind_spot": blind_spot,
-                "timestamp": timestamp_column,
                 "schedule": schedule,
+                "names": feature_names,
             },
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[self.obj.node],
         )
+        column_var_type_map = {}
+        column_lineage_map = {}
+        for key in self.keys:
+            column_var_type_map[key] = self.obj.column_var_type_map[key]
+            column_lineage_map[key] = (node.name,)
+        for column in feature_names:
+            column_var_type_map[column] = DBVarType.FLOAT
+            column_lineage_map[column] = (node.name,)
 
         return FeatureList(
             node=node,
-            column_var_type_map=self.obj.column_var_type_map,  # fix me
-            column_lineage_map=self.obj.column_lineage_map,  # fix me
-            row_index_lineage=self._append_to_lineage(self.obj.row_index_lineage, node.name),
+            column_var_type_map=column_var_type_map,
+            column_lineage_map=column_lineage_map,
+            row_index_lineage=(node.name,),
             session=self.obj.session,
         )

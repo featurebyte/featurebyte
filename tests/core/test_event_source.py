@@ -4,9 +4,10 @@ Unit test for EventSource class
 import pytest
 
 from featurebyte.core.event_source import EventSource
-from featurebyte.core.groupby import EventSourceGroupBy
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import Node
 
 
 def test_event_source__table_key_not_found(session):
@@ -46,6 +47,22 @@ def test_event_source__column_not_found(
         )
     expected_msg = f'Could not find the "{expected_column}" column from the table "trans"!'
     assert expected_msg in str(exc.value)
+
+
+def test_getitem__str(event_source):
+    """
+    Test retrieving single column
+    """
+    cust_id = event_source["cust_id"]
+    assert isinstance(cust_id, Series)
+    assert cust_id.node == Node(
+        name="project_1",
+        type=NodeType.PROJECT,
+        parameters={"columns": ["cust_id"]},
+        output_type=NodeOutputType.SERIES,
+    )
+    assert cust_id.lineage == ("input_1", "project_1")
+    assert cust_id.row_index_lineage == ("input_1",)
 
 
 def test_getitem__list_of_str(event_source):
@@ -93,11 +110,3 @@ def test_setitem__override_protected_column(event_source, column):
         event_source[column] = 1
     expected_msg = f"Not allow to override timestamp or entity identifier column '{column}'!"
     assert expected_msg in str(exc.value)
-
-
-def test_groupby(event_source):
-    """
-    Test EventSource groupby return correct object
-    """
-    grouped = event_source.groupby(by_keys="cust_id")
-    assert isinstance(grouped, EventSourceGroupBy)

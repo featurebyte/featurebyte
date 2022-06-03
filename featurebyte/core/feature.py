@@ -28,6 +28,10 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
     def entity_identifiers(self) -> list[str] | None:
         """
         Entity identifiers column names
+
+        Returns
+        -------
+        list[str]
         """
         return self.inception_node.parameters.get("keys")
 

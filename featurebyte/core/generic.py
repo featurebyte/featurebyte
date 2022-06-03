@@ -1,5 +1,5 @@
 """
-This module contains all protocol related classes
+This module generic query object classes
 """
 from __future__ import annotations
 
@@ -63,6 +63,11 @@ class ProtectedColumnsQueryObject(QueryObject):
         Returns
         -------
         set[str]
+
+        Raises
+        ------
+        TypeError
+            if any of the protected attribute types is not expected
         """
         columns = []
         for attr in self.protected_attributes:

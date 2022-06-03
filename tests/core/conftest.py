@@ -6,7 +6,9 @@ from collections import namedtuple
 import pytest
 
 from featurebyte.core.event_source import EventSource
+from featurebyte.core.feature import FeatureList
 from featurebyte.core.frame import Frame
+from featurebyte.core.groupby import EventSourceGroupBy
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -137,6 +139,7 @@ def event_source_fixture(session, graph):
         output_type=NodeOutputType.FRAME,
     )
     assert event_source.graph is graph
+    assert event_source.protected_columns == {"created_at", "cust_id"}
     assert event_source.inception_node == expected_inception_node
     assert event_source.timestamp_column == "created_at"
     assert event_source.entity_identifiers == ["cust_id"]
@@ -166,7 +169,61 @@ def event_source_without_entity_ids_fixture(session, graph):
         output_type=NodeOutputType.FRAME,
     )
     assert event_source.graph is graph
+    assert event_source.protected_columns == {"created_at"}
     assert event_source.inception_node == expected_inception_node
     assert event_source.timestamp_column == "created_at"
     assert event_source.entity_identifiers is None
     yield event_source
+
+
+@pytest.fixture(name="grouped_event_source")
+def grouped_event_source_fixture(event_source):
+    """
+    EventSourceGroupBy fixture
+    """
+    grouped = event_source.groupby("cust_id")
+    assert isinstance(grouped, EventSourceGroupBy)
+    yield grouped
+
+
+@pytest.fixture(name="feature_list")
+def feature_list_fixture(grouped_event_source):
+    """
+    FeatureList fixture
+    """
+    feature_list = grouped_event_source.aggregate(
+        value_column="value",
+        method="sum",
+        windows=["30m", "2h", "1d"],
+        blind_spot="10m",
+        schedule="30 MINUTE",
+        feature_names=["sum_30m", "sum_2h", "sum_1d"],
+    )
+    expected_inception_node = Node(
+        name="groupby_1",
+        type=NodeType.GROUPBY,
+        parameters={
+            "keys": ["cust_id"],
+            "parent": "value",
+            "agg_func": "sum",
+            "value_by": None,
+            "windows": ["30m", "2h", "1d"],
+            "timestamp": "created_at",
+            "blind_spot": "10m",
+            "schedule": "30 MINUTE",
+            "names": ["sum_30m", "sum_2h", "sum_1d"],
+        },
+        output_type=NodeOutputType.FRAME,
+    )
+    assert isinstance(feature_list, FeatureList)
+    assert feature_list.protected_columns == {"cust_id"}
+    assert feature_list.inception_node == expected_inception_node
+    assert feature_list.entity_identifiers == ["cust_id"]
+    assert feature_list.columns == ["cust_id", "sum_1d", "sum_2h", "sum_30m"]
+    assert feature_list.column_lineage_map == {
+        "cust_id": ("groupby_1",),
+        "sum_30m": ("groupby_1",),
+        "sum_2h": ("groupby_1",),
+        "sum_1d": ("groupby_1",),
+    }
+    yield feature_list
