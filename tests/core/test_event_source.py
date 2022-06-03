@@ -110,3 +110,26 @@ def test_setitem__override_protected_column(event_source, column):
         event_source[column] = 1
     expected_msg = f"Not allow to override timestamp or entity identifier column '{column}'!"
     assert expected_msg in str(exc.value)
+
+
+def test_setitem__str_key_series_value(event_source):
+    """
+    Test assigning Series object to event_source
+    """
+    double_value = event_source["value"] * 2
+    assert isinstance(double_value, Series)
+    event_source["double_value"] = double_value
+    assert event_source.node == Node(
+        name="assign_1",
+        type=NodeType.ASSIGN,
+        parameters={"name": "double_value"},
+        output_type=NodeOutputType.FRAME,
+    )
+    assert event_source.column_lineage_map == {
+        "cust_id": ("input_1",),
+        "session_id": ("input_1",),
+        "event_type": ("input_1",),
+        "value": ("input_1",),
+        "created_at": ("input_1",),
+        "double_value": ("assign_1",),
+    }

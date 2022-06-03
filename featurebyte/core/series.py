@@ -35,7 +35,9 @@ class Series(QueryObject, OpsMixin):
         self.lineage = lineage
 
     def __repr__(self) -> str:
-        return f"Series[{self.var_type}](name={self.name}, node.name={self.node.name})"
+        return (
+            f"{type(self).__name__}[{self.var_type}](name={self.name}, node.name={self.node.name})"
+        )
 
     def __getitem__(self, item: Series) -> Series:
         if isinstance(item, Series):
@@ -146,7 +148,7 @@ class Series(QueryObject, OpsMixin):
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[self.node],
             )
-            return Series(
+            return type(self)(
                 node=node,
                 name=None,
                 var_type=output_var_type,
@@ -161,7 +163,7 @@ class Series(QueryObject, OpsMixin):
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[self.node, other.node],  # type: ignore
         )
-        return Series(
+        return type(self)(
             node=node,
             name=None,
             var_type=output_var_type,

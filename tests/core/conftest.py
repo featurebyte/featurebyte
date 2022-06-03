@@ -6,7 +6,7 @@ from collections import namedtuple
 import pytest
 
 from featurebyte.core.event_source import EventSource
-from featurebyte.core.feature import FeatureList
+from featurebyte.core.feature import Feature, FeatureList
 from featurebyte.core.frame import Frame
 from featurebyte.core.groupby import EventSourceGroupBy
 from featurebyte.core.series import Series
@@ -227,3 +227,15 @@ def feature_list_fixture(grouped_event_source):
         "sum_1d": ("groupby_1",),
     }
     yield feature_list
+
+
+@pytest.fixture(name="feature")
+def feature_fixture(feature_list):
+    """
+    Feature fixture
+    """
+    feature = feature_list["sum_1d"]
+    assert isinstance(feature, Feature)
+    assert feature.protected_columns == {"cust_id"}
+    assert feature.entity_identifiers == ["cust_id"]
+    yield feature

@@ -22,7 +22,10 @@ class EventSource(ProtectedColumnsQueryObject, Frame):
     """
 
     def __repr__(self) -> str:
-        return f"EventSource(node.name={self.node.name})"
+        return (
+            f"{type(self).__name__}(node.name={self.node.name}, "
+            f"timestamp_column={self.timestamp_column}, entity_identifiers={self.entity_identifiers})"
+        )
 
     @property
     def protected_attributes(self) -> list[str]:

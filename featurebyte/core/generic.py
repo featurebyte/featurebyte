@@ -24,6 +24,9 @@ class QueryObject:
     row_index_lineage: tuple[str, ...]
     session: BaseSession | None
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}(node.name={self.node.name})"
+
     def preview(self) -> pd.DataFrame | None:
         """
         Preview transformed table/column partial output
@@ -72,7 +75,9 @@ class ProtectedColumnsQueryObject(QueryObject):
         columns = []
         for attr in self.protected_attributes:
             attr_val = getattr(self, attr)
-            if isinstance(attr_val, str):
+            if attr_val is None:
+                continue
+            elif isinstance(attr_val, str):
                 columns.append(attr_val)
             elif isinstance(attr_val, list) and all(isinstance(elem, str) for elem in attr_val):
                 columns.extend(attr_val)

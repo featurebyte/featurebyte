@@ -13,6 +13,9 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
     FeatureMixin contains common properties & operations shared between FeatureList & Feature
     """
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}(node.name={self.node.name}, entity_identifiers={self.entity_identifiers})"
+
     @property
     def protected_attributes(self) -> list[str]:
         """

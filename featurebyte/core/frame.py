@@ -46,9 +46,6 @@ class Frame(QueryObject, OpsMixin):
         """
         return sorted(self.column_var_type_map.keys())
 
-    def __repr__(self) -> str:
-        return f"Frame(node.name={self.node.name})"
-
     def _check_any_missing_column(self, item: str | list[str] | Series) -> None:
         """
         Check whether there is any unknown column from the specified item (single column or list of columns)

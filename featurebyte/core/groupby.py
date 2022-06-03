@@ -40,7 +40,7 @@ class EventSourceGroupBy(OpsMixin):
         self.keys = keys_value
 
     def __repr__(self) -> str:
-        return f"EventSourceGroupBy({self.obj}, keys={self.keys})"
+        return f"{type(self).__name__}({self.obj}, keys={self.keys})"
 
     def aggregate(
         self,
@@ -96,7 +96,7 @@ class EventSourceGroupBy(OpsMixin):
             input_nodes=[self.obj.node],
         )
         column_var_type_map = {}
-        column_lineage_map = {}
+        column_lineage_map: dict[str, tuple[str, ...]] = {}
         for key in self.keys:
             column_var_type_map[key] = self.obj.column_var_type_map[key]
             column_lineage_map[key] = (node.name,)
