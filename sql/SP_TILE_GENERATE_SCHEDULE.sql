@@ -4,11 +4,12 @@ language javascript
 as
 $$
     /*
-        Master Stored Procedure for scheduling and trigger Tile generation, monitoring and replacement
+        Master Stored Procedure to schedule and trigger Tile generation, monitoring and replacement
 
-        1. derive cron_residue_seconds, window_end_seconds, start_ts and monitor_start_ts for online and offline Tile respectively
-        2. call monitor tile stored procedure
-        3. call generate tile stored procedure to create new or replace already existed tiles
+        1. derive cron_residue_seconds, window_end_seconds, tile_end_ts
+        2. derive tile_start_ts for online and offline Tile respectively
+        3. call monitor tile stored procedure
+        4. call generate tile stored procedure to create new or replace already existed tiles
     */
 
     var debug = "Debug"
@@ -38,17 +39,28 @@ $$
     }
 
     var tile_type = TYPE.toUpperCase()
-    lookback_period = FREQUENCY_MINUTE * (MONITOR_PERIODS + 1)
+    var lookback_period = FREQUENCY_MINUTE * (MONITOR_PERIODS + 1)
+    var table_name = FEATURE_NAME.toUpperCase() + "_TILE"
+
     if (tile_type === "OFFLINE") {
         // offline schedule
         lookback_period = OFFLINE_PERIOD_MINUTE
         tile_end_ts.setMinutes(tile_end_ts.getMinutes() - lookback_period)
     }
-    debug = debug + " - lookback_period: " + lookback_period
+    debug = debug + " - lookback_period_1: " + lookback_period
 
     tile_end_ts_str = tile_end_ts.toISOString().split("T")
     tile_end_ts_str = tile_end_ts_str[0] + " " + tile_end_ts_str[1].slice(0,8)
     debug = debug + " - tile_end_ts_str: " + tile_end_ts_str
+
+    if (tile_type === "ONLINE") {
+        // derive appropriate tile_start_ts for ONLINE computation
+        var lookback_stored_proc = `call SP_TILE_ONLINE_LOOKBACK_PERIOD('${table_name}', '${tile_end_ts_str}', ${OFFLINE_PERIOD_MINUTE}, ${lookback_period}, ${window_end_seconds}, ${FREQUENCY_MINUTE})`
+        result = snowflake.execute({sqlText: lookback_stored_proc})    
+        result.next()
+        lookback_period = result.getColumnValue(1)
+        debug = debug + " - lookback_period_2: " + lookback_period
+    }
 
     // trigger stored procedure to monitor previous tiles 
     var tile_start_ts = new Date(tile_end_ts.getTime())
@@ -58,8 +70,7 @@ $$
     tile_start_ts_str = tile_start_ts_str[0] + " " + tile_start_ts_str[1].slice(0,8)
     debug = debug + " - tile_start_ts_str: " + tile_start_ts_str
 
-    var input_sql = SQL.replace("FB_START_TS", "\\'"+tile_start_ts_str+"\\'::timestamp_ntz").replace("FB_END_TS", "\\'"+tile_end_ts_str+"\\'::timestamp_ntz")   
-    var table_name = FEATURE_NAME.toUpperCase() + "_TILE"
+    var input_sql = SQL.replace("FB_START_TS", "\\'"+tile_start_ts_str+"\\'::timestamp_ntz").replace("FB_END_TS", "\\'"+tile_end_ts_str+"\\'::timestamp_ntz") 
     var monitor_stored_proc = `call SP_TILE_MONITOR('${input_sql}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}')`
     result = snowflake.execute(
         {
