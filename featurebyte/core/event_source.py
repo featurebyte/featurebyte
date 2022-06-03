@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from featurebyte.core.frame import Frame
-from featurebyte.core.operation import EventSourceFeatureOpsMixin
+from featurebyte.core.mixin import EventSourceFeatureOpsMixin
 from featurebyte.core.series import Series
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph

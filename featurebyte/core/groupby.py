@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from featurebyte.core.event_source import EventSource
 from featurebyte.core.feature import FeatureList
-from featurebyte.core.operation import OpsMixin
+from featurebyte.core.mixin import OpsMixin
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 

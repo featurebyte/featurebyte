@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import copy
 
-from featurebyte.core.operation import OpsMixin
+from featurebyte.core.mixin import OpsMixin, PreviewableMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -13,7 +13,7 @@ from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.session.base import BaseSession
 
 
-class Frame(OpsMixin):
+class Frame(OpsMixin, PreviewableMixin):
     """
     Implement operations to manipulate database table
     """

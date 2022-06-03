@@ -11,7 +11,7 @@ from featurebyte.core.protocol import HasRowIndexLineageProtocol, PreviewablePro
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
-from featurebyte.query_graph.interpreter import SQLOperationGraph
+from featurebyte.query_graph.interpreter import GraphInterpreter
 
 if TYPE_CHECKING:
     from featurebyte.core.frame import Frame
@@ -119,19 +119,6 @@ class OpsMixin:
         output.append(node_name)
         return tuple(output)
 
-    def preview(self: PreviewableProtocol) -> pd.DataFrame | None:
-        """
-        To preview current node results
-
-        Returns
-        -------
-        pd.DataFrame
-        """
-        sql_graph = SQLOperationGraph(self.graph)
-        sql_graph.build(self.graph.nodes[self.node.name])
-        sql_tree = sql_graph.get_node(self.node.name).sql
-        return self.session.execute_query(sql_tree.sql(pretty=True))
-
 
 class EventSourceFeatureOpsMixin:
     """
@@ -149,3 +136,20 @@ class EventSourceFeatureOpsMixin:
         """
         graph = QueryGraph()
         return graph.get_node_by_name(self.row_index_lineage[0])
+
+
+class PreviewableMixin:
+    """
+    PreviewableMixin provide methods to preview transformed table/column partial output
+    """
+
+    def preview(self: PreviewableProtocol) -> pd.DataFrame | None:
+        """
+        Preview transformed table/column partial output
+
+        Returns
+        -------
+        pd.DataFrame | None
+        """
+        sql_query = GraphInterpreter(self.graph).construct_preview_sql(self.node.name)
+        return self.session.execute_query(sql_query)
