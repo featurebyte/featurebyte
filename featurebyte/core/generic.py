@@ -27,15 +27,22 @@ class QueryObject:
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
 
-    def preview(self) -> pd.DataFrame | None:
+    def preview(self, limit: int = 10) -> pd.DataFrame | None:
         """
         Preview transformed table/column partial output
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
 
         Returns
         -------
         pd.DataFrame | None
         """
-        sql_query = GraphInterpreter(self.graph).construct_preview_sql(self.node.name)
+        sql_query = GraphInterpreter(self.graph).construct_preview_sql(
+            self.node.name, num_rows=limit
+        )
         if self.session:
             return self.session.execute_query(sql_query)
         return None
