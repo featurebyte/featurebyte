@@ -9,7 +9,7 @@ from enum import Enum
 
 import sqlglot
 
-from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql import (
     BINARY_OPERATION_NODE_TYPES,
@@ -19,6 +19,7 @@ from featurebyte.query_graph.sql import (
     ExpressionNode,
     GenericInputNode,
     Project,
+    ProjectMulti,
     SQLNode,
     TableNode,
     make_binary_operation_node,
@@ -112,6 +113,7 @@ class SQLOperationGraph:
         node_id = cur_node["name"]
         node_type = cur_node["type"]
         parameters = cur_node["parameters"]
+        output_type = cur_node["output_type"]
 
         sql_node: Any
         if node_type == NodeType.INPUT:
@@ -137,7 +139,12 @@ class SQLOperationGraph:
 
         elif node_type == NodeType.PROJECT:
             assert isinstance(input_sql_nodes[0], TableNode)
-            sql_node = Project(table_node=input_sql_nodes[0], columns=parameters["columns"])
+            table_node = input_sql_nodes[0]
+            columns = parameters["columns"]
+            if output_type == NodeOutputType.SERIES:
+                sql_node = Project(table_node=table_node, column_name=columns[0])
+            else:
+                sql_node = ProjectMulti(input_node=table_node, column_names=columns)
 
         elif node_type in BINARY_OPERATION_NODE_TYPES:
             sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)

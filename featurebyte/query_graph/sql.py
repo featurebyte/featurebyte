@@ -165,14 +165,29 @@ class BinaryOp(ExpressionNode):
 
 @dataclass
 class Project(ExpressionNode):
-    """Project node"""
+    """Project node for a single column"""
 
-    columns: list[str]
+    column_name: str
 
     @property
     def sql(self) -> Expression:
-        assert len(self.columns) == 1
-        return parse_one(self.columns[0])
+        return parse_one(self.column_name)
+
+
+@dataclass
+class ProjectMulti(TableNode):
+    """Project node for multiple columns"""
+
+    input_node: TableNode
+    column_names: list[str]
+
+    @property
+    def columns(self) -> list[str]:
+        return self.column_names
+
+    @property
+    def sql(self) -> Expression:
+        return select(*self.column_names).from_(self.input_node.sql_nested())
 
 
 @dataclass

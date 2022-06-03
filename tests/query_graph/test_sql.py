@@ -21,7 +21,7 @@ def test_assign_node__replace(input_node):
     """Test assign node replacing an existing column"""
     node = sql.AssignNode(
         table_node=input_node,
-        column_node=sql.Project(table_node=input_node, columns=["a"]),
+        column_node=sql.Project(table_node=input_node, column_name="a"),
         name="col_1",
     )
     assert node.columns == ["col_2", "col_3", "col_1"]
@@ -31,7 +31,7 @@ def test_assign_node__new_column(input_node):
     """Test assign node adding a new column"""
     node = sql.AssignNode(
         table_node=input_node,
-        column_node=sql.Project(table_node=input_node, columns=["a"]),
+        column_node=sql.Project(table_node=input_node, column_name="a"),
         name="col_11",
     )
     assert node.columns == ["col_1", "col_2", "col_3", "col_11"]
