@@ -1,7 +1,6 @@
 """
 Common test fixtures used across files in integration directory
 """
-import pdb
 import sqlite3
 import tempfile
 
@@ -15,6 +14,7 @@ def transaction_dataframe():
     """
     Simulated transaction Dataframe
     """
+    # pylint: disable=E1101
     row_number = 100
     rng = np.random.RandomState(1234)
     product_actions = ["detail", "add", "purchase", "remove", None]
