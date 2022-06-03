@@ -1,5 +1,5 @@
 """
-EventSource class
+EventView class
 """
 from __future__ import annotations
 
@@ -13,12 +13,12 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.session.base import BaseSession, TableName
 
 if TYPE_CHECKING:
-    from featurebyte.core.groupby import EventSourceGroupBy
+    from featurebyte.core.groupby import EventViewGroupBy
 
 
-class EventSource(ProtectedColumnsQueryObject, Frame):
+class EventView(ProtectedColumnsQueryObject, Frame):
     """
-    EventSource class
+    EventView class
     """
 
     def __repr__(self) -> str:
@@ -67,9 +67,9 @@ class EventSource(ProtectedColumnsQueryObject, Frame):
         table_name: TableName,
         timestamp_column: str,
         entity_identifiers: list[str] | None = None,
-    ) -> EventSource:
+    ) -> EventView:
         """
-        Construct an EventSource object using session object
+        Construct an EventView object using session object
 
         Parameters
         ----------
@@ -84,8 +84,8 @@ class EventSource(ProtectedColumnsQueryObject, Frame):
 
         Returns
         -------
-        EventSource
-            constructed EventSource object
+        EventView
+            constructed EventView object
 
         Raises
         ------
@@ -115,7 +115,7 @@ class EventSource(ProtectedColumnsQueryObject, Frame):
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[],
         )
-        return EventSource(
+        return EventView(
             node=node,
             column_var_type_map=column_var_type_map,
             column_lineage_map={col: (node.name,) for col in column_var_type_map},
@@ -136,9 +136,9 @@ class EventSource(ProtectedColumnsQueryObject, Frame):
             )
         super().__setitem__(key, value)
 
-    def groupby(self, by_keys: str | list[str]) -> EventSourceGroupBy:
+    def groupby(self, by_keys: str | list[str]) -> EventViewGroupBy:
         """
-        Group EventSource using a column or list of columns of the EventSource object
+        Group EventView using a column or list of columns of the EventView object
 
         Parameters
         ----------
@@ -147,10 +147,10 @@ class EventSource(ProtectedColumnsQueryObject, Frame):
 
         Returns
         -------
-        EventSourceGroupBy
+        EventViewGroupBy
             a groupby object that contains information about the groups
         """
         # pylint: disable=C0415
-        from featurebyte.core.groupby import EventSourceGroupBy
+        from featurebyte.core.groupby import EventViewGroupBy
 
-        return EventSourceGroupBy(obj=self, keys=by_keys)
+        return EventViewGroupBy(obj=self, keys=by_keys)

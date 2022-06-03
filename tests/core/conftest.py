@@ -5,10 +5,10 @@ from collections import namedtuple
 
 import pytest
 
-from featurebyte.core.event_source import EventSource
+from featurebyte.core.event_view import EventView
 from featurebyte.core.feature import Feature, FeatureList
 from featurebyte.core.frame import Frame
-from featurebyte.core.groupby import EventSourceGroupBy
+from featurebyte.core.groupby import EventViewGroupBy
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -115,18 +115,18 @@ def fake_session():
     yield FakeSession(database_metadata=database_metadata, source_type="sqlite")
 
 
-@pytest.fixture(name="event_source")
-def event_source_fixture(session, graph):
+@pytest.fixture(name="event_view")
+def event_view_fixture(session, graph):
     """
-    EventSource fixture
+    EventView fixture
     """
-    event_source = EventSource.from_session(
+    event_view = EventView.from_session(
         session=session,
         table_name='"trans"',
         timestamp_column="created_at",
         entity_identifiers=["cust_id"],
     )
-    assert isinstance(event_source, EventSource)
+    assert isinstance(event_view, EventView)
     expected_inception_node = Node(
         name="input_1",
         type=NodeType.INPUT,
@@ -138,25 +138,25 @@ def event_source_fixture(session, graph):
         },
         output_type=NodeOutputType.FRAME,
     )
-    assert event_source.graph is graph
-    assert event_source.protected_columns == {"created_at", "cust_id"}
-    assert event_source.inception_node == expected_inception_node
-    assert event_source.timestamp_column == "created_at"
-    assert event_source.entity_identifiers == ["cust_id"]
-    yield event_source
+    assert event_view.graph is graph
+    assert event_view.protected_columns == {"created_at", "cust_id"}
+    assert event_view.inception_node == expected_inception_node
+    assert event_view.timestamp_column == "created_at"
+    assert event_view.entity_identifiers == ["cust_id"]
+    yield event_view
 
 
-@pytest.fixture(name="event_source_without_entity_ids")
-def event_source_without_entity_ids_fixture(session, graph):
+@pytest.fixture(name="event_view_without_entity_ids")
+def event_view_without_entity_ids_fixture(session, graph):
     """
-    EventSource fixture
+    EventView fixture
     """
-    event_source = EventSource.from_session(
+    event_view = EventView.from_session(
         session=session,
         table_name='"trans"',
         timestamp_column="created_at",
     )
-    assert isinstance(event_source, EventSource)
+    assert isinstance(event_view, EventView)
     expected_inception_node = Node(
         name="input_1",
         type=NodeType.INPUT,
@@ -168,30 +168,30 @@ def event_source_without_entity_ids_fixture(session, graph):
         },
         output_type=NodeOutputType.FRAME,
     )
-    assert event_source.graph is graph
-    assert event_source.protected_columns == {"created_at"}
-    assert event_source.inception_node == expected_inception_node
-    assert event_source.timestamp_column == "created_at"
-    assert event_source.entity_identifiers is None
-    yield event_source
+    assert event_view.graph is graph
+    assert event_view.protected_columns == {"created_at"}
+    assert event_view.inception_node == expected_inception_node
+    assert event_view.timestamp_column == "created_at"
+    assert event_view.entity_identifiers is None
+    yield event_view
 
 
-@pytest.fixture(name="grouped_event_source")
-def grouped_event_source_fixture(event_source):
+@pytest.fixture(name="grouped_event_view")
+def grouped_event_view_fixture(event_view):
     """
-    EventSourceGroupBy fixture
+    EventViewGroupBy fixture
     """
-    grouped = event_source.groupby("cust_id")
-    assert isinstance(grouped, EventSourceGroupBy)
+    grouped = event_view.groupby("cust_id")
+    assert isinstance(grouped, EventViewGroupBy)
     yield grouped
 
 
 @pytest.fixture(name="feature_list")
-def feature_list_fixture(grouped_event_source):
+def feature_list_fixture(grouped_event_view):
     """
     FeatureList fixture
     """
-    feature_list = grouped_event_source.aggregate(
+    feature_list = grouped_event_view.aggregate(
         value_column="value",
         method="sum",
         windows=["30m", "2h", "1d"],

@@ -3,21 +3,21 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from featurebyte.core.event_source import EventSource
+from featurebyte.core.event_view import EventView
 from featurebyte.core.feature import FeatureList
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
-class EventSourceGroupBy(OpsMixin):
+class EventViewGroupBy(OpsMixin):
     """
-    EventSourceGroupBy class
+    EventViewGroupBy class
     """
 
-    def __init__(self, obj: EventSource, keys: str | list[str] | None):
-        if not isinstance(obj, EventSource):
-            raise TypeError(f"Expect {EventSource} object type!")
+    def __init__(self, obj: EventView, keys: str | list[str] | None):
+        if not isinstance(obj, EventView):
+            raise TypeError(f"Expect {EventView} object type!")
 
         keys_value = []
         if keys is None:
