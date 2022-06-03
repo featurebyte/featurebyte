@@ -106,6 +106,7 @@ def test_setitem__override_protected_column(event_source, column):
     """
     Test attempting to change event source's timestamp value or entity identifier value
     """
+    assert column in event_source.protected_columns
     with pytest.raises(ValueError) as exc:
         event_source[column] = 1
     expected_msg = f"Not allow to override timestamp or entity identifier column '{column}'!"

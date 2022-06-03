@@ -44,7 +44,7 @@ class Series(QueryObject, OpsMixin):
             node = self._add_filter_operation(
                 item=self, mask=item, node_output_type=NodeOutputType.SERIES
             )
-            return Series(
+            return type(self)(
                 node=node,
                 name=self.name,
                 var_type=self.var_type,

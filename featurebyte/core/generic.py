@@ -77,7 +77,8 @@ class ProtectedColumnsQueryObject(QueryObject):
             attr_val = getattr(self, attr)
             if attr_val is None:
                 continue
-            elif isinstance(attr_val, str):
+
+            if isinstance(attr_val, str):
                 columns.append(attr_val)
             elif isinstance(attr_val, list) and all(isinstance(elem, str) for elem in attr_val):
                 columns.extend(attr_val)

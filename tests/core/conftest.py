@@ -229,13 +229,25 @@ def feature_list_fixture(grouped_event_source):
     yield feature_list
 
 
-@pytest.fixture(name="feature")
-def feature_fixture(feature_list):
+@pytest.fixture(name="float_feature")
+def float_feature_fixture(feature_list):
     """
-    Feature fixture
+    Float Feature fixture
     """
     feature = feature_list["sum_1d"]
     assert isinstance(feature, Feature)
     assert feature.protected_columns == {"cust_id"}
-    assert feature.entity_identifiers == ["cust_id"]
+    assert feature.inception_node == feature_list.inception_node
     yield feature
+
+
+@pytest.fixture(name="bool_feature")
+def bool_feature_fixture(float_feature):
+    """
+    Boolean Feature fixture
+    """
+    bool_feature = float_feature > 100.0
+    assert isinstance(bool_feature, Feature)
+    assert bool_feature.protected_columns == float_feature.protected_columns
+    assert bool_feature.inception_node == float_feature.inception_node
+    yield bool_feature
