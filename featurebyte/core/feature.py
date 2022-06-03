@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from featurebyte.core.frame import Frame
 from featurebyte.core.mixin import WithProtectedColumnsFrameMixin, WithProtectedColumnsMixin
-from featurebyte.core.protocol import ProtectedPropertiesProtocol
 from featurebyte.core.series import Series
 
 
@@ -26,7 +25,7 @@ class FeatureMixin(WithProtectedColumnsMixin):
         return ["entity_identifiers"]
 
     @property
-    def entity_identifiers(self: ProtectedPropertiesProtocol) -> list[str] | None:
+    def entity_identifiers(self: WithProtectedColumnsMixin) -> list[str] | None:
         """
         Entity identifiers column names
         """
