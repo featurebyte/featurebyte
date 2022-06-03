@@ -5,14 +5,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import pandas as pd
-
-from featurebyte.core.protocol import WithQueryGraphProtocol
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
-from featurebyte.query_graph.interpreter import GraphInterpreter
-from featurebyte.session.base import BaseSession
 
 if TYPE_CHECKING:
     from featurebyte.core.frame import Frame
@@ -119,86 +114,3 @@ class OpsMixin:
         output = list(lineage)
         output.append(node_name)
         return tuple(output)
-
-
-class WithProtectedColumnsMixin(WithQueryGraphProtocol):
-    """
-    EventSourceFeatureOpsMixin contains common properties & methods shared between EventSource, Feature &
-    FeatureList classes
-    """
-
-    @property
-    def protected_attributes(self) -> list[str]:
-        """
-        List of protected attributes used to extract protected_columns
-
-        Returns
-        -------
-        list[str]
-        """
-
-    @property
-    def protected_columns(self) -> set[str]:
-        """
-        Special columns set where values of these columns should not be overridden
-
-        Returns
-        -------
-        set[str]
-        """
-        columns = []
-        for attr in self.protected_attributes:
-            attr_val = getattr(self, attr)
-            if attr_val:
-                columns.append(attr_val)
-        return set(columns)
-
-    @property
-    def inception_node(self: WithQueryGraphProtocol) -> Node:
-        """
-        Input node where the event source is introduced to the query graph
-
-        Returns
-        -------
-        Node
-        """
-        graph = QueryGraph()
-        return graph.get_node_by_name(self.row_index_lineage[0])
-
-
-class WithProtectedColumnsFrameMixin(WithProtectedColumnsMixin):
-    """
-    WithProtectedColumnsFrameMixin contains common properties & methods shared between Frame child classes with
-    protected columns
-    """
-
-    def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
-        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
-            item = sorted(self.protected_columns.union(item))
-        return super().__getitem__(item)
-
-    def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
-        if key in self.protected_columns:
-            raise ValueError(f"Not allow to override special column '{key}'!")
-        super().__setitem__(key, value)
-
-
-class PreviewableMixin(WithQueryGraphProtocol):
-    """
-    PreviewableMixin provide methods to preview transformed table/column partial output
-    """
-
-    session: BaseSession | None
-
-    def preview(self) -> pd.DataFrame | None:
-        """
-        Preview transformed table/column partial output
-
-        Returns
-        -------
-        pd.DataFrame | None
-        """
-        sql_query = GraphInterpreter(self.graph).construct_preview_sql(self.node.name)
-        if self.session:
-            return self.session.execute_query(sql_query)
-        return None

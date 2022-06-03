@@ -4,11 +4,11 @@ Feature and FeatureList classes
 from __future__ import annotations
 
 from featurebyte.core.frame import Frame
-from featurebyte.core.mixin import WithProtectedColumnsFrameMixin, WithProtectedColumnsMixin
+from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 
 
-class FeatureMixin(WithProtectedColumnsMixin):
+class FeatureQueryObject(ProtectedColumnsQueryObject):
     """
     FeatureMixin contains common properties & operations shared between FeatureList & Feature
     """
@@ -25,38 +25,33 @@ class FeatureMixin(WithProtectedColumnsMixin):
         return ["entity_identifiers"]
 
     @property
-    def entity_identifiers(self: WithProtectedColumnsMixin) -> list[str] | None:
+    def entity_identifiers(self) -> list[str] | None:
         """
         Entity identifiers column names
         """
         return self.inception_node.parameters.get("keys")
 
-    def publish(self) -> None:
-        """
-        Publish feature or feature list
-        """
-        raise NotImplementedError
 
-
-class Feature(Series, FeatureMixin, WithProtectedColumnsMixin):
+class Feature(FeatureQueryObject, Series):
     """
     Feature class
     """
 
-    def publish(self) -> None:
-        """
-        Publish feature
-        """
 
-
-class FeatureList(Frame, FeatureMixin, WithProtectedColumnsFrameMixin):
+class FeatureList(FeatureQueryObject, Frame):
     """
     FeatureList class
     """
 
     series_class = Feature
 
-    def publish(self) -> None:
-        """
-        Publish feature list
-        """
+    def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
+        # pylint: disable=R0801 (duplicate-code)
+        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
+            item = sorted(self.protected_columns.union(item))
+        return super().__getitem__(item)
+
+    def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
+        if key in self.protected_columns:
+            raise ValueError(f"Not allow to override entity identifier column '{key}'!")
+        super().__setitem__(key, value)

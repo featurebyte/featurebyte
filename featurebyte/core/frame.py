@@ -5,7 +5,8 @@ from __future__ import annotations
 
 import copy
 
-from featurebyte.core.mixin import OpsMixin, PreviewableMixin
+from featurebyte.core.generic import QueryObject
+from featurebyte.core.mixin import OpsMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -13,7 +14,7 @@ from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.session.base import BaseSession
 
 
-class Frame(OpsMixin, PreviewableMixin):
+class Frame(QueryObject, OpsMixin):
     """
     Implement operations to manipulate database table
     """
@@ -28,12 +29,11 @@ class Frame(OpsMixin, PreviewableMixin):
         row_index_lineage: tuple[str, ...],
         session: BaseSession | None = None,
     ):
-        self.graph = QueryGraph()
-        self.node = node
+        super().__init__(
+            graph=QueryGraph(), node=node, row_index_lineage=row_index_lineage, session=session
+        )
         self.column_var_type_map = column_var_type_map
         self.column_lineage_map = column_lineage_map
-        self.row_index_lineage = row_index_lineage
-        self.session = session
 
     @property
     def columns(self) -> list[str]:

@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from featurebyte.core.frame import Frame
-from featurebyte.core.mixin import WithProtectedColumnsFrameMixin
+from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from featurebyte.core.groupby import EventSourceGroupBy
 
 
-class EventSource(Frame, WithProtectedColumnsFrameMixin):
+class EventSource(ProtectedColumnsQueryObject, Frame):
     """
     EventSource class
     """
@@ -56,22 +56,6 @@ class EventSource(Frame, WithProtectedColumnsFrameMixin):
         list[str] | None
         """
         return self.inception_node.parameters.get("entity_identifiers")
-
-    @property
-    def protected_columns(self) -> set[str]:
-        """
-        Special columns where its value should not be overridden
-
-        Returns
-        -------
-        set[str]
-        """
-        columns = []
-        if self.timestamp_column:
-            columns.append(self.timestamp_column)
-        if self.entity_identifiers:
-            columns.extend(self.entity_identifiers)
-        return set(columns)
 
     @classmethod
     def from_session(
@@ -137,13 +121,16 @@ class EventSource(Frame, WithProtectedColumnsFrameMixin):
         )
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
+        # pylint: disable=R0801 (duplicate-code)
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.protected_columns.union(item))
         return super().__getitem__(item)
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         if key in self.protected_columns:
-            raise ValueError("Not allow to override timestamp column or entity identifiers!")
+            raise ValueError(
+                f"Not allow to override timestamp or entity identifier column '{key}'!"
+            )
         super().__setitem__(key, value)
 
     def groupby(self, by_keys: str | list[str]) -> EventSourceGroupBy:

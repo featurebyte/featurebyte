@@ -5,14 +5,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from featurebyte.core.mixin import OpsMixin, PreviewableMixin
+from featurebyte.core.generic import QueryObject
+from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.session.base import BaseSession
 
 
-class Series(OpsMixin, PreviewableMixin):
+class Series(QueryObject, OpsMixin):
     """
     Implement operations to manipulate database column
     """
@@ -26,13 +27,12 @@ class Series(OpsMixin, PreviewableMixin):
         row_index_lineage: tuple[str, ...],
         session: BaseSession | None = None,
     ):
-        self.graph = QueryGraph()
-        self.node = node
+        super().__init__(
+            graph=QueryGraph(), node=node, row_index_lineage=row_index_lineage, session=session
+        )
         self.name = name
         self.var_type = var_type
         self.lineage = lineage
-        self.row_index_lineage = row_index_lineage
-        self.session = session
 
     def __repr__(self) -> str:
         return f"Series[{self.var_type}](name={self.name}, node.name={self.node.name})"
