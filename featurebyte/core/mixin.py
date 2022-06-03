@@ -124,11 +124,27 @@ class OpsMixin:
         return tuple(output)
 
 
-class EventSourceFeatureOpsMixin:
+class WithProtectedColumnsMixin:
     """
     EventSourceFeatureOpsMixin contains common properties & methods shared between EventSource, Feature &
     FeatureList classes
     """
+
+    @property
+    def protected_columns(self: ProtectedPropertiesProtocol) -> set[str]:
+        """
+        Special columns set where values of these columns should not be overridden
+
+        Returns
+        -------
+        set[str]
+        """
+        columns = []
+        for attr in self.protected_attributes:
+            attr_val = getattr(self, attr)
+            if attr_val:
+                columns.append(attr_val)
+        return set(columns)
 
     @property
     def inception_node(self: WithQueryGraphProtocol) -> Node:
@@ -143,7 +159,7 @@ class EventSourceFeatureOpsMixin:
         return graph.get_node_by_name(self.row_index_lineage[0])
 
 
-class WithProtectedColumnsFrameMixin:
+class WithProtectedColumnsFrameMixin(WithProtectedColumnsMixin):
     """
     WithProtectedColumnsFrameMixin contains common properties & methods shared between Frame child classes with
     protected columns

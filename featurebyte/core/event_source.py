@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from featurebyte.core.frame import Frame
-from featurebyte.core.mixin import EventSourceFeatureOpsMixin, WithProtectedColumnsFrameMixin
+from featurebyte.core.mixin import WithProtectedColumnsFrameMixin
 from featurebyte.core.series import Series
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -16,13 +16,24 @@ if TYPE_CHECKING:
     from featurebyte.core.groupby import EventSourceGroupBy
 
 
-class EventSource(Frame, EventSourceFeatureOpsMixin, WithProtectedColumnsFrameMixin):
+class EventSource(Frame, WithProtectedColumnsFrameMixin):
     """
     EventSource class
     """
 
     def __repr__(self) -> str:
         return f"EventSource(node.name={self.node.name})"
+
+    @property
+    def protected_attributes(self) -> list[str]:
+        """
+        List of protected attributes used to extract protected_columns
+
+        Returns
+        -------
+        list[str]
+        """
+        return ["timestamp_column", "entity_identifiers"]
 
     @property
     def timestamp_column(self) -> str | None:

@@ -4,15 +4,26 @@ Feature and FeatureList classes
 from __future__ import annotations
 
 from featurebyte.core.frame import Frame
-from featurebyte.core.mixin import EventSourceFeatureOpsMixin, WithProtectedColumnsFrameMixin
+from featurebyte.core.mixin import WithProtectedColumnsFrameMixin, WithProtectedColumnsMixin
 from featurebyte.core.protocol import ProtectedPropertiesProtocol
 from featurebyte.core.series import Series
 
 
-class FeatureMixin(EventSourceFeatureOpsMixin):
+class FeatureMixin(WithProtectedColumnsMixin):
     """
     FeatureMixin contains common properties & operations shared between FeatureList & Feature
     """
+
+    @property
+    def protected_attributes(self) -> list[str]:
+        """
+        List of protected attributes used to extract protected_columns
+
+        Returns
+        -------
+        list[str]
+        """
+        return ["entity_identifiers"]
 
     @property
     def entity_identifiers(self: ProtectedPropertiesProtocol) -> list[str] | None:
@@ -21,20 +32,6 @@ class FeatureMixin(EventSourceFeatureOpsMixin):
         """
         return self.inception_node.parameters.get("keys")
 
-    @property
-    def protected_columns(self) -> set[str]:
-        """
-        Special columns set where values of these columns should not be overridden
-
-        Returns
-        -------
-        set[str]
-        """
-        columns = []
-        if self.entity_identifiers:
-            columns.extend(self.entity_identifiers)
-        return set(columns)
-
     def publish(self) -> None:
         """
         Publish feature or feature list
@@ -42,7 +39,7 @@ class FeatureMixin(EventSourceFeatureOpsMixin):
         raise NotImplementedError
 
 
-class Feature(FeatureMixin, Series):
+class Feature(Series, FeatureMixin, WithProtectedColumnsMixin):
     """
     Feature class
     """
