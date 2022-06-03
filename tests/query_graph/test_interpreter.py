@@ -228,6 +228,45 @@ def test_graph_interpreter_binary_operations(graph, node_type, expected_expr):
     assert sql_tree.sql(pretty=True) == expected
 
 
+def test_graph_interpreter_project_multiple_columns(graph):
+    """Test using a simple query graph"""
+    node_input = graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "columns": ["ts", "cust_id", "a", "b"],
+            "timestamp": "ts",
+            "dbtable": "event_table",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    proj = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a", "b"]},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input],
+    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.PREVIEW)
+    sql_graph.build(graph.nodes[proj.name])
+    sql_tree = sql_graph.get_node(proj.name).sql
+    expected = textwrap.dedent(
+        """
+        SELECT
+          a,
+          b
+        FROM (
+            SELECT
+              ts,
+              cust_id,
+              a,
+              b
+            FROM event_table
+        )
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
+
+
 def test_graph_interpreter_tile_gen(graph):
     """Test tile building SQL"""
     node_input = graph.add_operation(

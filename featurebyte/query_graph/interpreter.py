@@ -18,10 +18,10 @@ from featurebyte.query_graph.sql import (
     BuildTileNode,
     ExpressionNode,
     GenericInputNode,
-    Project,
     SQLNode,
     TableNode,
     make_binary_operation_node,
+    make_project_node,
 )
 
 
@@ -112,6 +112,7 @@ class SQLOperationGraph:
         node_id = cur_node["name"]
         node_type = cur_node["type"]
         parameters = cur_node["parameters"]
+        output_type = cur_node["output_type"]
 
         sql_node: Any
         if node_type == NodeType.INPUT:
@@ -136,8 +137,7 @@ class SQLOperationGraph:
             )
 
         elif node_type == NodeType.PROJECT:
-            assert isinstance(input_sql_nodes[0], TableNode)
-            sql_node = Project(table_node=input_sql_nodes[0], columns=parameters["columns"])
+            sql_node = make_project_node(input_sql_nodes, parameters, output_type)
 
         elif node_type in BINARY_OPERATION_NODE_TYPES:
             sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)
