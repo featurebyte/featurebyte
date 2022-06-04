@@ -21,6 +21,7 @@ from featurebyte.query_graph.sql import (
     SQLNode,
     TableNode,
     make_binary_operation_node,
+    make_filter_node,
     make_project_node,
 )
 
@@ -141,6 +142,9 @@ class SQLOperationGraph:
 
         elif node_type in BINARY_OPERATION_NODE_TYPES:
             sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)
+
+        elif node_type == NodeType.FILTER:
+            sql_node = make_filter_node(input_sql_nodes, output_type)
 
         elif node_type == NodeType.GROUPBY:
             assert isinstance(input_sql_nodes[0], TableNode)

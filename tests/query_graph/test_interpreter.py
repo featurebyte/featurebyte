@@ -496,3 +496,84 @@ def test_graph_interpreter_preview(graph):
         """
     ).strip()
     assert sql_code == expected
+
+
+def test_filter_node(graph):
+    """Test graph with filter operation"""
+    node_input = graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "columns": ["ts", "cust_id", "a", "b"],
+            "timestamp": "ts",
+            "dbtable": "event_table",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    proj_b = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["b"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    binary_node = graph.add_operation(
+        node_type=NodeType.EQ,
+        node_params={"value": 123},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_b],
+    )
+    filter_node = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, binary_node],
+    )
+    filter_series_node = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a, binary_node],
+    )
+    interpreter = GraphInterpreter(graph)
+    sql_code = interpreter.construct_preview_sql(filter_node.name)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          ts,
+          cust_id,
+          a,
+          b
+        FROM event_table
+        WHERE
+          b = 123
+        LIMIT 10
+        """
+    ).strip()
+    assert sql_code == expected
+
+    interpreter = GraphInterpreter(graph)
+    sql_code = interpreter.construct_preview_sql(filter_series_node.name)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          a
+        FROM (
+            SELECT
+              ts,
+              cust_id,
+              a,
+              b
+            FROM event_table
+        )
+        WHERE
+          b = 123
+        LIMIT 10
+        """
+    ).strip()
+    assert sql_code == expected

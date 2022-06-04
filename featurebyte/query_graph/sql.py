@@ -191,6 +191,42 @@ class ProjectMulti(TableNode):
 
 
 @dataclass
+class FilteredFrame(TableNode):
+    """Filter node for table"""
+
+    input_node: TableNode
+    mask: ExpressionNode
+
+    @property
+    def columns(self) -> list[str]:
+        return self.input_node.columns
+
+    @property
+    def sql(self) -> Expression:
+        input_sql = self.input_node.sql
+        assert isinstance(input_sql, expressions.Select)
+        return input_sql.where(self.mask.sql)
+
+
+@dataclass
+class FilteredSeries(ExpressionNode):
+    """Filter node for series"""
+
+    series_node: ExpressionNode
+    mask: ExpressionNode
+
+    @property
+    def sql(self) -> Expression:
+        return self.series_node.sql
+
+    @property
+    def sql_standalone(self) -> Expression:
+        pre_filter_sql = super().sql_standalone
+        assert isinstance(pre_filter_sql, expressions.Select)
+        return pre_filter_sql.where(self.mask.sql)
+
+
+@dataclass
 class AssignNode(TableNode):
     """Assign node"""
 
@@ -391,4 +427,33 @@ def make_project_node(
         sql_node = Project(table_node=table_node, column_name=columns[0])
     else:
         sql_node = ProjectMulti(input_node=table_node, column_names=columns)
+    return sql_node
+
+
+def make_filter_node(
+    input_sql_nodes: list[SQLNode], output_type: NodeOutputType
+) -> FilteredFrame | FilteredSeries:
+    """Create a FilteredFrame or FilteredSeries node
+
+    Parameters
+    ----------
+    input_sql_nodes : list[SQLNode]
+        List of input SQL nodes
+    output_type : NodeOutputType
+        Query node output type
+
+    Returns
+    -------
+    FilteredFrame | FilteredSeries
+        The appropriate SQL node for projection
+    """
+    item, mask = input_sql_nodes
+    assert isinstance(mask, ExpressionNode)
+    sql_node: FilteredFrame | FilteredSeries
+    if output_type == NodeOutputType.FRAME:
+        assert isinstance(item, TableNode)
+        sql_node = FilteredFrame(input_node=item, mask=mask)
+    else:
+        assert isinstance(item, ExpressionNode)
+        sql_node = FilteredSeries(table_node=item.table_node, series_node=item, mask=mask)
     return sql_node
