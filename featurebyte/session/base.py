@@ -12,7 +12,6 @@ import pandas as pd
 from featurebyte.enum import DBVarType
 from featurebyte.session.enum import SourceType
 
-TableName = str
 TableSchema = Dict[str, DBVarType]
 
 
@@ -23,7 +22,7 @@ class BaseSession:
     """
 
     source_type: SourceType = field(init=False)
-    database_metadata: dict[TableName, TableSchema] = field(init=False)
+    database_metadata: dict[str, TableSchema] = field(init=False)
     _connection: Any = field(default=None, init=False)
 
     def __post_init__(self) -> None:
@@ -31,7 +30,7 @@ class BaseSession:
             raise ConnectionError("Failed to established a database connection.")
         self.database_metadata = self.populate_database_metadata()
 
-    def populate_database_metadata(self) -> dict[TableName, TableSchema]:
+    def populate_database_metadata(self) -> dict[str, TableSchema]:
         """
         Extract database table schema info and store it to the database metadata
 

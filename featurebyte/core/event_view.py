@@ -10,7 +10,7 @@ from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.session.base import BaseSession, TableName
+from featurebyte.session.base import BaseSession
 
 if TYPE_CHECKING:
     from featurebyte.core.groupby import EventViewGroupBy
@@ -64,7 +64,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
     def from_session(
         cls,
         session: BaseSession,
-        table_name: TableName,
+        table_name: str,
         timestamp_column: str,
         entity_identifiers: list[str] | None = None,
     ) -> EventView:
@@ -75,7 +75,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         ----------
         session: BaseSession
             database session object to retrieve database metadata
-        table_name: TableName
+        table_name: str
             table name of the event source
         timestamp_column: str
             timestamp column of the event source
