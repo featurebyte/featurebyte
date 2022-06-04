@@ -5,13 +5,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from featurebyte.core.operation import OpsMixin
+from featurebyte.core.generic import QueryObject
+from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.session.base import BaseSession
 
 
-class Series(OpsMixin):
+class Series(QueryObject, OpsMixin):
     """
     Implement operations to manipulate database column
     """
@@ -23,28 +25,32 @@ class Series(OpsMixin):
         var_type: DBVarType,
         lineage: tuple[str, ...],
         row_index_lineage: tuple[str, ...],
+        session: BaseSession | None = None,
     ):
-        self.graph = QueryGraph()
-        self.node = node
+        super().__init__(
+            graph=QueryGraph(), node=node, row_index_lineage=row_index_lineage, session=session
+        )
         self.name = name
         self.var_type = var_type
         self.lineage = lineage
-        self.row_index_lineage = row_index_lineage
 
     def __repr__(self) -> str:
-        return f"Series[{self.var_type}](name={self.name}, node.name={self.node.name})"
+        return (
+            f"{type(self).__name__}[{self.var_type}](name={self.name}, node.name={self.node.name})"
+        )
 
     def __getitem__(self, item: Series) -> Series:
         if isinstance(item, Series):
             node = self._add_filter_operation(
                 item=self, mask=item, node_output_type=NodeOutputType.SERIES
             )
-            return Series(
+            return type(self)(
                 node=node,
                 name=self.name,
                 var_type=self.var_type,
                 lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+                session=self.session,
             )
         raise KeyError(f"Series indexing with value '{item}' not supported!")
 
@@ -142,12 +148,13 @@ class Series(OpsMixin):
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[self.node],
             )
-            return Series(
+            return type(self)(
                 node=node,
                 name=None,
                 var_type=output_var_type,
                 lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self.row_index_lineage,
+                session=self.session,
             )
 
         node = self.graph.add_operation(
@@ -156,12 +163,13 @@ class Series(OpsMixin):
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[self.node, other.node],  # type: ignore
         )
-        return Series(
+        return type(self)(
             node=node,
             name=None,
             var_type=output_var_type,
             lineage=self._append_to_lineage(self.lineage, node.name),
             row_index_lineage=self.row_index_lineage,
+            session=self.session,
         )
 
     def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:

@@ -245,6 +245,14 @@ def test_multiple_statements(dataframe):
         "amount": DBVarType.FLOAT,
         "vip_customer": DBVarType.BOOL,
     }
+    assert dataframe.columns == [
+        "CUST_ID",
+        "MASK",
+        "PRODUCT_ACTION",
+        "VALUE",
+        "amount",
+        "vip_customer",
+    ]
     assert dataframe.node == Node(
         name="assign_2",
         type=NodeType.ASSIGN,

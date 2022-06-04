@@ -5,17 +5,21 @@ from __future__ import annotations
 
 import copy
 
-from featurebyte.core.operation import OpsMixin
+from featurebyte.core.generic import QueryObject
+from featurebyte.core.mixin import OpsMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.session.base import BaseSession
 
 
-class Frame(OpsMixin):
+class Frame(QueryObject, OpsMixin):
     """
     Implement operations to manipulate database table
     """
+
+    series_class = Series
 
     def __init__(
         self,
@@ -23,19 +27,50 @@ class Frame(OpsMixin):
         column_var_type_map: dict[str, DBVarType],
         column_lineage_map: dict[str, tuple[str, ...]],
         row_index_lineage: tuple[str, ...],
+        session: BaseSession | None = None,
     ):
-        self.graph = QueryGraph()
-        self.node = node
+        super().__init__(
+            graph=QueryGraph(), node=node, row_index_lineage=row_index_lineage, session=session
+        )
         self.column_var_type_map = column_var_type_map
         self.column_lineage_map = column_lineage_map
-        self.row_index_lineage = row_index_lineage
 
-    def __repr__(self) -> str:
-        return f"Frame(node.name={self.node.name})"
+    @property
+    def columns(self) -> list[str]:
+        """
+        Columns of the object
+
+        Returns
+        -------
+        list
+        """
+        return sorted(self.column_var_type_map.keys())
+
+    def _check_any_missing_column(self, item: str | list[str] | Series) -> None:
+        """
+        Check whether there is any unknown column from the specified item (single column or list of columns)
+
+        Parameters
+        ----------
+        item: str | list[str]
+            input column(s)
+
+        Raises
+        ------
+        KeyError
+            if the specified column does not exist
+        """
+        if isinstance(item, str):
+            if item not in self.column_var_type_map:
+                raise KeyError(f"Column {item} not found!")
+        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
+            not_found_columns = [elem for elem in item if elem not in self.column_var_type_map]
+            if not_found_columns:
+                raise KeyError(f"Columns {not_found_columns} not found!")
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
         """
-        Extract column or perform row filtering on the table.
+        Extract column or perform row filtering on the table
 
         When the item has a `str` or `list[str]` type, column(s) projection is expected. When single column
         projection happens, the last node of the Series lineage (`self.column_lineage_map[item][-1]`) is used
@@ -69,19 +104,17 @@ class Frame(OpsMixin):
 
         Returns
         -------
-        Series | Frame:
+        Series | Frame
             output of the operation
 
         Raises
         ------
-        KeyError
-            When the selected column does not exist
         TypeError
             When the item type does not support
         """
+        self._check_any_missing_column(item)
+
         if isinstance(item, str):
-            if item not in self.column_var_type_map:
-                raise KeyError(f"Column {item} not found!")
             # when doing projection, use the last updated node of the column rather than using
             # the last updated dataframe node to prevent adding redundant project node to the graph.
             node = self.graph.add_operation(
@@ -90,17 +123,15 @@ class Frame(OpsMixin):
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[self.graph.get_node_by_name(self.column_lineage_map[item][-1])],
             )
-            return Series(
+            return self.series_class(
                 node=node,
                 name=item,
                 var_type=self.column_var_type_map[item],
                 lineage=self._append_to_lineage(self.column_lineage_map[item], node.name),
                 row_index_lineage=self.row_index_lineage,
+                session=self.session,
             )
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
-            not_found_columns = [elem for elem in item if elem not in self.column_var_type_map]
-            if not_found_columns:
-                raise KeyError(f"Columns {not_found_columns} not found!")
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
                 node_params={"columns": item},
@@ -115,11 +146,12 @@ class Frame(OpsMixin):
                 column_lineage_map[col] = self._append_to_lineage(
                     self.column_lineage_map[col], node.name
                 )
-            return Frame(
+            return type(self)(
                 node=node,
                 column_var_type_map=column_var_type_map,
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self.row_index_lineage,
+                session=self.session,
             )
         if isinstance(item, Series):
             node = self._add_filter_operation(
@@ -128,11 +160,12 @@ class Frame(OpsMixin):
             column_lineage_map = {}
             for col, lineage in self.column_lineage_map.items():
                 column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
-            return Frame(
+            return type(self)(
                 node=node,
                 column_var_type_map=copy.deepcopy(self.column_var_type_map),
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+                session=self.session,
             )
         raise TypeError(f"Frame indexing with value '{item}' not supported!")
 

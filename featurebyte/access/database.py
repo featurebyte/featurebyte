@@ -1,5 +1,5 @@
 """
-This module implements the Insert, Update and Search of EventSource JSON config files from Local database
+This module implements the Insert, Update and Search of EventView JSON config files from Local database
 """
 
 from typing import Any, Dict
