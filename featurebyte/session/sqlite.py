@@ -25,7 +25,7 @@ class SQLiteSession(BaseSession):
         if not os.path.exists(self.filename):
             raise FileNotFoundError(f"SQLite file '{self.filename}' not found!")
 
-        self._connection = sqlite3.connect(self.filename)
+        self.connection = sqlite3.connect(self.filename)
         super().__post_init__()
 
     def _list_tables(self) -> list[str]:

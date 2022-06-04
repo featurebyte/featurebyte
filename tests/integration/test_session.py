@@ -1,19 +1,20 @@
 """
 This module contains session to EventView integration tests
 """
+import os
+
 import pandas as pd
+import pytest
 
 from featurebyte.core.event_view import EventView
-from featurebyte.session.sqlite import SQLiteSession
 
 
-def test_query_object_operation_on_sqlite_source(sqlite_db_filename, transaction_data):
+def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data):
     """
     Test loading event view from sqlite source
     """
-    session = SQLiteSession(filename=sqlite_db_filename)
     event_view = EventView.from_session(
-        session, table_name='"browsing_raw"', timestamp_column="created_at"
+        sqlite_session, table_name='"test_table"', timestamp_column="created_at"
     )
     assert event_view.columns == ["created_at", "cust_id", "product_action", "session_id"]
 
@@ -23,8 +24,35 @@ def test_query_object_operation_on_sqlite_source(sqlite_db_filename, transaction
     # construct expected results
     expected = transaction_data.copy()
     expected["cust_id_x_session_id"] = expected["cust_id"] * expected["session_id"]
-    expected["lucky_customer"] = (expected["cust_id_x_session_id"] / 1000) > 140.0
+    expected["lucky_customer"] = ((expected["cust_id_x_session_id"] / 1000) > 140.0).astype(int)
 
     # check agreement
     output = event_view.preview(limit=expected.shape[0])
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
+
+
+@pytest.mark.skipif(
+    any(
+        [
+            os.getenv(env_name) is None
+            for env_name in [
+                "SNOWFLAKE_USER",
+                "SNOWFLAKE_PASSWORD",
+                "SNOWFLAKE_ACCOUNT",
+                "SNOWFLAKE_WAREHOUSE",
+                "SNOWFLAKE_DATABASE",
+                "SNOWFLAKE_SCHEMA",
+            ]
+        ]
+    ),
+    reason="At least one snowflake environment variable is not set properly.",
+)
+def test_query_object_operation_on_snowflake_source(snowflake_session, transaction_data_upper_case):
+    """
+    Test loading event view from snowflake source
+    """
+    event_view = EventView.from_session(
+        snowflake_session,
+        table_name='"FB_SIMULATE"."PUBLIC"."TEST_TABLE"',
+        timestamp_column="CREATED_AT",
+    )

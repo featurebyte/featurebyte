@@ -40,7 +40,7 @@ class SnowflakeSession(BaseSession):
                 "Environment variables 'SNOWFLAKE_USER' or 'SNOWFLAKE_PASSWORD' is not set"
             )
 
-        self._connection = connector.connect(
+        self.connection = connector.connect(
             user=user,
             password=password,
             account=self.account,
