@@ -430,7 +430,9 @@ def make_project_node(
     return sql_node
 
 
-def make_filter_node(input_sql_nodes: list[SQLNode], output_type: NodeOutputType):
+def make_filter_node(
+    input_sql_nodes: list[SQLNode], output_type: NodeOutputType
+) -> FilteredFrame | FilteredSeries:
     """Create a FilteredFrame or FilteredSeries node
 
     Parameters
@@ -446,7 +448,10 @@ def make_filter_node(input_sql_nodes: list[SQLNode], output_type: NodeOutputType
         The appropriate SQL node for projection
     """
     item, mask = input_sql_nodes
+    assert isinstance(mask, ExpressionNode)
+    sql_node: FilteredFrame | FilteredSeries
     if output_type == NodeOutputType.FRAME:
+        assert isinstance(item, TableNode)
         sql_node = FilteredFrame(input_node=item, mask=mask)
     else:
         assert isinstance(item, ExpressionNode)
