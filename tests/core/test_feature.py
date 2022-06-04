@@ -35,7 +35,7 @@ def test_feature_list__override_protected_column(feature_list):
     assert "cust_id" in feature_list.protected_columns
     with pytest.raises(ValueError) as exc:
         feature_list["cust_id"] = feature_list["cust_id"] * 2
-    expected_msg = "Not allow to override entity identifier column 'cust_id'!"
+    expected_msg = "Entity identifier column 'cust_id' cannot be modified!"
     assert expected_msg in str(exc.value)
 
 

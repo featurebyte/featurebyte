@@ -60,5 +60,5 @@ class FeatureList(FeatureQueryObject, Frame):
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         if key in self.protected_columns:
-            raise ValueError(f"Not allow to override entity identifier column '{key}'!")
+            raise ValueError(f"Entity identifier column '{key}' cannot be modified!")
         super().__setitem__(key, value)

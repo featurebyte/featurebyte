@@ -109,7 +109,7 @@ def test_setitem__override_protected_column(event_view, column):
     assert column in event_view.protected_columns
     with pytest.raises(ValueError) as exc:
         event_view[column] = 1
-    expected_msg = f"Not allow to override timestamp or entity identifier column '{column}'!"
+    expected_msg = f"Timestamp or entity identifier column '{column}' cannot be modified!"
     assert expected_msg in str(exc.value)
 
 
