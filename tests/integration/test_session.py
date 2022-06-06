@@ -33,16 +33,14 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
 
 @pytest.mark.skipif(
     any(
-        [
-            os.getenv(env_name) is None
-            for env_name in [
-                "SNOWFLAKE_USER",
-                "SNOWFLAKE_PASSWORD",
-                "SNOWFLAKE_ACCOUNT",
-                "SNOWFLAKE_WAREHOUSE",
-                "SNOWFLAKE_DATABASE",
-                "SNOWFLAKE_SCHEMA",
-            ]
+        os.getenv(env_name) is None
+        for env_name in [
+            "SNOWFLAKE_USER",
+            "SNOWFLAKE_PASSWORD",
+            "SNOWFLAKE_ACCOUNT",
+            "SNOWFLAKE_WAREHOUSE",
+            "SNOWFLAKE_DATABASE",
+            "SNOWFLAKE_SCHEMA",
         ]
     ),
     reason="At least one snowflake environment variable is not set properly.",
