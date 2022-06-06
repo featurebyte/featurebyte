@@ -306,7 +306,7 @@ def test_graph_interpreter_tile_gen(graph):
     _groupby_node = graph.add_operation(
         node_type=NodeType.GROUPBY,
         node_params={
-            "key": "cust_id",
+            "keys": ["cust_id"],
             "parent": "a",
             "agg_func": "sum",
             "window_end": 5,
@@ -347,7 +347,7 @@ def test_graph_interpreter_snowflake(graph):
     _groupby_node = graph.add_operation(
         node_type=NodeType.GROUPBY,
         node_params={
-            "key": "CUST_ID",
+            "keys": ["CUST_ID"],
             "parent": "*",
             "agg_func": "COUNT",
             "window_end": 600,

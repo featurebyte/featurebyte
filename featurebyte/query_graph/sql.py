@@ -255,7 +255,7 @@ class BuildTileNode(TableNode):
     """
 
     input_node: TableNode
-    key: str
+    keys: list[str]
     parent: str
     timestamp: str
     agg_func: str
@@ -263,7 +263,7 @@ class BuildTileNode(TableNode):
 
     @property
     def columns(self) -> list[str]:
-        return ["tile_start_date", self.key, "value"]
+        return ["tile_start_date"] + self.keys + ["value"]
 
     @property
     def sql(self) -> Expression:
@@ -284,12 +284,11 @@ class BuildTileNode(TableNode):
         groupby_sql = (
             select(
                 f"{tile_start_date} AS tile_start_date",
-                self.key,
+                *self.keys,
                 f"{self.agg_func}({self.parent}) AS value",
             )
             .from_(input_tiled.subquery())
-            # TODO: composite join keys
-            .group_by("tile_index", self.key)
+            .group_by("tile_index", *self.keys)
             .order_by("tile_index")
         )
 

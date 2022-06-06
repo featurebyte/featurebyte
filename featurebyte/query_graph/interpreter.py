@@ -150,7 +150,7 @@ class SQLOperationGraph:
             assert isinstance(input_sql_nodes[0], TableNode)
             sql_node = BuildTileNode(
                 input_node=input_sql_nodes[0],
-                key=parameters["key"],
+                keys=parameters["keys"],
                 parent=parameters["parent"],
                 timestamp=parameters["timestamp"],
                 agg_func=parameters["agg_func"],

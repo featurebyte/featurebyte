@@ -3,6 +3,8 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
+import pandas as pd
+
 from featurebyte.core.event_view import EventView
 from featurebyte.core.feature import FeatureList
 from featurebyte.core.mixin import OpsMixin
@@ -48,10 +50,12 @@ class EventViewGroupBy(OpsMixin):
         method: str,
         windows: list[str],
         blind_spot: str,
-        schedule: str,
+        frequency: str,
+        time_modulo_frequency: str,
         feature_names: list[str],
         timestamp_column: str | None = None,
         value_by_column: str | None = None,
+        schedule: str | None = None,
     ) -> FeatureList:
         """
         Aggregate given value_column for each group specified in keys
@@ -79,6 +83,10 @@ class EventViewGroupBy(OpsMixin):
         -------
         FeatureList
         """
+        blind_spot_seconds = pd.Timedelta(blind_spot).total_seconds()
+        frequency_seconds = pd.Timedelta(frequency).total_seconds()
+        time_modulo_frequency_seconds = pd.Timedelta(time_modulo_frequency).total_seconds()
+
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,
             node_params={
@@ -88,7 +96,9 @@ class EventViewGroupBy(OpsMixin):
                 "value_by": value_by_column,
                 "windows": windows,
                 "timestamp": timestamp_column or self.obj.timestamp_column,
-                "blind_spot": blind_spot,
+                "blind_spot": blind_spot_seconds,
+                "window_end": time_modulo_frequency_seconds,
+                "frequency": frequency_seconds,
                 "schedule": schedule,
                 "names": feature_names,
             },
