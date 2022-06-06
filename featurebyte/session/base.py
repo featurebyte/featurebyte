@@ -23,10 +23,10 @@ class BaseSession:
 
     source_type: SourceType = field(init=False)
     database_metadata: dict[str, TableSchema] = field(init=False)
-    _connection: Any = field(default=None, init=False)
+    connection: Any = field(default=None, init=False)
 
     def __post_init__(self) -> None:
-        if self._connection is None:
+        if self.connection is None:
             raise ConnectionError("Failed to established a database connection.")
         self.database_metadata = self.populate_database_metadata()
 
@@ -55,7 +55,7 @@ class BaseSession:
         pd.DataFrame
             return pandas DataFrame if the query expect output
         """
-        cursor = self._connection.cursor()
+        cursor = self.connection.cursor()
         try:
             cursor.execute(query)
             if cursor.description:
