@@ -55,7 +55,6 @@ class EventViewGroupBy(OpsMixin):
         feature_names: list[str],
         timestamp_column: str | None = None,
         value_by_column: str | None = None,
-        schedule: str | None = None,
     ) -> FeatureList:
         """
         Aggregate given value_column for each group specified in keys
@@ -70,8 +69,6 @@ class EventViewGroupBy(OpsMixin):
             list of aggregation window sizes
         blind_spot: str
             historical gap introduced to the aggregation
-        schedule: str
-            schedule to run tile building job
         feature_names: list[str]
             output feature names
         timestamp_column: str | None
@@ -83,9 +80,9 @@ class EventViewGroupBy(OpsMixin):
         -------
         FeatureList
         """
-        blind_spot_seconds = pd.Timedelta(blind_spot).total_seconds()
-        frequency_seconds = pd.Timedelta(frequency).total_seconds()
-        time_modulo_frequency_seconds = pd.Timedelta(time_modulo_frequency).total_seconds()
+        blind_spot = int(pd.Timedelta(blind_spot).total_seconds())
+        frequency = int(pd.Timedelta(frequency).total_seconds())
+        time_modulo_frequency = int(pd.Timedelta(time_modulo_frequency).total_seconds())
 
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,
@@ -96,10 +93,9 @@ class EventViewGroupBy(OpsMixin):
                 "value_by": value_by_column,
                 "windows": windows,
                 "timestamp": timestamp_column or self.obj.timestamp_column,
-                "blind_spot": blind_spot_seconds,
-                "window_end": time_modulo_frequency_seconds,
-                "frequency": frequency_seconds,
-                "schedule": schedule,
+                "blind_spot": blind_spot,
+                "time_modulo_frequency": time_modulo_frequency,
+                "frequency": frequency,
                 "names": feature_names,
             },
             node_output_type=NodeOutputType.FRAME,

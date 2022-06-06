@@ -169,7 +169,7 @@ class TileGenSql:
         Templated SQL code for building tiles
     columns : List[str]
         List of columns in the tile table after executing the SQL code
-    window_end : int
+    time_modulo_frequency: int
         Offset used to determine the time for jobs scheduling. Should be smaller than frequency.
     frequency : int
         Job frequency. Needed for job scheduling.
@@ -181,7 +181,7 @@ class TileGenSql:
     # tile_table_id: str
     sql: str
     columns: List[str]
-    window_end: int
+    time_modulo_frequency: int
     frequency: int
     blind_spot: int
 
@@ -239,11 +239,11 @@ class TileSQLGenerator:
         sql = groupby_sql_node.sql
         frequency = groupby_node["parameters"]["frequency"]
         blind_spot = groupby_node["parameters"]["blind_spot"]
-        window_end = groupby_node["parameters"]["window_end"]
+        time_modulo_frequency = groupby_node["parameters"]["time_modulo_frequency"]
         info = TileGenSql(
             sql=sql.sql(pretty=True),
             columns=groupby_sql_node.columns,
-            window_end=window_end,
+            time_modulo_frequency=time_modulo_frequency,
             frequency=frequency,
             blind_spot=blind_spot,
         )

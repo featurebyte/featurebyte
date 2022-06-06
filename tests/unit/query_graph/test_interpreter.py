@@ -309,7 +309,7 @@ def test_graph_interpreter_tile_gen(graph):
             "keys": ["cust_id"],
             "parent": "a",
             "agg_func": "avg",
-            "window_end": 5,
+            "time_modulo_frequency": 5,
             "frequency": 30,
             "blind_spot": 1,
             "timestamp": "ts",
@@ -326,7 +326,7 @@ def test_graph_interpreter_tile_gen(graph):
     info_dict.pop("sql")
     assert info_dict == {
         "columns": ["tile_start_date", "cust_id", "sum_value", "count_value"],
-        "window_end": 5,
+        "time_modulo_frequency": 5,
         "frequency": 30,
         "blind_spot": 1,
     }
@@ -350,7 +350,7 @@ def test_graph_interpreter_snowflake(graph):
             "keys": ["CUST_ID"],
             "parent": "*",
             "agg_func": "count",
-            "window_end": 600,
+            "time_modulo_frequency": 600,
             "frequency": 3600,
             "blind_spot": 1,
             "timestamp": "SERVER_TIMESTAMP",
