@@ -15,12 +15,12 @@ from featurebyte.query_graph.sql import (
     BINARY_OPERATION_NODE_TYPES,
     AssignNode,
     BuildTileInputNode,
-    BuildTileNode,
     ExpressionNode,
     GenericInputNode,
     SQLNode,
     TableNode,
     make_binary_operation_node,
+    make_build_tile_node,
     make_filter_node,
     make_project_node,
 )
@@ -147,15 +147,7 @@ class SQLOperationGraph:
             sql_node = make_filter_node(input_sql_nodes, output_type)
 
         elif node_type == NodeType.GROUPBY:
-            assert isinstance(input_sql_nodes[0], TableNode)
-            sql_node = BuildTileNode(
-                input_node=input_sql_nodes[0],
-                keys=parameters["keys"],
-                parent=parameters["parent"],
-                timestamp=parameters["timestamp"],
-                agg_func=parameters["agg_func"],
-                frequency=parameters["frequency"],
-            )
+            sql_node = make_build_tile_node(input_sql_nodes, parameters)
 
         else:
             raise NotImplementedError(f"SQLNode not implemented for {cur_node}")

@@ -308,7 +308,7 @@ def test_graph_interpreter_tile_gen(graph):
         node_params={
             "keys": ["cust_id"],
             "parent": "a",
-            "agg_func": "sum",
+            "agg_func": "avg",
             "window_end": 5,
             "frequency": 30,
             "blind_spot": 1,
@@ -325,7 +325,7 @@ def test_graph_interpreter_tile_gen(graph):
     info_dict = asdict(info)
     info_dict.pop("sql")
     assert info_dict == {
-        "columns": ["tile_start_date", "cust_id", "value"],
+        "columns": ["tile_start_date", "cust_id", "sum_value", "count_value"],
         "window_end": 5,
         "frequency": 30,
         "blind_spot": 1,
@@ -349,7 +349,7 @@ def test_graph_interpreter_snowflake(graph):
         node_params={
             "keys": ["CUST_ID"],
             "parent": "*",
-            "agg_func": "COUNT",
+            "agg_func": "count",
             "window_end": 600,
             "frequency": 3600,
             "blind_spot": 1,
