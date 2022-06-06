@@ -1,3 +1,6 @@
+"""
+Tests for featurebyte.query_graph.tiling
+"""
 import pytest
 
 from featurebyte.query_graph.tiling import AggFunc, TileSpec, get_aggregator

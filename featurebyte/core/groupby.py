@@ -69,6 +69,10 @@ class EventViewGroupBy(OpsMixin):
             list of aggregation window sizes
         blind_spot: str
             historical gap introduced to the aggregation
+        frequency: str
+            frequency of the feature job
+        time_modulo_frequency: str
+            offset of when the feature job will be run, should be smaller than frequency
         feature_names: list[str]
             output feature names
         timestamp_column: str | None
@@ -80,9 +84,10 @@ class EventViewGroupBy(OpsMixin):
         -------
         FeatureList
         """
-        blind_spot = int(pd.Timedelta(blind_spot).total_seconds())
-        frequency = int(pd.Timedelta(frequency).total_seconds())
-        time_modulo_frequency = int(pd.Timedelta(time_modulo_frequency).total_seconds())
+        # pylint: disable=R0914 (too-many-locals)
+        blind_spot_seconds = int(pd.Timedelta(blind_spot).total_seconds())
+        frequency_seconds = int(pd.Timedelta(frequency).total_seconds())
+        time_modulo_frequency_seconds = int(pd.Timedelta(time_modulo_frequency).total_seconds())
 
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,
@@ -93,9 +98,9 @@ class EventViewGroupBy(OpsMixin):
                 "value_by": value_by_column,
                 "windows": windows,
                 "timestamp": timestamp_column or self.obj.timestamp_column,
-                "blind_spot": blind_spot,
-                "time_modulo_frequency": time_modulo_frequency,
-                "frequency": frequency,
+                "blind_spot": blind_spot_seconds,
+                "time_modulo_frequency": time_modulo_frequency_seconds,
+                "frequency": frequency_seconds,
                 "names": feature_names,
             },
             node_output_type=NodeOutputType.FRAME,
