@@ -1,7 +1,18 @@
-CREATE FUNCTION F_TIMESTAMP_TO_INDEX(ts_str VARCHAR, window_end_seconds INTEGER, frequency_minute INTEGER)
+CREATE OR REPLACE FUNCTION F_TIMESTAMP_TO_INDEX(ts_str VARCHAR, time_modulo_frequency_seconds INTEGER, blind_spot_seconds INTEGER, frequency_minute INTEGER)
   RETURNS INTEGER
   AS
   $$
-      select floor(timediff(second, dateadd(second, window_end_seconds, '1970-01-01 00:00:00'::timestamp_ntz), ts_str::timestamp_ntz)/(frequency_minute*60)) as index
+      select index from (
+
+        select 
+        
+          (time_modulo_frequency_seconds - blind_spot_seconds) as offset,
+
+          dateadd(second, -offset, ts_str::timestamp_ntz) as adjusted_ts,
+
+          date_part(epoch_second, adjusted_ts) as period_in_seconds, 
+
+          floor(period_in_seconds / (frequency_minute*60)) as index
+      )
   $$
   ;

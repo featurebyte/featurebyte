@@ -1,4 +1,4 @@
-create or replace procedure SP_TILE_GENERATE_SCHEDULE(FEATURE_NAME varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, OFFLINE_PERIOD_MINUTE float, SQL varchar, COLUMN_NAMES varchar, TYPE varchar, MONITOR_PERIODS float, END_TS varchar)
+CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_SCHEDULE(FEATURE_NAME varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, OFFLINE_PERIOD_MINUTE float, SQL varchar, COLUMN_NAMES varchar, TYPE varchar, MONITOR_PERIODS float, END_TS varchar)
 returns string
 language javascript
 as
@@ -6,7 +6,7 @@ $$
     /*
         Master Stored Procedure to schedule and trigger Tile generation, monitoring and replacement
 
-        1. derive cron_residue_seconds, window_end_seconds, tile_end_ts
+        1. derive cron_residue_seconds, tile_end_ts
         2. derive tile_start_ts for online and offline Tile respectively
         3. call monitor tile stored procedure
         4. call generate tile stored procedure to create new or replace already existed tiles
@@ -22,9 +22,6 @@ $$
         }
     )
     debug = debug + " - cron_residue_seconds: " + cron_residue_seconds
-
-    window_end_seconds = TIME_MODULO_FREQUENCY_SECONDS - BLIND_SPOT_SECONDS
-    debug = debug + " - window_end_seconds: " + window_end_seconds
 
     // determine tile_end_ts (tile end timestamp) based on tile_type and whether END_TS is set
     var tile_end_ts = new Date()
@@ -55,7 +52,7 @@ $$
 
     if (tile_type === "ONLINE") {
         // derive appropriate tile_start_ts for ONLINE computation
-        var lookback_stored_proc = `call SP_TILE_ONLINE_LOOKBACK_PERIOD('${table_name}', '${tile_end_ts_str}', ${OFFLINE_PERIOD_MINUTE}, ${lookback_period}, ${window_end_seconds}, ${FREQUENCY_MINUTE})`
+        var lookback_stored_proc = `call SP_TILE_ONLINE_LOOKBACK_PERIOD('${table_name}', '${tile_end_ts_str}', ${OFFLINE_PERIOD_MINUTE}, ${lookback_period}, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE})`
         result = snowflake.execute({sqlText: lookback_stored_proc})    
         result.next()
         lookback_period = result.getColumnValue(1)
@@ -76,7 +73,7 @@ $$
     debug = debug + " - monitor_tile_end_ts_str: " + monitor_tile_end_ts_str
 
     var monitor_input_sql = SQL.replace("FB_START_TS", "\\'"+tile_start_ts_str+"\\'::timestamp_ntz").replace("FB_END_TS", "\\'"+monitor_tile_end_ts_str+"\\'::timestamp_ntz") 
-    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}')`
+    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}')`
     result = snowflake.execute(
         {
             sqlText: monitor_stored_proc
@@ -87,7 +84,7 @@ $$
 
     // trigger stored procedure to generate tiles
     var generate_input_sql = SQL.replace("FB_START_TS", "\\'"+tile_start_ts_str+"\\'::timestamp_ntz").replace("FB_END_TS", "\\'"+tile_end_ts_str+"\\'::timestamp_ntz")     
-    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', ${window_end_seconds}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}')`
+    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}')`
     var result = snowflake.execute(
         {
             sqlText: generate_stored_proc

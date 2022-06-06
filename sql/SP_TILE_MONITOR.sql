@@ -1,4 +1,4 @@
-create or replace procedure SP_TILE_MONITOR(MONITOR_SQL varchar, WINDOW_END_SECONDS float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME varchar, TILE_TYPE varchar)
+CREATE OR REPLACE PROCEDURE SP_TILE_MONITOR(MONITOR_SQL varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME varchar, TILE_TYPE varchar)
 returns string
 language javascript
 as
@@ -10,15 +10,15 @@ $$
 
     var debug = "Debug"
 
-    var table_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_schema = 'FEATUREBYTE' AND table_name = '${TABLE_NAME}')`
-    var result = snowflake.execute(
-        {
-            sqlText: table_exist_sql
-        }
-    )
-    result.next()
-    var table_exist = result.getColumnValue(1)
+    var table_exist = true
+    try {
+        snowflake.execute({sqlText: `SELECT * FROM ${TABLE_NAME} LIMIT 1`})
+    } catch (err)  {
+        table_exist = false
+    } 
     debug = debug + " - online_tile_table_exist: " + table_exist
+
+
     if (table_exist === false) {
         // first-time execution that online tile table does not exist yet
         return debug
@@ -39,7 +39,7 @@ $$
     //replace SQL template with start and end date strings for tile generation sql 
     var new_tile_sql = `
         select 
-            TILE_START_TS, F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${WINDOW_END_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX, ${col_list_str}
+            TILE_START_TS, F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX, ${col_list_str}
         from (${MONITOR_SQL})
     `
     
@@ -56,14 +56,12 @@ $$
     debug = debug + " - compare_sql: " + compare_sql
 
     var monitor_table_name = TABLE_NAME + '_MONITOR'
-    table_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_name = '${monitor_table_name}')`
-    result = snowflake.execute(
-        {
-            sqlText: table_exist_sql
-        }
-    )
-    result.next()
-    table_exist = result.getColumnValue(1)
+    table_exist = true
+    try {
+        snowflake.execute({sqlText: `SELECT * FROM ${monitor_table_name} LIMIT 1`})
+    } catch (err)  {
+        table_exist = false
+    } 
     debug = debug + " - monitor_table_exist: " + table_exist
 
     if (table_exist === false) {

@@ -1,4 +1,4 @@
-create or replace procedure SP_TILE_ONLINE_LOOKBACK_PERIOD(TABLE_NAME varchar, TILE_END varchar, OFFLINE_PERIOD_MINUTE float, LOOKBACK_MINUTE float, WINDOW_END_SECONDS FLOAT, FREQUENCY_MINUTE FLOAT)
+CREATE OR REPLACE PROCEDURE SP_TILE_ONLINE_LOOKBACK_PERIOD(TABLE_NAME varchar, TILE_END varchar, OFFLINE_PERIOD_MINUTE float, LOOKBACK_MINUTE float, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float)
 returns float
 language javascript
 as
@@ -15,7 +15,7 @@ $$
     var min_diff_sql = `
         select
             '${TILE_END}'::timestamp_ntz as tile_end_ts,
-            F_INDEX_TO_TIMESTAMP(index, ${WINDOW_END_SECONDS}, ${FREQUENCY_MINUTE})::timestamp_ntz as tile_start_ts,
+            F_INDEX_TO_TIMESTAMP(index, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE})::timestamp_ntz as tile_start_ts,
             timediff(minute, tile_start_ts, tile_end_ts)
         from feature1_tile
         where tile_start_ts > dateadd(minute, -${OFFLINE_PERIOD_MINUTE}, tile_end_ts::timestamp_ntz)

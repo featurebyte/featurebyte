@@ -1,4 +1,4 @@
-create or replace procedure SP_TILE_GENERATE(SQL varchar, WINDOW_END_SECONDS float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME varchar)
+CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE(SQL varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME varchar)
 returns string
 language javascript
 as
@@ -11,16 +11,13 @@ $$
     var debug = "Debug"
 
     //check whether tile table for the feature already exists
-    var tile_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_schema = 'FEATUREBYTE' AND table_name = '${TABLE_NAME}')`
-    var result = snowflake.execute(
-        {
-            sqlText: tile_exist_sql
-        }
-    )
-    result.next()
-    var tile_exist = result.getColumnValue(1)
+    var tile_exist = true
+    try {
+        snowflake.execute({sqlText: `SELECT * FROM ${TABLE_NAME} LIMIT 1`})
+    } catch (err)  {
+        tile_exist = false
+    } 
     debug = debug + " - tile_exist: " + tile_exist
-    
 
     var col_list = COLUMN_NAMES.split(",").filter(item => item.trim().toUpperCase() !== "TILE_START_TS")
     col_list_str = col_list.join(',')
@@ -29,7 +26,7 @@ $$
     //replace SQL template with start and end date strings for tile generation sql    
     var tile_sql = `
         select 
-            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${WINDOW_END_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX, ${col_list_str}
+            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX, ${col_list_str}
         from (${SQL})
     `
 
