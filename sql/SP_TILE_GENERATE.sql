@@ -11,7 +11,7 @@ $$
     var debug = "Debug"
 
     //check whether tile table for the feature already exists
-    var tile_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_name = '${TABLE_NAME}')`
+    var tile_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_schema = 'FEATUREBYTE' AND table_name = '${TABLE_NAME}')`
     var result = snowflake.execute(
         {
             sqlText: tile_exist_sql

@@ -10,7 +10,7 @@ $$
 
     var debug = "Debug"
 
-    var table_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_name = '${TABLE_NAME}')`
+    var table_exist_sql = `SELECT exists (SELECT * FROM information_schema.tables WHERE table_schema = 'FEATUREBYTE' AND table_name = '${TABLE_NAME}')`
     var result = snowflake.execute(
         {
             sqlText: table_exist_sql
