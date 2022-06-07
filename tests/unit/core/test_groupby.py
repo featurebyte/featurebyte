@@ -70,3 +70,14 @@ def test_constructor__keys_column_not_found(event_view):
     with pytest.raises(KeyError) as exc:
         EventViewGroupBy(obj=event_view, keys=["cust_id", "random_column"])
     assert expected_msg in str(exc.value)
+
+
+def test_groupby__wrong_method(event_view):
+    """
+    Test not valid aggregation method passed to groupby
+    """
+    grouped = EventViewGroupBy(obj=event_view, keys=None)
+    with pytest.raises(ValueError) as exc:
+        grouped.aggregate("a", "unknown_method", ["1d"], "5m", "1h", "10m", ["feature_name"])
+    expected_message = "Aggregation method not supported: unknown_method"
+    assert expected_message in str(exc.value)

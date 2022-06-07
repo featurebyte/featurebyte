@@ -1,6 +1,8 @@
 """
 This module contains all the enums used across different modules
 """
+from __future__ import annotations
+
 from enum import Enum
 
 
@@ -31,3 +33,13 @@ class AggFunc(str, Enum):
     MAX = "max"
     COUNT = "count"
     NA_COUNT = "na_count"
+
+    @classmethod
+    def all(cls) -> list[str]:
+        """List all defined aggregation function names
+
+        Returns
+        -------
+        list[str]
+        """
+        return [c.value for c in cls]

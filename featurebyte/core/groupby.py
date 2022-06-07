@@ -8,7 +8,7 @@ import pandas as pd
 from featurebyte.core.event_view import EventView
 from featurebyte.core.feature import FeatureList
 from featurebyte.core.mixin import OpsMixin
-from featurebyte.enum import DBVarType
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
@@ -83,8 +83,16 @@ class EventViewGroupBy(OpsMixin):
         Returns
         -------
         FeatureList
+
+        Raises
+        ------
+        ValueError
+            If provided aggregation method is not supported
         """
         # pylint: disable=R0914 (too-many-locals)
+        if method not in AggFunc.all():
+            raise ValueError(f"Aggregation method not supported: {method}")
+
         blind_spot_seconds = int(pd.Timedelta(blind_spot).total_seconds())
         frequency_seconds = int(pd.Timedelta(frequency).total_seconds())
         time_modulo_frequency_seconds = int(pd.Timedelta(time_modulo_frequency).total_seconds())
