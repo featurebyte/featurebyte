@@ -5,20 +5,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum
 
-
-class AggFunc(str, Enum):
-    """
-    Supported aggregation functions in groupby
-    """
-
-    SUM = "sum"
-    AVG = "avg"
-    MIN = "min"
-    MAX = "max"
-    COUNT = "count"
-    NA_COUNT = "na_count"
+from featurebyte.enum import AggFunc
 
 
 @dataclass

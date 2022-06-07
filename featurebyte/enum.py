@@ -18,3 +18,16 @@ class DBVarType(str, Enum):
     TIME = "TIME"
     TIMESTAMP = "TIMESTAMP"
     VARCHAR = "VARCHAR"
+
+
+class AggFunc(str, Enum):
+    """
+    Supported aggregation functions in groupby
+    """
+
+    SUM = "sum"
+    AVG = "avg"
+    MIN = "min"
+    MAX = "max"
+    COUNT = "count"
+    NA_COUNT = "na_count"
