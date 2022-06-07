@@ -39,14 +39,20 @@ $$
     //replace SQL template with start and end date strings for tile generation sql 
     var new_tile_sql = `
         select 
-            TILE_START_TS, F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX, ${col_list_str}
+            TILE_START_TS, 
+            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX, 
+            ${col_list_str}
         from (${MONITOR_SQL})
     `
     
     var compare_sql = `
         select * from
             (select 
-                a.*, b.VALUE as OLD_VALUE, '${TILE_TYPE}'::VARCHAR(8) as TILE_TYPE, sysdate() as CREATED_AT
+                a.*, 
+                b.VALUE as OLD_VALUE, 
+                '${TILE_TYPE}'::VARCHAR(8) as TILE_TYPE,
+                DATEADD(SECOND, (${BLIND_SPOT_SECONDS}+${FREQUENCY_MINUTE}*60), a.TILE_START_TS) as EXPECTED_CREATED_AT,
+                SYSDATE() as CREATED_AT
             from 
                 (${new_tile_sql}) a left outer join ${TABLE_NAME} b
             on 

@@ -26,7 +26,9 @@ $$
     //replace SQL template with start and end date strings for tile generation sql    
     var tile_sql = `
         select 
-            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX, ${col_list_str}
+            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX, 
+            ${col_list_str},
+            SYSDATE() as CREATED_AT
         from (${SQL})
     `
 
@@ -59,9 +61,9 @@ $$
             merge into ${TABLE_NAME} a using (${tile_sql}) b
                 on a.INDEX = b.INDEX ${filter_cols_str}
                 when matched then 
-                    update set a.VALUE = b.VALUE
+                    update set a.VALUE = b.VALUE, a.CREATED_AT = SYSDATE()
                 when not matched then 
-                    insert (INDEX, ${col_list_str}) values (b.INDEX, ${insert_cols_str})
+                    insert (INDEX, ${col_list_str}, CREATED_AT) values (b.INDEX, ${insert_cols_str}, SYSDATE())
         ` 
         snowflake.execute(
             {
