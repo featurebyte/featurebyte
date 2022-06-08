@@ -16,6 +16,16 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 
 
+def escape_column_name(x) -> str:
+    if x.startswith('"') and x.endswith('"'):
+        return x
+    return f'"{x}"'
+
+
+def escape_column_names(xs: list[str]) -> list[str]:
+    return [escape_column_name(x) for x in xs]
+
+
 class SQLNode(ABC):
     """Base class of a node in the SQL operations tree
 
@@ -124,8 +134,10 @@ class GenericInputNode(TableNode):
         Expression
             A sqlglot Expression object
         """
-        select_expr = select(*self.columns)
-        select_expr = select_expr.from_(self.dbtable)
+        columns = escape_column_names(self.columns)
+        select_expr = select(*columns)
+        dbtable = escape_column_name(self.dbtable)
+        select_expr = select_expr.from_(dbtable)
         return select_expr
 
 
@@ -172,7 +184,7 @@ class Project(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return parse_one(self.column_name)
+        return parse_one(escape_column_name(self.column_name))
 
 
 @dataclass
@@ -188,7 +200,8 @@ class ProjectMulti(TableNode):
 
     @property
     def sql(self) -> Expression:
-        return select(*self.column_names).from_(self.input_node.sql_nested())
+        column_names = escape_column_names(self.column_names)
+        return select(*column_names).from_(self.input_node.sql_nested())
 
 
 @dataclass
@@ -242,6 +255,7 @@ class AssignNode(TableNode):
     @property
     def sql(self) -> Expression:
         existing_columns = [col for col in self.table_node.columns if col != self.name]
+        existing_columns = escape_column_names(existing_columns)
         select_expr = select(*existing_columns)
         select_expr = select_expr.select(expressions.alias_(self.column_node.sql, self.name))
         select_expr = select_expr.from_(self.table_node.sql_nested())

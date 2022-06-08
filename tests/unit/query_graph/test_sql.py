@@ -1,6 +1,8 @@
 """
 Tests for the featurebyte.query_graph.sql module
 """
+import textwrap
+
 import pytest
 
 from featurebyte.query_graph import sql
@@ -10,7 +12,7 @@ from featurebyte.query_graph.enum import NodeType
 @pytest.fixture(name="input_node")
 def input_node_fixture():
     """Fixture for a generic InputNode"""
-    return sql.BuildTileInputNode(
+    return sql.GenericInputNode(
         column_names=["col_1", "col_2", "col_3"],
         timestamp="ts",
         dbtable="dbtable",
@@ -81,3 +83,62 @@ def test_binary_operation_node__scalar(node_type, value, expected, input_node):
     parameters = {"value": value}
     node = sql.make_binary_operation_node(node_type, input_nodes, parameters)
     assert node.sql.sql() == expected
+
+
+def test_project_node__special_chars(input_node):
+    """Test project node with names colliding with SQL keywords"""
+    node = sql.ProjectMulti(
+        input_node=input_node,
+        column_names=["col", "SUM(a)", "some name"],
+    )
+    expected = (
+        'SELECT "col", "SUM(a)", "some name" FROM (SELECT "col_1", "col_2", "col_3" FROM "dbtable")'
+    )
+    assert node.sql.sql() == expected
+
+
+def test_project__escape_names(input_node):
+    """Test project node with names colliding with SQL keywords"""
+    node = sql.Project(table_node=input_node, column_name="SUM(a)")
+    assert node.sql.sql() == '"SUM(a)"'
+    assert node.sql_standalone.sql() == (
+        'SELECT "SUM(a)" FROM (SELECT "col_1", "col_2", "col_3" FROM "dbtable")'
+    )
+
+
+def test_project_multi__escape_names(input_node):
+    """Test project node with names colliding with SQL keywords"""
+    node = sql.ProjectMulti(
+        input_node=input_node,
+        column_names=["col", "SUM(a)", "some name"],
+    )
+    expected = (
+        'SELECT "col", "SUM(a)", "some name" FROM (SELECT "col_1", "col_2", "col_3" FROM "dbtable")'
+    )
+    assert node.sql.sql() == expected
+
+
+def test_assign__escape_names(input_node):
+    """Test assign node properly escape column names"""
+    node = sql.AssignNode(
+        table_node=input_node,
+        column_node=sql.Project(table_node=input_node, column_name="SUM(a)"),
+        name="COUNT(a)",
+    )
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "col_1",
+          "col_2",
+          "col_3",
+          "SUM(a)" AS "COUNT(a)"
+        FROM (
+            SELECT
+              "col_1",
+              "col_2",
+              "col_3"
+            FROM "dbtable"
+        )
+        """
+    ).strip()
+    assert node.sql.sql(pretty=True) == expected
