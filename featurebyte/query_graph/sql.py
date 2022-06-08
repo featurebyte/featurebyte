@@ -257,7 +257,10 @@ class AssignNode(TableNode):
         existing_columns = [col for col in self.table_node.columns if col != self.name]
         existing_columns = escape_column_names(existing_columns)
         select_expr = select(*existing_columns)
-        select_expr = select_expr.select(expressions.alias_(self.column_node.sql, self.name))
+        # expressions.alias_ is a bit special - if we pass a quoted string as the alias name, it
+        # will be double quoted (e.g. ""a""). So, here an Identifier is constructed directly.
+        name_identifier = expressions.Identifier(this=self.name, quoted=True)
+        select_expr = select_expr.select(expressions.alias_(self.column_node.sql, name_identifier))
         select_expr = select_expr.from_(self.table_node.sql_nested())
         return select_expr
 

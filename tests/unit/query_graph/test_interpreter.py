@@ -50,18 +50,18 @@ def test_graph_interpreter_super_simple(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          ts,
-          cust_id,
-          a,
-          b,
-          a AS a_copy
+          "ts",
+          "cust_id",
+          "a",
+          "b",
+          "a" AS "a_copy"
         FROM (
             SELECT
-              ts,
-              cust_id,
-              a,
-              b
-            FROM event_table
+              "ts",
+              "cust_id",
+              "a",
+              "b"
+            FROM "event_table"
         )
         """
     ).strip()
@@ -123,26 +123,26 @@ def test_graph_interpreter_multi_assign(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          ts,
-          cust_id,
-          a,
-          b,
-          c,
-          c AS c2
+          "ts",
+          "cust_id",
+          "a",
+          "b",
+          "c",
+          "c" AS "c2"
         FROM (
             SELECT
-              ts,
-              cust_id,
-              a,
-              b,
-              a + b AS c
+              "ts",
+              "cust_id",
+              "a",
+              "b",
+              "a" + "b" AS "c"
             FROM (
                 SELECT
-                  ts,
-                  cust_id,
-                  a,
-                  b
-                FROM event_table
+                  "ts",
+                  "cust_id",
+                  "a",
+                  "b"
+                FROM "event_table"
                 WHERE
                   ts >= CAST(FBT_START_DATE AS TIMESTAMP)
                   AND ts < CAST(FBT_END_DATE AS TIMESTAMP)
@@ -207,21 +207,21 @@ def test_graph_interpreter_binary_operations(graph, node_type, expected_expr):
     expected = textwrap.dedent(
         f"""
         SELECT
-          ts,
-          cust_id,
-          a,
-          b,
-          {expected_expr} AS a2
+          "ts",
+          "cust_id",
+          "a",
+          "b",
+          {expected_expr} AS "a2"
         FROM (
             SELECT
-              ts,
-              cust_id,
-              a,
-              b
-            FROM event_table
+              "ts",
+              "cust_id",
+              "a",
+              "b"
+            FROM "event_table"
             WHERE
-              ts >= CAST(FBT_START_DATE AS TIMESTAMP)
-              AND ts < CAST(FBT_END_DATE AS TIMESTAMP)
+              "ts" >= CAST(FBT_START_DATE AS TIMESTAMP)
+              AND "ts" < CAST(FBT_END_DATE AS TIMESTAMP)
         )
         """
     ).strip()
@@ -252,15 +252,15 @@ def test_graph_interpreter_project_multiple_columns(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          a,
-          b
+          "a",
+          "b"
         FROM (
             SELECT
-              ts,
-              cust_id,
-              a,
-              b
-            FROM event_table
+              "ts",
+              "cust_id",
+              "a",
+              "b"
+            FROM "event_table"
         )
         """
     ).strip()
