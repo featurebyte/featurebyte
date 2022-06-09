@@ -1,8 +1,6 @@
 """
 This module contains EventTable related models
 """
-from __future__ import annotations
-
 from typing import Optional
 
 from datetime import datetime
@@ -18,15 +16,15 @@ class SnowflakeSource(BaseModel):
     sf_schema: str  # schema shadows a BaseModel attribute
 
 
-class FeatureJobSettings(BaseModel):
+class FeatureJobSetting(BaseModel):
     blind_spot: str
     frequency: str
     time_modulo_frequency: str
 
 
-class FeatureJobSettingsHistoryEntry(BaseModel):
+class FeatureJobSettingHistoryEntry(BaseModel):
     creation_date: datetime
-    settings: FeatureJobSettings
+    setting: FeatureJobSetting
 
 
 class EventTableStatus(str, Enum):
@@ -47,17 +45,22 @@ class EventTableModel(BaseModel):
         Database table name
     source : SnowflakeSource
         Data warehouse connection information
-    feature_job_settings : FeatureJobSettings
-        Default feature job settings
+    default_feature_job_setting : FeatureJobSetting
+        Default feature job setting
+    created_at : datetime
+        Date when the EventTable was first saved or published
+    history : list[FeatureJobSettingHistoryEntry]
+        History of feature job settings
+    status : EventTableStatus
+        Status of the EventTable
     """
 
     name: str
     table_name: str
     source: SnowflakeSource
     event_timestamp_column: str
-    record_creation_date_column: str | None
-    feature_job_settings: FeatureJobSettings
-    feature_job_settings_creation_date: datetime
+    record_creation_date_column: Optional[str]
+    default_feature_job_setting: Optional[FeatureJobSetting]
     created_at: datetime
-    history: list[FeatureJobSettingsHistoryEntry]
-    status: str
+    history: list[FeatureJobSettingHistoryEntry]
+    status: EventTableStatus

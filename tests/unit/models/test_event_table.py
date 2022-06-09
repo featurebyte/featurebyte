@@ -8,8 +8,8 @@ import pytest
 from featurebyte.models.event_table import (
     EventTableModel,
     EventTableStatus,
-    FeatureJobSettings,
-    FeatureJobSettingsHistoryEntry,
+    FeatureJobSetting,
+    FeatureJobSettingHistoryEntry,
     SnowflakeSource,
 )
 
@@ -25,42 +25,41 @@ def snowflake_source_fixture():
     return snowflake_source
 
 
-@pytest.fixture(name="feature_job_settings")
-def feature_job_settings_fixture():
-    feature_job_settings = FeatureJobSettings(
+@pytest.fixture(name="feature_job_setting")
+def feature_job_setting_fixture():
+    feature_job_setting = FeatureJobSetting(
         blind_spot="10m",
         frequency="30m",
         time_modulo_frequency="5m",
     )
-    return feature_job_settings
+    return feature_job_setting
 
 
-@pytest.fixture(name="feature_job_settings_history")
-def feature_job_settings_history_fixture(feature_job_settings):
+@pytest.fixture(name="feature_job_setting_history")
+def feature_job_setting_history_fixture(feature_job_setting):
     history = [
-        FeatureJobSettingsHistoryEntry(
+        FeatureJobSettingHistoryEntry(
             creation_date=datetime.datetime(2022, 4, 1),
-            settings=feature_job_settings,
+            setting=feature_job_setting,
         ),
-        FeatureJobSettingsHistoryEntry(
+        FeatureJobSettingHistoryEntry(
             creation_date=datetime.datetime(2022, 2, 1),
-            settings=feature_job_settings,
+            setting=feature_job_setting,
         ),
     ]
     return history
 
 
-def test_event_table_model(snowflake_source, feature_job_settings, feature_job_settings_history):
+def test_event_table_model(snowflake_source, feature_job_setting, feature_job_setting_history):
     event_table = EventTableModel(
         name="my_event_table",
         table_name="table",
         source=snowflake_source,
         event_timestamp_column="event_date",
         record_creation_date_column="created_at",
-        feature_job_settings=feature_job_settings,
-        created_at=datetime.datetime(2022, 4, 1),
-        feature_job_settings_creation_date=datetime.datetime(2022, 4, 1),
-        history=feature_job_settings_history,
+        default_feature_job_setting=feature_job_setting,
+        created_at=datetime.datetime(2022, 2, 1),
+        history=feature_job_setting_history,
         status=EventTableStatus.published,
     )
     assert event_table.dict() == {
@@ -74,17 +73,16 @@ def test_event_table_model(snowflake_source, feature_job_settings, feature_job_s
         },
         "event_timestamp_column": "event_date",
         "record_creation_date_column": "created_at",
-        "feature_job_settings": {
+        "default_feature_job_setting": {
             "blind_spot": "10m",
             "frequency": "30m",
             "time_modulo_frequency": "5m",
         },
-        "feature_job_settings_creation_date": datetime.datetime(2022, 4, 1),
-        "created_at": datetime.datetime(2022, 4, 1),
+        "created_at": datetime.datetime(2022, 2, 1),
         "history": [
             {
                 "creation_date": datetime.datetime(2022, 4, 1),
-                "settings": {
+                "setting": {
                     "blind_spot": "10m",
                     "frequency": "30m",
                     "time_modulo_frequency": "5m",
@@ -92,7 +90,7 @@ def test_event_table_model(snowflake_source, feature_job_settings, feature_job_s
             },
             {
                 "creation_date": datetime.datetime(2022, 2, 1),
-                "settings": {
+                "setting": {
                     "blind_spot": "10m",
                     "frequency": "30m",
                     "time_modulo_frequency": "5m",
