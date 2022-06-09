@@ -16,6 +16,7 @@ from featurebyte.models.event_table import (
 
 @pytest.fixture(name="snowflake_source")
 def snowflake_source_fixture():
+    """Fixture for a Snowflake source"""
     snowflake_source = SnowflakeSource(
         account="account",
         warehouse="warehouse",
@@ -27,6 +28,7 @@ def snowflake_source_fixture():
 
 @pytest.fixture(name="feature_job_setting")
 def feature_job_setting_fixture():
+    """Fixture for a Feature Job Setting"""
     feature_job_setting = FeatureJobSetting(
         blind_spot="10m",
         frequency="30m",
@@ -37,6 +39,7 @@ def feature_job_setting_fixture():
 
 @pytest.fixture(name="feature_job_setting_history")
 def feature_job_setting_history_fixture(feature_job_setting):
+    """Fixture for a Feature Job Setting history"""
     history = [
         FeatureJobSettingHistoryEntry(
             creation_date=datetime.datetime(2022, 4, 1),
@@ -51,6 +54,7 @@ def feature_job_setting_history_fixture(feature_job_setting):
 
 
 def test_event_table_model(snowflake_source, feature_job_setting, feature_job_setting_history):
+    """Test creation, serialization and deserialization of an EventTable"""
     event_table = EventTableModel(
         name="my_event_table",
         table_name="table",
@@ -60,7 +64,7 @@ def test_event_table_model(snowflake_source, feature_job_setting, feature_job_se
         default_feature_job_setting=feature_job_setting,
         created_at=datetime.datetime(2022, 2, 1),
         history=feature_job_setting_history,
-        status=EventTableStatus.published,
+        status=EventTableStatus.PUBLISHED,
     )
     assert event_table.dict() == {
         "name": "my_event_table",
@@ -97,7 +101,7 @@ def test_event_table_model(snowflake_source, feature_job_setting, feature_job_se
                 },
             },
         ],
-        "status": "published",
+        "status": "PUBLISHED",
     }
     event_table_json = event_table.json()
     event_table_loaded = event_table.parse_raw(event_table_json)

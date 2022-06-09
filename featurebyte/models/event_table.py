@@ -1,7 +1,7 @@
 """
 This module contains EventTable related models
 """
-from typing import Optional
+from typing import List, Optional
 
 from datetime import datetime
 from enum import Enum
@@ -10,6 +10,8 @@ from pydantic import BaseModel
 
 
 class SnowflakeSource(BaseModel):
+    """Model for Snowflake data source information"""
+
     account: str
     warehouse: str
     database: str
@@ -17,20 +19,26 @@ class SnowflakeSource(BaseModel):
 
 
 class FeatureJobSetting(BaseModel):
+    """Model for Feature Job Setting"""
+
     blind_spot: str
     frequency: str
     time_modulo_frequency: str
 
 
 class FeatureJobSettingHistoryEntry(BaseModel):
+    """Model for an entry in setting history"""
+
     creation_date: datetime
     setting: FeatureJobSetting
 
 
 class EventTableStatus(str, Enum):
-    published = "published"
-    draft = "draft"
-    deprecated = "deprecated"
+    """EventTable status"""
+
+    PUBLISHED = "PUBLISHED"
+    DRAFT = "DRAFT"
+    DEPRECATED = "DEPRECATED"
 
 
 class EventTableModel(BaseModel):
@@ -62,5 +70,5 @@ class EventTableModel(BaseModel):
     record_creation_date_column: Optional[str]
     default_feature_job_setting: Optional[FeatureJobSetting]
     created_at: datetime
-    history: list[FeatureJobSettingHistoryEntry]
+    history: List[FeatureJobSettingHistoryEntry]
     status: EventTableStatus
