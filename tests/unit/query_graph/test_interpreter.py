@@ -144,8 +144,8 @@ def test_graph_interpreter_multi_assign(graph):
                   "b"
                 FROM "event_table"
                 WHERE
-                  ts >= CAST(FBT_START_DATE AS TIMESTAMP)
-                  AND ts < CAST(FBT_END_DATE AS TIMESTAMP)
+                  "ts" >= CAST(FBT_START_DATE AS TIMESTAMP)
+                  AND "ts" < CAST(FBT_END_DATE AS TIMESTAMP)
             )
         )
         """
@@ -156,18 +156,18 @@ def test_graph_interpreter_multi_assign(graph):
 @pytest.mark.parametrize(
     "node_type, expected_expr",
     [
-        (NodeType.ADD, "a + 123"),
-        (NodeType.SUB, "a - 123"),
-        (NodeType.MUL, "a * 123"),
-        (NodeType.DIV, "a / 123"),
-        (NodeType.EQ, "a = 123"),
-        (NodeType.NE, "a <> 123"),
-        (NodeType.LT, "a < 123"),
-        (NodeType.LE, "a <= 123"),
-        (NodeType.GT, "a > 123"),
-        (NodeType.GE, "a >= 123"),
-        (NodeType.AND, "a AND 123"),
-        (NodeType.OR, "a OR 123"),
+        (NodeType.ADD, '"a" + 123'),
+        (NodeType.SUB, '"a" - 123'),
+        (NodeType.MUL, '"a" * 123'),
+        (NodeType.DIV, '"a" / 123'),
+        (NodeType.EQ, '"a" = 123'),
+        (NodeType.NE, '"a" <> 123'),
+        (NodeType.LT, '"a" < 123'),
+        (NodeType.LE, '"a" <= 123'),
+        (NodeType.GT, '"a" > 123'),
+        (NodeType.GE, '"a" >= 123'),
+        (NodeType.AND, '"a" AND 123'),
+        (NodeType.OR, '"a" OR 123'),
     ],
 )
 def test_graph_interpreter_binary_operations(graph, node_type, expected_expr):
@@ -366,25 +366,25 @@ def test_graph_interpreter_snowflake(graph):
         """
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(FBT_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS tile_start_date,
-          CUST_ID,
+          "CUST_ID",
           COUNT(*) AS value
         FROM (
             SELECT
               *,
-              FLOOR((DATE_PART(EPOCH_SECOND, SERVER_TIMESTAMP) - DATE_PART(EPOCH_SECOND, CAST(FBT_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+              FLOOR((DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(FBT_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
                 SELECT
-                  SERVER_TIMESTAMP,
-                  CUST_ID
+                  "SERVER_TIMESTAMP",
+                  "CUST_ID"
                 FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
                 WHERE
-                  SERVER_TIMESTAMP >= CAST(FBT_START_DATE AS TIMESTAMP)
-                  AND SERVER_TIMESTAMP < CAST(FBT_END_DATE AS TIMESTAMP)
+                  "SERVER_TIMESTAMP" >= CAST(FBT_START_DATE AS TIMESTAMP)
+                  AND "SERVER_TIMESTAMP" < CAST(FBT_END_DATE AS TIMESTAMP)
             )
         )
         GROUP BY
           tile_index,
-          CUST_ID
+          "CUST_ID"
         ORDER BY
           tile_index
         """
@@ -452,26 +452,26 @@ def test_graph_interpreter_preview(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          ts,
-          cust_id,
-          a,
-          b,
-          c,
-          c AS c2
+          "ts",
+          "cust_id",
+          "a",
+          "b",
+          "c",
+          "c" AS "c2"
         FROM (
             SELECT
-              ts,
-              cust_id,
-              a,
-              b,
-              a + b AS c
+              "ts",
+              "cust_id",
+              "a",
+              "b",
+              "a" + "b" AS "c"
             FROM (
                 SELECT
-                  ts,
-                  cust_id,
-                  a,
-                  b
-                FROM event_table
+                  "ts",
+                  "cust_id",
+                  "a",
+                  "b"
+                FROM "event_table"
             )
         )
         LIMIT 10
@@ -483,14 +483,14 @@ def test_graph_interpreter_preview(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          a + b
+          "a" + "b"
         FROM (
             SELECT
-              ts,
-              cust_id,
-              a,
-              b
-            FROM event_table
+              "ts",
+              "cust_id",
+              "a",
+              "b"
+            FROM "event_table"
         )
         LIMIT 5
         """
@@ -545,13 +545,13 @@ def test_filter_node(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          ts,
-          cust_id,
-          a,
-          b
-        FROM event_table
+          "ts",
+          "cust_id",
+          "a",
+          "b"
+        FROM "event_table"
         WHERE
-          b = 123
+          "b" = 123
         LIMIT 10
         """
     ).strip()
@@ -562,17 +562,17 @@ def test_filter_node(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          a
+          "a"
         FROM (
             SELECT
-              ts,
-              cust_id,
-              a,
-              b
-            FROM event_table
+              "ts",
+              "cust_id",
+              "a",
+              "b"
+            FROM "event_table"
         )
         WHERE
-          b = 123
+          "b" = 123
         LIMIT 10
         """
     ).strip()

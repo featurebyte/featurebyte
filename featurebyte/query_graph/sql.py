@@ -156,9 +156,10 @@ class BuildTileInputNode(GenericInputNode):
         """
         select_expr = super().sql
         assert isinstance(select_expr, expressions.Select)
+        timestamp = escape_column_name(self.timestamp)
         select_expr = select_expr.where(
-            f"{self.timestamp} >= CAST(FBT_START_DATE AS TIMESTAMP)",
-            f"{self.timestamp} < CAST(FBT_END_DATE AS TIMESTAMP)",
+            f"{timestamp} >= CAST(FBT_START_DATE AS TIMESTAMP)",
+            f"{timestamp} < CAST(FBT_END_DATE AS TIMESTAMP)",
         )
         return select_expr
 
@@ -289,7 +290,7 @@ class BuildTileNode(TableNode):
         start_date_placeholder_epoch = (
             f"DATE_PART(EPOCH_SECOND, CAST({start_date_placeholder} AS TIMESTAMP))"
         )
-        timestamp_epoch = f"DATE_PART(EPOCH_SECOND, {self.timestamp})"
+        timestamp_epoch = f"DATE_PART(EPOCH_SECOND, {escape_column_name(self.timestamp)})"
 
         input_tiled = select(
             "*",
@@ -299,14 +300,15 @@ class BuildTileNode(TableNode):
         tile_start_date = (
             f"TO_TIMESTAMP({start_date_placeholder_epoch} + tile_index * {self.frequency})"
         )
+        keys = escape_column_names(self.keys)
         groupby_sql = (
             select(
                 f"{tile_start_date} AS tile_start_date",
-                *self.keys,
+                *keys,
                 *[f"{spec.tile_expr} AS {spec.tile_column_name}" for spec in self.tile_specs],
             )
             .from_(input_tiled.subquery())
-            .group_by("tile_index", *self.keys)
+            .group_by("tile_index", *keys)
             .order_by("tile_index")
         )
 
