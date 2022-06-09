@@ -6,7 +6,19 @@ from typing import List, Optional
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel
+import pandas as pd
+from pydantic import BaseModel, validator
+
+
+def validate_duration_string(duration_string: str) -> None:
+    """Check whether the string is a valid duration
+
+    Parameters
+    ----------
+    duration_string : str
+        String to validate
+    """
+    pd.Timedelta(duration_string)
 
 
 class SnowflakeSource(BaseModel):
@@ -24,6 +36,23 @@ class FeatureJobSetting(BaseModel):
     blind_spot: str
     frequency: str
     time_modulo_frequency: str
+
+    @validator("blind_spot", "frequency", "time_modulo_frequency")
+    def valid_duration(cls, value: str) -> str:  # pylint: disable=no-self-argument
+        """Validate that job setting values are valid
+
+        Parameters
+        ----------
+        value : str
+            Duration string for feature job setting
+
+        Returns
+        -------
+        str
+        """
+        _ = cls
+        validate_duration_string(value)
+        return value
 
 
 class FeatureJobSettingHistoryEntry(BaseModel):

@@ -4,6 +4,7 @@ Tests for EventTable models
 import datetime
 
 import pytest
+from pydantic.error_wrappers import ValidationError
 
 from featurebyte.models.event_table import (
     EventTableModel,
@@ -106,3 +107,20 @@ def test_event_table_model(snowflake_source, feature_job_setting, feature_job_se
     event_table_json = event_table.json()
     event_table_loaded = event_table.parse_raw(event_table_json)
     assert event_table_loaded == event_table
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("blind_spot", "10something"),
+        ("frequency", "10something"),
+        ("time_modulo_frequency", "10something"),
+    ],
+)
+def test_invalid_job_setting(feature_job_setting, field, value):
+    """Test validation on invalid job settings"""
+    setting_dict = feature_job_setting.dict()
+    setting_dict[field] = value
+    with pytest.raises(ValidationError) as exc_info:
+        FeatureJobSetting(**setting_dict)
+    assert "invalid unit" in str(exc_info.value)
