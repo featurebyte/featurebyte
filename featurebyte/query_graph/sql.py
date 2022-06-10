@@ -16,14 +16,36 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 
 
-def escape_column_name(x) -> str:
-    if x.startswith('"') and x.endswith('"'):
-        return x
-    return f'"{x}"'
+def escape_column_name(column_name: str) -> str:
+    """Enclose provided column name with quotes
+
+    Parameters
+    ----------
+    column_name : str
+        Column name
+
+    Returns
+    -------
+    str
+    """
+    if column_name.startswith('"') and column_name.endswith('"'):
+        return column_name
+    return f'"{column_name}"'
 
 
-def escape_column_names(xs: list[str]) -> list[str]:
-    return [escape_column_name(x) for x in xs]
+def escape_column_names(column_names: list[str]) -> list[str]:
+    """Enclose provided column names with quotes
+
+    Parameters
+    ----------
+    column_names : list[str]
+        Column names
+
+    Returns
+    -------
+    list[str]
+    """
+    return [escape_column_name(x) for x in column_names]
 
 
 class SQLNode(ABC):
