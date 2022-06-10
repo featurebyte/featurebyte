@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_SCHEDULE(FEATURE_NAME varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, OFFLINE_PERIOD_MINUTE float, SQL varchar, COLUMN_NAMES varchar, TYPE varchar, MONITOR_PERIODS float, END_TS varchar)
+CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_SCHEDULE(FEATURE_NAME varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, OFFLINE_PERIOD_MINUTE float, SQL varchar, COLUMN_NAMES varchar, TYPE varchar, MONITOR_PERIODS float, END_TS timestamp_tz)
 returns string
 language javascript
 as
@@ -27,7 +27,8 @@ $$
     var tile_end_ts = new Date()
     if (END_TS != null) {
         debug = debug + " - END_TS: " + END_TS
-        tile_end_ts = new Date(Date.parse(END_TS+' UTC'))
+        //tile_end_ts = new Date(Date.parse(END_TS+' UTC'))
+        tile_end_ts = END_TS
 
     } else {
         // Make sure tile_end_ts is at deterministic for each window
@@ -46,8 +47,7 @@ $$
     }
     debug = debug + " - lookback_period_1: " + lookback_period
 
-    tile_end_ts_str = tile_end_ts.toISOString().split("T")
-    tile_end_ts_str = tile_end_ts_str[0] + " " + tile_end_ts_str[1].slice(0,8)
+    tile_end_ts_str = tile_end_ts.toISOString()
     debug = debug + " - tile_end_ts_str: " + tile_end_ts_str
 
     if (tile_type === "ONLINE") {
@@ -61,18 +61,16 @@ $$
 
     var tile_start_ts = new Date(tile_end_ts.getTime())
     tile_start_ts.setMinutes(tile_start_ts.getMinutes() - lookback_period)
-    tile_start_ts_str = tile_start_ts.toISOString().split("T")
-    tile_start_ts_str = tile_start_ts_str[0] + " " + tile_start_ts_str[1].slice(0,8)
+    tile_start_ts_str = tile_start_ts.toISOString()
     debug = debug + " - tile_start_ts_str: " + tile_start_ts_str   
 
     // trigger stored procedure to monitor previous tiles. No need to monitor the last tile to be created
     var monitor_end_ts = new Date(tile_end_ts.getTime())
     monitor_end_ts.setMinutes(monitor_end_ts.getMinutes() - FREQUENCY_MINUTE)
-    monitor_tile_end_ts_str = monitor_end_ts.toISOString().split("T")
-    monitor_tile_end_ts_str = monitor_tile_end_ts_str[0] + " " + monitor_tile_end_ts_str[1].slice(0,8)
+    monitor_tile_end_ts_str = monitor_end_ts.toISOString()
     debug = debug + " - monitor_tile_end_ts_str: " + monitor_tile_end_ts_str
 
-    var monitor_input_sql = SQL.replace("FB_START_TS", "\\'"+tile_start_ts_str+"\\'::timestamp_ntz").replace("FB_END_TS", "\\'"+monitor_tile_end_ts_str+"\\'::timestamp_ntz") 
+    var monitor_input_sql = SQL.replaceAll("FB_START_TS", "\\'"+tile_start_ts_str+"\\'").replaceAll("FB_END_TS", "\\'"+monitor_tile_end_ts_str+"\\'") 
     var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}')`
     result = snowflake.execute(
         {
@@ -83,7 +81,7 @@ $$
     debug = debug + " - SP_TILE_MONITOR: " + result.getColumnValue(1)
 
     // trigger stored procedure to generate tiles
-    var generate_input_sql = SQL.replace("FB_START_TS", "\\'"+tile_start_ts_str+"\\'::timestamp_ntz").replace("FB_END_TS", "\\'"+tile_end_ts_str+"\\'::timestamp_ntz")     
+    var generate_input_sql = SQL.replaceAll("FB_START_TS", "\\'"+tile_start_ts_str+"\\'").replaceAll("FB_END_TS", "\\'"+tile_end_ts_str+"\\'")     
     var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}')`
     var result = snowflake.execute(
         {

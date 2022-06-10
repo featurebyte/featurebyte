@@ -17,16 +17,22 @@ $$
             '${TILE_END}'::timestamp_ntz as tile_end_ts,
             F_INDEX_TO_TIMESTAMP(index, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE})::timestamp_ntz as tile_start_ts,
             timediff(minute, tile_start_ts, tile_end_ts)
-        from feature1_tile
+        from ${TABLE_NAME}
         where tile_start_ts > dateadd(minute, -${OFFLINE_PERIOD_MINUTE}, tile_end_ts::timestamp_ntz)
         order by tile_start_ts desc
         limit 1
     `
-    var result = snowflake.execute({sqlText: min_diff_sql})
-    if (result.getRowCount() > 0) {
-        result.next()
-        result_lookback_period = result.getColumnValue(3)
-    }
+
+    try {
+        var result = snowflake.execute({sqlText: min_diff_sql})
+        if (result.getRowCount() > 0) {
+            result.next()
+            result_lookback_period = result.getColumnValue(3)
+        }
+    } catch (err)  {
+        //tile table does not exist yet
+    } 
+
     
     
     if (LOOKBACK_MINUTE < 30) {
