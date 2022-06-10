@@ -11,9 +11,9 @@ from dataclasses import dataclass, field
 
 from snowflake import connector
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.session.base import BaseSession, TableSchema
-from featurebyte.session.enum import SnowflakeDataType, SourceType
+from featurebyte.session.enum import SnowflakeDataType
 
 
 @dataclass
