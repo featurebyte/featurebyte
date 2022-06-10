@@ -123,10 +123,19 @@ def test_event_table_model(snowflake_source, feature_job_setting, feature_job_se
         ("time_modulo_frequency", "10something"),
     ],
 )
-def test_invalid_job_setting(feature_job_setting, field, value):
+def test_invalid_job_setting__invalid_unit(feature_job_setting, field, value):
     """Test validation on invalid job settings"""
     setting_dict = feature_job_setting.dict()
     setting_dict[field] = value
     with pytest.raises(ValidationError) as exc_info:
         FeatureJobSetting(**setting_dict)
     assert "invalid unit" in str(exc_info.value)
+
+
+def test_invalid_job_setting__too_small(feature_job_setting):
+    """Test validation on invalid job settings"""
+    setting_dict = feature_job_setting.dict()
+    setting_dict["frequency"] = "1s"
+    with pytest.raises(ValidationError) as exc_info:
+        FeatureJobSetting(**setting_dict)
+    assert "Duration specified is too small: 1s" in str(exc_info.value)

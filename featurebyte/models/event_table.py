@@ -19,8 +19,15 @@ def validate_duration_string(duration_string: str) -> None:
     ----------
     duration_string : str
         String to validate
+
+    Raises
+    ------
+    ValueError
+        If the specified duration is invalid
     """
-    pd.Timedelta(duration_string)
+    duration = pd.Timedelta(duration_string)
+    if duration.total_seconds() < 60:
+        raise ValueError(f"Duration specified is too small: {duration_string}")
 
 
 class SnowflakeDetails(BaseModel):
