@@ -1,13 +1,15 @@
 """
 This module contains EventTable related models
 """
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from datetime import datetime
 from enum import Enum
 
 import pandas as pd
 from pydantic import BaseModel, validator
+
+from featurebyte.enum import SourceType
 
 
 def validate_duration_string(duration_string: str) -> None:
@@ -21,13 +23,26 @@ def validate_duration_string(duration_string: str) -> None:
     pd.Timedelta(duration_string)
 
 
-class SnowflakeSource(BaseModel):
+class SnowflakeDetails(BaseModel):
     """Model for Snowflake data source information"""
 
     account: str
     warehouse: str
     database: str
     sf_schema: str  # schema shadows a BaseModel attribute
+
+
+class SQLiteDetails(BaseModel):
+    """Model for SQLite data source information"""
+
+    filename: str
+
+
+class DatabaseSource(BaseModel):
+    """Model for a database source"""
+
+    type: SourceType
+    details: Union[SnowflakeDetails, SQLiteDetails]
 
 
 class FeatureJobSetting(BaseModel):
@@ -80,7 +95,7 @@ class EventTableModel(BaseModel):
         Name of the EventTable
     table_name : str
         Database table name
-    source : SnowflakeSource
+    source : DatabaseSource
         Data warehouse connection information
     default_feature_job_setting : FeatureJobSetting
         Default feature job setting
@@ -94,7 +109,7 @@ class EventTableModel(BaseModel):
 
     name: str
     table_name: str
-    source: SnowflakeSource
+    source: DatabaseSource
     event_timestamp_column: str
     record_creation_date_column: Optional[str]
     default_feature_job_setting: Optional[FeatureJobSetting]

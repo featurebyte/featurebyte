@@ -18,3 +18,12 @@ class DBVarType(str, Enum):
     TIME = "TIME"
     TIMESTAMP = "TIMESTAMP"
     VARCHAR = "VARCHAR"
+
+
+class SourceType(str, Enum):
+    """
+    Database or data warehouse source type
+    """
+
+    SNOWFLAKE = "snowflake"
+    SQLITE = "sqlite"

@@ -6,24 +6,27 @@ import datetime
 import pytest
 from pydantic.error_wrappers import ValidationError
 
+from featurebyte.enum import SourceType
 from featurebyte.models.event_table import (
+    DatabaseSource,
     EventTableModel,
     EventTableStatus,
     FeatureJobSetting,
     FeatureJobSettingHistoryEntry,
-    SnowflakeSource,
+    SnowflakeDetails,
 )
 
 
 @pytest.fixture(name="snowflake_source")
 def snowflake_source_fixture():
     """Fixture for a Snowflake source"""
-    snowflake_source = SnowflakeSource(
+    snowflake_details = SnowflakeDetails(
         account="account",
         warehouse="warehouse",
         database="database",
         sf_schema="schema",
     )
+    snowflake_source = DatabaseSource(type=SourceType.SNOWFLAKE, details=snowflake_details)
     return snowflake_source
 
 
@@ -71,10 +74,13 @@ def test_event_table_model(snowflake_source, feature_job_setting, feature_job_se
         "name": "my_event_table",
         "table_name": "table",
         "source": {
-            "account": "account",
-            "warehouse": "warehouse",
-            "database": "database",
-            "sf_schema": "schema",
+            "type": "snowflake",
+            "details": {
+                "account": "account",
+                "warehouse": "warehouse",
+                "database": "database",
+                "sf_schema": "schema",
+            },
         },
         "event_timestamp_column": "event_date",
         "record_creation_date_column": "created_at",
