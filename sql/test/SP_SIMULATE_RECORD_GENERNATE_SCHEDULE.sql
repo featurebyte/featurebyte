@@ -22,7 +22,6 @@ $$
 	        	EVENT_TIMESTAMP timestamp, 
 	        	CATEGORY varchar,
 	        	VALUE int,
-                WH_AVAILABLE_AT timestamp,
 	        	CREATED_AT timestamp default sysdate()
 	        )
         `})

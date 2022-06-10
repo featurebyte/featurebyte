@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION F_INDEX_TO_TIMESTAMP(tile_index INTEGER, time_modulo_
   RETURNS VARCHAR
   AS
   $$
-      select to_varchar(adjusted_ts, 'YYYY-MM-DD HH24:MI:SS') from (
+      select to_varchar(adjusted_ts, 'YYYY-MM-DD"T"HH24:MI:SS.ff3"Z"') from (
 
         select 
 

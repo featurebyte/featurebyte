@@ -9,12 +9,10 @@ $$
 
     var debug = "Debug"
 
-	// insert 3 records for those whose event_timestamp minute is 0
 	var diff_seconds = SECONDS_STR.split(",")
 	var cat_list = ["CAT_0", "CAT_1", "CAT_2", "CAT_3"]
 
-	var avail_ts = new Date(RUN_TS.getTime())
-	avail_ts.setSeconds(RUN_SECOND)
+	var values = []
 
 	for (let i = 0; i < diff_seconds.length; i++) {
 		event_ts = new Date(RUN_TS.getTime())
@@ -24,14 +22,15 @@ $$
 
 		val = Math.floor(Math.random() * 10)
 		cat = cat_list[Math.floor(Math.random() * cat_list.length)]
-
-		snowflake.execute({sqlText: `
-			INSERT INTO ${TABLE_NAME} 
-			(ENTITY_ID, EVENT_TIMESTAMP, CATEGORY, VALUE, WH_AVAILABLE_AT) 
-			VALUES (1, '${event_ts.toISOString()}', '${cat}', ${val}, '${avail_ts.toISOString()}')
-		`})
+		values.push(`(1, '${event_ts.toISOString()}', '${cat}', ${val})`)
 	}
 
+	var sql = `
+		INSERT INTO ${TABLE_NAME} 
+		(ENTITY_ID, EVENT_TIMESTAMP, CATEGORY, VALUE) 
+		VALUES ${values.join(",")}
+	`
+	snowflake.execute({sqlText: sql})
   
     return debug
 $$;
