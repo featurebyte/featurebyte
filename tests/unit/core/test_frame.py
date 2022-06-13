@@ -247,9 +247,9 @@ def test_multiple_statements(dataframe):
     }
     assert dataframe.columns == [
         "CUST_ID",
-        "MASK",
         "PRODUCT_ACTION",
         "VALUE",
+        "MASK",
         "amount",
         "vip_customer",
     ]

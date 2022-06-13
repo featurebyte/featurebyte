@@ -107,7 +107,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         node = QueryGraph().add_operation(
             node_type=NodeType.INPUT,
             node_params={
-                "columns": sorted(column_var_type_map.keys()),
+                "columns": list(column_var_type_map.keys()),
                 "timestamp": timestamp_column,
                 "entity_identifiers": entity_identifiers,
                 "dbtable": table_name,

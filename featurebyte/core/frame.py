@@ -4,6 +4,7 @@ Frame class
 from __future__ import annotations
 
 import copy
+from collections import OrderedDict
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
@@ -32,7 +33,7 @@ class Frame(QueryObject, OpsMixin):
         super().__init__(
             graph=QueryGraph(), node=node, row_index_lineage=row_index_lineage, session=session
         )
-        self.column_var_type_map = column_var_type_map
+        self.column_var_type_map = OrderedDict(column_var_type_map)
         self.column_lineage_map = column_lineage_map
 
     @property
@@ -44,7 +45,7 @@ class Frame(QueryObject, OpsMixin):
         -------
         list
         """
-        return sorted(self.column_var_type_map.keys())
+        return list(self.column_var_type_map)
 
     def _check_any_missing_column(self, item: str | list[str] | Series) -> None:
         """
