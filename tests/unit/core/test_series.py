@@ -307,6 +307,33 @@ def test_arithmetic_operators(int_series, float_series):
     )
 
 
+def test_right_arithmetic_operators(int_series, float_series):
+    """
+    Test arithmetic operators with other as series or scalar type (operation from the right object)
+    """
+    scalar_int_float_add = 1.23 + int_series
+    scalar_int_int_sub = 1 - int_series
+    scalar_float_int_mul = 2 * float_series
+    scalar_float_float_div = 2.34 / float_series
+    kwargs = {"output_type": NodeOutputType.SERIES}
+    assert scalar_int_float_add.var_type == DBVarType.FLOAT
+    assert scalar_int_int_sub.var_type == DBVarType.INT
+    assert scalar_float_int_mul.var_type == DBVarType.FLOAT
+    assert scalar_float_float_div.var_type == DBVarType.FLOAT
+    assert scalar_int_float_add.node == Node(
+        name="add_1", type=NodeType.ADD, parameters={"value": 1.23, "right_op": True}, **kwargs
+    )
+    assert scalar_int_int_sub.node == Node(
+        name="sub_1", type=NodeType.SUB, parameters={"value": 1, "right_op": True}, **kwargs
+    )
+    assert scalar_float_int_mul.node == Node(
+        name="mul_1", type=NodeType.MUL, parameters={"value": 2, "right_op": True}, **kwargs
+    )
+    assert scalar_float_float_div.node == Node(
+        name="div_1", type=NodeType.DIV, parameters={"value": 2.34, "right_op": True}, **kwargs
+    )
+
+
 def test_arithmetic_operators__types_not_supported(varchar_series, int_series):
     """
     Test arithmetic operators on not supported types

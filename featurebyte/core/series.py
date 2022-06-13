@@ -123,6 +123,7 @@ class Series(QueryObject, OpsMixin):
         other: int | float | str | bool | Series,
         node_type: NodeType,
         output_var_type: DBVarType,
+        right_op: bool = False,
     ) -> Series:
         """
         Apply binary operation between self & other objects
@@ -135,16 +136,20 @@ class Series(QueryObject, OpsMixin):
             binary operator node type
         output_var_type: DBVarType
             output of the variable type
+        right_op: bool
+            whether the binary operation is from right object or not
 
         Returns
         -------
         Series
             output of the binary operation
         """
+        node_params = {"right_op": right_op} if right_op else {}
         if self.is_supported_scalar_pytype(other):
+            node_params["value"] = other
             node = self.graph.add_operation(
                 node_type=node_type,
-                node_params={"value": other},
+                node_params=node_params,
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[self.node],
             )
@@ -255,7 +260,9 @@ class Series(QueryObject, OpsMixin):
     def __ge__(self, other: int | float | str | bool | Series) -> Series:
         return self._binary_relational_op(other, NodeType.GE)
 
-    def _binary_arithmetic_op(self, other: int | float | Series, node_type: NodeType) -> Series:
+    def _binary_arithmetic_op(
+        self, other: int | float | Series, node_type: NodeType, right_op: bool = False
+    ) -> Series:
         """
         Apply binary arithmetic operation between self & other objects
 
@@ -265,6 +272,8 @@ class Series(QueryObject, OpsMixin):
             right value of the binary arithmetic operator
         node_type: NodeType
             binary arithmetic operator node type
+        right_op: bool
+            whether the binary operation is from right object or not
 
         Returns
         -------
@@ -290,7 +299,10 @@ class Series(QueryObject, OpsMixin):
             ):
                 output_var_type = DBVarType.INT
             return self._binary_op(
-                other=other, node_type=node_type, output_var_type=output_var_type
+                other=other,
+                node_type=node_type,
+                output_var_type=output_var_type,
+                right_op=right_op,
             )
 
         raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
@@ -298,11 +310,23 @@ class Series(QueryObject, OpsMixin):
     def __add__(self, other: int | float | Series) -> Series:
         return self._binary_arithmetic_op(other, NodeType.ADD)
 
+    def __radd__(self, other: int | float | Series) -> Series:
+        return self._binary_arithmetic_op(other, NodeType.ADD, right_op=True)
+
     def __sub__(self, other: int | float | Series) -> Series:
         return self._binary_arithmetic_op(other, NodeType.SUB)
+
+    def __rsub__(self, other: int | float | Series) -> Series:
+        return self._binary_arithmetic_op(other, NodeType.SUB, right_op=True)
 
     def __mul__(self, other: int | float | Series) -> Series:
         return self._binary_arithmetic_op(other, NodeType.MUL)
 
+    def __rmul__(self, other: int | float | Series) -> Series:
+        return self._binary_arithmetic_op(other, NodeType.MUL, right_op=True)
+
     def __truediv__(self, other: int | float | Series) -> Series:
         return self._binary_arithmetic_op(other, NodeType.DIV)
+
+    def __rtruediv__(self, other: int | float | Series) -> Series:
+        return self._binary_arithmetic_op(other, NodeType.DIV, right_op=True)
