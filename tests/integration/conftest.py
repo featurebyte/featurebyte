@@ -76,16 +76,15 @@ def snowflake_session(transaction_data_upper_case):
         database=database_name,
         schema=schema_name,
     )
+    session.execute_query(f"USE WAREHOUSE {warehouse_name}")
     session.execute_query(
         f"""
-        USE WAREHOUSE {warehouse_name};
-
         CREATE TEMPORARY TABLE {table_name}(
             CREATED_AT INT,
             CUST_ID INT,
             PRODUCT_ACTION STRING,
             SESSION_ID INT
-        );
+        )
         """
     )
     write_pandas(session.connection, transaction_data_upper_case, table_name)
