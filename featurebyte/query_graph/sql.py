@@ -389,7 +389,7 @@ def make_binary_operation_node(
         # When the other value is a Series
         right_node = input_sql_nodes[1]
 
-    if parameters.get("right_op"):
+    if isinstance(right_node, ExpressionNode) and parameters.get("right_op"):
         # Swap left & right objects if the operation from the right object
         left_node, right_node = right_node, left_node
 

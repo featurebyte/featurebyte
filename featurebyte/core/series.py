@@ -144,7 +144,7 @@ class Series(QueryObject, OpsMixin):
         Series
             output of the binary operation
         """
-        node_params = {"right_op": right_op} if right_op else {}
+        node_params: dict[str, Any] = {"right_op": right_op} if right_op else {}
         if self.is_supported_scalar_pytype(other):
             node_params["value"] = other
             node = self.graph.add_operation(
