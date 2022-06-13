@@ -789,7 +789,7 @@ tokenize-rt = ">=3.2.0"
 name = "pyyaml"
 version = "6.0"
 description = "YAML parser and emitter for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -1166,7 +1166,7 @@ docs = ["Sphinx", "sphinx-rtd-theme", "sphinx-github-changelog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "5b9c4c0dbcdee86369ac04fc13c5be5a5f896a3bf36dc7726d7ea7170f0ecb4b"
+content-hash = "9665306d15bf066608521766370c2c9430c7131b339257a53be755e9811784b8"
 
 [metadata.files]
 alabaster = [

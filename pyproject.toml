@@ -47,6 +47,8 @@ pandas = "1.4.2"
 PyGithub = "1.55"
 tinydb = "4.7.0"
 sqlglot = "^2.3.2"
+pyyaml = "^6.0"
+
 
 [tool.poetry.extras]
 docs = ["Sphinx", "sphinx-rtd-theme", "sphinx-github-changelog"]

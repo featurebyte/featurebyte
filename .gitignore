@@ -2,6 +2,12 @@
 # Created by https://www.gitignore.io/api/osx,python,pycharm,windows,visualstudio,visualstudiocode
 # Edit at https://www.gitignore.io/?templates=osx,python,pycharm,windows,visualstudio,visualstudiocode
 
+### Config File with Credential###
+config.yml
+
+### Jupyter Notebook ###
+.ipynb_checkpoints/
+
 ### OSX ###
 # General
 .DS_Store
