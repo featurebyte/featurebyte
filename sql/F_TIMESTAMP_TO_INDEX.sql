@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION F_TIMESTAMP_TO_INDEX(ts_str VARCHAR, time_modulo_frequency_seconds INTEGER, blind_spot_seconds INTEGER, frequency_minute INTEGER)
+CREATE OR REPLACE FUNCTION F_TIMESTAMP_TO_INDEX(event_timestamp_str VARCHAR, time_modulo_frequency_seconds INTEGER, blind_spot_seconds INTEGER, frequency_minute INTEGER)
   RETURNS INTEGER
   AS
   $$
@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION F_TIMESTAMP_TO_INDEX(ts_str VARCHAR, time_modulo_freq
         
           (time_modulo_frequency_seconds - blind_spot_seconds) as offset,
 
-          dateadd(second, -offset, ts_str::timestamp_ntz) as adjusted_ts,
+          dateadd(second, -offset, event_timestamp_str::timestamp_ntz) as adjusted_ts,
 
           date_part(epoch_second, adjusted_ts) as period_in_seconds, 
 

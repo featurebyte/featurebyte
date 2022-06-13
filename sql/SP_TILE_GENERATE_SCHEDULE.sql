@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_SCHEDULE(FEATURE_NAME varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, OFFLINE_PERIOD_MINUTE float, SQL varchar, COLUMN_NAMES varchar, TYPE varchar, MONITOR_PERIODS float, END_TS timestamp_tz)
+CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_SCHEDULE(FEATURE_NAME varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, OFFLINE_PERIOD_MINUTE float, SQL varchar, COLUMN_NAMES varchar, TYPE varchar, MONITOR_PERIODS float, TILE_END_TS timestamp_tz)
 returns string
 language javascript
 as
@@ -23,7 +23,8 @@ $$
     )
     debug = debug + " - cron_residue_seconds: " + cron_residue_seconds
 
-    // determine tile_end_ts (tile end timestamp) based on tile_type and whether END_TS is set
+    // determine tile_end_ts (tile end timestamp) based on tile_type and TILE_END_TS
+    /*
     var tile_end_ts = new Date()
     if (END_TS != null) {
         debug = debug + " - END_TS: " + END_TS
@@ -35,6 +36,11 @@ $$
         tile_end_ts.setSeconds(cron_residue_seconds)
         tile_end_ts.setSeconds(tile_end_ts.getSeconds() - BLIND_SPOT_SECONDS)
     }
+    */
+
+    var tile_end_ts = TILE_END_TS
+    tile_end_ts.setSeconds(cron_residue_seconds)
+    tile_end_ts.setSeconds(tile_end_ts.getSeconds() - BLIND_SPOT_SECONDS)
 
     var tile_type = TYPE.toUpperCase()
     var lookback_period = FREQUENCY_MINUTE * (MONITOR_PERIODS + 1)

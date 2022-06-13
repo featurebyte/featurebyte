@@ -33,11 +33,11 @@ $$
         //tile table does not exist yet
     } 
 
-    
-    
+    /*
     if (LOOKBACK_MINUTE < 30) {
         LOOKBACK_MINUTE = 30
     }
+    */
     
     if (LOOKBACK_MINUTE > result_lookback_period) {
         result_lookback_period = LOOKBACK_MINUTE
