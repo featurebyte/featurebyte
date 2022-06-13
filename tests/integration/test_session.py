@@ -1,10 +1,7 @@
 """
 This module contains session to EventView integration tests
 """
-import os
-
 import pandas as pd
-import pytest
 
 from featurebyte.core.event_view import EventView
 
@@ -32,27 +29,13 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
 
-@pytest.mark.skipif(
-    any(
-        os.getenv(env_name) is None
-        for env_name in [
-            "SNOWFLAKE_USER",
-            "SNOWFLAKE_PASSWORD",
-            "SNOWFLAKE_ACCOUNT",
-            "SNOWFLAKE_WAREHOUSE",
-            "SNOWFLAKE_DATABASE",
-            "SNOWFLAKE_SCHEMA",
-        ]
-    ),
-    reason="At least one snowflake environment variable is not set properly.",
-)
 def test_query_object_operation_on_snowflake_source(snowflake_session, transaction_data_upper_case):
     """
     Test loading event view from snowflake source
     """
     event_view = EventView.from_session(
         snowflake_session,
-        table_name='"FB_SIMULATE"."PUBLIC"."TEST_TABLE"',
+        table_name='"FEATUREBYTE_TESTING"."PUBLIC"."TEST_TABLE"',
         timestamp_column="CREATED_AT",
     )
     assert event_view.columns == ["CREATED_AT", "CUST_ID", "PRODUCT_ACTION", "SESSION_ID"]
