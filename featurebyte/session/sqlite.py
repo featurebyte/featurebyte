@@ -7,9 +7,8 @@ import os
 import sqlite3
 from dataclasses import dataclass
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.session.base import BaseSession, TableSchema
-from featurebyte.session.enum import SourceType
 
 
 @dataclass
