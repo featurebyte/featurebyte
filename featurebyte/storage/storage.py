@@ -1,7 +1,7 @@
 """
 Persistent storage base class
 """
-from typing import Any, Iterable, Mapping, Optional, Union
+from typing import Any, Iterable, Literal, Mapping, Optional, Union
 
 from abc import ABC, abstractmethod
 
@@ -22,7 +22,7 @@ class Storage(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        document: pymongo.typings._DocumentIn
+        document: _DocumentIn
             Document to insert
         """
         return NotImplemented
@@ -36,13 +36,15 @@ class Storage(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        documents: Iterable[pymongo.typings._DocumentIn]
+        documents: Iterable[_DocumentIn]
             Documents to insert
         """
         return NotImplemented
 
     @abstractmethod
-    def find_one(self, collection_name: str, filter: Optional[Any]) -> Optional[_DocumentType]:
+    def find_one(
+        self, collection_name: str, filter_query: Optional[Any]
+    ) -> Optional[_DocumentType]:
         """
         Find one record from collection
 
@@ -50,7 +52,7 @@ class Storage(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter: Optional[Any]
+        filter_query: Optional[Any]
             Conditions to filter on
 
         Returns
@@ -61,7 +63,15 @@ class Storage(ABC):
         return NotImplemented
 
     @abstractmethod
-    def find(self, collection_name: str, filter: Optional[Any]) -> Iterable[_DocumentType]:
+    def find(
+        self,
+        collection_name: str,
+        filter_query: Optional[Any],
+        sort_by: Optional[str] = None,
+        sort_dir: Optional[Literal["asc", "desc"]] = "asc",
+        page: Optional[int] = 1,
+        page_size: Optional[int] = 0,
+    ) -> Iterable[_DocumentType]:
         """
         Find all records from collection
 
@@ -69,13 +79,21 @@ class Storage(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter: Optional[Any]
+        filter_query: Optional[Any]
             Conditions to filter on
+        sort_by: Optional[str]
+            Column to sort by
+        sort_dir: Optional[Literal["asc", "desc"]]
+            Direction to sort
+        page: Optional[int]
+            Page number for pagination
+        page_size: Optional[int]
+            Page size (0 to return all records)
 
         Returns
         -------
-        Iterable[_DocumentType]
-            Retrieved documents
+        Tuple[Iterable[_DocumentType], int]
+            Retrieved documents and total count
         """
         return NotImplemented
 
@@ -83,7 +101,7 @@ class Storage(ABC):
     def update_one(
         self,
         collection_name: str,
-        filter: Mapping[str, Any],
+        filter_query: Mapping[str, Any],
         update: Union[Mapping[str, Any], _Pipeline],
     ) -> int:
         """
@@ -93,7 +111,7 @@ class Storage(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter: Mapping[str, Any]
+        filter_query: Mapping[str, Any]
             Conditions to filter on
         update: Union[Mapping[str, Any], _Pipeline]
             Values to update
@@ -109,7 +127,7 @@ class Storage(ABC):
     def update_many(
         self,
         collection_name: str,
-        filter: Mapping[str, Any],
+        filter_query: Mapping[str, Any],
         update: Union[Mapping[str, Any], _Pipeline],
     ) -> int:
         """
@@ -119,7 +137,7 @@ class Storage(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter: Mapping[str, Any]
+        filter_query: Mapping[str, Any]
             Conditions to filter on
         update: Union[Mapping[str, Any], _Pipeline]
             Values to update
@@ -132,7 +150,7 @@ class Storage(ABC):
         return NotImplemented
 
     @abstractmethod
-    def delete_one(self, collection_name: str, filter: Mapping[str, Any]) -> int:
+    def delete_one(self, collection_name: str, filter_query: Mapping[str, Any]) -> int:
         """
         Delete one record from collection
 
@@ -140,7 +158,7 @@ class Storage(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter: Mapping[str, Any]
+        filter_query: Mapping[str, Any]
             Conditions to filter on
 
         Returns
@@ -151,7 +169,7 @@ class Storage(ABC):
         return NotImplemented
 
     @abstractmethod
-    def delete_many(self, collection_name: str, filter: Mapping[str, Any]) -> int:
+    def delete_many(self, collection_name: str, filter_query: Mapping[str, Any]) -> int:
         """
         Delete many records from collection
 
@@ -159,7 +177,7 @@ class Storage(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter: Mapping[str, Any]
+        filter_query: Mapping[str, Any]
             Conditions to filter on
 
         Returns
