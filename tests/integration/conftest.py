@@ -69,14 +69,12 @@ def snowflake_session(transaction_data_upper_case):
     database_name = os.getenv("SNOWFLAKE_DATABASE")
     schema_name = os.getenv("SNOWFLAKE_SCHEMA")
     table_name = "TEST_TABLE"
-    warehouse_name = os.getenv("SNOWFLAKE_WAREHOUSE")
     session = SnowflakeSession(
         account=os.getenv("SNOWFLAKE_ACCOUNT"),
-        warehouse=warehouse_name,
+        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
         database=database_name,
         schema=schema_name,
     )
-    session.execute_query(f"USE WAREHOUSE {warehouse_name}")
     session.execute_query(
         f"""
         CREATE TEMPORARY TABLE {table_name}(
