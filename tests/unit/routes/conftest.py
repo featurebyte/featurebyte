@@ -13,7 +13,7 @@ def test_api_client():
     """
     with mongomock.patch(servers=(("localhost", 27017),)):
         from featurebyte.app import app  # pylint: disable=import-outside-toplevel
-        from featurebyte.unified_api_settings import (  # pylint: disable=import-outside-toplevel
+        from featurebyte.routes.unified_api_settings import (  # pylint: disable=import-outside-toplevel
             storage,
         )
 

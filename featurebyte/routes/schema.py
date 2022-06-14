@@ -1,20 +1,46 @@
 """
 Common classes mixin for API payload schema
 """
+from typing import Any, Callable, Generator, Iterator
+
 from bson.objectid import ObjectId
 from pydantic import BaseModel, validator
 
 
 class PydanticObjectId(ObjectId):
+    """
+    Customized ObjectId type for pydantic schemas
+    """
+
     @classmethod
-    def __get_validators__(cls):
+    def __get_validators__(cls) -> Generator[Callable[[Any], ObjectId], Iterator[int], None]:
+        """
+        Retrieve validator function
+
+        Returns
+        -------
+        Callable
+        """
         yield cls.validate
 
     @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
+    def validate(cls, value: Any) -> ObjectId:
+        """
+        Validate value
+
+        Parameters
+        ----------
+        value: Any
+            Value to be validated
+
+        Returns
+        -------
+        ObjectId
+            Validated and casted value
+        """
+        if not ObjectId.is_valid(value):
             raise ValueError("Invalid ObjectId")
-        return ObjectId(v)
+        return ObjectId(value)
 
 
 class PaginationMixin(BaseModel):

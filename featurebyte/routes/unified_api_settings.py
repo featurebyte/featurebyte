@@ -2,7 +2,7 @@
 Static user to be used in API routes
 """
 # pylint: disable=too-few-public-methods
-from bson import ObjectId
+from bson.objectid import ObjectId
 
 from featurebyte.storage import MongoStorage
 
@@ -16,7 +16,7 @@ class User:
     id = ObjectId("62a6d9d023e7a8f2a0dc041a")
 
 
-def session_user():
+def session_user() -> User:
     """
     Get session user
 

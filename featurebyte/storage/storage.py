@@ -1,7 +1,7 @@
 """
 Persistent storage base class
 """
-from typing import Any, Iterable, Literal, Mapping, Optional, Union
+from typing import Any, Iterable, Literal, Mapping, Optional, Tuple, Union
 
 from abc import ABC, abstractmethod
 
@@ -25,7 +25,6 @@ class Storage(ABC):
         document: _DocumentIn
             Document to insert
         """
-        return NotImplemented
 
     @abstractmethod
     def insert_many(self, collection_name: str, documents: Iterable[_DocumentIn]) -> None:
@@ -39,11 +38,10 @@ class Storage(ABC):
         documents: Iterable[_DocumentIn]
             Documents to insert
         """
-        return NotImplemented
 
     @abstractmethod
     def find_one(
-        self, collection_name: str, filter_query: Optional[Any]
+        self, collection_name: str, filter_query: Mapping[str, Any]
     ) -> Optional[_DocumentType]:
         """
         Find one record from collection
@@ -52,7 +50,7 @@ class Storage(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Optional[Any]
+        filter_query: Mapping[str, Any]
             Conditions to filter on
 
         Returns
@@ -66,12 +64,12 @@ class Storage(ABC):
     def find(
         self,
         collection_name: str,
-        filter_query: Optional[Any],
+        filter_query: Mapping[str, Any],
         sort_by: Optional[str] = None,
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
-        page: Optional[int] = 1,
-        page_size: Optional[int] = 0,
-    ) -> Iterable[_DocumentType]:
+        page: int = 1,
+        page_size: int = 0,
+    ) -> Tuple[Iterable[_DocumentType], int]:
         """
         Find all records from collection
 
@@ -79,15 +77,15 @@ class Storage(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Optional[Any]
+        filter_query: Mapping[str, Any]
             Conditions to filter on
         sort_by: Optional[str]
             Column to sort by
         sort_dir: Optional[Literal["asc", "desc"]]
             Direction to sort
-        page: Optional[int]
+        page: int
             Page number for pagination
-        page_size: Optional[int]
+        page_size: int
             Page size (0 to return all records)
 
         Returns

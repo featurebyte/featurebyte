@@ -1,12 +1,13 @@
 """
 EventTable API routes
 """
-from typing import Any, Dict, List, Literal, Optional
+# pylint: disable=too-few-public-methods,relative-beyond-top-level
+from typing import Any, List, Literal, Optional
 
 import datetime
 from http import HTTPStatus
 
-from bson import ObjectId
+from bson.objectid import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
@@ -16,8 +17,8 @@ from featurebyte.models.event_table import (
     FeatureJobSettingHistoryEntry,
 )
 
-from ..unified_api_settings import session_user, storage
 from .schema import PaginationMixin, PydanticObjectId
+from .unified_api_settings import session_user, storage
 
 router = APIRouter()
 TABLE_NAME = "event_table"
@@ -39,6 +40,10 @@ class EventTable(EventTableModel):
     user_id: PydanticObjectId
 
     class Config:
+        """
+        Configuration for Event Table schema
+        """
+
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
@@ -52,6 +57,10 @@ class EventTables(PaginationMixin):
     data: List[EventTable]
 
     class Config:
+        """
+        Configuration for Event Tables schema
+        """
+
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
@@ -83,7 +92,7 @@ def create_event_table(
 
     document = EventTable(user_id=user.id, **data.dict())
     storage.insert_one(collection_name=TABLE_NAME, document=document.dict())
-    return storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
+    return EventTable(**storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter))
 
 
 @router.get("/event_table", response_model=EventTables)
@@ -129,7 +138,7 @@ def retrieve_event_table(
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail=f'Event table "{event_table_name}" not found.'
         )
-    return event_table
+    return EventTable(**event_table)
 
 
 @router.patch("/event_table/{event_table_name}", response_model=EventTable)
@@ -164,4 +173,4 @@ def update_event_table(
     if not updated_cnt:
         raise not_found_exception
 
-    return storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
+    return EventTable(**storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter))

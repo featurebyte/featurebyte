@@ -1,7 +1,7 @@
 """
 Persistent storage using MongoDB
 """
-from typing import Any, Iterable, Literal, Mapping, Optional, Union
+from typing import Any, Iterable, Literal, Mapping, Optional, Tuple, Union
 
 import pymongo
 from pymongo.typings import _DocumentIn, _DocumentType, _Pipeline
@@ -14,8 +14,8 @@ class MongoStorage(Storage):
     Persistent storage using MongoDB
     """
 
-    _client: pymongo.MongoClient = None
-    _db: pymongo.database.Database = None
+    _client: pymongo.mongo_client.MongoClient[Any]
+    _db: pymongo.database.Database[Any]
 
     def __init__(self, uri: str, database: str = "featurebyte") -> None:
         """
@@ -28,7 +28,7 @@ class MongoStorage(Storage):
         database: str
             Database to use
         """
-        self._client = pymongo.MongoClient(uri)
+        self._client = pymongo.MongoClient(uri)  # type: ignore
         self._db = self._client[database]
 
     def insert_one(self, collection_name: str, document: _DocumentIn) -> None:
@@ -57,8 +57,8 @@ class MongoStorage(Storage):
         """
         self._db[collection_name].insert_many(documents)
 
-    def find_one(
-        self, collection_name: str, filter_query: Optional[Any]
+    def find_one(  # type: ignore
+        self, collection_name: str, filter_query: Mapping[str, Any]
     ) -> Optional[_DocumentType]:
         """
         Find one record from collection
@@ -67,7 +67,7 @@ class MongoStorage(Storage):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Optional[Any]
+        filter_query: Mapping[str, Any]
             Conditions to filter on
 
         Returns
@@ -80,12 +80,12 @@ class MongoStorage(Storage):
     def find(
         self,
         collection_name: str,
-        filter_query: Optional[Any],
+        filter_query: Mapping[str, Any],
         sort_by: Optional[str] = None,
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
-        page: Optional[int] = 1,
-        page_size: Optional[int] = 0,
-    ) -> Iterable[_DocumentType]:
+        page: int = 1,
+        page_size: int = 0,
+    ) -> Tuple[Iterable[_DocumentType], int]:
         """
         Find all records from collection
 
@@ -93,21 +93,21 @@ class MongoStorage(Storage):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Optional[Any]
+        filter_query: Mapping[str, Any]
             Conditions to filter on
         sort_by: Optional[str]
             Column to sort by
         sort_dir: Optional[Literal["asc", "desc"]]
             Direction to sort
-        page: Optional[int]
+        page: int
             Page number for pagination
-        page_size: Optional[int]
+        page_size: int
             Page size (0 to return all records)
 
         Returns
         -------
-        Iterable[_DocumentType]
-            Retrieved documents
+        Tuple[Iterable[_DocumentType], int]
+            Retrieved documents and total count
         """
         cursor = self._db[collection_name].find(filter_query)
         total = self._db[collection_name].count_documents(filter_query)

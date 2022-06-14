@@ -43,7 +43,7 @@ test:
 check-codestyle:
 	poetry run isort --diff --check-only --settings-path pyproject.toml ./
 	poetry run black --diff --check --config pyproject.toml ./
-	poetry run pylint --rcfile=.pylintrc featurebyte tests
+	find featurebyte tests -iname "*.py" | xargs poetry run pylint --rcfile=.pylintrc
 	find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" | xargs poetry run darglint --verbosity 2
 
 .PHONY: mypy
