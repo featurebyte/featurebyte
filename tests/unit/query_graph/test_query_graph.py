@@ -7,7 +7,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 
-@pytest.fixture(name="graph", scope="module")
+@pytest.fixture(name="graph")
 def query_graph():
     """
     Empty query graph fixture
@@ -16,7 +16,7 @@ def query_graph():
     yield QueryGraph()
 
 
-@pytest.fixture(name="graph_single_node", scope="module")
+@pytest.fixture(name="graph_single_node")
 def query_graph_single_node(graph):
     """
     Query graph with a single node
@@ -42,7 +42,7 @@ def query_graph_single_node(graph):
     yield graph, node_input
 
 
-@pytest.fixture(name="graph_two_nodes", scope="module")
+@pytest.fixture(name="graph_two_nodes")
 def query_graph_two_nodes(graph_single_node):
     """
     Query graph with two nodes
@@ -72,7 +72,7 @@ def query_graph_two_nodes(graph_single_node):
     yield graph, node_input, node_proj
 
 
-@pytest.fixture(name="graph_three_nodes", scope="module")
+@pytest.fixture(name="graph_three_nodes")
 def query_graph_three_nodes(graph_two_nodes):
     """
     Query graph with three nodes
@@ -104,7 +104,7 @@ def query_graph_three_nodes(graph_two_nodes):
     yield graph, node_input, node_proj, node_eq
 
 
-@pytest.fixture(name="graph_four_nodes", scope="module")
+@pytest.fixture(name="graph_four_nodes")
 def query_graph_four_nodes(graph_three_nodes):
     """
     Query graph with four nodes
