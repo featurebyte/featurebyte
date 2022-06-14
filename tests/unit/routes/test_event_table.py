@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 import pytest
 
-from featurebyte.models.event_table import EventTableModel
+from featurebyte.models.event_table import EventTableModel, EventTableStatus
 from tests.unit.models.test_event_table import (  # pylint: disable=unused-import
     event_table_model_dict_fixture,
 )
@@ -43,6 +43,14 @@ def test_create_success(test_api_client, event_table_dict):
     result = response.json()
     result.pop("_id")
     assert result.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
+    # history should contain the initial entry
+    event_table_dict.pop("history")
+    history = result.pop("history")
+    assert len(history) == 1
+    assert history[0]["setting"] == event_table_dict["default_feature_job_setting"]
+    # status should be draft
+    event_table_dict.pop("status")
+    assert result.pop("status") == EventTableStatus.DRAFT
     assert result == event_table_dict
 
 
@@ -93,6 +101,9 @@ def test_list(test_api_client, event_table_dict):
     data.pop("_id")
     # should include the static user id
     assert data.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
+    assert data.pop("history")[0]["setting"] == event_table_dict["default_feature_job_setting"]
+    event_table_dict.pop("history")
+    event_table_dict["status"] = EventTableStatus.DRAFT
     assert data == event_table_dict
 
 
@@ -111,6 +122,9 @@ def test_retrieve_success(test_api_client, event_table_dict):
     data.pop("_id")
     # should include the static user id
     assert data.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
+    assert data.pop("history")[0]["setting"] == event_table_dict["default_feature_job_setting"]
+    event_table_dict.pop("history")
+    event_table_dict["status"] = EventTableStatus.DRAFT
     assert data == event_table_dict
 
 
@@ -131,6 +145,8 @@ def test_update_success(test_api_client, event_table_dict, event_table_update_di
     # insert a record
     response = test_api_client.request("POST", url="/event_table", json=event_table_dict)
     assert response.status_code == HTTPStatus.CREATED
+    data = response.json()
+    previous_history = data["history"]
 
     response = test_api_client.request(
         "PATCH", url="/event_table/my_event_table", json=event_table_update_dict
@@ -149,7 +165,8 @@ def test_update_success(test_api_client, event_table_dict, event_table_update_di
     # the other fields should be unchanged
     event_table_dict.pop("default_feature_job_setting")
     new_history = data.pop("history")
-    previous_history = event_table_dict.pop("history")
+    event_table_dict.pop("history")
+    event_table_dict["status"] = EventTableStatus.DRAFT
     assert data == event_table_dict
 
     # history should be appended with new default job settings update
@@ -178,9 +195,15 @@ def test_update_excludes_unsupported_fields(
     # insert a record
     response = test_api_client.request("POST", url="/event_table", json=event_table_dict)
     assert response.status_code == HTTPStatus.CREATED
+    data = response.json()
+    previous_history = data["history"]
+
+    # expect status to be draft
+    assert data["status"] == EventTableStatus.DRAFT
 
     event_table_update_dict["name"] = "Some other name"
     event_table_update_dict["source"] = "Some other source"
+    event_table_update_dict["status"] = EventTableStatus.PUBLISHED
     response = test_api_client.request(
         "PATCH", url="/event_table/my_event_table", json=event_table_update_dict
     )
@@ -197,11 +220,62 @@ def test_update_excludes_unsupported_fields(
 
     # the other fields should be unchanged
     event_table_dict.pop("default_feature_job_setting")
+    event_table_dict["history"] = []
     new_history = data.pop("history")
-    previous_history = event_table_dict.pop("history")
+    event_table_dict.pop("history")
     assert data == event_table_dict
 
     # history should be appended with new default job settings update
     assert len(new_history) == len(previous_history) + 1
     assert new_history[1:] == previous_history
     assert new_history[0]["setting"] == event_table_update_dict["default_feature_job_setting"]
+
+    # expect status to be updated to published
+    assert data["status"] == EventTableStatus.PUBLISHED
+
+
+def test_update_fails_invalid_transition(
+    test_api_client, event_table_dict, event_table_update_dict
+):
+    """
+    Update event table fails if status transition is no valid
+    """
+    # insert a record
+    response = test_api_client.request("POST", url="/event_table", json=event_table_dict)
+    assert response.status_code == HTTPStatus.CREATED
+    data = response.json()
+
+    # expect status to be draft
+    assert data["status"] == EventTableStatus.DRAFT
+
+    event_table_update_dict["status"] = EventTableStatus.DRAFT
+    response = test_api_client.request(
+        "PATCH", url="/event_table/my_event_table", json=event_table_update_dict
+    )
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.json() == {"detail": "Invalid status transition from DRAFT to DRAFT."}
+
+
+def test_update_status_only(test_api_client, event_table_dict):
+    """
+    Update event table status only
+    """
+    # insert a record
+    response = test_api_client.request("POST", url="/event_table", json=event_table_dict)
+    assert response.status_code == HTTPStatus.CREATED
+    current_data = response.json()
+
+    # expect status to be draft
+    assert current_data.pop("status") == EventTableStatus.DRAFT
+
+    response = test_api_client.request(
+        "PATCH", url="/event_table/my_event_table", json={"status": EventTableStatus.PUBLISHED}
+    )
+    assert response.status_code == HTTPStatus.OK
+    updated_data = response.json()
+
+    # expect status to be published
+    assert updated_data.pop("status") == EventTableStatus.PUBLISHED
+
+    # the other fields should be unchanged
+    assert updated_data == current_data
