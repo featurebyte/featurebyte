@@ -268,7 +268,11 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
 
     def prune(self, target_node: Node, target_columns: list[str]) -> PrunedQueryGraph:
         """
-        Prune the query graph & return the pruned graph
+        Prune the query graph and return the pruned graph.
+
+        To prune the graph, this function first traverses from the target node to the input node.
+        The unused branches of the graph will get pruned in this step. After that, a new graph is
+        reconstructed by adding the required nodes back.
 
         Parameters
         ----------
