@@ -72,7 +72,7 @@ def test_constructor__keys_column_not_found(event_view):
     assert expected_msg in str(exc.value)
 
 
-def test_constructor__value_column_not_found(event_view):
+def test_groupby__value_column_not_found(event_view):
     """
     Test cases when value column not found in the EventView
     """
