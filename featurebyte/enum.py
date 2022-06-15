@@ -43,3 +43,12 @@ class AggFunc(str, Enum):
         list[str]
         """
         return [c.value for c in cls]
+
+
+class SourceType(str, Enum):
+    """
+    Database or data warehouse source type
+    """
+
+    SNOWFLAKE = "snowflake"
+    SQLITE = "sqlite"

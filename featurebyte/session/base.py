@@ -9,8 +9,7 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from featurebyte.enum import DBVarType
-from featurebyte.session.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 
 TableSchema = Dict[str, DBVarType]
 

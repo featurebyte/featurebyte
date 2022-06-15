@@ -47,6 +47,7 @@ pandas = "1.4.2"
 PyGithub = "1.55"
 tinydb = "4.7.0"
 sqlglot = "^2.3.2"
+pydantic = "^1.9.1"
 
 [tool.poetry.extras]
 docs = ["Sphinx", "sphinx-rtd-theme", "sphinx-github-changelog"]
@@ -67,6 +68,7 @@ coverage = "^6.1.2"
 coverage-badge = "^1.1.0"
 pytest-html = "^3.1.1"
 pytest-cov = "^3.0.0"
+pyarrow = "^8.0.0"
 
 [tool.black]
 # https://github.com/psf/black

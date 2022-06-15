@@ -57,7 +57,7 @@ def test_constructor__wrong_input_type(event_view):
 
 def test_constructor__keys_column_not_found(event_view):
     """
-    Test cases when column of the keys not found in the event source
+    Test cases when column of the keys not found in the EventView
     """
     with pytest.raises(KeyError) as exc:
         EventViewGroupBy(obj=event_view, keys="random_column")
@@ -69,6 +69,19 @@ def test_constructor__keys_column_not_found(event_view):
 
     with pytest.raises(KeyError) as exc:
         EventViewGroupBy(obj=event_view, keys=["cust_id", "random_column"])
+    assert expected_msg in str(exc.value)
+
+
+def test_groupby__value_column_not_found(event_view):
+    """
+    Test cases when value column not found in the EventView
+    """
+    grouped = EventViewGroupBy(obj=event_view, keys="cust_id")
+    with pytest.raises(KeyError) as exc:
+        grouped.aggregate(
+            "non_existing_column", "count", ["1d"], "5m", "1h", "10m", ["feature_name"]
+        )
+    expected_msg = "Column 'non_existing_column' not found"
     assert expected_msg in str(exc.value)
 
 
