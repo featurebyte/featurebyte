@@ -288,7 +288,7 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
         -------
         PrunedQueryGraph, Node
         """
-        node_name_map = {}
+        node_name_map: dict[str, str] = {}
         pruned_graph = self._prune(
             target_node=target_node,
             target_columns=target_columns,
