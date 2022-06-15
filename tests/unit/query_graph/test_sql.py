@@ -65,19 +65,23 @@ def test_binary_operation_node__series(node_type, expected, input_node):
 
 
 @pytest.mark.parametrize(
-    "node_type, value, expected",
+    "node_type, value, right_op, expected",
     [
-        (NodeType.ADD, 1, "a + 1"),
-        (NodeType.SUB, 1, "a - 1"),
-        (NodeType.MUL, 1.0, "a * 1.0"),
-        (NodeType.DIV, 1.0, "a / 1.0"),
-        (NodeType.EQ, "apple", "a = 'apple'"),
+        (NodeType.ADD, 1, False, "a + 1"),
+        (NodeType.ADD, 1, True, "1 + a"),
+        (NodeType.SUB, 1, False, "a - 1"),
+        (NodeType.SUB, 1, True, "1 - a"),
+        (NodeType.MUL, 1.0, False, "a * 1.0"),
+        (NodeType.MUL, 1.0, True, "1.0 * a"),
+        (NodeType.DIV, 1.0, False, "a / 1.0"),
+        (NodeType.DIV, 1.0, True, "1.0 / a"),
+        (NodeType.EQ, "apple", False, "a = 'apple'"),
     ],
 )
-def test_binary_operation_node__scalar(node_type, value, expected, input_node):
+def test_binary_operation_node__scalar(node_type, value, right_op, expected, input_node):
     """Test binary operation node when another side is scalar"""
     column1 = sql.StrExpressionNode(table_node=input_node, expr="a")
     input_nodes = [column1]
-    parameters = {"value": value}
+    parameters = {"value": value, "right_op": right_op}
     node = sql.make_binary_operation_node(node_type, input_nodes, parameters)
     assert node.sql.sql() == expected

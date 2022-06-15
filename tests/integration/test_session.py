@@ -1,6 +1,8 @@
 """
 This module contains session to EventView integration tests
 """
+import os
+
 import pandas as pd
 
 from featurebyte.core.event_view import EventView
@@ -33,9 +35,10 @@ def test_query_object_operation_on_snowflake_source(snowflake_session, transacti
     """
     Test loading event view from snowflake source
     """
+    database_name = os.getenv("SNOWFLAKE_DATABASE")
     event_view = EventView.from_session(
         snowflake_session,
-        table_name='"FEATUREBYTE_TESTING"."PUBLIC"."TEST_TABLE"',
+        table_name=f'"{database_name}"."PUBLIC"."TEST_TABLE"',
         timestamp_column="CREATED_AT",
     )
     assert event_view.columns == ["CREATED_AT", "CUST_ID", "PRODUCT_ACTION", "SESSION_ID"]
