@@ -87,6 +87,8 @@ class EventViewGroupBy(OpsMixin):
         ------
         ValueError
             If provided aggregation method is not supported
+        KeyError
+            If column to be aggregated does not exist
         """
         # pylint: disable=R0914 (too-many-locals)
         if method not in AggFunc.all():
@@ -98,6 +100,9 @@ class EventViewGroupBy(OpsMixin):
             blind_spot=blind_spot,
         )
         frequency_seconds, time_modulo_frequency_seconds, blind_spot_seconds = parsed_seconds
+
+        if value_column not in self.obj.columns:
+            raise KeyError(f"Column '{value_column}' not found in {self.obj}!")
 
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,
