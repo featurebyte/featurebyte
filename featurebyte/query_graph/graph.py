@@ -218,15 +218,14 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
         to_prune_target_node = False
         input_node_names = self.backward_edges[target_node.name]
         if target_node.type == NodeType.ASSIGN:
-            frame_node_name, _ = input_node_names
             assign_column_name = target_node.parameters["name"]
             if assign_column_name in target_columns:
                 # remove matched name from the target_columns
                 target_columns = [col for col in target_columns if col != assign_column_name]
             else:
-                # remove series path
+                # remove series path if exists
                 to_prune_target_node = True
-                input_node_names = [frame_node_name]
+                input_node_names = input_node_names[:1]
         elif target_node.type == NodeType.PROJECT:
             # if columns are needed for projection, add them to the target_columns
             target_columns.extend(target_node.parameters["columns"])
@@ -270,9 +269,9 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
         processed_node_names.add(target_node.name)
         return pruned_graph
 
-    def prune(self, target_node: Node, target_columns: list[str]) -> PrunedQueryGraph:
+    def prune(self, target_node: Node, target_columns: list[str]) -> tuple[PrunedQueryGraph, Node]:
         """
-        Prune the query graph and return the pruned graph.
+        Prune the query graph and return the pruned graph & mapped node.
 
         To prune the graph, this function first traverses from the target node to the input node.
         The unused branches of the graph will get pruned in this step. After that, a new graph is
@@ -287,12 +286,15 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
 
         Returns
         -------
-        PrunedQueryGraph
+        PrunedQueryGraph, Node
         """
-        return self._prune(
+        node_name_map = {}
+        pruned_graph = self._prune(
             target_node=target_node,
             target_columns=target_columns,
             pruned_graph=PrunedQueryGraph(),
             processed_node_names=set(),
-            node_name_map={},
+            node_name_map=node_name_map,
         )
+        mapped_node = pruned_graph.get_node_by_name(node_name_map[target_node.name])
+        return pruned_graph, mapped_node

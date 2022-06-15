@@ -220,6 +220,29 @@ def test_prune__redundant_assign_nodes(dataframe):
     }
 
 
+def test_prune__redundant_assign_node_with_same_target_column_name(dataframe):
+    """
+    Test graph pruning on a query graph with redundant assign node of same target name
+    """
+    dataframe["VALUE"] = 1
+    dataframe["VALUE"] = dataframe["CUST_ID"] * 10
+    assert dataframe.graph.edges == {
+        "input_1": ["assign_1", "project_1"],
+        "project_1": ["mul_1"],
+        "assign_1": ["assign_2"],
+        "mul_1": ["assign_2"],
+    }
+    assert dataframe.graph.nodes["assign_1"]["parameters"] == {"value": 1, "name": "VALUE"}
+    assert dataframe.graph.nodes["assign_2"]["parameters"] == {"name": "VALUE"}
+    pruned_graph = dataframe.graph.prune(target_node=dataframe.node, target_columns=["VALUE"])
+    assert pruned_graph.edges == {
+        "input_1": ["project_1", "assign_1"],
+        "project_1": ["mul_1"],
+        "mul_1": ["assign_1"],
+    }
+    assert pruned_graph.nodes["assign_1"]["parameters"] == {"name": "VALUE"}
+
+
 def test_prune__redundant_project_nodes(dataframe):
     """
     Test graph pruning on a query graph with redundant project nodes

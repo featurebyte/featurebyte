@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import copy
 
+import pandas as pd
+
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.core.series import Series
@@ -213,3 +215,18 @@ class Frame(QueryObject, OpsMixin):
             )
         else:
             raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
+
+    def preview(self, limit: int = 10) -> pd.DataFrame | None:
+        """
+        Preview transformed table/column partial output
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+
+        Returns
+        -------
+        pd.DataFrame | None
+        """
+        return self._preview(columns=self.columns, limit=limit)
