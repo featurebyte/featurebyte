@@ -16,6 +16,38 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 
 
+def escape_column_name(column_name: str) -> str:
+    """Enclose provided column name with quotes
+
+    Parameters
+    ----------
+    column_name : str
+        Column name
+
+    Returns
+    -------
+    str
+    """
+    if column_name.startswith('"') and column_name.endswith('"'):
+        return column_name
+    return f'"{column_name}"'
+
+
+def escape_column_names(column_names: list[str]) -> list[str]:
+    """Enclose provided column names with quotes
+
+    Parameters
+    ----------
+    column_names : list[str]
+        Column names
+
+    Returns
+    -------
+    list[str]
+    """
+    return [escape_column_name(x) for x in column_names]
+
+
 class SQLNode(ABC):
     """Base class of a node in the SQL operations tree
 
@@ -124,8 +156,10 @@ class GenericInputNode(TableNode):
         Expression
             A sqlglot Expression object
         """
-        select_expr = select(*self.columns)
-        select_expr = select_expr.from_(self.dbtable)
+        columns = escape_column_names(self.columns)
+        select_expr = select(*columns)
+        dbtable = escape_column_name(self.dbtable)
+        select_expr = select_expr.from_(dbtable)
         return select_expr
 
 
@@ -144,9 +178,10 @@ class BuildTileInputNode(GenericInputNode):
         """
         select_expr = super().sql
         assert isinstance(select_expr, expressions.Select)
+        timestamp = escape_column_name(self.timestamp)
         select_expr = select_expr.where(
-            f"{self.timestamp} >= CAST(FBT_START_DATE AS TIMESTAMP)",
-            f"{self.timestamp} < CAST(FBT_END_DATE AS TIMESTAMP)",
+            f"{timestamp} >= CAST(FBT_START_DATE AS TIMESTAMP)",
+            f"{timestamp} < CAST(FBT_END_DATE AS TIMESTAMP)",
         )
         return select_expr
 
@@ -172,7 +207,7 @@ class Project(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return parse_one(self.column_name)
+        return parse_one(escape_column_name(self.column_name))
 
 
 @dataclass
@@ -188,7 +223,8 @@ class ProjectMulti(TableNode):
 
     @property
     def sql(self) -> Expression:
-        return select(*self.column_names).from_(self.input_node.sql_nested())
+        column_names = escape_column_names(self.column_names)
+        return select(*column_names).from_(self.input_node.sql_nested())
 
 
 @dataclass
@@ -242,8 +278,12 @@ class AssignNode(TableNode):
     @property
     def sql(self) -> Expression:
         existing_columns = [col for col in self.table_node.columns if col != self.name]
+        existing_columns = escape_column_names(existing_columns)
         select_expr = select(*existing_columns)
-        select_expr = select_expr.select(expressions.alias_(self.column_node.sql, self.name))
+        # expressions.alias_ is a bit special - if we pass a quoted string as the alias name, it
+        # will be double quoted (e.g. ""a""). So, here an Identifier is constructed directly.
+        name_identifier = expressions.Identifier(this=self.name, quoted=True)
+        select_expr = select_expr.select(expressions.alias_(self.column_node.sql, name_identifier))
         select_expr = select_expr.from_(self.table_node.sql_nested())
         return select_expr
 
@@ -272,7 +312,7 @@ class BuildTileNode(TableNode):
         start_date_placeholder_epoch = (
             f"DATE_PART(EPOCH_SECOND, CAST({start_date_placeholder} AS TIMESTAMP))"
         )
-        timestamp_epoch = f"DATE_PART(EPOCH_SECOND, {self.timestamp})"
+        timestamp_epoch = f"DATE_PART(EPOCH_SECOND, {escape_column_name(self.timestamp)})"
 
         input_tiled = select(
             "*",
@@ -282,14 +322,15 @@ class BuildTileNode(TableNode):
         tile_start_date = (
             f"TO_TIMESTAMP({start_date_placeholder_epoch} + tile_index * {self.frequency})"
         )
+        keys = escape_column_names(self.keys)
         groupby_sql = (
             select(
                 f"{tile_start_date} AS tile_start_date",
-                *self.keys,
+                *keys,
                 *[f"{spec.tile_expr} AS {spec.tile_column_name}" for spec in self.tile_specs],
             )
             .from_(input_tiled.subquery())
-            .group_by("tile_index", *self.keys)
+            .group_by("tile_index", *keys)
             .order_by("tile_index")
         )
 
