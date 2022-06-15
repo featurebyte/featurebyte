@@ -18,7 +18,8 @@ def query_graph_single_node(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    pruned_graph = graph.prune(target_node=node_input, target_columns=[])
+    pruned_graph, mapped_node = graph.prune(target_node=node_input, target_columns=[])
+    assert mapped_node.name == "input_1"
     assert graph.to_dict() == pruned_graph.to_dict()
     assert graph.to_dict() == {
         "nodes": {
@@ -58,7 +59,8 @@ def query_graph_two_nodes(graph_single_node):
         },
         "edges": {"input_1": ["project_1"]},
     }
-    pruned_graph = graph.prune(target_node=node_proj, target_columns=["a"])
+    pruned_graph, mapped_node = graph.prune(target_node=node_proj, target_columns=["a"])
+    assert mapped_node.name == "project_1"
     assert graph.to_dict() == pruned_graph.to_dict()
     assert graph.to_dict(exclude_name=True) == expected_graph
     assert node_proj == Node(
@@ -94,7 +96,8 @@ def query_graph_three_nodes(graph_two_nodes):
             "project_1": ["eq_1"],
         },
     }
-    pruned_graph = graph.prune(target_node=node_eq, target_columns=[])
+    pruned_graph, mapped_node = graph.prune(target_node=node_eq, target_columns=[])
+    assert mapped_node.name == "eq_1"
     assert graph.to_dict() == pruned_graph.to_dict()
     assert graph.to_dict(exclude_name=True) == expected_graph
     assert node_eq == Node(name="eq_1", type="eq", parameters={"value": 1}, output_type="series")
@@ -130,7 +133,8 @@ def query_graph_four_nodes(graph_three_nodes):
             "eq_1": ["filter_1"],
         },
     }
-    pruned_graph = graph.prune(target_node=node_filter, target_columns=[])
+    pruned_graph, mapped_node = graph.prune(target_node=node_filter, target_columns=[])
+    assert mapped_node.name == "filter_1"
     assert graph.to_dict() == pruned_graph.to_dict()
     assert graph.to_dict(exclude_name=True) == expected_graph
     assert node_filter == Node(name="filter_1", type="filter", parameters={}, output_type="frame")
@@ -205,7 +209,9 @@ def test_prune__redundant_assign_nodes(dataframe):
     assert dataframe.node == Node(
         name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
     )
-    pruned_graph = dataframe.graph.prune(target_node=dataframe.node, target_columns=["target"])
+    pruned_graph, mapped_node = dataframe.graph.prune(
+        target_node=dataframe.node, target_columns=["target"]
+    )
     assert pruned_graph.edges == {
         "input_1": ["project_1", "project_2", "assign_1"],
         "project_1": ["mul_1"],
@@ -218,6 +224,7 @@ def test_prune__redundant_assign_nodes(dataframe):
         "parameters": {"name": "target"},
         "output_type": "frame",
     }
+    assert mapped_node.name == "assign_1"
 
 
 def test_prune__redundant_assign_node_with_same_target_column_name(dataframe):
@@ -234,13 +241,16 @@ def test_prune__redundant_assign_node_with_same_target_column_name(dataframe):
     }
     assert dataframe.graph.nodes["assign_1"]["parameters"] == {"value": 1, "name": "VALUE"}
     assert dataframe.graph.nodes["assign_2"]["parameters"] == {"name": "VALUE"}
-    pruned_graph = dataframe.graph.prune(target_node=dataframe.node, target_columns=["VALUE"])
+    pruned_graph, mapped_node = dataframe.graph.prune(
+        target_node=dataframe.node, target_columns=["VALUE"]
+    )
     assert pruned_graph.edges == {
         "input_1": ["project_1", "assign_1"],
         "project_1": ["mul_1"],
         "mul_1": ["assign_1"],
     }
     assert pruned_graph.nodes["assign_1"]["parameters"] == {"name": "VALUE"}
+    assert mapped_node.name == "assign_1"
 
 
 def test_prune__redundant_project_nodes(dataframe):
@@ -251,9 +261,10 @@ def test_prune__redundant_project_nodes(dataframe):
     _ = dataframe["VALUE"]
     mask = dataframe["MASK"]
     assert dataframe.graph.edges == {"input_1": ["project_1", "project_2", "project_3"]}
-    pruned_graph = dataframe.graph.prune(target_node=mask.node, target_columns=[])
+    pruned_graph, mapped_node = dataframe.graph.prune(target_node=mask.node, target_columns=[])
     assert pruned_graph.edges == {"input_1": ["project_1"]}
     assert pruned_graph.nodes["project_1"]["parameters"]["columns"] == ["MASK"]
+    assert mapped_node.name == "project_1"
 
 
 def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(dataframe):
@@ -266,7 +277,9 @@ def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(datafra
     assert dataframe.node == Node(
         name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
     )
-    pruned_graph = dataframe.graph.prune(target_node=dataframe.node, target_columns=["target"])
+    pruned_graph, mapped_node = dataframe.graph.prune(
+        target_node=dataframe.node, target_columns=["target"]
+    )
     assert pruned_graph.edges == {
         "input_1": ["project_1", "assign_1", "project_3"],
         "project_1": ["div_1"],
@@ -285,6 +298,7 @@ def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(datafra
     assert pruned_graph.nodes["project_3"]["parameters"]["columns"] == ["VALUE"]
     assert pruned_graph.nodes["project_2"]["parameters"]["columns"] == ["requiredA"]
     assert pruned_graph.nodes["project_4"]["parameters"]["columns"] == ["requiredB"]
+    assert mapped_node.name == "assign_3"
 
 
 def test_prune__multiple_non_redundant_assign_nodes__cascading_pattern(dataframe):
@@ -297,7 +311,9 @@ def test_prune__multiple_non_redundant_assign_nodes__cascading_pattern(dataframe
     assert dataframe.node == Node(
         name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
     )
-    pruned_graph = dataframe.graph.prune(target_node=dataframe.node, target_columns=["target"])
+    pruned_graph, mapped_node = dataframe.graph.prune(
+        target_node=dataframe.node, target_columns=["target"]
+    )
     assert pruned_graph.edges == {
         "input_1": ["project_1", "assign_1"],
         "project_1": ["div_1"],
@@ -314,3 +330,4 @@ def test_prune__multiple_non_redundant_assign_nodes__cascading_pattern(dataframe
     assert pruned_graph.nodes["project_1"]["parameters"]["columns"] == ["CUST_ID"]
     assert pruned_graph.nodes["project_2"]["parameters"]["columns"] == ["requiredA"]
     assert pruned_graph.nodes["project_3"]["parameters"]["columns"] == ["requiredB"]
+    assert mapped_node.name == "assign_3"
