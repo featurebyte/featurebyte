@@ -196,7 +196,8 @@ def feature_list_fixture(grouped_event_view):
         method="sum",
         windows=["30m", "2h", "1d"],
         blind_spot="10m",
-        schedule="30 MINUTE",
+        frequency="30m",
+        time_modulo_frequency="5m",
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
     )
     expected_inception_node = Node(
@@ -209,8 +210,9 @@ def feature_list_fixture(grouped_event_view):
             "value_by": None,
             "windows": ["30m", "2h", "1d"],
             "timestamp": "created_at",
-            "blind_spot": "10m",
-            "schedule": "30 MINUTE",
+            "blind_spot": 600,
+            "time_modulo_frequency": 300,
+            "frequency": 1800,
             "names": ["sum_30m", "sum_2h", "sum_1d"],
         },
         output_type=NodeOutputType.FRAME,

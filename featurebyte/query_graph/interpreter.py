@@ -15,12 +15,12 @@ from featurebyte.query_graph.sql import (
     BINARY_OPERATION_NODE_TYPES,
     AssignNode,
     BuildTileInputNode,
-    BuildTileNode,
     ExpressionNode,
     GenericInputNode,
     SQLNode,
     TableNode,
     make_binary_operation_node,
+    make_build_tile_node,
     make_filter_node,
     make_project_node,
 )
@@ -147,15 +147,7 @@ class SQLOperationGraph:
             sql_node = make_filter_node(input_sql_nodes, output_type)
 
         elif node_type == NodeType.GROUPBY:
-            assert isinstance(input_sql_nodes[0], TableNode)
-            sql_node = BuildTileNode(
-                input_node=input_sql_nodes[0],
-                key=parameters["key"],
-                parent=parameters["parent"],
-                timestamp=parameters["timestamp"],
-                agg_func=parameters["agg_func"],
-                frequency=parameters["frequency"],
-            )
+            sql_node = make_build_tile_node(input_sql_nodes, parameters)
 
         else:
             raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
@@ -177,7 +169,7 @@ class TileGenSql:
         Templated SQL code for building tiles
     columns : List[str]
         List of columns in the tile table after executing the SQL code
-    window_end : int
+    time_modulo_frequency: int
         Offset used to determine the time for jobs scheduling. Should be smaller than frequency.
     frequency : int
         Job frequency. Needed for job scheduling.
@@ -189,7 +181,7 @@ class TileGenSql:
     # tile_table_id: str
     sql: str
     columns: List[str]
-    window_end: int
+    time_modulo_frequency: int
     frequency: int
     blind_spot: int
 
@@ -247,11 +239,11 @@ class TileSQLGenerator:
         sql = groupby_sql_node.sql
         frequency = groupby_node["parameters"]["frequency"]
         blind_spot = groupby_node["parameters"]["blind_spot"]
-        window_end = groupby_node["parameters"]["window_end"]
+        time_modulo_frequency = groupby_node["parameters"]["time_modulo_frequency"]
         info = TileGenSql(
             sql=sql.sql(pretty=True),
             columns=groupby_sql_node.columns,
-            window_end=window_end,
+            time_modulo_frequency=time_modulo_frequency,
             frequency=frequency,
             blind_spot=blind_spot,
         )

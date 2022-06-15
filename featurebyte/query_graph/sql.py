@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 
 
 class SQLNode(ABC):
@@ -255,15 +256,15 @@ class BuildTileNode(TableNode):
     """
 
     input_node: TableNode
-    key: str
-    parent: str
+    keys: list[str]
+    tile_specs: list[TileSpec]
     timestamp: str
     agg_func: str
     frequency: int
 
     @property
     def columns(self) -> list[str]:
-        return ["tile_start_date", self.key, "value"]
+        return ["tile_start_date"] + self.keys + [spec.tile_column_name for spec in self.tile_specs]
 
     @property
     def sql(self) -> Expression:
@@ -284,12 +285,11 @@ class BuildTileNode(TableNode):
         groupby_sql = (
             select(
                 f"{tile_start_date} AS tile_start_date",
-                self.key,
-                f"{self.agg_func}({self.parent}) AS value",
+                *self.keys,
+                *[f"{spec.tile_expr} AS {spec.tile_column_name}" for spec in self.tile_specs],
             )
             .from_(input_tiled.subquery())
-            # TODO: composite join keys
-            .group_by("tile_index", self.key)
+            .group_by("tile_index", *self.keys)
             .order_by("tile_index")
         )
 
@@ -456,4 +456,35 @@ def make_filter_node(
     else:
         assert isinstance(item, ExpressionNode)
         sql_node = FilteredSeries(table_node=item.table_node, series_node=item, mask=mask)
+    return sql_node
+
+
+def make_build_tile_node(
+    input_sql_nodes: list[SQLNode], parameters: dict[str, Any]
+) -> BuildTileNode:
+    """Create a BuildTileNode
+
+    Parameters
+    ----------
+    input_sql_nodes : list[SQLNode]
+        List of input SQL nodes
+    parameters : dict[str, Any]
+        Query node parameters
+
+    Returns
+    -------
+    BuildTileNode
+    """
+    input_node = input_sql_nodes[0]
+    assert isinstance(input_node, TableNode)
+    aggregator = get_aggregator(parameters["agg_func"])
+    tile_specs = aggregator.tile(parameters["parent"])
+    sql_node = BuildTileNode(
+        input_node=input_node,
+        keys=parameters["keys"],
+        tile_specs=tile_specs,
+        timestamp=parameters["timestamp"],
+        agg_func=parameters["agg_func"],
+        frequency=parameters["frequency"],
+    )
     return sql_node

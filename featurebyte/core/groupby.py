@@ -3,10 +3,11 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
+from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
 from featurebyte.core.event_view import EventView
 from featurebyte.core.feature import FeatureList
 from featurebyte.core.mixin import OpsMixin
-from featurebyte.enum import DBVarType
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
@@ -48,7 +49,8 @@ class EventViewGroupBy(OpsMixin):
         method: str,
         windows: list[str],
         blind_spot: str,
-        schedule: str,
+        frequency: str,
+        time_modulo_frequency: str,
         feature_names: list[str],
         timestamp_column: str | None = None,
         value_by_column: str | None = None,
@@ -66,8 +68,10 @@ class EventViewGroupBy(OpsMixin):
             list of aggregation window sizes
         blind_spot: str
             historical gap introduced to the aggregation
-        schedule: str
-            schedule to run tile building job
+        frequency: str
+            frequency of the feature job
+        time_modulo_frequency: str
+            offset of when the feature job will be run, should be smaller than frequency
         feature_names: list[str]
             output feature names
         timestamp_column: str | None
@@ -78,7 +82,28 @@ class EventViewGroupBy(OpsMixin):
         Returns
         -------
         FeatureList
+
+        Raises
+        ------
+        ValueError
+            If provided aggregation method is not supported
+        KeyError
+            If column to be aggregated does not exist
         """
+        # pylint: disable=R0914 (too-many-locals)
+        if method not in AggFunc.all():
+            raise ValueError(f"Aggregation method not supported: {method}")
+
+        parsed_seconds = validate_job_setting_parameters(
+            frequency=frequency,
+            time_modulo_frequency=time_modulo_frequency,
+            blind_spot=blind_spot,
+        )
+        frequency_seconds, time_modulo_frequency_seconds, blind_spot_seconds = parsed_seconds
+
+        if value_column not in self.obj.columns:
+            raise KeyError(f"Column '{value_column}' not found in {self.obj}!")
+
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,
             node_params={
@@ -88,8 +113,9 @@ class EventViewGroupBy(OpsMixin):
                 "value_by": value_by_column,
                 "windows": windows,
                 "timestamp": timestamp_column or self.obj.timestamp_column,
-                "blind_spot": blind_spot,
-                "schedule": schedule,
+                "blind_spot": blind_spot_seconds,
+                "time_modulo_frequency": time_modulo_frequency_seconds,
+                "frequency": frequency_seconds,
                 "names": feature_names,
             },
             node_output_type=NodeOutputType.FRAME,
