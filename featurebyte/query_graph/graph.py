@@ -218,7 +218,7 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
         to_prune_target_node = False
         input_node_names = self.backward_edges[target_node.name]
         if target_node.type == NodeType.ASSIGN:
-            frame_node_name, series_node_name = input_node_names
+            frame_node_name, _ = input_node_names
             assign_column_name = target_node.parameters["name"]
             if assign_column_name in target_columns:
                 # remove matched name from the target_columns
