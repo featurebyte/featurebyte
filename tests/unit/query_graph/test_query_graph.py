@@ -220,6 +220,19 @@ def test_prune__redundant_assign_nodes(dataframe):
     }
 
 
+def test_prune__redundant_project_nodes(dataframe):
+    """
+    Test graph pruning on a query graph with redundant project nodes
+    """
+    _ = dataframe["CUST_ID"]
+    _ = dataframe["VALUE"]
+    mask = dataframe["MASK"]
+    assert dataframe.graph.edges == {"input_1": ["project_1", "project_2", "project_3"]}
+    pruned_graph = dataframe.graph.prune(target_node=mask.node, target_columns=[])
+    assert pruned_graph.edges == {"input_1": ["project_1"]}
+    assert pruned_graph.nodes["project_1"]["parameters"]["columns"] == ["MASK"]
+
+
 def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(dataframe):
     """
     Test graph pruning on a query graph without any redundant assign nodes (interactive pattern)
