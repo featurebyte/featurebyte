@@ -12,10 +12,7 @@ def test_api_client():
     Test API client
     """
     with mongomock.patch(servers=(("localhost", 27017),)):
-        from featurebyte.app import app  # pylint: disable=import-outside-toplevel
-        from featurebyte.routes.unified_api_settings import (  # pylint: disable=import-outside-toplevel
-            storage,
-        )
+        from featurebyte.app import app, storage  # pylint: disable=import-outside-toplevel
 
         with TestClient(app) as client:
             yield client

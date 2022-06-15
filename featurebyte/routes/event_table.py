@@ -2,13 +2,14 @@
 EventTable API routes
 """
 # pylint: disable=too-few-public-methods,relative-beyond-top-level
-from typing import Any, List, Literal, Optional
+from typing import List, Literal, Optional
 
 import datetime
 from http import HTTPStatus
 
+from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from featurebyte.models.event_table import (
@@ -18,8 +19,7 @@ from featurebyte.models.event_table import (
     FeatureJobSettingHistoryEntry,
 )
 
-from .schema import PaginationMixin, PydanticObjectId
-from .unified_api_settings import session_user, storage
+from .schema import PaginationMixin
 
 router = APIRouter()
 TABLE_NAME = "event_table"
@@ -78,12 +78,15 @@ class EventTableUpdate(BaseModel):
 
 @router.post("/event_table", response_model=EventTable, status_code=HTTPStatus.CREATED)
 def create_event_table(
+    request: Request,
     data: EventTableModel,
-    user: Any = Depends(session_user),  # pylint: disable=unused-argument
 ) -> EventTable:
     """
     Create event table
     """
+    user = request.state.user
+    storage = request.state.storage
+
     # ensure table name does not already exist
     query_filter = {"name": data.name, "user_id": user.id}
     if storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter):
@@ -107,16 +110,19 @@ def create_event_table(
 
 @router.get("/event_table", response_model=EventTables)
 def list_event_tables(
+    request: Request,
     page: int = 1,
     page_size: int = 10,
     sort_by: Optional[str] = "created_at",
     sort_dir: Literal["asc", "desc"] = "desc",
     search: Optional[str] = None,
-    user: Any = Depends(session_user),  # pylint: disable=unused-argument
 ) -> EventTables:
     """
     List event tables
     """
+    user = request.state.user
+    storage = request.state.storage
+
     query_filter = {"user_id": user.id}
 
     # Apply search
@@ -136,12 +142,15 @@ def list_event_tables(
 
 @router.get("/event_table/{event_table_name}", response_model=EventTable)
 def retrieve_event_table(
+    request: Request,
     event_table_name: str,
-    user: Any = Depends(session_user),  # pylint: disable=unused-argument
 ) -> Optional[EventTable]:
     """
     Retrieve event table
     """
+    user = request.state.user
+    storage = request.state.storage
+
     query_filter = {"name": event_table_name, "user_id": user.id}
     event_table = storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
     if not event_table:
@@ -153,13 +162,16 @@ def retrieve_event_table(
 
 @router.patch("/event_table/{event_table_name}", response_model=EventTable)
 def update_event_table(
+    request: Request,
     event_table_name: str,
     data: EventTableUpdate,
-    user: Any = Depends(session_user),  # pylint: disable=unused-argument
 ) -> EventTable:
     """
     Update scheduled task
     """
+    user = request.state.user
+    storage = request.state.storage
+
     query_filter = {"name": event_table_name, "user_id": user.id}
     event_table = storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
     not_found_exception = HTTPException(

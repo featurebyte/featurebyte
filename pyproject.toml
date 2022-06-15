@@ -50,6 +50,7 @@ sqlglot = "^2.3.2"
 pydantic = "^1.9.1"
 fastapi = "^0.78.0"
 pymongo = "^4.1.1"
+beanie = "^1.11.4"
 
 [tool.poetry.extras]
 docs = ["Sphinx", "sphinx-rtd-theme", "sphinx-github-changelog"]
