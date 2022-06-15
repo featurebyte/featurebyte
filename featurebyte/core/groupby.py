@@ -3,8 +3,7 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-import pandas as pd
-
+from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
 from featurebyte.core.event_view import EventView
 from featurebyte.core.feature import FeatureList
 from featurebyte.core.mixin import OpsMixin
@@ -93,9 +92,12 @@ class EventViewGroupBy(OpsMixin):
         if method not in AggFunc.all():
             raise ValueError(f"Aggregation method not supported: {method}")
 
-        blind_spot_seconds = int(pd.Timedelta(blind_spot).total_seconds())
-        frequency_seconds = int(pd.Timedelta(frequency).total_seconds())
-        time_modulo_frequency_seconds = int(pd.Timedelta(time_modulo_frequency).total_seconds())
+        parsed_seconds = validate_job_setting_parameters(
+            frequency=frequency,
+            time_modulo_frequency=time_modulo_frequency,
+            blind_spot=blind_spot,
+        )
+        frequency_seconds, time_modulo_frequency_seconds, blind_spot_seconds = parsed_seconds
 
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,

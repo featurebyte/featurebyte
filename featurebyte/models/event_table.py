@@ -1,33 +1,15 @@
 """
 This module contains EventTable related models
 """
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from datetime import datetime
 from enum import Enum
 
-import pandas as pd
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, root_validator
 
+from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
 from featurebyte.enum import SourceType
-
-
-def validate_duration_string(duration_string: str) -> None:
-    """Check whether the string is a valid duration
-
-    Parameters
-    ----------
-    duration_string : str
-        String to validate
-
-    Raises
-    ------
-    ValueError
-        If the specified duration is invalid
-    """
-    duration = pd.Timedelta(duration_string)
-    if duration.total_seconds() < 60:
-        raise ValueError(f"Duration specified is too small: {duration_string}")
 
 
 class SnowflakeDetails(BaseModel):
@@ -59,22 +41,27 @@ class FeatureJobSetting(BaseModel):
     frequency: str
     time_modulo_frequency: str
 
-    @validator("blind_spot", "frequency", "time_modulo_frequency")
-    def valid_duration(cls, value: str) -> str:  # pylint: disable=no-self-argument
-        """Validate that job setting values are valid
+    # pylint: disable=no-self-argument
+    @root_validator(pre=True)
+    def validate_setting_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate feature job setting parameters
 
         Parameters
         ----------
-        value : str
-            Duration string for feature job setting
+        values : dict
+            Parameter values
 
         Returns
         -------
-        str
+        dict
         """
         _ = cls
-        validate_duration_string(value)
-        return value
+        validate_job_setting_parameters(
+            frequency=values["frequency"],
+            time_modulo_frequency=values["time_modulo_frequency"],
+            blind_spot=values["blind_spot"],
+        )
+        return values
 
 
 class FeatureJobSettingHistoryEntry(BaseModel):
