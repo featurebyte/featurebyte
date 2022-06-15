@@ -215,17 +215,17 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
         node_name_map: dict[str, str],
     ) -> PrunedQueryGraph:
         # pruning: move backward from target node to the input node
+        to_prune_target_node = False
         input_node_names = self.backward_edges[target_node.name]
         if target_node.type == NodeType.ASSIGN:
             frame_node_name, series_node_name = input_node_names
             assign_column_name = target_node.parameters["name"]
             if assign_column_name in target_columns:
-                # remove matched name from the target_columns & traverse the series path first
-                # so that the required columns are added to the target_columns
+                # remove matched name from the target_columns
                 target_columns = [col for col in target_columns if col != assign_column_name]
-                input_node_names = [series_node_name, frame_node_name]
             else:
                 # remove series path
+                to_prune_target_node = True
                 input_node_names = [frame_node_name]
         elif target_node.type == NodeType.PROJECT:
             # if columns are needed for projection, add them to the target_columns
@@ -240,6 +240,10 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
                 processed_node_names=processed_node_names,
                 node_name_map=node_name_map,
             )
+
+        if to_prune_target_node:
+            # do not add the target_node to the pruned graph
+            return pruned_graph
 
         # reconstruction: process the node from the input node towards the target node
         mapped_input_node_names = []
