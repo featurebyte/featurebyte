@@ -4,16 +4,7 @@ Unit test for query graph
 import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import Node, QueryGraph
-
-
-@pytest.fixture(name="graph")
-def query_graph():
-    """
-    Empty query graph fixture
-    """
-    QueryGraph.clear()
-    yield QueryGraph()
+from featurebyte.query_graph.graph import Node
 
 
 @pytest.fixture(name="graph_single_node")

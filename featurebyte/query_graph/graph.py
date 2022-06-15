@@ -3,7 +3,7 @@ Implement graph data structure for query graph
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 import json
 from collections import defaultdict
@@ -88,7 +88,7 @@ class Graph:
         ----------
         node_type: NodeType
             node type
-        node_params: Dict[str, Any]
+        node_params: dict[str, Any]
             parameters in dictionary format
         node_output_type: NodeOutputType
             node output type
@@ -118,7 +118,7 @@ class Graph:
 
         Returns
         -------
-        output: Dict[str, Any]
+        output: dict[str, Any]
 
         """
         nodes = self.nodes
@@ -177,7 +177,7 @@ class PrunedQueryGraph(Graph):
             parameters used for the node operation
         node_output_type: NodeOutputType
             node output type
-        input_nodes: List[Node]
+        input_nodes: list[Node]
             list of input nodes
 
         Returns
@@ -213,7 +213,7 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
         pruned_graph: PrunedQueryGraph,
         processed_node_names: set[str],
         node_name_map: dict[str, str],
-    ):
+    ) -> PrunedQueryGraph:
         # pruning: move backward from target node to the input node
         input_node_names = self.backward_edges[target_node.name]
         if target_node.type == NodeType.ASSIGN:
@@ -266,7 +266,21 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
         processed_node_names.add(target_node.name)
         return pruned_graph
 
-    def prune(self, target_node: Node, target_columns: list[str]):
+    def prune(self, target_node: Node, target_columns: list[str]) -> PrunedQueryGraph:
+        """
+        Prune the query graph & return the pruned graph
+
+        Parameters
+        ----------
+        target_node: Node
+            target end node
+        target_columns: list[str]
+            list of target columns
+
+        Returns
+        -------
+        PrunedQueryGraph
+        """
         return self._prune(
             target_node=target_node,
             target_columns=target_columns,
