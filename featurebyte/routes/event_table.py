@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from featurebyte.models.event_table import (
+    DatabaseSource,
     EventTableModel,
     EventTableStatus,
     FeatureJobSetting,
@@ -23,6 +24,22 @@ from .schema import PaginationMixin
 
 router = APIRouter()
 TABLE_NAME = "event_table"
+
+
+class EventTableCreate(BaseModel):
+    """
+    Event Table Creation Payload
+
+    Parameters
+    ----------
+    """
+
+    name: str
+    table_name: str
+    source: DatabaseSource
+    event_timestamp_column: str
+    record_creation_date_column: Optional[str]
+    default_feature_job_setting: Optional[FeatureJobSetting]
 
 
 class EventTable(EventTableModel):
@@ -79,7 +96,7 @@ class EventTableUpdate(BaseModel):
 @router.post("/event_table", response_model=EventTable, status_code=HTTPStatus.CREATED)
 def create_event_table(
     request: Request,
-    data: EventTableModel,
+    data: EventTableCreate,
 ) -> EventTable:
     """
     Create event table
@@ -96,14 +113,17 @@ def create_event_table(
         )
 
     # init history and set status to draft
-    data.history = [
-        FeatureJobSettingHistoryEntry(
-            creation_date=datetime.datetime.utcnow(), setting=data.default_feature_job_setting
-        )
-    ]
-    data.status = EventTableStatus.DRAFT
-
-    document = EventTable(user_id=user.id, **data.dict())
+    document = EventTable(
+        user_id=user.id,
+        created_at=datetime.datetime.utcnow(),
+        status=EventTableStatus.DRAFT,
+        history=[
+            FeatureJobSettingHistoryEntry(
+                creation_date=datetime.datetime.utcnow(), setting=data.default_feature_job_setting
+            )
+        ],
+        **data.dict(),
+    )
     storage.insert_one(collection_name=TABLE_NAME, document=document.dict())
     return EventTable(**storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter))
 

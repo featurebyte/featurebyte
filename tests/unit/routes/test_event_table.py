@@ -1,6 +1,7 @@
 """
 Tests for event tables route
 """
+import datetime
 import json
 from http import HTTPStatus
 
@@ -17,7 +18,9 @@ def event_table_dict_fixture(event_table_model_dict):
     """
     Table Event dict object
     """
-    return json.loads(EventTableModel(**event_table_model_dict).json())
+    event_table_dict = json.loads(EventTableModel(**event_table_model_dict).json())
+    event_table_dict.pop("created_at")
+    return event_table_dict
 
 
 @pytest.fixture(name="event_table_update_dict")
@@ -38,9 +41,11 @@ def test_create_success(test_api_client, event_table_dict):
     """
     Create event table
     """
+    utcnow = datetime.datetime.utcnow()
     response = test_api_client.request("POST", url="/event_table", json=event_table_dict)
     assert response.status_code == HTTPStatus.CREATED
     result = response.json()
+    assert datetime.datetime.fromisoformat(result.pop("created_at")) > utcnow
     result.pop("_id")
     assert result.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
     # history should contain the initial entry
@@ -97,8 +102,9 @@ def test_list(test_api_client, event_table_dict):
     results = response.json()
     assert results["page"] == 1
     assert results["total"] == 3
-    data = results["data"][-1]
+    data = results["data"][0]
     data.pop("_id")
+    data.pop("created_at")
     # should include the static user id
     assert data.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
     assert data.pop("history")[0]["setting"] == event_table_dict["default_feature_job_setting"]
@@ -120,6 +126,7 @@ def test_retrieve_success(test_api_client, event_table_dict):
     assert response.status_code == HTTPStatus.OK
     data = response.json()
     data.pop("_id")
+    data.pop("created_at")
     # should include the static user id
     assert data.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
     assert data.pop("history")[0]["setting"] == event_table_dict["default_feature_job_setting"]
@@ -154,6 +161,7 @@ def test_update_success(test_api_client, event_table_dict, event_table_update_di
     assert response.status_code == HTTPStatus.OK
     data = response.json()
     data.pop("_id")
+    data.pop("created_at")
     assert data.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
 
     # default_feature_job_setting should be updated
@@ -210,6 +218,7 @@ def test_update_excludes_unsupported_fields(
     assert response.status_code == HTTPStatus.OK
     data = response.json()
     data.pop("_id")
+    data.pop("created_at")
     assert data.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
 
     # default_feature_job_setting should be updated
