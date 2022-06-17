@@ -220,7 +220,7 @@ class TileSQLGenerator:
     def __init__(self, query_graph: QueryGraph):
         self.query_graph = query_graph
 
-    def construct_tile_gen_sql(self, starting_nodes: list[Node]) -> list[TileGenSql]:
+    def construct_tile_gen_sql(self, starting_node: Node) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
 
         There can be more than one tile table to build if the feature depends on more than one
@@ -229,8 +229,8 @@ class TileSQLGenerator:
 
         Parameters
         ----------
-        starting_nodes : list[Node]
-            List of nodes (typically corresponding to selected features) to search from
+        starting_node : Node
+            Starting node (typically corresponding to selected features) to search from
 
         Returns
         -------
@@ -238,10 +238,9 @@ class TileSQLGenerator:
         """
         # Groupby operations requires building tiles (assuming the aggregation type supports tiling)
         tile_generating_nodes = {}
-        for starting_node in starting_nodes:
-            for node in dfs(self.query_graph, starting_node):
-                if node.type == "groupby":
-                    tile_generating_nodes[node.name] = node
+        for node in dfs(self.query_graph, starting_node):
+            if node.type == "groupby":
+                tile_generating_nodes[node.name] = node
 
         sqls = []
         for node in tile_generating_nodes.values():
@@ -290,20 +289,20 @@ class GraphInterpreter:
     def __init__(self, query_graph: QueryGraph):
         self.query_graph = query_graph
 
-    def construct_tile_gen_sql(self, starting_nodes: list[Node]) -> list[TileGenSql]:
+    def construct_tile_gen_sql(self, starting_node: Node) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
 
         Parameters
         ----------
-        starting_nodes : list[Node]
-            List of nodes (typically corresponding to selected features) to search from
+        starting_node : Node
+            Starting node (typically corresponding to selected features) to search from
 
         Returns
         -------
         List[TileGenSql]
         """
         generator = TileSQLGenerator(self.query_graph)
-        return generator.construct_tile_gen_sql(starting_nodes)
+        return generator.construct_tile_gen_sql(starting_node)
 
     def construct_feature_from_tile_sql(self) -> None:
         """Construct SQL that computes feature from tile table
