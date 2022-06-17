@@ -4,7 +4,7 @@ This module contains the Query Graph Interpreter
 from __future__ import annotations
 
 # pylint: disable=W0511
-from typing import Any
+from typing import Any, Iterator
 
 from dataclasses import dataclass
 from enum import Enum
@@ -188,7 +188,7 @@ class TileGenSql:
     blind_spot: int
 
 
-def dfs(query_graph: QueryGraph, node: Node):
+def dfs(query_graph: QueryGraph, node: Node) -> Iterator[Node]:
     """Perform a DFS traversal
 
     Parameters
