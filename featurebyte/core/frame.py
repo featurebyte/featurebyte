@@ -31,6 +31,7 @@ class Frame(QueryObject, OpsMixin):
         row_index_lineage: tuple[str, ...],
         session: BaseSession | None = None,
     ):
+        # pylint: disable=R0801 (duplicate-code)
         super().__init__(
             graph=GlobalQueryGraph(),
             node=node,
