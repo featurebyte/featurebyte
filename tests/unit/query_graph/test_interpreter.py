@@ -16,7 +16,7 @@ def query_graph():
     """
     Empty query graph fixture
     """
-    GlobalQueryGraphState.clear()
+    GlobalQueryGraphState.reset()
     yield GlobalQueryGraph()
 
 

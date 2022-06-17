@@ -3,7 +3,7 @@ Implement graph data structure for query graph
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, List, TypedDict
 
 import json
 from collections import defaultdict
@@ -35,7 +35,7 @@ class Node(BaseModel):
 
     name: str
     type: NodeType
-    parameters: dict[str, Any]
+    parameters: Dict[str, Any]
     output_type: NodeOutputType
 
 
@@ -44,10 +44,10 @@ class Graph(BaseModel):
     Graph data structure
     """
 
-    edges: dict[str, list[str]] = Field(default=defaultdict(list))
-    backward_edges: dict[str, list[str]] = Field(default=defaultdict(list))
-    nodes: dict[str, dict[str, Any]] = Field(default_factory=dict)
-    node_type_counter: dict[str, int] = Field(default=defaultdict(int))
+    edges: Dict[str, List[str]] = Field(default=defaultdict(list))
+    backward_edges: Dict[str, List[str]] = Field(default=defaultdict(list))
+    nodes: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    node_type_counter: Dict[str, int] = Field(default=defaultdict(int))
 
     def add_edge(self, parent: Node, child: Node) -> None:
         """
@@ -100,14 +100,43 @@ class Graph(BaseModel):
     def __repr__(self) -> str:
         return json.dumps(self.dict(), indent=4)
 
+    def _topological_sort_util(
+        self, node_name: str, visited: dict[str, bool], stack: list[str]
+    ) -> None:
+        # mark node as visited
+        visited[node_name] = True
+
+        # recur for all the vertices adjacent to this vertex
+        for adj_node_name in self.edges.get(node_name, []):
+            if not visited[adj_node_name]:
+                self._topological_sort_util(adj_node_name, visited, stack)
+
+        stack.append(node_name)
+
+    def topological_sort(self) -> list[str]:
+        """
+        Topological sort the graph (reference: https://www.geeksforgeeks.org/topological-sorting/)
+
+        Returns
+        -------
+        list[str]
+        """
+        visited = {node_name: False for node_name in self.nodes}
+        stack: list[str] = []
+        for node_name in self.nodes:
+            if not visited[node_name]:
+                self._topological_sort_util(node_name, visited, stack)
+
+        return stack[::-1]
+
 
 class QueryGraph(Graph):
     """
     Query graph object
     """
 
-    node_name_to_ref: dict[str, int] = Field(default_factory=dict)
-    ref_to_node_name: dict[int, str] = Field(default_factory=dict)
+    node_name_to_ref: Dict[str, int] = Field(default_factory=dict)
+    ref_to_node_name: Dict[int, str] = Field(default_factory=dict)
 
     def get_node_by_name(self, node_name: str) -> Node:
         """
@@ -167,50 +196,110 @@ class QueryGraph(Graph):
         return node
 
 
+class GraphState(TypedDict):
+    """
+    Typed dictionary for graph state
+    """
+
+    edges: dict[str, list[str]]
+    backward_edges: dict[str, list[str]]
+    nodes: dict[str, dict[str, Any]]
+    node_type_counter: dict[str, int]
+    node_name_to_ref: dict[str, int]
+    ref_to_node_name: dict[int, str]
+
+
 class GlobalQueryGraphState(metaclass=SingletonMeta):
     """
     Global singleton to store query graph related attributes
     """
 
-    edges: dict[str, list[str]] = defaultdict(list)
-    backward_edges: dict[str, list[str]] = defaultdict(list)
-    nodes: dict[str, dict[str, Any]] = {}
-    node_type_counter: dict[str, int] = defaultdict(int)
-    node_name_to_ref: dict[str, int] = {}
-    ref_to_node_name: dict[int, str] = {}
+    _state: GraphState = {
+        "edges": defaultdict(list),
+        "backward_edges": defaultdict(list),
+        "nodes": {},
+        "node_type_counter": defaultdict(int),
+        "node_name_to_ref": {},
+        "ref_to_node_name": {},
+    }
 
     @classmethod
-    def clear(cls):
-        cls.edges: dict[str, list[str]] = defaultdict(list)
-        cls.backward_edges: dict[str, list[str]] = defaultdict(list)
-        cls.nodes: dict[str, dict[str, Any]] = {}
-        cls.node_type_counter: dict[str, int] = defaultdict(int)
-        cls.node_name_to_ref: dict[str, int] = {}
-        cls.ref_to_node_name: dict[int, str] = {}
+    def reset(cls) -> None:
+        """
+        Reset the global query graph state to clean state
+        """
+        cls._state["edges"] = defaultdict(list)
+        cls._state["backward_edges"] = defaultdict(list)
+        cls._state["nodes"] = {}
+        cls._state["node_type_counter"] = defaultdict(int)
+        cls._state["node_name_to_ref"] = {}
+        cls._state["ref_to_node_name"] = {}
 
     @classmethod
-    def get_edges(cls):
-        return cls.edges
+    def get_edges(cls) -> dict[str, list[str]]:
+        """
+        Get global query graph edges
+
+        Returns
+        -------
+        dict[str, list[str]]
+        """
+        return cls._state["edges"]
 
     @classmethod
-    def get_backward_edges(cls):
-        return cls.backward_edges
+    def get_backward_edges(cls) -> dict[str, list[str]]:
+        """
+        Get global query graph backward edges
+
+        Returns
+        -------
+        dict[str, list[str]]
+        """
+        return cls._state["backward_edges"]
 
     @classmethod
-    def get_nodes(cls):
-        return cls.nodes
+    def get_nodes(cls) -> dict[str, dict[str, Any]]:
+        """
+        Get global query graph nodes
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return cls._state["nodes"]
 
     @classmethod
-    def get_node_type_counter(cls):
-        return cls.node_type_counter
+    def get_node_type_counter(cls) -> dict[str, int]:
+        """
+        Get global query node type counter
+
+        Returns
+        -------
+        dict[str, int]
+        """
+        return cls._state["node_type_counter"]
 
     @classmethod
-    def get_node_name_to_ref(cls):
-        return cls.node_name_to_ref
+    def get_node_name_to_ref(cls) -> dict[str, int]:
+        """
+        Get global query node name to node hash dictionary
+
+        Returns
+        -------
+        dict[str, int]
+        """
+        return cls._state["node_name_to_ref"]
 
     @classmethod
-    def get_ref_to_node_name(cls):
-        return cls.ref_to_node_name
+    def get_ref_to_node_name(cls) -> dict[int, str]:
+        """
+        Get global query node hash to node name dictionary
+
+        Returns
+        -------
+        dict[int, str]
+        """
+        return cls._state["ref_to_node_name"]
 
 
 class GlobalQueryGraph(QueryGraph):
@@ -218,25 +307,25 @@ class GlobalQueryGraph(QueryGraph):
     Global query graph used to store the core like operations for the SQL query construction
     """
 
-    edges: dict[str, list[str]] = Field(default_factory=GlobalQueryGraphState.get_edges)
-    backward_edges: dict[str, list[str]] = Field(
+    edges: Dict[str, List[str]] = Field(default_factory=GlobalQueryGraphState.get_edges)
+    backward_edges: Dict[str, List[str]] = Field(
         default_factory=GlobalQueryGraphState.get_backward_edges
     )
-    nodes: dict[str, dict[str, Any]] = Field(default_factory=GlobalQueryGraphState.get_nodes)
-    node_type_counter: dict[str, int] = Field(
+    nodes: Dict[str, Dict[str, Any]] = Field(default_factory=GlobalQueryGraphState.get_nodes)
+    node_type_counter: Dict[str, int] = Field(
         default_factory=GlobalQueryGraphState.get_node_type_counter
     )
-    node_name_to_ref: dict[str, int] = Field(
+    node_name_to_ref: Dict[str, int] = Field(
         default_factory=GlobalQueryGraphState.get_node_name_to_ref
     )
-    ref_to_node_name: dict[int, str] = Field(
+    ref_to_node_name: Dict[int, str] = Field(
         default_factory=GlobalQueryGraphState.get_ref_to_node_name
     )
 
     def _prune(
         self,
         target_node: Node,
-        target_columns: list[str],
+        target_columns: set[str],
         pruned_graph: QueryGraph,
         processed_node_names: set[str],
         node_name_map: dict[str, str],
@@ -248,14 +337,14 @@ class GlobalQueryGraph(QueryGraph):
             assign_column_name = target_node.parameters["name"]
             if assign_column_name in target_columns:
                 # remove matched name from the target_columns
-                target_columns = [col for col in target_columns if col != assign_column_name]
+                target_columns -= {assign_column_name}
             else:
                 # remove series path if exists
                 to_prune_target_node = True
                 input_node_names = input_node_names[:1]
         elif target_node.type == NodeType.PROJECT:
             # if columns are needed for projection, add them to the target_columns
-            target_columns.extend(target_node.parameters["columns"])
+            target_columns.update(target_node.parameters["columns"])
 
         for input_node_name in input_node_names:
             input_node = self.get_node_by_name(input_node_name)
@@ -276,6 +365,8 @@ class GlobalQueryGraph(QueryGraph):
         for input_node_name in input_node_names:
             # if the input node get pruned, it will not exist in the processed_node_names.
             # in this case, keep finding the first parent node exists in the processed_node_names.
+            # currently only ASSIGN node could get pruned, the first input node is the frame node.
+            # it is used to replace the pruned assigned node
             while input_node_name not in processed_node_names:
                 input_node_name = self.backward_edges[input_node_name][0]
             mapped_input_node_names.append(input_node_name)
@@ -296,7 +387,7 @@ class GlobalQueryGraph(QueryGraph):
         processed_node_names.add(target_node.name)
         return pruned_graph
 
-    def prune(self, target_node: Node, target_columns: list[str]) -> tuple[QueryGraph, Node]:
+    def prune(self, target_node: Node, target_columns: set[str]) -> tuple[QueryGraph, Node]:
         """
         Prune the query graph and return the pruned graph & mapped node.
 
@@ -308,7 +399,7 @@ class GlobalQueryGraph(QueryGraph):
         ----------
         target_node: Node
             target end node
-        target_columns: list[str]
+        target_columns: set[str]
             list of target columns
 
         Returns
@@ -325,3 +416,33 @@ class GlobalQueryGraph(QueryGraph):
         )
         mapped_node = pruned_graph.get_node_by_name(node_name_map[target_node.name])
         return pruned_graph, mapped_node
+
+    def load(self, graph: QueryGraph) -> tuple[GlobalQueryGraph, dict[str, str]]:
+        """
+        Load the query graph into the global query graph
+
+        Parameters
+        ----------
+        graph: QueryGraph
+            query graph object to be loaded
+
+        Returns
+        -------
+        GlobalQueryGraph, dict[str, str]
+            updated global query graph with the node name mapping between query graph & global query graph
+        """
+        node_name_map: dict[str, str] = {}
+        for node_name in graph.topological_sort():
+            node = graph.get_node_by_name(node_name)
+            input_nodes = [
+                self.get_node_by_name(node_name_map[input_node_name])
+                for input_node_name in graph.backward_edges[node_name]
+            ]
+            node_global = self.add_operation(
+                node_type=NodeType(node.type),
+                node_params=node.parameters,
+                node_output_type=NodeOutputType(node.output_type),
+                input_nodes=input_nodes,
+            )
+            node_name_map[node_name] = node_global.name
+        return self, node_name_map

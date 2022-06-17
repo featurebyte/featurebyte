@@ -6,8 +6,6 @@ from __future__ import annotations
 import copy
 from collections import OrderedDict
 
-import pandas as pd
-
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.core.series import Series
@@ -221,9 +219,9 @@ class Frame(QueryObject, OpsMixin):
         else:
             raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
 
-    def preview(self, limit: int = 10) -> pd.DataFrame | None:
+    def preview_sql(self, limit: int = 10) -> str:
         """
-        Preview transformed table/column partial output
+        Generate SQL query to preview the transformed table
 
         Parameters
         ----------
@@ -234,4 +232,4 @@ class Frame(QueryObject, OpsMixin):
         -------
         pd.DataFrame | None
         """
-        return self._preview(columns=self.columns, limit=limit)
+        return self._preview_sql(columns=self.columns, limit=limit)
