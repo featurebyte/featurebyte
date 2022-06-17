@@ -18,7 +18,7 @@ def test_trigger_tile_schedule(fb_db_session):
     task_name = f"SP_TILE_GENERATE_SCHEDULE_TASK_{table_name}"
 
     sql = (
-        f"call SP_TILE_TRIGGER_GENERATE_SCHEDULE(null, 'INTEGRATION_TESTING', '{table_name}', 181, 1, 5, 1440, "
+        f"call SP_TILE_TRIGGER_GENERATE_SCHEDULE(null, 'COMPUTE_WH', '{table_name}', 181, 1, 5, 1440, "
         f"'{tile_sql}', '{col_names}', 'ONLINE', {tile_monitor})"
     )
     fb_db_session.execute_query(sql)
