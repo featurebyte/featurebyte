@@ -135,7 +135,7 @@ class Graph:
 
 class QueryGraph(Graph):
     """
-    Pruned query graph object
+    Query graph object
     """
 
     def __init__(self) -> None:
@@ -203,7 +203,7 @@ class QueryGraph(Graph):
 
 class GlobalQueryGraph(QueryGraph, metaclass=SingletonMeta):
     """
-    Graph used to store the core like operations for the SQL query construction
+    Global query graph used to store the core like operations for the SQL query construction
     """
 
     def _prune(
@@ -286,7 +286,7 @@ class GlobalQueryGraph(QueryGraph, metaclass=SingletonMeta):
 
         Returns
         -------
-        PrunedQueryGraph, Node
+        QueryGraph, Node
         """
         node_name_map: dict[str, str] = {}
         pruned_graph = self._prune(

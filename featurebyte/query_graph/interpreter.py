@@ -34,7 +34,7 @@ class SQLType(Enum):
 
 
 class SQLOperationGraph:
-    """Construct a tree of SQL operations given a PrunedQueryGraph
+    """Construct a tree of SQL operations given a QueryGraph
 
     Parameters
     ----------
