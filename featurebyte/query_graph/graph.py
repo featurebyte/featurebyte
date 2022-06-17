@@ -7,7 +7,8 @@ from typing import Any
 
 import json
 from collections import defaultdict
-from dataclasses import asdict, dataclass
+
+from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.util import hash_node
@@ -26,18 +27,8 @@ class SingletonMeta(type):
             cls._instances[cls] = instance
         return cls._instances[cls]
 
-    def clear(cls) -> None:
-        """
-        Remove the singleton instance for the recreation of the new singleton
-        """
-        try:
-            del SingletonMeta._instances[cls]
-        except KeyError:
-            pass
 
-
-@dataclass()
-class Node:
+class Node(BaseModel):
     """
     Graph Node
     """
@@ -48,16 +39,15 @@ class Node:
     output_type: NodeOutputType
 
 
-class Graph:
+class Graph(BaseModel):
     """
     Graph data structure
     """
 
-    def __init__(self) -> None:
-        self.edges: dict[str, list[str]] = defaultdict(list)
-        self.backward_edges: dict[str, list[str]] = defaultdict(list)
-        self.nodes: dict[str, dict[str, Any]] = {}
-        self._node_type_counter: dict[str, int] = defaultdict(int)
+    edges: dict[str, list[str]] = Field(default=defaultdict(list))
+    backward_edges: dict[str, list[str]] = Field(default=defaultdict(list))
+    nodes: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    node_type_counter: dict[str, int] = Field(default=defaultdict(int))
 
     def add_edge(self, parent: Node, child: Node) -> None:
         """
@@ -75,8 +65,8 @@ class Graph:
         self.backward_edges[child.name].append(parent.name)
 
     def _generate_node_name(self, node_type: NodeType) -> str:
-        self._node_type_counter[node_type] += 1
-        return f"{node_type}_{self._node_type_counter[node_type]}"
+        self.node_type_counter[node_type] += 1
+        return f"{node_type}_{self.node_type_counter[node_type]}"
 
     def add_node(
         self, node_type: NodeType, node_params: dict[str, Any], node_output_type: NodeOutputType
@@ -104,33 +94,11 @@ class Graph:
             parameters=node_params,
             output_type=node_output_type,
         )
-        self.nodes[node.name] = asdict(node)
+        self.nodes[node.name] = node.dict()
         return node
 
-    def to_dict(self, exclude_name: bool = False) -> dict[str, Any]:
-        """
-        Convert the graph into dictionary format
-
-        Parameters
-        ----------
-        exclude_name: bool
-            whether to exclude name for each node
-
-        Returns
-        -------
-        output: dict[str, Any]
-
-        """
-        nodes = self.nodes
-        if exclude_name:
-            nodes = {
-                key: {field: val for field, val in node.items() if field != "name"}
-                for key, node in self.nodes.items()
-            }
-        return {"nodes": nodes, "edges": dict(self.edges)}
-
     def __repr__(self) -> str:
-        return json.dumps(self.to_dict(), indent=4)
+        return json.dumps(self.dict(), indent=4)
 
 
 class QueryGraph(Graph):
@@ -138,10 +106,8 @@ class QueryGraph(Graph):
     Query graph object
     """
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.node_name_to_ref: dict[str, int] = {}
-        self.ref_to_node_name: dict[int, str] = {}
+    node_name_to_ref: dict[str, int] = Field(default_factory=dict)
+    ref_to_node_name: dict[int, str] = Field(default_factory=dict)
 
     def get_node_by_name(self, node_name: str) -> Node:
         """
@@ -201,10 +167,71 @@ class QueryGraph(Graph):
         return node
 
 
-class GlobalQueryGraph(QueryGraph, metaclass=SingletonMeta):
+class GlobalQueryGraphState(metaclass=SingletonMeta):
+    """
+    Global singleton to store query graph related attributes
+    """
+
+    edges: dict[str, list[str]] = defaultdict(list)
+    backward_edges: dict[str, list[str]] = defaultdict(list)
+    nodes: dict[str, dict[str, Any]] = {}
+    node_type_counter: dict[str, int] = defaultdict(int)
+    node_name_to_ref: dict[str, int] = {}
+    ref_to_node_name: dict[int, str] = {}
+
+    @classmethod
+    def clear(cls):
+        cls.edges: dict[str, list[str]] = defaultdict(list)
+        cls.backward_edges: dict[str, list[str]] = defaultdict(list)
+        cls.nodes: dict[str, dict[str, Any]] = {}
+        cls.node_type_counter: dict[str, int] = defaultdict(int)
+        cls.node_name_to_ref: dict[str, int] = {}
+        cls.ref_to_node_name: dict[int, str] = {}
+
+    @classmethod
+    def get_edges(cls):
+        return cls.edges
+
+    @classmethod
+    def get_backward_edges(cls):
+        return cls.backward_edges
+
+    @classmethod
+    def get_nodes(cls):
+        return cls.nodes
+
+    @classmethod
+    def get_node_type_counter(cls):
+        return cls.node_type_counter
+
+    @classmethod
+    def get_node_name_to_ref(cls):
+        return cls.node_name_to_ref
+
+    @classmethod
+    def get_ref_to_node_name(cls):
+        return cls.ref_to_node_name
+
+
+class GlobalQueryGraph(QueryGraph):
     """
     Global query graph used to store the core like operations for the SQL query construction
     """
+
+    edges: dict[str, list[str]] = Field(default_factory=GlobalQueryGraphState.get_edges)
+    backward_edges: dict[str, list[str]] = Field(
+        default_factory=GlobalQueryGraphState.get_backward_edges
+    )
+    nodes: dict[str, dict[str, Any]] = Field(default_factory=GlobalQueryGraphState.get_nodes)
+    node_type_counter: dict[str, int] = Field(
+        default_factory=GlobalQueryGraphState.get_node_type_counter
+    )
+    node_name_to_ref: dict[str, int] = Field(
+        default_factory=GlobalQueryGraphState.get_node_name_to_ref
+    )
+    ref_to_node_name: dict[int, str] = Field(
+        default_factory=GlobalQueryGraphState.get_ref_to_node_name
+    )
 
     def _prune(
         self,
@@ -216,7 +243,7 @@ class GlobalQueryGraph(QueryGraph, metaclass=SingletonMeta):
     ) -> QueryGraph:
         # pruning: move backward from target node to the input node
         to_prune_target_node = False
-        input_node_names = self.backward_edges[target_node.name]
+        input_node_names = self.backward_edges.get(target_node.name, [])
         if target_node.type == NodeType.ASSIGN:
             assign_column_name = target_node.parameters["name"]
             if assign_column_name in target_columns:

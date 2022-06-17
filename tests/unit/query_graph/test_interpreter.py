@@ -7,7 +7,7 @@ from dataclasses import asdict
 import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState
 from featurebyte.query_graph.interpreter import GraphInterpreter, SQLOperationGraph, SQLType
 
 
@@ -16,7 +16,7 @@ def query_graph():
     """
     Empty query graph fixture
     """
-    GlobalQueryGraph.clear()
+    GlobalQueryGraphState.clear()
     yield GlobalQueryGraph()
 
 

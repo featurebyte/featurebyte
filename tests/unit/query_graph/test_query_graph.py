@@ -4,7 +4,7 @@ Unit test for query graph
 import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import Node
+from featurebyte.query_graph.graph import Node, QueryGraph
 
 
 @pytest.fixture(name="graph_single_node")
@@ -20,18 +20,17 @@ def query_graph_single_node(graph):
     )
     pruned_graph, mapped_node = graph.prune(target_node=node_input, target_columns=[])
     assert mapped_node.name == "input_1"
-    assert graph.to_dict() == pruned_graph.to_dict()
-    assert graph.to_dict() == {
-        "nodes": {
-            "input_1": {
-                "name": "input_1",
-                "type": "input",
-                "parameters": {},
-                "output_type": "frame",
-            }
-        },
-        "edges": {},
+    graph_dict = graph.dict()
+    assert graph_dict == pruned_graph.dict()
+    assert graph_dict["nodes"] == {
+        "input_1": {
+            "name": "input_1",
+            "type": "input",
+            "parameters": {},
+            "output_type": "frame",
+        }
     }
+    assert graph_dict["edges"] == {}
     assert node_input == Node(name="input_1", type="input", parameters={}, output_type="frame")
     yield graph, node_input
 
@@ -48,21 +47,20 @@ def query_graph_two_nodes(graph_single_node):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
-    expected_graph = {
-        "nodes": {
-            "input_1": {"type": "input", "parameters": {}, "output_type": "frame"},
-            "project_1": {
-                "type": "project",
-                "parameters": {"columns": ["a"]},
-                "output_type": "series",
-            },
-        },
-        "edges": {"input_1": ["project_1"]},
-    }
     pruned_graph, mapped_node = graph.prune(target_node=node_proj, target_columns=["a"])
     assert mapped_node.name == "project_1"
-    assert graph.to_dict() == pruned_graph.to_dict()
-    assert graph.to_dict(exclude_name=True) == expected_graph
+    graph_dict = graph.dict()
+    assert graph_dict == pruned_graph.dict()
+    assert graph_dict["nodes"] == {
+        "input_1": {"name": "input_1", "type": "input", "parameters": {}, "output_type": "frame"},
+        "project_1": {
+            "name": "project_1",
+            "type": "project",
+            "parameters": {"columns": ["a"]},
+            "output_type": "series",
+        },
+    }
+    assert graph_dict["edges"] == {"input_1": ["project_1"]}
     assert node_proj == Node(
         name="project_1", type="project", parameters={"columns": ["a"]}, output_type="series"
     )
@@ -81,25 +79,21 @@ def query_graph_three_nodes(graph_two_nodes):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_proj],
     )
-    expected_graph = {
-        "nodes": {
-            "input_1": {"type": "input", "parameters": {}, "output_type": "frame"},
-            "project_1": {
-                "type": "project",
-                "parameters": {"columns": ["a"]},
-                "output_type": "series",
-            },
-            "eq_1": {"type": "eq", "parameters": {"value": 1}, "output_type": "series"},
-        },
-        "edges": {
-            "input_1": ["project_1"],
-            "project_1": ["eq_1"],
-        },
-    }
     pruned_graph, mapped_node = graph.prune(target_node=node_eq, target_columns=[])
     assert mapped_node.name == "eq_1"
-    assert graph.to_dict() == pruned_graph.to_dict()
-    assert graph.to_dict(exclude_name=True) == expected_graph
+    graph_dict = graph.dict()
+    assert graph_dict == pruned_graph.dict()
+    assert graph_dict["nodes"] == {
+        "input_1": {"name": "input_1", "type": "input", "parameters": {}, "output_type": "frame"},
+        "project_1": {
+            "name": "project_1",
+            "type": "project",
+            "parameters": {"columns": ["a"]},
+            "output_type": "series",
+        },
+        "eq_1": {"name": "eq_1", "type": "eq", "parameters": {"value": 1}, "output_type": "series"},
+    }
+    assert graph_dict["edges"] == {"input_1": ["project_1"], "project_1": ["eq_1"]}
     assert node_eq == Node(name="eq_1", type="eq", parameters={"value": 1}, output_type="series")
     yield graph, node_input, node_proj, node_eq
 
@@ -116,27 +110,31 @@ def query_graph_four_nodes(graph_three_nodes):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, node_eq],
     )
-    expected_graph = {
-        "nodes": {
-            "input_1": {"type": "input", "parameters": {}, "output_type": "frame"},
-            "project_1": {
-                "type": "project",
-                "parameters": {"columns": ["a"]},
-                "output_type": "series",
-            },
-            "eq_1": {"type": "eq", "parameters": {"value": 1}, "output_type": "series"},
-            "filter_1": {"type": "filter", "parameters": {}, "output_type": "frame"},
-        },
-        "edges": {
-            "input_1": ["project_1", "filter_1"],
-            "project_1": ["eq_1"],
-            "eq_1": ["filter_1"],
-        },
-    }
     pruned_graph, mapped_node = graph.prune(target_node=node_filter, target_columns=[])
     assert mapped_node.name == "filter_1"
-    assert graph.to_dict() == pruned_graph.to_dict()
-    assert graph.to_dict(exclude_name=True) == expected_graph
+    graph_dict = graph.dict()
+    assert graph_dict == pruned_graph.dict()
+    assert graph_dict["nodes"] == {
+        "input_1": {"name": "input_1", "type": "input", "parameters": {}, "output_type": "frame"},
+        "project_1": {
+            "name": "project_1",
+            "type": "project",
+            "parameters": {"columns": ["a"]},
+            "output_type": "series",
+        },
+        "eq_1": {"name": "eq_1", "type": "eq", "parameters": {"value": 1}, "output_type": "series"},
+        "filter_1": {
+            "name": "filter_1",
+            "type": "filter",
+            "parameters": {},
+            "output_type": "frame",
+        },
+    }
+    assert graph_dict["edges"] == {
+        "input_1": ["project_1", "filter_1"],
+        "project_1": ["eq_1"],
+        "eq_1": ["filter_1"],
+    }
     assert node_filter == Node(name="filter_1", type="filter", parameters={}, output_type="frame")
     yield graph, node_input, node_proj, node_eq, node_filter
 
@@ -152,18 +150,17 @@ def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
-    expected_graph = {
-        "nodes": {
-            "input_1": {"type": "input", "parameters": {}, "output_type": "frame"},
-            "project_1": {
-                "type": "project",
-                "parameters": {"columns": ["a"]},
-                "output_type": "series",
-            },
+    graph_dict = graph.dict()
+    assert graph_dict["nodes"] == {
+        "input_1": {"name": "input_1", "type": "input", "parameters": {}, "output_type": "frame"},
+        "project_1": {
+            "name": "project_1",
+            "type": "project",
+            "parameters": {"columns": ["a"]},
+            "output_type": "series",
         },
-        "edges": {"input_1": ["project_1"]},
     }
-    assert graph.to_dict(exclude_name=True) == expected_graph
+    assert graph_dict["edges"] == {"input_1": ["project_1"]}
     assert node_duplicated == node_proj
 
 
@@ -178,24 +175,28 @@ def test_add_operation__add_duplicated_node_on_four_nodes_graph(graph_four_nodes
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_proj],
     )
-    expected_graph = {
-        "nodes": {
-            "input_1": {"type": "input", "parameters": {}, "output_type": "frame"},
-            "project_1": {
-                "type": "project",
-                "parameters": {"columns": ["a"]},
-                "output_type": "series",
-            },
-            "eq_1": {"type": "eq", "parameters": {"value": 1}, "output_type": "series"},
-            "filter_1": {"type": "filter", "parameters": {}, "output_type": "frame"},
+    graph_dict = graph.dict()
+    assert graph_dict["nodes"] == {
+        "input_1": {"name": "input_1", "type": "input", "parameters": {}, "output_type": "frame"},
+        "project_1": {
+            "name": "project_1",
+            "type": "project",
+            "parameters": {"columns": ["a"]},
+            "output_type": "series",
         },
-        "edges": {
-            "input_1": ["project_1", "filter_1"],
-            "project_1": ["eq_1"],
-            "eq_1": ["filter_1"],
+        "eq_1": {"name": "eq_1", "type": "eq", "parameters": {"value": 1}, "output_type": "series"},
+        "filter_1": {
+            "name": "filter_1",
+            "type": "filter",
+            "parameters": {},
+            "output_type": "frame",
         },
     }
-    assert graph.to_dict(exclude_name=True) == expected_graph
+    assert graph_dict["edges"] == {
+        "input_1": ["project_1", "filter_1"],
+        "project_1": ["eq_1"],
+        "eq_1": ["filter_1"],
+    }
     assert node_duplicated == node_eq
 
 
@@ -331,3 +332,10 @@ def test_prune__multiple_non_redundant_assign_nodes__cascading_pattern(dataframe
     assert pruned_graph.nodes["project_2"]["parameters"]["columns"] == ["requiredA"]
     assert pruned_graph.nodes["project_3"]["parameters"]["columns"] == ["requiredB"]
     assert mapped_node.name == "assign_3"
+
+
+def test_serialization_deserialization(graph_four_nodes):
+    graph, _, _, _, _ = graph_four_nodes
+    graph_dict = graph.dict()
+    deserialized_graph = QueryGraph.parse_obj(graph_dict)
+    assert graph == deserialized_graph

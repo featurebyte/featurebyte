@@ -6,7 +6,7 @@ import pytest
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState
 
 
 @pytest.fixture(name="graph")
@@ -14,7 +14,7 @@ def query_graph():
     """
     Empty query graph fixture
     """
-    GlobalQueryGraph.clear()
+    GlobalQueryGraphState.clear()
     yield GlobalQueryGraph()
 
 
