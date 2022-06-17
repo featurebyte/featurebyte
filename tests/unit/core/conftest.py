@@ -7,46 +7,11 @@ import pytest
 
 from featurebyte.core.event_view import EventView
 from featurebyte.core.feature import Feature, FeatureList
-from featurebyte.core.frame import Frame
 from featurebyte.core.groupby import EventViewGroupBy
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import Node, QueryGraph
-
-
-@pytest.fixture(name="graph")
-def query_graph():
-    """
-    Empty query graph fixture
-    """
-    QueryGraph.clear()
-    yield QueryGraph()
-
-
-@pytest.fixture(name="dataframe")
-def dataframe_fixture(graph):
-    """
-    Frame test fixture
-    """
-    column_var_type_map = {
-        "CUST_ID": DBVarType.INT,
-        "PRODUCT_ACTION": DBVarType.VARCHAR,
-        "VALUE": DBVarType.FLOAT,
-        "MASK": DBVarType.BOOL,
-    }
-    node = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={},
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
-    yield Frame(
-        node=node,
-        column_var_type_map=column_var_type_map,
-        column_lineage_map={col: (node.name,) for col in column_var_type_map},
-        row_index_lineage=(node.name,),
-    )
+from featurebyte.query_graph.graph import Node
 
 
 @pytest.fixture()

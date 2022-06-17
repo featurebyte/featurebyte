@@ -6,12 +6,14 @@ from __future__ import annotations
 import copy
 from collections import OrderedDict
 
+import pandas as pd
+
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.session.base import BaseSession
 
 
@@ -30,8 +32,12 @@ class Frame(QueryObject, OpsMixin):
         row_index_lineage: tuple[str, ...],
         session: BaseSession | None = None,
     ):
+        # pylint: disable=R0801 (duplicate-code)
         super().__init__(
-            graph=QueryGraph(), node=node, row_index_lineage=row_index_lineage, session=session
+            graph=GlobalQueryGraph(),
+            node=node,
+            row_index_lineage=row_index_lineage,
+            session=session,
         )
         self.column_var_type_map = OrderedDict(column_var_type_map)
         self.column_lineage_map = column_lineage_map
@@ -214,3 +220,18 @@ class Frame(QueryObject, OpsMixin):
             )
         else:
             raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
+
+    def preview(self, limit: int = 10) -> pd.DataFrame | None:
+        """
+        Preview transformed table/column partial output
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+
+        Returns
+        -------
+        pd.DataFrame | None
+        """
+        return self._preview(columns=self.columns, limit=limit)

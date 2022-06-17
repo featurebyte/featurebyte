@@ -1,7 +1,9 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Dict, List
+from __future__ import annotations
+
+from typing import Any
 
 import json
 from collections import defaultdict
@@ -16,7 +18,7 @@ class SingletonMeta(type):
     Singleton Metaclass for Singleton construction
     """
 
-    _instances: Dict[Any, Any] = {}
+    _instances: dict[Any, Any] = {}
 
     def __call__(cls, *args: Any, **kwargs: Any) -> Any:
         if cls not in cls._instances:
@@ -42,20 +44,20 @@ class Node:
 
     name: str
     type: str
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
     output_type: str
 
 
-class Graph(metaclass=SingletonMeta):
+class Graph:
     """
     Graph data structure
     """
 
     def __init__(self) -> None:
-        self.edges: Dict[str, List[str]] = defaultdict(list)
-        self.backward_edges: Dict[str, List[str]] = defaultdict(list)
-        self.nodes: Dict[str, Dict[str, Any]] = {}
-        self._node_type_counter: Dict[str, int] = defaultdict(int)
+        self.edges: dict[str, list[str]] = defaultdict(list)
+        self.backward_edges: dict[str, list[str]] = defaultdict(list)
+        self.nodes: dict[str, dict[str, Any]] = {}
+        self._node_type_counter: dict[str, int] = defaultdict(int)
 
     def add_edge(self, parent: Node, child: Node) -> None:
         """
@@ -77,7 +79,7 @@ class Graph(metaclass=SingletonMeta):
         return f"{node_type}_{self._node_type_counter[node_type]}"
 
     def add_node(
-        self, node_type: NodeType, node_params: Dict[str, Any], node_output_type: NodeOutputType
+        self, node_type: NodeType, node_params: dict[str, Any], node_output_type: NodeOutputType
     ) -> Node:
         """
         Add node to the graph by specifying node type, parameters & output type
@@ -86,7 +88,7 @@ class Graph(metaclass=SingletonMeta):
         ----------
         node_type: NodeType
             node type
-        node_params: Dict[str, Any]
+        node_params: dict[str, Any]
             parameters in dictionary format
         node_output_type: NodeOutputType
             node output type
@@ -105,7 +107,7 @@ class Graph(metaclass=SingletonMeta):
         self.nodes[node.name] = asdict(node)
         return node
 
-    def to_dict(self, exclude_name: bool = False) -> Dict[str, Any]:
+    def to_dict(self, exclude_name: bool = False) -> dict[str, Any]:
         """
         Convert the graph into dictionary format
 
@@ -116,7 +118,7 @@ class Graph(metaclass=SingletonMeta):
 
         Returns
         -------
-        output: Dict[str, Any]
+        output: dict[str, Any]
 
         """
         nodes = self.nodes
@@ -133,13 +135,13 @@ class Graph(metaclass=SingletonMeta):
 
 class QueryGraph(Graph):
     """
-    Graph used to store the core like operations for the SQL query construction
+    Query graph object
     """
 
     def __init__(self) -> None:
         super().__init__()
-        self.node_name_to_ref: Dict[str, int] = {}
-        self.ref_to_node_name: Dict[int, str] = {}
+        self.node_name_to_ref: dict[str, int] = {}
+        self.ref_to_node_name: dict[int, str] = {}
 
     def get_node_by_name(self, node_name: str) -> Node:
         """
@@ -160,9 +162,9 @@ class QueryGraph(Graph):
     def add_operation(
         self,
         node_type: NodeType,
-        node_params: Dict[str, Any],
+        node_params: dict[str, Any],
         node_output_type: NodeOutputType,
-        input_nodes: List[Node],
+        input_nodes: list[Node],
     ) -> Node:
         """
         Add operation to the query graph.
@@ -175,7 +177,7 @@ class QueryGraph(Graph):
             parameters used for the node operation
         node_output_type: NodeOutputType
             node output type
-        input_nodes: List[Node]
+        input_nodes: list[Node]
             list of input nodes
 
         Returns
@@ -197,3 +199,102 @@ class QueryGraph(Graph):
             name = self.ref_to_node_name[node_ref]
             node = Node(**self.nodes[name])
         return node
+
+
+class GlobalQueryGraph(QueryGraph, metaclass=SingletonMeta):
+    """
+    Global query graph used to store the core like operations for the SQL query construction
+    """
+
+    def _prune(
+        self,
+        target_node: Node,
+        target_columns: list[str],
+        pruned_graph: QueryGraph,
+        processed_node_names: set[str],
+        node_name_map: dict[str, str],
+    ) -> QueryGraph:
+        # pruning: move backward from target node to the input node
+        to_prune_target_node = False
+        input_node_names = self.backward_edges[target_node.name]
+        if target_node.type == NodeType.ASSIGN:
+            assign_column_name = target_node.parameters["name"]
+            if assign_column_name in target_columns:
+                # remove matched name from the target_columns
+                target_columns = [col for col in target_columns if col != assign_column_name]
+            else:
+                # remove series path if exists
+                to_prune_target_node = True
+                input_node_names = input_node_names[:1]
+        elif target_node.type == NodeType.PROJECT:
+            # if columns are needed for projection, add them to the target_columns
+            target_columns.extend(target_node.parameters["columns"])
+
+        for input_node_name in input_node_names:
+            input_node = self.get_node_by_name(input_node_name)
+            pruned_graph = self._prune(
+                target_node=input_node,
+                target_columns=target_columns,
+                pruned_graph=pruned_graph,
+                processed_node_names=processed_node_names,
+                node_name_map=node_name_map,
+            )
+
+        if to_prune_target_node:
+            # do not add the target_node to the pruned graph
+            return pruned_graph
+
+        # reconstruction: process the node from the input node towards the target node
+        mapped_input_node_names = []
+        for input_node_name in input_node_names:
+            # if the input node get pruned, it will not exist in the processed_node_names.
+            # in this case, keep finding the first parent node exists in the processed_node_names.
+            while input_node_name not in processed_node_names:
+                input_node_name = self.backward_edges[input_node_name][0]
+            mapped_input_node_names.append(input_node_name)
+
+        # add the node back to the pruned graph
+        node_pruned = pruned_graph.add_operation(
+            node_type=NodeType(target_node.type),
+            node_params=target_node.parameters,
+            node_output_type=NodeOutputType(target_node.output_type),
+            input_nodes=[
+                pruned_graph.get_node_by_name(node_name_map[node_name])
+                for node_name in mapped_input_node_names
+            ],
+        )
+
+        # update the container to store the mapped node name & processed nodes information
+        node_name_map[target_node.name] = node_pruned.name
+        processed_node_names.add(target_node.name)
+        return pruned_graph
+
+    def prune(self, target_node: Node, target_columns: list[str]) -> tuple[QueryGraph, Node]:
+        """
+        Prune the query graph and return the pruned graph & mapped node.
+
+        To prune the graph, this function first traverses from the target node to the input node.
+        The unused branches of the graph will get pruned in this step. After that, a new graph is
+        reconstructed by adding the required nodes back.
+
+        Parameters
+        ----------
+        target_node: Node
+            target end node
+        target_columns: list[str]
+            list of target columns
+
+        Returns
+        -------
+        QueryGraph, Node
+        """
+        node_name_map: dict[str, str] = {}
+        pruned_graph = self._prune(
+            target_node=target_node,
+            target_columns=target_columns,
+            pruned_graph=QueryGraph(),
+            processed_node_names=set(),
+            node_name_map=node_name_map,
+        )
+        mapped_node = pruned_graph.get_node_by_name(node_name_map[target_node.name])
+        return pruned_graph, mapped_node

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 
 if TYPE_CHECKING:
     from featurebyte.core.frame import Frame
@@ -85,7 +85,7 @@ class OpsMixin:
         if item.row_index_lineage != mask.row_index_lineage:
             raise ValueError(f"Row indices between '{item}' and '{mask}' are not aligned!")
 
-        node = QueryGraph().add_operation(
+        node = GlobalQueryGraph().add_operation(
             node_type=NodeType.FILTER,
             node_params={},
             node_output_type=node_output_type,

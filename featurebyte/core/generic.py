@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.session.base import BaseSession
 
@@ -19,7 +19,7 @@ class QueryObject:
     QueryObject class contains query graph, node, row index lineage & session.
     """
 
-    graph: QueryGraph
+    graph: GlobalQueryGraph
     node: Node
     row_index_lineage: tuple[str, ...]
     session: BaseSession | None
@@ -27,12 +27,14 @@ class QueryObject:
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
 
-    def preview(self, limit: int = 10) -> pd.DataFrame | None:
+    def _preview(self, columns: list[str], limit: int = 10) -> pd.DataFrame | None:
         """
         Preview transformed table/column partial output
 
         Parameters
         ----------
+        columns: list[str]
+            list of columns used to prune the query graph
         limit: int
             maximum number of return rows
 
@@ -40,8 +42,9 @@ class QueryObject:
         -------
         pd.DataFrame | None
         """
-        sql_query = GraphInterpreter(self.graph).construct_preview_sql(
-            self.node.name, num_rows=limit
+        pruned_graph, mapped_node = self.graph.prune(target_node=self.node, target_columns=columns)
+        sql_query = GraphInterpreter(pruned_graph).construct_preview_sql(
+            mapped_node.name, num_rows=limit
         )
         if self.session:
             return self.session.execute_query(sql_query)
@@ -102,5 +105,5 @@ class ProtectedColumnsQueryObject(QueryObject):
         -------
         Node
         """
-        graph = QueryGraph()
+        graph = GlobalQueryGraph()
         return graph.get_node_by_name(self.row_index_lineage[0])
