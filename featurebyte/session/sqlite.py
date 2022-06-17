@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from collections import OrderedDict
 from dataclasses import dataclass
 
 from featurebyte.enum import DBVarType, SourceType
@@ -60,7 +61,7 @@ class SQLiteSession(BaseSession):
             query_column_res = self.execute_query(f'PRAGMA table_info("{table}")')
             if query_column_res is None:
                 continue
-            column_name_type_map = {}
+            column_name_type_map = OrderedDict()
             for _, (column_name, data_type) in query_column_res[["name", "type"]].iterrows():
                 column_name_type_map[column_name] = self._convert_to_db_var_type(data_type)
             output[f'"{table}"'] = column_name_type_map
