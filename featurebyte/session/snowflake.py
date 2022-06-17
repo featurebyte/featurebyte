@@ -7,6 +7,7 @@ from typing import Any
 
 import json
 import os
+from collections import OrderedDict
 from dataclasses import dataclass, field
 
 from snowflake import connector
@@ -116,7 +117,7 @@ class SnowflakeSession(BaseSession):
             )
             if query_column_res is None:
                 continue
-            column_name_type_map = {}
+            column_name_type_map = OrderedDict()
             for _, (column_name, data_type) in query_column_res[
                 ["column_name", "data_type"]
             ].iterrows():

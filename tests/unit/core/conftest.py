@@ -131,7 +131,7 @@ def event_view_fixture(session, graph):
         name="input_1",
         type=NodeType.INPUT,
         parameters={
-            "columns": ["created_at", "cust_id", "event_type", "session_id", "value"],
+            "columns": ["cust_id", "session_id", "event_type", "value", "created_at"],
             "timestamp": "created_at",
             "entity_identifiers": ["cust_id"],
             "dbtable": '"trans"',
@@ -161,7 +161,7 @@ def event_view_without_entity_ids_fixture(session, graph):
         name="input_1",
         type=NodeType.INPUT,
         parameters={
-            "columns": ["created_at", "cust_id", "event_type", "session_id", "value"],
+            "columns": ["cust_id", "session_id", "event_type", "value", "created_at"],
             "timestamp": "created_at",
             "entity_identifiers": None,
             "dbtable": '"trans"',
@@ -221,7 +221,7 @@ def feature_list_fixture(grouped_event_view):
     assert feature_list.protected_columns == {"cust_id"}
     assert feature_list.inception_node == expected_inception_node
     assert feature_list.entity_identifiers == ["cust_id"]
-    assert feature_list.columns == ["cust_id", "sum_1d", "sum_2h", "sum_30m"]
+    assert feature_list.columns == ["cust_id", "sum_30m", "sum_2h", "sum_1d"]
     assert feature_list.column_lineage_map == {
         "cust_id": ("groupby_1",),
         "sum_30m": ("groupby_1",),
