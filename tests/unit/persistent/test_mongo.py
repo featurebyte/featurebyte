@@ -1,5 +1,5 @@
 """
-Test MongoDB storage backend
+Test MongoDB persistent backend
 """
 from typing import Any, Dict, List, Tuple
 
@@ -8,23 +8,23 @@ import pymongo
 import pytest
 from bson import ObjectId
 
-from featurebyte.storage.mongo import MongoStorage
+from featurebyte.persistent.mongo import MongoDB
 
 
-@pytest.fixture(name="mongo_storage")
-def mongo_storage_fixture() -> Tuple[MongoStorage, pymongo.MongoClient]:
+@pytest.fixture(name="mongo_persistent")
+def mongo_persistent_fixture() -> Tuple[MongoDB, pymongo.MongoClient]:
     """
-    Patched MongoStorage fixture for testing
+    Patched MongoDB fixture for testing
 
     Returns
     -------
-    Tuple[MongoStorage, pymongo.MongoClient]
-        Patched MongoStorage object and MongoClient
+    Tuple[MongoDB, pymongo.MongoClient]
+        Patched MongoDB object and MongoClient
     """
     with mongomock.patch(servers=(("server.example.com", 27017),)):
-        storage = MongoStorage(uri="mongodb://server.example.com:27017", database="test")
+        persistent = MongoDB(uri="mongodb://server.example.com:27017", database="test")
         mongo_client = pymongo.MongoClient("mongodb://server.example.com:27017")
-        return storage, mongo_client
+        return persistent, mongo_client
 
 
 @pytest.fixture(name="test_document")
@@ -62,74 +62,74 @@ def test_documents_fixture(test_document) -> List[Dict[str, Any]]:
     return [{**test_document, **{"id": ObjectId()}} for _ in range(3)]
 
 
-def test_insert_one(mongo_storage, test_document):
+def test_insert_one(mongo_persistent, test_document):
     """
     Test inserting one document
     """
-    storage, client = mongo_storage
-    storage.insert_one(collection_name="data", document=test_document)
+    persistent, client = mongo_persistent
+    persistent.insert_one(collection_name="data", document=test_document)
     # check document is inserted
     results = list(client["test"]["data"].find({}))
     assert results[0] == test_document
 
 
-def test_insert_many(mongo_storage, test_documents):
+def test_insert_many(mongo_persistent, test_documents):
     """
     Test inserting many documents
     """
-    storage, client = mongo_storage
-    storage.insert_many(collection_name="data", documents=test_documents)
+    persistent, client = mongo_persistent
+    persistent.insert_many(collection_name="data", documents=test_documents)
     # check documents are inserted
     assert list(client["test"]["data"].find({})) == test_documents
 
 
-def test_find_one(mongo_storage, test_documents):
+def test_find_one(mongo_persistent, test_documents):
     """
     Test finding one document
     """
-    storage, client = mongo_storage
+    persistent, client = mongo_persistent
     client["test"]["data"].insert_many(test_documents)
-    doc = storage.find_one(collection_name="data", filter_query={})
+    doc = persistent.find_one(collection_name="data", filter_query={})
     assert doc == test_documents[0]
 
 
-def test_find_many(mongo_storage, test_documents):
+def test_find_many(mongo_persistent, test_documents):
     """
     Test finding many documents
     """
-    storage, client = mongo_storage
+    persistent, client = mongo_persistent
     client["test"]["data"].insert_many(test_documents)
-    docs, total = storage.find(collection_name="data", filter_query={})
+    docs, total = persistent.find(collection_name="data", filter_query={})
     assert list(docs) == test_documents
     assert total == 3
 
     # test pagination
-    docs, total = storage.find(collection_name="data", filter_query={}, page_size=2, page=1)
+    docs, total = persistent.find(collection_name="data", filter_query={}, page_size=2, page=1)
     assert list(docs) == test_documents[:2]
     assert total == 3
-    docs, total = storage.find(collection_name="data", filter_query={}, page_size=2, page=2)
+    docs, total = persistent.find(collection_name="data", filter_query={}, page_size=2, page=2)
     assert list(docs) == test_documents[2:]
     assert total == 3
-    docs, total = storage.find(collection_name="data", filter_query={}, page_size=0, page=2)
+    docs, total = persistent.find(collection_name="data", filter_query={}, page_size=0, page=2)
     assert list(docs) == test_documents
     assert total == 3
 
     # test sort
-    docs, total = storage.find(
+    docs, total = persistent.find(
         collection_name="data", filter_query={}, sort_by="id", sort_dir="desc"
     )
     assert list(docs) == test_documents[-1::-1]
     assert total == 3
 
 
-def test_update_one(mongo_storage, test_document, test_documents):
+def test_update_one(mongo_persistent, test_document, test_documents):
     """
     Test updating one document
     """
-    storage, client = mongo_storage
+    persistent, client = mongo_persistent
     test_documents = [{**test_document, **{"id": ObjectId()}} for _ in range(3)]
     client["test"]["data"].insert_many(test_documents)
-    result = storage.update_one(
+    result = persistent.update_one(
         collection_name="data", filter_query={}, update={"$set": {"value": 1}}
     )
 
@@ -142,13 +142,13 @@ def test_update_one(mongo_storage, test_document, test_documents):
     assert results[2]["value"] == test_document["value"]
 
 
-def test_update_many(mongo_storage, test_documents):
+def test_update_many(mongo_persistent, test_documents):
     """
     Test updating one document
     """
-    storage, client = mongo_storage
+    persistent, client = mongo_persistent
     client["test"]["data"].insert_many(test_documents)
-    result = storage.update_many(
+    result = persistent.update_many(
         collection_name="data", filter_query={}, update={"$set": {"value": 1}}
     )
     # expect all documents to be updated
@@ -158,26 +158,26 @@ def test_update_many(mongo_storage, test_documents):
         assert result["value"] == 1
 
 
-def test_delete_one(mongo_storage, test_documents):
+def test_delete_one(mongo_persistent, test_documents):
     """
     Test deleting one document
     """
-    storage, client = mongo_storage
+    persistent, client = mongo_persistent
     client["test"]["data"].insert_many(test_documents)
-    result = storage.delete_one(collection_name="data", filter_query={})
+    result = persistent.delete_one(collection_name="data", filter_query={})
     # expect only one document to be deleted
     assert result == 1
     results = list(client["test"]["data"].find({}))
     assert len(results) == 2
 
 
-def test_delete_many(mongo_storage, test_documents):
+def test_delete_many(mongo_persistent, test_documents):
     """
     Test deleting many documents
     """
-    storage, client = mongo_storage
+    persistent, client = mongo_persistent
     client["test"]["data"].insert_many(test_documents)
-    result = storage.delete_many(collection_name="data", filter_query={})
+    result = persistent.delete_many(collection_name="data", filter_query={})
     # expect all documents to be deleted
     assert result == 3
     results = list(client["test"]["data"].find({}))

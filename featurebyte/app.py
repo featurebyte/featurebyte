@@ -5,11 +5,11 @@ FastAPI Application
 from bson.objectid import ObjectId
 from fastapi import Depends, FastAPI, Request
 
+from featurebyte.persistent import MongoDB
 from featurebyte.routes import event_data
-from featurebyte.storage import MongoStorage
 
 app = FastAPI()
-storage = MongoStorage("mongodb://localhost:27017")
+persistent = MongoDB("mongodb://localhost:27017")
 
 
 class User:
@@ -30,7 +30,7 @@ def inject_api_deps(request: Request) -> None:
     request: Request
         Request object to be updated
     """
-    request.state.storage = storage
+    request.state.persistent = persistent
     request.state.user = User()
 
 

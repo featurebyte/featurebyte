@@ -1,5 +1,5 @@
 """
-Persistent storage base class
+Persistent persistent base class
 """
 from typing import Any, Iterable, Literal, Mapping, Optional, Tuple, Union
 
@@ -8,9 +8,15 @@ from abc import ABC, abstractmethod
 from pymongo.typings import _DocumentIn, _DocumentType, _Pipeline
 
 
-class Storage(ABC):
+class DuplicateDocumentError(Exception):
     """
-    Persistent storage base class
+    Duplicate document found during insert / update
+    """
+
+
+class Persistent(ABC):
+    """
+    Persistent persistent base class
     """
 
     @abstractmethod

@@ -102,11 +102,11 @@ def create_event_data(
     Create Event Data
     """
     user = request.state.user
-    storage = request.state.storage
+    persistent = request.state.persistent
 
     # ensure table name does not already exist
     query_filter = {"name": data.name, "user_id": user.id}
-    if storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter):
+    if persistent.find_one(collection_name=TABLE_NAME, filter_query=query_filter):
         raise HTTPException(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             detail=f'Event Data "{data.name}" already exists.',
@@ -124,8 +124,8 @@ def create_event_data(
         ],
         **data.dict(),
     )
-    storage.insert_one(collection_name=TABLE_NAME, document=document.dict())
-    return EventData(**storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter))
+    persistent.insert_one(collection_name=TABLE_NAME, document=document.dict())
+    return EventData(**persistent.find_one(collection_name=TABLE_NAME, filter_query=query_filter))
 
 
 @router.get("/event_data", response_model=EventDatas)
@@ -141,7 +141,7 @@ def list_event_datas(
     List Event Datas
     """
     user = request.state.user
-    storage = request.state.storage
+    persistent = request.state.persistent
 
     query_filter = {"user_id": user.id}
 
@@ -149,7 +149,7 @@ def list_event_datas(
     if search:
         query_filter["$text"] = {"$search": search}
 
-    docs, total = storage.find(
+    docs, total = persistent.find(
         collection_name=TABLE_NAME,
         filter_query=query_filter,
         sort_by=sort_by,
@@ -169,10 +169,10 @@ def retrieve_event_data(
     Retrieve Event Data
     """
     user = request.state.user
-    storage = request.state.storage
+    persistent = request.state.persistent
 
     query_filter = {"name": event_data_name, "user_id": user.id}
-    event_data = storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
+    event_data = persistent.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
     if not event_data:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail=f'Event Data "{event_data_name}" not found.'
@@ -190,10 +190,10 @@ def update_event_data(
     Update scheduled task
     """
     user = request.state.user
-    storage = request.state.storage
+    persistent = request.state.persistent
 
     query_filter = {"name": event_data_name, "user_id": user.id}
-    event_data = storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
+    event_data = persistent.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
     not_found_exception = HTTPException(
         status_code=HTTPStatus.NOT_FOUND, detail=f'Event Data "{event_data_name}" not found.'
     )
@@ -228,10 +228,10 @@ def update_event_data(
     else:
         update_payload.pop("status")
 
-    updated_cnt = storage.update_one(
+    updated_cnt = persistent.update_one(
         collection_name=TABLE_NAME, filter_query=query_filter, update={"$set": update_payload}
     )
     if not updated_cnt:
         raise not_found_exception
 
-    return EventData(**storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter))
+    return EventData(**persistent.find_one(collection_name=TABLE_NAME, filter_query=query_filter))

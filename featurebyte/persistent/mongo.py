@@ -6,10 +6,10 @@ from typing import Any, Iterable, Literal, Mapping, Optional, Tuple, Union
 import pymongo
 from pymongo.typings import _DocumentIn, _DocumentType, _Pipeline
 
-from .storage import Storage
+from .persistent import DuplicateDocumentError, Persistent
 
 
-class MongoStorage(Storage):
+class MongoDB(Persistent):
     """
     Persistent storage using MongoDB
     """
@@ -19,7 +19,7 @@ class MongoStorage(Storage):
 
     def __init__(self, uri: str, database: str = "featurebyte") -> None:
         """
-        Constructor for MongoStorage
+        Constructor for MongoDB
 
         Parameters
         ----------
@@ -41,8 +41,16 @@ class MongoStorage(Storage):
             Name of collection to use
         document: _DocumentIn
             Document to insert
+
+        Raises
+        ------
+        DuplicateDocumentError
+            Document already exist
         """
-        self._db[collection_name].insert_one(document)
+        try:
+            self._db[collection_name].insert_one(document)
+        except pymongo.errors.DuplicateKeyError as exc:
+            raise DuplicateDocumentError() from exc
 
     def insert_many(self, collection_name: str, documents: Iterable[_DocumentIn]) -> None:
         """
