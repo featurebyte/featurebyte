@@ -11,7 +11,7 @@ from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.session.base import BaseSession
 
 
@@ -30,7 +30,10 @@ class Series(QueryObject, OpsMixin):
         session: BaseSession | None = None,
     ):
         super().__init__(
-            graph=QueryGraph(), node=node, row_index_lineage=row_index_lineage, session=session
+            graph=GlobalQueryGraph(),
+            node=node,
+            row_index_lineage=row_index_lineage,
+            session=session,
         )
         self.name = name
         self.var_type = var_type

@@ -10,7 +10,7 @@ from enum import Enum
 import sqlglot
 
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.graph import PrunedQueryGraph
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql import (
     BINARY_OPERATION_NODE_TYPES,
     AssignNode,
@@ -38,13 +38,13 @@ class SQLOperationGraph:
 
     Parameters
     ----------
-    query_graph : PrunedQueryGraph
+    query_graph : QueryGraph
         Query Graph representing user's intention
     sql_type : SQLType
         Type of SQL to generate
     """
 
-    def __init__(self, query_graph: PrunedQueryGraph, sql_type: SQLType) -> None:
+    def __init__(self, query_graph: QueryGraph, sql_type: SQLType) -> None:
         self.sql_nodes: Dict[str, Union[SQLNode, TableNode]] = {}
         self.query_graph = query_graph
         self.sql_type = sql_type
@@ -191,10 +191,10 @@ class TileSQLGenerator:
 
     Parameters
     ----------
-    query_graph : PrunedQueryGraph
+    query_graph : QueryGraph
     """
 
-    def __init__(self, query_graph: PrunedQueryGraph):
+    def __init__(self, query_graph: QueryGraph):
         self.query_graph = query_graph
 
     def construct_tile_gen_sql(self) -> List[TileGenSql]:
@@ -255,10 +255,10 @@ class GraphInterpreter:
 
     Parameters
     ----------
-    query_graph : PrunedQueryGraph
+    query_graph : QueryGraph
     """
 
-    def __init__(self, query_graph: PrunedQueryGraph):
+    def __init__(self, query_graph: QueryGraph):
         self.query_graph = query_graph
 
     def construct_tile_gen_sql(self) -> List[TileGenSql]:

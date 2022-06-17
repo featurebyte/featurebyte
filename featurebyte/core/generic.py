@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.session.base import BaseSession
 
@@ -19,7 +19,7 @@ class QueryObject:
     QueryObject class contains query graph, node, row index lineage & session.
     """
 
-    graph: QueryGraph
+    graph: GlobalQueryGraph
     node: Node
     row_index_lineage: tuple[str, ...]
     session: BaseSession | None
@@ -105,5 +105,5 @@ class ProtectedColumnsQueryObject(QueryObject):
         -------
         Node
         """
-        graph = QueryGraph()
+        graph = GlobalQueryGraph()
         return graph.get_node_by_name(self.row_index_lineage[0])

@@ -133,7 +133,7 @@ class Graph:
         return json.dumps(self.to_dict(), indent=4)
 
 
-class PrunedQueryGraph(Graph):
+class QueryGraph(Graph):
     """
     Pruned query graph object
     """
@@ -201,7 +201,7 @@ class PrunedQueryGraph(Graph):
         return node
 
 
-class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
+class GlobalQueryGraph(QueryGraph, metaclass=SingletonMeta):
     """
     Graph used to store the core like operations for the SQL query construction
     """
@@ -210,10 +210,10 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
         self,
         target_node: Node,
         target_columns: list[str],
-        pruned_graph: PrunedQueryGraph,
+        pruned_graph: QueryGraph,
         processed_node_names: set[str],
         node_name_map: dict[str, str],
-    ) -> PrunedQueryGraph:
+    ) -> QueryGraph:
         # pruning: move backward from target node to the input node
         to_prune_target_node = False
         input_node_names = self.backward_edges[target_node.name]
@@ -269,7 +269,7 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
         processed_node_names.add(target_node.name)
         return pruned_graph
 
-    def prune(self, target_node: Node, target_columns: list[str]) -> tuple[PrunedQueryGraph, Node]:
+    def prune(self, target_node: Node, target_columns: list[str]) -> tuple[QueryGraph, Node]:
         """
         Prune the query graph and return the pruned graph & mapped node.
 
@@ -292,7 +292,7 @@ class QueryGraph(PrunedQueryGraph, metaclass=SingletonMeta):
         pruned_graph = self._prune(
             target_node=target_node,
             target_columns=target_columns,
-            pruned_graph=PrunedQueryGraph(),
+            pruned_graph=QueryGraph(),
             processed_node_names=set(),
             node_name_map=node_name_map,
         )

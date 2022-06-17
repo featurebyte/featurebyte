@@ -9,7 +9,7 @@ from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.session.base import BaseSession
 
 if TYPE_CHECKING:
@@ -104,7 +104,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
             if column not in column_var_type_map:
                 raise KeyError(f'Could not find the "{column}" column from the table {table_name}!')
 
-        node = QueryGraph().add_operation(
+        node = GlobalQueryGraph().add_operation(
             node_type=NodeType.INPUT,
             node_params={
                 "columns": sorted(column_var_type_map.keys()),
