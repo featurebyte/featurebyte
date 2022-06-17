@@ -5,7 +5,7 @@ FastAPI Application
 from bson.objectid import ObjectId
 from fastapi import Depends, FastAPI, Request
 
-from featurebyte.routes import event_table
+from featurebyte.routes import event_data
 from featurebyte.storage import MongoStorage
 
 app = FastAPI()
@@ -34,4 +34,4 @@ def inject_api_deps(request: Request) -> None:
     request.state.user = User()
 
 
-app.include_router(event_table.router, dependencies=[Depends(inject_api_deps)])
+app.include_router(event_data.router, dependencies=[Depends(inject_api_deps)])

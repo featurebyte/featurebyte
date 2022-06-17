@@ -1,5 +1,5 @@
 """
-EventTable API routes
+EventData API routes
 """
 # pylint: disable=too-few-public-methods,relative-beyond-top-level
 from typing import List, Literal, Optional
@@ -12,10 +12,10 @@ from bson.objectid import ObjectId
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from featurebyte.models.event_table import (
+from featurebyte.models.event_data import (
     DatabaseSource,
-    EventTableModel,
-    EventTableStatus,
+    EventDataModel,
+    EventDataStatus,
     FeatureJobSetting,
     FeatureJobSettingHistoryEntry,
 )
@@ -23,12 +23,12 @@ from featurebyte.models.event_table import (
 from .schema import PaginationMixin
 
 router = APIRouter()
-TABLE_NAME = "event_table"
+TABLE_NAME = "event_data"
 
 
-class EventTableCreate(BaseModel):
+class EventDataCreate(BaseModel):
     """
-    Event Table Creation Payload
+    Event Data Creation Payload
 
     Parameters
     ----------
@@ -42,9 +42,9 @@ class EventTableCreate(BaseModel):
     default_feature_job_setting: Optional[FeatureJobSetting]
 
 
-class EventTable(EventTableModel):
+class EventData(EventDataModel):
     """
-    Event Table
+    Event Data
 
     Parameters
     ----------
@@ -59,7 +59,7 @@ class EventTable(EventTableModel):
 
     class Config:
         """
-        Configuration for Event Table schema
+        Configuration for Event Data schema
         """
 
         allow_population_by_field_name = True
@@ -67,16 +67,16 @@ class EventTable(EventTableModel):
         json_encoders = {ObjectId: str}
 
 
-class EventTables(PaginationMixin):
+class EventDatas(PaginationMixin):
     """
-    Paginated list of Event Tables
+    Paginated list of Event Datas
     """
 
-    data: List[EventTable]
+    data: List[EventData]
 
     class Config:
         """
-        Configuration for Event Tables schema
+        Configuration for Event Datas schema
         """
 
         allow_population_by_field_name = True
@@ -84,22 +84,22 @@ class EventTables(PaginationMixin):
         json_encoders = {ObjectId: str}
 
 
-class EventTableUpdate(BaseModel):
+class EventDataUpdate(BaseModel):
     """
-    Event table update schema
+    Event Data update schema
     """
 
     default_feature_job_setting: Optional[FeatureJobSetting]
-    status: Optional[EventTableStatus]
+    status: Optional[EventDataStatus]
 
 
-@router.post("/event_table", response_model=EventTable, status_code=HTTPStatus.CREATED)
-def create_event_table(
+@router.post("/event_data", response_model=EventData, status_code=HTTPStatus.CREATED)
+def create_event_data(
     request: Request,
-    data: EventTableCreate,
-) -> EventTable:
+    data: EventDataCreate,
+) -> EventData:
     """
-    Create event table
+    Create Event Data
     """
     user = request.state.user
     storage = request.state.storage
@@ -109,14 +109,14 @@ def create_event_table(
     if storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter):
         raise HTTPException(
             status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-            detail=f'Event table "{data.name}" already exists.',
+            detail=f'Event Data "{data.name}" already exists.',
         )
 
     # init history and set status to draft
-    document = EventTable(
+    document = EventData(
         user_id=user.id,
         created_at=datetime.datetime.utcnow(),
-        status=EventTableStatus.DRAFT,
+        status=EventDataStatus.DRAFT,
         history=[
             FeatureJobSettingHistoryEntry(
                 creation_date=datetime.datetime.utcnow(), setting=data.default_feature_job_setting
@@ -125,20 +125,20 @@ def create_event_table(
         **data.dict(),
     )
     storage.insert_one(collection_name=TABLE_NAME, document=document.dict())
-    return EventTable(**storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter))
+    return EventData(**storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter))
 
 
-@router.get("/event_table", response_model=EventTables)
-def list_event_tables(
+@router.get("/event_data", response_model=EventDatas)
+def list_event_datas(
     request: Request,
     page: int = 1,
     page_size: int = 10,
     sort_by: Optional[str] = "created_at",
     sort_dir: Literal["asc", "desc"] = "desc",
     search: Optional[str] = None,
-) -> EventTables:
+) -> EventDatas:
     """
-    List event tables
+    List Event Datas
     """
     user = request.state.user
     storage = request.state.storage
@@ -157,47 +157,47 @@ def list_event_tables(
         page=page,
         page_size=page_size,
     )
-    return EventTables(page=page, page_size=page_size, total=total, data=list(docs))
+    return EventDatas(page=page, page_size=page_size, total=total, data=list(docs))
 
 
-@router.get("/event_table/{event_table_name}", response_model=EventTable)
-def retrieve_event_table(
+@router.get("/event_data/{event_data_name}", response_model=EventData)
+def retrieve_event_data(
     request: Request,
-    event_table_name: str,
-) -> Optional[EventTable]:
+    event_data_name: str,
+) -> Optional[EventData]:
     """
-    Retrieve event table
+    Retrieve Event Data
     """
     user = request.state.user
     storage = request.state.storage
 
-    query_filter = {"name": event_table_name, "user_id": user.id}
-    event_table = storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
-    if not event_table:
+    query_filter = {"name": event_data_name, "user_id": user.id}
+    event_data = storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
+    if not event_data:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail=f'Event table "{event_table_name}" not found.'
+            status_code=HTTPStatus.NOT_FOUND, detail=f'Event Data "{event_data_name}" not found.'
         )
-    return EventTable(**event_table)
+    return EventData(**event_data)
 
 
-@router.patch("/event_table/{event_table_name}", response_model=EventTable)
-def update_event_table(
+@router.patch("/event_data/{event_data_name}", response_model=EventData)
+def update_event_data(
     request: Request,
-    event_table_name: str,
-    data: EventTableUpdate,
-) -> EventTable:
+    event_data_name: str,
+    data: EventDataUpdate,
+) -> EventData:
     """
     Update scheduled task
     """
     user = request.state.user
     storage = request.state.storage
 
-    query_filter = {"name": event_table_name, "user_id": user.id}
-    event_table = storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
+    query_filter = {"name": event_data_name, "user_id": user.id}
+    event_data = storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
     not_found_exception = HTTPException(
-        status_code=HTTPStatus.NOT_FOUND, detail=f'Event table "{event_table_name}" not found.'
+        status_code=HTTPStatus.NOT_FOUND, detail=f'Event Data "{event_data_name}" not found.'
     )
-    if not event_table:
+    if not event_data:
         raise not_found_exception
 
     # prepare update payload
@@ -208,18 +208,18 @@ def update_event_table(
                 creation_date=datetime.datetime.utcnow(),
                 setting=update_payload["default_feature_job_setting"],
             ).dict()
-        ] + event_table["history"]
+        ] + event_data["history"]
     else:
         update_payload.pop("default_feature_job_setting")
 
     if data.status:
         # check eligibility of status transition
         eligible_transitions = {
-            EventTableStatus.DRAFT: {EventTableStatus.PUBLISHED},
-            EventTableStatus.PUBLISHED: {EventTableStatus.DEPRECATED},
-            EventTableStatus.DEPRECATED: {},
+            EventDataStatus.DRAFT: {EventDataStatus.PUBLISHED},
+            EventDataStatus.PUBLISHED: {EventDataStatus.DEPRECATED},
+            EventDataStatus.DEPRECATED: {},
         }
-        current_status = event_table["status"]
+        current_status = event_data["status"]
         if data.status not in eligible_transitions[current_status]:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -234,4 +234,4 @@ def update_event_table(
     if not updated_cnt:
         raise not_found_exception
 
-    return EventTable(**storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter))
+    return EventData(**storage.find_one(collection_name=TABLE_NAME, filter_query=query_filter))

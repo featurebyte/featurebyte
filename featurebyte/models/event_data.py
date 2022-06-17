@@ -1,5 +1,5 @@
 """
-This module contains EventTable related models
+This module contains EventData related models
 """
 from typing import Any, Dict, List, Optional, Union
 
@@ -71,22 +71,22 @@ class FeatureJobSettingHistoryEntry(BaseModel):
     setting: FeatureJobSetting
 
 
-class EventTableStatus(str, Enum):
-    """EventTable status"""
+class EventDataStatus(str, Enum):
+    """EventData status"""
 
     PUBLISHED = "PUBLISHED"
     DRAFT = "DRAFT"
     DEPRECATED = "DEPRECATED"
 
 
-class EventTableModel(BaseModel):
+class EventDataModel(BaseModel):
     """
-    Model for EventTable entity
+    Model for EventData entity
 
     Parameters
     ----------
     name : str
-        Name of the EventTable
+        Name of the EventData
     table_name : str
         Database table name
     source : DatabaseSource
@@ -94,11 +94,11 @@ class EventTableModel(BaseModel):
     default_feature_job_setting : FeatureJobSetting
         Default feature job setting
     created_at : datetime
-        Date when the EventTable was first saved or published
+        Date when the EventData was first saved or published
     history : list[FeatureJobSettingHistoryEntry]
         History of feature job settings
-    status : EventTableStatus
-        Status of the EventTable
+    status : EventDataStatus
+        Status of the EventData
     """
 
     name: str
@@ -109,4 +109,4 @@ class EventTableModel(BaseModel):
     default_feature_job_setting: Optional[FeatureJobSetting]
     created_at: datetime
     history: List[FeatureJobSettingHistoryEntry]
-    status: EventTableStatus
+    status: EventDataStatus
