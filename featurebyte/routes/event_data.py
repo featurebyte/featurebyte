@@ -19,6 +19,7 @@ from featurebyte.models.event_data import (
     FeatureJobSetting,
     FeatureJobSettingHistoryEntry,
 )
+from featurebyte.persistent import DuplicateDocumentError
 
 from .schema import PaginationMixin
 
@@ -124,7 +125,14 @@ def create_event_data(
         ],
         **data.dict(),
     )
-    persistent.insert_one(collection_name=TABLE_NAME, document=document.dict())
+    try:
+        persistent.insert_one(collection_name=TABLE_NAME, document=document.dict())
+    except DuplicateDocumentError as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            detail=f'Event Data "{data.name}" already exists.',
+        ) from exc
+
     return EventData(**persistent.find_one(collection_name=TABLE_NAME, filter_query=query_filter))
 
 

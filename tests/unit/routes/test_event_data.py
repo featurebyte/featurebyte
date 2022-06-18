@@ -4,10 +4,12 @@ Tests for Event Datas route
 import datetime
 import json
 from http import HTTPStatus
+from unittest import mock
 
 import pytest
 
 from featurebyte.models.event_data import EventDataModel, EventDataStatus
+from featurebyte.persistent import DuplicateDocumentError
 from tests.unit.models.test_event_data import (  # pylint: disable=unused-import
     event_data_model_dict_fixture,
 )
@@ -19,6 +21,7 @@ def event_data_dict_fixture(event_data_model_dict):
     Table Event dict object
     """
     event_data_dict = json.loads(EventDataModel(**event_data_model_dict).json())
+    event_data_dict["name"] = "订单表"
     event_data_dict.pop("created_at")
     return event_data_dict
 
@@ -67,7 +70,18 @@ def test_create_fails_table_exists(test_api_client, event_data_dict):
     assert response.status_code == HTTPStatus.CREATED
     response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert response.json() == {"detail": 'Event Data "my_event_data" already exists.'}
+    assert response.json() == {"detail": 'Event Data "订单表" already exists.'}
+
+
+def test_create_fails_table_exists_during_insert(test_api_client, event_data_dict):
+    """
+    Create Event Data fails if table with same name already exists during persistent insert
+    """
+    with mock.patch("featurebyte.app.persistent.insert_one") as mock_insert:
+        mock_insert.side_effect = DuplicateDocumentError
+        response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.json() == {"detail": 'Event Data "订单表" already exists.'}
 
 
 def test_create_fails_wrong_field_type(test_api_client, event_data_dict):
@@ -122,7 +136,7 @@ def test_retrieve_success(test_api_client, event_data_dict):
     assert response.status_code == HTTPStatus.CREATED
 
     # retrieve by table name
-    response = test_api_client.request("GET", url="/event_data/my_event_data")
+    response = test_api_client.request("GET", url="/event_data/订单表")
     assert response.status_code == HTTPStatus.OK
     data = response.json()
     data.pop("_id")
@@ -140,9 +154,9 @@ def test_retrieve_fails_table_not_found(test_api_client):
     Retrieve Event Data fails as it does not exist
     """
     # retrieve by table name
-    response = test_api_client.request("GET", url="/event_data/my_event_data")
+    response = test_api_client.request("GET", url="/event_data/订单表")
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {"detail": 'Event Data "my_event_data" not found.'}
+    assert response.json() == {"detail": 'Event Data "订单表" not found.'}
 
 
 def test_update_success(test_api_client, event_data_dict, event_data_update_dict):
@@ -155,9 +169,7 @@ def test_update_success(test_api_client, event_data_dict, event_data_update_dict
     data = response.json()
     previous_history = data["history"]
 
-    response = test_api_client.request(
-        "PATCH", url="/event_data/my_event_data", json=event_data_update_dict
-    )
+    response = test_api_client.request("PATCH", url="/event_data/订单表", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.OK
     data = response.json()
     data.pop("_id")
@@ -187,11 +199,9 @@ def test_update_fails_table_not_found(test_api_client, event_data_update_dict):
     """
     Update Event Data fails if table not found
     """
-    response = test_api_client.request(
-        "PATCH", url="/event_data/my_event_data", json=event_data_update_dict
-    )
+    response = test_api_client.request("PATCH", url="/event_data/订单表", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {"detail": 'Event Data "my_event_data" not found.'}
+    assert response.json() == {"detail": 'Event Data "订单表" not found.'}
 
 
 def test_update_excludes_unsupported_fields(
@@ -212,9 +222,7 @@ def test_update_excludes_unsupported_fields(
     event_data_update_dict["name"] = "Some other name"
     event_data_update_dict["source"] = "Some other source"
     event_data_update_dict["status"] = EventDataStatus.PUBLISHED
-    response = test_api_client.request(
-        "PATCH", url="/event_data/my_event_data", json=event_data_update_dict
-    )
+    response = test_api_client.request("PATCH", url="/event_data/订单表", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.OK
     data = response.json()
     data.pop("_id")
@@ -256,9 +264,7 @@ def test_update_fails_invalid_transition(test_api_client, event_data_dict, event
     assert data["status"] == EventDataStatus.DRAFT
 
     event_data_update_dict["status"] = EventDataStatus.DRAFT
-    response = test_api_client.request(
-        "PATCH", url="/event_data/my_event_data", json=event_data_update_dict
-    )
+    response = test_api_client.request("PATCH", url="/event_data/订单表", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert response.json() == {"detail": "Invalid status transition from DRAFT to DRAFT."}
 
@@ -276,7 +282,7 @@ def test_update_status_only(test_api_client, event_data_dict):
     assert current_data.pop("status") == EventDataStatus.DRAFT
 
     response = test_api_client.request(
-        "PATCH", url="/event_data/my_event_data", json={"status": EventDataStatus.PUBLISHED}
+        "PATCH", url="/event_data/订单表", json={"status": EventDataStatus.PUBLISHED}
     )
     assert response.status_code == HTTPStatus.OK
     updated_data = response.json()

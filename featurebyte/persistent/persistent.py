@@ -30,6 +30,11 @@ class Persistent(ABC):
             Name of collection to use
         document: _DocumentIn
             Document to insert
+
+        Raises
+        ------
+        DuplicateDocumentError
+            Document already exist
         """
 
     @abstractmethod
@@ -43,6 +48,11 @@ class Persistent(ABC):
             Name of collection to use
         documents: Iterable[_DocumentIn]
             Documents to insert
+
+        Raises
+        ------
+        DuplicateDocumentError
+            Document already exist
         """
 
     @abstractmethod

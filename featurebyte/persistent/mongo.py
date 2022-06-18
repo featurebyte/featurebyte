@@ -62,8 +62,16 @@ class MongoDB(Persistent):
             Name of collection to use
         documents: Iterable[_DocumentIn]
             Documents to insert
+
+        Raises
+        ------
+        DuplicateDocumentError
+            Document already exist
         """
-        self._db[collection_name].insert_many(documents)
+        try:
+            self._db[collection_name].insert_many(documents)
+        except pymongo.errors.DuplicateKeyError as exc:
+            raise DuplicateDocumentError() from exc
 
     def find_one(  # type: ignore
         self, collection_name: str, filter_query: Mapping[str, Any]
