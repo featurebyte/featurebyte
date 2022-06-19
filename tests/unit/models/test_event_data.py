@@ -1,5 +1,5 @@
 """
-Tests for EventTable models
+Tests for EventData models
 """
 import datetime
 
@@ -7,10 +7,10 @@ import pytest
 from pydantic.error_wrappers import ValidationError
 
 from featurebyte.enum import SourceType
-from featurebyte.models.event_table import (
+from featurebyte.models.event_data import (
     DatabaseSource,
-    EventTableModel,
-    EventTableStatus,
+    EventDataModel,
+    EventDataStatus,
     FeatureJobSetting,
     FeatureJobSettingHistoryEntry,
     SnowflakeDetails,
@@ -57,21 +57,11 @@ def feature_job_setting_history_fixture(feature_job_setting):
     return history
 
 
-def test_event_table_model(snowflake_source, feature_job_setting, feature_job_setting_history):
-    """Test creation, serialization and deserialization of an EventTable"""
-    event_table = EventTableModel(
-        name="my_event_table",
-        table_name="table",
-        source=snowflake_source,
-        event_timestamp_column="event_date",
-        record_creation_date_column="created_at",
-        default_feature_job_setting=feature_job_setting,
-        created_at=datetime.datetime(2022, 2, 1),
-        history=feature_job_setting_history,
-        status=EventTableStatus.PUBLISHED,
-    )
-    assert event_table.dict() == {
-        "name": "my_event_table",
+@pytest.fixture(name="event_data_model_dict")
+def event_data_model_dict_fixture():
+    """Fixture for a Event Data dict"""
+    return {
+        "name": "my_event_data",
         "table_name": "table",
         "source": {
             "type": "snowflake",
@@ -110,9 +100,27 @@ def test_event_table_model(snowflake_source, feature_job_setting, feature_job_se
         ],
         "status": "PUBLISHED",
     }
-    event_table_json = event_table.json()
-    event_table_loaded = event_table.parse_raw(event_table_json)
-    assert event_table_loaded == event_table
+
+
+def test_event_data_model(
+    snowflake_source, feature_job_setting, feature_job_setting_history, event_data_model_dict
+):
+    """Test creation, serialization and deserialization of an EventData"""
+    event_data = EventDataModel(
+        name="my_event_data",
+        table_name="table",
+        source=snowflake_source,
+        event_timestamp_column="event_date",
+        record_creation_date_column="created_at",
+        default_feature_job_setting=feature_job_setting,
+        created_at=datetime.datetime(2022, 2, 1),
+        history=feature_job_setting_history,
+        status=EventDataStatus.PUBLISHED,
+    )
+    assert event_data.dict() == event_data_model_dict
+    event_data_json = event_data.json()
+    event_data_loaded = event_data.parse_raw(event_data_json)
+    assert event_data_loaded == event_data
 
 
 @pytest.mark.parametrize(
