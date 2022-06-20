@@ -17,8 +17,6 @@ def dfs_traversal(query_graph: QueryGraph, node: Node) -> Iterator[Node]:
         Query graph
     node : Node
         Current node to traverse from
-    visited : dict
-        Markers for visited nodes
 
     Yields
     ------
