@@ -6,7 +6,7 @@ import pytest
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState
 
 
 @pytest.fixture(name="graph")
@@ -14,7 +14,7 @@ def query_graph():
     """
     Empty query graph fixture
     """
-    GlobalQueryGraph.clear()
+    GlobalQueryGraphState.reset()
     yield GlobalQueryGraph()
 
 
@@ -31,7 +31,11 @@ def dataframe_fixture(graph):
     }
     node = graph.add_operation(
         node_type=NodeType.INPUT,
-        node_params={},
+        node_params={
+            "columns": list(column_var_type_map.keys()),
+            "timestamp": "VALUE",
+            "dbtable": "transaction",
+        },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )

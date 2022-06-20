@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import pandas as pd
-
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import DBVarType
@@ -337,9 +335,9 @@ class Series(QueryObject, OpsMixin):
     def __rtruediv__(self, other: int | float | Series) -> Series:
         return self._binary_arithmetic_op(other, NodeType.DIV, right_op=True)
 
-    def preview(self, limit: int = 10) -> pd.DataFrame | None:
+    def preview_sql(self, limit: int = 10) -> str:
         """
-        Preview transformed table/column partial output
+        Generate SQL query to preview the transformed column
 
         Parameters
         ----------
@@ -353,4 +351,4 @@ class Series(QueryObject, OpsMixin):
         columns = []
         if self.name:
             columns.append(self.name)
-        return self._preview(columns=columns, limit=limit)
+        return self._preview_sql(columns=columns, limit=limit)

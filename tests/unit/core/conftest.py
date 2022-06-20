@@ -103,7 +103,7 @@ def event_view_fixture(session, graph):
         },
         output_type=NodeOutputType.FRAME,
     )
-    assert event_view.graph is graph
+    assert event_view.graph.dict() == graph.dict()
     assert event_view.protected_columns == {"created_at", "cust_id"}
     assert event_view.inception_node == expected_inception_node
     assert event_view.timestamp_column == "created_at"
@@ -133,7 +133,7 @@ def event_view_without_entity_ids_fixture(session, graph):
         },
         output_type=NodeOutputType.FRAME,
     )
-    assert event_view.graph is graph
+    assert event_view.graph.dict() == graph.dict()
     assert event_view.protected_columns == {"created_at"}
     assert event_view.inception_node == expected_inception_node
     assert event_view.timestamp_column == "created_at"

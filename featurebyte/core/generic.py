@@ -27,9 +27,9 @@ class QueryObject:
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
 
-    def _preview(self, columns: list[str], limit: int = 10) -> pd.DataFrame | None:
+    def _preview_sql(self, columns: list[str], limit: int = 10) -> str:
         """
-        Preview transformed table/column partial output
+        Preview SQL query
 
         Parameters
         ----------
@@ -40,14 +40,45 @@ class QueryObject:
 
         Returns
         -------
-        pd.DataFrame | None
+        str
         """
-        pruned_graph, mapped_node = self.graph.prune(target_node=self.node, target_columns=columns)
-        sql_query = GraphInterpreter(pruned_graph).construct_preview_sql(
+        pruned_graph, mapped_node = self.graph.prune(
+            target_node=self.node, target_columns=set(columns)
+        )
+        return GraphInterpreter(pruned_graph).construct_preview_sql(
             mapped_node.name, num_rows=limit
         )
+
+    def preview_sql(self, limit: int = 10) -> str:
+        """
+        Generate SQL query to preview the transformation output
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+
+        Returns
+        -------
+        pd.DataFrame | None
+        """
+        return self._preview_sql(columns=[], limit=limit)
+
+    def preview(self, limit: int = 10) -> pd.DataFrame | None:
+        """
+        Preview transformed table/column partial output
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+
+        Returns
+        -------
+        pd.DataFrame | None
+        """
         if self.session:
-            return self.session.execute_query(sql_query)
+            return self.session.execute_query(self.preview_sql(limit=limit))
         return None
 
 
