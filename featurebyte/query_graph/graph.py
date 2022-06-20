@@ -10,6 +10,7 @@ from collections import defaultdict
 
 from pydantic import BaseModel, Field
 
+from featurebyte.query_graph.algorithms import topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.util import hash_node
 
@@ -99,35 +100,6 @@ class Graph(BaseModel):
 
     def __repr__(self) -> str:
         return json.dumps(self.dict(), indent=4)
-
-    def _topological_sort_util(
-        self, node_name: str, visited: dict[str, bool], stack: list[str]
-    ) -> None:
-        # mark node as visited
-        visited[node_name] = True
-
-        # recur for all the vertices adjacent to this vertex
-        for adj_node_name in self.edges.get(node_name, []):
-            if not visited[adj_node_name]:
-                self._topological_sort_util(adj_node_name, visited, stack)
-
-        stack.append(node_name)
-
-    def topological_sort(self) -> list[str]:
-        """
-        Topological sort the graph (reference: https://www.geeksforgeeks.org/topological-sorting/)
-
-        Returns
-        -------
-        list[str]
-        """
-        visited = {node_name: False for node_name in self.nodes}
-        stack: list[str] = []
-        for node_name in self.nodes:
-            if not visited[node_name]:
-                self._topological_sort_util(node_name, visited, stack)
-
-        return stack[::-1]
 
 
 class QueryGraph(Graph):
@@ -432,7 +404,7 @@ class GlobalQueryGraph(QueryGraph):
             updated global query graph with the node name mapping between query graph & global query graph
         """
         node_name_map: dict[str, str] = {}
-        for node_name in graph.topological_sort():
+        for node_name in topological_sort(graph):
             node = graph.get_node_by_name(node_name)
             input_nodes = [
                 self.get_node_by_name(node_name_map[input_node_name])
