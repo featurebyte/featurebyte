@@ -68,15 +68,12 @@ def _topological_sort_util(
 
 def topological_sort(query_graph: QueryGraph) -> list[str]:
     """
-    Topological sort the graph
-
-    References
-    ----------
-    https://www.geeksforgeeks.org/topological-sorting/
+    Topological sort the graph (reference: https://www.geeksforgeeks.org/topological-sorting/)
 
     Parameters
     ----------
     query_graph: QueryGraph
+        Input query graph
 
     Returns
     -------
