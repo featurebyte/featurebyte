@@ -1,17 +1,7 @@
 """
 Unit tests for featurebyte.query_graph.algorithms
 """
-import pytest
-
 from featurebyte.query_graph.algorithms import dfs_traversal
-from featurebyte.query_graph.graph import GlobalQueryGraph
-
-
-@pytest.fixture(name="graph", scope="function")
-def query_graph():
-    """Empty query graph fixture"""
-    GlobalQueryGraph.clear()
-    yield GlobalQueryGraph()
 
 
 def test_dfs__1(query_graph_with_groupby):
