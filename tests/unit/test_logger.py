@@ -35,4 +35,4 @@ def test_logging():
     assert len(mock_handler.records) == 1
     parts = mock_handler.records[0].split("|")
     assert datetime.strptime(parts.pop(0).strip(), "%Y-%m-%d %H:%M:%S.%f") > curtime
-    assert "|".join(parts) == " DEBUG    | test_logger:test_logging:26 - Test Message"
+    assert "|".join(parts) == " DEBUG    | test_logger:test_logging:31 - Test Message"

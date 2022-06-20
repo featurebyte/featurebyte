@@ -10,7 +10,8 @@ from configparser import ConfigParser
 from pydantic import BaseSettings
 from pydantic.error_wrappers import ValidationError
 
-from featurebyte.models.credential import CREDENTIAL_CLASS, Credential
+from featurebyte.enum import SourceType
+from featurebyte.models.credential import CREDENTIAL_CLASS, Credential, CredentialType
 from featurebyte.models.event_data import DB_DETAILS_CLASS, DatabaseSource
 
 
@@ -29,7 +30,7 @@ class Configurations:
     """
 
     _config_file_path: str
-    settings: Dict[str, Any] = None
+    settings: Dict[str, Any] = {}
     db_sources: Dict[str, DatabaseSource] = {}
     credentials: Dict[DatabaseSource, Credential] = {}
     logging: LoggingSettings = LoggingSettings()
@@ -43,10 +44,12 @@ class Configurations:
         config_file_path: Optional[str]
             Path to read configurations from
         """
-        if not config_file_path:
-            config_file_path = os.environ.get(
+        config_file_path = str(
+            config_file_path
+            or os.environ.get(
                 "FEATUREBYTE_CONFIG_PATH", os.path.join(os.environ["HOME"], ".featurebyte.ini")
             )
+        )
         self._config_file_path = config_file_path
         self._parse_config(config_file_path)
 
@@ -74,17 +77,19 @@ class Configurations:
             try:
                 if "source_type" in values and values["source_type"] in DB_DETAILS_CLASS:
                     # parse and store database source
+                    source_type = SourceType(values["source_type"])
                     db_source = DatabaseSource(
-                        type=values["source_type"],
-                        details=DB_DETAILS_CLASS[values["source_type"]](**values),
+                        type=source_type,
+                        details=DB_DETAILS_CLASS[source_type](**values),
                     )
                     self.db_sources[section] = db_source
 
                     # parse and store credentials
+                    credential_type = CredentialType(values["credential_type"])
                     credentials = Credential(
                         name=section,
                         source=db_source,
-                        credential=CREDENTIAL_CLASS[values["credential_type"]](**values),
+                        credential=CREDENTIAL_CLASS[credential_type](**values),
                         **values,
                     )
                     self.credentials[db_source] = credentials
