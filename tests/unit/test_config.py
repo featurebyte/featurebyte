@@ -12,7 +12,7 @@ def test_configurations():
     """
     Test creating configuration from config file
     """
-    config = Configurations("tests/fixtures/sample_config.ini")
+    config = Configurations("tests/fixtures/sample_config.yaml")
 
     # one database source with section name as key
     assert len(config.db_sources) == 1
@@ -56,10 +56,10 @@ def test_configurations():
     }
 
 
-def test_configurations_malformed():
+def test_configurations_malformed_datasource():
     """
     Test creating configuration from malformed config file
     """
     with pytest.raises(ValueError) as exc_info:
-        Configurations("tests/fixtures/malformed_config.ini")
-    assert str(exc_info.value) == "Invalid settings in section: snowflake 数据库"
+        Configurations("tests/fixtures/malformed_config.yaml")
+    assert str(exc_info.value) == "Invalid settings for datasource: snowflake 数据库"

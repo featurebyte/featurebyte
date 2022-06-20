@@ -2,11 +2,14 @@
 Read configurations from ini file
 """
 # pylint: disable=too-few-public-methods
-from typing import Any, Dict, Optional
+from __future__ import annotations
+
+from typing import Any
 
 import os
-from configparser import ConfigParser
+from enum import Enum
 
+import yaml
 from pydantic import BaseSettings
 from pydantic.error_wrappers import ValidationError
 
@@ -15,12 +18,27 @@ from featurebyte.models.credential import CREDENTIAL_CLASS, Credential, Credenti
 from featurebyte.models.event_data import DB_DETAILS_CLASS, DatabaseSource
 
 
+class LogLevel(str, Enum):
+    """
+    Log levels
+    """
+
+    CRITICAL = "CRITICAL"
+    FATAL = "FATAL"
+    ERROR = "ERROR"
+    WARNING = "WARNING"
+    WARN = "WARN"
+    INFO = "INFO"
+    DEBUG = "DEBUG"
+    NOTSET = "NOTSET"
+
+
 class LoggingSettings(BaseSettings):
     """
     Settings related with the logging
     """
 
-    level: str = "DEBUG"
+    level: LogLevel = LogLevel.DEBUG
     serialize: bool = False
 
 
@@ -30,24 +48,24 @@ class Configurations:
     """
 
     _config_file_path: str
-    settings: Dict[str, Any] = {}
-    db_sources: Dict[str, DatabaseSource] = {}
-    credentials: Dict[DatabaseSource, Credential] = {}
+    settings: dict[str, Any] = {}
+    db_sources: dict[str, DatabaseSource] = {}
+    credentials: dict[DatabaseSource, Credential] = {}
     logging: LoggingSettings = LoggingSettings()
 
-    def __init__(self, config_file_path: Optional[str] = None) -> None:
+    def __init__(self, config_file_path: str | None = None) -> None:
         """
         Load and parse configurations
 
         Parameters
         ----------
-        config_file_path: Optional[str]
+        config_file_path: str | None
             Path to read configurations from
         """
         config_file_path = str(
             config_file_path
             or os.environ.get(
-                "FEATUREBYTE_CONFIG_PATH", os.path.join(os.environ["HOME"], ".featurebyte.ini")
+                "FEATUREBYTE_CONFIG_PATH", os.path.join(os.environ["HOME"], ".featurebyte.yaml")
             )
         )
         self._config_file_path = config_file_path
@@ -67,42 +85,41 @@ class Configurations:
         ValueError
             Parsing Error
         """
-        config_parser = ConfigParser()
-        config_parser.read(path)
-        self.settings = {}
-        for section in config_parser.sections():
+        if not os.path.exists(path):
+            return
 
-            # parse db_sources and credentials for easier retrieval
-            values = dict(config_parser.items(section))
+        with open(path, encoding="utf-8") as file_obj:
+            self.settings = yaml.safe_load(file_obj)
+
+        datasources = self.settings.pop("datasource", [])
+        for datasource in datasources:
             try:
-                if "source_type" in values and values["source_type"] in DB_DETAILS_CLASS:
+                name = datasource.pop("name", "unnamed")
+                if "source_type" in datasource and datasource["source_type"] in DB_DETAILS_CLASS:
                     # parse and store database source
-                    source_type = SourceType(values["source_type"])
+                    source_type = SourceType(datasource["source_type"])
                     db_source = DatabaseSource(
                         type=source_type,
-                        details=DB_DETAILS_CLASS[source_type](**values),
+                        details=DB_DETAILS_CLASS[source_type](**datasource),
                     )
-                    self.db_sources[section] = db_source
+                    self.db_sources[name] = db_source
 
                     # parse and store credentials
-                    credential_type = CredentialType(values["credential_type"])
+                    credential_type = CredentialType(datasource["credential_type"])
                     credentials = Credential(
-                        name=section,
+                        name=name,
                         source=db_source,
-                        credential=CREDENTIAL_CLASS[credential_type](**values),
-                        **values,
+                        credential=CREDENTIAL_CLASS[credential_type](**datasource),
+                        **datasource,
                     )
                     self.credentials[db_source] = credentials
-
-                elif section == "logging":
-                    # parse logging settings
-                    self.logging = LoggingSettings(**values)
-                else:
-                    # store generic settings
-                    self.settings[section] = values
-
             except ValidationError as exc:
-                raise ValueError(f"Invalid settings in section: {section}") from exc
+                raise ValueError(f"Invalid settings for datasource: {name}") from exc
+
+        logging_settings = self.settings.pop("logging", None)
+        if logging_settings:
+            # parse logging settings
+            self.logging = LoggingSettings(**logging_settings)
 
 
 config = Configurations()

@@ -52,6 +52,8 @@ fastapi = "^0.78.0"
 pymongo = "^4.1.1"
 beanie = "^1.11.4"
 loguru = "^0.6.0"
+PyYAML = "^6.0"
+pyaml = "^21.10.1"
 
 [tool.poetry.extras]
 docs = ["Sphinx", "sphinx-rtd-theme", "sphinx-github-changelog"]

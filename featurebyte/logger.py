@@ -16,7 +16,7 @@ LOGGER_FORMAT = (
 logger.remove()
 logger.add(
     sys.stderr,
-    level=config.logging.level.upper(),
+    level=config.logging.level,
     format=LOGGER_FORMAT,
     serialize=config.logging.serialize,
     enqueue=True,  # process logs in background
