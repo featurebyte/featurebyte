@@ -45,7 +45,7 @@ def test_graph_interpreter_super_simple(graph):
         input_nodes=[node_input, proj_a],
     )
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.PREVIEW)
-    sql_graph.build(graph.nodes[assign.name])
+    sql_graph.build(assign)
     sql_tree = sql_graph.get_node(assign.name).sql
     expected = textwrap.dedent(
         """
@@ -118,7 +118,7 @@ def test_graph_interpreter_multi_assign(graph):
     )
     name = assign_node_2.name
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE)
-    sql_graph.build(graph.nodes[name])
+    sql_graph.build(assign_node_2)
     sql_tree = sql_graph.get_node(name).sql
     expected = textwrap.dedent(
         """
@@ -202,7 +202,7 @@ def test_graph_interpreter_binary_operations(graph, node_type, expected_expr):
     )
     name = assign_node.name
     sql_graph = SQLOperationGraph(graph, SQLType.BUILD_TILE)
-    sql_graph.build(graph.nodes[name])
+    sql_graph.build(assign_node)
     sql_tree = sql_graph.get_node(name).sql
     expected = textwrap.dedent(
         f"""
@@ -247,7 +247,7 @@ def test_graph_interpreter_project_multiple_columns(graph):
         input_nodes=[node_input],
     )
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.PREVIEW)
-    sql_graph.build(graph.nodes[proj.name])
+    sql_graph.build(proj)
     sql_tree = sql_graph.get_node(proj.name).sql
     expected = textwrap.dedent(
         """
@@ -267,58 +267,11 @@ def test_graph_interpreter_project_multiple_columns(graph):
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_graph_interpreter_tile_gen(graph):
+def test_graph_interpreter_tile_gen(query_graph_with_groupby):
     """Test tile building SQL"""
-    node_input = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "columns": ["ts", "cust_id", "a", "b"],
-            "timestamp": "ts",
-            "dbtable": "event_table",
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
-    proj_a = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["a"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[node_input],
-    )
-    proj_b = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["b"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[node_input],
-    )
-    sum_node = graph.add_operation(
-        node_type=NodeType.ADD,
-        node_params={},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[proj_a, proj_b],
-    )
-    assign_node = graph.add_operation(
-        node_type=NodeType.ASSIGN,
-        node_params={"name": "c"},
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[node_input, sum_node],
-    )
-    _groupby_node = graph.add_operation(
-        node_type=NodeType.GROUPBY,
-        node_params={
-            "keys": ["cust_id"],
-            "parent": "a",
-            "agg_func": "avg",
-            "time_modulo_frequency": 5,
-            "frequency": 30,
-            "blind_spot": 1,
-            "timestamp": "ts",
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[assign_node],
-    )
-    interpreter = GraphInterpreter(graph)
-    tile_gen_sqls = interpreter.construct_tile_gen_sql()
+    interpreter = GraphInterpreter(query_graph_with_groupby)
+    groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node)
     assert len(tile_gen_sqls) == 1
 
     info = tile_gen_sqls[0]
@@ -359,7 +312,7 @@ def test_graph_interpreter_snowflake(graph):
         input_nodes=[node_input],
     )
     interpreter = GraphInterpreter(graph)
-    tile_gen_sql = interpreter.construct_tile_gen_sql()
+    tile_gen_sql = interpreter.construct_tile_gen_sql(_groupby_node)
     assert len(tile_gen_sql) == 1
     sql_template = tile_gen_sql[0].sql
     expected = textwrap.dedent(

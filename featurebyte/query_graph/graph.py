@@ -43,9 +43,9 @@ class Node:
     """
 
     name: str
-    type: str
+    type: NodeType
     parameters: dict[str, Any]
-    output_type: str
+    output_type: NodeOutputType
 
 
 class Graph:
@@ -100,9 +100,9 @@ class Graph:
         """
         node = Node(
             name=self._generate_node_name(node_type),
-            type=node_type.value,
+            type=node_type,
             parameters=node_params,
-            output_type=node_output_type.value,
+            output_type=node_output_type,
         )
         self.nodes[node.name] = asdict(node)
         return node
