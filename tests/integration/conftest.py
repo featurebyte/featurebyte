@@ -88,3 +88,75 @@ def snowflake_session(transaction_data_upper_case):
     write_pandas(session.connection, transaction_data_upper_case, table_name)
     session.database_metadata = session.populate_database_metadata()
     yield session
+
+
+@pytest.fixture(name="fb_db_session")
+def snowflake_featurebyte_session():
+    """
+    Create Snowflake session for integration tests of featurebyte sql scripts
+    """
+    database_name = os.getenv("SNOWFLAKE_DATABASE")
+    session = SnowflakeSession(
+        account=os.getenv("SNOWFLAKE_ACCOUNT"),
+        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
+        database=database_name,
+        schema=os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE"),
+    )
+    sql_dir = os.path.join(os.path.dirname(__file__), "..", "..", "sql")
+
+    with open(os.path.join(sql_dir, "F_TIMESTAMP_TO_INDEX.sql"), encoding="utf8") as file:
+        func_sql_1 = file.read()
+    with open(os.path.join(sql_dir, "F_INDEX_TO_TIMESTAMP.sql"), encoding="utf8") as file:
+        func_sql_2 = file.read()
+    with open(os.path.join(sql_dir, "SP_TILE_GENERATE.sql"), encoding="utf8") as file:
+        sp_sql_1 = file.read()
+    with open(os.path.join(sql_dir, "SP_TILE_MONITOR.sql"), encoding="utf8") as file:
+        sp_sql_2 = file.read()
+    with open(os.path.join(sql_dir, "SP_TILE_GENERATE_SCHEDULE.sql"), encoding="utf8") as file:
+        sp_sql_3 = file.read()
+    with open(
+        os.path.join(sql_dir, "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql"), encoding="utf8"
+    ) as file:
+        sp_sql_4 = file.read()
+
+    session.execute_query(func_sql_1)
+    session.execute_query(func_sql_2)
+    session.execute_query(sp_sql_1)
+    session.execute_query(sp_sql_2)
+    session.execute_query(sp_sql_3)
+    session.execute_query(sp_sql_4)
+
+    df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
+    df_tiles["TILE_START_TS"] = pd.to_datetime(df_tiles["TILE_START_TS"])
+    write_pandas(
+        session.connection, df_tiles, "TEMP_TABLE", auto_create_table=True, create_temp_table=True
+    )
+
+    yield session
+
+    session.execute_query(
+        "DROP FUNCTION IF EXISTS F_TIMESTAMP_TO_INDEX(VARCHAR, NUMBER, NUMBER, NUMBER)"
+    )
+    session.execute_query(
+        "DROP FUNCTION IF EXISTS F_INDEX_TO_TIMESTAMP(NUMBER, NUMBER, NUMBER, NUMBER)"
+    )
+    session.execute_query(
+        "DROP PROCEDURE IF EXISTS SP_TILE_GENERATE(VARCHAR, FLOAT, FLOAT, FLOAT, VARCHAR, VARCHAR)"
+    )
+    session.execute_query(
+        "DROP PROCEDURE IF EXISTS SP_TILE_MONITOR(VARCHAR, FLOAT, FLOAT, FLOAT, VARCHAR, VARCHAR, "
+        "VARCHAR)"
+    )
+    session.execute_query(
+        "DROP PROCEDURE IF EXISTS SP_TILE_GENERATE_SCHEDULE(VARCHAR, FLOAT, FLOAT, FLOAT, FLOAT, VARCHAR, "
+        "VARCHAR, VARCHAR, VARCHAR, TIMESTAMP_TZ)"
+    )
+    session.execute_query(
+        "DROP PROCEDURE IF EXISTS SP_TILE_TRIGGER_GENERATE_SCHEDULE(VARCHAR, VARCHAR, VARCHAR, FLOAT, FLOAT, "
+        "FLOAT, FLOAT, VARCHAR, VARCHAR, VARCHAR, VARCHAR)"
+    )
+    session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE")
+    session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE_TILE")
+    session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE_TILE_MONITOR")
+
+    session.connection.close()
