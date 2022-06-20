@@ -42,28 +42,6 @@ def test_add_operation__add_duplicated_node_on_four_nodes_graph(graph_four_nodes
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_proj],
     )
-    graph_dict = graph.dict()
-    assert graph_dict["nodes"] == {
-        "input_1": {"name": "input_1", "type": "input", "parameters": {}, "output_type": "frame"},
-        "project_1": {
-            "name": "project_1",
-            "type": "project",
-            "parameters": {"columns": ["a"]},
-            "output_type": "series",
-        },
-        "eq_1": {"name": "eq_1", "type": "eq", "parameters": {"value": 1}, "output_type": "series"},
-        "filter_1": {
-            "name": "filter_1",
-            "type": "filter",
-            "parameters": {},
-            "output_type": "frame",
-        },
-    }
-    assert graph_dict["edges"] == {
-        "input_1": ["project_1", "filter_1"],
-        "project_1": ["eq_1"],
-        "eq_1": ["filter_1"],
-    }
     assert node_duplicated == node_eq
 
 
