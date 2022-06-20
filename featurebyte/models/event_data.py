@@ -27,11 +27,28 @@ class SQLiteDetails(BaseModel):
     filename: str
 
 
+DB_DETAILS_CLASS = {
+    SourceType.SNOWFLAKE: SnowflakeDetails,
+    SourceType.SQLITE: SQLiteDetails,
+}
+
+
 class DatabaseSource(BaseModel):
     """Model for a database source"""
 
     type: SourceType
     details: Union[SnowflakeDetails, SQLiteDetails]
+
+    def __hash__(self) -> int:
+        """
+        Hash function to support use as a dict key
+
+        Returns
+        -------
+        int
+            hash_value
+        """
+        return hash(str(self.type) + str(self.details))
 
 
 class FeatureJobSetting(BaseModel):
