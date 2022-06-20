@@ -41,7 +41,7 @@ def test_topological_sort__0(graph):
     """
     assert graph.nodes == {}
     assert graph.edges == {}
-    assert topological_sort(graph) == []
+    assert not topological_sort(graph)
 
 
 def test_topological_sort__1(graph_single_node):

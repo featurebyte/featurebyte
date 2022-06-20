@@ -1,8 +1,6 @@
 """
 Unit test for query graph
 """
-import pytest
-
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
