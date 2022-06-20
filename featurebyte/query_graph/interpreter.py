@@ -4,13 +4,14 @@ This module contains the Query Graph Interpreter
 from __future__ import annotations
 
 # pylint: disable=W0511
-from typing import Any, Iterator
+from typing import Any
 
 from dataclasses import dataclass
 from enum import Enum
 
 import sqlglot
 
+from featurebyte.query_graph.algorithms import dfs_traversal
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.sql import (
@@ -188,27 +189,6 @@ class TileGenSql:
     blind_spot: int
 
 
-def dfs(query_graph: QueryGraph, node: Node) -> Iterator[Node]:
-    """Perform a DFS traversal
-
-    Parameters
-    ----------
-    query_graph : QueryGraph
-        Query graph
-    node : Node
-        Current node to traverse from
-
-    Yields
-    ------
-    Node
-        Query graph nodes
-    """
-    yield node
-    for parent_name in query_graph.backward_edges[node.name]:
-        parent_node = query_graph.get_node_by_name(parent_name)
-        yield from dfs(query_graph, parent_node)
-
-
 class TileSQLGenerator:
     """Generator for Tile-building SQL
 
@@ -238,7 +218,7 @@ class TileSQLGenerator:
         """
         # Groupby operations requires building tiles (assuming the aggregation type supports tiling)
         tile_generating_nodes = {}
-        for node in dfs(self.query_graph, starting_node):
+        for node in dfs_traversal(self.query_graph, starting_node):
             if node.type == "groupby":
                 tile_generating_nodes[node.name] = node
 
