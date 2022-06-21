@@ -4,7 +4,7 @@ This module contains groupby related class
 from __future__ import annotations
 
 from featurebyte.api.event_view import EventView
-from featurebyte.api.feature import FeatureList
+from featurebyte.api.feature import FeatureGroup
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
@@ -54,7 +54,7 @@ class EventViewGroupBy(OpsMixin):
         feature_names: list[str],
         timestamp_column: str | None = None,
         value_by_column: str | None = None,
-    ) -> FeatureList:
+    ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys
 
@@ -81,7 +81,7 @@ class EventViewGroupBy(OpsMixin):
 
         Returns
         -------
-        FeatureList
+        FeatureGroup
 
         Raises
         ------
@@ -130,7 +130,7 @@ class EventViewGroupBy(OpsMixin):
             column_var_type_map[column] = DBVarType.FLOAT
             column_lineage_map[column] = (node.name,)
 
-        return FeatureList(
+        return FeatureGroup(
             node=node,
             column_var_type_map=column_var_type_map,
             column_lineage_map=column_lineage_map,

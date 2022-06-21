@@ -45,7 +45,7 @@ class Feature(FeatureQueryObject, Series):
     """
 
 
-class FeatureList(FeatureQueryObject, Frame):
+class FeatureGroup(FeatureQueryObject, Frame):
     """
     FeatureList class
     """

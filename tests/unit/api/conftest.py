@@ -6,7 +6,7 @@ from collections import namedtuple
 import pytest
 
 from featurebyte.api.event_view import EventView
-from featurebyte.api.feature import Feature, FeatureList
+from featurebyte.api.feature import Feature, FeatureGroup
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -133,7 +133,7 @@ def feature_list_fixture(grouped_event_view):
         },
         output_type=NodeOutputType.FRAME,
     )
-    assert isinstance(feature_list, FeatureList)
+    assert isinstance(feature_list, FeatureGroup)
     assert feature_list.protected_columns == {"cust_id"}
     assert feature_list.inception_node == expected_inception_node
     assert feature_list.entity_identifiers == ["cust_id"]
