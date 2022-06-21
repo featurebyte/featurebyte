@@ -3,14 +3,14 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional, Tuple
+
+from pydantic import Field
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, Node
-from featurebyte.session.base import BaseSession
 
 
 class Series(QueryObject, OpsMixin):
@@ -18,27 +18,11 @@ class Series(QueryObject, OpsMixin):
     Implement operations to manipulate database column
     """
 
-    def __init__(
-        self,
-        node: Node,
-        name: str | None,
-        var_type: DBVarType,
-        lineage: tuple[str, ...],
-        row_index_lineage: tuple[str, ...],
-        session: BaseSession | None = None,
-    ):
-        # pylint: disable=R0801 (duplicate-code)
-        super().__init__(
-            graph=GlobalQueryGraph(),
-            node=node,
-            row_index_lineage=row_index_lineage,
-            session=session,
-        )
-        self.name = name
-        self.var_type = var_type
-        self.lineage = lineage
+    name: Optional[str] = Field(default=None)
+    var_type: DBVarType
+    lineage: Tuple[str, ...]
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return (
             f"{type(self).__name__}[{self.var_type}](name={self.name}, node.name={self.node.name})"
         )

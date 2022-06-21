@@ -21,7 +21,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
     EventView class
     """
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return (
             f"{type(self).__name__}(node.name={self.node.name}, "
             f"timestamp_column={self.timestamp_column}, entity_identifiers={self.entity_identifiers})"

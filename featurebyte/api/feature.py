@@ -50,7 +50,7 @@ class FeatureGroup(FeatureQueryObject, Frame):
     FeatureList class
     """
 
-    series_class = Feature
+    _series_class = Feature
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
         # pylint: disable=R0801 (duplicate-code)
