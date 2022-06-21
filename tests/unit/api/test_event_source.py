@@ -3,7 +3,7 @@ Unit test for EventView class
 """
 import pytest
 
-from featurebyte.core.event_view import EventView
+from featurebyte.api.event_view import EventView
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType

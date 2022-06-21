@@ -3,7 +3,7 @@ Unit test for Feature & FeatureList classes
 """
 import pytest
 
-from featurebyte.core.feature import Feature, FeatureList
+from featurebyte.api.feature import Feature, FeatureList
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
 

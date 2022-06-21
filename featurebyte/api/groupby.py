@@ -3,9 +3,9 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
+from featurebyte.api.event_view import EventView
+from featurebyte.api.feature import FeatureList
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
-from featurebyte.core.event_view import EventView
-from featurebyte.core.feature import FeatureList
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
