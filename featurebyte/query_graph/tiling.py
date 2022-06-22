@@ -3,10 +3,15 @@ This module contains helpers related to tiling-based aggregation functions
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from featurebyte.enum import AggFunc
+from featurebyte.query_graph.algorithms import dfs_traversal
+from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.util import hash_node
 
 
 @dataclass
@@ -155,3 +160,25 @@ def get_aggregator(agg_name: AggFunc) -> type[TilingAggregator]:
     if agg_name not in aggregator_mapping:
         raise ValueError(f"Unsupported aggregation: {agg_name}")
     return aggregator_mapping[agg_name]
+
+
+def get_tile_table_identifier(query_graph: QueryGraph, groupby_node: Node):
+    hash_components = []
+    for node in dfs_traversal(query_graph, groupby_node):
+        parameters = node.parameters
+        if node.name == groupby_node.name:
+            job_setting = (
+                parameters["keys"],
+                parameters["parent"],
+                parameters["agg_func"],
+                parameters["frequency"],
+                parameters["time_modulo_frequency"],
+                parameters["blind_spot"],
+            )
+            hash_components.append(job_setting)
+        else:
+            hash_components.append(query_graph.node_name_to_ref[node.name])
+    hasher = hashlib.shake_128()
+    hasher.update(json.dumps(hash_components).encode("utf-8"))
+    table_identifier = hasher.hexdigest(20)
+    return table_identifier

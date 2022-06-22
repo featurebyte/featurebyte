@@ -3,7 +3,6 @@ This module contains the Query Graph Interpreter
 """
 from __future__ import annotations
 
-# pylint: disable=W0511
 from typing import Any
 
 from dataclasses import dataclass
@@ -27,6 +26,7 @@ from featurebyte.query_graph.sql import (
     make_filter_node,
     make_project_node,
 )
+from featurebyte.query_graph.tiling import get_tile_table_identifier
 
 
 class SQLType(Enum):
@@ -120,12 +120,12 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
-            klass: Any
+            input_node_cls: Any
             if self.sql_type == SQLType.BUILD_TILE:
-                klass = BuildTileInputNode
+                input_node_cls = BuildTileInputNode
             else:
-                klass = GenericInputNode
-            sql_node = klass(
+                input_node_cls = GenericInputNode
+            sql_node = input_node_cls(
                 column_names=parameters["columns"],
                 timestamp=parameters["timestamp"],
                 dbtable=parameters["dbtable"],
@@ -180,8 +180,7 @@ class TileGenSql:
         Blind spot. Needed for job scheduling.
     """
 
-    # TODO: tile_table_id likely should be determined by interpreter as well
-    # tile_table_id: str
+    tile_table_id: str
     sql: str
     columns: list[str]
     time_modulo_frequency: int
@@ -248,7 +247,9 @@ class TileSQLGenerator:
         frequency = groupby_node.parameters["frequency"]
         blind_spot = groupby_node.parameters["blind_spot"]
         time_modulo_frequency = groupby_node.parameters["time_modulo_frequency"]
+        tile_table_id = get_tile_table_identifier(self.query_graph, groupby_node)
         info = TileGenSql(
+            tile_table_id=tile_table_id,
             sql=sql.sql(pretty=True),
             columns=groupby_sql_node.columns,
             time_modulo_frequency=time_modulo_frequency,
