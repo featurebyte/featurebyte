@@ -9,9 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from featurebyte.enum import AggFunc
-from featurebyte.query_graph.algorithms import dfs_traversal
 from featurebyte.query_graph.graph import Node, QueryGraph
-from featurebyte.query_graph.util import hash_node
 
 
 @dataclass
@@ -162,23 +160,77 @@ def get_aggregator(agg_name: AggFunc) -> type[TilingAggregator]:
     return aggregator_mapping[agg_name]
 
 
-def get_tile_table_identifier(query_graph: QueryGraph, groupby_node: Node):
+def get_tile_table_identifier(query_graph: QueryGraph, groupby_node: Node) -> str:
+    """Get tile table identifier that can be used as tile table name
+
+    Parameters
+    ----------
+    query_graph : QueryGraph
+        Query graph
+    groupby_node : Node
+        Query graph node corresponding to the groupby operation
+
+    Returns
+    -------
+    str
+    """
+
+    # This should include factors that affect whether a tile table can be reused
     hash_components = []
-    for node in dfs_traversal(query_graph, groupby_node):
-        parameters = node.parameters
-        if node.name == groupby_node.name:
-            job_setting = (
-                parameters["keys"],
-                parameters["parent"],
-                parameters["agg_func"],
-                parameters["frequency"],
-                parameters["time_modulo_frequency"],
-                parameters["blind_spot"],
-            )
-            hash_components.append(job_setting)
-        else:
-            hash_components.append(query_graph.node_name_to_ref[node.name])
+
+    # Aggregation related parameters
+    parameters = groupby_node.parameters
+    aggregation_setting = (
+        parameters["keys"],
+        parameters["parent"],
+        parameters["agg_func"],
+    )
+    hash_components.append(aggregation_setting)
+
+    # Feature job settings
+    job_setting = (
+        parameters["frequency"],
+        parameters["time_modulo_frequency"],
+        parameters["blind_spot"],
+    )
+    hash_components.append(job_setting)
+
+    # Readable prefix for troubleshooting
+    prefix = (
+        f"{parameters['agg_func']}"
+        f"_f{parameters['frequency']}"
+        f"_m{parameters['time_modulo_frequency']}"
+        f"_b{parameters['blind_spot']}"
+    )
+
+    # EventView transformations
+    cached_node_hashes = {}
+
+    def hash_node(cur_node: Node):
+        if cur_node.name in cached_node_hashes:
+            return cached_node_hashes[cur_node.name]
+        prev_node_hashes = []
+        for prev_node_name in query_graph.backward_edges[cur_node.name]:
+            prev_node = query_graph.get_node_by_name(prev_node_name)
+            prev_node_hashes.append(hash_node(prev_node))
+        node_hasher = hashlib.shake_128()
+        hash_data = json.dumps(
+            (cur_node.type, cur_node.parameters, cur_node.output_type, prev_node_hashes)
+        ).encode("utf-8")
+        node_hasher.update(hash_data)
+        hash_output = node_hasher.hexdigest(20)
+        cached_node_hashes[cur_node.name] = hash_output
+        return hash_output
+
+    # Identify transformations by recursively hashing the input of groupby
+    groupby_input_node_names = query_graph.backward_edges[groupby_node.name]
+    assert len(groupby_input_node_names) == 1
+    groupby_input_node = query_graph.get_node_by_name(groupby_input_node_names[0])
+    transformations_hash = hash_node(groupby_input_node)
+    hash_components.append(transformations_hash)
+
+    # Hash all the factors above as the tile table identifier
     hasher = hashlib.shake_128()
-    hasher.update(json.dumps(hash_components).encode("utf-8"))
-    table_identifier = hasher.hexdigest(20)
-    return table_identifier
+    hasher.update(json.dumps(hash_components, sort_keys=True).encode("utf-8"))
+    tile_table_identifier = "_".join([prefix, hasher.hexdigest(20)])
+    return tile_table_identifier
