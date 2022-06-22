@@ -21,7 +21,7 @@ class BaseSession:
     """
 
     source_type: SourceType = field(init=False)
-    database_metadata: dict[str, TableSchema] = field(init=False)
+    database_metadata: Dict[str, TableSchema] = field(init=False)
     connection: Any = field(default=None, init=False)
 
     def __post_init__(self) -> None:

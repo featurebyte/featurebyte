@@ -3,16 +3,15 @@ Frame class
 """
 from __future__ import annotations
 
+from typing import Dict, Tuple
+
 import copy
-from collections import OrderedDict
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, Node
-from featurebyte.session.base import BaseSession
 
 
 class Frame(QueryObject, OpsMixin):
@@ -20,25 +19,10 @@ class Frame(QueryObject, OpsMixin):
     Implement operations to manipulate database table
     """
 
-    series_class = Series
+    _series_class = Series
 
-    def __init__(
-        self,
-        node: Node,
-        column_var_type_map: dict[str, DBVarType],
-        column_lineage_map: dict[str, tuple[str, ...]],
-        row_index_lineage: tuple[str, ...],
-        session: BaseSession | None = None,
-    ):
-        # pylint: disable=R0801 (duplicate-code)
-        super().__init__(
-            graph=GlobalQueryGraph(),
-            node=node,
-            row_index_lineage=row_index_lineage,
-            session=session,
-        )
-        self.column_var_type_map = OrderedDict(column_var_type_map)
-        self.column_lineage_map = column_lineage_map
+    column_var_type_map: Dict[str, DBVarType]
+    column_lineage_map: Dict[str, Tuple[str, ...]]
 
     @property
     def columns(self) -> list[str]:
@@ -128,7 +112,7 @@ class Frame(QueryObject, OpsMixin):
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[self.graph.get_node_by_name(self.column_lineage_map[item][-1])],
             )
-            return self.series_class(
+            return self._series_class(
                 node=node,
                 name=item,
                 var_type=self.column_var_type_map[item],

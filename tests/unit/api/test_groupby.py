@@ -3,7 +3,7 @@ Unit test for EventViewGroupBy
 """
 import pytest
 
-from featurebyte.core.groupby import EventViewGroupBy
+from featurebyte.api.groupby import EventViewGroupBy
 
 
 @pytest.mark.parametrize(
@@ -43,7 +43,7 @@ def test_constructor__wrong_input_type(event_view):
     """
     with pytest.raises(TypeError) as exc:
         EventViewGroupBy(obj=True, keys="whatever")
-    expected_msg = "Expect <class 'featurebyte.core.event_view.EventView'> object type!"
+    expected_msg = "Expect <class 'featurebyte.api.event_view.EventView'> object type!"
     assert expected_msg in str(exc.value)
 
     with pytest.raises(TypeError) as exc:

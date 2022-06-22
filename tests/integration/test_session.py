@@ -5,7 +5,7 @@ import os
 
 import pandas as pd
 
-from featurebyte.core.event_view import EventView
+from featurebyte.api.event_view import EventView
 
 
 def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data):

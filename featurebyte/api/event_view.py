@@ -13,7 +13,7 @@ from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.session.base import BaseSession
 
 if TYPE_CHECKING:
-    from featurebyte.core.groupby import EventViewGroupBy
+    from featurebyte.api.groupby import EventViewGroupBy
 
 
 class EventView(ProtectedColumnsQueryObject, Frame):
@@ -21,7 +21,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
     EventView class
     """
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return (
             f"{type(self).__name__}(node.name={self.node.name}, "
             f"timestamp_column={self.timestamp_column}, entity_identifiers={self.entity_identifiers})"
@@ -149,6 +149,6 @@ class EventView(ProtectedColumnsQueryObject, Frame):
             a groupby object that contains information about the groups
         """
         # pylint: disable=C0415
-        from featurebyte.core.groupby import EventViewGroupBy
+        from featurebyte.api.groupby import EventViewGroupBy
 
         return EventViewGroupBy(obj=self, keys=by_keys)

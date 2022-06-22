@@ -3,28 +3,28 @@ This module generic query object classes
 """
 from __future__ import annotations
 
+from typing import Any, Tuple
+
 from abc import abstractmethod
-from dataclasses import dataclass
 
 import pandas as pd
+from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.query_graph.interpreter import GraphInterpreter
-from featurebyte.session.base import BaseSession
 
 
-@dataclass
-class QueryObject:
+class QueryObject(BaseModel):
     """
     QueryObject class contains query graph, node, row index lineage & session.
     """
 
-    graph: GlobalQueryGraph
+    graph: GlobalQueryGraph = Field(default_factory=GlobalQueryGraph)
     node: Node
-    row_index_lineage: tuple[str, ...]
-    session: BaseSession | None
+    row_index_lineage: Tuple[str, ...]
+    session: Any
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
 
     def _preview_sql(self, columns: list[str], limit: int = 10) -> str:
