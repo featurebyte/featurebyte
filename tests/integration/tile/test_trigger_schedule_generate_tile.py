@@ -15,7 +15,7 @@ def test_trigger_tile_schedule(fb_db_session):
         f" WHERE TILE_START_TS >= FB_START_TS "
         f" AND TILE_START_TS < FB_END_TS"
     )
-    task_name = f"SP_TILE_GENERATE_SCHEDULE_TASK_{table_name}"
+    task_name = f"TILE_TASK_ONLINE_{table_name}"
 
     sql = (
         f"call SP_TILE_TRIGGER_GENERATE_SCHEDULE(null, 'COMPUTE_WH', '{table_name}', 181, 1, 5, 1440, "

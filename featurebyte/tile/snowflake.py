@@ -3,8 +3,6 @@ Snowflake Tile class
 """
 from __future__ import annotations
 
-from datetime import datetime
-
 from jinja2 import Template
 from logzero import logger
 
@@ -89,8 +87,8 @@ class TileSnowflake(TileBase):
         self._blind_spot_seconds = blind_spot_seconds
         self._frequency_minute = frequency_minute
         self._tile_sql = tile_sql
-        self._column_names = column_names
-        self._tile_id = tile_id
+        self._column_names = column_names.strip().upper()
+        self._tile_id = tile_id.strip().upper()
 
     def generate_tiles(self, start_ts_str: str, end_ts_str: str) -> str:
         """
@@ -126,89 +124,108 @@ class TileSnowflake(TileBase):
 
         return sql
 
-    # def schedule_tiles(
-    #     self,
-    #     tile_type: str,
-    #     offline_frequency: Optional[int] = None,
-    #     monitor_periods: Optional[int] = None,
-    #     end_ts: Optional[str] = None,
-    # ) -> None:
-    #
-    #     tile_type = tile_type.upper()
-    #     if tile_type not in ["ONLINE", "OFFLINE"]:
-    #         raise ValueError("tile type must be either ONLINE or OFFLINE")
-    #
-    #     if tile_type == "OFFLINE":
-    #         if not offline_frequency:
-    #             raise ValueError("offline_frequency must not be empty")
-    #         else:
-    #             self._check_integer_range(offline_frequency, self._frequency)
-    #
-    #     sql, task_name = self._construct_schedule_tile_generate_sql(
-    #         tile_type, offline_frequency, monitor_periods, end_ts
-    #     )
-    #     logger.info(sql)
-    #     self._execute(sql)
-    #
-    #     if not end_ts:
-    #         logger.info(f"task_name: {task_name}")
-    #         self._execute(f"ALTER TASK {task_name} RESUME")
+    def schedule_online_tiles(self, monitor_periods: int = 10, start_task: bool = True) -> str:
+        """
+        Schedule online tiles
 
-    # def _construct_tile_generate_sql(self, table_name: str, start_ts: str, end_ts: str) -> str:
-    #     sql = (
-    #         sql_generate_tile.replace("${SQL}", f"'{self._tile_sql}'")
-    #         .replace("FB_START_TS", f"\\'{start_ts}\\'")
-    #         .replace("FB_END_TS", f"\\'{end_ts}\\'")
-    #         .replace("${COLUMN_NAMES}", f"'{','.join(self._column_names)}'")
-    #         .replace("${TABLE_NAME}", f"'{table_name}'")
-    #         .replace("${WINDOW_END_MINUTE}", f"{self._window_end_minute}")
-    #         .replace("${FREQUENCY_MINUTE}", f"{self._frequency}")
-    #     )
-    #
-    #     return sql
+        Parameters
+        ----------
+        monitor_periods: int
+            number of tile periods to monitor and re-generate. Default is 10
+        start_task: bool
+            whether to start the scheduled task
 
-    # def _construct_schedule_tile_generate_sql(
-    #     self, tile_type: str, offline_frequency: int, monitor_periods: int, end_ts: int
-    # ) -> Tuple[str, str]:
-    #
-    #     blindspot_residue_seconds = self._blind_spot_seconds % 60
-    #     target_sql_template = (
-    #         sql_manual_generate_monitor_title if end_ts else sql_schedule_generate_monitor_title
-    #     )
-    #     task_name = f"TASK_{self._feature_name}_{tile_type}_TILE"
-    #
-    #     if not monitor_periods:
-    #         monitor_periods = 2
-    #
-    #     frequency = self._frequency
-    #     if tile_type == "OFFLINE":
-    #         if not offline_frequency:
-    #             frequency = 1440
-    #         else:
-    #             frequency = offline_frequency
-    #
-    #     sql = (
-    #         target_sql_template.replace("${FEATURE_NAME}", f"'{self._feature_name}'")
-    #         .replace("${SQL}", f"'{self._tile_sql}'")
-    #         .replace("${COLUMN_NAMES}", f"'{','.join(self._column_names)}'")
-    #         .replace("${TYPE}", f"'{tile_type}'")
-    #         .replace("${WINDOW_END_MINUTE}", f"{self._window_end_minute}")
-    #         .replace("${FREQUENCY_MINUTE}", f"{frequency}")
-    #         .replace("${BLINDSPOT_RESIDUE_SECONDS}", f"{blindspot_residue_seconds}")
-    #         .replace("${MONITOR_PERIODS}", f"{monitor_periods}")
-    #     )
-    #
-    #     if end_ts:
-    #         sql = sql.replace("${END_TS}", f"'{end_ts}'")
-    #     else:
-    #         window_modular_minute = self._window_end_minute + self._blind_spot_seconds // 60
-    #         cron_expression = f"{window_modular_minute}-59/{self._frequency} * * * *"
-    #
-    #         sql = (
-    #             sql.replace("${END_TS}", f"NULL")
-    #             .replace("${task_name}", f"{task_name}")
-    #             .replace("${warehouse}", f"{self._conn.warehouse}")
-    #             .replace("${cron}", f"{cron_expression}")
-    #         )
-    #
-    #     return sql, task_name
+        Returns
+        -------
+            generated sql to be executed
+        """
+        tile_type = "ONLINE"
+        start_minute = self._time_modulo_frequency_seconds // 60
+        cron = f"{start_minute}-59/{self._frequency_minute} * * * *"
+
+        return self._schedule_tiles(
+            tile_type=tile_type,
+            cron_expr=cron,
+            start_task=start_task,
+            monitor_periods=monitor_periods,
+        )
+
+    def schedule_offline_tiles(self, offline_minutes: int = 1440, start_task: bool = True) -> str:
+        """
+        Schedule offline tiles
+
+        Parameters
+        ----------
+        offline_minutes: int
+            offline tile lookback minutes to monitor and re-generate. Default is 1440
+        start_task: bool
+            whether to start the scheduled task
+
+        Returns
+        -------
+            generated sql to be executed
+        """
+        tile_type = "OFFLINE"
+        start_minute = self._time_modulo_frequency_seconds // 60
+        cron = f"{start_minute} 0 * * *"
+
+        return self._schedule_tiles(
+            tile_type=tile_type,
+            cron_expr=cron,
+            start_task=start_task,
+            offline_minutes=offline_minutes,
+        )
+
+    def _schedule_tiles(
+        self,
+        tile_type: str,
+        cron_expr: str,
+        start_task: bool,
+        offline_minutes: int = 1440,
+        monitor_periods: int = 10,
+    ) -> str:
+        """
+        Common tile schedule method
+
+        Parameters
+        ----------
+        start_task: bool
+            whether to start the scheduled task
+        tile_type: str
+            ONLINE or OFFLINE
+        cron_expr: str
+            cron expression for snowflake Task
+        offline_minutes: int
+            offline tile lookback minutes
+        monitor_periods: int
+            online tile lookback period
+
+        Returns
+        -------
+            generated sql to be executed
+        """
+
+        temp_task_name = f"SHELL_TASK_{self._tile_id}_{tile_type}"
+
+        sql = tm_schedule_tile.render(
+            temp_task_name=temp_task_name,
+            warehouse=self._session.warehouse,
+            cron=cron_expr,
+            sql=self._tile_sql,
+            time_modulo_frequency_seconds=self._time_modulo_frequency_seconds,
+            blind_spot_seconds=self._blind_spot_seconds,
+            frequency_minute=self._frequency_minute,
+            column_names=self._column_names,
+            tile_id=self._tile_id,
+            type=tile_type,
+            offline_minutes=offline_minutes,
+            monitor_periods=monitor_periods,
+        )
+
+        logger.info(f"generated sql: {sql}")
+        self._session.execute_query(sql)
+
+        if start_task:
+            self._session.execute_query(f"ALTER TASK {temp_task_name} RESUME")
+
+        return sql

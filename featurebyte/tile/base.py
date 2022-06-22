@@ -1,5 +1,5 @@
 """
-Abstract Base class for Tile classes of different database types
+Base class for Tile classes of different database types
 """
 from __future__ import annotations
 
@@ -21,11 +21,33 @@ class TileBase:
         tile_sql: str,
         column_names: str,
         tile_id: str,
-    ):
+    ) -> None:
+        """
+        Validate basic tile parameters
 
+        Parameters
+        ----------
+        feature_name: str
+            feature name
+        time_modulo_frequency_seconds: int
+            time modulo seconds for the tile
+        blind_spot_seconds: int
+            blind spot seconds for the tile
+        frequency_minute: int
+            frequency minute for the tile
+        tile_sql: str
+            sql for tile generation
+        column_names: str
+            comma separated string of column names for the tile table
+        tile_id: str
+            hash value of tile id and name
+
+        """
         self._check_integer_range(frequency_minute, 1, 60)
         self._check_integer_range(time_modulo_frequency_seconds, 0)
         self._check_integer_range(blind_spot_seconds, 0)
+
+        self._check_integer_range(time_modulo_frequency_seconds, 1, frequency_minute * 60)
 
         if 60 % frequency_minute != 0:
             raise ValueError("base_window value must be divisible by 60")
@@ -42,7 +64,18 @@ class TileBase:
         if tile_id is None or tile_id.strip() == "":
             raise ValueError("tile_id cannot be empty")
 
-    def _check_integer_range(self, val: int, lower: int, upper: int = math.inf):
+    def _check_integer_range(self, val: int, lower: int, upper: int = math.inf) -> None:
+        """
+        Helper method to validate integer
 
-        if not isinstance(val, numbers.Integral) or val < lower or upper > upper:
+        Parameters
+        ----------
+        val: int
+            integer value to be validated
+        lower: int
+            lower bound
+        upper: int
+            upper bound of the value if presented
+        """
+        if not isinstance(val, numbers.Integral) or val < lower or val > upper:
             raise ValueError(f"{val} must be an integer between {lower} and {upper}")

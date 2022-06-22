@@ -21,7 +21,7 @@ $$
 
     // create and start new scheduled Task with Intervaled Schedule
     var sql = `
-        CREATE OR REPLACE TASK SP_TILE_GENERATE_SCHEDULE_TASK_${FEATURE_NAME}
+        CREATE OR REPLACE TASK TILE_TASK_${TYPE}_${FEATURE_NAME}
         WAREHOUSE = '${WAREHOUSE}'
         SCHEDULE = '${FREQUENCY_MINUTE} MINUTE'
         AS
