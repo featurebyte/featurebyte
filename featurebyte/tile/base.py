@@ -43,11 +43,11 @@ class TileBase:
             hash value of tile id and name
 
         """
-        self._check_integer_range(frequency_minute, 1, 60)
-        self._check_integer_range(time_modulo_frequency_seconds, 0)
-        self._check_integer_range(blind_spot_seconds, 0)
+        self.check_integer_range(frequency_minute, 1, 60)
+        self.check_integer_range(time_modulo_frequency_seconds, 0)
+        self.check_integer_range(blind_spot_seconds, 0)
 
-        self._check_integer_range(time_modulo_frequency_seconds, 1, frequency_minute * 60)
+        self.check_integer_range(time_modulo_frequency_seconds, 1, frequency_minute * 60)
 
         if 60 % frequency_minute != 0:
             raise ValueError("base_window value must be divisible by 60")
@@ -64,7 +64,70 @@ class TileBase:
         if tile_id is None or tile_id.strip() == "":
             raise ValueError("tile_id cannot be empty")
 
-    def _check_integer_range(self, val: int, lower: int, upper: int = math.inf) -> None:
+    def generate_tiles(self, start_ts_str: str, end_ts_str: str) -> str:
+        """
+        Manually trigger tile generation
+
+        Parameters
+        ----------
+        start_ts_str: str
+            start_timestamp of tile. ie. 2022-06-20 15:00:00
+        end_ts_str: str
+            end_timestamp of tile. ie. 2022-06-21 15:00:00
+
+        Returns
+        -------
+        sql: str
+            tile generation sql
+
+        Raises
+        ------
+        NotImplementedError
+            if the child class not implement this method
+        """
+        raise NotImplementedError
+
+    def schedule_online_tiles(self, monitor_periods: int = 10, start_task: bool = True) -> str:
+        """
+        Schedule online tiles
+
+        Parameters
+        ----------
+        monitor_periods: int
+            number of tile periods to monitor and re-generate. Default is 10
+        start_task: bool
+            whether to start the scheduled task
+
+        Raises
+        ------
+        NotImplementedError
+            if the child class not implement this method
+        """
+        raise NotImplementedError
+
+    def schedule_offline_tiles(self, offline_minutes: int = 1440, start_task: bool = True) -> str:
+        """
+        Schedule offline tiles
+
+        Parameters
+        ----------
+        offline_minutes: int
+            offline tile lookback minutes to monitor and re-generate. Default is 1440
+        start_task: bool
+            whether to start the scheduled task
+
+        Returns
+        -------
+            generated sql to be executed
+
+        Raises
+        ------
+        NotImplementedError
+            if the child class not implement this method
+        """
+        raise NotImplementedError
+
+    def check_integer_range(self, val: int, lower: int, upper: int = math.inf) -> None:
         """
         Helper method to validate integer
 

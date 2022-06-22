@@ -13,8 +13,8 @@ def mock_snowflake_session():
     """
     Pytest Fixture for Mock SnowflakeSession
     """
-    with mock.patch("featurebyte.session.snowflake.SnowflakeSession") as m:
-        yield m
+    with mock.patch("featurebyte.session.snowflake.SnowflakeSession") as mock_session:
+        yield mock_session
 
 
 @pytest.fixture
@@ -45,15 +45,15 @@ def test_check_integer_range(snowflake_tile):
     """
     # test validate non integer
     with pytest.raises(ValueError):
-        snowflake_tile._check_integer_range(1.1, 1)
+        snowflake_tile.check_integer_range(1.1, 1)
 
     # test value smaller than lower bound
     with pytest.raises(ValueError):
-        snowflake_tile._check_integer_range(0, 1)
+        snowflake_tile.check_integer_range(0, 1)
 
     # test integer greater than upper bound
     with pytest.raises(ValueError):
-        snowflake_tile._check_integer_range(10, 0, 9)
+        snowflake_tile.check_integer_range(10, 0, 9)
 
 
 def test_tile_validate(snowflake_tile):

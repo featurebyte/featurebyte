@@ -6,8 +6,8 @@ from __future__ import annotations
 from jinja2 import Template
 from logzero import logger
 
-from ..session.snowflake import SnowflakeSession
-from .base import TileBase
+from featurebyte.session.snowflake import SnowflakeSession
+from featurebyte.tile.base import TileBase
 
 tm_gen_tile = Template(
     """
