@@ -94,6 +94,8 @@ def run_groupby_and_get_tile_table_identifier(event_view, aggregate_kwargs, grou
     "overrides,expected_tile_id",
     [
         ({}, "sum_f1800_m300_b600_73745c67c6aadbb5bec07085c9df5601e25dd7a0"),
+        # Features with different windows can share the same tile table
+        ({"windows": ["2d"]}, "sum_f1800_m300_b600_73745c67c6aadbb5bec07085c9df5601e25dd7a0"),
         ({"method": "max"}, "max_f1800_m300_b600_fb8eca2ad73a377833efcd8e22bb36e4fc0a98b2"),
         (
             {"value_column": "event_type"},
