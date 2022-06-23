@@ -4,6 +4,7 @@ Common test fixtures used across files in integration directory
 import os
 import sqlite3
 import tempfile
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -14,7 +15,7 @@ from snowflake.connector.pandas_tools import write_pandas
 from featurebyte.config import Configurations
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.tile.snowflake import TileSnowflake
+from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
 @pytest.fixture(name="transaction_data")
@@ -134,37 +135,34 @@ def snowflake_featurebyte_session():
     Create Snowflake session for integration tests of featurebyte sql scripts
     """
     database_name = os.getenv("SNOWFLAKE_DATABASE")
+    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
+
     session = SnowflakeSession(
         account=os.getenv("SNOWFLAKE_ACCOUNT"),
         warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
         database=database_name,
-        sf_schema=os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE"),
+        sf_schema=schema_name,
         username=os.getenv("SNOWFLAKE_USER"),
         password=os.getenv("SNOWFLAKE_PASSWORD"),
     )
-    sql_dir = os.path.join(os.path.dirname(__file__), "..", "..", "sql")
 
-    with open(os.path.join(sql_dir, "F_TIMESTAMP_TO_INDEX.sql"), encoding="utf8") as file:
-        func_sql_1 = file.read()
-    with open(os.path.join(sql_dir, "F_INDEX_TO_TIMESTAMP.sql"), encoding="utf8") as file:
-        func_sql_2 = file.read()
-    with open(os.path.join(sql_dir, "SP_TILE_GENERATE.sql"), encoding="utf8") as file:
-        sp_sql_1 = file.read()
-    with open(os.path.join(sql_dir, "SP_TILE_MONITOR.sql"), encoding="utf8") as file:
-        sp_sql_2 = file.read()
-    with open(os.path.join(sql_dir, "SP_TILE_GENERATE_SCHEDULE.sql"), encoding="utf8") as file:
-        sp_sql_3 = file.read()
-    with open(
-        os.path.join(sql_dir, "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql"), encoding="utf8"
-    ) as file:
-        sp_sql_4 = file.read()
+    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    session.execute_query(f"CREATE TRANSIENT SCHEMA {temp_schema_name}")
+    session.execute_query(f"USE SCHEMA {temp_schema_name}")
 
-    session.execute_query(func_sql_1)
-    session.execute_query(func_sql_2)
-    session.execute_query(sp_sql_1)
-    session.execute_query(sp_sql_2)
-    session.execute_query(sp_sql_3)
-    session.execute_query(sp_sql_4)
+    sql_dir = os.path.join(os.path.dirname(__file__), "..", "..", "sql", "snowflake")
+    sql_file_list = [
+        "F_TIMESTAMP_TO_INDEX.sql",
+        "F_INDEX_TO_TIMESTAMP.sql",
+        "SP_TILE_GENERATE.sql",
+        "SP_TILE_MONITOR.sql",
+        "SP_TILE_GENERATE_SCHEDULE.sql",
+        "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql",
+    ]
+    for sql_file in sql_file_list:
+        with open(os.path.join(sql_dir, sql_file), encoding="utf8") as file:
+            sql_script = file.read()
+        session.execute_query(sql_script)
 
     df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
     df_tiles["TILE_START_TS"] = pd.to_datetime(df_tiles["TILE_START_TS"])
@@ -198,6 +196,8 @@ def snowflake_featurebyte_session():
     session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE")
     session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE_TILE")
     session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE_TILE_MONITOR")
+
+    session.execute_query(f"DROP SCHEMA IF EXISTS {temp_schema_name}")
 
     session.connection.close()
 

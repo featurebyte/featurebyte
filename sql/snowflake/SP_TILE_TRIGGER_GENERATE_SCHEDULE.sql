@@ -19,9 +19,10 @@ $$
     )
     debug = debug + " - cron_residue_seconds: " + cron_residue_seconds
 
+    task_name = "TILE_TASK_" + TYPE + "_" + FEATURE_NAME
     // create and start new scheduled Task with Intervaled Schedule
     var sql = `
-        CREATE OR REPLACE TASK SP_TILE_GENERATE_SCHEDULE_TASK_${FEATURE_NAME}
+        CREATE OR REPLACE TASK ${task_name}
         WAREHOUSE = '${WAREHOUSE}'
         SCHEDULE = '${FREQUENCY_MINUTE} MINUTE'
         AS
@@ -30,7 +31,7 @@ $$
     snowflake.execute({sqlText: sql})
 
     if (SHELL_TASK_NAME != null) {
-        snowflake.execute({sqlText: `ALTER TASK IF EXISTS SP_TILE_GENERATE_SCHEDULE_TASK_${FEATURE_NAME} RESUME`})
+        snowflake.execute({sqlText: `ALTER TASK IF EXISTS ${task_name} RESUME`})
     }
 
     // remove the temporary task that trigger this stored procedure
