@@ -3,6 +3,7 @@ Utility functions
 """
 from typing import Any, Dict, List
 
+import hashlib
 import json
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -12,8 +13,8 @@ def hash_node(
     node_type: NodeType,
     node_params: Dict[str, Any],
     node_output_type: NodeOutputType,
-    input_node_refs: List[int],
-) -> int:
+    input_node_refs: List[str],
+) -> str:
     """
     Hash the node related parameters for generating the node signature.
 
@@ -30,14 +31,18 @@ def hash_node(
 
     Returns
     -------
-    int
-
+    str
     """
-    return hash(
+    hasher = hashlib.shake_128()
+    hash_data = json.dumps(
         (
             node_type,
-            json.dumps(node_params, sort_keys=True),
+            node_params,
             node_output_type,
             tuple(input_node_refs),
-        )
-    )
+        ),
+        sort_keys=True,
+    ).encode("utf-8")
+    hasher.update(hash_data)
+    hash_result = hasher.hexdigest(20)  # pylint: disable=E1121
+    return hash_result

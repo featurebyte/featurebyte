@@ -1,65 +1,13 @@
 """
 Common test fixtures used across api test directories
 """
-from collections import namedtuple
-
 import pytest
 
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureGroup
 from featurebyte.api.groupby import EventViewGroupBy
-from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
-
-
-@pytest.fixture(name="session")
-def fake_session():
-    """
-    Fake database session for testing
-    """
-    FakeSession = namedtuple("FakeSession", ["database_metadata", "source_type"])
-    database_metadata = {
-        '"trans"': {
-            "cust_id": DBVarType.INT,
-            "session_id": DBVarType.INT,
-            "event_type": DBVarType.VARCHAR,
-            "value": DBVarType.FLOAT,
-            "created_at": DBVarType.INT,
-        }
-    }
-    yield FakeSession(database_metadata=database_metadata, source_type="sqlite")
-
-
-@pytest.fixture(name="event_view")
-def event_view_fixture(session, graph):
-    """
-    EventView fixture
-    """
-    event_view = EventView.from_session(
-        session=session,
-        table_name='"trans"',
-        timestamp_column="created_at",
-        entity_identifiers=["cust_id"],
-    )
-    assert isinstance(event_view, EventView)
-    expected_inception_node = Node(
-        name="input_1",
-        type=NodeType.INPUT,
-        parameters={
-            "columns": ["cust_id", "session_id", "event_type", "value", "created_at"],
-            "timestamp": "created_at",
-            "entity_identifiers": ["cust_id"],
-            "dbtable": '"trans"',
-        },
-        output_type=NodeOutputType.FRAME,
-    )
-    assert event_view.graph.dict() == graph.dict()
-    assert event_view.protected_columns == {"created_at", "cust_id"}
-    assert event_view.inception_node == expected_inception_node
-    assert event_view.timestamp_column == "created_at"
-    assert event_view.entity_identifiers == ["cust_id"]
-    yield event_view
 
 
 @pytest.fixture(name="event_view_without_entity_ids")
