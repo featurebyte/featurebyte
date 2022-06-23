@@ -1,8 +1,6 @@
 """
 Common test fixtures used across api test directories
 """
-from collections import namedtuple
-
 import pytest
 
 from featurebyte.api.event_view import EventView

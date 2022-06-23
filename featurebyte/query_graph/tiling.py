@@ -3,6 +3,8 @@ This module contains helpers related to tiling-based aggregation functions
 """
 from __future__ import annotations
 
+from typing import Any
+
 import hashlib
 import json
 from abc import ABC, abstractmethod
@@ -174,9 +176,12 @@ def get_tile_table_identifier(query_graph: QueryGraph, groupby_node: Node) -> st
     -------
     str
     """
+    # Without this, pylint complains when calling hexdigest() below (too many positional arguments,
+    # but that seems like a false alarm)
+    # pylint: disable=E1121
 
     # This should include factors that affect whether a tile table can be reused
-    hash_components = []
+    hash_components: list[Any] = []
 
     # Aggregation related parameters
     parameters = groupby_node.parameters
@@ -204,9 +209,9 @@ def get_tile_table_identifier(query_graph: QueryGraph, groupby_node: Node) -> st
     )
 
     # EventView transformations
-    cached_node_hashes = {}
+    cached_node_hashes: dict[str, str] = {}
 
-    def hash_node(cur_node: Node):
+    def hash_node(cur_node: Node) -> str:
         if cur_node.name in cached_node_hashes:
             return cached_node_hashes[cur_node.name]
         prev_node_hashes = []
