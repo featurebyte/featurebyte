@@ -2,6 +2,7 @@
 Common test fixtures used across unit test directories
 """
 from collections import namedtuple
+from unittest import mock
 
 import pytest
 
@@ -10,6 +11,7 @@ from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
+from featurebyte.tile.snowflake import TileSnowflake
 
 
 @pytest.fixture(name="graph")
@@ -97,3 +99,26 @@ def event_view_fixture(session, graph):
     assert event_view.timestamp_column == "created_at"
     assert event_view.entity_identifiers == ["cust_id"]
     yield event_view
+
+
+@pytest.fixture
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession")
+def mock_snowflake_tile(mock_execute_query, mock_snowflake_session):
+    """
+    Pytest Fixture for TileSnowflake instance
+    """
+    mock_snowflake_session.warehouse = "warehouse"
+    mock_execute_query.size_effect = None
+
+    tile_s = TileSnowflake(
+        mock_snowflake_session,
+        "featurename",
+        183,
+        3,
+        5,
+        "select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
+        "c1",
+        "tile_id1",
+    )
+    return tile_s
