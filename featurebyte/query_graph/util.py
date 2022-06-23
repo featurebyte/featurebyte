@@ -32,9 +32,7 @@ def hash_node(
     Returns
     -------
     str
-
     """
-    # pylint: disable=E1121
     hasher = hashlib.shake_128()
     hash_data = json.dumps(
         (
@@ -46,5 +44,6 @@ def hash_node(
         sort_keys=True,
     ).encode("utf-8")
     hasher.update(hash_data)
+    # pylint: disable=E1121
     hash_result = hasher.hexdigest(20)
     return hash_result

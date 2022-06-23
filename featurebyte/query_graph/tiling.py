@@ -176,10 +176,6 @@ def get_tile_table_identifier(query_graph: QueryGraph, groupby_node: Node) -> st
     -------
     str
     """
-    # Without this, pylint complains when calling hexdigest() below (too many positional arguments,
-    # but that seems like a false alarm)
-    # pylint: disable=E1121
-
     # This should include factors that affect whether a tile table can be reused
     hash_components: list[Any] = []
 
@@ -217,5 +213,8 @@ def get_tile_table_identifier(query_graph: QueryGraph, groupby_node: Node) -> st
     # Hash all the factors above as the tile table identifier
     hasher = hashlib.shake_128()
     hasher.update(json.dumps(hash_components, sort_keys=True).encode("utf-8"))
+
+    # Ignore "too many positional arguments" for hexdigest(20), but that seems like a false alarm
+    # pylint: disable=E1121
     tile_table_identifier = "_".join([prefix, hasher.hexdigest(20)])
     return tile_table_identifier
