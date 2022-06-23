@@ -93,20 +93,20 @@ def run_groupby_and_get_tile_table_identifier(event_view, aggregate_kwargs, grou
 @pytest.mark.parametrize(
     "overrides,expected_tile_id",
     [
-        ({}, "sum_f1800_m300_b600_73745c67c6aadbb5bec07085c9df5601e25dd7a0"),
+        ({}, "sum_f1800_m300_b600_660bb2c3146819a24651769312ba61a9c96465d1"),
         # Features with different windows can share the same tile table
-        ({"windows": ["2d"]}, "sum_f1800_m300_b600_73745c67c6aadbb5bec07085c9df5601e25dd7a0"),
-        ({"method": "max"}, "max_f1800_m300_b600_fb8eca2ad73a377833efcd8e22bb36e4fc0a98b2"),
+        ({"windows": ["2d"]}, "sum_f1800_m300_b600_660bb2c3146819a24651769312ba61a9c96465d1"),
+        ({"method": "max"}, "max_f1800_m300_b600_eacc788e0533df806f3539628ec37525175e8b8c"),
         (
             {"value_column": "event_type"},
-            "sum_f1800_m300_b600_75cbef54c369e56c0eaf76988e6d882b15864481",
+            "sum_f1800_m300_b600_1e458330b6c20fc0a9ed9af399ee4444da1ba272",
         ),
-        ({"frequency": "10m"}, "sum_f600_m300_b600_8b10bcaa2752efbf46a902c716717442ae6b54f8"),
+        ({"frequency": "10m"}, "sum_f600_m300_b600_b039cedc9dd8a370aaf4bac8f6a519d20b17fe19"),
         (
             {"time_modulo_frequency": "10m"},
-            "sum_f1800_m600_b600_75ee56cfcf23b8a9c4f6c054bafa1ecd76774d97",
+            "sum_f1800_m600_b600_16986f600ecc3c4c9895bd4e6cc945ca7f168c77",
         ),
-        ({"blind_spot": "20m"}, "sum_f1800_m300_b1200_bab672a8bd456b382654cd6dc018f89e16b63922"),
+        ({"blind_spot": "20m"}, "sum_f1800_m300_b1200_991a80d487ba89c3c7b2a48f1a8ac047a6b370e7"),
     ],
 )
 def test_tile_table_id__agg_parameters(event_view, aggregate_kwargs, overrides, expected_tile_id):
@@ -119,11 +119,11 @@ def test_tile_table_id__agg_parameters(event_view, aggregate_kwargs, overrides, 
 @pytest.mark.parametrize(
     "groupby_kwargs,expected_tile_id",
     [
-        ({"by_keys": "cust_id"}, "sum_f1800_m300_b600_73745c67c6aadbb5bec07085c9df5601e25dd7a0"),
+        ({"by_keys": "cust_id"}, "sum_f1800_m300_b600_660bb2c3146819a24651769312ba61a9c96465d1"),
         # Single groupby key specified as a list should give the same result
-        ({"by_keys": ["cust_id"]}, "sum_f1800_m300_b600_73745c67c6aadbb5bec07085c9df5601e25dd7a0"),
+        ({"by_keys": ["cust_id"]}, "sum_f1800_m300_b600_660bb2c3146819a24651769312ba61a9c96465d1"),
         # Changing the by_keys changes the tile ID
-        ({"by_keys": "event_type"}, "sum_f1800_m300_b600_3c7e197e40e46d702c2fb2f042ac09f8ccc9359b"),
+        ({"by_keys": "event_type"}, "sum_f1800_m300_b600_b0b10aa55ae0ea91a1db9bc299f0dd5267723f16"),
     ],
 )
 def test_tile_table_id__groupby_parameters(
@@ -146,10 +146,10 @@ def test_tile_table_id__transformations(event_view, aggregate_kwargs):
     kwargs = copy.deepcopy(aggregate_kwargs)
     kwargs["value_column"] = "value_10"
     tile_id = run_groupby_and_get_tile_table_identifier(event_view, kwargs)
-    assert tile_id == "sum_f1800_m300_b600_d1718c9dd7b88997626cfbbfe491bc9af9b4d064"
+    assert tile_id == "sum_f1800_m300_b600_06fedbc59011280762994b6938b37c263ba25032"
 
     # Note that this is different from above
     kwargs = copy.deepcopy(aggregate_kwargs)
     kwargs["value_column"] = "value_100"
     tile_id = run_groupby_and_get_tile_table_identifier(event_view, kwargs)
-    assert tile_id == "sum_f1800_m300_b600_a2725c23f0cb003d5391ea04b1e1d99f4a61e3e2"
+    assert tile_id == "sum_f1800_m300_b600_266a158991f9ff00ae7b0e20c4dd5cb96aa12a5a"
