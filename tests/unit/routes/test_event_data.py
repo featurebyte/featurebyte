@@ -88,13 +88,13 @@ def test_create_fails_wrong_field_type(test_api_client, event_data_dict):
     """
     Create Event Data fails if wrong types are provided for fields
     """
-    event_data_dict["source"] = "Some other source"
+    event_data_dict["tabular_source"] = ("Some other source", "other_table")
     response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert response.json() == {
         "detail": [
             {
-                "loc": ["body", "source"],
+                "loc": ["body", "tabular_source", 0],
                 "msg": "value is not a valid dict",
                 "type": "type_error.dict",
             }

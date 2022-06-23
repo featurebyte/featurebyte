@@ -3,11 +3,60 @@ Common test fixtures used across api test directories
 """
 import pytest
 
+from featurebyte.api.database_source import DatabaseSource
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureGroup
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
+
+
+@pytest.fixture(name="database_source")
+def database_source_fixture(snowflake_datasource):
+    """
+    Database source fixture
+    """
+    return DatabaseSource(**snowflake_datasource.dict())
+
+
+@pytest.fixture(name="database_table")
+def database_table_fixture(snowflake_connector, snowflake_execute_query, database_source, config):
+    """
+    Test retrieval database table by indexing
+    """
+    _ = snowflake_connector, snowflake_execute_query
+    yield database_source["sf_table", config]
+
+
+@pytest.fixture(name="event_view")
+def event_view_fixture(session, graph):
+    """
+    EventView fixture
+    """
+    event_view = EventView.from_session(
+        session=session,
+        table_name='"trans"',
+        timestamp_column="created_at",
+        entity_identifiers=["cust_id"],
+    )
+    assert isinstance(event_view, EventView)
+    expected_inception_node = Node(
+        name="input_1",
+        type=NodeType.INPUT,
+        parameters={
+            "columns": ["cust_id", "session_id", "event_type", "value", "created_at"],
+            "timestamp": "created_at",
+            "entity_identifiers": ["cust_id"],
+            "dbtable": '"trans"',
+        },
+        output_type=NodeOutputType.FRAME,
+    )
+    assert event_view.graph.dict() == graph.dict()
+    assert event_view.protected_columns == {"created_at", "cust_id"}
+    assert event_view.inception_node == expected_inception_node
+    assert event_view.timestamp_column == "created_at"
+    assert event_view.entity_identifiers == ["cust_id"]
+    yield event_view
 
 
 @pytest.fixture(name="event_view_without_entity_ids")

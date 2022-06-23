@@ -3,21 +3,19 @@ SnowflakeSession class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 import json
 import os
-from collections import OrderedDict
-from dataclasses import dataclass, field
 
+from pydantic import Field
 from snowflake import connector
 
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.session.base import BaseSession, TableSchema
+from featurebyte.session.base import BaseSession
 from featurebyte.session.enum import SnowflakeDataType
 
 
-@dataclass
 class SnowflakeSession(BaseSession):
     """
     Snowflake session class
@@ -25,71 +23,43 @@ class SnowflakeSession(BaseSession):
 
     account: str
     warehouse: str
-    database: str | None = field(default=None)
-    schema: str | None = field(default=None)
-    source_type = SourceType.SNOWFLAKE
+    database: str
+    sf_schema: str
+    username: Optional[str]
+    password: Optional[str]
+    source_type: SourceType = Field(SourceType.SNOWFLAKE, const=True)
 
-    def __post_init__(self) -> None:
-        if self.schema and self.database is None:
-            raise ValueError("Database name is required if schema is set")
+    def __init__(self, **data: Any) -> None:
+        if data.get("username") is None:
+            data["username"] = os.getenv("SNOWFLAKE_USER")
+        if data.get("password") is None:
+            data["password"] = os.getenv("SNOWFLAKE_PASSWORD")
+        if not data.get("username") or not data.get("password"):
+            raise ValueError("Username or password is empty!")
+        super().__init__(**data)
 
-        user = os.getenv("SNOWFLAKE_USER")
-        password = os.getenv("SNOWFLAKE_PASSWORD")
-
-        if not user or not password:
-            raise ValueError(
-                "Environment variables 'SNOWFLAKE_USER' or 'SNOWFLAKE_PASSWORD' is not set"
-            )
-
-        self.connection = connector.connect(
-            user=user,
-            password=password,
-            account=self.account,
-            warehouse=self.warehouse,
-            database=self.database,
-            schema=self.schema,
+        self._connection = connector.connect(
+            user=data["username"],
+            password=data["password"],
+            account=data["account"],
+            warehouse=data["warehouse"],
+            database=data["database"],
+            schema=data["sf_schema"],
         )
-        super().__post_init__()
 
-    def _list_databases(self) -> list[str]:
-        if self.database:
-            return [self.database]
-        query_res = self.execute_query("SHOW DATABASES")
-        if query_res is None:
-            return []
-        return list(query_res["name"])
-
-    def _list_schemas(self) -> list[tuple[str, str]]:
-        if self.database and self.schema:
-            return [(self.database, self.schema)]
-        database_schemas = []
-        for database in self._list_databases():
-            query_res = self.execute_query(f"SHOW SCHEMAS IN DATABASE {database}")
-            if query_res is None:
-                continue
-            for schema in query_res["name"]:
-                database_schemas.append((database, schema))
-        return database_schemas
-
-    def _list_tables_or_views(self) -> list[tuple[str, str, str]]:
-        tables_or_views = []
-        for database, schema in self._list_schemas():
-            query_table_res = self.execute_query(f'SHOW TABLES IN SCHEMA "{database}"."{schema}"')
-            if query_table_res is None:
-                continue
-            for table in query_table_res["name"]:
-                tables_or_views.append((database, schema, table))
-
-            query_view_res = self.execute_query(f'SHOW VIEWS IN SCHEMA "{database}"."{schema}"')
-            if query_view_res is None:
-                continue
-            for view in query_view_res["name"]:
-                tables_or_views.append((database, schema, view))
-        return tables_or_views
+    def list_tables(self) -> list[str]:
+        tables = self.execute_query(f'SHOW TABLES IN SCHEMA "{self.database}"."{self.sf_schema}"')
+        views = self.execute_query(f'SHOW VIEWS IN SCHEMA "{self.database}"."{self.sf_schema}"')
+        output = []
+        if tables is not None:
+            output.extend(tables["name"])
+        if views is not None:
+            output.extend(views["name"])
+        return output
 
     @staticmethod
-    def _convert_to_db_var_type(snowflake_data_type: dict[str, Any]) -> DBVarType:
-        data_type_to_db_var_type_map = {
+    def _convert_to_internal_variable_type(snowflake_var_info: dict[str, Any]) -> DBVarType:
+        to_internal_variable_map = {
             SnowflakeDataType.FIXED: DBVarType.INT,
             SnowflakeDataType.REAL: DBVarType.FLOAT,
             SnowflakeDataType.BINARY: DBVarType.BINARY,
@@ -97,32 +67,26 @@ class SnowflakeSession(BaseSession):
             SnowflakeDataType.DATE: DBVarType.DATE,
             SnowflakeDataType.TIME: DBVarType.TIME,
         }
-        if snowflake_data_type["type"] in data_type_to_db_var_type_map:
-            return data_type_to_db_var_type_map[snowflake_data_type["type"]]
-        if snowflake_data_type["type"] == SnowflakeDataType.TEXT:
-            return DBVarType.CHAR if snowflake_data_type["length"] == 1 else DBVarType.VARCHAR
-        if snowflake_data_type["type"] in {
+        if snowflake_var_info["type"] in to_internal_variable_map:
+            return to_internal_variable_map[snowflake_var_info["type"]]
+        if snowflake_var_info["type"] == SnowflakeDataType.TEXT:
+            return DBVarType.CHAR if snowflake_var_info["length"] == 1 else DBVarType.VARCHAR
+        if snowflake_var_info["type"] in {
             SnowflakeDataType.TIMESTAMP_LTZ,
             SnowflakeDataType.TIMESTAMP_NTZ,
             SnowflakeDataType.TIMESTAMP_TZ,
         }:
             return DBVarType.TIMESTAMP
-        raise ValueError(f"Not supported data type '{snowflake_data_type}'")
+        raise ValueError(f"Not supported data type '{snowflake_var_info}'")
 
-    def populate_database_metadata(self) -> dict[str, TableSchema]:
-        output: dict[str, TableSchema] = {}
-        for database, schema, table_or_view in self._list_tables_or_views():
-            query_column_res = self.execute_query(
-                f'SHOW COLUMNS IN "{database}"."{schema}"."{table_or_view}"'
-            )
-            if query_column_res is None:
-                continue
-            column_name_type_map = OrderedDict()
-            for _, (column_name, data_type) in query_column_res[
-                ["column_name", "data_type"]
-            ].iterrows():
-                column_name_type_map[column_name] = self._convert_to_db_var_type(
-                    json.loads(data_type)
-                )
-            output[f'"{database}"."{schema}"."{table_or_view}"'] = column_name_type_map
-        return output
+    def list_table_schema(self, table_name: str) -> dict[str, DBVarType]:
+        schema = self.execute_query(
+            f'SHOW COLUMNS IN "{self.database}"."{self.sf_schema}"."{table_name}"'
+        )
+        column_name_type_map = {}
+        if schema is not None:
+            column_name_type_map = {
+                column_name: self._convert_to_internal_variable_type(json.loads(var_info))
+                for _, (column_name, var_info) in schema[["column_name", "data_type"]].iterrows()
+            }
+        return column_name_type_map

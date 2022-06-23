@@ -65,33 +65,32 @@ def test_sqlite_session(sqlite_db_filename):
     Test sqlite session
     """
     session = SQLiteSession(filename=sqlite_db_filename)
-    assert session.database_metadata == {
-        '"type_table"': {
-            "int": DBVarType.INT,
-            "integer": DBVarType.INT,
-            "tinyint": DBVarType.INT,
-            "smallint": DBVarType.INT,
-            "mediumint": DBVarType.INT,
-            "bigint": DBVarType.INT,
-            "unsigned_big_int": DBVarType.INT,
-            "int2": DBVarType.INT,
-            "int8": DBVarType.INT,
-            "char": DBVarType.VARCHAR,
-            "varchar": DBVarType.VARCHAR,
-            "varying_character": DBVarType.VARCHAR,
-            "nchar": DBVarType.VARCHAR,
-            "native_character": DBVarType.VARCHAR,
-            "nvarchar": DBVarType.VARCHAR,
-            "text": DBVarType.VARCHAR,
-            "real": DBVarType.FLOAT,
-            "double": DBVarType.FLOAT,
-            "double_precision": DBVarType.FLOAT,
-            "float": DBVarType.FLOAT,
-            "decimal": DBVarType.FLOAT,
-            "boolean": DBVarType.BOOL,
-            "date": DBVarType.DATE,
-            "datetime": DBVarType.TIMESTAMP,
-        }
+    assert session.list_tables() == ["type_table"]
+    assert session.list_table_schema("type_table") == {
+        "int": DBVarType.INT,
+        "integer": DBVarType.INT,
+        "tinyint": DBVarType.INT,
+        "smallint": DBVarType.INT,
+        "mediumint": DBVarType.INT,
+        "bigint": DBVarType.INT,
+        "unsigned_big_int": DBVarType.INT,
+        "int2": DBVarType.INT,
+        "int8": DBVarType.INT,
+        "char": DBVarType.VARCHAR,
+        "varchar": DBVarType.VARCHAR,
+        "varying_character": DBVarType.VARCHAR,
+        "nchar": DBVarType.VARCHAR,
+        "native_character": DBVarType.VARCHAR,
+        "nvarchar": DBVarType.VARCHAR,
+        "text": DBVarType.VARCHAR,
+        "real": DBVarType.FLOAT,
+        "double": DBVarType.FLOAT,
+        "double_precision": DBVarType.FLOAT,
+        "float": DBVarType.FLOAT,
+        "decimal": DBVarType.FLOAT,
+        "boolean": DBVarType.BOOL,
+        "date": DBVarType.DATE,
+        "datetime": DBVarType.TIMESTAMP,
     }
 
 

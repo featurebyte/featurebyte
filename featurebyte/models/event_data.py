@@ -1,7 +1,7 @@
 """
 This module contains EventData related models
 """
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from datetime import datetime
 from enum import Enum
@@ -33,7 +33,7 @@ DB_DETAILS_CLASS = {
 }
 
 
-class DatabaseSource(BaseModel):
+class DatabaseSourceModel(BaseModel):
     """Model for a database source"""
 
     type: SourceType
@@ -104,10 +104,12 @@ class EventDataModel(BaseModel):
     ----------
     name : str
         Name of the EventData
-    table_name : str
-        Database table name
-    source : DatabaseSource
-        Data warehouse connection information
+    tabular_source : Tuple[DatabaseSourceModel, str]
+        Data warehouse connection information & table name tuple
+    event_timestamp_column: str
+        Event timestamp column name
+    record_creation_date_column: str
+        Record creation date column name
     default_feature_job_setting : FeatureJobSetting
         Default feature job setting
     created_at : datetime
@@ -119,8 +121,7 @@ class EventDataModel(BaseModel):
     """
 
     name: str
-    table_name: str
-    source: DatabaseSource
+    tabular_source: Tuple[DatabaseSourceModel, str]
     event_timestamp_column: str
     record_creation_date_column: Optional[str]
     default_feature_job_setting: Optional[FeatureJobSetting]

@@ -22,10 +22,13 @@ class Series(QueryObject, OpsMixin):
     var_type: DBVarType
     lineage: Tuple[str, ...]
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return (
             f"{type(self).__name__}[{self.var_type}](name={self.name}, node.name={self.node.name})"
         )
+
+    def __str__(self) -> str:
+        return repr(self)
 
     def __getitem__(self, item: Series) -> Series:
         if isinstance(item, Series):

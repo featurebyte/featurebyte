@@ -2,7 +2,7 @@
 EventData API routes
 """
 # pylint: disable=too-few-public-methods,relative-beyond-top-level
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Tuple
 
 import datetime
 from http import HTTPStatus
@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from featurebyte.models.event_data import (
-    DatabaseSource,
+    DatabaseSourceModel,
     EventDataModel,
     EventDataStatus,
     FeatureJobSetting,
@@ -36,8 +36,7 @@ class EventDataCreate(BaseModel):
     """
 
     name: str
-    table_name: str
-    source: DatabaseSource
+    tabular_source: Tuple[DatabaseSourceModel, str]
     event_timestamp_column: str
     record_creation_date_column: Optional[str]
     default_feature_job_setting: Optional[FeatureJobSetting]

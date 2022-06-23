@@ -3,15 +3,121 @@ Common test fixtures used across unit test directories
 """
 from collections import namedtuple
 from unittest import mock
+import json
+import tempfile
 
+import pandas as pd
 import pytest
+import yaml
 
 from featurebyte.api.event_view import EventView
+from featurebyte.config import Configurations
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.tile.snowflake import TileSnowflake
+
+
+@pytest.fixture(name="config")
+def config_fixture():
+    """
+    Create config object for testing
+    """
+    config_dict = {
+        "datasource": [
+            {
+                "name": "sf_datasource",
+                "source_type": "snowflake",
+                "account": "sf_account",
+                "warehouse": "sf_warehouse",
+                "sf_schema": "sf_schema",
+                "database": "sf_database",
+                "credential_type": "USERNAME_PASSWORD",
+                "username": "sf_user",
+                "password": "sf_password",
+            },
+            {
+                "name": "sq_datasource",
+                "source_type": "sqlite",
+                "filename": "some_filename.sqlite",
+            },
+        ],
+    }
+    with tempfile.NamedTemporaryFile("w") as file_handle:
+        file_handle.write(yaml.dump(config_dict))
+        file_handle.flush()
+        yield Configurations(config_file_path=file_handle.name)
+
+
+@pytest.fixture(name="snowflake_datasource")
+def snowflake_datasource_fixture(config):
+    """
+    Snowflake database source fixture
+    """
+    return config.db_sources["sf_datasource"]
+
+
+@pytest.fixture(name="sqlite_datasource")
+def sqlite_datasource_fixture(config):
+    """
+    Snowflake database source fixture
+    """
+    return config.db_sources["sq_datasource"]
+
+
+@pytest.fixture(name="snowflake_connector")
+def mock_snowflake_connector():
+    """
+    Mock snowflake connector in featurebyte.session.snowflake module
+    """
+    with mock.patch("featurebyte.session.snowflake.connector") as mock_connector:
+        yield mock_connector
+
+
+@pytest.fixture(name="snowflake_execute_query")
+def mock_snowflake_execute_query():
+    """
+    Mock execute_query in featurebyte.session.snowflake.SnowflakeSession class
+    """
+
+    def side_effect(query):
+        query_map = {
+            'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_table"}],
+            'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_view"}],
+            'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
+                {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED"})},
+                {"column_name": "col_float", "data_type": json.dumps({"type": "REAL"})},
+                {"column_name": "col_char", "data_type": json.dumps({"type": "TEXT", "length": 1})},
+                {
+                    "column_name": "col_text",
+                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                },
+                {"column_name": "col_binary", "data_type": json.dumps({"type": "BINARY"})},
+                {"column_name": "col_boolean", "data_type": json.dumps({"type": "BOOLEAN"})},
+            ],
+            'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_view"': [
+                {"column_name": "col_date", "data_type": json.dumps({"type": "DATE"})},
+                {"column_name": "col_time", "data_type": json.dumps({"type": "TIME"})},
+                {
+                    "column_name": "col_timestamp_ltz",
+                    "data_type": json.dumps({"type": "TIMESTAMP_LTZ"}),
+                },
+                {
+                    "column_name": "col_timestamp_ntz",
+                    "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
+                },
+                {
+                    "column_name": "col_timestamp_tz",
+                    "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                },
+            ],
+        }
+        return pd.DataFrame(query_map[query])
+
+    with mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query") as mock_execute_query:
+        mock_execute_query.side_effect = side_effect
+        yield mock_execute_query
 
 
 @pytest.fixture(name="graph")
