@@ -13,7 +13,7 @@ def hash_node(
     node_type: NodeType,
     node_params: Dict[str, Any],
     node_output_type: NodeOutputType,
-    input_node_refs: List[int],
+    input_node_refs: List[str],
 ) -> str:
     """
     Hash the node related parameters for generating the node signature.
@@ -34,6 +34,7 @@ def hash_node(
     str
 
     """
+    # pylint: disable=E1121
     hasher = hashlib.shake_128()
     hash_data = json.dumps(
         (

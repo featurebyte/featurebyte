@@ -287,10 +287,10 @@ class GlobalQueryGraph(QueryGraph):
     node_type_counter: Dict[str, int] = Field(
         default_factory=GlobalQueryGraphState.get_node_type_counter
     )
-    node_name_to_ref: Dict[str, int] = Field(
+    node_name_to_ref: Dict[str, str] = Field(
         default_factory=GlobalQueryGraphState.get_node_name_to_ref
     )
-    ref_to_node_name: Dict[int, str] = Field(
+    ref_to_node_name: Dict[str, str] = Field(
         default_factory=GlobalQueryGraphState.get_ref_to_node_name
     )
 
