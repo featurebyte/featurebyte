@@ -44,6 +44,5 @@ def hash_node(
         sort_keys=True,
     ).encode("utf-8")
     hasher.update(hash_data)
-    # pylint: disable=E1121
-    hash_result = hasher.hexdigest(20)
+    hash_result = hasher.hexdigest(20)  # pylint: disable=E1121
     return hash_result

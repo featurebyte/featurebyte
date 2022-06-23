@@ -215,6 +215,5 @@ def get_tile_table_identifier(query_graph: QueryGraph, groupby_node: Node) -> st
     hasher.update(json.dumps(hash_components, sort_keys=True).encode("utf-8"))
 
     # Ignore "too many positional arguments" for hexdigest(20), but that seems like a false alarm
-    # pylint: disable=E1121
-    tile_table_identifier = "_".join([prefix, hasher.hexdigest(20)])
+    tile_table_identifier = "_".join([prefix, hasher.hexdigest(20)])  # pylint: disable=E1121
     return tile_table_identifier
