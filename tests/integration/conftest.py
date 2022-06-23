@@ -12,6 +12,7 @@ from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.session.sqlite import SQLiteSession
+from featurebyte.tile.snowflake import TileSnowflake
 
 
 @pytest.fixture(name="transaction_data")
@@ -160,3 +161,31 @@ def snowflake_featurebyte_session():
     session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE_TILE_MONITOR")
 
     session.connection.close()
+
+
+@pytest.fixture
+def snowflake_tile(fb_db_session):
+    """
+    Pytest Fixture for TileSnowflake instance
+    """
+    col_names = "TILE_START_TS,PRODUCT_ACTION,CUST_ID,VALUE"
+    table_name = "TEMP_TABLE"
+    tile_sql = f"SELECT {col_names} FROM {table_name} WHERE TILE_START_TS >= FB_START_TS and TILE_START_TS < FB_END_TS"
+    tile_id = "tile_id1"
+
+    tile_s = TileSnowflake(
+        fb_db_session,
+        "feature1",
+        183,
+        3,
+        5,
+        tile_sql,
+        col_names,
+        tile_id,
+    )
+
+    yield tile_s
+
+    fb_db_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
+    fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
+    fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
