@@ -209,29 +209,9 @@ def get_tile_table_identifier(query_graph: QueryGraph, groupby_node: Node) -> st
     )
 
     # EventView transformations
-    cached_node_hashes: dict[str, str] = {}
-
-    def hash_node(cur_node: Node) -> str:
-        if cur_node.name in cached_node_hashes:
-            return cached_node_hashes[cur_node.name]
-        prev_node_hashes = []
-        for prev_node_name in query_graph.backward_edges[cur_node.name]:
-            prev_node = query_graph.get_node_by_name(prev_node_name)
-            prev_node_hashes.append(hash_node(prev_node))
-        node_hasher = hashlib.shake_128()
-        hash_data = json.dumps(
-            (cur_node.type, cur_node.parameters, cur_node.output_type, prev_node_hashes)
-        ).encode("utf-8")
-        node_hasher.update(hash_data)
-        hash_output = node_hasher.hexdigest(20)
-        cached_node_hashes[cur_node.name] = hash_output
-        return hash_output
-
-    # Identify transformations by recursively hashing the input of groupby
     groupby_input_node_names = query_graph.backward_edges[groupby_node.name]
     assert len(groupby_input_node_names) == 1
-    groupby_input_node = query_graph.get_node_by_name(groupby_input_node_names[0])
-    transformations_hash = hash_node(groupby_input_node)
+    transformations_hash = query_graph.node_name_to_ref[groupby_input_node_names[0]]
     hash_components.append(transformations_hash)
 
     # Hash all the factors above as the tile table identifier

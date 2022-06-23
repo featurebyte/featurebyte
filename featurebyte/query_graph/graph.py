@@ -107,8 +107,8 @@ class QueryGraph(Graph):
     Query graph object
     """
 
-    node_name_to_ref: Dict[str, int] = Field(default_factory=dict)
-    ref_to_node_name: Dict[int, str] = Field(default_factory=dict)
+    node_name_to_ref: Dict[str, str] = Field(default_factory=dict)
+    ref_to_node_name: Dict[str, str] = Field(default_factory=dict)
 
     def get_node_by_name(self, node_name: str) -> Node:
         """
