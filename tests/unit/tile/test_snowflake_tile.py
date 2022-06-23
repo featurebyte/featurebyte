@@ -4,46 +4,78 @@ Unit test for snowflake tile
 import pytest
 
 
-def test_check_integer_range(mock_snowflake_tile):
+@pytest.mark.parametrize(
+    "val,lower,upper,error_msg",
+    [
+        (0, 1, -1, "0 must be an integer greater than or equal to 1"),
+        (10, 0, 9, "10 must be an integer less than or equal to 9"),
+    ],
+)
+def test_check_integer_range(mock_snowflake_tile, val, lower, upper, error_msg):
     """
     Test _check_integer_range method in TileBase
     """
-    # test value smaller than lower bound
-    with pytest.raises(ValueError):
-        mock_snowflake_tile.check_integer_range(0, 1)
+    with pytest.raises(ValueError) as excinfo:
+        mock_snowflake_tile.check_integer_range(val, lower, upper)
 
-    # test integer greater than upper bound
-    with pytest.raises(ValueError):
-        mock_snowflake_tile.check_integer_range(10, 0, 9)
+    assert str(excinfo.value) == error_msg
 
 
-def test_tile_validate(mock_snowflake_tile):
+@pytest.mark.parametrize(
+    "feature,time_modulo_frequency_seconds,blind_spot_seconds,frequency_minute,sql,col_names,tile_id,error_msg",
+    [
+        (" ", 183, 3, 5, "select dummy", "c1,c2", "tile_id1", "feature name cannot be empty"),
+        ("f1", 183, 3, 5, " ", "c1,c2", "tile_id1", "tile_sql cannot be empty"),
+        ("f1", 183, 3, 5, "select dummy", "", "tile_id1", "column_names cannot be empty"),
+        ("f1", 183, 3, 5, "select dummy", "c1,c2", "", "tile_id cannot be empty"),
+        (
+            "f1",
+            -183,
+            3,
+            3,
+            "select dummy",
+            "c1,c2",
+            "tile_id1",
+            "-183 must be an integer greater than or equal to 0",
+        ),
+        (
+            "f1",
+            183,
+            3,
+            3,
+            "select dummy",
+            "c1,c2",
+            "tile_id1",
+            "183 must be an integer less than or equal to 180",
+        ),
+    ],
+)
+def test_tile_validate(
+    mock_snowflake_tile,
+    feature,
+    time_modulo_frequency_seconds,
+    blind_spot_seconds,
+    frequency_minute,
+    sql,
+    col_names,
+    tile_id,
+    error_msg,
+):
     """
     Test validate method in TileBase
     """
-    # test empty feature name
-    with pytest.raises(ValueError):
-        mock_snowflake_tile.validate(" ", 183, 3, 5, "select dummy", "c1,c2", "tile_id1")
+    with pytest.raises(ValueError) as excinfo:
+        mock_snowflake_tile.validate(
+            feature,
+            time_modulo_frequency_seconds,
+            blind_spot_seconds,
+            frequency_minute,
+            sql,
+            col_names,
+            tile_id,
+        )
 
-    # test empty tile sql
-    with pytest.raises(ValueError):
-        mock_snowflake_tile.validate("f1", 183, 3, 5, " ", "c1,c2", "tile_id1")
-
-    # test empty column names
-    with pytest.raises(ValueError):
-        mock_snowflake_tile.validate("f1", 183, 3, 5, "select dummy", "", "tile_id1")
-
-    # test empty tile id
-    with pytest.raises(ValueError):
-        mock_snowflake_tile.validate("f1", 183, 3, 5, "select dummy", "c1,c2", "")
-
-    # test empty negative time modulo frequency
-    with pytest.raises(ValueError):
-        mock_snowflake_tile.validate("f1", -183, 3, 3, "select dummy", "c1,c2", "tile_id1")
-
-    # test time modulo frequency greater than frequency
-    with pytest.raises(ValueError):
-        mock_snowflake_tile.validate("f1", 183, 3, 3, "select dummy", "c1,c2", "tile_id1")
+    assert str(excinfo.value) == error_msg
 
 
 def test_generate_tiles(mock_snowflake_tile):

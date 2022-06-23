@@ -137,11 +137,8 @@ class TileBase:
         ValueError
             if validation fails
         """
-        # if not isinstance(val, numbers.Integral) or val < lower or val > upper:
-        #     raise ValueError(f"{val} must be an integer between {lower} and {upper}")
-
         if not isinstance(val, int) or val < lower:
-            raise ValueError(f"{val} must be an integer not less than {lower}")
+            raise ValueError(f"{val} must be an integer greater than or equal to {lower}")
 
         if upper != -1 and val > upper:
-            raise ValueError(f"{val} must be an integer not greater than {lower}")
+            raise ValueError(f"{val} must be an integer less than or equal to {upper}")
