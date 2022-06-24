@@ -75,6 +75,6 @@ class EventData(EventDataModel, DatabaseTable):
     @validator("record_creation_date_column")
     @classmethod
     def _check_record_creation_date_column_exists(cls, value: str, values: dict[str, Any]) -> str:
-        if value not in values["column_var_type_map"]:
+        if value and value not in values["column_var_type_map"]:
             raise ValueError(f'Column "{value}" not found in the table!')
         return value
