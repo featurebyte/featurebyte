@@ -36,12 +36,12 @@ class Series(QueryObject, OpsMixin):
                 item=self, mask=item, node_output_type=NodeOutputType.SERIES
             )
             return type(self)(
+                tabular_source=self.tabular_source,
                 node=node,
                 name=self.name,
                 var_type=self.var_type,
                 lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
-                session=self.session,
             )
         raise KeyError(f"Series indexing with value '{item}' not supported!")
 
@@ -145,12 +145,12 @@ class Series(QueryObject, OpsMixin):
                 input_nodes=[self.node],
             )
             return type(self)(
+                tabular_source=self.tabular_source,
                 node=node,
                 name=None,
                 var_type=output_var_type,
                 lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self.row_index_lineage,
-                session=self.session,
             )
 
         node = self.graph.add_operation(
@@ -160,12 +160,12 @@ class Series(QueryObject, OpsMixin):
             input_nodes=[self.node, other.node],  # type: ignore
         )
         return type(self)(
+            tabular_source=self.tabular_source,
             node=node,
             name=None,
             var_type=output_var_type,
             lineage=self._append_to_lineage(self.lineage, node.name),
             row_index_lineage=self.row_index_lineage,
-            session=self.session,
         )
 
     def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:

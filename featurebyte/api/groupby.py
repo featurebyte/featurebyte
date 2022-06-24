@@ -134,9 +134,9 @@ class EventViewGroupBy(OpsMixin):
             column_lineage_map[column] = (node.name,)
 
         return FeatureGroup(
+            tabular_source=self.obj.tabular_source,
             node=node,
             column_var_type_map=column_var_type_map,
             column_lineage_map=column_lineage_map,
             row_index_lineage=(node.name,),
-            session=self.obj.session,
         )

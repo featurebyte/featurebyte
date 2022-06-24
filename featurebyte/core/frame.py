@@ -113,12 +113,12 @@ class Frame(QueryObject, OpsMixin):
                 input_nodes=[self.graph.get_node_by_name(self.column_lineage_map[item][-1])],
             )
             return self._series_class(
+                tabular_source=self.tabular_source,
                 node=node,
                 name=item,
                 var_type=self.column_var_type_map[item],
                 lineage=self._append_to_lineage(self.column_lineage_map[item], node.name),
                 row_index_lineage=self.row_index_lineage,
-                session=self.session,
             )
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             node = self.graph.add_operation(
@@ -136,11 +136,11 @@ class Frame(QueryObject, OpsMixin):
                     self.column_lineage_map[col], node.name
                 )
             return type(self)(
+                tabular_source=self.tabular_source,
                 node=node,
                 column_var_type_map=column_var_type_map,
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self.row_index_lineage,
-                session=self.session,
             )
         if isinstance(item, Series):
             node = self._add_filter_operation(
@@ -150,11 +150,11 @@ class Frame(QueryObject, OpsMixin):
             for col, lineage in self.column_lineage_map.items():
                 column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
             return type(self)(
+                tabular_source=self.tabular_source,
                 node=node,
                 column_var_type_map=copy.deepcopy(self.column_var_type_map),
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
-                session=self.session,
             )
         raise TypeError(f"Frame indexing with value '{item}' not supported!")
 

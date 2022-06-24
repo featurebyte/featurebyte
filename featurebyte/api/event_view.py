@@ -80,13 +80,13 @@ class EventView(ProtectedColumnsQueryObject, Frame):
             constructed EventView object
         """
         return EventView(
+            tabular_source=event_data.tabular_source,
             node=event_data.node,
             column_var_type_map=event_data.column_var_type_map.copy(),
             column_lineage_map={
                 col: (event_data.node.name,) for col in event_data.column_var_type_map
             },
             row_index_lineage=tuple(event_data.row_index_lineage),
-            session=event_data.session,
         )
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:

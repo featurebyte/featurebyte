@@ -127,7 +127,7 @@ class SQLOperationGraph:
                 input_node_cls = GenericInputNode
             sql_node = input_node_cls(
                 column_names=parameters["columns"],
-                timestamp=parameters["timestamp"],
+                timestamp=parameters.get("timestamp"),
                 dbtable=parameters["dbtable"],
             )
 
