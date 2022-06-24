@@ -25,6 +25,13 @@ class BaseFrame(QueryObject):
 
     @property
     def dtypes(self) -> pd.Series:
+        """
+        Retrieve column data type info
+
+        Returns
+        -------
+        pd.Series
+        """
         return pd.Series(self.column_var_type_map)
 
     @property
