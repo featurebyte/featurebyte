@@ -40,8 +40,11 @@ class EventViewGroupBy(OpsMixin):
         self.obj = obj
         self.keys = keys_value
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"{type(self).__name__}({self.obj}, keys={self.keys})"
+
+    def __str__(self) -> str:
+        return repr(self)
 
     def aggregate(
         self,

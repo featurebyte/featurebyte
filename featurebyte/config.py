@@ -4,7 +4,7 @@ Read configurations from ini file
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, Optional
 
 import os
 from enum import Enum
@@ -15,7 +15,10 @@ from pydantic.error_wrappers import ValidationError
 
 from featurebyte.enum import SourceType
 from featurebyte.models.credential import CREDENTIAL_CLASS, Credential, CredentialType
-from featurebyte.models.event_data import DB_DETAILS_CLASS, DatabaseSource
+from featurebyte.models.event_data import DB_DETAILS_CLASS, DatabaseSourceModel
+
+# data source to credential mapping
+Credentials = Dict[DatabaseSourceModel, Optional[Credential]]
 
 
 class LogLevel(str, Enum):
@@ -47,12 +50,6 @@ class Configurations:
     FeatureByte SDK settings. Contains general settings, database sources and credentials.
     """
 
-    _config_file_path: str
-    settings: dict[str, Any] = {}
-    db_sources: dict[str, DatabaseSource] = {}
-    credentials: dict[DatabaseSource, Credential] = {}
-    logging: LoggingSettings = LoggingSettings()
-
     def __init__(self, config_file_path: str | None = None) -> None:
         """
         Load and parse configurations
@@ -68,6 +65,10 @@ class Configurations:
                 "FEATUREBYTE_CONFIG_PATH", os.path.join(os.environ["HOME"], ".featurebyte.yaml")
             )
         )
+        self.settings: dict[str, Any] = {}
+        self.db_sources: dict[str, DatabaseSourceModel] = {}
+        self.credentials: Credentials = {}
+        self.logging: LoggingSettings = LoggingSettings()
         self._config_file_path = config_file_path
         self._parse_config(config_file_path)
 
@@ -98,20 +99,22 @@ class Configurations:
                 if "source_type" in datasource and datasource["source_type"] in DB_DETAILS_CLASS:
                     # parse and store database source
                     source_type = SourceType(datasource["source_type"])
-                    db_source = DatabaseSource(
+                    db_source = DatabaseSourceModel(
                         type=source_type,
                         details=DB_DETAILS_CLASS[source_type](**datasource),
                     )
                     self.db_sources[name] = db_source
 
                     # parse and store credentials
-                    credential_type = CredentialType(datasource["credential_type"])
-                    credentials = Credential(
-                        name=name,
-                        source=db_source,
-                        credential=CREDENTIAL_CLASS[credential_type](**datasource),
-                        **datasource,
-                    )
+                    credentials = None
+                    if datasource.get("credential_type"):
+                        credential_type = CredentialType(datasource["credential_type"])
+                        credentials = Credential(
+                            name=name,
+                            source=db_source,
+                            credential=CREDENTIAL_CLASS[credential_type](**datasource),
+                            **datasource,
+                        )
                     self.credentials[db_source] = credentials
             except ValidationError as exc:
                 raise ValueError(f"Invalid settings for datasource: {name}") from exc
@@ -120,6 +123,3 @@ class Configurations:
         if logging_settings:
             # parse logging settings
             self.logging = LoggingSettings(**logging_settings)
-
-
-config = Configurations()

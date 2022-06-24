@@ -3,39 +3,42 @@ SQLiteSession class
 """
 from __future__ import annotations
 
+from typing import Any
+
 import os
 import sqlite3
-from collections import OrderedDict
-from dataclasses import dataclass
+
+from pydantic import Field
 
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.session.base import BaseSession, TableSchema
+from featurebyte.session.base import BaseSession
 
 
-@dataclass
 class SQLiteSession(BaseSession):
     """
     SQLite session class
     """
 
     filename: str
-    source_type = SourceType.SQLITE
+    source_type: SourceType = Field(SourceType.SQLITE, const=True)
 
-    def __post_init__(self) -> None:
-        if not os.path.exists(self.filename):
-            raise FileNotFoundError(f"SQLite file '{self.filename}' not found!")
+    def __init__(self, **data: Any) -> None:
+        super().__init__(**data)
+        filename = data["filename"]
+        if not os.path.exists(filename):
+            raise FileNotFoundError(f"SQLite file '{filename}' not found!")
 
-        self.connection = sqlite3.connect(self.filename)
-        super().__post_init__()
+        self._connection = sqlite3.connect(filename)
 
-    def _list_tables(self) -> list[str]:
-        query_table_res = self.execute_query("SELECT name FROM sqlite_master WHERE type = 'table'")
-        if query_table_res is None:
-            return []
-        return list(query_table_res["name"])
+    def list_tables(self) -> list[str]:
+        tables = self.execute_query("SELECT name FROM sqlite_master WHERE type = 'table'")
+        output = []
+        if tables is not None:
+            output.extend(tables["name"])
+        return output
 
     @staticmethod
-    def _convert_to_db_var_type(sqlite_data_type: str) -> DBVarType:
+    def _convert_to_internal_variable_type(sqlite_data_type: str) -> DBVarType:
         if "INT" in sqlite_data_type:
             return DBVarType.INT
         if "CHAR" in sqlite_data_type or "TEXT" in sqlite_data_type:
@@ -55,14 +58,12 @@ class SQLiteSession(BaseSession):
             return DBVarType.DATE
         raise ValueError(f"Not supported data type '{sqlite_data_type}'")
 
-    def populate_database_metadata(self) -> dict[str, TableSchema]:
-        output: dict[str, TableSchema] = {}
-        for table in self._list_tables():
-            query_column_res = self.execute_query(f'PRAGMA table_info("{table}")')
-            if query_column_res is None:
-                continue
-            column_name_type_map = OrderedDict()
-            for _, (column_name, data_type) in query_column_res[["name", "type"]].iterrows():
-                column_name_type_map[column_name] = self._convert_to_db_var_type(data_type)
-            output[f'"{table}"'] = column_name_type_map
-        return output
+    def list_table_schema(self, table_name: str) -> dict[str, DBVarType]:
+        schema = self.execute_query(f'PRAGMA table_info("{table_name}")')
+        column_name_type_map = {}
+        if schema is not None:
+            column_name_type_map = {
+                column_name: self._convert_to_internal_variable_type(data_type)
+                for _, (column_name, data_type) in schema[["name", "type"]].iterrows()
+            }
+        return column_name_type_map

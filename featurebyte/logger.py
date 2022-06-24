@@ -5,7 +5,7 @@ import sys
 
 from loguru import logger
 
-from featurebyte.config import config
+from featurebyte.config import Configurations
 
 LOGGER_FORMAT = (
     "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
@@ -13,6 +13,7 @@ LOGGER_FORMAT = (
     "<level>{message}</level> | {extra}"
 )
 
+config = Configurations()
 logger.remove()
 logger.add(
     sys.stderr,

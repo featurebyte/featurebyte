@@ -8,7 +8,7 @@ from pydantic.error_wrappers import ValidationError
 
 from featurebyte.enum import SourceType
 from featurebyte.models.event_data import (
-    DatabaseSource,
+    DatabaseSourceModel,
     EventDataModel,
     EventDataStatus,
     FeatureJobSetting,
@@ -26,7 +26,7 @@ def snowflake_source_fixture():
         database="database",
         sf_schema="schema",
     )
-    snowflake_source = DatabaseSource(type=SourceType.SNOWFLAKE, details=snowflake_details)
+    snowflake_source = DatabaseSourceModel(type=SourceType.SNOWFLAKE, details=snowflake_details)
     return snowflake_source
 
 
@@ -62,16 +62,18 @@ def event_data_model_dict_fixture():
     """Fixture for a Event Data dict"""
     return {
         "name": "my_event_data",
-        "table_name": "table",
-        "source": {
-            "type": "snowflake",
-            "details": {
-                "account": "account",
-                "warehouse": "warehouse",
-                "database": "database",
-                "sf_schema": "schema",
+        "tabular_source": (
+            {
+                "type": "snowflake",
+                "details": {
+                    "account": "account",
+                    "warehouse": "warehouse",
+                    "database": "database",
+                    "sf_schema": "schema",
+                },
             },
-        },
+            "table",
+        ),
         "event_timestamp_column": "event_date",
         "record_creation_date_column": "created_at",
         "default_feature_job_setting": {
@@ -108,8 +110,7 @@ def test_event_data_model(
     """Test creation, serialization and deserialization of an EventData"""
     event_data = EventDataModel(
         name="my_event_data",
-        table_name="table",
-        source=snowflake_source,
+        tabular_source=(snowflake_source, "table"),
         event_timestamp_column="event_date",
         record_creation_date_column="created_at",
         default_feature_job_setting=feature_job_setting,

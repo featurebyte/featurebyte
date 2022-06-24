@@ -8,7 +8,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
-from featurebyte.models.event_data import DatabaseSource, SnowflakeDetails, SourceType
+from featurebyte.models.event_data import DatabaseSourceModel, SnowflakeDetails, SourceType
 
 
 @pytest.fixture(name="username_password_credential")
@@ -32,7 +32,7 @@ def source_fixture():
     Source
         Source object
     """
-    return DatabaseSource(
+    return DatabaseSourceModel(
         type=SourceType.SNOWFLAKE,
         details=SnowflakeDetails(
             account="account",

@@ -24,8 +24,11 @@ class QueryObject(BaseModel):
     row_index_lineage: Tuple[str, ...]
     session: Any
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
+
+    def __str__(self) -> str:
+        return repr(self)
 
     def _preview_sql(self, columns: list[str], limit: int = 10) -> str:
         """

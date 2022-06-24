@@ -3,42 +3,60 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
-from dataclasses import dataclass, field
+from abc import abstractmethod
 
 import pandas as pd
+from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.enum import DBVarType, SourceType
 
-TableSchema = Dict[str, DBVarType]
 
-
-@dataclass
-class BaseSession:
+class BaseSession(BaseModel):
     """
     Abstract session class to extract data warehouse table metadata & execute query
     """
 
-    source_type: SourceType = field(init=False)
-    database_metadata: Dict[str, TableSchema] = field(init=False)
-    connection: Any = field(default=None, init=False)
+    source_type: SourceType
+    _connection: Any = PrivateAttr(default=None)
 
-    def __post_init__(self) -> None:
-        if self.connection is None:
-            raise ConnectionError("Failed to established a database connection.")
-        self.database_metadata = self.populate_database_metadata()
-
-    def populate_database_metadata(self) -> dict[str, TableSchema]:
+    @property
+    def connection(self) -> Any:
         """
-        Extract database table schema info and store it to the database metadata
+        Session connection object
 
-        Raises
-        ------
-        NotImplementedError
-            if the child class not implement this method
+        Returns
+        -------
+        Any
         """
-        raise NotImplementedError
+        return self._connection
+
+    @abstractmethod
+    def list_tables(self) -> list[str]:
+        """
+        Execute SQL query to retrieve table names
+
+        Returns
+        -------
+        list[str]
+        """
+
+    @abstractmethod
+    def list_table_schema(self, table_name: str) -> dict[str, DBVarType]:
+        """
+        Execute SQL query to retrieve table schema of a given table name and convert the
+        schema type to internal variable type
+
+        Parameters
+        ----------
+        table_name: str
+            Table name
+
+        Returns
+        -------
+        dict[str, DBVarType]
+        """
 
     def execute_query(self, query: str) -> pd.DataFrame | None:
         """

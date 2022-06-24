@@ -1,12 +1,12 @@
 """
 This module contains EventData related models
 """
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
 from featurebyte.enum import SourceType
@@ -33,7 +33,7 @@ DB_DETAILS_CLASS = {
 }
 
 
-class DatabaseSource(BaseModel):
+class DatabaseSourceModel(BaseModel):
     """Model for a database source"""
 
     type: SourceType
@@ -104,26 +104,27 @@ class EventDataModel(BaseModel):
     ----------
     name : str
         Name of the EventData
-    table_name : str
-        Database table name
-    source : DatabaseSource
-        Data warehouse connection information
-    default_feature_job_setting : FeatureJobSetting
+    tabular_source : Tuple[DatabaseSourceModel, str]
+        Data warehouse connection information & table name tuple
+    event_timestamp_column: str
+        Event timestamp column name
+    record_creation_date_column: Optional[str]
+        Record creation date column name
+    default_feature_job_setting : Optional[FeatureJobSetting]
         Default feature job setting
-    created_at : datetime
+    created_at : Optional[datetime]
         Date when the EventData was first saved or published
     history : list[FeatureJobSettingHistoryEntry]
         History of feature job settings
-    status : EventDataStatus
+    status : Optional[EventDataStatus]
         Status of the EventData
     """
 
     name: str
-    table_name: str
-    source: DatabaseSource
+    tabular_source: Tuple[DatabaseSourceModel, str]
     event_timestamp_column: str
     record_creation_date_column: Optional[str]
     default_feature_job_setting: Optional[FeatureJobSetting]
-    created_at: datetime
-    history: List[FeatureJobSettingHistoryEntry]
-    status: EventDataStatus
+    created_at: Optional[datetime] = Field(default=None)
+    history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list)
+    status: Optional[EventDataStatus] = Field(default=None)

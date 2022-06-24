@@ -1,17 +1,54 @@
 """
 Common test fixtures used across unit test directories
 """
-from collections import namedtuple
+import json
+import tempfile
 from unittest import mock
 
+import pandas as pd
 import pytest
+import yaml
 
+from featurebyte.api.database_source import DatabaseSource
+from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
+from featurebyte.config import Configurations
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.tile.snowflake import TileSnowflake
+
+
+@pytest.fixture(name="config")
+def config_fixture():
+    """
+    Config object for unit testing
+    """
+    config_dict = {
+        "datasource": [
+            {
+                "name": "sf_datasource",
+                "source_type": "snowflake",
+                "account": "sf_account",
+                "warehouse": "sf_warehouse",
+                "sf_schema": "sf_schema",
+                "database": "sf_database",
+                "credential_type": "USERNAME_PASSWORD",
+                "username": "sf_user",
+                "password": "sf_password",
+            },
+            {
+                "name": "sq_datasource",
+                "source_type": "sqlite",
+                "filename": "some_filename.sqlite",
+            },
+        ],
+    }
+    with tempfile.NamedTemporaryFile("w") as file_handle:
+        file_handle.write(yaml.dump(config_dict))
+        file_handle.flush()
+        yield Configurations(config_file_path=file_handle.name)
 
 
 @pytest.fixture(name="graph")
@@ -21,6 +58,147 @@ def query_graph():
     """
     GlobalQueryGraphState.reset()
     yield GlobalQueryGraph()
+
+
+@pytest.fixture(name="snowflake_database_source")
+def snowflake_database_source_fixture(config, graph):
+    """
+    Snowflake database source fixture
+    """
+    _ = graph
+    return DatabaseSource(**config.db_sources["sf_datasource"].dict())
+
+
+@pytest.fixture(name="snowflake_connector")
+def mock_snowflake_connector():
+    """
+    Mock snowflake connector in featurebyte.session.snowflake module
+    """
+    with mock.patch("featurebyte.session.snowflake.connector") as mock_connector:
+        yield mock_connector
+
+
+@pytest.fixture(name="snowflake_execute_query")
+def mock_snowflake_execute_query():
+    """
+    Mock execute_query in featurebyte.session.snowflake.SnowflakeSession class
+    """
+
+    def side_effect(query):
+        query_map = {
+            'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_table"}],
+            'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_view"}],
+            'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
+                {"column_name": "col_int", "data_type": json.dumps({"type": "FIXED"})},
+                {"column_name": "col_float", "data_type": json.dumps({"type": "REAL"})},
+                {"column_name": "col_char", "data_type": json.dumps({"type": "TEXT", "length": 1})},
+                {
+                    "column_name": "col_text",
+                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                },
+                {"column_name": "col_binary", "data_type": json.dumps({"type": "BINARY"})},
+                {"column_name": "col_boolean", "data_type": json.dumps({"type": "BOOLEAN"})},
+                {
+                    "column_name": "event_timestamp",
+                    "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                },
+                {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
+                {"column_name": "cust_id", "data_type": json.dumps({"type": "FIXED"})},
+            ],
+            'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_view"': [
+                {"column_name": "col_date", "data_type": json.dumps({"type": "DATE"})},
+                {"column_name": "col_time", "data_type": json.dumps({"type": "TIME"})},
+                {
+                    "column_name": "col_timestamp_ltz",
+                    "data_type": json.dumps({"type": "TIMESTAMP_LTZ"}),
+                },
+                {
+                    "column_name": "col_timestamp_ntz",
+                    "data_type": json.dumps({"type": "TIMESTAMP_NTZ"}),
+                },
+                {
+                    "column_name": "col_timestamp_tz",
+                    "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                },
+            ],
+        }
+        return pd.DataFrame(query_map[query])
+
+    with mock.patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
+        mock_execute_query.side_effect = side_effect
+        yield mock_execute_query
+
+
+@pytest.fixture(name="snowflake_database_table")
+def snowflake_database_table_fixture(
+    snowflake_connector, snowflake_execute_query, snowflake_database_source, config
+):
+    """
+    DatabaseTable object fixture
+    """
+    _ = snowflake_connector, snowflake_execute_query
+    yield snowflake_database_source["sf_table", config.credentials]
+
+
+@pytest.fixture(name="snowflake_event_data")
+def snowflake_event_data_fixture(snowflake_database_table, config):
+    """
+    EventData object fixture
+    """
+    event_data = EventData.from_tabular_source(
+        tabular_source=snowflake_database_table,
+        name="sf_event_data",
+        event_timestamp_column="event_timestamp",
+        record_creation_date_column="created_at",
+        credentials=config.credentials,
+    )
+    return event_data
+
+
+@pytest.fixture(name="snowflake_event_view")
+def snowflake_event_view_fixture(snowflake_event_data, config):
+    """
+    EventData object fixture
+    """
+    _ = config
+    event_view = EventView.from_event_data(event_data=snowflake_event_data)
+    assert isinstance(event_view, EventView)
+    expected_inception_node = Node(
+        name="input_2",
+        type=NodeType.INPUT,
+        parameters={
+            "columns": [
+                "col_int",
+                "col_float",
+                "col_char",
+                "col_text",
+                "col_binary",
+                "col_boolean",
+                "event_timestamp",
+                "created_at",
+                "cust_id",
+            ],
+            "timestamp": "event_timestamp",
+            "record_creation_date": "created_at",
+            "database_source": {
+                "type": "snowflake",
+                "details": {
+                    "account": "sf_account",
+                    "database": "sf_database",
+                    "sf_schema": "sf_schema",
+                    "warehouse": "sf_warehouse",
+                },
+            },
+            "dbtable": "sf_table",
+        },
+        output_type=NodeOutputType.FRAME,
+    )
+    assert event_view.inception_node == expected_inception_node
+    assert event_view.protected_columns == {"event_timestamp"}
+    assert event_view.timestamp_column == "event_timestamp"
+    yield event_view
 
 
 @pytest.fixture(name="dataframe")
@@ -50,55 +228,6 @@ def dataframe_fixture(graph):
         column_lineage_map={col: (node.name,) for col in column_var_type_map},
         row_index_lineage=(node.name,),
     )
-
-
-@pytest.fixture(name="session")
-def fake_session():
-    """
-    Fake database session for testing
-    """
-    FakeSession = namedtuple("FakeSession", ["database_metadata", "source_type"])
-    database_metadata = {
-        '"trans"': {
-            "cust_id": DBVarType.INT,
-            "session_id": DBVarType.INT,
-            "event_type": DBVarType.VARCHAR,
-            "value": DBVarType.FLOAT,
-            "created_at": DBVarType.INT,
-        }
-    }
-    yield FakeSession(database_metadata=database_metadata, source_type="sqlite")
-
-
-@pytest.fixture(name="event_view")
-def event_view_fixture(session, graph):
-    """
-    EventView fixture
-    """
-    event_view = EventView.from_session(
-        session=session,
-        table_name='"trans"',
-        timestamp_column="created_at",
-        entity_identifiers=["cust_id"],
-    )
-    assert isinstance(event_view, EventView)
-    expected_inception_node = Node(
-        name="input_1",
-        type=NodeType.INPUT,
-        parameters={
-            "columns": ["cust_id", "session_id", "event_type", "value", "created_at"],
-            "timestamp": "created_at",
-            "entity_identifiers": ["cust_id"],
-            "dbtable": '"trans"',
-        },
-        output_type=NodeOutputType.FRAME,
-    )
-    assert event_view.graph.dict() == graph.dict()
-    assert event_view.protected_columns == {"created_at", "cust_id"}
-    assert event_view.inception_node == expected_inception_node
-    assert event_view.timestamp_column == "created_at"
-    assert event_view.entity_identifiers == ["cust_id"]
-    yield event_view
 
 
 @pytest.fixture
