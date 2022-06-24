@@ -78,11 +78,6 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         -------
         EventView
             constructed EventView object
-
-        Raises
-        ------
-        KeyError
-            if the table name does not exist in the session's database metadata
         """
         return EventView(
             node=event_data.node,

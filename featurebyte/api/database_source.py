@@ -65,7 +65,7 @@ class DatabaseSource(DatabaseSourceModel):
 
         Raises
         ------
-        Type
+        TypeError
             When the item type does not support
 
         """

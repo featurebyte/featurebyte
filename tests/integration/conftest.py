@@ -64,8 +64,8 @@ def sqlite_filename_fixture(transaction_data):
         yield file_handle.name
 
 
-@pytest.fixture()
-def config(sqlite_filename):
+@pytest.fixture(name="config")
+def config_fixture(sqlite_filename):
     """
     Config object for integration testing
     """

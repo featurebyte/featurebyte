@@ -48,9 +48,14 @@ class BaseSession(BaseModel):
         Execute SQL query to retrieve table schema of a given table name and convert the
         schema type to internal variable type
 
+        Parameters
+        ----------
+        table_name: str
+            Table name
+
         Returns
         -------
-        dict
+        dict[str, DBVarType]
         """
 
     def execute_query(self, query: str) -> pd.DataFrame | None:
