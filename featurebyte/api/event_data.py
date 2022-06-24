@@ -31,9 +31,9 @@ class EventData(EventDataModel, QueryObject):
     EventData class
     """
 
-    created_at: Optional[datetime]
+    created_at: Optional[datetime] = Field(default=None)
     history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list)
-    status: Optional[EventDataStatus]
+    status: Optional[EventDataStatus] = Field(default=None)
     column_var_type_map: Dict[str, DBVarType]
     credentials: Optional[Dict[DatabaseSourceModel, Optional[Credential]]] = Field(default=None)
 
@@ -87,7 +87,7 @@ class EventData(EventDataModel, QueryObject):
         event_timestamp_column: str,
         record_creation_date_column: str | None = None,
         credentials: dict[DatabaseSourceModel, Credential | None] | None = None,
-    ):
+    ) -> EventData:
         node_parameters = tabular_source.node.parameters.copy()
         database_source = DatabaseSource(**node_parameters["database_source"])
         table_name = node_parameters["dbtable"]

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from featurebyte.api.event_data import EventData
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
@@ -64,26 +65,17 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         return self.inception_node.parameters.get("entity_identifiers")
 
     @classmethod
-    def from_session(
+    def from_event_data(
         cls,
-        session: BaseSession,
-        table_name: str,
-        timestamp_column: str,
-        entity_identifiers: list[str] | None = None,
+        event_data: EventData,
     ) -> EventView:
         """
         Construct an EventView object using session object
 
         Parameters
         ----------
-        session: BaseSession
-            database session object to retrieve database metadata
-        table_name: str
-            table name of the event source
-        timestamp_column: str
-            timestamp column of the event source
-        entity_identifiers: str
-            entity id of the event source
+        event_data: EventData
+            EventData object used to construct EventView object
 
         Returns
         -------
@@ -95,35 +87,14 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         KeyError
             if the table name does not exist in the session's database metadata
         """
-        if table_name not in session.database_metadata:
-            raise KeyError(f"Could not find the {table_name} table!")
-
-        column_var_type_map = session.database_metadata[table_name]
-        required_columns = [timestamp_column]
-        if entity_identifiers:
-            required_columns.extend(entity_identifiers)
-
-        for column in required_columns:
-            if column not in column_var_type_map:
-                raise KeyError(f'Could not find the "{column}" column from the table {table_name}!')
-
-        node = GlobalQueryGraph().add_operation(
-            node_type=NodeType.INPUT,
-            node_params={
-                "columns": list(column_var_type_map.keys()),
-                "timestamp": timestamp_column,
-                "entity_identifiers": entity_identifiers,
-                "dbtable": table_name,
-            },
-            node_output_type=NodeOutputType.FRAME,
-            input_nodes=[],
-        )
         return EventView(
-            node=node,
-            column_var_type_map=column_var_type_map,
-            column_lineage_map={col: (node.name,) for col in column_var_type_map},
-            row_index_lineage=(node.name,),
-            session=session,
+            node=event_data.node,
+            column_var_type_map=event_data.column_var_type_map.copy(),
+            column_lineage_map={
+                col: (event_data.node.name,) for col in event_data.column_var_type_map
+            },
+            row_index_lineage=tuple(event_data.row_index_lineage),
+            session=event_data.session,
         )
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:

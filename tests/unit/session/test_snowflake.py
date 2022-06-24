@@ -51,6 +51,9 @@ def test_snowflake_session__credential_from_config(snowflake_session_dict):
         "col_text": DBVarType.VARCHAR,
         "col_binary": DBVarType.BINARY,
         "col_boolean": DBVarType.BOOL,
+        "created_at": DBVarType.TIMESTAMP,
+        "cust_id": DBVarType.INT,
+        "event_timestamp": DBVarType.TIMESTAMP,
     }
     assert session.list_table_schema("sf_view") == {
         "col_date": DBVarType.DATE,

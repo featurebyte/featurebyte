@@ -7,6 +7,7 @@ import pytest
 from loguru import logger
 from pytest import LogCaptureFixture
 
+from featurebyte.api.database_source import DatabaseSource
 from featurebyte.session.manager import SessionManager
 
 
@@ -30,10 +31,18 @@ def session_manager_fixture(config, snowflake_connector):
     yield SessionManager(credentials=config.credentials)
 
 
+@pytest.fixture(name="sqlite_database_source")
+def sqlite_database_source_fixture(config, graph):
+    """
+    SQLite database source fixture
+    """
+    return DatabaseSource(**config.db_sources["sq_datasource"].dict())
+
+
 @patch("featurebyte.session.sqlite.os", Mock())
 @patch("featurebyte.session.sqlite.sqlite3", Mock())
 def test_session_manager__get_cached_properly(
-    snowflake_datasource, sqlite_datasource, session_manager, caplog
+    snowflake_database_source, sqlite_database_source, session_manager, caplog
 ):
     """
     Test session manager get cached properly
@@ -42,21 +51,21 @@ def test_session_manager__get_cached_properly(
     assert caplog.records == []
 
     # retrieve data source session for the first time
-    _ = session_manager[snowflake_datasource]
+    _ = session_manager[snowflake_database_source]
     assert len(caplog.records) == 1
     assert caplog.records[0].msg == "Create a new session for snowflake"
 
     # retrieve same data source for the second time, check that cached is used
-    _ = session_manager[snowflake_datasource]
+    _ = session_manager[snowflake_database_source]
     assert len(caplog.records) == 1
 
     # retrieve different data source
-    _ = session_manager[sqlite_datasource]
+    _ = session_manager[sqlite_database_source]
     assert len(caplog.records) == 2
     assert caplog.records[1].msg == "Create a new session for sqlite"
 
     # clear the cache & call again
     session_manager.__getitem__.cache_clear()
-    _ = session_manager[snowflake_datasource]
+    _ = session_manager[snowflake_database_source]
     assert len(caplog.records) == 3
     assert caplog.records[2].msg == "Create a new session for snowflake"

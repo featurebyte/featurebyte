@@ -1,33 +1,16 @@
 """
 Unit test for DatabaseTable
 """
-import textwrap
-
 import pandas as pd
 
 from featurebyte.enum import DBVarType
 
 
-def test_database_table(database_table):
+def test_database_table(snowflake_database_table, expected_snowflake_table_preview_query):
     """
     Test DatabaseTable preview functionality
     """
-    query = database_table.preview_sql()
-    expected_query = textwrap.dedent(
-        """
-        SELECT
-          "col_int",
-          "col_float",
-          "col_char",
-          "col_text",
-          "col_binary",
-          "col_boolean"
-        FROM "sf_table"
-        LIMIT 10
-        """
-    ).strip()
-    assert query == expected_query
-
+    assert snowflake_database_table.preview_sql() == expected_snowflake_table_preview_query
     expected_dtypes = pd.Series(
         {
             "col_int": DBVarType.INT,
@@ -36,6 +19,9 @@ def test_database_table(database_table):
             "col_text": DBVarType.VARCHAR,
             "col_binary": DBVarType.BINARY,
             "col_boolean": DBVarType.BOOL,
+            "event_timestamp": DBVarType.TIMESTAMP,
+            "created_at": DBVarType.TIMESTAMP,
+            "cust_id": DBVarType.INT,
         }
     )
-    pd.testing.assert_series_equal(database_table.dtypes, expected_dtypes)
+    pd.testing.assert_series_equal(snowflake_database_table.dtypes, expected_dtypes)

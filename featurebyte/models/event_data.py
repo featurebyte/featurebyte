@@ -125,6 +125,6 @@ class EventDataModel(BaseModel):
     event_timestamp_column: str
     record_creation_date_column: Optional[str]
     default_feature_job_setting: Optional[FeatureJobSetting]
-    created_at: datetime
+    created_at: Optional[datetime]
     history: List[FeatureJobSettingHistoryEntry]
-    status: EventDataStatus
+    status: Optional[EventDataStatus]
