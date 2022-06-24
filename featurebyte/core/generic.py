@@ -3,7 +3,7 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Tuple
 
 from abc import abstractmethod
 
@@ -19,6 +19,10 @@ from featurebyte.session.manager import SessionManager
 
 
 class ExtendedDatabaseSourceModel(DatabaseSourceModel):
+    """
+    ExtendedDatabaseSourceModel class contains method to construct a session
+    """
+
     def get_session(self, credentials: Credentials | None = None) -> BaseSession:
         """
         Get data source session based on provided configuration
@@ -47,7 +51,7 @@ class QueryObject(BaseModel):
     graph: GlobalQueryGraph = Field(default_factory=GlobalQueryGraph)
     node: Node
     row_index_lineage: Tuple[str, ...]
-    tabular_source: Optional[Tuple[DatabaseSourceModel, str]]
+    tabular_source: Tuple[DatabaseSourceModel, str]
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
@@ -88,7 +92,7 @@ class QueryObject(BaseModel):
 
         Returns
         -------
-        pd.DataFrame | None
+        str
         """
         return self._preview_sql(columns=[], limit=limit)
 
@@ -105,7 +109,7 @@ class QueryObject(BaseModel):
 
         Returns
         -------
-        pd.DataFrame | None
+        pd.DataFrame
         """
         if credentials is None:
             config = Configurations()

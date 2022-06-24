@@ -21,6 +21,8 @@ class DatabaseTable(DatabaseTableModel, QueryObject):
     DatabaseTable class to preview table
     """
 
+    # pylint: disable=R0903 (too-few-public-methods)
+
     column_var_type_map: Dict[str, DBVarType]
     credentials: Optional[Credentials] = Field(default=None)
 
@@ -38,7 +40,7 @@ class DatabaseTable(DatabaseTableModel, QueryObject):
         }
 
     @classmethod
-    def _get_other_node_parameters(cls, values):
+    def _get_other_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         _ = values
         return {}
 

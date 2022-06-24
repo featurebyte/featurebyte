@@ -3,6 +3,8 @@ EventData class
 """
 from __future__ import annotations
 
+from typing import Any
+
 from featurebyte.api.database_source import DatabaseSource
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.models.credential import Credential
@@ -17,7 +19,7 @@ class EventData(EventDataModel, DatabaseTable):
     # pylint: disable=R0903 (too-few-public-methods)
 
     @classmethod
-    def _get_other_node_parameters(cls, values):
+    def _get_other_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         return {
             "timestamp": values["event_timestamp_column"],
             "record_creation_date": values.get("record_creation_date_column"),

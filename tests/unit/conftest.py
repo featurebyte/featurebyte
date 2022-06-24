@@ -202,7 +202,7 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
 
 
 @pytest.fixture(name="dataframe")
-def dataframe_fixture(graph):
+def dataframe_fixture(graph, snowflake_database_source):
     """
     Frame test fixture
     """
@@ -223,6 +223,7 @@ def dataframe_fixture(graph):
         input_nodes=[],
     )
     yield Frame(
+        tabular_source=(snowflake_database_source, "some_table_name"),
         node=node,
         column_var_type_map=column_var_type_map,
         column_lineage_map={col: (node.name,) for col in column_var_type_map},
