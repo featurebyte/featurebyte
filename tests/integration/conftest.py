@@ -138,7 +138,9 @@ def snowflake_featurebyte_session():
         account=os.getenv("SNOWFLAKE_ACCOUNT"),
         warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
         database=database_name,
-        schema=os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE"),
+        sf_schema=os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE"),
+        username=os.getenv("SNOWFLAKE_USER"),
+        password=os.getenv("SNOWFLAKE_PASSWORD"),
     )
     sql_dir = os.path.join(os.path.dirname(__file__), "..", "..", "sql")
 
