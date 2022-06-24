@@ -3,7 +3,7 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Any, Tuple
 
 from abc import abstractmethod
 
@@ -12,7 +12,6 @@ from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.query_graph.interpreter import GraphInterpreter
-from featurebyte.session.base import BaseSession
 
 
 class QueryObject(BaseModel):
@@ -23,7 +22,7 @@ class QueryObject(BaseModel):
     graph: GlobalQueryGraph = Field(default_factory=GlobalQueryGraph)
     node: Node
     row_index_lineage: Tuple[str, ...]
-    session: Optional[BaseSession]
+    session: Any
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
