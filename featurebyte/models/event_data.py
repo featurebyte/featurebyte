@@ -108,15 +108,15 @@ class EventDataModel(BaseModel):
         Data warehouse connection information & table name tuple
     event_timestamp_column: str
         Event timestamp column name
-    record_creation_date_column: str
+    record_creation_date_column: Optional[str]
         Record creation date column name
-    default_feature_job_setting : FeatureJobSetting
+    default_feature_job_setting : Optional[FeatureJobSetting]
         Default feature job setting
-    created_at : datetime
+    created_at : Optional[datetime]
         Date when the EventData was first saved or published
     history : list[FeatureJobSettingHistoryEntry]
         History of feature job settings
-    status : EventDataStatus
+    status : Optional[EventDataStatus]
         Status of the EventData
     """
 
