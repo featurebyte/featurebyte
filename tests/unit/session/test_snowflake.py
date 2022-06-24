@@ -68,34 +68,3 @@ def test_snowflake_session__credential_from_config(snowflake_session_dict):
         "col_timestamp_ntz": DBVarType.TIMESTAMP,
         "col_timestamp_tz": DBVarType.TIMESTAMP,
     }
-
-
-@pytest.mark.usefixtures("snowflake_connector", "snowflake_execute_query")
-def test_snowflake_session__credential_from_env(
-    snowflake_session_dict_without_credentials, os_getenv
-):
-    """
-    Test snowflake session with passing credential from environment
-    """
-
-    def _side_effect(var_name):
-        env = {
-            "SNOWFLAKE_USER": "snowflake_user",
-            "SNOWFLAKE_PASSWORD": "snowflake_password",
-        }
-        return env.get(var_name)
-
-    os_getenv.side_effect = _side_effect
-    session = SnowflakeSession(**snowflake_session_dict_without_credentials)
-    assert session.username == "snowflake_user"
-    assert session.password == "snowflake_password"
-
-
-@pytest.mark.usefixtures("snowflake_execute_query")
-def test_snowflake_session__missing_credential(snowflake_session_dict_without_credentials):
-    """
-    Test snowflake session with missing credential
-    """
-    with pytest.raises(ValueError) as exc:
-        SnowflakeSession(**snowflake_session_dict_without_credentials)
-    assert "Username or password is empty!" in str(exc.value)

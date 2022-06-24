@@ -3,10 +3,9 @@ SnowflakeSession class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import json
-import os
 
 from pydantic import Field
 from snowflake import connector
@@ -25,17 +24,11 @@ class SnowflakeSession(BaseSession):
     warehouse: str
     database: str
     sf_schema: str
-    username: Optional[str] = Field(default=None)
-    password: Optional[str] = Field(default=None)
+    username: str
+    password: str
     source_type: SourceType = Field(SourceType.SNOWFLAKE, const=True)
 
     def __init__(self, **data: Any) -> None:
-        if data.get("username") is None:
-            data["username"] = os.getenv("SNOWFLAKE_USER")
-        if data.get("password") is None:
-            data["password"] = os.getenv("SNOWFLAKE_PASSWORD")
-        if not data.get("username") or not data.get("password"):
-            raise ValueError("Username or password is empty!")
         super().__init__(**data)
 
         self._connection = connector.connect(
