@@ -17,7 +17,7 @@ from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
-from featurebyte.tile.snowflake import TileSnowflake
+from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
 @pytest.fixture(name="config")

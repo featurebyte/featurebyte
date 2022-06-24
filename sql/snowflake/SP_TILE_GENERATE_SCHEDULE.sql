@@ -39,7 +39,7 @@ $$
     var tile_start_ts = new Date(tile_end_ts.getTime())
     tile_start_ts.setMinutes(tile_start_ts.getMinutes() - lookback_period)
     tile_start_ts_str = tile_start_ts.toISOString()
-    debug = debug + " - tile_start_ts_str: " + tile_start_ts_str   
+    debug = debug + " - tile_start_ts_str: " + tile_start_ts_str
 
     // trigger stored procedure to monitor previous tiles. No need to monitor the last tile to be created
     var monitor_end_ts = new Date(tile_end_ts.getTime())
@@ -47,7 +47,7 @@ $$
     monitor_tile_end_ts_str = monitor_end_ts.toISOString()
     debug = debug + " - monitor_tile_end_ts_str: " + monitor_tile_end_ts_str
 
-    var monitor_input_sql = SQL.replaceAll("FB_START_TS", "\\'"+tile_start_ts_str+"\\'").replaceAll("FB_END_TS", "\\'"+monitor_tile_end_ts_str+"\\'") 
+    var monitor_input_sql = SQL.replaceAll("FB_START_TS", "\\'"+tile_start_ts_str+"\\'").replaceAll("FB_END_TS", "\\'"+monitor_tile_end_ts_str+"\\'")
     var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}')`
     result = snowflake.execute(
         {
@@ -58,7 +58,7 @@ $$
     debug = debug + " - SP_TILE_MONITOR: " + result.getColumnValue(1)
 
     // trigger stored procedure to generate tiles
-    var generate_input_sql = SQL.replaceAll("FB_START_TS", "\\'"+tile_start_ts_str+"\\'").replaceAll("FB_END_TS", "\\'"+tile_end_ts_str+"\\'")     
+    var generate_input_sql = SQL.replaceAll("FB_START_TS", "\\'"+tile_start_ts_str+"\\'").replaceAll("FB_END_TS", "\\'"+tile_end_ts_str+"\\'")
     var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}')`
     var result = snowflake.execute(
         {

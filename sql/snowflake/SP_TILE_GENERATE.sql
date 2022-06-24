@@ -4,7 +4,7 @@ language javascript
 as
 $$
     /*
-        Stored Procedure to generate Tile records for the target Feature. This stored procedure will trigger the input SQL 
+        Stored Procedure to generate Tile records for the target Feature. This stored procedure will trigger the input SQL
         and create the Tile table if it doesn’t exist, or insert the tile records if the Tile table already exists.
     */
 
@@ -16,17 +16,17 @@ $$
         snowflake.execute({sqlText: `SELECT * FROM ${TABLE_NAME} LIMIT 1`})
     } catch (err)  {
         tile_exist = false
-    } 
+    }
     debug = debug + " - tile_exist: " + tile_exist
 
     var col_list = COLUMN_NAMES.split(",").filter(item => item.trim().toUpperCase() !== "TILE_START_TS")
     col_list_str = col_list.join(',')
     debug = debug + " - col_list_str: " + col_list_str
-        
-    //replace SQL template with start and end date strings for tile generation sql    
+
+    //replace SQL template with start and end date strings for tile generation sql
     var tile_sql = `
-        select 
-            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX, 
+        select
+            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX,
             ${col_list_str},
             SYSDATE() as CREATED_AT
         from (${SQL})
@@ -60,16 +60,16 @@ $$
         var tile_insert_sql = `
             merge into ${TABLE_NAME} a using (${tile_sql}) b
                 on a.INDEX = b.INDEX ${filter_cols_str}
-                when matched then 
+                when matched then
                     update set a.VALUE = b.VALUE, a.CREATED_AT = SYSDATE()
-                when not matched then 
+                when not matched then
                     insert (INDEX, ${col_list_str}, CREATED_AT) values (b.INDEX, ${insert_cols_str}, SYSDATE())
-        ` 
+        `
         snowflake.execute(
             {
                 sqlText: tile_insert_sql
             }
-        ) 
+        )
         debug = debug + " - tile_insert_sql: " + tile_insert_sql
 
     }
