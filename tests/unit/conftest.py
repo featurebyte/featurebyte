@@ -3,7 +3,6 @@ Common test fixtures used across unit test directories
 """
 import json
 import tempfile
-from collections import namedtuple
 from unittest import mock
 
 import pandas as pd
@@ -66,6 +65,7 @@ def snowflake_database_source_fixture(config, graph):
     """
     Snowflake database source fixture
     """
+    _ = graph
     return DatabaseSource(**config.db_sources["sf_datasource"].dict())
 
 
@@ -162,6 +162,7 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
     """
     EventData object fixture
     """
+    _ = config
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
     assert isinstance(event_view, EventView)
     expected_inception_node = Node(

@@ -20,6 +20,9 @@ def mock_os_getenv():
 
 @pytest.fixture(name="snowflake_session_dict_without_credentials")
 def snowflake_session_dict_without_credentials_fixture():
+    """
+    Snowflake session parameters
+    """
     return {
         "account": "some_account",
         "warehouse": "some_warehouse",
@@ -30,6 +33,9 @@ def snowflake_session_dict_without_credentials_fixture():
 
 @pytest.fixture(name="snowflake_session_dict")
 def snowflake_session_dict_fixture(snowflake_session_dict_without_credentials):
+    """
+    Snowflake session parameters with credentials
+    """
     snowflake_session_dict_without_credentials["username"] = "username"
     snowflake_session_dict_without_credentials["password"] = "password"
     return snowflake_session_dict_without_credentials

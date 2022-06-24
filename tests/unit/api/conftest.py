@@ -5,9 +5,6 @@ import textwrap
 
 import pytest
 
-from featurebyte.api.database_source import DatabaseSource
-from featurebyte.api.event_data import EventData
-from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureGroup
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.query_graph.enum import NodeOutputType, NodeType

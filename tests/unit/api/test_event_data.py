@@ -3,7 +3,6 @@ Unit test for EventData class
 """
 from __future__ import annotations
 
-import textwrap
 from unittest.mock import patch
 
 import pytest
@@ -64,6 +63,7 @@ def test_deserialization(
     """
     Test deserialize event data dictionary
     """
+    _ = snowflake_execute_query
     # setup proper configuration to deserialize the event data object
     mock_configurations.return_value = config
     event_data = EventData.parse_obj(event_data_dict)

@@ -3,7 +3,7 @@ SessionManager class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 import json
 
@@ -30,9 +30,6 @@ class SessionManager(BaseModel):
     """
 
     credentials: Dict[DatabaseSourceModel, Optional[Credential]]
-
-    def __init__(self, **data: Any) -> None:
-        super().__init__(**data)
 
     def __hash__(self) -> int:
         return hash(
