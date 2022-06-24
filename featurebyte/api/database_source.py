@@ -4,7 +4,7 @@ DatabaseSource class
 from __future__ import annotations
 
 from featurebyte.api.database_table import DatabaseTable
-from featurebyte.config import Configurations
+from featurebyte.config import Configurations, Credentials
 from featurebyte.models.event_data import DatabaseSourceModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -17,47 +17,48 @@ class DatabaseSource(DatabaseSourceModel):
     DatabaseSource class
     """
 
-    def get_session(self, config: Configurations | None = None) -> BaseSession:
+    def get_session(self, credentials: Credentials | None = None) -> BaseSession:
         """
         Get data source session based on provided configuration
 
         Parameters
         ----------
-        config: Configurations
-            configuration contains data source settings & credentials
+        credentials: Credentials
+            data source to credential mapping used to initiate a new connection
 
         Returns
         -------
         BaseSession
         """
-        if config is None:
+        if credentials is None:
             config = Configurations()
-        session_manager = SessionManager(credentials=config.credentials)
+            credentials = config.credentials
+        session_manager = SessionManager(credentials=credentials)
         return session_manager[self]
 
-    def list_tables(self, config: Configurations | None = None) -> list[str]:
+    def list_tables(self, credentials: Credentials | None = None) -> list[str]:
         """
         List tables of the data source
 
         Parameters
         ----------
-        config: Configurations
+        credentials: Credentials
             configuration contains data source settings & credentials
 
         Returns
         -------
         list tables
         """
-        return self.get_session(config=config).list_tables()
+        return self.get_session(credentials=credentials).list_tables()
 
-    def __getitem__(self, item: str | tuple[str, Configurations]) -> DatabaseTable:
+    def __getitem__(self, item: str | tuple[str, Credentials]) -> DatabaseTable:
         """
         Get table from the data source
 
         Parameters
         ----------
-        item: str
-            Table name
+        item: str | tuple[str, Credentials]
+            Table name or (table name, credentials) pair
 
         Returns
         -------
@@ -69,15 +70,17 @@ class DatabaseSource(DatabaseSourceModel):
             When the item type does not support
 
         """
-        table_name, config = "", None
+        table_name, credentials = "", None
         if isinstance(item, str):
             table_name = item
         elif isinstance(item, tuple):
-            table_name, config = item
+            table_name, credentials = item
         else:
             raise TypeError(f"DatabaseSource indexing with value '{item}' not supported!")
 
-        table_schema = self.get_session(config=config).list_table_schema(table_name=table_name)
+        table_schema = self.get_session(credentials=credentials).list_table_schema(
+            table_name=table_name
+        )
 
         node = GlobalQueryGraph().add_operation(
             node_type=NodeType.INPUT,
@@ -93,6 +96,6 @@ class DatabaseSource(DatabaseSourceModel):
         return DatabaseTable(
             node=node,
             row_index_lineage=(node.name,),
-            session=self.get_session(config),
+            session=self.get_session(credentials=credentials),
             column_var_type_map=table_schema,
         )

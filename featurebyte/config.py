@@ -4,7 +4,7 @@ Read configurations from ini file
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, Optional
 
 import os
 from enum import Enum
@@ -16,6 +16,9 @@ from pydantic.error_wrappers import ValidationError
 from featurebyte.enum import SourceType
 from featurebyte.models.credential import CREDENTIAL_CLASS, Credential, CredentialType
 from featurebyte.models.event_data import DB_DETAILS_CLASS, DatabaseSourceModel
+
+# data source to credential mapping
+Credentials = Dict[DatabaseSourceModel, Optional[Credential]]
 
 
 class LogLevel(str, Enum):
@@ -64,7 +67,7 @@ class Configurations:
         )
         self.settings: dict[str, Any] = {}
         self.db_sources: dict[str, DatabaseSourceModel] = {}
-        self.credentials: dict[DatabaseSourceModel, Credential | None] = {}
+        self.credentials: Credentials = {}
         self.logging: LoggingSettings = LoggingSettings()
         self._config_file_path = config_file_path
         self._parse_config(config_file_path)

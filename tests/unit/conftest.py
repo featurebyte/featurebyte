@@ -139,7 +139,7 @@ def snowflake_database_table_fixture(
     DatabaseTable object fixture
     """
     _ = snowflake_connector, snowflake_execute_query
-    yield snowflake_database_source["sf_table", config]
+    yield snowflake_database_source["sf_table", config.credentials]
 
 
 @pytest.fixture(name="snowflake_event_data")

@@ -22,7 +22,6 @@ from featurebyte.models.event_data import (
 )
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.session.manager import SessionManager
 
 
 class EventData(EventDataModel, DatabaseTable):
@@ -63,8 +62,8 @@ class EventData(EventDataModel, DatabaseTable):
         database_source, table_name = values["tabular_source"]
         if isinstance(database_source, dict):
             database_source = DatabaseSource(**database_source)
-        session_manager = SessionManager(credentials=credentials)
-        session = session_manager[database_source]
+
+        session = database_source.get_session(credentials=credentials)
         table_schema = session.list_table_schema(table_name=table_name)
 
         node = GlobalQueryGraph().add_operation(

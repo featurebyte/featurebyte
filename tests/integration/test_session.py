@@ -14,9 +14,9 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
     """
     _ = sqlite_session
     sqlite_database_source = DatabaseSource(**config.db_sources["sqlite_datasource"].dict())
-    assert sqlite_database_source.list_tables(config=config) == ["test_table"]
+    assert sqlite_database_source.list_tables(credentials=config.credentials) == ["test_table"]
 
-    sqlite_database_table = sqlite_database_source["test_table", config]
+    sqlite_database_table = sqlite_database_source["test_table", config.credentials]
     expected_dtypes = pd.Series(
         {
             "created_at": "INT",
@@ -58,9 +58,9 @@ def test_query_object_operation_on_snowflake_source(
     """
     _ = snowflake_session
     snowflake_database_source = DatabaseSource(**config.db_sources["snowflake_datasource"].dict())
-    assert snowflake_database_source.list_tables(config=config) == ["TEST_TABLE"]
+    assert snowflake_database_source.list_tables(credentials=config.credentials) == ["TEST_TABLE"]
 
-    snowflake_database_table = snowflake_database_source["TEST_TABLE", config]
+    snowflake_database_table = snowflake_database_source["TEST_TABLE", config.credentials]
     expected_dtypes = pd.Series(
         {
             "CREATED_AT": "INT",

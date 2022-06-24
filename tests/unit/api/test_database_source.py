@@ -9,7 +9,7 @@ def test_get_session(snowflake_connector, snowflake_database_source, config):
     Test DatabaseSource.get_session return expected session
     """
     _ = snowflake_connector
-    session = snowflake_database_source.get_session(config=config)
+    session = snowflake_database_source.get_session(credentials=config.credentials)
     assert session.dict() == {
         "source_type": "snowflake",
         "account": "sf_account",
@@ -28,7 +28,7 @@ def test_list_tables(
     Test list_tables return expected results
     """
     _ = snowflake_connector, snowflake_execute_query
-    output = snowflake_database_source.list_tables(config=config)
+    output = snowflake_database_source.list_tables(credentials=config.credentials)
     assert output == ["sf_table", "sf_view"]
 
 
@@ -39,5 +39,5 @@ def test__getitem__retrieve_database_table(
     Test retrieval database table by indexing
     """
     _ = snowflake_connector, snowflake_execute_query
-    database_table = snowflake_database_source["sf_table", config]
+    database_table = snowflake_database_source["sf_table", config.credentials]
     assert isinstance(database_table, DatabaseTable)
