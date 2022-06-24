@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
 from featurebyte.enum import SourceType
@@ -125,6 +125,6 @@ class EventDataModel(BaseModel):
     event_timestamp_column: str
     record_creation_date_column: Optional[str]
     default_feature_job_setting: Optional[FeatureJobSetting]
-    created_at: Optional[datetime]
-    history: List[FeatureJobSettingHistoryEntry]
-    status: Optional[EventDataStatus]
+    created_at: Optional[datetime] = Field(default=None)
+    history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list)
+    status: Optional[EventDataStatus] = Field(default=None)

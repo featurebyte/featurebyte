@@ -3,9 +3,7 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-
-from datetime import datetime
+from typing import Any, Dict, Optional
 
 from pydantic import Field, root_validator
 
@@ -14,12 +12,7 @@ from featurebyte.api.database_table import DatabaseTable
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
 from featurebyte.models.credential import Credential
-from featurebyte.models.event_data import (
-    DatabaseSourceModel,
-    EventDataModel,
-    EventDataStatus,
-    FeatureJobSettingHistoryEntry,
-)
+from featurebyte.models.event_data import DatabaseSourceModel, EventDataModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
@@ -31,9 +24,6 @@ class EventData(EventDataModel, DatabaseTable):
 
     # pylint: disable=R0903 (too-few-public-methods)
 
-    created_at: Optional[datetime] = Field(default=None)
-    history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list)
-    status: Optional[EventDataStatus] = Field(default=None)
     column_var_type_map: Dict[str, DBVarType]
     credentials: Optional[Dict[DatabaseSourceModel, Optional[Credential]]] = Field(default=None)
 
