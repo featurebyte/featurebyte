@@ -65,12 +65,14 @@ class TileBase:
         if tile_id is None or tile_id.strip() == "":
             raise ValueError("tile_id cannot be empty")
 
-    def generate_tiles(self, start_ts_str: str, end_ts_str: str) -> str:
+    def generate_tiles(self, tile_type: str, start_ts_str: str, end_ts_str: str) -> str:
         """
         Manually trigger tile generation
 
         Parameters
         ----------
+        tile_type: str
+            tile type. ONLINE or OFFLINE
         start_ts_str: str
             start_timestamp of tile. ie. 2022-06-20 15:00:00
         end_ts_str: str

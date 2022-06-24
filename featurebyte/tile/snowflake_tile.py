@@ -13,7 +13,7 @@ tm_gen_tile = Template(
     """
     call SP_TILE_GENERATE(
         '{{sql}}', {{time_modulo_frequency_seconds}}, {{blind_spot_seconds}}, {{frequency_minute}}, '{{column_names}}',
-        '{{table_name}}'
+        '{{table_name}}', '{{tile_type}}'
     )
 """
 )
@@ -90,12 +90,14 @@ class TileSnowflake(TileBase):
         self._column_names = column_names.strip().upper()
         self.tile_id = tile_id.strip().upper()
 
-    def generate_tiles(self, start_ts_str: str, end_ts_str: str) -> str:
+    def generate_tiles(self, tile_type: str, start_ts_str: str, end_ts_str: str) -> str:
         """
         Manually trigger tile generation
 
         Parameters
         ----------
+        tile_type: str
+            tile type. ONLINE or OFFLINE
         start_ts_str: str
             start_timestamp of tile. ie. 2022-06-20 15:00:00
         end_ts_str: str
@@ -117,6 +119,7 @@ class TileSnowflake(TileBase):
             frequency_minute=self._frequency_minute,
             column_names=self._column_names,
             table_name=self.tile_id,
+            tile_type=tile_type,
         )
         logger.info(f"generated sql: {sql}")
         self._session.execute_query(sql)

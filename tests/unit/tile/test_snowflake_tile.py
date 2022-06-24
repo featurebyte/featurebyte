@@ -82,13 +82,13 @@ def test_generate_tiles(mock_snowflake_tile):
     """
     Test generate_tiles method in TileSnowflake
     """
-    sql = mock_snowflake_tile.generate_tiles("2022-06-20 15:00:00", "2022-06-21 15:00:00")
+    sql = mock_snowflake_tile.generate_tiles("ONLINE", "2022-06-20 15:00:00", "2022-06-21 15:00:00")
     expected_sql = """
         call SP_TILE_GENERATE(
             'select c1 from dummy
             where tile_start_ts >= \\'2022-06-20 15:00:00\\'
             and tile_start_ts < \\'2022-06-21 15:00:00\\'',
-            183, 3, 5, 'C1', 'TILE_ID1'
+            183, 3, 5, 'C1', 'TILE_ID1', 'ONLINE'
         )
     """
     assert "".join(sql.split()) == "".join(expected_sql.split())

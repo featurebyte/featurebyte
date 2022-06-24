@@ -129,7 +129,7 @@ def sqlite_session(config):
     return session_manager[sqlite_database_source]
 
 
-@pytest.fixture(name="fb_db_session")
+@pytest.fixture(name="fb_db_session", scope="session")
 def snowflake_featurebyte_session():
     """
     Create Snowflake session for integration tests of featurebyte sql scripts
@@ -147,7 +147,7 @@ def snowflake_featurebyte_session():
     )
 
     temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    session.execute_query(f"CREATE TRANSIENT SCHEMA {temp_schema_name}")
+    session.execute_query(f"CREATE OR REPLACE TRANSIENT SCHEMA {temp_schema_name}")
     session.execute_query(f"USE SCHEMA {temp_schema_name}")
 
     sql_dir = os.path.join(os.path.dirname(__file__), "..", "..", "sql", "snowflake")
@@ -158,6 +158,8 @@ def snowflake_featurebyte_session():
         "SP_TILE_MONITOR.sql",
         "SP_TILE_GENERATE_SCHEDULE.sql",
         "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql",
+        "T_TILE_REGISTRY.sql",
+        "T_FEATURE_REGISTRY.sql",
     ]
     for sql_file in sql_file_list:
         with open(os.path.join(sql_dir, sql_file), encoding="utf8") as file:
@@ -171,31 +173,6 @@ def snowflake_featurebyte_session():
     )
 
     yield session
-
-    session.execute_query(
-        "DROP FUNCTION IF EXISTS F_TIMESTAMP_TO_INDEX(VARCHAR, NUMBER, NUMBER, NUMBER)"
-    )
-    session.execute_query(
-        "DROP FUNCTION IF EXISTS F_INDEX_TO_TIMESTAMP(NUMBER, NUMBER, NUMBER, NUMBER)"
-    )
-    session.execute_query(
-        "DROP PROCEDURE IF EXISTS SP_TILE_GENERATE(VARCHAR, FLOAT, FLOAT, FLOAT, VARCHAR, VARCHAR)"
-    )
-    session.execute_query(
-        "DROP PROCEDURE IF EXISTS SP_TILE_MONITOR(VARCHAR, FLOAT, FLOAT, FLOAT, VARCHAR, VARCHAR, "
-        "VARCHAR)"
-    )
-    session.execute_query(
-        "DROP PROCEDURE IF EXISTS SP_TILE_GENERATE_SCHEDULE(VARCHAR, FLOAT, FLOAT, FLOAT, FLOAT, VARCHAR, "
-        "VARCHAR, VARCHAR, VARCHAR, TIMESTAMP_TZ)"
-    )
-    session.execute_query(
-        "DROP PROCEDURE IF EXISTS SP_TILE_TRIGGER_GENERATE_SCHEDULE(VARCHAR, VARCHAR, VARCHAR, FLOAT, FLOAT, "
-        "FLOAT, FLOAT, VARCHAR, VARCHAR, VARCHAR, VARCHAR)"
-    )
-    session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE")
-    session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE_TILE")
-    session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE_TILE_MONITOR")
 
     session.execute_query(f"DROP SCHEMA IF EXISTS {temp_schema_name}")
 

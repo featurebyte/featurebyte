@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE(SQL varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME varchar)
+CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE(SQL varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME varchar, TILE_TYPE varchar)
 returns string
 language javascript
 as
@@ -74,5 +74,13 @@ $$
 
     }
 
-    return debug
+    // update last_tile index
+    update_tile_last_ind_sql = `
+        UPDATE TILE_REGISTRY 
+            SET LAST_TILE_INDEX_${TILE_TYPE} = (SELECT MAX(INDEX) FROM (${tile_sql}))
+        WHERE TILE_ID = '${TABLE_NAME}'
+    `
+    snowflake.execute({sqlText: update_tile_last_ind_sql})
+
+  return debug
 $$;
