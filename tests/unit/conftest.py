@@ -23,7 +23,7 @@ from featurebyte.tile.snowflake import TileSnowflake
 @pytest.fixture(name="config")
 def config_fixture():
     """
-    Create config object for testing
+    Config object for unit testing
     """
     config_dict = {
         "datasource": [

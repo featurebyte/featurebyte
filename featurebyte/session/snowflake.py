@@ -25,8 +25,8 @@ class SnowflakeSession(BaseSession):
     warehouse: str
     database: str
     sf_schema: str
-    username: Optional[str]
-    password: Optional[str]
+    username: Optional[str] = Field(default=None)
+    password: Optional[str] = Field(default=None)
     source_type: SourceType = Field(SourceType.SNOWFLAKE, const=True)
 
     def __init__(self, **data: Any) -> None:

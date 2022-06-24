@@ -8,10 +8,12 @@ import tempfile
 import numpy as np
 import pandas as pd
 import pytest
+import yaml
 from snowflake.connector.pandas_tools import write_pandas
 
+from featurebyte.config import Configurations
+from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.session.sqlite import SQLiteSession
 from featurebyte.tile.snowflake import TileSnowflake
 
 
@@ -50,8 +52,8 @@ def transaction_dataframe_upper_case(transaction_data):
     yield data
 
 
-@pytest.fixture()
-def sqlite_session(transaction_data):
+@pytest.fixture(name="sqlite_filename")
+def sqlite_filename_fixture(transaction_data):
     """
     Create SQLite database file with data for testing
     """
@@ -59,23 +61,49 @@ def sqlite_session(transaction_data):
         connection = sqlite3.connect(file_handle.name)
         transaction_data.to_sql(name="test_table", con=connection, index=False)
         connection.commit()
-        yield SQLiteSession(filename=file_handle.name)
+        yield file_handle.name
 
 
 @pytest.fixture()
-def snowflake_session(transaction_data_upper_case):
+def config(sqlite_filename):
     """
-    Create Snowflake temporary table
+    Config object for integration testing
     """
-    database_name = os.getenv("SNOWFLAKE_DATABASE")
-    schema_name = os.getenv("SNOWFLAKE_SCHEMA")
+    config_dict = {
+        "datasource": [
+            {
+                "name": "snowflake_datasource",
+                "source_type": "snowflake",
+                "account": os.getenv("SNOWFLAKE_ACCOUNT"),
+                "warehouse": os.getenv("SNOWFLAKE_WAREHOUSE"),
+                "sf_schema": os.getenv("SNOWFLAKE_SCHEMA"),
+                "database": os.getenv("SNOWFLAKE_DATABASE"),
+                "credential_type": "USERNAME_PASSWORD",
+                "username": os.getenv("SNOWFLAKE_USER"),
+                "password": os.getenv("SNOWFLAKE_PASSWORD"),
+            },
+            {
+                "name": "sqlite_datasource",
+                "source_type": "sqlite",
+                "filename": sqlite_filename,
+            },
+        ]
+    }
+    with tempfile.NamedTemporaryFile("w") as file_handle:
+        file_handle.write(yaml.dump(config_dict))
+        file_handle.flush()
+        yield Configurations(config_file_path=file_handle.name)
+
+
+@pytest.fixture()
+def snowflake_session(transaction_data_upper_case, config):
+    """
+    Snowflake session
+    """
+    session_manager = SessionManager(credentials=config.credentials)
+    snowflake_database_source = config.db_sources["snowflake_datasource"]
+    session = session_manager[snowflake_database_source]
     table_name = "TEST_TABLE"
-    session = SnowflakeSession(
-        account=os.getenv("SNOWFLAKE_ACCOUNT"),
-        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-        database=database_name,
-        schema=schema_name,
-    )
     session.execute_query(
         f"""
         CREATE TEMPORARY TABLE {table_name}(
@@ -87,8 +115,17 @@ def snowflake_session(transaction_data_upper_case):
         """
     )
     write_pandas(session.connection, transaction_data_upper_case, table_name)
-    session.database_metadata = session.populate_database_metadata()
     yield session
+
+
+@pytest.fixture()
+def sqlite_session(config):
+    """
+    SQLite session
+    """
+    session_manager = SessionManager(credentials=config.credentials)
+    sqlite_database_source = config.db_sources["sqlite_datasource"]
+    return session_manager[sqlite_database_source]
 
 
 @pytest.fixture(name="fb_db_session")

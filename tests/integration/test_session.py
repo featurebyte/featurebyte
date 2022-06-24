@@ -1,20 +1,39 @@
 """
 This module contains session to EventView integration tests
 """
-import os
-
 import pandas as pd
 
+from featurebyte.api.database_source import DatabaseSource
+from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 
 
-def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data):
+def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data, config):
     """
     Test loading event view from sqlite source
     """
-    event_view = EventView.from_session(
-        sqlite_session, table_name='"test_table"', timestamp_column="created_at"
+    _ = sqlite_session
+    sqlite_database_source = DatabaseSource(**config.db_sources["sqlite_datasource"].dict())
+    assert sqlite_database_source.list_tables(config=config) == ["test_table"]
+
+    sqlite_database_table = sqlite_database_source["test_table", config]
+    expected_dtypes = pd.Series(
+        {
+            "created_at": "INT",
+            "cust_id": "INT",
+            "product_action": "VARCHAR",
+            "session_id": "INT",
+        }
     )
+    pd.testing.assert_series_equal(expected_dtypes, sqlite_database_table.dtypes)
+
+    event_data = EventData.from_tabular_source(
+        tabular_source=sqlite_database_table,
+        name="sqlite_event_data",
+        event_timestamp_column="created_at",
+        credentials=config.credentials,
+    )
+    event_view = EventView.from_event_data(event_data)
     assert event_view.columns == ["created_at", "cust_id", "product_action", "session_id"]
 
     # need to specify the constant as float, otherwise results will get truncated
@@ -31,16 +50,34 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
 
-def test_query_object_operation_on_snowflake_source(snowflake_session, transaction_data_upper_case):
+def test_query_object_operation_on_snowflake_source(
+    snowflake_session, transaction_data_upper_case, config
+):
     """
     Test loading event view from snowflake source
     """
-    database_name = os.getenv("SNOWFLAKE_DATABASE")
-    event_view = EventView.from_session(
-        snowflake_session,
-        table_name=f'"{database_name}"."PUBLIC"."TEST_TABLE"',
-        timestamp_column="CREATED_AT",
+    _ = snowflake_session
+    snowflake_database_source = DatabaseSource(**config.db_sources["snowflake_datasource"].dict())
+    assert snowflake_database_source.list_tables(config=config) == ["TEST_TABLE"]
+
+    snowflake_database_table = snowflake_database_source["TEST_TABLE", config]
+    expected_dtypes = pd.Series(
+        {
+            "CREATED_AT": "INT",
+            "CUST_ID": "INT",
+            "PRODUCT_ACTION": "VARCHAR",
+            "SESSION_ID": "INT",
+        }
     )
+    pd.testing.assert_series_equal(expected_dtypes, snowflake_database_table.dtypes)
+
+    event_data = EventData.from_tabular_source(
+        tabular_source=snowflake_database_table,
+        name="snowflake_event_data",
+        event_timestamp_column="CREATED_AT",
+        credentials=config.credentials,
+    )
+    event_view = EventView.from_event_data(event_data)
     assert event_view.columns == ["CREATED_AT", "CUST_ID", "PRODUCT_ACTION", "SESSION_ID"]
 
     # need to specify the constant as float, otherwise results will get truncated
