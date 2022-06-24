@@ -7,6 +7,8 @@ from typing import Dict, Tuple
 
 import copy
 
+import pandas as pd
+
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.core.series import Series
@@ -14,15 +16,16 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
-class Frame(QueryObject, OpsMixin):
+class BaseFrame(QueryObject):
     """
-    Implement operations to manipulate database table
+    BaseFrame class
     """
-
-    _series_class = Series
 
     column_var_type_map: Dict[str, DBVarType]
-    column_lineage_map: Dict[str, Tuple[str, ...]]
+
+    @property
+    def dtypes(self) -> pd.Series:
+        return pd.Series(self.column_var_type_map)
 
     @property
     def columns(self) -> list[str]:
@@ -34,6 +37,31 @@ class Frame(QueryObject, OpsMixin):
         list
         """
         return list(self.column_var_type_map)
+
+    def preview_sql(self, limit: int = 10) -> str:
+        """
+        Generate SQL query to preview the transformed table
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+
+        Returns
+        -------
+        pd.DataFrame | None
+        """
+        return self._preview_sql(columns=self.columns, limit=limit)
+
+
+class Frame(BaseFrame, OpsMixin):
+    """
+    Implement operations to manipulate database table
+    """
+
+    _series_class = Series
+
+    column_lineage_map: Dict[str, Tuple[str, ...]]
 
     def _check_any_missing_column(self, item: str | list[str] | Series) -> None:
         """
@@ -202,18 +230,3 @@ class Frame(QueryObject, OpsMixin):
             )
         else:
             raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
-
-    def preview_sql(self, limit: int = 10) -> str:
-        """
-        Generate SQL query to preview the transformed table
-
-        Parameters
-        ----------
-        limit: int
-            maximum number of return rows
-
-        Returns
-        -------
-        pd.DataFrame | None
-        """
-        return self._preview_sql(columns=self.columns, limit=limit)

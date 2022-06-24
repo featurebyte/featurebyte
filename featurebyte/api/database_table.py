@@ -5,18 +5,18 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-import pandas as pd
 from pydantic import Field, root_validator
 
 from featurebyte.config import Configurations, Credentials
-from featurebyte.core.generic import ExtendedDatabaseSourceModel, QueryObject
+from featurebyte.core.frame import BaseFrame
+from featurebyte.core.generic import ExtendedDatabaseSourceModel
 from featurebyte.enum import DBVarType
 from featurebyte.models.event_data import DatabaseSourceModel, DatabaseTableModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
-class DatabaseTable(DatabaseTableModel, QueryObject):
+class DatabaseTable(DatabaseTableModel, BaseFrame):
     """
     DatabaseTable class to preview table
     """
@@ -76,14 +76,3 @@ class DatabaseTable(DatabaseTableModel, QueryObject):
         values["row_index_lineage"] = (node.name,)
         values["column_var_type_map"] = table_schema
         return values
-
-    @property
-    def dtypes(self) -> pd.Series:
-        """
-        Get the column datatype info from the table
-
-        Returns
-        -------
-        pd.Series
-        """
-        return pd.Series(self.column_var_type_map)
