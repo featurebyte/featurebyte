@@ -443,7 +443,7 @@ name = "jinja2"
 version = "3.1.2"
 description = "A very fast and expressive template engine."
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -491,7 +491,7 @@ name = "markupsafe"
 version = "2.1.1"
 description = "Safely add untrusted strings to HTML/XML markup."
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.7"
 
 [[package]]
@@ -1398,7 +1398,7 @@ docs = ["Sphinx", "sphinx-rtd-theme", "sphinx-github-changelog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "f74b429537ea5fcb91386006a810f52745b09b240d02fe9fa3149b31187977d0"
+content-hash = "e10970b4c5cf87f12d318aa1cc18cfda0e80c86876e1b024550b80839675b852"
 
 [metadata.files]
 alabaster = [
