@@ -20,4 +20,11 @@ class DatabaseTable(QueryObject):
 
     @property
     def dtypes(self) -> pd.Series:
+        """
+        Get the column datatype info from the table
+
+        Returns
+        -------
+        pd.Series
+        """
         return pd.Series(self.column_var_type_map)

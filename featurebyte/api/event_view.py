@@ -9,9 +9,6 @@ from featurebyte.api.event_data import EventData
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.session.base import BaseSession
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import EventViewGroupBy

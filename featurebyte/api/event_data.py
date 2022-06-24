@@ -38,6 +38,10 @@ class EventData(EventDataModel, QueryObject):
     credentials: Optional[Dict[DatabaseSourceModel, Optional[Credential]]] = Field(default=None)
 
     class Config:
+        """
+        Pydantic Config class
+        """
+
         fields = {
             "credentials": {"exclude": True},
             "graph": {"exclude": True},
@@ -48,7 +52,7 @@ class EventData(EventDataModel, QueryObject):
         }
 
     @root_validator(pre=True)
-    def generate_graph_settings(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _generate_graph_settings(cls, values: dict[str, Any]) -> dict[str, Any]:
         credentials = values.get("credentials")
         if credentials is None:
             config = Configurations()
