@@ -64,3 +64,15 @@ def test_deserialization(
     event_data_dict["credentials"] = config.credentials
     event_data = EventData.parse_obj(event_data_dict)
     assert event_data.preview_sql() == expected_snowflake_table_preview_query
+
+
+def test_deserialization__column_name_not_found(event_data_dict, config, snowflake_execute_query):
+    """
+    Test column not found during deserialize event data
+    """
+    _ = snowflake_execute_query
+    event_data_dict["credentials"] = config.credentials
+    event_data_dict["record_creation_date_column"] = "some_random_name"
+    with pytest.raises(ValueError) as exc:
+        EventData.parse_obj(event_data_dict)
+    assert 'Column "some_random_name" not found in the table!' in str(exc.value)

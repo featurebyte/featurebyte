@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from pydantic import validator
+
 from featurebyte.api.database_source import DatabaseSource
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.models.credential import Credential
@@ -15,8 +17,6 @@ class EventData(EventDataModel, DatabaseTable):
     """
     EventData class
     """
-
-    # pylint: disable=R0903 (too-few-public-methods)
 
     @classmethod
     def _get_other_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -64,3 +64,17 @@ class EventData(EventDataModel, DatabaseTable):
             record_creation_date_column=record_creation_date_column,
             credentials=credentials,
         )
+
+    @validator("event_timestamp_column")
+    @classmethod
+    def _check_event_timestamp_column_exists(cls, value: str, values: dict[str, Any]) -> str:
+        if value not in values["column_var_type_map"]:
+            raise ValueError(f'Column "{value}" not found in the table!')
+        return value
+
+    @validator("record_creation_date_column")
+    @classmethod
+    def _check_record_creation_date_column_exists(cls, value: str, values: dict[str, Any]) -> str:
+        if value not in values["column_var_type_map"]:
+            raise ValueError(f'Column "{value}" not found in the table!')
+        return value
