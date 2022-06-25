@@ -181,7 +181,6 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
                 "cust_id",
             ],
             "timestamp": "event_timestamp",
-            "record_creation_date": "created_at",
             "database_source": {
                 "type": "snowflake",
                 "details": {

@@ -20,10 +20,7 @@ class EventData(EventDataModel, DatabaseTable):
 
     @classmethod
     def _get_other_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
-        return {
-            "timestamp": values["event_timestamp_column"],
-            "record_creation_date": values.get("record_creation_date_column"),
-        }
+        return {"timestamp": values["event_timestamp_column"]}
 
     @classmethod
     def from_tabular_source(
