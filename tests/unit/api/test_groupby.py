@@ -33,7 +33,7 @@ def test_constructor__wrong_input_type(snowflake_event_view):
     with pytest.raises(TypeError) as exc:
         EventViewGroupBy(snowflake_event_view, True)
     expected_msg = (
-        "Grouping EventView(node.name=input_2, timestamp_column=event_timestamp, entity_identifiers=None) "
+        "Grouping EventView(node.name=input_2, timestamp_column=event_timestamp, entity_identifiers=[]) "
         "by 'True' is not supported!"
     )
     assert expected_msg in str(exc.value)
@@ -47,7 +47,7 @@ def test_constructor__keys_column_not_found(snowflake_event_view):
         EventViewGroupBy(obj=snowflake_event_view, keys="random_column")
     expected_msg = (
         "Column 'random_column' not found in "
-        "EventView(node.name=input_2, timestamp_column=event_timestamp, entity_identifiers=None)!"
+        "EventView(node.name=input_2, timestamp_column=event_timestamp, entity_identifiers=[])!"
     )
     assert expected_msg in str(exc.value)
 

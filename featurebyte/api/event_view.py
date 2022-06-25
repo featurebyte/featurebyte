@@ -3,7 +3,9 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, List
+
+from pydantic import Field, validator
 
 from featurebyte.api.event_data import EventData
 from featurebyte.core.frame import Frame
@@ -19,6 +21,8 @@ class EventView(ProtectedColumnsQueryObject, Frame):
     EventView class
     """
 
+    entity_identifiers: List[str] = Field(default_factory=list)
+
     def __repr__(self) -> str:
         return (
             f"{type(self).__name__}(node.name={self.node.name}, "
@@ -27,6 +31,14 @@ class EventView(ProtectedColumnsQueryObject, Frame):
 
     def __str__(self) -> str:
         return repr(self)
+
+    @validator("entity_identifiers")
+    @classmethod
+    def _check_entity_identifiers_exist(cls, value: list[str], values: dict[str, Any]) -> list[str]:
+        for column in value:
+            if column not in values["column_var_type_map"]:
+                raise ValueError(f'Column "{column}" not found in the table!')
+        return value
 
     @property
     def protected_attributes(self) -> list[str]:
@@ -50,21 +62,11 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         """
         return self.inception_node.parameters.get("timestamp")
 
-    @property
-    def entity_identifiers(self) -> list[str] | None:
-        """
-        Entity id columns of the event source
-
-        Returns
-        -------
-        list[str] | None
-        """
-        return self.inception_node.parameters.get("entity_identifiers")
-
     @classmethod
     def from_event_data(
         cls,
         event_data: EventData,
+        entity_identifiers: list[str] | None = None,
     ) -> EventView:
         """
         Construct an EventView object using session object
@@ -73,6 +75,8 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         ----------
         event_data: EventData
             EventData object used to construct EventView object
+        entity_identifiers: list[str]
+            List of columns to be used as entity identifiers
 
         Returns
         -------
@@ -87,6 +91,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
                 col: (event_data.node.name,) for col in event_data.column_var_type_map
             },
             row_index_lineage=tuple(event_data.row_index_lineage),
+            entity_identifiers=entity_identifiers or [],
         )
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
