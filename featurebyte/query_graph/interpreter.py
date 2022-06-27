@@ -120,14 +120,19 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
+            columns_map = {}
+            for colname in parameters["columns"]:
+                columns_map[colname] = sqlglot.expressions.Identifier(this=colname, quoted=True)
             if self.sql_type == SQLType.BUILD_TILE:
                 sql_node = BuildTileInputNode(
+                    columns_map=columns_map,
                     column_names=parameters["columns"],
                     timestamp=parameters["timestamp"],
                     dbtable=parameters["dbtable"],
                 )
             else:
                 sql_node = GenericInputNode(
+                    columns_map=columns_map,
                     column_names=parameters["columns"],
                     dbtable=parameters["dbtable"],
                 )
@@ -135,11 +140,9 @@ class SQLOperationGraph:
         elif node_type == NodeType.ASSIGN:
             assert len(input_sql_nodes) == 2
             assert isinstance(input_sql_nodes[0], TableNode)
-            sql_node = AssignNode(
-                table_node=input_sql_nodes[0],
-                column_node=input_sql_nodes[1],
-                name=parameters["name"],
-            )
+            input_table_node = input_sql_nodes[0]
+            input_table_node.set_column_expr(parameters["name"], input_sql_nodes[1].sql)
+            sql_node = input_table_node
 
         elif node_type == NodeType.PROJECT:
             sql_node = make_project_node(input_sql_nodes, parameters, output_type)

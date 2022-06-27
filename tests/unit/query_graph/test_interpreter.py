@@ -50,19 +50,12 @@ def test_graph_interpreter_super_simple(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          "ts",
-          "cust_id",
-          "a",
-          "b",
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
           "a" AS "a_copy"
-        FROM (
-            SELECT
-              "ts",
-              "cust_id",
-              "a",
-              "b"
-            FROM "event_table"
-        )
+        FROM "event_table"
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -123,31 +116,16 @@ def test_graph_interpreter_multi_assign(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          "ts",
-          "cust_id",
-          "a",
-          "b",
-          "c",
-          "c" AS "c2"
-        FROM (
-            SELECT
-              "ts",
-              "cust_id",
-              "a",
-              "b",
-              "a" + "b" AS "c"
-            FROM (
-                SELECT
-                  "ts",
-                  "cust_id",
-                  "a",
-                  "b"
-                FROM "event_table"
-                WHERE
-                  "ts" >= CAST(FBT_START_DATE AS TIMESTAMP)
-                  AND "ts" < CAST(FBT_END_DATE AS TIMESTAMP)
-            )
-        )
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          "a" + "b" AS "c",
+          "a" + "b" AS "c2"
+        FROM "event_table"
+        WHERE
+          "ts" >= CAST(FBT_START_DATE AS TIMESTAMP)
+          AND "ts" < CAST(FBT_END_DATE AS TIMESTAMP)
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -207,22 +185,15 @@ def test_graph_interpreter_binary_operations(graph, node_type, expected_expr):
     expected = textwrap.dedent(
         f"""
         SELECT
-          "ts",
-          "cust_id",
-          "a",
-          "b",
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
           {expected_expr} AS "a2"
-        FROM (
-            SELECT
-              "ts",
-              "cust_id",
-              "a",
-              "b"
-            FROM "event_table"
-            WHERE
-              "ts" >= CAST(FBT_START_DATE AS TIMESTAMP)
-              AND "ts" < CAST(FBT_END_DATE AS TIMESTAMP)
-        )
+        FROM "event_table"
+        WHERE
+          "ts" >= CAST(FBT_START_DATE AS TIMESTAMP)
+          AND "ts" < CAST(FBT_END_DATE AS TIMESTAMP)
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -252,16 +223,9 @@ def test_graph_interpreter_project_multiple_columns(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          "a",
-          "b"
-        FROM (
-            SELECT
-              "ts",
-              "cust_id",
-              "a",
-              "b"
-            FROM "event_table"
-        )
+          "a" AS "a",
+          "b" AS "b"
+        FROM "event_table"
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -328,8 +292,8 @@ def test_graph_interpreter_snowflake(graph):
               FLOOR((DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(FBT_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
                 SELECT
-                  "SERVER_TIMESTAMP",
-                  "CUST_ID"
+                  "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
+                  "CUST_ID" AS "CUST_ID"
                 FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
                 WHERE
                   "SERVER_TIMESTAMP" >= CAST(FBT_START_DATE AS TIMESTAMP)
@@ -406,28 +370,13 @@ def test_graph_interpreter_preview(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          "ts",
-          "cust_id",
-          "a",
-          "b",
-          "c",
-          "c" AS "c2"
-        FROM (
-            SELECT
-              "ts",
-              "cust_id",
-              "a",
-              "b",
-              "a" + "b" AS "c"
-            FROM (
-                SELECT
-                  "ts",
-                  "cust_id",
-                  "a",
-                  "b"
-                FROM "event_table"
-            )
-        )
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          "a" + "b" AS "c",
+          "a" + "b" AS "c2"
+        FROM "event_table"
         LIMIT 10
         """
     ).strip()
@@ -440,10 +389,10 @@ def test_graph_interpreter_preview(graph):
           "a" + "b"
         FROM (
             SELECT
-              "ts",
-              "cust_id",
-              "a",
-              "b"
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b"
             FROM "event_table"
         )
         LIMIT 5
@@ -499,10 +448,10 @@ def test_filter_node(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          "ts",
-          "cust_id",
-          "a",
-          "b"
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b"
         FROM "event_table"
         WHERE
           "b" = 123
@@ -519,12 +468,70 @@ def test_filter_node(graph):
           "a"
         FROM (
             SELECT
-              "ts",
-              "cust_id",
-              "a",
-              "b"
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b"
             FROM "event_table"
         )
+        WHERE
+          "b" = 123
+        LIMIT 10
+        """
+    ).strip()
+    assert sql_code == expected
+
+
+def test_filter_then_project(graph):
+    """Test graph with both filter and project operations"""
+    node_input = graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "columns": ["ts", "cust_id", "a", "b"],
+            "timestamp": "ts",
+            "dbtable": "event_table",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    proj_b = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["b"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    binary_node = graph.add_operation(
+        node_type=NodeType.EQ,
+        node_params={"value": 123},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_b],
+    )
+    filter_node = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, binary_node],
+    )
+    assign_node = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "new_col"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[filter_node, binary_node],
+    )
+    project_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["b", "new_col"]},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node],
+    )
+    interpreter = GraphInterpreter(graph)
+    sql_code = interpreter.construct_preview_sql(project_node.name)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "b" AS "b",
+          "b" = 123 AS "new_col"
+        FROM "event_table"
         WHERE
           "b" = 123
         LIMIT 10
