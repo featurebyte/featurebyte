@@ -3,8 +3,6 @@ Unit test for EventData class
 """
 from __future__ import annotations
 
-from unittest.mock import patch
-
 import pytest
 
 from featurebyte.api.event_data import EventData
@@ -52,9 +50,7 @@ def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
     assert event_data.dict() == event_data_dict
 
 
-@patch("featurebyte.api.event_data.Configurations")
 def test_deserialization(
-    mock_configurations,
     event_data_dict,
     config,
     snowflake_execute_query,
@@ -65,6 +61,18 @@ def test_deserialization(
     """
     _ = snowflake_execute_query
     # setup proper configuration to deserialize the event data object
-    mock_configurations.return_value = config
+    event_data_dict["credentials"] = config.credentials
     event_data = EventData.parse_obj(event_data_dict)
     assert event_data.preview_sql() == expected_snowflake_table_preview_query
+
+
+def test_deserialization__column_name_not_found(event_data_dict, config, snowflake_execute_query):
+    """
+    Test column not found during deserialize event data
+    """
+    _ = snowflake_execute_query
+    event_data_dict["credentials"] = config.credentials
+    event_data_dict["record_creation_date_column"] = "some_random_name"
+    with pytest.raises(ValueError) as exc:
+        EventData.parse_obj(event_data_dict)
+    assert 'Column "some_random_name" not found in the table!' in str(exc.value)

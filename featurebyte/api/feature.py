@@ -53,7 +53,6 @@ class FeatureGroup(FeatureQueryObject, Frame):
     _series_class = Feature
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
-        # pylint: disable=R0801 (duplicate-code)
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.protected_columns.union(item))
         return super().__getitem__(item)

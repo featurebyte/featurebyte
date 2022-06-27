@@ -14,7 +14,6 @@ def input_node_fixture():
     """Fixture for a generic InputNode"""
     return sql.GenericInputNode(
         column_names=["col_1", "col_2", "col_3"],
-        timestamp="ts",
         dbtable="dbtable",
     )
 

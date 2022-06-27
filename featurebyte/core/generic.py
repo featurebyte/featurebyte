@@ -3,15 +3,44 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Tuple
 
 from abc import abstractmethod
 
 import pandas as pd
 from pydantic import BaseModel, Field
 
+from featurebyte.config import Configurations, Credentials
+from featurebyte.models.event_data import DatabaseSourceModel
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.query_graph.interpreter import GraphInterpreter
+from featurebyte.session.base import BaseSession
+from featurebyte.session.manager import SessionManager
+
+
+class ExtendedDatabaseSourceModel(DatabaseSourceModel):
+    """
+    ExtendedDatabaseSourceModel class contains method to construct a session
+    """
+
+    def get_session(self, credentials: Credentials | None = None) -> BaseSession:
+        """
+        Get data source session based on provided configuration
+
+        Parameters
+        ----------
+        credentials: Credentials
+            data source to credential mapping used to initiate a new connection
+
+        Returns
+        -------
+        BaseSession
+        """
+        if credentials is None:
+            config = Configurations()
+            credentials = config.credentials
+        session_manager = SessionManager(credentials=credentials)
+        return session_manager[self]
 
 
 class QueryObject(BaseModel):
@@ -22,7 +51,7 @@ class QueryObject(BaseModel):
     graph: GlobalQueryGraph = Field(default_factory=GlobalQueryGraph)
     node: Node
     row_index_lineage: Tuple[str, ...]
-    session: Any
+    tabular_source: Tuple[DatabaseSourceModel, str]
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
@@ -63,11 +92,11 @@ class QueryObject(BaseModel):
 
         Returns
         -------
-        pd.DataFrame | None
+        str
         """
         return self._preview_sql(columns=[], limit=limit)
 
-    def preview(self, limit: int = 10) -> pd.DataFrame | None:
+    def preview(self, limit: int = 10, credentials: Credentials | None = None) -> pd.DataFrame:
         """
         Preview transformed table/column partial output
 
@@ -75,14 +104,20 @@ class QueryObject(BaseModel):
         ----------
         limit: int
             maximum number of return rows
+        credentials: Credentials | None
+            credentials to create a database session
 
         Returns
         -------
-        pd.DataFrame | None
+        pd.DataFrame
         """
-        if self.session:
-            return self.session.execute_query(self.preview_sql(limit=limit))
-        return None
+        if credentials is None:
+            config = Configurations()
+            credentials = config.credentials
+
+        data_source = ExtendedDatabaseSourceModel(**self.tabular_source[0].dict())
+        session = data_source.get_session(credentials=credentials)
+        return session.execute_query(self.preview_sql(limit=limit))
 
 
 class ProtectedColumnsQueryObject(QueryObject):

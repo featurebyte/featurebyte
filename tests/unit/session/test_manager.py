@@ -8,6 +8,7 @@ from loguru import logger
 from pytest import LogCaptureFixture
 
 from featurebyte.api.database_source import DatabaseSource
+from featurebyte.config import Configurations
 from featurebyte.session.manager import SessionManager
 
 
@@ -71,3 +72,14 @@ def test_session_manager__get_cached_properly(
     _ = session_manager[snowflake_database_source]
     assert len(caplog_handle.records) == 3
     assert caplog_handle.records[2].msg == "Create a new session for snowflake"
+
+
+def test_session_manager__wrong_configuration_file(snowflake_database_source):
+    """
+    Test exception raised when wrong configuration file is used
+    """
+    config = Configurations()
+    session_manager = SessionManager(credentials=config.credentials)
+    with pytest.raises(ValueError) as exc:
+        _ = session_manager[snowflake_database_source]
+    assert "Credentials do not contain info for the database source" in str(exc.value)

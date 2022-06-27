@@ -7,6 +7,8 @@ from typing import Dict, Tuple
 
 import copy
 
+import pandas as pd
+
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.core.series import Series
@@ -14,15 +16,23 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
-class Frame(QueryObject, OpsMixin):
+class BaseFrame(QueryObject):
     """
-    Implement operations to manipulate database table
+    BaseFrame class
     """
-
-    _series_class = Series
 
     column_var_type_map: Dict[str, DBVarType]
-    column_lineage_map: Dict[str, Tuple[str, ...]]
+
+    @property
+    def dtypes(self) -> pd.Series:
+        """
+        Retrieve column data type info
+
+        Returns
+        -------
+        pd.Series
+        """
+        return pd.Series(self.column_var_type_map)
 
     @property
     def columns(self) -> list[str]:
@@ -34,6 +44,31 @@ class Frame(QueryObject, OpsMixin):
         list
         """
         return list(self.column_var_type_map)
+
+    def preview_sql(self, limit: int = 10) -> str:
+        """
+        Generate SQL query to preview the transformed table
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+
+        Returns
+        -------
+        pd.DataFrame | None
+        """
+        return self._preview_sql(columns=self.columns, limit=limit)
+
+
+class Frame(BaseFrame, OpsMixin):
+    """
+    Implement operations to manipulate database table
+    """
+
+    _series_class = Series
+
+    column_lineage_map: Dict[str, Tuple[str, ...]]
 
     def _check_any_missing_column(self, item: str | list[str] | Series) -> None:
         """
@@ -113,12 +148,12 @@ class Frame(QueryObject, OpsMixin):
                 input_nodes=[self.graph.get_node_by_name(self.column_lineage_map[item][-1])],
             )
             return self._series_class(
+                tabular_source=self.tabular_source,
                 node=node,
                 name=item,
                 var_type=self.column_var_type_map[item],
                 lineage=self._append_to_lineage(self.column_lineage_map[item], node.name),
                 row_index_lineage=self.row_index_lineage,
-                session=self.session,
             )
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             node = self.graph.add_operation(
@@ -136,11 +171,11 @@ class Frame(QueryObject, OpsMixin):
                     self.column_lineage_map[col], node.name
                 )
             return type(self)(
+                tabular_source=self.tabular_source,
                 node=node,
                 column_var_type_map=column_var_type_map,
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self.row_index_lineage,
-                session=self.session,
             )
         if isinstance(item, Series):
             node = self._add_filter_operation(
@@ -150,11 +185,11 @@ class Frame(QueryObject, OpsMixin):
             for col, lineage in self.column_lineage_map.items():
                 column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
             return type(self)(
+                tabular_source=self.tabular_source,
                 node=node,
                 column_var_type_map=copy.deepcopy(self.column_var_type_map),
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
-                session=self.session,
             )
         raise TypeError(f"Frame indexing with value '{item}' not supported!")
 
@@ -202,18 +237,3 @@ class Frame(QueryObject, OpsMixin):
             )
         else:
             raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
-
-    def preview_sql(self, limit: int = 10) -> str:
-        """
-        Generate SQL query to preview the transformed table
-
-        Parameters
-        ----------
-        limit: int
-            maximum number of return rows
-
-        Returns
-        -------
-        pd.DataFrame | None
-        """
-        return self._preview_sql(columns=self.columns, limit=limit)

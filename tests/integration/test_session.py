@@ -46,7 +46,7 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
     expected["lucky_customer"] = (expected["cust_id_x_session_id"] > 140.0).astype(int)
 
     # check agreement
-    output = event_view.preview(limit=expected.shape[0])
+    output = event_view.preview(limit=expected.shape[0], credentials=config.credentials)
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
 
@@ -90,7 +90,7 @@ def test_query_object_operation_on_snowflake_source(
     expected["LUCKY_CUSTOMER"] = (expected["CUST_ID_X_SESSION_ID"] > 140.0).astype(int)
 
     # check agreement
-    output = event_view.preview(limit=expected.shape[0])
+    output = event_view.preview(limit=expected.shape[0], credentials=config.credentials)
     output["CUST_ID_X_SESSION_ID"] = output["CUST_ID_X_SESSION_ID"].astype(
         float
     )  # type is not correct here

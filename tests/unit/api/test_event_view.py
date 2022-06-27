@@ -10,6 +10,17 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
 
 
+def test_from_event_data__column_not_found(snowflake_event_data):
+    """
+    Test EventData from_tabular_source trigger column not found error
+    """
+    with pytest.raises(ValueError) as exc:
+        EventView.from_event_data(
+            event_data=snowflake_event_data, entity_identifiers=["unknown_column"]
+        )
+    assert 'Column "unknown_column" not found in the table!' in str(exc.value)
+
+
 def test_getitem__str(snowflake_event_view):
     """
     Test retrieving single column

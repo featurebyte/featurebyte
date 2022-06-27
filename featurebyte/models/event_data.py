@@ -1,6 +1,8 @@
 """
 This module contains EventData related models
 """
+from __future__ import annotations
+
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from datetime import datetime
@@ -96,7 +98,13 @@ class EventDataStatus(str, Enum):
     DEPRECATED = "DEPRECATED"
 
 
-class EventDataModel(BaseModel):
+class DatabaseTableModel(BaseModel):
+    """Model for a table of database source"""
+
+    tabular_source: Tuple[DatabaseSourceModel, str]
+
+
+class EventDataModel(DatabaseTableModel):
     """
     Model for EventData entity
 
@@ -121,7 +129,6 @@ class EventDataModel(BaseModel):
     """
 
     name: str
-    tabular_source: Tuple[DatabaseSourceModel, str]
     event_timestamp_column: str
     record_creation_date_column: Optional[str]
     default_feature_job_setting: Optional[FeatureJobSetting]

@@ -43,7 +43,27 @@ class SessionManager(BaseModel):
 
     @cached(cache=TTLCache(maxsize=1024, ttl=1800))
     def __getitem__(self, item: DatabaseSourceModel) -> BaseSession:
-        logger.debug(f"Create a new session for {item.type.value}")
-        credential = self.credentials[item]
-        credential_params = credential.credential.dict() if credential else {}
-        return SOURCE_TYPE_SESSION_MAP[item.type](**item.details.dict(), **credential_params)
+        """
+        Retrieve or create a new session for the given database source key
+
+        Parameters
+        ----------
+        item: DatabaseSourceModel
+            Database source object
+
+        Returns
+        -------
+        BaseSession
+            Session that can be used to connect to the specified database
+
+        Raises
+        ------
+        ValueError
+            When credentials do not contain the specified data source info
+        """
+        if item in self.credentials:
+            logger.debug(f"Create a new session for {item.type.value}")
+            credential = self.credentials[item]
+            credential_params = credential.credential.dict() if credential else {}
+            return SOURCE_TYPE_SESSION_MAP[item.type](**item.details.dict(), **credential_params)
+        raise ValueError(f'Credentials do not contain info for the database source "{item}"!')
