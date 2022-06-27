@@ -120,7 +120,6 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
-            sql_node: BuildTileInputNode | GenericInputNode
             if self.sql_type == SQLType.BUILD_TILE:
                 sql_node = BuildTileInputNode(
                     column_names=parameters["columns"],
