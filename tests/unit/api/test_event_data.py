@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 
-from featurebyte.api.event_data import EventData
+from featurebyte.api.event_data import EventData, EventDataColumn
 
 
 @pytest.fixture(name="event_data_dict")
@@ -77,3 +77,22 @@ def test_deserialization__column_name_not_found(event_data_dict, config, snowfla
     with pytest.raises(ValueError) as exc:
         EventData.parse_obj(event_data_dict)
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
+
+
+def test_event_data_column__not_exists(snowflake_event_data):
+    """
+    Test non-exist column retrieval
+    """
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_event_data["non_exist_column"]
+    assert 'Column "non_exist_column" not exists!' in str(exc.value)
+
+
+def test_event_data_column__as_entity(snowflake_event_data):
+    """
+    Test setting a column in the event data as entity
+    """
+    col_int = snowflake_event_data.col_int
+    assert isinstance(col_int, EventDataColumn)
+    snowflake_event_data.col_int.as_entity("col_id")
+    assert snowflake_event_data.column_entity_map == {"col_int": "col_id"}

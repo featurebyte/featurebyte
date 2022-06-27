@@ -13,6 +13,29 @@ from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import DatabaseSourceModel, EventDataModel
 
 
+class EventDataColumn:
+    """
+    EventDataColumn class to set metadata like entity
+    """
+
+    # pylint: disable=R0903
+
+    def __init__(self, event_data: EventData, column_name: str) -> None:
+        self.event_data = event_data
+        self.column_name = column_name
+
+    def as_entity(self, tag_name: str) -> None:
+        """
+        Set the column name as entity with tag name
+
+        Parameters
+        ----------
+        tag_name: str
+            Tag name of the entity
+        """
+        self.event_data.column_entity_map[self.column_name] = tag_name
+
+
 class EventData(EventDataModel, DatabaseTable):
     """
     EventData class
@@ -75,3 +98,28 @@ class EventData(EventDataModel, DatabaseTable):
         if value and value not in values["column_var_type_map"]:
             raise ValueError(f'Column "{value}" not found in the table!')
         return value
+
+    def __getitem__(self, item: str) -> EventDataColumn:
+        """
+        Retrieve column from the table
+
+        Parameters
+        ----------
+        item: str
+            Column name
+
+        Returns
+        -------
+        EventDataColumn
+
+        Raises
+        ------
+        ValueError
+            when accessing non-exist column
+        """
+        if item not in self.column_var_type_map:
+            raise ValueError(f'Column "{item}" not exists!')
+        return EventDataColumn(event_data=self, column_name=item)
+
+    def __getattr__(self, item: str) -> EventDataColumn:
+        return self.__getitem__(item)
