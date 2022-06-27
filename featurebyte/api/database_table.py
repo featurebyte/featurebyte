@@ -40,13 +40,37 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         }
 
     @classmethod
-    def _get_other_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
+        """
+        Construct additional parameter mappings to input node during node insertion
+
+        Parameters
+        ----------
+        values: dict[str, Any]
+            Dictionary contains parameter name to value mapping for the DatabaseTable object
+
+        Returns
+        -------
+        dict[str, Any]
+        """
         _ = values
         return {}
 
     @root_validator(pre=True)
     @classmethod
     def _set_graph_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
+        """
+        Construct input node & set the graph related parameters based on the given input dictionary
+
+        Parameters
+        ----------
+        values: dict[str, Any]
+            Dictionary contains parameter name to value mapping for the DatabaseTable object
+
+        Returns
+        -------
+        dict[str, Any]
+        """
         credentials = values.get("credentials")
         if credentials is None:
             config = Configurations()
@@ -67,7 +91,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
                 "columns": list(table_schema.keys()),
                 "dbtable": table_name,
                 "database_source": database_source.dict(),
-                **cls._get_other_node_parameters(values),
+                **cls._get_other_input_node_parameters(values),
             },
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[],

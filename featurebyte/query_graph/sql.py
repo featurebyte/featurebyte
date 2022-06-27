@@ -140,7 +140,6 @@ class GenericInputNode(TableNode):
     """Input data node"""
 
     column_names: list[str]
-    timestamp: str
     dbtable: str
 
     @property
@@ -166,6 +165,8 @@ class GenericInputNode(TableNode):
 @dataclass
 class BuildTileInputNode(GenericInputNode):
     """Input data node used when building tiles"""
+
+    timestamp: str
 
     @property
     def sql(self) -> Expression:

@@ -120,16 +120,18 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
-            input_node_cls: Any
+            sql_node: BuildTileInputNode | GenericInputNode
             if self.sql_type == SQLType.BUILD_TILE:
-                input_node_cls = BuildTileInputNode
+                sql_node = BuildTileInputNode(
+                    column_names=parameters["columns"],
+                    timestamp=parameters["timestamp"],
+                    dbtable=parameters["dbtable"],
+                )
             else:
-                input_node_cls = GenericInputNode
-            sql_node = input_node_cls(
-                column_names=parameters["columns"],
-                timestamp=parameters.get("timestamp"),
-                dbtable=parameters["dbtable"],
-            )
+                sql_node = GenericInputNode(
+                    column_names=parameters["columns"],
+                    dbtable=parameters["dbtable"],
+                )
 
         elif node_type == NodeType.ASSIGN:
             assert len(input_sql_nodes) == 2

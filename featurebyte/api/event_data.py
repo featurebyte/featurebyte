@@ -19,7 +19,7 @@ class EventData(EventDataModel, DatabaseTable):
     """
 
     @classmethod
-    def _get_other_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         return {"timestamp": values["event_timestamp_column"]}
 
     @classmethod
