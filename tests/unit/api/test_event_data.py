@@ -29,6 +29,7 @@ def event_data_dict_fixture():
         ),
         "event_timestamp_column": "event_timestamp",
         "record_creation_date_column": "created_at",
+        "column_entity_map": {},
         "default_feature_job_setting": None,
         "created_at": None,
         "history": [],
