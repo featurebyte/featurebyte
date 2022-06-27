@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Tuple
 
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 
 from featurebyte.core.generic import BaseFrame, QueryObject
 from featurebyte.core.mixin import OpsMixin
@@ -21,7 +21,33 @@ class Series(QueryObject, OpsMixin):
     name: Optional[str] = Field(default=None)
     var_type: DBVarType
     lineage: Tuple[str, ...]
-    parent_frame: BaseFrame
+    _parent_frame: Optional[BaseFrame] = PrivateAttr(default=None)
+
+    @property
+    def parent_frame(self) -> Optional[BaseFrame]:
+        """
+        Parent Frame object of the current series
+
+        Returns
+        -------
+        BaseFrame
+        """
+        return self._parent_frame
+
+    def set_parent_frame(self, frame: BaseFrame) -> Series:
+        """
+        Set parent frame object
+
+        Parameters
+        ----------
+        frame: BaseFrame
+
+        Returns
+        -------
+        Series
+        """
+        self._parent_frame = frame
+        return self
 
     def __repr__(self) -> str:
         return (
@@ -153,7 +179,6 @@ class Series(QueryObject, OpsMixin):
                 var_type=output_var_type,
                 lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self.row_index_lineage,
-                parent_frame=self.parent_frame,
             )
 
         node = self.graph.add_operation(
@@ -169,7 +194,6 @@ class Series(QueryObject, OpsMixin):
             var_type=output_var_type,
             lineage=self._append_to_lineage(self.lineage, node.name),
             row_index_lineage=self.row_index_lineage,
-            parent_frame=self.parent_frame,
         )
 
     def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:
@@ -343,3 +367,22 @@ class Series(QueryObject, OpsMixin):
         if self.name:
             columns.append(self.name)
         return self._preview_sql(columns=columns, limit=limit)
+
+    def as_entity(self, tag_name: str) -> None:
+        """
+        Set the series as entity with tag name
+
+        Parameters
+        ----------
+        tag_name: str
+            Tag name of the entity
+
+        Raises
+        ------
+        ValueError
+        """
+        if self.name is None:
+            raise ValueError("Series object does not have name!")
+        if self._parent_frame is None:
+            raise ValueError("Series object does not have parent frame object!")
+        self._parent_frame.column_entity_map[self.name] = tag_name

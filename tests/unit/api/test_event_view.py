@@ -10,15 +10,24 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
 
 
-def test_from_event_data__column_not_found(snowflake_event_data):
+def test_from_event_data(snowflake_event_data):
     """
-    Test EventData from_tabular_source trigger column not found error
+    Test from_event_data
     """
-    with pytest.raises(ValueError) as exc:
-        EventView.from_event_data(
-            event_data=snowflake_event_data, entity_identifiers=["unknown_column"]
-        )
-    assert 'Column "unknown_column" not found in the table!' in str(exc.value)
+    event_view_first = EventView.from_event_data(snowflake_event_data)
+    assert event_view_first.tabular_source == snowflake_event_data.tabular_source
+    assert event_view_first.node == snowflake_event_data.node
+    assert event_view_first.column_var_type_map == snowflake_event_data.column_var_type_map
+    assert event_view_first.row_index_lineage == snowflake_event_data.row_index_lineage
+    assert event_view_first.column_entity_map == snowflake_event_data.column_entity_map == {}
+
+    snowflake_event_data.cust_id.as_entity("customer")
+    event_view_second = EventView.from_event_data(snowflake_event_data)
+    assert (
+        event_view_second.column_entity_map
+        == snowflake_event_data.column_entity_map
+        == {"cust_id": "customer"}
+    )
 
 
 def test_getitem__str(snowflake_event_view):
@@ -35,6 +44,7 @@ def test_getitem__str(snowflake_event_view):
     )
     assert cust_id.lineage == ("input_2", "project_1")
     assert cust_id.row_index_lineage == ("input_2",)
+    assert cust_id.parent_frame.node.name == "input_2"
 
 
 def test_getitem__list_of_str(snowflake_event_view):
@@ -110,3 +120,53 @@ def test_setitem__str_key_series_value(snowflake_event_view):
         "cust_id": ("input_2",),
         "double_value": ("assign_1",),
     }
+
+
+def test_setting_column_as_entity__on_original_frame(snowflake_event_view):
+    """
+    Test setting a specific column as entity
+    """
+    # test on original column
+    snowflake_event_view.cust_id.as_entity("customer")
+    assert id(snowflake_event_view) == id(snowflake_event_view.cust_id.parent_frame)
+    assert snowflake_event_view.column_entity_map == {"cust_id": "customer"}
+
+    # test on transformed column
+    snowflake_event_view["col_int_entity"] = 1 * snowflake_event_view["col_int"]
+    snowflake_event_view.col_int_entity.as_entity("col_int")
+    assert snowflake_event_view.column_entity_map == {
+        "cust_id": "customer",
+        "col_int_entity": "col_int",
+    }
+
+
+def test_setting_column_as_entity__on_sub_frame(snowflake_event_view):
+    """
+    Test setting a specific column as entity (on sub-frame)
+    """
+    snowflake_event_view.cust_id.as_entity("customer")
+    sub_frame_first = snowflake_event_view[["cust_id", "col_int"]]
+    assert sub_frame_first.column_entity_map == {"cust_id": "customer"}
+
+    sub_frame_second = snowflake_event_view[["col_int", "col_float"]]
+    assert sub_frame_second.column_entity_map == {}
+    sub_frame_second.col_int.as_entity("col_integer")
+    assert sub_frame_second.column_entity_map == {"col_int": "col_integer"}
+
+
+def test_setting_column_as_entity__invalid_cases(snowflake_event_view):
+    """
+    Test invalid ways of setting column as entity
+    """
+    cust_id = snowflake_event_view.cust_id
+    new_cust_id = cust_id * 2
+    assert new_cust_id.parent_frame is None
+    assert new_cust_id.name is None
+    with pytest.raises(ValueError) as exc:
+        new_cust_id.as_entity("new_cust_id")
+    assert "Series object does not have name!" in str(exc.value)
+
+    new_cust_id.name = "some_random_name"
+    with pytest.raises(ValueError) as exc:
+        new_cust_id.as_entity("new_cust_id")
+    assert "Series object does not have parent frame object!" in str(exc.value)

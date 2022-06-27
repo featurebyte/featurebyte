@@ -185,6 +185,7 @@ class BaseFrame(QueryObject):
     """
 
     column_var_type_map: Dict[str, DBVarType]
+    column_entity_map: Dict[str, str] = Field(default_factory=dict)
 
     @property
     def dtypes(self) -> pd.Series:

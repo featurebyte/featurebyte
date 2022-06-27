@@ -3,9 +3,9 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Dict
 
-from pydantic import Field, validator
+from pydantic import Field
 
 from featurebyte.api.event_data import EventData
 from featurebyte.core.frame import Frame
@@ -21,24 +21,13 @@ class EventView(ProtectedColumnsQueryObject, Frame):
     EventView class
     """
 
-    entity_identifiers: List[str] = Field(default_factory=list)
+    column_entity_map: Dict[str, str] = Field(default_factory=dict)
 
     def __repr__(self) -> str:
-        return (
-            f"{type(self).__name__}(node.name={self.node.name}, "
-            f"timestamp_column={self.timestamp_column}, entity_identifiers={self.entity_identifiers})"
-        )
+        return f"{type(self).__name__}(node.name={self.node.name}, timestamp_column={self.timestamp_column})"
 
     def __str__(self) -> str:
         return repr(self)
-
-    @validator("entity_identifiers")
-    @classmethod
-    def _check_entity_identifiers_exist(cls, value: list[str], values: dict[str, Any]) -> list[str]:
-        for column in value:
-            if column not in values["column_var_type_map"]:
-                raise ValueError(f'Column "{column}" not found in the table!')
-        return value
 
     @property
     def protected_attributes(self) -> list[str]:
@@ -49,7 +38,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         -------
         list[str]
         """
-        return ["timestamp_column", "entity_identifiers"]
+        return ["timestamp_column"]
 
     @property
     def timestamp_column(self) -> str | None:
@@ -63,11 +52,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         return self.inception_node.parameters.get("timestamp")
 
     @classmethod
-    def from_event_data(
-        cls,
-        event_data: EventData,
-        entity_identifiers: list[str] | None = None,
-    ) -> EventView:
+    def from_event_data(cls, event_data: EventData) -> EventView:
         """
         Construct an EventView object using session object
 
@@ -75,8 +60,6 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         ----------
         event_data: EventData
             EventData object used to construct EventView object
-        entity_identifiers: list[str]
-            List of columns to be used as entity identifiers
 
         Returns
         -------
@@ -91,7 +74,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
                 col: (event_data.node.name,) for col in event_data.column_var_type_map
             },
             row_index_lineage=tuple(event_data.row_index_lineage),
-            entity_identifiers=entity_identifiers or [],
+            column_entity_map=event_data.column_entity_map,
         )
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
@@ -118,6 +101,10 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         EventViewGroupBy
             a groupby object that contains information about the groups
         """
+        for key in by_keys:
+            if key not in self.column_entity_map:
+                raise ValueError(f'Column "{key}" is not an entity.')
+
         # pylint: disable=C0415
         from featurebyte.api.groupby import EventViewGroupBy
 

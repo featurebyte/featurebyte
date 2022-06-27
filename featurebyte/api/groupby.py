@@ -16,17 +16,12 @@ class EventViewGroupBy(OpsMixin):
     EventViewGroupBy class
     """
 
-    def __init__(self, obj: EventView, keys: str | list[str] | None):
+    def __init__(self, obj: EventView, keys: str | list[str]) -> None:
         if not isinstance(obj, EventView):
             raise TypeError(f"Expect {EventView} object type!")
 
         keys_value = []
-        if keys is None:
-            if obj.entity_identifiers:
-                keys_value = obj.entity_identifiers
-            else:
-                raise ValueError(f"Not able to infer keys from {obj}!")
-        elif isinstance(keys, str):
+        if isinstance(keys, str):
             keys_value.append(keys)
         elif isinstance(keys, list):
             keys_value = keys

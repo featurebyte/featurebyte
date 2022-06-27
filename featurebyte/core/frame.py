@@ -106,8 +106,7 @@ class Frame(BaseFrame, OpsMixin):
                 var_type=self.column_var_type_map[item],
                 lineage=self._append_to_lineage(self.column_lineage_map[item], node.name),
                 row_index_lineage=self.row_index_lineage,
-                parent_frame=self,
-            )
+            ).set_parent_frame(self)
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
@@ -118,6 +117,9 @@ class Frame(BaseFrame, OpsMixin):
             column_var_type_map = {
                 col: var_type for col, var_type in self.column_var_type_map.items() if col in item
             }
+            column_entity_map = {
+                col: name for col, name in self.column_entity_map.items() if col in item
+            }
             column_lineage_map = {}
             for col in item:
                 column_lineage_map[col] = self._append_to_lineage(
@@ -127,6 +129,7 @@ class Frame(BaseFrame, OpsMixin):
                 tabular_source=self.tabular_source,
                 node=node,
                 column_var_type_map=column_var_type_map,
+                column_entity_map=column_entity_map,
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self.row_index_lineage,
             )
@@ -145,6 +148,9 @@ class Frame(BaseFrame, OpsMixin):
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
             )
         raise TypeError(f"Frame indexing with value '{item}' not supported!")
+
+    def __getattr__(self, item: str | list[str] | Series) -> Series | Frame:
+        return self.__getitem__(item)
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         """
