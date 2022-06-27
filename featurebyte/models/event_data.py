@@ -135,3 +135,42 @@ class EventDataModel(DatabaseTableModel):
     created_at: Optional[datetime] = Field(default=None)
     history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list)
     status: Optional[EventDataStatus] = Field(default=None)
+
+
+class Feature(BaseModel):
+    """
+    Model for Feature
+
+    Parameters
+    ----------
+    name : str
+        Name of the Feature
+    status : str
+        Status of the Feature
+    time_modulo_frequency_seconds: int
+        time modulo seconds for the tile
+    blind_spot_seconds: int
+        blind spot seconds for the tile
+    frequency_minute: int
+        frequency minute for the tile
+    tile_sql: str
+        sql for tile generation
+    column_names: str
+        comma separated string of column names for the tile table
+    tile_id: str
+        hash value of tile id and name
+    """
+
+    name: str
+    status: str
+
+    time_modulo_frequency_second: int
+    blind_spot_second: int
+    frequency_minute: int
+
+    tile_sql: str
+    column_names: str
+    tile_id: str
+    oneline_enabled: str
+
+    datasource: DatabaseSourceModel

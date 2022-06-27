@@ -4,10 +4,12 @@ Snowflake Tile class
 from __future__ import annotations
 
 from jinja2 import Template
-from logzero import logger
+from pydantic import BaseModel, Field, root_validator, validator
 
-from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.tile.base import TileBase
+from featurebyte.config import Credentials
+from featurebyte.core.generic import ExtendedDatabaseSourceModel
+from featurebyte.logger import logger
+from featurebyte.models.event_data import DatabaseSourceModel
 
 tm_gen_tile = Template(
     """
@@ -32,65 +34,58 @@ tm_schedule_tile = Template(
 )
 
 
-class TileSnowflake(TileBase):
+class TileSnowflake(BaseModel):
     """
     Snowflake Tile class
+
+    Parameters
+    ----------
+    feature_name: str
+        feature name
+    time_modulo_frequency_seconds: int
+        time modulo seconds for the tile
+    blind_spot_seconds: int
+        blind spot seconds for the tile
+    frequency_minute: int
+        frequency minute for the tile
+    tile_sql: str
+        sql for tile generation
+    column_names: str
+        comma separated string of column names for the tile table
+    tile_id: str
+        hash value of tile id and name
     """
 
-    def __init__(
+    feature_name: str
+    time_modulo_frequency_seconds: int = Field(gt=0)
+    blind_spot_seconds: int
+    frequency_minute: int = Field(gt=0, le=60)
+    tile_sql: str
+    column_names: str
+    tile_id: str
+    tabular_source: DatabaseSourceModel
+
+    @validator("feature_name", "tile_id", "column_names")
+    def stripped_upper(cls, value):
+        if value is None or value.strip() == "":
+            raise ValueError("value cannot be empty")
+        return value.strip().upper()
+
+    @root_validator
+    def check_time_modulo_frequency_seconds(cls, values):
+        if values["time_modulo_frequency_seconds"] > values["frequency_minute"] * 60:
+            raise ValueError(
+                f"time_modulo_frequency_seconds must be less than {values['frequency_minute'] * 60}"
+            )
+        return values
+
+    def generate_tiles(
         self,
-        session: SnowflakeSession,
-        feature_name: str,
-        time_modulo_frequency_seconds: int,
-        blind_spot_seconds: int,
-        frequency_minute: int,
-        tile_sql: str,
-        column_names: str,
-        tile_id: str,
-    ) -> None:
-        """
-        Instantiate a TileSnowflake instance.
-
-        Parameters
-        ----------
-        session: SnowflakeSession
-            snowflake session instance
-        feature_name: str
-            feature name
-        time_modulo_frequency_seconds: int
-            time modulo seconds for the tile
-        blind_spot_seconds: int
-            blind spot seconds for the tile
-        frequency_minute: int
-            frequency minute for the tile
-        tile_sql: str
-            sql for tile generation
-        column_names: str
-            comma separated string of column names for the tile table
-        tile_id: str
-            hash value of tile id and name
-        """
-
-        self.validate(
-            feature_name,
-            time_modulo_frequency_seconds,
-            blind_spot_seconds,
-            frequency_minute,
-            tile_sql,
-            column_names,
-            tile_id,
-        )
-
-        self._session = session
-        self._feature_name = feature_name.strip().upper()
-        self._time_modulo_frequency_seconds = time_modulo_frequency_seconds
-        self._blind_spot_seconds = blind_spot_seconds
-        self._frequency_minute = frequency_minute
-        self._tile_sql = tile_sql
-        self._column_names = column_names.strip().upper()
-        self.tile_id = tile_id.strip().upper()
-
-    def generate_tiles(self, tile_type: str, start_ts_str: str, end_ts_str: str) -> str:
+        tile_type: str,
+        start_ts_str: str,
+        end_ts_str: str,
+        credentials: Credentials | None = None,
+    ) -> str:
         """
         Manually trigger tile generation
 
@@ -107,26 +102,31 @@ class TileSnowflake(TileBase):
         -------
             tile generation sql
         """
-        tile_sql = self._tile_sql.replace("FB_START_TS", f"\\'{start_ts_str}\\'").replace(
+        tile_sql = self.tile_sql.replace("FB_START_TS", f"\\'{start_ts_str}\\'").replace(
             "FB_END_TS", f"\\'{end_ts_str}\\'"
         )
         logger.info(f"tile_sql: {tile_sql}")
 
         sql = tm_gen_tile.render(
             sql=tile_sql,
-            time_modulo_frequency_seconds=self._time_modulo_frequency_seconds,
-            blind_spot_seconds=self._blind_spot_seconds,
-            frequency_minute=self._frequency_minute,
-            column_names=self._column_names,
+            time_modulo_frequency_seconds=self.time_modulo_frequency_seconds,
+            blind_spot_seconds=self.blind_spot_seconds,
+            frequency_minute=self.frequency_minute,
+            column_names=self.column_names,
             table_name=self.tile_id,
             tile_type=tile_type,
         )
         logger.info(f"generated sql: {sql}")
-        self._session.execute_query(sql)
+        self._get_session(credentials).execute_query(sql)
 
         return sql
 
-    def schedule_online_tiles(self, monitor_periods: int = 10, start_task: bool = True) -> str:
+    def schedule_online_tiles(
+        self,
+        monitor_periods: int = 10,
+        start_task: bool = True,
+        credentials: Credentials | None = None,
+    ) -> str:
         """
         Schedule online tiles
 
@@ -142,17 +142,23 @@ class TileSnowflake(TileBase):
             generated sql to be executed
         """
         tile_type = "ONLINE"
-        start_minute = self._time_modulo_frequency_seconds // 60
-        cron = f"{start_minute}-59/{self._frequency_minute} * * * *"
+        start_minute = self.time_modulo_frequency_seconds // 60
+        cron = f"{start_minute}-59/{self.frequency_minute} * * * *"
 
         return self._schedule_tiles(
             tile_type=tile_type,
             cron_expr=cron,
             start_task=start_task,
             monitor_periods=monitor_periods,
+            credentials=credentials,
         )
 
-    def schedule_offline_tiles(self, offline_minutes: int = 1440, start_task: bool = True) -> str:
+    def schedule_offline_tiles(
+        self,
+        offline_minutes: int = 1440,
+        start_task: bool = True,
+        credentials: Credentials | None = None,
+    ) -> str:
         """
         Schedule offline tiles
 
@@ -168,7 +174,7 @@ class TileSnowflake(TileBase):
             generated sql to be executed
         """
         tile_type = "OFFLINE"
-        start_minute = self._time_modulo_frequency_seconds // 60
+        start_minute = self.time_modulo_frequency_seconds // 60
         cron = f"{start_minute} 0 * * *"
 
         return self._schedule_tiles(
@@ -176,6 +182,7 @@ class TileSnowflake(TileBase):
             cron_expr=cron,
             start_task=start_task,
             offline_minutes=offline_minutes,
+            credentials=credentials,
         )
 
     def _schedule_tiles(
@@ -185,6 +192,7 @@ class TileSnowflake(TileBase):
         start_task: bool,
         offline_minutes: int = 1440,
         monitor_periods: int = 10,
+        credentials: Credentials | None = None,
     ) -> str:
         """
         Common tile schedule method
@@ -208,16 +216,17 @@ class TileSnowflake(TileBase):
         """
 
         temp_task_name = f"SHELL_TASK_{self.tile_id}_{tile_type}"
+        session = self._get_session(credentials)
 
         sql = tm_schedule_tile.render(
             temp_task_name=temp_task_name,
-            warehouse=self._session.warehouse,
+            warehouse=session.warehouse,
             cron=cron_expr,
-            sql=self._tile_sql,
-            time_modulo_frequency_seconds=self._time_modulo_frequency_seconds,
-            blind_spot_seconds=self._blind_spot_seconds,
-            frequency_minute=self._frequency_minute,
-            column_names=self._column_names,
+            sql=self.tile_sql,
+            time_modulo_frequency_seconds=self.time_modulo_frequency_seconds,
+            blind_spot_seconds=self.blind_spot_seconds,
+            frequency_minute=self.frequency_minute,
+            column_names=self.column_names,
             tile_id=self.tile_id,
             type=tile_type,
             offline_minutes=offline_minutes,
@@ -225,9 +234,14 @@ class TileSnowflake(TileBase):
         )
 
         logger.info(f"generated sql: {sql}")
-        self._session.execute_query(sql)
+        session.execute_query(sql)
 
         if start_task:
-            self._session.execute_query(f"ALTER TASK {temp_task_name} RESUME")
+            session.execute_query(f"ALTER TASK {temp_task_name} RESUME")
 
         return sql
+
+    def _get_session(self, credentials: Credentials | None = None):
+        data_source = ExtendedDatabaseSourceModel(**self.tabular_source.dict())
+        session = data_source.get_session(credentials=credentials)
+        return session

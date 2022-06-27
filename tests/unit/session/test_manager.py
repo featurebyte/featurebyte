@@ -22,17 +22,6 @@ def caplog_handle_fixture(caplog: LogCaptureFixture):
     logger.remove(handler_id)
 
 
-@pytest.fixture(name="session_manager")
-def session_manager_fixture(config, snowflake_connector):
-    """
-    Session manager fixture
-    """
-    # pylint: disable=E1101
-    _ = snowflake_connector
-    SessionManager.__getitem__.cache_clear()
-    yield SessionManager(credentials=config.credentials)
-
-
 @pytest.fixture(name="sqlite_database_source")
 def sqlite_database_source_fixture(config, graph):
     """

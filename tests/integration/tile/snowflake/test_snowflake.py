@@ -3,22 +3,24 @@ This module contains integration tests for TileSnowflake
 """
 
 
-def test_generate_tile(snowflake_tile, fb_db_session):
+def test_generate_tile(snowflake_tile, fb_db_session, config):
     """
     Test generate_tiles method in TileSnowflake
     """
-    snowflake_tile.generate_tiles("ONLINE", "2022-06-05 23:33:00", "2022-06-05 23:58:00")
+    snowflake_tile.generate_tiles(
+        "ONLINE", "2022-06-05 23:33:00", "2022-06-05 23:58:00", credentials=config.credentials
+    )
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {snowflake_tile.tile_id}"
     result = fb_db_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 5
 
 
-def test_schedule_online_tile(snowflake_tile, fb_db_session):
+def test_schedule_online_tile(snowflake_tile, fb_db_session, config):
     """
     Test schedule_online_tiles method in TileSnowflake
     """
-    snowflake_tile.schedule_online_tiles(start_task=False)
+    snowflake_tile.schedule_online_tiles(start_task=False, credentials=config.credentials)
 
     task_name = f"SHELL_TASK_{snowflake_tile.tile_id}_ONLINE"
 
@@ -28,11 +30,11 @@ def test_schedule_online_tile(snowflake_tile, fb_db_session):
     assert result["schedule"].iloc[0] == "USING CRON 3-59/5 * * * * UTC"
 
 
-def test_schedule_offline_tile(snowflake_tile, fb_db_session):
+def test_schedule_offline_tile(snowflake_tile, fb_db_session, config):
     """
     Test schedule_offline_tiles method in TileSnowflake
     """
-    snowflake_tile.schedule_offline_tiles(start_task=False)
+    snowflake_tile.schedule_offline_tiles(start_task=False, credentials=config.credentials)
 
     task_name = f"SHELL_TASK_{snowflake_tile.tile_id}_OFFLINE"
 

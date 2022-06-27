@@ -14,11 +14,9 @@ from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
 from featurebyte.session.manager import SessionManager
-from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
-@pytest.fixture(name="transaction_data")
+@pytest.fixture(name="transaction_data", scope="session")
 def transaction_dataframe():
     """
     Simulated transaction Dataframe
@@ -43,7 +41,7 @@ def transaction_dataframe():
     yield data
 
 
-@pytest.fixture(name="transaction_data_upper_case")
+@pytest.fixture(name="transaction_data_upper_case", scope="session")
 def transaction_dataframe_upper_case(transaction_data):
     """
     Convert transaction data column names to upper case
@@ -53,7 +51,7 @@ def transaction_dataframe_upper_case(transaction_data):
     yield data
 
 
-@pytest.fixture(name="sqlite_filename")
+@pytest.fixture(name="sqlite_filename", scope="session")
 def sqlite_filename_fixture(transaction_data):
     """
     Create SQLite database file with data for testing
@@ -65,7 +63,7 @@ def sqlite_filename_fixture(transaction_data):
         yield file_handle.name
 
 
-@pytest.fixture(name="config")
+@pytest.fixture(name="config", scope="session")
 def config_fixture(sqlite_filename):
     """
     Config object for integration testing
@@ -96,7 +94,7 @@ def config_fixture(sqlite_filename):
         yield Configurations(config_file_path=file_handle.name)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def snowflake_session(transaction_data_upper_case, config):
     """
     Snowflake session
@@ -119,7 +117,7 @@ def snowflake_session(transaction_data_upper_case, config):
     yield session
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def sqlite_session(config):
     """
     SQLite session
@@ -130,22 +128,15 @@ def sqlite_session(config):
 
 
 @pytest.fixture(name="fb_db_session", scope="session")
-def snowflake_featurebyte_session():
+def snowflake_featurebyte_session(config):
     """
     Create Snowflake session for integration tests of featurebyte sql scripts
     """
-    database_name = os.getenv("SNOWFLAKE_DATABASE")
+    session_manager = SessionManager(credentials=config.credentials)
+    snowflake_database_source = config.db_sources["snowflake_datasource"]
+    session = session_manager[snowflake_database_source]
+
     schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
-
-    session = SnowflakeSession(
-        account=os.getenv("SNOWFLAKE_ACCOUNT"),
-        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-        database=database_name,
-        sf_schema=schema_name,
-        username=os.getenv("SNOWFLAKE_USER"),
-        password=os.getenv("SNOWFLAKE_PASSWORD"),
-    )
-
     temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     session.execute_query(f"CREATE OR REPLACE TRANSIENT SCHEMA {temp_schema_name}")
     session.execute_query(f"USE SCHEMA {temp_schema_name}")
@@ -180,7 +171,9 @@ def snowflake_featurebyte_session():
 
 
 @pytest.fixture
-def snowflake_tile(fb_db_session):
+def snowflake_tile(fb_db_session, config):
+    from featurebyte.tile.snowflake_tile import TileSnowflake
+
     """
     Pytest Fixture for TileSnowflake instance
     """
@@ -190,14 +183,14 @@ def snowflake_tile(fb_db_session):
     tile_id = "tile_id1"
 
     tile_s = TileSnowflake(
-        fb_db_session,
-        "feature1",
-        183,
-        3,
-        5,
-        tile_sql,
-        col_names,
-        tile_id,
+        feature_name="feature1",
+        time_modulo_frequency_seconds=183,
+        blind_spot_seconds=3,
+        frequency_minute=5,
+        tile_sql=tile_sql,
+        column_names=col_names,
+        tile_id="tile_id1",
+        tabular_source=config.db_sources["snowflake_datasource"],
     )
 
     yield tile_s
