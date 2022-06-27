@@ -4,9 +4,9 @@ Persistent storage using MongoDB
 from typing import Any, Iterable, Literal, Mapping, Optional, Tuple, Union
 
 import pymongo
-from pymongo.typings import _DocumentIn, _DocumentType, _Pipeline
+from pymongo.typings import _DocumentIn, _Pipeline
 
-from .persistent import DuplicateDocumentError, Persistent
+from .persistent import DocumentType, DuplicateDocumentError, Persistent
 
 
 class MongoDB(Persistent):
@@ -73,9 +73,9 @@ class MongoDB(Persistent):
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
 
-    def find_one(  # type: ignore
+    def find_one(
         self, collection_name: str, filter_query: Mapping[str, Any]
-    ) -> Optional[_DocumentType]:
+    ) -> Optional[DocumentType]:
         """
         Find one record from collection
 
@@ -88,7 +88,7 @@ class MongoDB(Persistent):
 
         Returns
         -------
-        Optional[_DocumentType]
+        Optional[DocumentType]
             Retrieved document
         """
         return self._db[collection_name].find_one(filter_query)
@@ -101,7 +101,7 @@ class MongoDB(Persistent):
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
         page_size: int = 0,
-    ) -> Tuple[Iterable[_DocumentType], int]:
+    ) -> Tuple[Iterable[DocumentType], int]:
         """
         Find all records from collection
 
@@ -122,7 +122,7 @@ class MongoDB(Persistent):
 
         Returns
         -------
-        Tuple[Iterable[_DocumentType], int]
+        Tuple[Iterable[DocumentType], int]
             Retrieved documents and total count
         """
         cursor = self._db[collection_name].find(filter_query)

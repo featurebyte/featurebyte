@@ -12,9 +12,11 @@ def test_api_client():
     Test API client
     """
     with mongomock.patch(servers=(("localhost", 27017),)):
-        from featurebyte.app import app, persistent  # pylint: disable=import-outside-toplevel
+        from featurebyte.app import app, get_persistent  # pylint: disable=import-outside-toplevel
 
         with TestClient(app) as client:
             yield client
             # clean up database
-            persistent._client.drop_database("featurebyte")  # pylint: disable=protected-access
+            get_persistent()._client.drop_database(  # pylint: disable=protected-access
+                "featurebyte"
+            )
