@@ -7,58 +7,10 @@ from typing import Dict, Tuple
 
 import copy
 
-import pandas as pd
-
-from featurebyte.core.generic import QueryObject
+from featurebyte.core.generic import BaseFrame
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.core.series import Series
-from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-
-
-class BaseFrame(QueryObject):
-    """
-    BaseFrame class
-    """
-
-    column_var_type_map: Dict[str, DBVarType]
-
-    @property
-    def dtypes(self) -> pd.Series:
-        """
-        Retrieve column data type info
-
-        Returns
-        -------
-        pd.Series
-        """
-        return pd.Series(self.column_var_type_map)
-
-    @property
-    def columns(self) -> list[str]:
-        """
-        Columns of the object
-
-        Returns
-        -------
-        list
-        """
-        return list(self.column_var_type_map)
-
-    def preview_sql(self, limit: int = 10) -> str:
-        """
-        Generate SQL query to preview the transformed table
-
-        Parameters
-        ----------
-        limit: int
-            maximum number of return rows
-
-        Returns
-        -------
-        pd.DataFrame | None
-        """
-        return self._preview_sql(columns=self.columns, limit=limit)
 
 
 class Frame(BaseFrame, OpsMixin):
@@ -154,6 +106,7 @@ class Frame(BaseFrame, OpsMixin):
                 var_type=self.column_var_type_map[item],
                 lineage=self._append_to_lineage(self.column_lineage_map[item], node.name),
                 row_index_lineage=self.row_index_lineage,
+                parent_frame=self,
             )
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             node = self.graph.add_operation(

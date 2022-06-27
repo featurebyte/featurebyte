@@ -7,7 +7,7 @@ from typing import Any, Optional, Tuple
 
 from pydantic import Field
 
-from featurebyte.core.generic import QueryObject
+from featurebyte.core.generic import BaseFrame, QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -21,6 +21,7 @@ class Series(QueryObject, OpsMixin):
     name: Optional[str] = Field(default=None)
     var_type: DBVarType
     lineage: Tuple[str, ...]
+    parent_frame: BaseFrame
 
     def __repr__(self) -> str:
         return (
@@ -42,6 +43,7 @@ class Series(QueryObject, OpsMixin):
                 var_type=self.var_type,
                 lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+                parent_frame=self.parent_frame,
             )
         raise KeyError(f"Series indexing with value '{item}' not supported!")
 
@@ -151,6 +153,7 @@ class Series(QueryObject, OpsMixin):
                 var_type=output_var_type,
                 lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self.row_index_lineage,
+                parent_frame=self.parent_frame,
             )
 
         node = self.graph.add_operation(
@@ -166,6 +169,7 @@ class Series(QueryObject, OpsMixin):
             var_type=output_var_type,
             lineage=self._append_to_lineage(self.lineage, node.name),
             row_index_lineage=self.row_index_lineage,
+            parent_frame=self.parent_frame,
         )
 
     def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:

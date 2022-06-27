@@ -8,8 +8,7 @@ from typing import Any, Dict, Optional
 from pydantic import Field, root_validator
 
 from featurebyte.config import Configurations, Credentials
-from featurebyte.core.frame import BaseFrame
-from featurebyte.core.generic import ExtendedDatabaseSourceModel
+from featurebyte.core.generic import BaseFrame, ExtendedDatabaseSourceModel
 from featurebyte.enum import DBVarType
 from featurebyte.models.event_data import DatabaseSourceModel, DatabaseTableModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
