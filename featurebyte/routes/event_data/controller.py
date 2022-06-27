@@ -62,9 +62,8 @@ class EventDataController:
         event_data: Optional[Mapping[str, Any]] = persistent.find_one(
             collection_name=TABLE_NAME, filter_query=query_filter
         )
-        if event_data:
-            return EventData(**event_data)
-        return document
+        assert event_data
+        return EventData(**event_data)
 
     @staticmethod
     def list_event_datas(
