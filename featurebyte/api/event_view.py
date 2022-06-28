@@ -51,9 +51,14 @@ class EventViewColumn(Series):
         self._parent = event_view
         return self
 
-    def _validate_series_to_set_parent_attribute(self):
+    def _validate_series_to_set_parent_attribute(self) -> None:
         """
         Check whether the current series has right to set parent frame
+
+        Raises
+        ------
+        ValueError
+            When the name or parent frame is missing
         """
         if self.name is None:
             raise ValueError("Series object does not have name!")
@@ -68,14 +73,10 @@ class EventViewColumn(Series):
         ----------
         tag_name: str
             Tag name of the entity
-
-        Raises
-        ------
-        ValueError
-            When the name or parent frame is missing
         """
         self._validate_series_to_set_parent_attribute()
-        self.parent.column_entity_map[self.name] = str(tag_name)
+        if self.name and self.parent:
+            self.parent.column_entity_map[self.name] = str(tag_name)
 
     def add_description(self, description: str) -> None:
         """
@@ -87,7 +88,8 @@ class EventViewColumn(Series):
             Description for current series
         """
         self._validate_series_to_set_parent_attribute()
-        self._parent_frame.column_description_map[self.name] = str(description)
+        if self.name and self.parent:
+            self.parent.column_description_map[self.name] = str(description)
 
 
 class EventView(ProtectedColumnsQueryObject, Frame):
@@ -159,7 +161,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
             item = sorted(self.protected_columns.union(item))
         output = super().__getitem__(item)
         if isinstance(item, str) and isinstance(output, EventViewColumn):
-            return output.set_parent(self)
+            return output.set_parent(self)  # pylint: disable=E1101 (no-member)
         return output
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
