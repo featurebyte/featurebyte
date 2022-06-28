@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from typing import Any, Optional, Tuple
 
-from pydantic import Field, PrivateAttr
+from pydantic import Field
 
-from featurebyte.core.generic import BaseFrame, QueryObject
+from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -21,35 +21,6 @@ class Series(QueryObject, OpsMixin):
     name: Optional[str] = Field(default=None)
     var_type: DBVarType
     lineage: Tuple[str, ...]
-    _parent_frame: Optional[BaseFrame] = PrivateAttr(default=None)
-
-    @property
-    def parent_frame(self) -> Optional[BaseFrame]:
-        """
-        Parent Frame object of the current series
-
-        Returns
-        -------
-        BaseFrame
-        """
-        return self._parent_frame
-
-    def set_parent_frame(self, frame: BaseFrame) -> Series:
-        """
-        Set parent frame object
-
-        Parameters
-        ----------
-        frame: BaseFrame
-            Parent frame which current series belongs to
-
-        Returns
-        -------
-        Series
-            Reference to current Series
-        """
-        self._parent_frame = frame
-        return self
 
     def __repr__(self) -> str:
         return (
@@ -71,7 +42,6 @@ class Series(QueryObject, OpsMixin):
                 var_type=self.var_type,
                 lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
-                parent_frame=self.parent_frame,
             )
         raise KeyError(f"Series indexing with value '{item}' not supported!")
 
@@ -369,23 +339,3 @@ class Series(QueryObject, OpsMixin):
         if self.name:
             columns.append(self.name)
         return self._preview_sql(columns=columns, limit=limit)
-
-    def as_entity(self, tag_name: str) -> None:
-        """
-        Set the series as entity with tag name
-
-        Parameters
-        ----------
-        tag_name: str
-            Tag name of the entity
-
-        Raises
-        ------
-        ValueError
-            When the name or parent frame is missing
-        """
-        if self.name is None:
-            raise ValueError("Series object does not have name!")
-        if self._parent_frame is None:
-            raise ValueError("Series object does not have parent frame object!")
-        self._parent_frame.column_entity_map[self.name] = tag_name

@@ -44,7 +44,7 @@ def test_getitem__str(snowflake_event_view):
     )
     assert cust_id.lineage == ("input_2", "project_1")
     assert cust_id.row_index_lineage == ("input_2",)
-    assert cust_id.parent_frame.node.name == "input_2"
+    assert cust_id.parent.node.name == "input_2"
 
 
 def test_getitem__list_of_str(snowflake_event_view):
@@ -128,7 +128,7 @@ def test_setting_column_as_entity__on_original_frame(snowflake_event_view):
     """
     # test on original column
     snowflake_event_view.cust_id.as_entity("customer")
-    assert id(snowflake_event_view) == id(snowflake_event_view.cust_id.parent_frame)
+    assert id(snowflake_event_view) == id(snowflake_event_view.cust_id.parent)
     assert snowflake_event_view.column_entity_map == {"cust_id": "customer"}
 
     # test on transformed column
@@ -160,7 +160,7 @@ def test_setting_column_as_entity__invalid_cases(snowflake_event_view):
     """
     cust_id = snowflake_event_view.cust_id
     new_cust_id = cust_id * 2
-    assert new_cust_id.parent_frame is None
+    assert new_cust_id.parent is None
     assert new_cust_id.name is None
     with pytest.raises(ValueError) as exc:
         new_cust_id.as_entity("new_cust_id")

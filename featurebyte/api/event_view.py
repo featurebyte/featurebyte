@@ -3,9 +3,9 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 
 from featurebyte.api.event_data import EventData
 from featurebyte.core.frame import Frame
@@ -16,12 +16,89 @@ if TYPE_CHECKING:
     from featurebyte.api.groupby import EventViewGroupBy
 
 
+class EventViewColumn(Series):
+    """
+    EventViewColumn class
+    """
+
+    _parent: Optional[EventView] = PrivateAttr(default=None)
+
+    @property
+    def parent(self) -> Optional[EventView]:
+        """
+        Parent Frame object of the current series
+
+        Returns
+        -------
+        BaseFrame
+        """
+        return self._parent
+
+    def set_parent(self, event_view: EventView) -> Series:
+        """
+        Set parent of the current object
+
+        Parameters
+        ----------
+        event_view: EventView
+            Parent which current series belongs to
+
+        Returns
+        -------
+        Series
+            Reference to current object
+        """
+        self._parent = event_view
+        return self
+
+    def _validate_series_to_set_parent_attribute(self):
+        """
+        Check whether the current series has right to set parent frame
+        """
+        if self.name is None:
+            raise ValueError("Series object does not have name!")
+        if self.parent is None:
+            raise ValueError("Series object does not have parent frame object!")
+
+    def as_entity(self, tag_name: str) -> None:
+        """
+        Set the series as entity with tag name at parent frame
+
+        Parameters
+        ----------
+        tag_name: str
+            Tag name of the entity
+
+        Raises
+        ------
+        ValueError
+            When the name or parent frame is missing
+        """
+        self._validate_series_to_set_parent_attribute()
+        self.parent.column_entity_map[self.name] = str(tag_name)
+
+    def add_description(self, description: str) -> None:
+        """
+        Add description to the column at parent frame
+
+        Parameters
+        ----------
+        description: str
+            Description for current series
+        """
+        self._validate_series_to_set_parent_attribute()
+        self._parent_frame.column_description_map[self.name] = str(description)
+
+
 class EventView(ProtectedColumnsQueryObject, Frame):
     """
     EventView class
     """
 
+    _series_class = EventViewColumn
+
     column_entity_map: Dict[str, str] = Field(default_factory=dict)
+    column_description_map: Dict[str, str] = Field(default_factory=dict)
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name}, timestamp_column={self.timestamp_column})"
@@ -80,7 +157,10 @@ class EventView(ProtectedColumnsQueryObject, Frame):
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.protected_columns.union(item))
-        return super().__getitem__(item)
+        output = super().__getitem__(item)
+        if isinstance(item, str) and isinstance(output, EventViewColumn):
+            return output.set_parent(self)
+        return output
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         if key in self.protected_columns:

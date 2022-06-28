@@ -3,7 +3,7 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import Dict, Tuple
+from typing import Tuple
 
 from abc import abstractmethod
 
@@ -11,7 +11,6 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 from featurebyte.config import Configurations, Credentials
-from featurebyte.enum import DBVarType
 from featurebyte.models.event_data import DatabaseSourceModel
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.query_graph.interpreter import GraphInterpreter
@@ -177,49 +176,3 @@ class ProtectedColumnsQueryObject(QueryObject):
         """
         graph = GlobalQueryGraph()
         return graph.get_node_by_name(self.row_index_lineage[0])
-
-
-class BaseFrame(QueryObject):
-    """
-    BaseFrame class
-    """
-
-    column_var_type_map: Dict[str, DBVarType]
-    column_entity_map: Dict[str, str] = Field(default_factory=dict)
-
-    @property
-    def dtypes(self) -> pd.Series:
-        """
-        Retrieve column data type info
-
-        Returns
-        -------
-        pd.Series
-        """
-        return pd.Series(self.column_var_type_map)
-
-    @property
-    def columns(self) -> list[str]:
-        """
-        Columns of the object
-
-        Returns
-        -------
-        list
-        """
-        return list(self.column_var_type_map)
-
-    def preview_sql(self, limit: int = 10) -> str:
-        """
-        Generate SQL query to preview the transformed table
-
-        Parameters
-        ----------
-        limit: int
-            maximum number of return rows
-
-        Returns
-        -------
-        pd.DataFrame | None
-        """
-        return self._preview_sql(columns=self.columns, limit=limit)
