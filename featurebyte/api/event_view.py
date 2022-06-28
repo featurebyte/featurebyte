@@ -135,18 +135,42 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         -------
         list[str]
         """
-        return ["timestamp_column"]
+        return ["timestamp_column", "entity_columns"]
 
     @property
-    def timestamp_column(self) -> str | None:
+    def entity_columns(self) -> list[str]:
+        """
+        List of entity columns
+
+        Returns
+        -------
+        list[str]
+        """
+        return list(self.column_entity_map.keys())
+
+    @property
+    def timestamp_column(self) -> str:
         """
         Timestamp column of the event source
 
         Returns
         -------
-        str | None
+        str
         """
-        return self.inception_node.parameters.get("timestamp")
+        timestamp_col: str = self.inception_node.parameters["timestamp"]
+        return timestamp_col
+
+    @property
+    def inherited_columns(self) -> set[str]:
+        """
+        Special columns set which will be automatically added to the object of same class
+        derived from current object
+
+        Returns
+        -------
+        set[str]
+        """
+        return {self.timestamp_column}
 
     @classmethod
     def from_event_data(cls, event_data: EventData) -> EventView:
@@ -176,7 +200,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
-            item = sorted(self.protected_columns.union(item))
+            item = sorted(self.inherited_columns.union(item))
         output = super().__getitem__(item)
         if isinstance(item, str) and isinstance(output, EventViewColumn):
             return output.set_parent(self)  # pylint: disable=E1101 (no-member)
@@ -188,7 +212,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         if key in self.protected_columns:
-            raise ValueError(f"Timestamp or entity identifier column '{key}' cannot be modified!")
+            raise ValueError(f"Timestamp or entity column '{key}' cannot be modified!")
         super().__setitem__(key, value)
 
     def groupby(self, by_keys: str | list[str]) -> EventViewGroupBy:
