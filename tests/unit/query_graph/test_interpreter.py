@@ -482,8 +482,8 @@ def test_filter_node(graph):
     assert sql_code == expected
 
 
-def test_filter_then_project(graph):
-    """Test graph with both filter and project operations"""
+def test_filter_assign_project(graph):
+    """Test graph with both filter, assign, and project operations"""
     node_input = graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
@@ -534,6 +534,51 @@ def test_filter_then_project(graph):
         FROM "event_table"
         WHERE
           "b" = 123
+        LIMIT 10
+        """
+    ).strip()
+    assert sql_code == expected
+
+
+def test_project_multi_then_assign(graph):
+    """Test graph with both projection and assign operations"""
+    node_input = graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "columns": ["ts", "cust_id", "a", "b"],
+            "timestamp": "ts",
+            "dbtable": "event_table",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    proj_b = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["b"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    project_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["ts", "a"]},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input],
+    )
+    assign_node = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "new_col"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[project_node, proj_b],
+    )
+    interpreter = GraphInterpreter(graph)
+    sql_code = interpreter.construct_preview_sql(assign_node.name)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "ts" AS "ts",
+          "a" AS "a",
+          "b" AS "new_col"
+        FROM "event_table"
         LIMIT 10
         """
     ).strip()

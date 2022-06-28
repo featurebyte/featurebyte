@@ -15,7 +15,6 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.sql import (
     BINARY_OPERATION_NODE_TYPES,
-    AssignNode,
     BuildTileInputNode,
     ExpressionNode,
     GenericInputNode,
