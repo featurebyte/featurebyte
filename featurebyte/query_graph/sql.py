@@ -365,6 +365,14 @@ class BuildTileNode(TableNode):
 
 @dataclass
 class AggregatedTilesNode(TableNode):
+    """Node with tiles already aggregated
+
+    The purpose of this node is to allow feature SQL generation to retrieve the post-aggregation
+    feature transform expression. The columns_map of this node has the mapping from user defined
+    feature names to internal aggregated column names. The feature expression can be obtained by
+    calling get_column_expr().
+    """
+
     @property
     def sql(self):
         # This will not be called anywhere
@@ -626,6 +634,19 @@ def make_input_node(
 
 
 def make_aggregated_tiles_node(graph: QueryGraph, groupby_node: Node) -> AggregatedTilesNode:
+    """Create a TableNode representing the aggregated tiles
+
+    Parameters
+    ----------
+    graph : QueryGraph
+        Query graph
+    groupby_node : Node
+        Query graph node with groupby type
+
+    Returns
+    -------
+    AggregatedTilesNode
+    """
     agg_specs = AggregationSpec.from_groupby_query_node(graph, groupby_node)
     columns_map = {}
     for agg_spec in agg_specs:

@@ -1,3 +1,6 @@
+"""
+Common data structures for feature SQL generation
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -22,8 +25,14 @@ class AggregationSpec:
     feature_name: str
 
     @property
-    def agg_result_name(self):
-        """Column name of the aggregated result"""
+    def agg_result_name(self) -> str:
+        """Column name of the aggregated result
+
+        Returns
+        -------
+        str
+            Column name of the aggregated result
+        """
         return f"agg_w{self.window}_{self.tile_table_id}"
 
     @classmethod
@@ -32,6 +41,20 @@ class AggregationSpec:
         graph: QueryGraph,
         groupby_node: Node,
     ) -> list[AggregationSpec]:
+        """Construct an AggregationSpec from a query graph and groupby node
+
+        Parameters
+        ----------
+        graph : QueryGraph
+            Query graph
+        groupby_node : Node
+            Query graph node with groupby type
+
+        Returns
+        -------
+        list[AggregationSpec]
+            List of AggregationSpec
+        """
         tile_table_id = get_tile_table_identifier(graph, groupby_node)
         params = groupby_node.parameters
         aggregation_specs = []

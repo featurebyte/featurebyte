@@ -3,7 +3,7 @@ This module contains the Query Graph Interpreter
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Iterator
 
 from dataclasses import dataclass
 
@@ -177,7 +177,21 @@ class TileGenSql:
     windows: list[int]
 
 
-def find_parent_groupby_nodes(query_graph: QueryGraph, starting_node: Node):
+def find_parent_groupby_nodes(query_graph: QueryGraph, starting_node: Node) -> Iterator[Node]:
+    """Helper function to find all groupby nodes in a Query Graph
+
+    Parameters
+    ----------
+    query_graph : QueryGraph
+        Query graph
+    starting_node : Node
+        Node from which to start the search
+
+    Yields
+    ------
+    Node
+        Query graph nodes of groupby type
+    """
     for node in dfs_traversal(query_graph, starting_node):
         if node.type == NodeType.GROUPBY:
             yield node

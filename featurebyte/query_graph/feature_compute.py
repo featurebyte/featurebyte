@@ -7,7 +7,6 @@ from typing import Any, Optional
 
 import logging
 import time
-from dataclasses import dataclass
 
 import pandas as pd
 import sqlglot
@@ -22,7 +21,6 @@ from featurebyte.query_graph.interpreter import (
 )
 from featurebyte.query_graph.sql import Project, TableNode
 from featurebyte.query_graph.tile_compute import construct_on_demand_tile_ctes
-from featurebyte.query_graph.tiling import get_aggregator, get_tile_table_identifier
 
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
 
@@ -167,6 +165,7 @@ class RequestTablePlan:
         Parameters
         ----------
         agg_spec : AggregationSpec
+            Aggregation specification
 
         Returns
         -------
@@ -237,6 +236,11 @@ class FeatureExecutionPlan:
         ----------
         feature_spec : FeatureSpec
             Feature specification
+
+        Raises
+        ------
+        ValueError
+            If there are duplicated feature names
         """
         key = feature_spec.feature_name
         if key in self.feature_specs:
@@ -498,8 +502,6 @@ class FeatureExecutionPlanner:
         ----------
         node : Node
             Query graph node
-        name_mapping : dict[str, str]
-            Mapping from column names to aggregated result name
         """
         sql_graph = SQLOperationGraph(self.graph, SQLType.GENERATE_FEATURE)
         sql_node = sql_graph.build(node)
@@ -534,7 +536,7 @@ def construct_expanded_request_table_sql(
     blind_spot: int,
     time_modulo_frequency: int,
     entity_columns: list[str],
-):
+) -> str:
     """Construct SQL for expanded SQLs
 
     Parameters
@@ -550,6 +552,10 @@ def construct_expanded_request_table_sql(
     entity_columns : list[str]
         List of entity columns
 
+    Returns
+    -------
+    str
+        SQL code for expanding request table
     """
     select_entity_columns = ", ".join([f"REQ.{col}" for col in entity_columns])
     sql = f"""
@@ -579,6 +585,7 @@ def construct_cte_sql(cte_statements: list[tuple[str, str]]) -> str:
     Parameters
     ----------
     cte_statements : list[tuple[str, str]]
+        List of CTE statements
 
     Returns
     -------
@@ -614,6 +621,11 @@ def get_feature_preview_sql(
     Returns
     -------
     str
+
+    Raises
+    ------
+    KeyError
+        If any required entity columns is not provided
     """
 
     point_in_time = point_in_time_and_entity_id["POINT_IN_TIME"]

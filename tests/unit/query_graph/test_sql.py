@@ -81,7 +81,7 @@ def test_make_input_node_escape_special_characters():
         "columns": ["SUM(a)", "b", "c"],
         "dbtable": "my_table",
     }
-    node = sql.make_input_node(parameters=parameters, sql_type=sql.SQLType.PREVIEW)
+    node = sql.make_input_node(parameters=parameters, sql_type=sql.SQLType.EVENT_VIEW_PREVIEW)
     expected = textwrap.dedent(
         """
         SELECT
