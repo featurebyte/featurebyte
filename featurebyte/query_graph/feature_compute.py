@@ -323,6 +323,48 @@ class FeatureExecutionPlan:
 
         return prettify_sql(sql)
 
+    @staticmethod
+    def construct_left_join_sql(
+        index: int,
+        point_in_time_column: str,
+        agg_spec: AggregationSpec,
+        agg_sql: str,
+    ) -> tuple[str, str]:
+        """Construct SQL that left join aggregated result back to request table
+
+        Parameters
+        ----------
+        index : int
+            Index of the current left join
+        point_in_time_column : str
+            Point in time column
+        agg_spec : AggregationSpec
+            Aggregation specification
+        agg_sql : str
+            SQL that performs the aggregation
+
+        Returns
+        -------
+        tuple[str, str]
+            Tuple of left join SQL and alias name for the aggregated column
+        """
+        agg_table_alias = f"T{index}"
+        agg_result_name = agg_spec.agg_result_name
+        agg_result_name_alias = f'"{agg_table_alias}"."{agg_result_name}" AS "{agg_result_name}"'
+        join_conditions_lst = [
+            f"REQ.{point_in_time_column} = {agg_table_alias}.{point_in_time_column}",
+        ]
+        for k in agg_spec.entity_ids:
+            join_conditions_lst += [f"REQ.{k} = {agg_table_alias}.{k}"]
+        join_conditions = " AND ".join(join_conditions_lst)
+        left_join_sql = f"""
+            LEFT JOIN (
+                {agg_sql}
+            ) {agg_table_alias}
+            ON {join_conditions}
+            """
+        return left_join_sql, agg_result_name_alias
+
     def construct_combined_aggregation_cte(self, point_in_time_column: str) -> tuple[str, str]:
         """Construct SQL code for all aggregations
 
@@ -351,25 +393,14 @@ class FeatureExecutionPlan:
                 merge_expr=agg_spec.merge_expr,
                 agg_result_name=agg_result_name,
             )
-            agg_table_alias = f"T{i}"
-            agg_result_name_alias = (
-                f'"{agg_table_alias}"."{agg_result_name}" AS "{agg_result_name}"'
+            left_join_sql, agg_result_name_alias = self.construct_left_join_sql(
+                index=i,
+                point_in_time_column=point_in_time_column,
+                agg_spec=agg_spec,
+                agg_sql=agg_sql,
             )
             qualified_aggregation_names.append(agg_result_name_alias)
-            join_conditions_lst = [
-                f"REQ.{point_in_time_column} = {agg_table_alias}.{point_in_time_column}",
-            ]
-            for k in agg_spec.entity_ids:
-                join_conditions_lst += [f"REQ.{k} = {agg_table_alias}.{k}"]
-            join_conditions = " AND ".join(join_conditions_lst)
-            left_joins.append(
-                f"""
-            LEFT JOIN (
-                {agg_sql}
-            ) {agg_table_alias}
-            ON {join_conditions}
-                """
-            )
+            left_joins.append(left_join_sql)
         left_joins_sql = "\n".join(left_joins)
         qualified_aggregation_names_str = ", ".join(qualified_aggregation_names)
         combined_sql = (
