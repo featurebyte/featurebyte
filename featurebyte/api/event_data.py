@@ -32,8 +32,16 @@ class EventDataColumn:
         ----------
         tag_name: str
             Tag name of the entity
+
+        Raises
+        ------
+        TypeError
+            When the tag name has non-string type
         """
-        self.event_data.column_entity_map[self.column_name] = str(tag_name)
+        if isinstance(tag_name, str):
+            self.event_data.column_entity_map[self.column_name] = tag_name
+        else:
+            raise TypeError(f'Unsupported type "{type(tag_name)}" for tag name "{tag_name}"!')
 
 
 class EventData(EventDataModel, DatabaseTable):
@@ -114,11 +122,11 @@ class EventData(EventDataModel, DatabaseTable):
 
         Raises
         ------
-        ValueError
+        KeyError
             when accessing non-exist column
         """
         if item not in self.column_var_type_map:
-            raise ValueError(f'Column "{item}" not exists!')
+            raise KeyError(f'Column "{item}" does not exist!')
         return EventDataColumn(event_data=self, column_name=item)
 
     def __getattr__(self, item: str) -> EventDataColumn:

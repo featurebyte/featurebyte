@@ -83,12 +83,12 @@ def test_event_data_column__not_exists(snowflake_event_data):
     """
     Test non-exist column retrieval
     """
-    expected = 'Column "non_exist_column" not exists!'
-    with pytest.raises(ValueError) as exc:
+    expected = 'Column "non_exist_column" does not exist!'
+    with pytest.raises(KeyError) as exc:
         _ = snowflake_event_data["non_exist_column"]
     assert expected in str(exc.value)
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(KeyError) as exc:
         _ = snowflake_event_data.non_exist_column
     assert expected in str(exc.value)
 
@@ -101,3 +101,7 @@ def test_event_data_column__as_entity(snowflake_event_data):
     assert isinstance(col_int, EventDataColumn)
     snowflake_event_data.col_int.as_entity("col_id")
     assert snowflake_event_data.column_entity_map == {"col_int": "col_id"}
+
+    with pytest.raises(TypeError) as exc:
+        snowflake_event_data.col_int.as_entity(1234)
+    assert 'Unsupported type "<class \'int\'>" for tag name "1234"!' in str(exc.value)

@@ -73,10 +73,18 @@ class EventViewColumn(Series):
         ----------
         tag_name: str
             Tag name of the entity
+
+        Raises
+        ------
+        TypeError
+            When the tag name has non-string type
         """
         self._validate_series_to_set_parent_attribute()
         if self.name and self.parent:
-            self.parent.column_entity_map[self.name] = str(tag_name)
+            if isinstance(tag_name, str):
+                self.parent.column_entity_map[self.name] = str(tag_name)
+            else:
+                raise TypeError(f'Unsupported type "{type(tag_name)}" for tag name "{tag_name}"!')
 
     def add_description(self, description: str) -> None:
         """
@@ -86,10 +94,20 @@ class EventViewColumn(Series):
         ----------
         description: str
             Description for current series
+
+        Raises
+        ------
+        TypeError
+            When the description has non-string type
         """
         self._validate_series_to_set_parent_attribute()
         if self.name and self.parent:
-            self.parent.column_description_map[self.name] = str(description)
+            if isinstance(description, str):
+                self.parent.column_description_map[self.name] = str(description)
+            else:
+                raise TypeError(
+                    f'Unsupported type "{type(description)}" for description "{description}"!'
+                )
 
 
 class EventView(ProtectedColumnsQueryObject, Frame):
