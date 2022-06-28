@@ -139,6 +139,12 @@ def test_setting_column_as_entity__on_original_frame(snowflake_event_view):
         "col_int_entity": "col_int",
     }
 
+    # test entity column is protected
+    with pytest.raises(ValueError) as exc:
+        snowflake_event_view["col_int_entity"] = snowflake_event_view["col_int"]
+    expected_msg = "Timestamp or entity column 'col_int_entity' cannot be modified!"
+    assert expected_msg in str(exc.value)
+
 
 def test_setting_column_as_entity__on_sub_frame(snowflake_event_view):
     """
@@ -148,6 +154,13 @@ def test_setting_column_as_entity__on_sub_frame(snowflake_event_view):
     sub_view_first = snowflake_event_view[["cust_id", "col_int"]]
     assert isinstance(sub_view_first, EventView)
     assert sub_view_first.column_entity_map == {"cust_id": "customer"}
+    assert set(sub_view_first.columns) == {"event_timestamp", "cust_id", "col_int"}
+
+    # test entity column is protected in sub-frame also
+    with pytest.raises(ValueError) as exc:
+        sub_view_first["cust_id"] = 10
+    expected_msg = "Timestamp or entity column 'cust_id' cannot be modified!"
+    assert expected_msg in str(exc.value)
 
     sub_view_second = snowflake_event_view[["col_int", "col_float"]]
     assert sub_view_second.column_entity_map == {}
