@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-# pylint: disable=W0511 (fixme)
 # pylint: disable=R0903 (too-few-public-methods)
 from abc import ABC, abstractmethod
 from copy import deepcopy
@@ -77,7 +76,7 @@ class SQLNode(ABC):
         """
 
 
-@dataclass
+@dataclass  # type: ignore[misc]
 class TableNode(SQLNode, ABC):
     """Nodes that produce table-like output that can be used as nested input
 
@@ -138,7 +137,7 @@ class TableNode(SQLNode, ABC):
         """
         return self.columns_map[column_name]
 
-    def set_columns_map(self, columns_map: dict[str, Expression]):
+    def set_columns_map(self, columns_map: dict[str, Expression]) -> None:
         """Set column-expression mapping to the provided mapping
 
         The default implementation simply sets self.columns_map to the provided dict. However, nodes
@@ -147,6 +146,7 @@ class TableNode(SQLNode, ABC):
         Parameters
         ----------
         columns_map : dict[str, Expression]
+            Column names to expressions mapping
         """
         self.columns_map = columns_map
 
@@ -273,7 +273,7 @@ class FilteredFrame(TableNode):
     input_node: TableNode
     mask: ExpressionNode
 
-    def set_columns_map(self, columns_map: dict[str, Expression]):
+    def set_columns_map(self, columns_map: dict[str, Expression]) -> None:
         """Set column-expression mapping to the provided mapping
 
         This overrides the default implementation because FilteredFrame offloads generation of the
@@ -281,6 +281,11 @@ class FilteredFrame(TableNode):
         only has effect if the columns_map is also applied to the input_node as well.
 
         One scenario that is affected by this is Filter then Project.
+
+        Parameters
+        ----------
+        columns_map : dict[str, Expression]
+            Column names to expressions mapping
         """
         self.input_node.set_columns_map(columns_map)
         super().set_columns_map(columns_map)
@@ -583,10 +588,16 @@ def make_input_node(
         Query graph node parameters
     sql_type: SQLType
         Type of SQL code to generate
+
+    Returns
+    -------
+    BuildTileInputNode | GenericInputNode
+        SQLNode corresponding to the query graph input node
     """
     columns_map = {}
     for colname in parameters["columns"]:
         columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
+    sql_node: BuildTileInputNode | GenericInputNode
     if sql_type == SQLType.BUILD_TILE:
         sql_node = BuildTileInputNode(
             columns_map=columns_map,
