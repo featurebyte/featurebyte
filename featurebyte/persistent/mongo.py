@@ -1,9 +1,12 @@
 """
 Persistent storage using MongoDB
 """
-from typing import Any, Iterable, Literal, Mapping, Optional, Tuple, Union
+from __future__ import annotations
+
+from typing import Any, Iterable, List, Literal, Mapping, Optional, Tuple, Union
 
 import pymongo
+from bson import ObjectId
 from pymongo.typings import _DocumentIn, _Pipeline
 
 from .persistent import DocumentType, DuplicateDocumentError, Persistent
@@ -31,7 +34,7 @@ class MongoDB(Persistent):
         self._client = pymongo.MongoClient(uri)  # type: ignore
         self._db = self._client[database]
 
-    def insert_one(self, collection_name: str, document: _DocumentIn) -> None:
+    def insert_one(self, collection_name: str, document: _DocumentIn) -> ObjectId:
         """
         Insert record into collection
 
@@ -42,17 +45,23 @@ class MongoDB(Persistent):
         document: _DocumentIn
             Document to insert
 
+        Returns
+        -------
+        ObjectId
+            Id of the inserted document
+
         Raises
         ------
         DuplicateDocumentError
             Document already exist
         """
         try:
-            self._db[collection_name].insert_one(document)
+            result = self._db[collection_name].insert_one(document)
+            return result.inserted_id
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
 
-    def insert_many(self, collection_name: str, documents: Iterable[_DocumentIn]) -> None:
+    def insert_many(self, collection_name: str, documents: Iterable[_DocumentIn]) -> List[ObjectId]:
         """
         Insert records into collection
 
@@ -63,13 +72,19 @@ class MongoDB(Persistent):
         documents: Iterable[_DocumentIn]
             Documents to insert
 
+        Returns
+        -------
+        List[ObjectId]
+            Ids of the inserted document
+
         Raises
         ------
         DuplicateDocumentError
             Document already exist
         """
         try:
-            self._db[collection_name].insert_many(documents)
+            result = self._db[collection_name].insert_many(documents)
+            return result.inserted_ids
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
 

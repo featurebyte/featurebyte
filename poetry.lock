@@ -352,7 +352,7 @@ testing = ["covdefaults (>=1.2.0)", "coverage (>=4)", "pytest (>=4)", "pytest-co
 name = "gitdb"
 version = "4.0.9"
 description = "Git Object Database"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -363,7 +363,7 @@ smmap = ">=3.0.1,<6"
 name = "gitpython"
 version = "3.1.27"
 description = "GitPython is a python library used to interact with Git repositories"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -1039,7 +1039,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 name = "smmap"
 version = "5.0.0"
 description = "A pure Python implementation of a sliding window memory map manager"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -1398,7 +1398,7 @@ docs = ["Sphinx", "sphinx-rtd-theme", "sphinx-github-changelog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "aa7ea44fa38d79128f53ba816e6d6dfc3fb903e38baf6b29756d0875e6806c33"
+content-hash = "aa1eddec54130ceff10685b4c564e3d58a9a5dd5595e2b587fc6997f15a88df2"
 
 [metadata.files]
 alabaster = [

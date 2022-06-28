@@ -1,7 +1,9 @@
 """
 Test MongoDB persistent backend
 """
-from typing import Any, Dict, List, Tuple
+from __future__ import annotations
+
+from typing import Tuple
 
 import mongomock
 import pymongo
@@ -27,50 +29,16 @@ def mongo_persistent_fixture() -> Tuple[MongoDB, pymongo.MongoClient]:
         return persistent, mongo_client
 
 
-@pytest.fixture(name="test_document")
-def test_document_fixture() -> Dict[str, Any]:
-    """
-    Test document to be used for testing
-
-    Returns
-    -------
-    Dict[str, Any]
-        Document for testing
-    """
-    return {
-        "id": ObjectId(),
-        "name": "Generic Document",
-        "value": [
-            {
-                "key1": "value1",
-                "key2": "value2",
-            }
-        ],
-    }
-
-
-@pytest.fixture(name="test_documents")
-def test_documents_fixture(test_document) -> List[Dict[str, Any]]:
-    """
-    Test documents to be used for testing
-
-    Returns
-    -------
-    List[Dict[str, Any]]
-        Document for testing
-    """
-    return [{**test_document, **{"id": ObjectId()}} for _ in range(3)]
-
-
 def test_insert_one(mongo_persistent, test_document):
     """
     Test inserting one document
     """
     persistent, client = mongo_persistent
-    persistent.insert_one(collection_name="data", document=test_document)
+    inserted_id = persistent.insert_one(collection_name="data", document=test_document)
     # check document is inserted
     results = list(client["test"]["data"].find({}))
     assert results[0] == test_document
+    assert results[0]["_id"] == inserted_id
 
 
 def test_insert_many(mongo_persistent, test_documents):
@@ -78,9 +46,10 @@ def test_insert_many(mongo_persistent, test_documents):
     Test inserting many documents
     """
     persistent, client = mongo_persistent
-    persistent.insert_many(collection_name="data", documents=test_documents)
+    inserted_ids = persistent.insert_many(collection_name="data", documents=test_documents)
     # check documents are inserted
     assert list(client["test"]["data"].find({})) == test_documents
+    assert [doc["_id"] for doc in test_documents] == inserted_ids
 
 
 def test_find_one(mongo_persistent, test_documents):

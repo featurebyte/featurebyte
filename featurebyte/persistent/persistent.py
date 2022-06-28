@@ -1,10 +1,13 @@
 """
 Persistent persistent base class
 """
-from typing import Any, Iterable, Literal, Mapping, Optional, Tuple, Union
+from __future__ import annotations
+
+from typing import Any, Iterable, List, Literal, Mapping, Optional, Tuple, Union
 
 from abc import ABC, abstractmethod
 
+from bson import ObjectId
 from pymongo.typings import _DocumentIn, _Pipeline
 
 DocumentType = Mapping[str, Any]
@@ -22,7 +25,7 @@ class Persistent(ABC):
     """
 
     @abstractmethod
-    def insert_one(self, collection_name: str, document: _DocumentIn) -> None:
+    def insert_one(self, collection_name: str, document: _DocumentIn) -> ObjectId:
         """
         Insert record into collection
 
@@ -33,6 +36,11 @@ class Persistent(ABC):
         document: _DocumentIn
             Document to insert
 
+        Returns
+        -------
+        ObjectId
+            Id of the inserted document
+
         Raises
         ------
         DuplicateDocumentError
@@ -40,7 +48,7 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    def insert_many(self, collection_name: str, documents: Iterable[_DocumentIn]) -> None:
+    def insert_many(self, collection_name: str, documents: Iterable[_DocumentIn]) -> List[ObjectId]:
         """
         Insert records into collection
 
@@ -50,6 +58,11 @@ class Persistent(ABC):
             Name of collection to use
         documents: Iterable[_DocumentIn]
             Documents to insert
+
+        Returns
+        -------
+        List[ObjectId]
+            Ids of the inserted document
 
         Raises
         ------
