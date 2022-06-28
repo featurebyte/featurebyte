@@ -33,7 +33,18 @@ class EventDataColumn:
         tag_name: str
             Tag name of the entity
         """
-        self.event_data.column_entity_map[self.column_name] = tag_name
+        self.event_data.column_entity_map[self.column_name] = str(tag_name)
+
+    def add_description(self, description: str) -> None:
+        """
+        Add description to the column
+
+        Parameters
+        ----------
+        description: str
+            Description for the column
+        """
+        self.event_data.column_description_map[self.column_name] = str(description)
 
 
 class EventData(EventDataModel, DatabaseTable):

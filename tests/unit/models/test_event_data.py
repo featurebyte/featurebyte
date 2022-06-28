@@ -77,6 +77,7 @@ def event_data_model_dict_fixture():
         "event_timestamp_column": "event_date",
         "record_creation_date_column": "created_at",
         "column_entity_map": {},
+        "column_description_map": {},
         "default_feature_job_setting": {
             "blind_spot": "10m",
             "frequency": "30m",

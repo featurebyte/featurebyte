@@ -120,6 +120,8 @@ class EventDataModel(DatabaseTableModel):
         Record creation date column name
     column_entity_map: Dict[str, str]
         Column name to entity name mapping
+    column_description_map: Dict[str, str]
+        Column name to description mapping
     default_feature_job_setting : Optional[FeatureJobSetting]
         Default feature job setting
     created_at : Optional[datetime]
@@ -134,6 +136,7 @@ class EventDataModel(DatabaseTableModel):
     event_timestamp_column: str
     record_creation_date_column: Optional[str]
     column_entity_map: Dict[str, str] = Field(default_factory=dict)
+    column_description_map: Dict[str, str] = Field(default_factory=dict)
     default_feature_job_setting: Optional[FeatureJobSetting]
     created_at: Optional[datetime] = Field(default=None)
     history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list)
