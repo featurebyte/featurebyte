@@ -3,7 +3,7 @@ Test config parser
 """
 import pytest
 
-from featurebyte.config import Configurations, LoggingSettings
+from featurebyte.config import Configurations, GitSettings, LoggingSettings
 from featurebyte.enum import SourceType
 from featurebyte.models.credential import CredentialType
 
@@ -43,12 +43,15 @@ def test_configurations():
         serialize=True,
     )
 
+    # git settings
+    assert config.git == GitSettings(
+        remote_url="git@github.com:featurebyte/playground.git",
+        ssh_key_path="~/.ssh/id_rsa",
+        branch="test",
+    )
+
     # other settings
     assert config.settings == {
-        "git": {
-            "remote": "git@github.com:featurebyte/featurebyte.git",
-            "ssh_key_path": "~/.ssh/id_rsa",
-        },
         "featurebyte": {
             "api_url": "https://app.featurebyte.com/api/v1",
             "api_token": "API_TOKEN_VALUE",

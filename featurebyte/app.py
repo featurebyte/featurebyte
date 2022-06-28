@@ -13,7 +13,7 @@ import featurebyte.routes.event_data.api as event_data_api
 from featurebyte.config import Configurations
 from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import DatabaseSourceModel
-from featurebyte.persistent import MongoDB, Persistent
+from featurebyte.persistent import GitDB, Persistent
 from featurebyte.routes.event_data.controller import EventDataController
 
 app = FastAPI()
@@ -39,7 +39,10 @@ def get_persistent() -> Persistent:
     """
     global PERSISTENT  # pylint: disable=global-statement
     if not PERSISTENT:
-        PERSISTENT = MongoDB("mongodb://localhost:27017")
+        config = Configurations()
+        if not config.git:
+            raise ValueError("Git settings not available in configurations")
+        PERSISTENT = GitDB(**config.git.dict())
     return PERSISTENT
 
 

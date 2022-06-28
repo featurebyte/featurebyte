@@ -77,7 +77,7 @@ def test_create_fails_table_exists_during_insert(test_api_client, event_data_dic
     """
     Create Event Data fails if table with same name already exists during persistent insert
     """
-    with mock.patch("featurebyte.app.PERSISTENT.insert_one") as mock_insert:
+    with mock.patch("featurebyte.persistent.GitDB.insert_one") as mock_insert:
         mock_insert.side_effect = DuplicateDocumentError
         response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

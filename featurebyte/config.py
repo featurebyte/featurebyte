@@ -10,8 +10,9 @@ import os
 from enum import Enum
 
 import yaml
-from pydantic import BaseSettings
+from pydantic import BaseSettings, constr
 from pydantic.error_wrappers import ValidationError
+from pydantic.types import Path
 
 from featurebyte.enum import SourceType
 from featurebyte.models.credential import CREDENTIAL_CLASS, Credential, CredentialType
@@ -38,11 +39,21 @@ class LogLevel(str, Enum):
 
 class LoggingSettings(BaseSettings):
     """
-    Settings related with the logging
+    Settings for logging
     """
 
     level: LogLevel = LogLevel.DEBUG
     serialize: bool = False
+
+
+class GitSettings(BaseSettings):
+    """
+    Settings for git access
+    """
+
+    remote_url: constr(regex=r".*\.git")
+    ssh_key_path: Path
+    branch: str
 
 
 class Configurations:
@@ -123,3 +134,8 @@ class Configurations:
         if logging_settings:
             # parse logging settings
             self.logging = LoggingSettings(**logging_settings)
+
+        git_settings = self.settings.pop("git", None)
+        if git_settings:
+            # parse git settings
+            self.git = GitSettings(**git_settings)

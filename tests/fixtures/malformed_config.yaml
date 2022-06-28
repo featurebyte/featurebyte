@@ -9,8 +9,9 @@ datasource:
     password: password
 
 git:
-  remote: git@github.com:featurebyte/featurebyte.git
+  remote_url: git@github.com:featurebyte/playground.git
   ssh_key_path: ~/.ssh/id_rsa
+  branch: test
 
 featurebyte:
   api_url: https://app.featurebyte.com/api/v1

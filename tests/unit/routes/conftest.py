@@ -1,9 +1,13 @@
 """
 Fixture for API unit tests
 """
-import mongomock
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
+
+from featurebyte.app import app
+from featurebyte.persistent import GitDB
 
 
 @pytest.fixture()
@@ -11,12 +15,7 @@ def test_api_client():
     """
     Test API client
     """
-    with mongomock.patch(servers=(("localhost", 27017),)):
-        from featurebyte.app import app, get_persistent  # pylint: disable=import-outside-toplevel
-
+    with patch("featurebyte.app.get_persistent") as mock_get_persistent:
+        mock_get_persistent.return_value = GitDB()
         with TestClient(app) as client:
             yield client
-            # clean up database
-            get_persistent()._client.drop_database(  # pylint: disable=protected-access
-                "featurebyte"
-            )
