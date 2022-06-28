@@ -13,6 +13,37 @@ from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import DatabaseSourceModel, EventDataModel
 
 
+class EventDataColumn:
+    """
+    EventDataColumn class to set metadata like entity
+    """
+
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, event_data: EventData, column_name: str) -> None:
+        self.event_data = event_data
+        self.column_name = column_name
+
+    def as_entity(self, tag_name: str) -> None:
+        """
+        Set the column name as entity with tag name
+
+        Parameters
+        ----------
+        tag_name: str
+            Tag name of the entity
+
+        Raises
+        ------
+        TypeError
+            When the tag name has non-string type
+        """
+        if isinstance(tag_name, str):
+            self.event_data.column_entity_map[self.column_name] = tag_name
+        else:
+            raise TypeError(f'Unsupported type "{type(tag_name)}" for tag name "{tag_name}"!')
+
+
 class EventData(EventDataModel, DatabaseTable):
     """
     EventData class
@@ -75,3 +106,28 @@ class EventData(EventDataModel, DatabaseTable):
         if value and value not in values["column_var_type_map"]:
             raise ValueError(f'Column "{value}" not found in the table!')
         return value
+
+    def __getitem__(self, item: str) -> EventDataColumn:
+        """
+        Retrieve column from the table
+
+        Parameters
+        ----------
+        item: str
+            Column name
+
+        Returns
+        -------
+        EventDataColumn
+
+        Raises
+        ------
+        KeyError
+            when accessing non-exist column
+        """
+        if item not in self.column_var_type_map:
+            raise KeyError(f'Column "{item}" does not exist!')
+        return EventDataColumn(event_data=self, column_name=item)
+
+    def __getattr__(self, item: str) -> EventDataColumn:
+        return self.__getitem__(item)

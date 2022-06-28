@@ -166,9 +166,21 @@ class ProtectedColumnsQueryObject(QueryObject):
         return set(columns)
 
     @property
+    @abstractmethod
+    def inherited_columns(self) -> set[str]:
+        """
+        Special columns set which will be automatically added to the object of same class
+        derived from current object
+
+        Returns
+        -------
+        set[str]
+        """
+
+    @property
     def inception_node(self) -> Node:
         """
-        Input node where the event source is introduced to the query graph
+        Node where the event source is introduced to the query graph
 
         Returns
         -------

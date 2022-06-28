@@ -102,9 +102,9 @@ class Frame(BaseFrame, OpsMixin):
         to the graph when the value of the column does not change. Consider the following case if `self.node`
         is used:
 
-        >>> df["c"] = df["b"]
-        >>> b = df["b"]
-        >>> dict(df.graph.edges)
+        >>> df["c"] = df["b"]     # doctest: +SKIP
+        >>> b = df["b"]           # doctest: +SKIP
+        >>> dict(df.graph.edges)  # doctest: +SKIP
         {
             "input_1": ["project_1", "assign_1"],
             "project_1": ["assign_1"],
@@ -113,7 +113,7 @@ class Frame(BaseFrame, OpsMixin):
 
         Current implementation uses the last node of each lineage, it results in a simpler graph:
 
-        >>> dict(df.graph.edges)
+        >>> dict(df.graph.edges)  # doctest: +SKIP
         {
             "input_1": ["project_1", "assign_1"],
             "project_1": ["assign_1"],
@@ -192,6 +192,9 @@ class Frame(BaseFrame, OpsMixin):
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
             )
         raise TypeError(f"Frame indexing with value '{item}' not supported!")
+
+    def __getattr__(self, item: str | list[str] | Series) -> Series | Frame:
+        return self.__getitem__(item)
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         """

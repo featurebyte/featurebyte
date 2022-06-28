@@ -10,7 +10,7 @@ from featurebyte.query_graph.graph import Node
 @pytest.fixture(name="query_graph_with_groupby")
 def query_graph_with_groupby_fixture(graph):
     """Fixture of a query graph with a groupby operation"""
-    # pylint: disable=R0801
+    # pylint: disable=duplicate-code
     node_input = graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
-# pylint: disable=R0903 (too-few-public-methods)
+# pylint: disable=too-few-public-methods
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass

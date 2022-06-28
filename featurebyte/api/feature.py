@@ -28,7 +28,7 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
         return ["entity_identifiers"]
 
     @property
-    def entity_identifiers(self) -> list[str] | None:
+    def entity_identifiers(self) -> list[str]:
         """
         Entity identifiers column names
 
@@ -36,7 +36,20 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
         -------
         list[str]
         """
-        return self.inception_node.parameters.get("keys")
+        entity_ids: list[str] = self.inception_node.parameters["keys"]
+        return entity_ids
+
+    @property
+    def inherited_columns(self) -> set[str]:
+        """
+        Special columns set which will be automatically added to the object of same class
+        derived from current object
+
+        Returns
+        -------
+        set[str]
+        """
+        return set(self.entity_identifiers)
 
 
 class Feature(FeatureQueryObject, Series):
