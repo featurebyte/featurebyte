@@ -30,7 +30,6 @@ def event_data_dict_fixture():
         "event_timestamp_column": "event_timestamp",
         "record_creation_date_column": "created_at",
         "column_entity_map": {},
-        "column_description_map": {},
         "default_feature_job_setting": None,
         "created_at": None,
         "history": [],
@@ -102,11 +101,3 @@ def test_event_data_column__as_entity(snowflake_event_data):
     assert isinstance(col_int, EventDataColumn)
     snowflake_event_data.col_int.as_entity("col_id")
     assert snowflake_event_data.column_entity_map == {"col_int": "col_id"}
-
-
-def test_event_data_column__add_description(snowflake_event_data):
-    """
-    Test add description to a particular column
-    """
-    snowflake_event_data.cust_id.add_description("Customer id column")
-    assert snowflake_event_data.column_description_map == {"cust_id": "Customer id column"}
