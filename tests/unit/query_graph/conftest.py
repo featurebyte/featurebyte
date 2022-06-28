@@ -55,6 +55,7 @@ def query_graph_with_groupby_fixture(graph):
             "frequency": 30,
             "blind_spot": 1,
             "timestamp": "ts",
+            "windows": [86400],
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node],

@@ -3,9 +3,17 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
+import logging
+import time
+
+import pandas as pd
+
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.query_graph.feature_compute import get_feature_preview_sql
+
+logger = logging.getLogger("featurebyte")
 
 
 class FeatureQueryObject(ProtectedColumnsQueryObject):
@@ -50,6 +58,32 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
         set[str]
         """
         return set(self.entity_identifiers)
+
+    def preview(self, *args, **kwargs) -> pd.DataFrame | None:
+        """
+        Preview a FeatureGroup
+
+        Parameters
+        ----------
+        point_in_time_and_entity_id : dict
+            Dictionary consisting the point in time and entity ids based on which the feature
+            preview will be computed
+        credentials: Credentials | None
+            credentials to create a database session
+        """
+        tic = time.time()
+        point_in_time_and_entity_id = args[0]
+        preview_sql = get_feature_preview_sql(
+            graph=self.graph,
+            node=self.node,
+            entity_columns=self.entity_identifiers,
+            point_in_time_and_entity_id=point_in_time_and_entity_id,
+        )
+        session = self.get_session(kwargs.get("credentials"))
+        result = session.execute_query(preview_sql)
+        elapsed = time.time() - tic
+        logger.debug(f"Preview took {elapsed:.2f}s")
+        return result
 
 
 class Feature(FeatureQueryObject, Series):

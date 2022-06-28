@@ -44,7 +44,7 @@ def test_graph_interpreter_super_simple(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, proj_a],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.PREVIEW)
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
     sql_graph.build(assign)
     sql_tree = sql_graph.get_node(assign.name).sql
     expected = textwrap.dedent(
@@ -217,7 +217,7 @@ def test_graph_interpreter_project_multiple_columns(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.PREVIEW)
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
     sql_graph.build(proj)
     sql_tree = sql_graph.get_node(proj.name).sql
     expected = textwrap.dedent(
@@ -247,6 +247,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
         "time_modulo_frequency": 5,
         "frequency": 30,
         "blind_spot": 1,
+        "windows": [86400],
     }
 
 
@@ -272,6 +273,7 @@ def test_graph_interpreter_snowflake(graph):
             "frequency": 3600,
             "blind_spot": 1,
             "timestamp": "SERVER_TIMESTAMP",
+            "windows": [86400],
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],

@@ -14,6 +14,8 @@ from enum import Enum
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.feature_sql import AggregationSpec
+from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 
 
@@ -21,7 +23,8 @@ class SQLType(Enum):
     """Type of SQL code corresponding to different operations"""
 
     BUILD_TILE = "build_tile"
-    PREVIEW = "preview"
+    EVENT_VIEW_PREVIEW = "event_view_preview"
+    GENERATE_FEATURE = "generate_feature"
 
 
 def escape_column_name(column_name: str) -> str:
@@ -141,7 +144,7 @@ class TableNode(SQLNode, ABC):
         """Set column-expression mapping to the provided mapping
 
         The default implementation simply sets self.columns_map to the provided dict. However, nodes
-        such as FilterFrame need to override this.
+        such as FilteredFrame need to override this.
 
         Parameters
         ----------
@@ -358,6 +361,14 @@ class BuildTileNode(TableNode):
         )
 
         return groupby_sql
+
+
+@dataclass
+class AggregatedTilesNode(TableNode):
+    @property
+    def sql(self):
+        # This will not be called anywhere
+        raise NotImplementedError()
 
 
 BINARY_OPERATION_NODE_TYPES = {
@@ -612,3 +623,13 @@ def make_input_node(
             dbtable=parameters["dbtable"],
         )
     return sql_node
+
+
+def make_aggregated_tiles_node(graph: QueryGraph, groupby_node: Node) -> AggregatedTilesNode:
+    agg_specs = AggregationSpec.from_groupby_query_node(graph, groupby_node)
+    columns_map = {}
+    for agg_spec in agg_specs:
+        columns_map[agg_spec.feature_name] = expressions.Identifier(
+            this=agg_spec.agg_result_name, quoted=True
+        )
+    return AggregatedTilesNode(columns_map=columns_map)
