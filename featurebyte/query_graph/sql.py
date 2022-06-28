@@ -374,7 +374,7 @@ class AggregatedTilesNode(TableNode):
     """
 
     @property
-    def sql(self):
+    def sql(self) -> Expression:
         # This will not be called anywhere
         raise NotImplementedError()
 

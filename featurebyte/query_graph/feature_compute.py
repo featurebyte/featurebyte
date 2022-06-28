@@ -14,12 +14,8 @@ from sqlglot import select
 
 from featurebyte.query_graph.feature_sql import AggregationSpec, FeatureSpec
 from featurebyte.query_graph.graph import Node, QueryGraph
-from featurebyte.query_graph.interpreter import (
-    SQLOperationGraph,
-    SQLType,
-    find_parent_groupby_nodes,
-)
-from featurebyte.query_graph.sql import Project, TableNode
+from featurebyte.query_graph.interpreter import SQLOperationGraph, find_parent_groupby_nodes
+from featurebyte.query_graph.sql import Project, SQLType, TableNode
 from featurebyte.query_graph.tile_compute import construct_on_demand_tile_ctes
 
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
@@ -27,7 +23,7 @@ REQUEST_TABLE_NAME = "REQUEST_TABLE"
 logger = logging.getLogger("featurebyte")
 
 
-def prettify_sql(sql_str) -> str:
+def prettify_sql(sql_str: str) -> str:
     """Reformat sql code using sqlglot
 
     Parameters
@@ -39,7 +35,9 @@ def prettify_sql(sql_str) -> str:
     -------
     str
     """
-    return sqlglot.parse_one(sql_str).sql(pretty=True)
+    result = sqlglot.parse_one(sql_str).sql(pretty=True)
+    assert isinstance(result, str)
+    return result
 
 
 def construct_preview_request_table_sql(
@@ -116,10 +114,12 @@ class RequestTablePlan:
     The REQ_TILE_INDEX column will be used as a join key when joining with the tile table.
     """
 
-    def __init__(self):
-        self.expanded_request_table_names = {}
+    TileIndicesIdType = tuple[int, int, int, int, tuple[str, ...]]  # type: ignore[misc]
 
-    def add_aggregation_spec(self, agg_spec: AggregationSpec):
+    def __init__(self) -> None:
+        self.expanded_request_table_names: dict[RequestTablePlan.TileIndicesIdType, str] = {}
+
+    def add_aggregation_spec(self, agg_spec: AggregationSpec) -> None:
         """Process a new AggregationSpec
 
         Depending on the feature job setting of the provided aggregation, a new expanded request
@@ -159,7 +159,7 @@ class RequestTablePlan:
         return self.expanded_request_table_names[key]
 
     @staticmethod
-    def get_unique_tile_indices_id(agg_spec: AggregationSpec) -> tuple:
+    def get_unique_tile_indices_id(agg_spec: AggregationSpec) -> TileIndicesIdType:
         """Get a key for an AggregationSpec that controls reuse of expanded request table
 
         Parameters
@@ -201,7 +201,7 @@ class RequestTablePlan:
                 frequency=frequency,
                 blind_spot=blind_spot,
                 time_modulo_frequency=time_modulo_frequency,
-                entity_columns=entity_columns,
+                entity_columns=list(entity_columns),
             )
             expanded_request_ctes.append((table_name, expanded_table_sql))
         return expanded_request_ctes
@@ -212,12 +212,12 @@ class FeatureExecutionPlan:
 
     AGGREGATION_TABLE_NAME = "_FB_AGGREGATED"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.aggregation_specs: dict[tuple[str, int], AggregationSpec] = {}
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.request_table_plan: RequestTablePlan = RequestTablePlan()
 
-    def add_aggregation_spec(self, aggregation_spec: AggregationSpec):
+    def add_aggregation_spec(self, aggregation_spec: AggregationSpec) -> None:
         """Add AggregationSpec to be incorporated when generating SQL
 
         Parameters
@@ -229,7 +229,7 @@ class FeatureExecutionPlan:
         self.aggregation_specs[key] = aggregation_spec
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
 
-    def add_feature_spec(self, feature_spec: FeatureSpec):
+    def add_feature_spec(self, feature_spec: FeatureSpec) -> None:
         """Add FeatureSpec to be incorporated when generating SQL
 
         Parameters
@@ -248,7 +248,7 @@ class FeatureExecutionPlan:
         self.feature_specs[key] = feature_spec
 
     @staticmethod
-    def get_aggregation_spec_key(aggregation_spec: AggregationSpec) -> tuple:
+    def get_aggregation_spec_key(aggregation_spec: AggregationSpec) -> tuple[str, int]:
         """Get a key for a AggregationSpec that determines whether it can be shared
 
         Some aggregations can be shared by different features, e.g. "transaction_type (7 day
@@ -301,15 +301,15 @@ class FeatureExecutionPlan:
         -------
         str
         """
-        join_conditions = ["REQ.REQ_TILE_INDEX = TILE.INDEX"]
+        join_conditions_lst = ["REQ.REQ_TILE_INDEX = TILE.INDEX"]
         for key in entity_ids:
-            join_conditions.append(f"REQ.{key} = TILE.{key}")
-        join_conditions = " AND ".join(join_conditions)
+            join_conditions_lst.append(f"REQ.{key} = TILE.{key}")
+        join_conditions = " AND ".join(join_conditions_lst)
 
-        group_by_keys = [f"REQ.{point_in_time_column}"]
+        group_by_keys_lst = [f"REQ.{point_in_time_column}"]
         for key in entity_ids:
-            group_by_keys.append(f"REQ.{key}")
-        group_by_keys = ", ".join(group_by_keys)
+            group_by_keys_lst.append(f"REQ.{key}")
+        group_by_keys = ", ".join(group_by_keys_lst)
 
         sql = f"""
             SELECT
@@ -323,7 +323,7 @@ class FeatureExecutionPlan:
 
         return prettify_sql(sql)
 
-    def construct_combined_aggregation_cte(self, point_in_time_column) -> tuple[str, str]:
+    def construct_combined_aggregation_cte(self, point_in_time_column: str) -> tuple[str, str]:
         """Construct SQL code for all aggregations
 
         Parameters
@@ -356,12 +356,12 @@ class FeatureExecutionPlan:
                 f'"{agg_table_alias}"."{agg_result_name}" AS "{agg_result_name}"'
             )
             qualified_aggregation_names.append(agg_result_name_alias)
-            join_conditions = [
+            join_conditions_lst = [
                 f"REQ.{point_in_time_column} = {agg_table_alias}.{point_in_time_column}",
             ]
             for k in agg_spec.entity_ids:
-                join_conditions += [f"REQ.{k} = {agg_table_alias}.{k}"]
-            join_conditions = " AND ".join(join_conditions)
+                join_conditions_lst += [f"REQ.{k} = {agg_table_alias}.{k}"]
+            join_conditions = " AND ".join(join_conditions_lst)
             left_joins.append(
                 f"""
             LEFT JOIN (
@@ -370,16 +370,16 @@ class FeatureExecutionPlan:
             ON {join_conditions}
                 """
             )
-        left_joins = "\n".join(left_joins)
-        qualified_aggregation_names = ", ".join(qualified_aggregation_names)
+        left_joins_sql = "\n".join(left_joins)
+        qualified_aggregation_names_str = ", ".join(qualified_aggregation_names)
         combined_sql = (
             f"""
             SELECT
                 REQ.*,
-                {qualified_aggregation_names}
+                {qualified_aggregation_names_str}
             FROM {REQUEST_TABLE_NAME} REQ
             """
-            + left_joins
+            + left_joins_sql
         )
         combined_sql = prettify_sql(combined_sql)
         return self.AGGREGATION_TABLE_NAME, combined_sql
@@ -407,11 +407,11 @@ class FeatureExecutionPlan:
             feature_alias = f'{feature_spec.feature_expr} AS "{feature_spec.feature_name}"'
             qualified_feature_names.append(feature_alias)
         request_table_column_names = ", ".join([f'AGG."{col}"' for col in request_table_columns])
-        qualified_feature_names = ", ".join(qualified_feature_names)
+        qualified_feature_names_str = ", ".join(qualified_feature_names)
         sql = f"""
             SELECT
                 {request_table_column_names},
-                {qualified_feature_names}
+                {qualified_feature_names_str}
             FROM {self.AGGREGATION_TABLE_NAME} AGG
             """
         sql = prettify_sql(sql)
@@ -483,7 +483,7 @@ class FeatureExecutionPlanner:
         self.update_feature_specs(node)
         return self.plan
 
-    def parse_and_update_specs_from_groupby(self, groupby_node: Node):
+    def parse_and_update_specs_from_groupby(self, groupby_node: Node) -> None:
         """Update FeatureExecutionPlan with a groupby query node
 
         Parameters
@@ -495,7 +495,7 @@ class FeatureExecutionPlanner:
         for agg_spec in agg_specs:
             self.plan.add_aggregation_spec(agg_spec)
 
-    def update_feature_specs(self, node: Node):
+    def update_feature_specs(self, node: Node) -> None:
         """Update FeatureExecutionPlan with a query graph node
 
         Parameters

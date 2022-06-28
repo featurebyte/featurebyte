@@ -113,7 +113,7 @@ def compute_start_end_date_from_point_in_time(
     time_modulo_frequency: int,
     blind_spot: int,
     num_tiles: int,
-):
+) -> tuple[pd.Timestamp, pd.Timestamp]:
     """Compute start and end dates to fill in the placeholders in tile SQL template
 
     Parameters
