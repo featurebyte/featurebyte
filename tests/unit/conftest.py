@@ -249,6 +249,7 @@ def mock_snowflake_tile(mock_execute_query, snowflake_database_source, snowflake
     Pytest Fixture for TileSnowflake instance
     """
     mock_execute_query.size_effect = None
+    _ = snowflake_connector
 
     tile_s = TileSnowflake(
         feature_name="featurename",

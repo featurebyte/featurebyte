@@ -3,6 +3,8 @@ Snowflake Tile class
 """
 from __future__ import annotations
 
+from typing import Any, Dict
+
 from jinja2 import Template
 from pydantic import BaseModel, Field, root_validator, validator
 
@@ -10,6 +12,14 @@ from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedDatabaseSourceModel
 from featurebyte.logger import logger
 from featurebyte.models.event_data import DatabaseSourceModel
+from featurebyte.session.base import BaseSession
+from featurebyte.session.snowflake import SnowflakeSession
+
+tm_ins_tile_registry = Template(
+    """
+    INSERT INTO TILE_REGISTRY (TILE_ID, TILE_SQL) VALUES ('{{tile_id}}', '{{tile_sql}}')
+"""
+)
 
 tm_gen_tile = Template(
     """
@@ -54,6 +64,8 @@ class TileSnowflake(BaseModel):
         comma separated string of column names for the tile table
     tile_id: str
         hash value of tile id and name
+    tabular_source: DatabaseSourceModel
+        datasource instance
     """
 
     feature_name: str
@@ -66,18 +78,103 @@ class TileSnowflake(BaseModel):
     tabular_source: DatabaseSourceModel
 
     @validator("feature_name", "tile_id", "column_names")
-    def stripped_upper(cls, value):
+    def stripped_upper(cls, value: str) -> str:  # pylint: disable=E0213
+        """
+        Validator for non-empty attributes and return stripped and upper case of the value
+
+        Parameters
+        ----------
+        value: str
+            input value of attributes feature_name, tile_id, column_names
+
+        Raises
+        ------
+        ValueError
+            if the input value is None or empty
+
+        Returns
+        -------
+            stripped and upper case of the input value
+        """
         if value is None or value.strip() == "":
             raise ValueError("value cannot be empty")
         return value.strip().upper()
 
     @root_validator
-    def check_time_modulo_frequency_seconds(cls, values):
+    def check_time_modulo_frequency_seconds(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:  # pylint: disable=E0213
+        """
+        Root Validator for time-modulo-frequency
+
+        Parameters
+        ----------
+        values: dict
+            dict of attribute and value
+
+        Raises
+        ------
+        ValueError
+            if time-modulo-frequency is greater than frequency in seconds
+
+        Returns
+        -------
+            original dict
+        """
         if values["time_modulo_frequency_seconds"] > values["frequency_minute"] * 60:
             raise ValueError(
                 f"time_modulo_frequency_seconds must be less than {values['frequency_minute'] * 60}"
             )
         return values
+
+    def insert_tile_registry(self, credentials: Credentials | None = None) -> bool:
+        """
+        Insert new tile registry record if it does not exist
+
+        Parameters
+        ----------
+        credentials: Credentials
+            credentials of the datasource
+
+        Returns
+        -------
+            whether the tile registry record is inserted successfully or not
+        """
+        session = self._get_session(credentials)
+        result = session.execute_query(
+            f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{self.tile_id}'"
+        )
+        if result is None or len(result) == 0:
+            sql = tm_ins_tile_registry.render(tile_id=self.tile_id, tile_sql=self.tile_sql)
+            logger.info(f"generated sql: {sql}")
+            self._get_session(credentials).execute_query(sql)
+            return True
+
+        logger.warning(f"Tile id {self.tile_id} already exists")
+        return False
+
+    def disable_tiles(self, credentials: Credentials | None = None) -> None:
+        """
+        Disable tile jobs
+
+        Parameters
+        ----------
+        credentials: Credentials
+            credentials of the datasource
+
+        Returns
+        -------
+
+        """
+        session = self._get_session(credentials)
+
+        for t_type in ["ONLINE", "OFFLINE"]:
+            tile_task_name = f"TILE_TASK_{t_type}_{self.tile_id}"
+            session.execute_query(f"ALTER TASK IF EXISTS {tile_task_name} SUSPEND")
+
+        session.execute_query(
+            f"UPDATE TILE_REGISTRY SET ENABLED = 'N' WHERE TILE_ID = '{self.tile_id}'"
+        )
 
     def generate_tiles(
         self,
@@ -97,6 +194,8 @@ class TileSnowflake(BaseModel):
             start_timestamp of tile. ie. 2022-06-20 15:00:00
         end_ts_str: str
             end_timestamp of tile. ie. 2022-06-21 15:00:00
+        credentials: Credentials
+            credentials of the datasource
 
         Returns
         -------
@@ -124,7 +223,6 @@ class TileSnowflake(BaseModel):
     def schedule_online_tiles(
         self,
         monitor_periods: int = 10,
-        start_task: bool = True,
         credentials: Credentials | None = None,
     ) -> str:
         """
@@ -134,8 +232,8 @@ class TileSnowflake(BaseModel):
         ----------
         monitor_periods: int
             number of tile periods to monitor and re-generate. Default is 10
-        start_task: bool
-            whether to start the scheduled task
+        credentials: Credentials
+            credentials for datasource
 
         Returns
         -------
@@ -148,7 +246,6 @@ class TileSnowflake(BaseModel):
         return self._schedule_tiles(
             tile_type=tile_type,
             cron_expr=cron,
-            start_task=start_task,
             monitor_periods=monitor_periods,
             credentials=credentials,
         )
@@ -156,7 +253,6 @@ class TileSnowflake(BaseModel):
     def schedule_offline_tiles(
         self,
         offline_minutes: int = 1440,
-        start_task: bool = True,
         credentials: Credentials | None = None,
     ) -> str:
         """
@@ -166,8 +262,8 @@ class TileSnowflake(BaseModel):
         ----------
         offline_minutes: int
             offline tile lookback minutes to monitor and re-generate. Default is 1440
-        start_task: bool
-            whether to start the scheduled task
+        credentials: Credentials
+            credentials for datasource
 
         Returns
         -------
@@ -180,7 +276,6 @@ class TileSnowflake(BaseModel):
         return self._schedule_tiles(
             tile_type=tile_type,
             cron_expr=cron,
-            start_task=start_task,
             offline_minutes=offline_minutes,
             credentials=credentials,
         )
@@ -189,7 +284,6 @@ class TileSnowflake(BaseModel):
         self,
         tile_type: str,
         cron_expr: str,
-        start_task: bool,
         offline_minutes: int = 1440,
         monitor_periods: int = 10,
         credentials: Credentials | None = None,
@@ -199,8 +293,6 @@ class TileSnowflake(BaseModel):
 
         Parameters
         ----------
-        start_task: bool
-            whether to start the scheduled task
         tile_type: str
             ONLINE or OFFLINE
         cron_expr: str
@@ -209,6 +301,8 @@ class TileSnowflake(BaseModel):
             offline tile lookback minutes
         monitor_periods: int
             online tile lookback period
+        credentials: Credentials
+            credentials for datasource
 
         Returns
         -------
@@ -220,7 +314,7 @@ class TileSnowflake(BaseModel):
 
         sql = tm_schedule_tile.render(
             temp_task_name=temp_task_name,
-            warehouse=session.warehouse,
+            warehouse=SnowflakeSession(**session.dict()).warehouse,
             cron=cron_expr,
             sql=self.tile_sql,
             time_modulo_frequency_seconds=self.time_modulo_frequency_seconds,
@@ -236,12 +330,24 @@ class TileSnowflake(BaseModel):
         logger.info(f"generated sql: {sql}")
         session.execute_query(sql)
 
-        if start_task:
-            session.execute_query(f"ALTER TASK {temp_task_name} RESUME")
+        session.execute_query(f"ALTER TASK IF EXISTS {temp_task_name} RESUME")
 
         return sql
 
-    def _get_session(self, credentials: Credentials | None = None):
+    def _get_session(self, credentials: Credentials | None = None) -> BaseSession:
+        """
+        Helper function to get database session from credentials and datasource
+
+        Parameters
+        ----------
+        credentials: Credentials
+            credentials of the database source
+
+        Returns
+        -------
+            database session
+        """
         data_source = ExtendedDatabaseSourceModel(**self.tabular_source.dict())
         session = data_source.get_session(credentials=credentials)
+
         return session

@@ -81,3 +81,17 @@ def test_schedule_offline_tiles(mock_snowflake_tile, config):
             )
     """
     assert "".join(sql.split()) == "".join(expected_sql.split())
+
+
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def test_insert_tile_registry(mock_execute_query, mock_snowflake_tile, config):
+    """
+    Test schedule_offline_tiles method in TileSnowflake
+    """
+    mock_execute_query.return_value = ["Element"]
+    flag = mock_snowflake_tile.insert_tile_registry(credentials=config.credentials)
+    assert flag is False
+
+    mock_execute_query.return_value = []
+    flag = mock_snowflake_tile.insert_tile_registry(credentials=config.credentials)
+    assert flag is True

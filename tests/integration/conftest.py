@@ -14,6 +14,7 @@ from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
 from featurebyte.session.manager import SessionManager
+from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
 @pytest.fixture(name="transaction_data", scope="session")
@@ -172,8 +173,6 @@ def snowflake_featurebyte_session(config):
 
 @pytest.fixture
 def snowflake_tile(fb_db_session, config):
-    from featurebyte.tile.snowflake_tile import TileSnowflake
-
     """
     Pytest Fixture for TileSnowflake instance
     """
@@ -195,6 +194,7 @@ def snowflake_tile(fb_db_session, config):
 
     yield tile_s
 
+    fb_db_session.execute_query("DELETE FROM TILE_REGISTRY")
     fb_db_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
     fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
     fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")

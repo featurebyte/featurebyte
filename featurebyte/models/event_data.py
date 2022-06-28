@@ -145,7 +145,7 @@ class Feature(BaseModel):
     ----------
     name : str
         Name of the Feature
-    status : str
+    status : EventDataStatus
         Status of the Feature
     time_modulo_frequency_seconds: int
         time modulo seconds for the tile
@@ -159,18 +159,17 @@ class Feature(BaseModel):
         comma separated string of column names for the tile table
     tile_id: str
         hash value of tile id and name
+    datasource: DatabaseSourceModel
+        datasource instance
     """
 
-    name: str
+    name: EventDataStatus
     status: str
-
     time_modulo_frequency_second: int
     blind_spot_second: int
     frequency_minute: int
-
     tile_sql: str
     column_names: str
     tile_id: str
     oneline_enabled: str
-
     datasource: DatabaseSourceModel
