@@ -170,3 +170,12 @@ def test_setting_column_as_entity__invalid_cases(snowflake_event_view):
     with pytest.raises(ValueError) as exc:
         new_cust_id.as_entity("new_cust_id")
     assert "Series object does not have parent frame object!" in str(exc.value)
+
+
+def test_add_description(snowflake_event_view):
+    """
+    Test add_description to event view's column
+    """
+    assert snowflake_event_view.column_description_map == {}
+    snowflake_event_view.cust_id.add_description("Customer ID column")
+    assert snowflake_event_view.column_description_map == {"cust_id": "Customer ID column"}
