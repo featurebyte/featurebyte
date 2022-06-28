@@ -3,16 +3,18 @@ Persistent storage using MongoDB
 """
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Literal, Mapping, Optional, Tuple, Union
+from typing import Iterable, List, Literal, Optional, Tuple
 
 import json
 import os
 import shutil
 import tempfile
 
-from bson import ObjectId, json_util
-from git import GitCommandError, Repo
-from pymongo.typings import _DocumentIn, _Pipeline
+from bson import json_util
+from bson.objectid import ObjectId
+from git import GitCommandError
+from git.remote import Remote
+from git.repo.base import Repo
 
 from featurebyte.logger import logger
 
@@ -51,6 +53,8 @@ class GitDB(Persistent):
         self._branch = branch
         self._refspec = f"refs/heads/{self._branch}:refs/heads/{self._branch}"
         self._ssh_cmd = f"ssh -i {key_path}" if key_path else "ssh"
+        self._origin: Optional[Remote] = None
+        self._working_tree_dir: str = str(self._repo.working_tree_dir)
 
         if remote_url:
             # create remote origin if does not exist
@@ -62,20 +66,24 @@ class GitDB(Persistent):
             # confirm repo has correct remote
             assert len(repo.remotes) == 1
             assert self._origin.url == remote_url
-        else:
-            self._origin = None
 
-        # checkout branch
-        try:
-            self._fetch()
-            logger.debug("Check out remote branch", extra={"branch": branch})
-            repo.create_head(branch, self._origin.refs[branch])
-            repo.heads[branch].checkout()
-            repo.index.reset(self._origin.refs[branch])
-        except (GitCommandError, AttributeError):
+        # try to checkout checkout branch
+        branch_exists = False
+        if self._origin:
+            try:
+                self._fetch()
+                logger.debug("Check out remote branch", extra={"branch": branch})
+                repo.create_head(branch, self._origin.refs[branch])
+                repo.heads[branch].checkout()
+                repo.index.reset(self._origin.refs[branch])
+                branch_exists = True
+            except (GitCommandError, AttributeError):
+                pass
+
+        if not branch_exists:
             logger.debug("Create new branch", extra={"branch": branch})
             # no branch found on remote, create new branch from main
-            initial_commit_file_path = os.path.join(self._repo.working_tree_dir, "README.md")
+            initial_commit_file_path = os.path.join(self._working_tree_dir, "README.md")
             with open(initial_commit_file_path, "w", encoding="utf-8") as file_obj:
                 file_obj.write(
                     "# FeatureByte Git Repo\nRepository for FeatureByte feature engineering SDK"
@@ -86,7 +94,7 @@ class GitDB(Persistent):
             repo.heads[branch].checkout()
             self._push()
 
-    def __del__(self):
+    def __del__(self) -> None:
         """
         Clean up local repo
         """
@@ -131,7 +139,11 @@ class GitDB(Persistent):
             self._origin.push(self._refspec).raise_if_error()
 
     def _add_file(
-        self, dir_name: str, document: _DocumentIn, doc_name: Optional[str] = None, replace=False
+        self,
+        dir_name: str,
+        document: DocumentType,
+        doc_name: Optional[str] = None,
+        replace: bool = False,
     ) -> ObjectId:
         """
         Add one file to repo
@@ -140,7 +152,7 @@ class GitDB(Persistent):
         ----------
         dir_name: str
             Name of directory to use
-        document: _DocumentIn
+        document: DocumentType
             Document to insert
         doc_name: Optional[str]
             Document name
@@ -158,14 +170,15 @@ class GitDB(Persistent):
             Document exists
         """
         # ensure collection dir exists
-        dir_path = os.path.join(self._repo.working_tree_dir, dir_name)
+        dir_path = os.path.join(self._working_tree_dir, dir_name)
         if not os.path.exists(dir_path):
             os.mkdir(dir_path)
 
         # ensures document id is set
         doc_id = document.get("_id")
         if not doc_id:
-            doc_id = document["_id"] = ObjectId()
+            doc_id = ObjectId()
+            document["_id"] = doc_id
 
         # create document
         new_doc_name = str(document.get("name", doc_id))
@@ -174,7 +187,7 @@ class GitDB(Persistent):
         # handle renaming
         is_renaming = doc_name and doc_name != new_doc_name
         if is_renaming:
-            old_doc_path = os.path.join(dir_path, doc_name + ".json")
+            old_doc_path = os.path.join(dir_path, f"{doc_name}.json")
             if os.path.exists(old_doc_path):
                 self._repo.index.move([old_doc_path, doc_path])
                 self._repo.index.commit(
@@ -197,7 +210,7 @@ class GitDB(Persistent):
 
         return doc_id
 
-    def _remove_file(self, dir_name: str, document: _DocumentIn) -> None:
+    def _remove_file(self, dir_name: str, document: DocumentType) -> None:
         """
         Remove one file from repo
 
@@ -205,11 +218,11 @@ class GitDB(Persistent):
         ----------
         dir_name: str
             Name of directory to use
-        document: _DocumentIn
+        document: DocumentType
             Document to insert
         """
         # ensure collection dir exists
-        dir_path = os.path.join(self._repo.working_tree_dir, dir_name)
+        dir_path = os.path.join(self._working_tree_dir, dir_name)
         if not os.path.exists(dir_path):
             return
 
@@ -227,8 +240,8 @@ class GitDB(Persistent):
         self._repo.index.commit(f"Remove document: {dir_name}/{doc_name}")
 
     def _find_files(
-        self, dir_name: str, filter_query: Mapping[str, Any], multiple: bool = False
-    ) -> Optional[DocumentType]:
+        self, dir_name: str, filter_query: DocumentType, multiple: bool = False
+    ) -> List[DocumentType]:
         """
         Find one record from collection
 
@@ -236,45 +249,43 @@ class GitDB(Persistent):
         ----------
         dir_name: str
             Name of directory to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
         multiple: bool
             Return multiple documents
 
         Returns
         -------
-        Optional[DocumentType]
+        List[DocumentType]
             Retrieved document
         """
         # check unsupported filters
         self._check_filter(filter_query)
         filter_items = filter_query.items()
 
-        collection_dir = os.path.join(self._repo.working_tree_dir, dir_name)
+        collection_dir = os.path.join(self._working_tree_dir, dir_name)
 
         if not os.path.exists(collection_dir):
-            return [] if multiple else None
+            return []
 
         documents = []
         for path in sorted(os.listdir(collection_dir)):
             with open(os.path.join(collection_dir, path), encoding="utf-8") as file_obj:
-                doc = json_util.loads(file_obj.read())
+                doc: DocumentType = json_util.loads(file_obj.read())
             if filter_items <= doc.items():
                 if not multiple:
-                    return doc
+                    return [doc]
                 documents.append(doc)
-        if not multiple:
-            return None
         return documents
 
     @staticmethod
-    def _check_filter(filter_query: Mapping[str, Any]) -> None:
+    def _check_filter(filter_query: DocumentType) -> None:
         """
         Validate filter is supported
 
         Parameters
         ----------
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
 
         Raises
@@ -287,7 +298,7 @@ class GitDB(Persistent):
             if "$" in key:
                 raise NotImplementedError("$ operators not supported")
 
-    def insert_one(self, collection_name: str, document: _DocumentIn) -> ObjectId:
+    def insert_one(self, collection_name: str, document: DocumentType) -> ObjectId:
         """
         Insert record into collection
 
@@ -295,7 +306,7 @@ class GitDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        document: _DocumentIn
+        document: DocumentType
             Document to insert
 
         Returns
@@ -313,7 +324,9 @@ class GitDB(Persistent):
         self._push()
         return doc_id
 
-    def insert_many(self, collection_name: str, documents: Iterable[_DocumentIn]) -> List[ObjectId]:
+    def insert_many(
+        self, collection_name: str, documents: Iterable[DocumentType]
+    ) -> List[ObjectId]:
         """
         Insert records into collection
 
@@ -321,7 +334,7 @@ class GitDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        documents: Iterable[_DocumentIn]
+        documents: Iterable[DocumentType]
             Documents to insert
 
         Returns
@@ -344,9 +357,7 @@ class GitDB(Persistent):
             self._push()
         return doc_ids
 
-    def find_one(
-        self, collection_name: str, filter_query: Mapping[str, Any]
-    ) -> Optional[DocumentType]:
+    def find_one(self, collection_name: str, filter_query: DocumentType) -> Optional[DocumentType]:
         """
         Find one record from collection
 
@@ -354,7 +365,7 @@ class GitDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
 
         Returns
@@ -363,12 +374,15 @@ class GitDB(Persistent):
             Retrieved document
         """
         self._reset_branch()
-        return self._find_files(dir_name=collection_name, filter_query=filter_query)
+        docs = self._find_files(dir_name=collection_name, filter_query=filter_query)
+        if not docs:
+            return None
+        return docs[0]
 
     def find(
         self,
         collection_name: str,
-        filter_query: Mapping[str, Any],
+        filter_query: DocumentType,
         sort_by: Optional[str] = None,
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
@@ -381,7 +395,7 @@ class GitDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
         sort_by: Optional[str]
             Column to sort by
@@ -397,14 +411,14 @@ class GitDB(Persistent):
         Tuple[Iterable[DocumentType], int]
             Retrieved documents and total count
         """
-        sort_by = sort_by or "_id"
+        sort_col = sort_by or "_id"
         self._reset_branch()
         docs = self._find_files(dir_name=collection_name, filter_query=filter_query, multiple=True)
         total = len(docs)
 
         docs = sorted(
             docs,
-            key=lambda x: x[sort_by],
+            key=lambda doc: str(doc[sort_col]),
             reverse=sort_dir == "desc",
         )
 
@@ -417,8 +431,8 @@ class GitDB(Persistent):
     def update_one(
         self,
         collection_name: str,
-        filter_query: Mapping[str, Any],
-        update: Union[Mapping[str, Any], _Pipeline],
+        filter_query: DocumentType,
+        update: DocumentType,
     ) -> int:
         """
         Update one record in collection
@@ -427,9 +441,9 @@ class GitDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
-        update: Union[Mapping[str, Any], _Pipeline]
+        update: DocumentType
             Values to update
 
         Returns
@@ -442,9 +456,10 @@ class GitDB(Persistent):
             raise NotImplementedError("update not supported")
 
         self._reset_branch()
-        doc = self._find_files(dir_name=collection_name, filter_query=filter_query)
-        if not doc:
+        docs = self._find_files(dir_name=collection_name, filter_query=filter_query)
+        if not docs:
             return 0
+        doc = docs[0]
 
         # track original doc name
         doc_name = doc.get("name")
@@ -456,8 +471,8 @@ class GitDB(Persistent):
     def update_many(
         self,
         collection_name: str,
-        filter_query: Mapping[str, Any],
-        update: Union[Mapping[str, Any], _Pipeline],
+        filter_query: DocumentType,
+        update: DocumentType,
     ) -> int:
         """
         Update many records in collection
@@ -466,9 +481,9 @@ class GitDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
-        update: Union[Mapping[str, Any], _Pipeline]
+        update: DocumentType
             Values to update
 
         Returns
@@ -497,7 +512,7 @@ class GitDB(Persistent):
             self._push()
         return num_updated
 
-    def delete_one(self, collection_name: str, filter_query: Mapping[str, Any]) -> int:
+    def delete_one(self, collection_name: str, filter_query: DocumentType) -> int:
         """
         Delete one record from collection
 
@@ -505,7 +520,7 @@ class GitDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
 
         Returns
@@ -514,15 +529,16 @@ class GitDB(Persistent):
             Number of records deleted
         """
         self._reset_branch()
-        doc = self._find_files(dir_name=collection_name, filter_query=filter_query)
-        if not doc:
+        docs = self._find_files(dir_name=collection_name, filter_query=filter_query)
+        if not docs:
             return 0
+        doc = docs[0]
 
         self._remove_file(dir_name=collection_name, document=doc)
         self._push()
         return 1
 
-    def delete_many(self, collection_name: str, filter_query: Mapping[str, Any]) -> int:
+    def delete_many(self, collection_name: str, filter_query: DocumentType) -> int:
         """
         Delete many records from collection
 
@@ -530,7 +546,7 @@ class GitDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
 
         Returns

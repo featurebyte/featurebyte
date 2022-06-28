@@ -3,11 +3,10 @@ Persistent storage using MongoDB
 """
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Literal, Mapping, Optional, Tuple, Union
+from typing import Any, Iterable, List, Literal, Optional, Tuple
 
 import pymongo
-from bson import ObjectId
-from pymongo.typings import _DocumentIn, _Pipeline
+from bson.objectid import ObjectId
 
 from .persistent import DocumentType, DuplicateDocumentError, Persistent
 
@@ -34,7 +33,7 @@ class MongoDB(Persistent):
         self._client = pymongo.MongoClient(uri)  # type: ignore
         self._db = self._client[database]
 
-    def insert_one(self, collection_name: str, document: _DocumentIn) -> ObjectId:
+    def insert_one(self, collection_name: str, document: DocumentType) -> ObjectId:
         """
         Insert record into collection
 
@@ -42,7 +41,7 @@ class MongoDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        document: _DocumentIn
+        document: DocumentType
             Document to insert
 
         Returns
@@ -57,11 +56,13 @@ class MongoDB(Persistent):
         """
         try:
             result = self._db[collection_name].insert_one(document)
-            return result.inserted_id
+            return ObjectId(result.inserted_id)
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
 
-    def insert_many(self, collection_name: str, documents: Iterable[_DocumentIn]) -> List[ObjectId]:
+    def insert_many(
+        self, collection_name: str, documents: Iterable[DocumentType]
+    ) -> List[ObjectId]:
         """
         Insert records into collection
 
@@ -69,7 +70,7 @@ class MongoDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        documents: Iterable[_DocumentIn]
+        documents: Iterable[DocumentType]
             Documents to insert
 
         Returns
@@ -88,9 +89,7 @@ class MongoDB(Persistent):
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
 
-    def find_one(
-        self, collection_name: str, filter_query: Mapping[str, Any]
-    ) -> Optional[DocumentType]:
+    def find_one(self, collection_name: str, filter_query: DocumentType) -> Optional[DocumentType]:
         """
         Find one record from collection
 
@@ -98,7 +97,7 @@ class MongoDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
 
         Returns
@@ -111,7 +110,7 @@ class MongoDB(Persistent):
     def find(
         self,
         collection_name: str,
-        filter_query: Mapping[str, Any],
+        filter_query: DocumentType,
         sort_by: Optional[str] = None,
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
@@ -124,7 +123,7 @@ class MongoDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
         sort_by: Optional[str]
             Column to sort by
@@ -157,8 +156,8 @@ class MongoDB(Persistent):
     def update_one(
         self,
         collection_name: str,
-        filter_query: Mapping[str, Any],
-        update: Union[Mapping[str, Any], _Pipeline],
+        filter_query: DocumentType,
+        update: DocumentType,
     ) -> int:
         """
         Update one record in collection
@@ -167,9 +166,9 @@ class MongoDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
-        update: Union[Mapping[str, Any], _Pipeline]
+        update: DocumentType
             Values to update
 
         Returns
@@ -182,8 +181,8 @@ class MongoDB(Persistent):
     def update_many(
         self,
         collection_name: str,
-        filter_query: Mapping[str, Any],
-        update: Union[Mapping[str, Any], _Pipeline],
+        filter_query: DocumentType,
+        update: DocumentType,
     ) -> int:
         """
         Update many records in collection
@@ -192,9 +191,9 @@ class MongoDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
-        update: Union[Mapping[str, Any], _Pipeline]
+        update: DocumentType
             Values to update
 
         Returns
@@ -204,7 +203,7 @@ class MongoDB(Persistent):
         """
         return self._db[collection_name].update_many(filter_query, update).modified_count
 
-    def delete_one(self, collection_name: str, filter_query: Mapping[str, Any]) -> int:
+    def delete_one(self, collection_name: str, filter_query: DocumentType) -> int:
         """
         Delete one record from collection
 
@@ -212,7 +211,7 @@ class MongoDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
 
         Returns
@@ -222,7 +221,7 @@ class MongoDB(Persistent):
         """
         return self._db[collection_name].delete_one(filter_query).deleted_count
 
-    def delete_many(self, collection_name: str, filter_query: Mapping[str, Any]) -> int:
+    def delete_many(self, collection_name: str, filter_query: DocumentType) -> int:
         """
         Delete many records from collection
 
@@ -230,7 +229,7 @@ class MongoDB(Persistent):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        filter_query: DocumentType
             Conditions to filter on
 
         Returns
