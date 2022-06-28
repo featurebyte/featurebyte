@@ -171,7 +171,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
                 col: (event_data.node.name,) for col in event_data.column_var_type_map
             },
             row_index_lineage=tuple(event_data.row_index_lineage),
-            column_entity_map=event_data.column_entity_map,
+            column_entity_map=event_data.column_entity_map.copy(),
         )
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
