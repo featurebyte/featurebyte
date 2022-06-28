@@ -633,7 +633,7 @@ def construct_cte_sql(cte_statements: list[tuple[str, str]]) -> str:
 def get_feature_preview_sql(
     graph: QueryGraph,
     node: Node,
-    entity_columns: list[str],
+    entity_columns: Optional[list[str]],
     point_in_time_and_entity_id: dict[str, Any],
 ) -> str:
     """Get SQL code for previewing SQL
@@ -644,7 +644,7 @@ def get_feature_preview_sql(
         Query graph
     node : Node
         Query graph node
-    entity_columns : list[str]
+    entity_columns : Optional[list[str]]
         Entity columns
     point_in_time_and_entity_id : dict
         Preview request consisting of point in time and entity ID(s)
@@ -660,9 +660,10 @@ def get_feature_preview_sql(
     """
 
     point_in_time = point_in_time_and_entity_id["POINT_IN_TIME"]
-    for col in entity_columns:
-        if col not in point_in_time_and_entity_id:
-            raise KeyError(f"Entity column not provided: {col}")
+    if entity_columns is not None:
+        for col in entity_columns:
+            if col not in point_in_time_and_entity_id:
+                raise KeyError(f"Entity column not provided: {col}")
 
     cte_statements = []
 

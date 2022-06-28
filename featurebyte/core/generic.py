@@ -117,6 +117,15 @@ class QueryObject(BaseModel):
     def get_session(self, credentials: Credentials | None = None) -> BaseSession:
         """
         Get a session based on underlying tabular source and provided credentials
+
+        Parameters
+        ----------
+        credentials : Credentials
+            data source to credential mapping used to initiate a new connection
+
+        Returns
+        -------
+        BaseSession
         """
         if credentials is None:
             config = Configurations()
