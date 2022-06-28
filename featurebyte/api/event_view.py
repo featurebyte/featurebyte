@@ -203,7 +203,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
             item = sorted(self.inherited_columns.union(item))
         output = super().__getitem__(item)
         if isinstance(item, str) and isinstance(output, EventViewColumn):
-            return output.set_parent(self)  # pylint: disable=E1101 (no-member)
+            return output.set_parent(self)  # pylint: disable=no-member
         if isinstance(output, EventView):
             output.column_entity_map = {
                 col: name for col, name in self.column_entity_map.items() if col in output.columns
@@ -229,7 +229,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         EventViewGroupBy
             a groupby object that contains information about the groups
         """
-        # pylint: disable=C0415
+        # pylint: disable=import-outside-toplevel
         from featurebyte.api.groupby import EventViewGroupBy
 
         return EventViewGroupBy(obj=self, keys=by_keys)

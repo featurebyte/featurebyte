@@ -18,7 +18,7 @@ class EventDataColumn:
     EventDataColumn class to set metadata like entity
     """
 
-    # pylint: disable=R0903
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, event_data: EventData, column_name: str) -> None:
         self.event_data = event_data

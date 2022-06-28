@@ -90,7 +90,7 @@ class EventViewGroupBy(OpsMixin):
         KeyError
             If column to be aggregated does not exist
         """
-        # pylint: disable=R0914 (too-many-locals)
+        # pylint: disable=too-many-locals
         if method not in AggFunc.all():
             raise ValueError(f"Aggregation method not supported: {method}")
 

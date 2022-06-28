@@ -21,7 +21,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
     DatabaseTable class to preview table
     """
 
-    # pylint: disable=R0903 (too-few-public-methods)
+    # pylint: disable=too-few-public-methods
 
     column_var_type_map: Dict[str, DBVarType]
     credentials: Optional[Credentials] = Field(default=None)
