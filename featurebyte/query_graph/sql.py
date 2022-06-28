@@ -10,11 +10,19 @@ from typing import Any
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
+from enum import Enum
 
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
+
+
+class SQLType(Enum):
+    """Type of SQL code corresponding to different operations"""
+
+    BUILD_TILE = "build_tile"
+    PREVIEW = "preview"
 
 
 def escape_column_name(column_name: str) -> str:
@@ -259,18 +267,6 @@ class Project(ExpressionNode):
 
 
 @dataclass
-class ProjectMulti(TableNode):
-    """Project node for multiple columns"""
-
-    subset_table: TableNode
-    column_names: list[str]
-
-    @property
-    def sql(self) -> Expression:
-        return self.subset_table.sql
-
-
-@dataclass
 class FilteredFrame(TableNode):
     """Filter node for table"""
 
@@ -469,7 +465,7 @@ def make_project_node(
     input_sql_nodes: list[SQLNode],
     parameters: dict[str, Any],
     output_type: NodeOutputType,
-) -> Project | ProjectMulti:
+) -> Project | TableNode:
     """Create a Project or ProjectMulti node
 
     Parameters
@@ -483,27 +479,25 @@ def make_project_node(
 
     Returns
     -------
-    Project | ProjectMulti
+    Project | TableNode
         The appropriate SQL node for projection
     """
     table_node = input_sql_nodes[0]
     assert isinstance(table_node, TableNode)
     columns = parameters["columns"]
-    sql_node: Project | ProjectMulti
+    sql_node: Project | TableNode
     if output_type == NodeOutputType.SERIES:
         sql_node = Project(table_node=table_node, column_name=columns[0])
     else:
         columns_set = set(columns)
         columns_map = {
-            column_name: expr for (
-                column_name, expr
-            ) in table_node.columns_map.items() if column_name in columns_set
+            column_name: expr
+            for (column_name, expr) in table_node.columns_map.items()
+            if column_name in columns_set
         }
         subset_table = deepcopy(table_node)
         subset_table.set_columns_map(columns_map)
-        sql_node = ProjectMulti(
-            columns_map=columns_map, subset_table=subset_table, column_names=columns
-        )
+        sql_node = subset_table
     return sql_node
 
 
@@ -574,4 +568,36 @@ def make_build_tile_node(
         agg_func=parameters["agg_func"],
         frequency=parameters["frequency"],
     )
+    return sql_node
+
+
+def make_input_node(
+    parameters: dict[str, Any],
+    sql_type: SQLType,
+) -> BuildTileInputNode | GenericInputNode:
+    """Create a SQLNode corresponding to a query graph input node
+
+    Parameters
+    ----------
+    parameters : dict[str, Any]
+        Query graph node parameters
+    sql_type: SQLType
+        Type of SQL code to generate
+    """
+    columns_map = {}
+    for colname in parameters["columns"]:
+        columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
+    if sql_type == SQLType.BUILD_TILE:
+        sql_node = BuildTileInputNode(
+            columns_map=columns_map,
+            column_names=parameters["columns"],
+            timestamp=parameters["timestamp"],
+            dbtable=parameters["dbtable"],
+        )
+    else:
+        sql_node = GenericInputNode(
+            columns_map=columns_map,
+            column_names=parameters["columns"],
+            dbtable=parameters["dbtable"],
+        )
     return sql_node

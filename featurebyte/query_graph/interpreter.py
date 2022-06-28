@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Any
 
 from dataclasses import dataclass
-from enum import Enum
 
 import sqlglot
 
@@ -19,20 +18,15 @@ from featurebyte.query_graph.sql import (
     ExpressionNode,
     GenericInputNode,
     SQLNode,
+    SQLType,
     TableNode,
     make_binary_operation_node,
     make_build_tile_node,
     make_filter_node,
+    make_input_node,
     make_project_node,
 )
 from featurebyte.query_graph.tiling import get_tile_table_identifier
-
-
-class SQLType(Enum):
-    """Type of SQL code corresponding to different operations"""
-
-    BUILD_TILE = "build_tile"
-    PREVIEW = "preview"
 
 
 class SQLOperationGraph:
@@ -119,22 +113,7 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
-            columns_map = {}
-            for colname in parameters["columns"]:
-                columns_map[colname] = sqlglot.expressions.Identifier(this=colname, quoted=True)
-            if self.sql_type == SQLType.BUILD_TILE:
-                sql_node = BuildTileInputNode(
-                    columns_map=columns_map,
-                    column_names=parameters["columns"],
-                    timestamp=parameters["timestamp"],
-                    dbtable=parameters["dbtable"],
-                )
-            else:
-                sql_node = GenericInputNode(
-                    columns_map=columns_map,
-                    column_names=parameters["columns"],
-                    dbtable=parameters["dbtable"],
-                )
+            sql_node = make_input_node(parameters, self.sql_type)
 
         elif node_type == NodeType.ASSIGN:
             assert len(input_sql_nodes) == 2

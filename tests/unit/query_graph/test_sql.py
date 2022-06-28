@@ -4,6 +4,7 @@ Tests for the featurebyte.query_graph.sql module
 import textwrap
 
 import pytest
+import sqlglot
 
 from featurebyte.query_graph import sql
 from featurebyte.query_graph.enum import NodeType
@@ -12,30 +13,16 @@ from featurebyte.query_graph.enum import NodeType
 @pytest.fixture(name="input_node")
 def input_node_fixture():
     """Fixture for a generic InputNode"""
+    columns_map = {
+        "col_1": sqlglot.parse_one("col_1"),
+        "col_2": sqlglot.parse_one("col_2"),
+        "col_3": sqlglot.parse_one("col_3"),
+    }
     return sql.GenericInputNode(
+        columns_map=columns_map,
         column_names=["col_1", "col_2", "col_3"],
         dbtable="dbtable",
     )
-
-
-def test_assign_node__replace(input_node):
-    """Test assign node replacing an existing column"""
-    node = sql.AssignNode(
-        table_node=input_node,
-        column_node=sql.Project(table_node=input_node, column_name="a"),
-        name="col_1",
-    )
-    assert node.columns == ["col_2", "col_3", "col_1"]
-
-
-def test_assign_node__new_column(input_node):
-    """Test assign node adding a new column"""
-    node = sql.AssignNode(
-        table_node=input_node,
-        column_node=sql.Project(table_node=input_node, column_name="a"),
-        name="col_11",
-    )
-    assert node.columns == ["col_1", "col_2", "col_3", "col_11"]
 
 
 @pytest.mark.parametrize(
@@ -88,60 +75,20 @@ def test_binary_operation_node__scalar(node_type, value, right_op, expected, inp
     assert node.sql.sql() == expected
 
 
-def test_project_node__special_chars(input_node):
-    """Test project node with names colliding with SQL keywords"""
-    node = sql.ProjectMulti(
-        input_node=input_node,
-        column_names=["col", "SUM(a)", "some name"],
-    )
-    expected = (
-        'SELECT "col", "SUM(a)", "some name" FROM (SELECT "col_1", "col_2", "col_3" FROM "dbtable")'
-    )
-    assert node.sql.sql() == expected
-
-
-def test_project__escape_names(input_node):
-    """Test project node with names colliding with SQL keywords"""
-    node = sql.Project(table_node=input_node, column_name="SUM(a)")
-    assert node.sql.sql() == '"SUM(a)"'
-    assert node.sql_standalone.sql() == (
-        'SELECT "SUM(a)" FROM (SELECT "col_1", "col_2", "col_3" FROM "dbtable")'
-    )
-
-
-def test_project_multi__escape_names(input_node):
-    """Test project node with names colliding with SQL keywords"""
-    node = sql.ProjectMulti(
-        input_node=input_node,
-        column_names=["col", "SUM(a)", "some name"],
-    )
-    expected = (
-        'SELECT "col", "SUM(a)", "some name" FROM (SELECT "col_1", "col_2", "col_3" FROM "dbtable")'
-    )
-    assert node.sql.sql() == expected
-
-
-def test_assign__escape_names(input_node):
-    """Test assign node properly escape column names"""
-    node = sql.AssignNode(
-        table_node=input_node,
-        column_node=sql.Project(table_node=input_node, column_name="SUM(a)"),
-        name="COUNT(a)",
-    )
+def test_make_input_node_escape_special_characters():
+    """Test input node quotes all identifiers to handle special characters"""
+    parameters = {
+        "columns": ["SUM(a)", "b", "c"],
+        "dbtable": "my_table",
+    }
+    node = sql.make_input_node(parameters=parameters, sql_type=sql.SQLType.PREVIEW)
     expected = textwrap.dedent(
         """
         SELECT
-          "col_1",
-          "col_2",
-          "col_3",
-          "SUM(a)" AS "COUNT(a)"
-        FROM (
-            SELECT
-              "col_1",
-              "col_2",
-              "col_3"
-            FROM "dbtable"
-        )
+          "SUM(a)" AS "SUM(a)",
+          "b" AS "b",
+          "c" AS "c"
+        FROM "my_table"
         """
     ).strip()
     assert node.sql.sql(pretty=True) == expected
