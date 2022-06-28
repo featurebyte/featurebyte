@@ -41,10 +41,12 @@ class Series(QueryObject, OpsMixin):
         Parameters
         ----------
         frame: BaseFrame
+            Parent frame which current series belongs to
 
         Returns
         -------
         Series
+            Reference to current Series
         """
         self._parent_frame = frame
         return self
@@ -380,6 +382,7 @@ class Series(QueryObject, OpsMixin):
         Raises
         ------
         ValueError
+            When the name or parent frame is missing
         """
         if self.name is None:
             raise ValueError("Series object does not have name!")
