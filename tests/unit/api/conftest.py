@@ -39,6 +39,7 @@ def grouped_event_view_fixture(snowflake_event_view):
     """
     EventViewGroupBy fixture
     """
+    snowflake_event_view.cust_id.as_entity("customer")
     grouped = snowflake_event_view.groupby("cust_id")
     assert isinstance(grouped, EventViewGroupBy)
     yield grouped

@@ -101,10 +101,6 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         EventViewGroupBy
             a groupby object that contains information about the groups
         """
-        for key in by_keys:
-            if key not in self.column_entity_map:
-                raise ValueError(f'Column "{key}" is not an entity.')
-
         # pylint: disable=C0415
         from featurebyte.api.groupby import EventViewGroupBy
 

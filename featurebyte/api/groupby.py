@@ -16,7 +16,7 @@ class EventViewGroupBy(OpsMixin):
     EventViewGroupBy class
     """
 
-    def __init__(self, obj: EventView, keys: str | list[str]) -> None:
+    def __init__(self, obj: EventView, keys: str | list[str]):
         if not isinstance(obj, EventView):
             raise TypeError(f"Expect {EventView} object type!")
 
@@ -26,11 +26,13 @@ class EventViewGroupBy(OpsMixin):
         elif isinstance(keys, list):
             keys_value = keys
         else:
-            raise TypeError(f"Grouping {obj} by '{keys}' is not supported!")
+            raise TypeError(f'Grouping {obj} by "{keys}" is not supported!')
 
         for key in keys_value:
             if key not in obj.columns:
-                raise KeyError(f"Column '{key}' not found in {obj}!")
+                raise KeyError(f'Column "{key}" not found!')
+            if key not in obj.column_entity_map:
+                raise ValueError(f'Column "{key}" is not an entity!')
 
         self.obj = obj
         self.keys = keys_value
@@ -100,7 +102,7 @@ class EventViewGroupBy(OpsMixin):
         frequency_seconds, time_modulo_frequency_seconds, blind_spot_seconds = parsed_seconds
 
         if value_column not in self.obj.columns:
-            raise KeyError(f"Column '{value_column}' not found in {self.obj}!")
+            raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
 
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,
