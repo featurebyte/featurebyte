@@ -8,7 +8,6 @@ from typing import Dict, Tuple
 import copy
 
 import pandas as pd
-from pydantic import Field
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
@@ -23,7 +22,6 @@ class BaseFrame(QueryObject):
     """
 
     column_var_type_map: Dict[str, DBVarType]
-    column_entity_map: Dict[str, str] = Field(default_factory=dict)
 
     @property
     def dtypes(self) -> pd.Series:
@@ -167,9 +165,6 @@ class Frame(BaseFrame, OpsMixin):
             column_var_type_map = {
                 col: var_type for col, var_type in self.column_var_type_map.items() if col in item
             }
-            column_entity_map = {
-                col: name for col, name in self.column_entity_map.items() if col in item
-            }
             column_lineage_map = {}
             for col in item:
                 column_lineage_map[col] = self._append_to_lineage(
@@ -179,7 +174,6 @@ class Frame(BaseFrame, OpsMixin):
                 tabular_source=self.tabular_source,
                 node=node,
                 column_var_type_map=column_var_type_map,
-                column_entity_map=column_entity_map,
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self.row_index_lineage,
             )

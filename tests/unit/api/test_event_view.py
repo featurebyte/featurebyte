@@ -145,13 +145,14 @@ def test_setting_column_as_entity__on_sub_frame(snowflake_event_view):
     Test setting a specific column as entity (on sub-frame)
     """
     snowflake_event_view.cust_id.as_entity("customer")
-    sub_frame_first = snowflake_event_view[["cust_id", "col_int"]]
-    assert sub_frame_first.column_entity_map == {"cust_id": "customer"}
+    sub_view_first = snowflake_event_view[["cust_id", "col_int"]]
+    assert isinstance(sub_view_first, EventView)
+    assert sub_view_first.column_entity_map == {"cust_id": "customer"}
 
-    sub_frame_second = snowflake_event_view[["col_int", "col_float"]]
-    assert sub_frame_second.column_entity_map == {}
-    sub_frame_second.col_int.as_entity("col_integer")
-    assert sub_frame_second.column_entity_map == {"col_int": "col_integer"}
+    sub_view_second = snowflake_event_view[["col_int", "col_float"]]
+    assert sub_view_second.column_entity_map == {}
+    sub_view_second.col_int.as_entity("col_integer")
+    assert sub_view_second.column_entity_map == {"col_int": "col_integer"}
 
 
 def test_setting_column_as_entity__invalid_cases(snowflake_event_view):
