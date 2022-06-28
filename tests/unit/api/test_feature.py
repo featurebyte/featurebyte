@@ -8,6 +8,31 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
 
 
+@pytest.fixture(name="float_feature_dict")
+def float_feature_dict_fixture(float_feature):
+    """
+    Serialize float feature in dictionary format
+    """
+    # before serialization, global query graph is used
+    assert set(float_feature.graph.nodes) == {
+        "input_1",
+        "input_2",
+        "project_1",
+        "project_2",
+        "groupby_1",
+    }
+    assert float_feature.graph.edges == {
+        "input_2": ["project_1", "groupby_1"],
+        "groupby_1": ["project_2"],
+    }
+
+    feat_dict = float_feature.dict()
+    # after serialization, pruned query graph is used
+    assert set(feat_dict["graph"]["nodes"]) == {"input_1", "groupby_1", "project_1"}
+    assert feat_dict["graph"]["edges"] == {"input_1": ["groupby_1"], "groupby_1": ["project_1"]}
+    yield feat_dict
+
+
 def test_feature_list__getitem__list_of_str(feature_list):
     """
     Test retrieving single column
@@ -108,3 +133,18 @@ def test_feature__preview_not_a_dict(float_feature):
     with pytest.raises(ValueError) as exc_info:
         float_feature.preview(invalid_params)
     assert "point_in_time_and_entity_id should be a dict" in str(exc_info.value)
+
+
+def test_feature_deserialization(float_feature, float_feature_dict):
+    """
+    Test feature deserialization
+    """
+    global_graph_dict = float_feature.graph.dict()
+    deserialized_float_feature = Feature.parse_obj(float_feature_dict)
+    assert deserialized_float_feature.name == float_feature.name
+    assert deserialized_float_feature.var_type == float_feature.var_type
+    assert deserialized_float_feature.lineage == float_feature.lineage
+    assert deserialized_float_feature.node == float_feature.node
+    assert deserialized_float_feature.graph.dict() == global_graph_dict
+    assert deserialized_float_feature.row_index_lineage == float_feature.row_index_lineage
+    assert deserialized_float_feature.tabular_source == float_feature.tabular_source

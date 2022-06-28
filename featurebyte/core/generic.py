@@ -3,16 +3,16 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Any, Tuple
 
 from abc import abstractmethod
 
 import pandas as pd
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.config import Configurations, Credentials
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
-from featurebyte.query_graph.graph import GlobalQueryGraph, Node
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
@@ -48,7 +48,7 @@ class QueryObject(BaseModel):
     QueryObject class contains query graph, node, row index lineage & session.
     """
 
-    graph: GlobalQueryGraph = Field(default_factory=GlobalQueryGraph)
+    graph: QueryGraph = Field(default_factory=GlobalQueryGraph)
     node: Node
     row_index_lineage: Tuple[str, ...]
     tabular_source: Tuple[FeatureStoreModel, TableDetails]
@@ -58,6 +58,15 @@ class QueryObject(BaseModel):
 
     def __str__(self) -> str:
         return repr(self)
+
+    @root_validator()
+    @classmethod
+    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(values["graph"], GlobalQueryGraph):
+            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
+            values["graph"] = global_graph
+            values["node"] = global_graph.get_node_by_name(node_name_map[values["node"].name])
+        return values
 
     def _preview_sql(self, columns: list[str], limit: int = 10) -> str:
         """
@@ -74,11 +83,15 @@ class QueryObject(BaseModel):
         -------
         str
         """
-        pruned_graph, mapped_node = self.graph.prune(
-            target_node=self.node, target_columns=set(columns)
-        )
-        return GraphInterpreter(pruned_graph).construct_preview_sql(
-            mapped_node.name, num_rows=limit
+        if isinstance(self.graph, GlobalQueryGraph):
+            pruned_graph, mapped_node = self.graph.prune(
+                target_node=self.node, target_columns=set(columns)
+            )
+            return GraphInterpreter(pruned_graph).construct_preview_sql(
+                node_name=mapped_node.name, num_rows=limit
+            )
+        return GraphInterpreter(self.graph).construct_preview_sql(
+            node_name=self.node.name, num_rows=limit
         )
 
     def preview_sql(self, limit: int = 10) -> str:
@@ -134,6 +147,17 @@ class QueryObject(BaseModel):
         data_source = ExtendedFeatureStoreModel(**self.tabular_source[0].dict())
         session = data_source.get_session(credentials=credentials)
         return session
+
+    def _to_dict(self, target_columns: set[str], **kwargs: Any) -> dict[str, Any]:
+        if isinstance(self.graph, GlobalQueryGraph):
+            pruned_graph, mapped_node = self.graph.prune(
+                target_node=self.node, target_columns=target_columns
+            )
+            new_object = self.copy()
+            new_object.graph = pruned_graph
+            new_object.node = mapped_node
+            return new_object.dict(**kwargs)
+        return super().dict(**kwargs)
 
 
 class ProtectedColumnsQueryObject(QueryObject):

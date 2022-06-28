@@ -1,6 +1,8 @@
 """
 Unit test for query graph
 """
+from collections import defaultdict
+
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
@@ -242,6 +244,9 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
         GraphInterpreter(GlobalQueryGraph()).construct_preview_sql(node_global.name)
         == query_before_serialization
     )
+    assert isinstance(graph.edges, defaultdict)
+    assert isinstance(graph.backward_edges, defaultdict)
+    assert isinstance(graph.node_type_counter, defaultdict)
 
     # check that loading the deserialized graph back to global won't affect other node
     pruned_graph_after_load, _ = GlobalQueryGraph().prune(
