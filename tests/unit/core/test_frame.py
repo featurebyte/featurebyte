@@ -289,11 +289,11 @@ def test_frame_column_order(dataframe):
     """
     original_columns = ["CUST_ID", "PRODUCT_ACTION", "VALUE", "MASK"]
     assert dataframe.columns == original_columns
-    dataframe["first_added_column"] = dataframe["CUST_ID"] * 10
+    dataframe["first_added_column"] = dataframe.CUST_ID * 10
     assert dataframe.columns == original_columns + ["first_added_column"]
-    dataframe["second_added_column"] = dataframe["VALUE"] * dataframe["CUST_ID"]
+    dataframe["second_added_column"] = dataframe.VALUE * dataframe.CUST_ID
     assert dataframe.columns == original_columns + ["first_added_column", "second_added_column"]
-    dataframe["third_added_column"] = dataframe["VALUE"] + 1.234
+    dataframe["third_added_column"] = dataframe.VALUE + 1.234
     assert dataframe.columns == original_columns + [
         "first_added_column",
         "second_added_column",
