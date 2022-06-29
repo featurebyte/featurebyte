@@ -27,8 +27,6 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
             "session_id": "INT",
         }
     )
-    print("--->", sqlite_database_table.dtypes)
-    print(expected_dtypes)
     pd.testing.assert_series_equal(expected_dtypes, sqlite_database_table.dtypes)
 
     event_data = EventData.from_tabular_source(

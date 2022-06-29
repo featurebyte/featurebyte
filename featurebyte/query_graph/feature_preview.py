@@ -5,18 +5,16 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-import logging
 import time
 
 import pandas as pd
 from sqlglot import select
 
+from featurebyte.logger import logger
 from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME, prettify_sql
 from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.tile_compute import construct_on_demand_tile_ctes
-
-logger = logging.getLogger("featurebyte")
 
 
 def construct_preview_request_table_sql(
@@ -96,23 +94,20 @@ def get_feature_preview_sql(
     execution_plan = planner.generate_plan(node)
 
     # build required tiles
-    logger.debug("Building required tiles")
     tic = time.time()
     on_demand_tile_ctes = construct_on_demand_tile_ctes(graph, node, point_in_time)
     cte_statements.extend(on_demand_tile_ctes)
     elapsed = time.time() - tic
-    logger.debug(f"Building required tiles took {elapsed:.2}s")
+    logger.debug(f"Constructing required tiles SQL took {elapsed:.2}s")
 
     # prepare request table
-    logger.debug("Uploading request table")
     tic = time.time()
     df_request = pd.DataFrame([point_in_time_and_entity_id])
     request_table_sql = construct_preview_request_table_sql(df_request, ["POINT_IN_TIME"])
     cte_statements.append((REQUEST_TABLE_NAME, request_table_sql))
     elapsed = time.time() - tic
-    logger.debug(f"Uploading request table took {elapsed:.2}s")
+    logger.debug(f"Constructing request table SQL took {elapsed:.2}s")
 
-    logger.debug("Generating full feature SQL")
     tic = time.time()
     preview_sql = execution_plan.construct_combined_sql(
         point_in_time_column="POINT_IN_TIME",

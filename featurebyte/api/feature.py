@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import logging
 import time
 
 import pandas as pd
@@ -14,9 +13,8 @@ from featurebyte.config import Credentials
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.logger import logger
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
-
-logger = logging.getLogger("featurebyte")
 
 
 class FeatureQueryObject(ProtectedColumnsQueryObject):
