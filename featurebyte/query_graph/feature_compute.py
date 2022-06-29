@@ -55,7 +55,7 @@ class RequestTablePlan:
     The REQ_TILE_INDEX column will be used as a join key when joining with the tile table.
     """
 
-    TileIndicesIdType = Tuple[int, int, int, int, Tuple[str, ...]]  # type: ignore[misc]
+    TileIndicesIdType = Tuple[int, int, int, int, Tuple[str, ...]]
 
     def __init__(self) -> None:
         self.expanded_request_table_names: dict[RequestTablePlan.TileIndicesIdType, str] = {}
