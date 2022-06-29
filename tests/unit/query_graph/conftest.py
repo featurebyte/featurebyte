@@ -51,11 +51,12 @@ def query_graph_with_groupby_fixture(graph):
             "keys": ["cust_id"],
             "parent": "a",
             "agg_func": "avg",
-            "time_modulo_frequency": 5,
-            "frequency": 30,
-            "blind_spot": 1,
+            "time_modulo_frequency": 1800,  # 30m
+            "frequency": 3600,  # 1h
+            "blind_spot": 900,  # 15m
             "timestamp": "ts",
-            "windows": [86400],
+            "names": ["a_2h_average", "a_48h_average"],
+            "windows": ["2h", "48h"],
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node],
