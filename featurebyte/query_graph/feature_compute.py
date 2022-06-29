@@ -3,7 +3,7 @@ Module with logic related to feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Tuple
 
 from featurebyte.query_graph.feature_common import (
     REQUEST_TABLE_NAME,
@@ -55,7 +55,7 @@ class RequestTablePlan:
     The REQ_TILE_INDEX column will be used as a join key when joining with the tile table.
     """
 
-    TileIndicesIdType = tuple[int, int, int, int, tuple[str, ...]]  # type: ignore[misc]
+    TileIndicesIdType = Tuple[int, int, int, int, Tuple[str, ...]]  # type: ignore[misc]
 
     def __init__(self) -> None:
         self.expanded_request_table_names: dict[RequestTablePlan.TileIndicesIdType, str] = {}
