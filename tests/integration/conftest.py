@@ -68,6 +68,17 @@ def sqlite_filename_fixture(transaction_data):
         yield file_handle.name
 
 
+def register_snowflake_procedure_or_udf(session, name):
+    """
+    Register a snowflake procedure or UDF
+    """
+    sql_dir = os.path.join(os.path.dirname(__file__), "..", "..", "sql", "snowflake")
+    filename = os.path.join(sql_dir, f"{name}.sql")
+    with open(filename, encoding="utf-8") as file_handle:
+        sql_script = file_handle.read()
+    session.execute_query(sql_script)
+
+
 @pytest.fixture(name="config")
 def config_fixture(sqlite_filename):
     """
@@ -121,7 +132,19 @@ def snowflake_session(transaction_data_upper_case, config):
         """
     )
     write_pandas(session.connection, transaction_data_upper_case, table_name)
+
+    sql_names = ["F_TIMESTAMP_TO_INDEX", "F_COMPUTE_TILE_INDICES"]
+    for name in sql_names:
+        register_snowflake_procedure_or_udf(session, name)
+
     yield session
+
+    session.execute_query(
+        "DROP FUNCTION IF EXISTS F_TIMESTAMP_TO_INDEX(VARCHAR, NUMBER, NUMBER, NUMBER)"
+    )
+    session.execute_query(
+        "DROP FUNCTION IF EXISTS F_COMPUTE_TILE_INDICES(NUMBER, NUMBER, NUMBER, NUMBER, NUMBER)"
+    )
 
 
 @pytest.fixture()

@@ -134,13 +134,17 @@ def compute_start_end_date_from_point_in_time(
     tuple[pd.Timestamp, pd.Timestamp]
         Tuple of start and end dates
     """
+    # Calculate the time of the latest feature job before point in time
     point_in_time_epoch_seconds = get_epoch_seconds(point_in_time)
     last_job_index = (point_in_time_epoch_seconds - time_modulo_frequency) // frequency
     last_job_time_epoch_seconds = last_job_index * frequency + time_modulo_frequency
+
+    # Compute start and end dates based on number of tiles required
     end_date_epoch_seconds = last_job_time_epoch_seconds - blind_spot
     start_date_epoch_seconds = end_date_epoch_seconds - num_tiles * frequency
     start_date = epoch_seconds_to_timestamp(start_date_epoch_seconds)
     end_date = epoch_seconds_to_timestamp(end_date_epoch_seconds)
+
     return start_date, end_date
 
 

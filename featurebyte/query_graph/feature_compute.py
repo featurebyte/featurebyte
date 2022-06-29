@@ -597,7 +597,7 @@ def construct_expanded_request_table_sql(
     FROM REQUEST_TABLE REQ,
     Table(
         Flatten(
-            SELECT COMPUTE_TILE_INDICES(
+            SELECT F_COMPUTE_TILE_INDICES(
                 DATE_PART(epoch, REQ.POINT_IN_TIME),
                 {window_size},
                 {frequency},
