@@ -106,7 +106,7 @@ def test_find_many(git_persistent, test_documents):
 
     docs, total = persistent.find(
         collection_name="data",
-        filter_query={"_id": test_documents[2]["_id"]},
+        filter_query={"id": test_documents[2]["id"]},
         sort_by="id",
         sort_dir="desc",
     )

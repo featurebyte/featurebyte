@@ -20,16 +20,7 @@ app = FastAPI()
 PERSISTENT = None
 
 
-class User:
-    """
-    Skeleton user class to provide static user for API routes
-    """
-
-    # DO NOT CHANGE THIS VALUE
-    id = ObjectId("62a6d9d023e7a8f2a0dc041a")
-
-
-def get_persistent() -> Persistent:
+def _get_persistent() -> Persistent:
     """
     Return global Persistent object
     Returns
@@ -50,7 +41,7 @@ def get_persistent() -> Persistent:
     return PERSISTENT
 
 
-def get_credential(user_id: ObjectId, db_source: DatabaseSourceModel) -> Credential | None:
+def _get_credential(user_id: ObjectId, db_source: DatabaseSourceModel) -> Credential | None:
     """
     Retrieve credential from DatabaseSourceModel
 
@@ -71,7 +62,7 @@ def get_credential(user_id: ObjectId, db_source: DatabaseSourceModel) -> Credent
     return config.credentials.get(db_source)
 
 
-def get_api_deps(controller: type) -> Callable[[Request], None]:
+def _get_api_deps(controller: type) -> Callable[[Request], None]:
     """
     Get API dependency injection function
 
@@ -86,6 +77,13 @@ def get_api_deps(controller: type) -> Callable[[Request], None]:
         Dependency injection function
     """
 
+    class User:
+        """
+        Skeleton user class to provide static user for API routes
+        """
+
+        id = None
+
     def _dep_injection_func(request: Request) -> None:
         """
         Inject dependencies into the requests
@@ -95,12 +93,14 @@ def get_api_deps(controller: type) -> Callable[[Request], None]:
         request: Request
             Request object to be updated
         """
-        request.state.persistent = get_persistent()
+        request.state.persistent = _get_persistent()
         request.state.user = User()
-        request.state.get_credential = get_credential
+        request.state.get_credential = _get_credential
         request.state.controller = controller
 
     return _dep_injection_func
 
 
-app.include_router(event_data_api.router, dependencies=[Depends(get_api_deps(EventDataController))])
+app.include_router(
+    event_data_api.router, dependencies=[Depends(_get_api_deps(EventDataController))]
+)

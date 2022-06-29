@@ -23,7 +23,7 @@ from featurebyte.logger import logger
 from .persistent import DocumentType, DuplicateDocumentError, Persistent
 
 
-def sync_push(func: Any) -> Any:
+def _sync_push(func: Any) -> Any:
     """
     Synchronize git conflicts
 
@@ -208,10 +208,13 @@ class GitDB(Persistent):
             os.mkdir(dir_path)
 
         # ensures document id is set
-        doc_id = document.get("_id")
+        doc_id = document.get("id")
         if not doc_id:
             doc_id = ObjectId()
-            document["_id"] = doc_id
+            document["id"] = doc_id
+
+        # strip user id
+        document.pop("user_id", None)
 
         # create document
         new_doc_name = str(document.get("name", doc_id))
@@ -260,7 +263,7 @@ class GitDB(Persistent):
             return
 
         # remove document
-        doc_name = str(document.get("name", str(document["_id"])))
+        doc_name = str(document.get("name", str(document["id"])))
         doc_path = os.path.join(dir_path, doc_name + ".json")
 
         logger.debug(f"Remove file: {doc_path}")
@@ -294,6 +297,10 @@ class GitDB(Persistent):
         """
         # check unsupported filters
         self._check_filter(filter_query)
+
+        # strip user id
+        filter_query.pop("user_id", None)
+
         filter_items = filter_query.items()
 
         collection_dir = os.path.join(self._working_tree_dir, dir_name)
@@ -331,7 +338,7 @@ class GitDB(Persistent):
             if "$" in key:
                 raise NotImplementedError("$ operators not supported")
 
-    @sync_push
+    @_sync_push
     def insert_one(self, collection_name: str, document: DocumentType) -> ObjectId:
         """
         Insert record into collection
@@ -350,7 +357,7 @@ class GitDB(Persistent):
         """
         return self._add_file(dir_name=collection_name, document=document)
 
-    @sync_push
+    @_sync_push
     def insert_many(
         self, collection_name: str, documents: Iterable[DocumentType]
     ) -> List[ObjectId]:
@@ -428,7 +435,7 @@ class GitDB(Persistent):
         Tuple[Iterable[DocumentType], int]
             Retrieved documents and total count
         """
-        sort_col = sort_by or "_id"
+        sort_col = sort_by or "id"
         self._reset_branch()
         docs = self._find_files(dir_name=collection_name, filter_query=filter_query, multiple=True)
         total = len(docs)
@@ -474,7 +481,7 @@ class GitDB(Persistent):
             update format not supported
         """
         # check unsupported update
-        if len(update) > 1 or next(iter(update.keys())) != "$set" or "_id" in update["$set"]:
+        if len(update) > 1 or next(iter(update.keys())) != "$set" or "id" in update["$set"]:
             raise NotImplementedError("update not supported")
 
         self._reset_branch()
@@ -519,7 +526,7 @@ class GitDB(Persistent):
             update format not supported
         """
         # check unsupported update
-        if len(update) > 1 or next(iter(update.keys())) != "$set" or "_id" in update["$set"]:
+        if len(update) > 1 or next(iter(update.keys())) != "$set" or "id" in update["$set"]:
             raise NotImplementedError("update not supported")
 
         self._reset_branch()

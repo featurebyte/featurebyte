@@ -15,7 +15,7 @@ def test_api_client():
     """
     Test API client
     """
-    with patch("featurebyte.app.get_persistent") as mock_get_persistent:
+    with patch("featurebyte.app._get_persistent") as mock_get_persistent:
         mock_get_persistent.return_value = GitDB()
         with TestClient(app) as client:
             yield client
