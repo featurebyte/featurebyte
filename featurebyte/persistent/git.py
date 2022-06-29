@@ -1,10 +1,12 @@
 """
 Persistent storage using MongoDB
 """
+# pylint: disable=protected-access
 from __future__ import annotations
 
-from typing import Iterable, List, Literal, Optional, Tuple
+from typing import Any, Iterable, List, Literal, Optional, Tuple
 
+import functools
 import json
 import os
 import shutil
@@ -19,6 +21,36 @@ from git.repo.base import Repo
 from featurebyte.logger import logger
 
 from .persistent import DocumentType, DuplicateDocumentError, Persistent
+
+
+def sync_push(func: Any) -> Any:
+    """
+    Synchronize git conflicts
+
+    Parameters
+    ----------
+    func: Any
+        Function to run
+
+    Returns
+    -------
+    Any
+        Return from function
+    """
+
+    @functools.wraps(func)
+    def wrapper_decorator(cls: GitDB, *args: int, **kwargs: str) -> Any:
+        try:
+            value = func(cls, *args, **kwargs)
+            cls._push()
+        except GitCommandError:
+            logger.debug("Git conflict detected. Retrying.")
+            cls._reset_branch()
+            value = func(cls, *args, **kwargs)
+            cls._push()
+        return value
+
+    return wrapper_decorator
 
 
 class GitDB(Persistent):
@@ -98,9 +130,10 @@ class GitDB(Persistent):
         """
         Clean up local repo
         """
-        if self._local_path:
-            logger.debug("Delete local repo", extra={"local_path": self._local_path})
-            shutil.rmtree(self._local_path)
+        local_path = getattr(self, "_local_path", None)
+        if local_path:
+            logger.debug("Delete local repo", extra={"local_path": local_path})
+            shutil.rmtree(local_path)
 
     def _fetch(self) -> None:
         """
@@ -124,7 +157,7 @@ class GitDB(Persistent):
 
         logger.debug("Reset branch to remote", extra={"branch": self._branch})
         self._fetch()
-        self._repo.index.reset(self._origin.refs[self._branch])
+        self._repo.git.reset("--hard", f"origin/{self._branch}")
 
     def _push(self) -> None:
         """
@@ -298,6 +331,7 @@ class GitDB(Persistent):
             if "$" in key:
                 raise NotImplementedError("$ operators not supported")
 
+    @sync_push
     def insert_one(self, collection_name: str, document: DocumentType) -> ObjectId:
         """
         Insert record into collection
@@ -314,11 +348,9 @@ class GitDB(Persistent):
         ObjectId
             Id of the inserted document
         """
-        self._reset_branch()
-        doc_id = self._add_file(dir_name=collection_name, document=document)
-        self._push()
-        return doc_id
+        return self._add_file(dir_name=collection_name, document=document)
 
+    @sync_push
     def insert_many(
         self, collection_name: str, documents: Iterable[DocumentType]
     ) -> List[ObjectId]:
@@ -335,15 +367,11 @@ class GitDB(Persistent):
         Returns
         -------
         List[ObjectId]
-            Ids of the inserted document
+            Ids of the inserted documents
         """
-        self._reset_branch()
-        try:
-            doc_ids = []
-            for document in documents:
-                doc_ids.append(self._add_file(dir_name=collection_name, document=document))
-        finally:
-            self._push()
+        doc_ids = []
+        for document in documents:
+            doc_ids.append(self._add_file(dir_name=collection_name, document=document))
         return doc_ids
 
     def find_one(self, collection_name: str, filter_query: DocumentType) -> Optional[DocumentType]:

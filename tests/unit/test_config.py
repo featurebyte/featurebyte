@@ -46,7 +46,7 @@ def test_configurations():
     # git settings
     assert config.git == GitSettings(
         remote_url="git@github.com:featurebyte/playground.git",
-        ssh_key_path="~/.ssh/id_rsa",
+        key_path="~/.ssh/id_rsa",
         branch="test",
     )
 

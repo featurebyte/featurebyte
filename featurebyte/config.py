@@ -61,7 +61,7 @@ class GitSettings(BaseSettings):
     """
 
     remote_url: GitRepoUrl
-    ssh_key_path: Path
+    key_path: Path
     branch: str
 
 

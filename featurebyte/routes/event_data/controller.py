@@ -30,25 +30,24 @@ class EventDataController:
         """
         Create Event Data
         """
-        # ensure table name does not already exist
         query_filter = {"name": data.name, "user_id": user.id}
-        if persistent.find_one(collection_name=TABLE_NAME, filter_query=query_filter):
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-                detail=f'Event Data "{data.name}" already exists.',
-            )
 
         # init history and set status to draft
-        document = EventData(
-            user_id=user.id,
-            created_at=datetime.datetime.utcnow(),
-            status=EventDataStatus.DRAFT,
-            history=[
+        if data.default_feature_job_setting:
+            history = [
                 FeatureJobSettingHistoryEntry(
                     creation_date=datetime.datetime.utcnow(),
                     setting=data.default_feature_job_setting,
                 )
-            ],
+            ]
+        else:
+            history = []
+
+        document = EventData(
+            user_id=user.id,
+            created_at=datetime.datetime.utcnow(),
+            status=EventDataStatus.DRAFT,
+            history=history,
             **data.dict(),
         )
         try:
