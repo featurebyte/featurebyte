@@ -28,4 +28,4 @@ def test_get_feature_preview_sql(query_graph_with_groupby):
 
     with open("tests/fixtures/expected_preview_sql.sql", encoding="utf-8") as f_handle:
         expected = f_handle.read()
-    assert preview_sql == expected
+    assert preview_sql.strip() == expected.strip()

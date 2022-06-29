@@ -273,7 +273,7 @@ def test_graph_interpreter_snowflake(graph):
             "frequency": 3600,
             "blind_spot": 1,
             "timestamp": "SERVER_TIMESTAMP",
-            "windows": [86400],
+            "windows": ["1d"],
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],
