@@ -14,7 +14,7 @@ from enum import Enum
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.feature_sql import AggregationSpec
+from featurebyte.query_graph.feature_common import AggregationSpec
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 

@@ -1,14 +1,54 @@
 """
-Common data structures for feature SQL generation
+Common helpers and data structures for feature SQL generation
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 import pandas as pd
+import sqlglot
 
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.tiling import get_aggregator, get_tile_table_identifier
+
+REQUEST_TABLE_NAME = "REQUEST_TABLE"
+
+
+def prettify_sql(sql_str: str) -> str:
+    """Reformat sql code using sqlglot
+
+    Parameters
+    ----------
+    sql_str : str
+        SQL code to be prettified
+
+    Returns
+    -------
+    str
+    """
+    result = sqlglot.parse_one(sql_str).sql(pretty=True)
+    assert isinstance(result, str)
+    return result
+
+
+def construct_cte_sql(cte_statements: list[tuple[str, str]]) -> str:
+    """Construct CTEs section of a SQL code
+
+    Parameters
+    ----------
+    cte_statements : list[tuple[str, str]]
+        List of CTE statements
+
+    Returns
+    -------
+    str
+    """
+    cte_definitions = []
+    for table_name, table_statement in cte_statements:
+        cte_definitions.append(f"{table_name} AS ({table_statement})")
+    cte_sql = ",\n".join(cte_definitions)
+    cte_sql = f"WITH {cte_sql}"
+    return cte_sql
 
 
 @dataclass
