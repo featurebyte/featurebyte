@@ -36,6 +36,10 @@ def get_persistent() -> Persistent:
     -------
     Persistent
         Persistent object
+    Raises
+    ------
+    ValueError
+        Git configurations not available
     """
     global PERSISTENT  # pylint: disable=global-statement
     if not PERSISTENT:

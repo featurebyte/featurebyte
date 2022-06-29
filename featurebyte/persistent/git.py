@@ -313,11 +313,6 @@ class GitDB(Persistent):
         -------
         ObjectId
             Id of the inserted document
-
-        Raises
-        ------
-        DuplicateDocumentError
-            Document already exist
         """
         self._reset_branch()
         doc_id = self._add_file(dir_name=collection_name, document=document)
@@ -341,18 +336,12 @@ class GitDB(Persistent):
         -------
         List[ObjectId]
             Ids of the inserted document
-
-        Raises
-        ------
-        DuplicateDocumentError
-            Document already exist
         """
         self._reset_branch()
         try:
-            doc_ids = [
-                self._add_file(dir_name=collection_name, document=document)
-                for document in documents
-            ]
+            doc_ids = []
+            for document in documents:
+                doc_ids.append(self._add_file(dir_name=collection_name, document=document))
         finally:
             self._push()
         return doc_ids
@@ -450,6 +439,11 @@ class GitDB(Persistent):
         -------
         int
             Number of records modified
+
+        Raises
+        ------
+        NotImplementedError
+            update format not supported
         """
         # check unsupported update
         if len(update) > 1 or next(iter(update.keys())) != "$set" or "_id" in update["$set"]:
@@ -490,6 +484,11 @@ class GitDB(Persistent):
         -------
         int
             Number of records modified
+
+        Raises
+        ------
+        NotImplementedError
+            update format not supported
         """
         # check unsupported update
         if len(update) > 1 or next(iter(update.keys())) != "$set" or "_id" in update["$set"]:

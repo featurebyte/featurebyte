@@ -16,6 +16,7 @@ env:
   SNOWFLAKE_DATABASE: FEATUREBYTE_TESTING
   SNOWFLAKE_SCHEMA: PUBLIC
   SNOWFLAKE_SCHEMA_FEATUREBYTE: FEATUREBYTE
+  GIT_SSH_KEY_PATH: ./git_key
 
 jobs:
   build:
@@ -54,6 +55,7 @@ jobs:
 
     - name: Run tests
       run: |
+        echo "${{ secrets.PLAYGROUND_PRIVATE_KEY }}" > ./git_key
         make test
 
     - name: Run safety checks
