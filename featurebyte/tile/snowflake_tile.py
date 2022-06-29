@@ -8,6 +8,7 @@ from typing import Any, Dict
 from jinja2 import Template
 from pydantic import BaseModel, Field, PrivateAttr, root_validator, validator
 
+from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedDatabaseSourceModel
 from featurebyte.logger import logger
 from featurebyte.models.event_data import DatabaseSourceModel
@@ -64,6 +65,8 @@ class TileSnowflake(BaseModel):
         hash value of tile id and name
     tabular_source: DatabaseSourceModel
         datasource instance
+    credentials: Credentials
+        credentials to the datasource
     """
 
     feature_name: str
@@ -74,6 +77,7 @@ class TileSnowflake(BaseModel):
     column_names: str
     tile_id: str
     tabular_source: DatabaseSourceModel
+    credentials: Credentials
     _session: BaseSession = PrivateAttr()
 
     def __init__(self, **kw: Any) -> None:
@@ -87,7 +91,7 @@ class TileSnowflake(BaseModel):
         """
         super().__init__(**kw)
         data_source = ExtendedDatabaseSourceModel(**self.tabular_source.dict())
-        self._session = data_source.get_session(credentials=kw["credentials"])
+        self._session = data_source.get_session(credentials=self.credentials)
 
     # pylint: disable=E0213
     @validator("feature_name", "tile_id", "column_names")
@@ -168,9 +172,6 @@ class TileSnowflake(BaseModel):
 
         Parameters
         ----------
-
-        Returns
-        -------
 
         """
         for t_type in ["ONLINE", "OFFLINE"]:

@@ -13,6 +13,8 @@ import yaml
 from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
+from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
+from featurebyte.models.event_data import EventDataStatus, Feature
 from featurebyte.session.manager import SessionManager
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
@@ -152,6 +154,7 @@ def snowflake_featurebyte_session(config):
         "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql",
         "T_TILE_REGISTRY.sql",
         "T_FEATURE_REGISTRY.sql",
+        "T_FEATURE_LIST_REGISTRY.sql",
     ]
     for sql_file in sql_file_list:
         with open(os.path.join(sql_dir, sql_file), encoding="utf8") as file:
@@ -199,3 +202,30 @@ def snowflake_tile(fb_db_session, config):
     fb_db_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
     fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
     fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+
+
+@pytest.fixture
+def snowflake_feature(fb_db_session, config):
+    """
+    Pytest Fixture for FeatureSnowflake instance
+    """
+    feature = Feature(
+        name="test_feature1",
+        version="v1",
+        status=EventDataStatus.DRAFT,
+        is_default=True,
+        time_modulo_frequency_second=183,
+        blind_spot_second=3,
+        frequency_minute=5,
+        tile_sql="SELECT * FROM DUMMY",
+        column_names="col1",
+        tile_id="tile_id1",
+        online_enabled=False,
+        datasource=config.db_sources["snowflake_datasource"],
+    )
+
+    s_feature = FeatureSnowflake(feature=feature, credentials=config.credentials)
+
+    yield s_feature
+
+    fb_db_session.execute_query("DELETE FROM FEATURE_REGISTRY")

@@ -55,7 +55,7 @@ def test_insert_tile_registry(snowflake_tile, fb_db_session):
     result = fb_db_session.execute_query(sql)
     assert len(result) == 1
     assert result["TILE_ID"].iloc[0] == snowflake_tile.tile_id
-    assert result["ENABLED"].iloc[0] == "Y"
+    assert bool(result["ENABLED"].iloc[0]) is True
 
     flag = snowflake_tile.insert_tile_registry()
     assert flag is False
@@ -64,7 +64,7 @@ def test_insert_tile_registry(snowflake_tile, fb_db_session):
     result = fb_db_session.execute_query(sql)
     assert len(result) == 1
     assert result["TILE_ID"].iloc[0] == snowflake_tile.tile_id
-    assert result["ENABLED"].iloc[0] == "Y"
+    assert bool(result["ENABLED"].iloc[0]) is True
 
 
 def test_disable_tiles(snowflake_tile, fb_db_session):
@@ -78,7 +78,7 @@ def test_disable_tiles(snowflake_tile, fb_db_session):
     result = fb_db_session.execute_query(sql)
     assert len(result) == 1
     assert result["TILE_ID"].iloc[0] == snowflake_tile.tile_id
-    assert result["ENABLED"].iloc[0] == "Y"
+    assert bool(result["ENABLED"].iloc[0]) is True
 
     # disable tile jobs
     snowflake_tile.disable_tiles()
@@ -87,4 +87,4 @@ def test_disable_tiles(snowflake_tile, fb_db_session):
     result = fb_db_session.execute_query(sql)
     assert len(result) == 1
     assert result["TILE_ID"].iloc[0] == snowflake_tile.tile_id
-    assert result["ENABLED"].iloc[0] == "N"
+    assert bool(result["ENABLED"].iloc[0]) is False

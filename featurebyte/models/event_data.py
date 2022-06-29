@@ -147,6 +147,10 @@ class Feature(BaseModel):
         Name of the Feature
     status : EventDataStatus
         Status of the Feature
+    version : str
+        feature version
+    is_default : bool
+        whether it is the default feature
     time_modulo_frequency_seconds: int
         time modulo seconds for the tile
     blind_spot_seconds: int
@@ -159,17 +163,23 @@ class Feature(BaseModel):
         comma separated string of column names for the tile table
     tile_id: str
         hash value of tile id and name
+    online_enabled: bool
+        whether feature is online enabled or not
     datasource: DatabaseSourceModel
         datasource instance
     """
 
     name: str
     status: EventDataStatus
+    version: str
+    is_default: bool
+
     time_modulo_frequency_second: int
     blind_spot_second: int
     frequency_minute: int
     tile_sql: str
     column_names: str
     tile_id: str
-    oneline_enabled: str
+
+    online_enabled: bool
     datasource: DatabaseSourceModel
