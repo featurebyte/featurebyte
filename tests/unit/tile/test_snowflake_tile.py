@@ -29,13 +29,11 @@ def test_construct_snowflaketile_time_modulo_error(mock_execute_query, snowflake
     assert "time_modulo_frequency_seconds must be less than 180" in str(excinfo.value)
 
 
-def test_generate_tiles(mock_snowflake_tile, config):
+def test_generate_tiles(mock_snowflake_tile):
     """
     Test generate_tiles method in TileSnowflake
     """
-    sql = mock_snowflake_tile.generate_tiles(
-        "ONLINE", "2022-06-20 15:00:00", "2022-06-21 15:00:00", credentials=config.credentials
-    )
+    sql = mock_snowflake_tile.generate_tiles("ONLINE", "2022-06-20 15:00:00", "2022-06-21 15:00:00")
     expected_sql = """
         call SP_TILE_GENERATE(
             'select c1 from dummy
@@ -47,11 +45,11 @@ def test_generate_tiles(mock_snowflake_tile, config):
     assert "".join(sql.split()) == "".join(expected_sql.split())
 
 
-def test_schedule_online_tiles(mock_snowflake_tile, config):
+def test_schedule_online_tiles(mock_snowflake_tile):
     """
     Test schedule_online_tiles method in TileSnowflake
     """
-    sql = mock_snowflake_tile.schedule_online_tiles(credentials=config.credentials)
+    sql = mock_snowflake_tile.schedule_online_tiles()
     expected_sql = """
         CREATE OR REPLACE TASK SHELL_TASK_TILE_ID1_ONLINE
           WAREHOUSE = sf_warehouse
@@ -65,11 +63,11 @@ def test_schedule_online_tiles(mock_snowflake_tile, config):
     assert "".join(sql.split()) == "".join(expected_sql.split())
 
 
-def test_schedule_offline_tiles(mock_snowflake_tile, config):
+def test_schedule_offline_tiles(mock_snowflake_tile):
     """
     Test schedule_offline_tiles method in TileSnowflake
     """
-    sql = mock_snowflake_tile.schedule_offline_tiles(credentials=config.credentials)
+    sql = mock_snowflake_tile.schedule_offline_tiles()
     expected_sql = """
         CREATE OR REPLACE TASK SHELL_TASK_TILE_ID1_OFFLINE
           WAREHOUSE = sf_warehouse
@@ -84,14 +82,14 @@ def test_schedule_offline_tiles(mock_snowflake_tile, config):
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_insert_tile_registry(mock_execute_query, mock_snowflake_tile, config):
+def test_insert_tile_registry(mock_execute_query, mock_snowflake_tile):
     """
     Test schedule_offline_tiles method in TileSnowflake
     """
     mock_execute_query.return_value = ["Element"]
-    flag = mock_snowflake_tile.insert_tile_registry(credentials=config.credentials)
+    flag = mock_snowflake_tile.insert_tile_registry()
     assert flag is False
 
     mock_execute_query.return_value = []
-    flag = mock_snowflake_tile.insert_tile_registry(credentials=config.credentials)
+    flag = mock_snowflake_tile.insert_tile_registry()
     assert flag is True

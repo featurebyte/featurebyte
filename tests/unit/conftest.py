@@ -244,7 +244,7 @@ def session_manager_fixture(config, snowflake_connector):
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_tile(mock_execute_query, snowflake_database_source, snowflake_connector):
+def mock_snowflake_tile(mock_execute_query, snowflake_database_source, snowflake_connector, config):
     """
     Pytest Fixture for TileSnowflake instance
     """
@@ -260,6 +260,7 @@ def mock_snowflake_tile(mock_execute_query, snowflake_database_source, snowflake
         column_names="c1",
         tile_id="tile_id1",
         tabular_source=snowflake_database_source,
+        credentials=config.credentials,
     )
 
     return tile_s

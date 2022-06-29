@@ -163,8 +163,8 @@ class Feature(BaseModel):
         datasource instance
     """
 
-    name: EventDataStatus
-    status: str
+    name: str
+    status: EventDataStatus
     time_modulo_frequency_second: int
     blind_spot_second: int
     frequency_minute: int

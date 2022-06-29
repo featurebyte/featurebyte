@@ -190,6 +190,7 @@ def snowflake_tile(fb_db_session, config):
         column_names=col_names,
         tile_id="tile_id1",
         tabular_source=config.db_sources["snowflake_datasource"],
+        credentials=config.credentials,
     )
 
     yield tile_s
