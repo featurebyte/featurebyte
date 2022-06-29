@@ -19,12 +19,16 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
     sqlite_database_table = sqlite_database_source["test_table", config.credentials]
     expected_dtypes = pd.Series(
         {
+            "event_timestamp": "VARCHAR",
             "created_at": "INT",
             "cust_id": "INT",
+            "user_id": "INT",
             "product_action": "VARCHAR",
             "session_id": "INT",
         }
     )
+    print("--->", sqlite_database_table.dtypes)
+    print(expected_dtypes)
     pd.testing.assert_series_equal(expected_dtypes, sqlite_database_table.dtypes)
 
     event_data = EventData.from_tabular_source(
@@ -34,7 +38,14 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
         credentials=config.credentials,
     )
     event_view = EventView.from_event_data(event_data)
-    assert event_view.columns == ["created_at", "cust_id", "product_action", "session_id"]
+    assert event_view.columns == [
+        "event_timestamp",
+        "created_at",
+        "cust_id",
+        "user_id",
+        "product_action",
+        "session_id",
+    ]
 
     # need to specify the constant as float, otherwise results will get truncated
     event_view["cust_id_x_session_id"] = event_view["cust_id"] * event_view["session_id"] / 1000.0
