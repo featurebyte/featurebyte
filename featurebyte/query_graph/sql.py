@@ -212,7 +212,8 @@ class GenericInputNode(TableNode):
             col = expressions.Identifier(this=col, quoted=True)
             select_args.append(expressions.alias_(expr, col))
         select_expr = select(*select_args)
-        dbtable = escape_column_name(self.dbtable)
+        # table name is fully qualified and should be quoted already
+        dbtable = self.dbtable
         select_expr = select_expr.from_(dbtable)
         return select_expr
 

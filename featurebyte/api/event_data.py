@@ -84,7 +84,7 @@ class EventData(EventDataModel, DatabaseTable):
         """
         node_parameters = tabular_source.node.parameters.copy()
         database_source = DatabaseSource(**node_parameters["database_source"])
-        table_name = node_parameters["dbtable"]
+        table_name = tabular_source.tabular_source[1]
         return EventData(
             name=name,
             tabular_source=(database_source, table_name),

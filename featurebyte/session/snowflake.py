@@ -6,11 +6,15 @@ from __future__ import annotations
 from typing import Any
 
 import json
+import os
 
 from pydantic import Field
 from snowflake import connector
 
+import featurebyte
+from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType, SourceType
+from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
 from featurebyte.session.enum import SnowflakeDataType
 
@@ -37,8 +41,9 @@ class SnowflakeSession(BaseSession):
             account=data["account"],
             warehouse=data["warehouse"],
             database=data["database"],
-            schema=data["sf_schema"],
+            schema=self._get_featurebyte_schema_name(),
         )
+        self._init_featurebyte_schema_if_needed()
 
     def list_tables(self) -> list[str]:
         tables = self.execute_query(f'SHOW TABLES IN SCHEMA "{self.database}"."{self.sf_schema}"')
@@ -83,3 +88,36 @@ class SnowflakeSession(BaseSession):
                 for _, (column_name, var_info) in schema[["column_name", "data_type"]].iterrows()
             }
         return column_name_type_map
+
+    def _init_featurebyte_schema_if_needed(self):
+        featurebyte_schema_name = self._connection.schema
+        available_schemas = self.execute_query("SHOW SCHEMAS")["name"].tolist()
+        if featurebyte_schema_name not in available_schemas:
+            logger.debug(f"Initializing schema {featurebyte_schema_name}")
+            self.execute_query(f"CREATE SCHEMA {featurebyte_schema_name}")
+            self._register_custom_functions()
+
+    def _register_custom_functions(self):
+        for sql_filename in get_custom_function_sql_filenames():
+            logger.debug(f"Executing {sql_filename}")
+            with open(sql_filename, encoding="utf-8") as file_handle:
+                self.execute_query(file_handle.read())
+
+    def _get_featurebyte_schema_name(self) -> str:
+        return Configurations().snowflake.featurebyte_schema
+
+
+def get_custom_function_sql_filenames() -> list[str]:
+    """Find the sourcefiles for all user defined functions and stored procedure
+
+    Returns
+    -------
+    list[str]
+    """
+    sql_directory = os.path.join(os.path.dirname(featurebyte.__file__), "..", "sql", "snowflake")
+    output = []
+    for filename in os.listdir(sql_directory):
+        if filename.startswith("F_") or filename.startswith("SP_"):
+            full_filename = os.path.join(sql_directory, filename)
+            output.append(full_filename)
+    return output
