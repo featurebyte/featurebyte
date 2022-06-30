@@ -222,6 +222,13 @@ def dataframe_fixture(graph, snowflake_database_source):
             "columns": list(column_var_type_map.keys()),
             "timestamp": "VALUE",
             "dbtable": "transaction",
+            "database_source": {
+                "type": "snowflake",
+                "details": {
+                    "database": "db",
+                    "sf_schema": "public",
+                },
+            },
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
