@@ -57,6 +57,8 @@ jobs:
       run: |
         echo "${{ secrets.PLAYGROUND_PRIVATE_KEY }}" > /tmp/git_key
         chmod 400 /tmp/git_key
+        git config --global user.email "github@featurebyte.com"
+        git config --global user.name "FeatureByte Github Testing"
         make test
 
     - name: Run safety checks
