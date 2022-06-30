@@ -46,14 +46,15 @@ def sqlite_database_source_fixture(config, graph):
 @patch("featurebyte.session.sqlite.sqlite3", Mock())
 def test_session_manager__get_cached_properly(
     snowflake_database_source,
-    snowflake_execute_query,
     sqlite_database_source,
+    snowflake_execute_query,
     session_manager,
     caplog_handle,
 ):
     """
     Test session manager get cached properly
     """
+    _ = snowflake_execute_query
     # check no record emit
     assert caplog_handle.records == []
 

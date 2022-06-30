@@ -128,6 +128,7 @@ def mock_snowflake_execute_query():
         res = query_map.get(query)
         if res is not None:
             return pd.DataFrame(res)
+        return None
 
     with mock.patch(
         "featurebyte.session.snowflake.SnowflakeSession.execute_query"

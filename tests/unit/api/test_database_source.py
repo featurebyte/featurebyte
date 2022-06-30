@@ -10,7 +10,7 @@ def test_get_session(
     """
     Test DatabaseSource.get_session return expected session
     """
-    _ = snowflake_connector
+    _ = snowflake_connector, snowflake_execute_query
     session = snowflake_database_source.get_session(credentials=config.credentials)
     assert session.dict() == {
         "source_type": "snowflake",

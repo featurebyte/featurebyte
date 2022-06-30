@@ -22,6 +22,7 @@ def query_graph():
 
 @pytest.fixture(name="node_input")
 def node_input_fixture(graph):
+    """Fixture for a generic input node"""
     node_params = {
         "columns": ["ts", "cust_id", "a", "b"],
         "timestamp": "ts",
