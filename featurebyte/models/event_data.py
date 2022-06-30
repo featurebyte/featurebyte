@@ -52,24 +52,6 @@ class DatabaseSourceModel(BaseModel):
         """
         return hash(str(self.type) + str(self.details))
 
-    def get_fully_qualified_table_name(self, table_name: str) -> str:
-        """
-        Get fully qualified table name
-
-        Parameters
-        ----------
-        table_name : str
-            Table name
-
-        Returns
-        -------
-        str
-        """
-        if self.type == SourceType.SNOWFLAKE:
-            assert isinstance(self.details, SnowflakeDetails)
-            return f'"{self.details.database}"."{self.details.sf_schema}"."{table_name}"'
-        return table_name
-
 
 class FeatureJobSetting(BaseModel):
     """Model for Feature Job Setting"""

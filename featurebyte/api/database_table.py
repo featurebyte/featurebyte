@@ -84,13 +84,12 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
 
         session = database_source.get_session(credentials=credentials)
         table_schema = session.list_table_schema(table_name=table_name)
-        dbtable = database_source.get_fully_qualified_table_name(table_name=table_name)
 
         node = GlobalQueryGraph().add_operation(
             node_type=NodeType.INPUT,
             node_params={
                 "columns": list(table_schema.keys()),
-                "dbtable": dbtable,
+                "dbtable": table_name,
                 "database_source": database_source.dict(),
                 **cls._get_other_input_node_parameters(values),
             },
