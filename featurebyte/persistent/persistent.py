@@ -5,7 +5,9 @@ from typing import Any, Iterable, Literal, Mapping, Optional, Tuple, Union
 
 from abc import ABC, abstractmethod
 
-from pymongo.typings import _DocumentIn, _DocumentType, _Pipeline
+from pymongo.typings import _DocumentIn, _Pipeline
+
+DocumentType = Mapping[str, Any]
 
 
 class DuplicateDocumentError(Exception):
@@ -58,7 +60,7 @@ class Persistent(ABC):
     @abstractmethod
     def find_one(
         self, collection_name: str, filter_query: Mapping[str, Any]
-    ) -> Optional[_DocumentType]:
+    ) -> Optional[DocumentType]:
         """
         Find one record from collection
 
@@ -71,7 +73,7 @@ class Persistent(ABC):
 
         Returns
         -------
-        Optional[_DocumentType]
+        Optional[DocumentType]
             Retrieved document
         """
         return NotImplemented
@@ -85,7 +87,7 @@ class Persistent(ABC):
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
         page_size: int = 0,
-    ) -> Tuple[Iterable[_DocumentType], int]:
+    ) -> Tuple[Iterable[DocumentType], int]:
         """
         Find all records from collection
 
@@ -106,7 +108,7 @@ class Persistent(ABC):
 
         Returns
         -------
-        Tuple[Iterable[_DocumentType], int]
+        Tuple[Iterable[DocumentType], int]
             Retrieved documents and total count
         """
         return NotImplemented

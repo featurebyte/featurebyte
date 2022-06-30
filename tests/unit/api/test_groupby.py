@@ -17,8 +17,21 @@ def test_constructor(snowflake_event_view, keys, expected_keys):
     """
     Test constructor
     """
+    # set key columns as entity
+    for column in expected_keys:
+        snowflake_event_view[column].as_entity(column)
+
     grouped = EventViewGroupBy(obj=snowflake_event_view, keys=keys)
     assert grouped.keys == expected_keys
+
+
+def test_constructor__non_entity_by_keys(snowflake_event_view):
+    """
+    Test constructor when invalid group by keys are used
+    """
+    with pytest.raises(ValueError) as exc:
+        _ = EventViewGroupBy(obj=snowflake_event_view, keys=["cust_id"])
+    assert 'Column "cust_id" is not an entity!' in str(exc.value)
 
 
 def test_constructor__wrong_input_type(snowflake_event_view):
@@ -32,10 +45,7 @@ def test_constructor__wrong_input_type(snowflake_event_view):
 
     with pytest.raises(TypeError) as exc:
         EventViewGroupBy(snowflake_event_view, True)
-    expected_msg = (
-        "Grouping EventView(node.name=input_2, timestamp_column=event_timestamp, entity_identifiers=[]) "
-        "by 'True' is not supported!"
-    )
+    expected_msg = 'Grouping EventView(node.name=input_2, timestamp_column=event_timestamp) by "True" is not supported!'
     assert expected_msg in str(exc.value)
 
 
@@ -45,27 +55,25 @@ def test_constructor__keys_column_not_found(snowflake_event_view):
     """
     with pytest.raises(KeyError) as exc:
         EventViewGroupBy(obj=snowflake_event_view, keys="random_column")
-    expected_msg = (
-        "Column 'random_column' not found in "
-        "EventView(node.name=input_2, timestamp_column=event_timestamp, entity_identifiers=[])!"
-    )
-    assert expected_msg in str(exc.value)
+    assert 'Column "random_column" not found!' in str(exc.value)
 
+    snowflake_event_view.cust_id.as_entity("customer")
     with pytest.raises(KeyError) as exc:
         EventViewGroupBy(obj=snowflake_event_view, keys=["cust_id", "random_column"])
-    assert expected_msg in str(exc.value)
+    assert 'Column "random_column" not found!' in str(exc.value)
 
 
 def test_groupby__value_column_not_found(snowflake_event_view):
     """
     Test cases when value column not found in the EventView
     """
+    snowflake_event_view.cust_id.as_entity("customer")
     grouped = EventViewGroupBy(obj=snowflake_event_view, keys="cust_id")
     with pytest.raises(KeyError) as exc:
         grouped.aggregate(
             "non_existing_column", "count", ["1d"], "5m", "1h", "10m", ["feature_name"]
         )
-    expected_msg = "Column 'non_existing_column' not found"
+    expected_msg = 'Column "non_existing_column" not found'
     assert expected_msg in str(exc.value)
 
 
@@ -73,6 +81,7 @@ def test_groupby__wrong_method(snowflake_event_view):
     """
     Test not valid aggregation method passed to groupby
     """
+    snowflake_event_view.cust_id.as_entity("customer")
     grouped = EventViewGroupBy(obj=snowflake_event_view, keys="cust_id")
     with pytest.raises(ValueError) as exc:
         grouped.aggregate("a", "unknown_method", ["1d"], "5m", "1h", "10m", ["feature_name"])

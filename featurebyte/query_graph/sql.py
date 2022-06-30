@@ -5,15 +5,23 @@ from __future__ import annotations
 
 from typing import Any
 
-# pylint: disable=W0511 (fixme)
-# pylint: disable=R0903 (too-few-public-methods)
+# pylint: disable=too-few-public-methods
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from dataclasses import dataclass
+from enum import Enum
 
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
+
+
+class SQLType(Enum):
+    """Type of SQL code corresponding to different operations"""
+
+    BUILD_TILE = "build_tile"
+    PREVIEW = "preview"
 
 
 def escape_column_name(column_name: str) -> str:
@@ -68,11 +76,19 @@ class SQLNode(ABC):
         """
 
 
+@dataclass  # type: ignore[misc]
 class TableNode(SQLNode, ABC):
-    """Nodes that produce table-like output that can be used as nested input"""
+    """Nodes that produce table-like output that can be used as nested input
+
+    Parameters
+    ----------
+    columns_map : dict[str, Expression]
+        This mapping keeps track of the expression currently associated with each column name
+    """
+
+    columns_map: dict[str, Expression]
 
     @property
-    @abstractmethod
     def columns(self) -> list[str]:
         """Columns that are available in this table
 
@@ -81,6 +97,7 @@ class TableNode(SQLNode, ABC):
         List[str]
             List of column names
         """
+        return list(self.columns_map.keys())
 
     def sql_nested(self) -> Expression:
         """SQL expression that can be used within from_() to form a nested query
@@ -93,6 +110,45 @@ class TableNode(SQLNode, ABC):
         sql = self.sql
         assert isinstance(sql, expressions.Subqueryable)
         return sql.subquery()
+
+    def set_column_expr(self, column_name: str, expr: Expression) -> None:
+        """Set expression for a column name
+
+        Parameters
+        ----------
+        column_name : str
+            Column name
+        expr : Expression
+            SQL expression
+        """
+        self.columns_map[column_name] = expr
+
+    def get_column_expr(self, column_name: str) -> Expression:
+        """Get expression for a column name
+
+        Parameters
+        ----------
+        column_name : str
+            Column name
+
+        Returns
+        -------
+        Expression
+        """
+        return self.columns_map[column_name]
+
+    def set_columns_map(self, columns_map: dict[str, Expression]) -> None:
+        """Set column-expression mapping to the provided mapping
+
+        The default implementation simply sets self.columns_map to the provided dict. However, nodes
+        such as FilterFrame need to override this.
+
+        Parameters
+        ----------
+        columns_map : dict[str, Expression]
+            Column names to expressions mapping
+        """
+        self.columns_map = columns_map
 
 
 @dataclass  # type: ignore
@@ -143,10 +199,6 @@ class GenericInputNode(TableNode):
     dbtable: str
 
     @property
-    def columns(self) -> list[str]:
-        return self.column_names
-
-    @property
     def sql(self) -> Expression:
         """Construct a sql expression
 
@@ -155,8 +207,11 @@ class GenericInputNode(TableNode):
         Expression
             A sqlglot Expression object
         """
-        columns = escape_column_names(self.columns)
-        select_expr = select(*columns)
+        select_args = []
+        for col, expr in self.columns_map.items():
+            col = expressions.Identifier(this=col, quoted=True)
+            select_args.append(expressions.alias_(expr, col))
+        select_expr = select(*select_args)
         dbtable = escape_column_name(self.dbtable)
         select_expr = select_expr.from_(dbtable)
         return select_expr
@@ -208,24 +263,7 @@ class Project(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return parse_one(escape_column_name(self.column_name))
-
-
-@dataclass
-class ProjectMulti(TableNode):
-    """Project node for multiple columns"""
-
-    input_node: TableNode
-    column_names: list[str]
-
-    @property
-    def columns(self) -> list[str]:
-        return self.column_names
-
-    @property
-    def sql(self) -> Expression:
-        column_names = escape_column_names(self.column_names)
-        return select(*column_names).from_(self.input_node.sql_nested())
+        return self.table_node.get_column_expr(self.column_name)
 
 
 @dataclass
@@ -235,9 +273,22 @@ class FilteredFrame(TableNode):
     input_node: TableNode
     mask: ExpressionNode
 
-    @property
-    def columns(self) -> list[str]:
-        return self.input_node.columns
+    def set_columns_map(self, columns_map: dict[str, Expression]) -> None:
+        """Set column-expression mapping to the provided mapping
+
+        This overrides the default implementation because FilteredFrame offloads generation of the
+        pre-filtered SQL to the input_node. Setting columns_map attribute of FilteredFrame itself
+        only has effect if the columns_map is also applied to the input_node as well.
+
+        One scenario that is affected by this is Filter then Project.
+
+        Parameters
+        ----------
+        columns_map : dict[str, Expression]
+            Column names to expressions mapping
+        """
+        self.input_node.set_columns_map(columns_map)
+        super().set_columns_map(columns_map)
 
     @property
     def sql(self) -> Expression:
@@ -265,31 +316,6 @@ class FilteredSeries(ExpressionNode):
 
 
 @dataclass
-class AssignNode(TableNode):
-    """Assign node"""
-
-    table_node: TableNode
-    column_node: SQLNode
-    name: str
-
-    @property
-    def columns(self) -> list[str]:
-        return [x for x in self.table_node.columns if x != self.name] + [self.name]
-
-    @property
-    def sql(self) -> Expression:
-        existing_columns = [col for col in self.table_node.columns if col != self.name]
-        existing_columns = escape_column_names(existing_columns)
-        select_expr = select(*existing_columns)
-        # expressions.alias_ is a bit special - if we pass a quoted string as the alias name, it
-        # will be double quoted (e.g. ""a""). So, here an Identifier is constructed directly.
-        name_identifier = expressions.Identifier(this=self.name, quoted=True)
-        select_expr = select_expr.select(expressions.alias_(self.column_node.sql, name_identifier))
-        select_expr = select_expr.from_(self.table_node.sql_nested())
-        return select_expr
-
-
-@dataclass
 class BuildTileNode(TableNode):
     """Tile builder node
 
@@ -302,10 +328,6 @@ class BuildTileNode(TableNode):
     timestamp: str
     agg_func: str
     frequency: int
-
-    @property
-    def columns(self) -> list[str]:
-        return ["tile_start_date"] + self.keys + [spec.tile_column_name for spec in self.tile_specs]
 
     @property
     def sql(self) -> Expression:
@@ -448,7 +470,7 @@ def make_project_node(
     input_sql_nodes: list[SQLNode],
     parameters: dict[str, Any],
     output_type: NodeOutputType,
-) -> Project | ProjectMulti:
+) -> Project | TableNode:
     """Create a Project or ProjectMulti node
 
     Parameters
@@ -462,17 +484,25 @@ def make_project_node(
 
     Returns
     -------
-    Project | ProjectMulti
+    Project | TableNode
         The appropriate SQL node for projection
     """
     table_node = input_sql_nodes[0]
     assert isinstance(table_node, TableNode)
     columns = parameters["columns"]
-    sql_node: Project | ProjectMulti
+    sql_node: Project | TableNode
     if output_type == NodeOutputType.SERIES:
         sql_node = Project(table_node=table_node, column_name=columns[0])
     else:
-        sql_node = ProjectMulti(input_node=table_node, column_names=columns)
+        columns_set = set(columns)
+        columns_map = {
+            column_name: expr
+            for (column_name, expr) in table_node.columns_map.items()
+            if column_name in columns_set
+        }
+        subset_table = deepcopy(table_node)
+        subset_table.set_columns_map(columns_map)
+        sql_node = subset_table
     return sql_node
 
 
@@ -498,7 +528,12 @@ def make_filter_node(
     sql_node: FilteredFrame | FilteredSeries
     if output_type == NodeOutputType.FRAME:
         assert isinstance(item, TableNode)
-        sql_node = FilteredFrame(input_node=item, mask=mask)
+        input_table_copy = deepcopy(item)
+        sql_node = FilteredFrame(
+            columns_map=input_table_copy.columns_map,
+            input_node=input_table_copy,
+            mask=mask,
+        )
     else:
         assert isinstance(item, ExpressionNode)
         sql_node = FilteredSeries(table_node=item.table_node, series_node=item, mask=mask)
@@ -525,7 +560,12 @@ def make_build_tile_node(
     assert isinstance(input_node, TableNode)
     aggregator = get_aggregator(parameters["agg_func"])
     tile_specs = aggregator.tile(parameters["parent"])
+    columns = (
+        ["tile_start_date"] + parameters["keys"] + [spec.tile_column_name for spec in tile_specs]
+    )
+    columns_map = {col: expressions.Identifier(this=col, quoted=True) for col in columns}
     sql_node = BuildTileNode(
+        columns_map=columns_map,
         input_node=input_node,
         keys=parameters["keys"],
         tile_specs=tile_specs,
@@ -533,4 +573,42 @@ def make_build_tile_node(
         agg_func=parameters["agg_func"],
         frequency=parameters["frequency"],
     )
+    return sql_node
+
+
+def make_input_node(
+    parameters: dict[str, Any],
+    sql_type: SQLType,
+) -> BuildTileInputNode | GenericInputNode:
+    """Create a SQLNode corresponding to a query graph input node
+
+    Parameters
+    ----------
+    parameters : dict[str, Any]
+        Query graph node parameters
+    sql_type: SQLType
+        Type of SQL code to generate
+
+    Returns
+    -------
+    BuildTileInputNode | GenericInputNode
+        SQLNode corresponding to the query graph input node
+    """
+    columns_map = {}
+    for colname in parameters["columns"]:
+        columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
+    sql_node: BuildTileInputNode | GenericInputNode
+    if sql_type == SQLType.BUILD_TILE:
+        sql_node = BuildTileInputNode(
+            columns_map=columns_map,
+            column_names=parameters["columns"],
+            timestamp=parameters["timestamp"],
+            dbtable=parameters["dbtable"],
+        )
+    else:
+        sql_node = GenericInputNode(
+            columns_map=columns_map,
+            column_names=parameters["columns"],
+            dbtable=parameters["dbtable"],
+        )
     return sql_node

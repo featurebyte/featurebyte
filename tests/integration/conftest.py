@@ -24,7 +24,7 @@ def transaction_dataframe():
     """
     Simulated transaction Dataframe
     """
-    # pylint: disable=E1101
+    # pylint: disable=no-member
     row_number = 100
     rng = np.random.RandomState(1234)
     product_actions = ["detail", "add", "purchase", "remove", None]

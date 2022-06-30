@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 
-from featurebyte.api.event_data import EventData
+from featurebyte.api.event_data import EventData, EventDataColumn
 
 
 @pytest.fixture(name="event_data_dict")
@@ -29,6 +29,7 @@ def event_data_dict_fixture():
         ),
         "event_timestamp_column": "event_timestamp",
         "record_creation_date_column": "created_at",
+        "column_entity_map": {},
         "default_feature_job_setting": None,
         "created_at": None,
         "history": [],
@@ -76,3 +77,31 @@ def test_deserialization__column_name_not_found(event_data_dict, config, snowfla
     with pytest.raises(ValueError) as exc:
         EventData.parse_obj(event_data_dict)
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
+
+
+def test_event_data_column__not_exists(snowflake_event_data):
+    """
+    Test non-exist column retrieval
+    """
+    expected = 'Column "non_exist_column" does not exist!'
+    with pytest.raises(KeyError) as exc:
+        _ = snowflake_event_data["non_exist_column"]
+    assert expected in str(exc.value)
+
+    with pytest.raises(KeyError) as exc:
+        _ = snowflake_event_data.non_exist_column
+    assert expected in str(exc.value)
+
+
+def test_event_data_column__as_entity(snowflake_event_data):
+    """
+    Test setting a column in the event data as entity
+    """
+    col_int = snowflake_event_data.col_int
+    assert isinstance(col_int, EventDataColumn)
+    snowflake_event_data.col_int.as_entity("col_id")
+    assert snowflake_event_data.column_entity_map == {"col_int": "col_id"}
+
+    with pytest.raises(TypeError) as exc:
+        snowflake_event_data.col_int.as_entity(1234)
+    assert 'Unsupported type "<class \'int\'>" for tag name "1234"!' in str(exc.value)

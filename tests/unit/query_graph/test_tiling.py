@@ -83,6 +83,13 @@ def run_groupby_and_get_tile_table_identifier(event_view, aggregate_kwargs, grou
     """
     if groupby_kwargs is None:
         groupby_kwargs = {"by_keys": ["cust_id"]}
+    by_keys = (
+        [groupby_kwargs["by_keys"]]
+        if isinstance(groupby_kwargs["by_keys"], str)
+        else groupby_kwargs["by_keys"]
+    )
+    for by_key in by_keys:
+        event_view[by_key].as_entity(by_key)
     feature_names = set(aggregate_kwargs["feature_names"])
     features = event_view.groupby(**groupby_kwargs).aggregate(**aggregate_kwargs)
     graph, node = GlobalQueryGraph().prune(features.node, feature_names)

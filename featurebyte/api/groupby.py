@@ -16,26 +16,23 @@ class EventViewGroupBy(OpsMixin):
     EventViewGroupBy class
     """
 
-    def __init__(self, obj: EventView, keys: str | list[str] | None):
+    def __init__(self, obj: EventView, keys: str | list[str]):
         if not isinstance(obj, EventView):
             raise TypeError(f"Expect {EventView} object type!")
 
         keys_value = []
-        if keys is None:
-            if obj.entity_identifiers:
-                keys_value = obj.entity_identifiers
-            else:
-                raise ValueError(f"Not able to infer keys from {obj}!")
-        elif isinstance(keys, str):
+        if isinstance(keys, str):
             keys_value.append(keys)
         elif isinstance(keys, list):
             keys_value = keys
         else:
-            raise TypeError(f"Grouping {obj} by '{keys}' is not supported!")
+            raise TypeError(f'Grouping {obj} by "{keys}" is not supported!')
 
         for key in keys_value:
             if key not in obj.columns:
-                raise KeyError(f"Column '{key}' not found in {obj}!")
+                raise KeyError(f'Column "{key}" not found!')
+            if key not in obj.column_entity_map:
+                raise ValueError(f'Column "{key}" is not an entity!')
 
         self.obj = obj
         self.keys = keys_value
@@ -93,7 +90,7 @@ class EventViewGroupBy(OpsMixin):
         KeyError
             If column to be aggregated does not exist
         """
-        # pylint: disable=R0914 (too-many-locals)
+        # pylint: disable=too-many-locals
         if method not in AggFunc.all():
             raise ValueError(f"Aggregation method not supported: {method}")
 
@@ -105,7 +102,7 @@ class EventViewGroupBy(OpsMixin):
         frequency_seconds, time_modulo_frequency_seconds, blind_spot_seconds = parsed_seconds
 
         if value_column not in self.obj.columns:
-            raise KeyError(f"Column '{value_column}' not found in {self.obj}!")
+            raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
 
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,

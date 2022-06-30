@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Any
 
 from dataclasses import dataclass
-from enum import Enum
 
 import sqlglot
 
@@ -15,25 +14,17 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.sql import (
     BINARY_OPERATION_NODE_TYPES,
-    AssignNode,
-    BuildTileInputNode,
     ExpressionNode,
-    GenericInputNode,
     SQLNode,
+    SQLType,
     TableNode,
     make_binary_operation_node,
     make_build_tile_node,
     make_filter_node,
+    make_input_node,
     make_project_node,
 )
 from featurebyte.query_graph.tiling import get_tile_table_identifier
-
-
-class SQLType(Enum):
-    """Type of SQL code corresponding to different operations"""
-
-    BUILD_TILE = "build_tile"
-    PREVIEW = "preview"
 
 
 class SQLOperationGraph:
@@ -120,26 +111,14 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
-            if self.sql_type == SQLType.BUILD_TILE:
-                sql_node = BuildTileInputNode(
-                    column_names=parameters["columns"],
-                    timestamp=parameters["timestamp"],
-                    dbtable=parameters["dbtable"],
-                )
-            else:
-                sql_node = GenericInputNode(
-                    column_names=parameters["columns"],
-                    dbtable=parameters["dbtable"],
-                )
+            sql_node = make_input_node(parameters, self.sql_type)
 
         elif node_type == NodeType.ASSIGN:
             assert len(input_sql_nodes) == 2
             assert isinstance(input_sql_nodes[0], TableNode)
-            sql_node = AssignNode(
-                table_node=input_sql_nodes[0],
-                column_node=input_sql_nodes[1],
-                name=parameters["name"],
-            )
+            input_table_node = input_sql_nodes[0]
+            input_table_node.set_column_expr(parameters["name"], input_sql_nodes[1].sql)
+            sql_node = input_table_node
 
         elif node_type == NodeType.PROJECT:
             sql_node = make_project_node(input_sql_nodes, parameters, output_type)

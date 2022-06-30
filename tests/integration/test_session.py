@@ -57,10 +57,11 @@ def test_query_object_operation_on_snowflake_source(
     Test loading event view from snowflake source
     """
     _ = snowflake_session
+    table_name = "TEST_TABLE"
     snowflake_database_source = DatabaseSource(**config.db_sources["snowflake_datasource"].dict())
-    assert snowflake_database_source.list_tables(credentials=config.credentials) == ["TEST_TABLE"]
+    assert table_name in snowflake_database_source.list_tables(credentials=config.credentials)
 
-    snowflake_database_table = snowflake_database_source["TEST_TABLE", config.credentials]
+    snowflake_database_table = snowflake_database_source[table_name, config.credentials]
     expected_dtypes = pd.Series(
         {
             "CREATED_AT": "INT",

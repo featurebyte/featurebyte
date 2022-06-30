@@ -19,15 +19,15 @@ def expected_snowflake_table_preview_query() -> str:
     return textwrap.dedent(
         """
         SELECT
-          "col_int",
-          "col_float",
-          "col_char",
-          "col_text",
-          "col_binary",
-          "col_boolean",
-          "event_timestamp",
-          "created_at",
-          "cust_id"
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "col_char" AS "col_char",
+          "col_text" AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          "event_timestamp" AS "event_timestamp",
+          "created_at" AS "created_at",
+          "cust_id" AS "cust_id"
         FROM "sf_table"
         LIMIT 10
         """
@@ -39,6 +39,7 @@ def grouped_event_view_fixture(snowflake_event_view):
     """
     EventViewGroupBy fixture
     """
+    snowflake_event_view.cust_id.as_entity("customer")
     grouped = snowflake_event_view.groupby("cust_id")
     assert isinstance(grouped, EventViewGroupBy)
     yield grouped
