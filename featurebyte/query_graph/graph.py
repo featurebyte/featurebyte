@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.algorithms import topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.util import hash_node
+from featurebyte.query_graph.util import get_tile_table_identifier, hash_node
 
 
 class SingletonMeta(type):
@@ -294,6 +294,31 @@ class GlobalQueryGraph(QueryGraph):
         default_factory=GlobalQueryGraphState.get_ref_to_node_name
     )
 
+    def _update_node_parameters(
+        self, node_type: NodeType, node_params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """
+        Update node parameter if the parameter is a function of node hash.
+        After the graph get pruned, the input node hash could be different there is a change in
+        input node lineage.
+
+        Parameters
+        ----------
+        node_type: NodeType
+            Node type
+        node_params: dict[str, Any]
+            Node parameters
+
+        Returns
+        -------
+        dict[str, Any]
+            Updated node_params
+        """
+        if node_type == NodeType.GROUPBY:
+            node_params["tile_id"] = get_tile_table_identifier()
+
+        return node_params
+
     def _prune(
         self,
         target_node: Node,
@@ -344,9 +369,13 @@ class GlobalQueryGraph(QueryGraph):
             mapped_input_node_names.append(input_node_name)
 
         # add the node back to the pruned graph
+        node_type = NodeType(target_node.type)
         node_pruned = pruned_graph.add_operation(
-            node_type=NodeType(target_node.type),
-            node_params=target_node.parameters,
+            node_type=node_type,
+            node_params=self._update_node_parameters(
+                node_type=node_type,
+                node_params=target_node.parameters,
+            ),
             node_output_type=NodeOutputType(target_node.output_type),
             input_nodes=[
                 pruned_graph.get_node_by_name(node_name_map[node_name])
