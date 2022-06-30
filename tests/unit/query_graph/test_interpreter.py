@@ -20,18 +20,31 @@ def query_graph():
     yield GlobalQueryGraph()
 
 
-def test_graph_interpreter_super_simple(graph):
-    """Test using a simple query graph"""
+@pytest.fixture(name="node_input")
+def node_input_fixture(graph):
+    node_params = {
+        "columns": ["ts", "cust_id", "a", "b"],
+        "timestamp": "ts",
+        "dbtable": "event_table",
+        "database_source": {
+            "type": "snowflake",
+            "details": {
+                "database": "db",
+                "sf_schema": "public",
+            },
+        },
+    }
     node_input = graph.add_operation(
         node_type=NodeType.INPUT,
-        node_params={
-            "columns": ["ts", "cust_id", "a", "b"],
-            "timestamp": "ts",
-            "dbtable": '"event_table"',
-        },
+        node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
+    return node_input
+
+
+def test_graph_interpreter_super_simple(graph, node_input):
+    """Test using a simple query graph"""
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
@@ -55,24 +68,14 @@ def test_graph_interpreter_super_simple(graph):
           "a" AS "a",
           "b" AS "b",
           "a" AS "a_copy"
-        FROM "event_table"
+        FROM "db"."public"."event_table"
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_graph_interpreter_multi_assign(graph):
+def test_graph_interpreter_multi_assign(graph, node_input):
     """Test using a slightly more complex graph (multiple assigns)"""
-    node_input = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "columns": ["ts", "cust_id", "a", "b"],
-            "timestamp": "ts",
-            "dbtable": '"event_table"',
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
@@ -122,7 +125,7 @@ def test_graph_interpreter_multi_assign(graph):
           "b" AS "b",
           "a" + "b" AS "c",
           "a" + "b" AS "c2"
-        FROM "event_table"
+        FROM "db"."public"."event_table"
         WHERE
           "ts" >= CAST(FBT_START_DATE AS TIMESTAMP)
           AND "ts" < CAST(FBT_END_DATE AS TIMESTAMP)
@@ -148,18 +151,8 @@ def test_graph_interpreter_multi_assign(graph):
         (NodeType.OR, '"a" OR 123'),
     ],
 )
-def test_graph_interpreter_binary_operations(graph, node_type, expected_expr):
+def test_graph_interpreter_binary_operations(graph, node_input, node_type, expected_expr):
     """Test graph with binary operation nodes"""
-    node_input = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "columns": ["ts", "cust_id", "a", "b"],
-            "timestamp": "ts",
-            "dbtable": '"event_table"',
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
@@ -190,7 +183,7 @@ def test_graph_interpreter_binary_operations(graph, node_type, expected_expr):
           "a" AS "a",
           "b" AS "b",
           {expected_expr} AS "a2"
-        FROM "event_table"
+        FROM "db"."public"."event_table"
         WHERE
           "ts" >= CAST(FBT_START_DATE AS TIMESTAMP)
           AND "ts" < CAST(FBT_END_DATE AS TIMESTAMP)
@@ -199,18 +192,8 @@ def test_graph_interpreter_binary_operations(graph, node_type, expected_expr):
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_graph_interpreter_project_multiple_columns(graph):
+def test_graph_interpreter_project_multiple_columns(graph, node_input):
     """Test using a simple query graph"""
-    node_input = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "columns": ["ts", "cust_id", "a", "b"],
-            "timestamp": "ts",
-            "dbtable": '"event_table"',
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
     proj = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a", "b"]},
@@ -225,7 +208,7 @@ def test_graph_interpreter_project_multiple_columns(graph):
         SELECT
           "a" AS "a",
           "b" AS "b"
-        FROM "event_table"
+        FROM "db"."public"."event_table"
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -242,7 +225,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
     info_dict = asdict(info)
     info_dict.pop("sql")
     assert info_dict == {
-        "tile_table_id": "avg_f30_m5_b1_ab21707e40d41cdb46c9d842652bcc14c483bcac",
+        "tile_table_id": "avg_f30_m5_b1_38fdbe5f5add00ab0e39fa5db7c0e804934165bb",
         "columns": ["tile_start_date", "cust_id", "sum_value", "count_value"],
         "time_modulo_frequency": 5,
         "frequency": 30,
@@ -257,7 +240,14 @@ def test_graph_interpreter_snowflake(graph):
         node_params={
             "columns": ["SERVER_TIMESTAMP", "CUST_ID"],
             "timestamp": "SERVER_TIMESTAMP",
-            "dbtable": '"FB_SIMULATE"."PUBLIC"."BROWSING_TS"',
+            "dbtable": "BROWSING_TS",
+            "database_source": {
+                "type": "snowflake",
+                "details": {
+                    "database": "FB_SIMULATE",
+                    "sf_schema": "PUBLIC",
+                },
+            },
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
@@ -316,18 +306,8 @@ def test_graph_interpreter_snowflake(graph):
     print(sql_template)
 
 
-def test_graph_interpreter_preview(graph):
+def test_graph_interpreter_preview(graph, node_input):
     """Test graph preview"""
-    node_input = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "columns": ["ts", "cust_id", "a", "b"],
-            "timestamp": "ts",
-            "dbtable": '"event_table"',
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
@@ -376,7 +356,7 @@ def test_graph_interpreter_preview(graph):
           "b" AS "b",
           "a" + "b" AS "c",
           "a" + "b" AS "c2"
-        FROM "event_table"
+        FROM "db"."public"."event_table"
         LIMIT 10
         """
     ).strip()
@@ -393,7 +373,7 @@ def test_graph_interpreter_preview(graph):
               "cust_id" AS "cust_id",
               "a" AS "a",
               "b" AS "b"
-            FROM "event_table"
+            FROM "db"."public"."event_table"
         )
         LIMIT 5
         """
@@ -401,18 +381,8 @@ def test_graph_interpreter_preview(graph):
     assert sql_code == expected
 
 
-def test_filter_node(graph):
+def test_filter_node(graph, node_input):
     """Test graph with filter operation"""
-    node_input = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "columns": ["ts", "cust_id", "a", "b"],
-            "timestamp": "ts",
-            "dbtable": '"event_table"',
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
@@ -452,7 +422,7 @@ def test_filter_node(graph):
           "cust_id" AS "cust_id",
           "a" AS "a",
           "b" AS "b"
-        FROM "event_table"
+        FROM "db"."public"."event_table"
         WHERE
           "b" = 123
         LIMIT 10
@@ -472,7 +442,7 @@ def test_filter_node(graph):
               "cust_id" AS "cust_id",
               "a" AS "a",
               "b" AS "b"
-            FROM "event_table"
+            FROM "db"."public"."event_table"
         )
         WHERE
           "b" = 123
@@ -482,18 +452,8 @@ def test_filter_node(graph):
     assert sql_code == expected
 
 
-def test_filter_assign_project(graph):
+def test_filter_assign_project(graph, node_input):
     """Test graph with both filter, assign, and project operations"""
-    node_input = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "columns": ["ts", "cust_id", "a", "b"],
-            "timestamp": "ts",
-            "dbtable": '"event_table"',
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
     proj_b = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["b"]},
@@ -531,7 +491,7 @@ def test_filter_assign_project(graph):
         SELECT
           "b" AS "b",
           "b" = 123 AS "new_col"
-        FROM "event_table"
+        FROM "db"."public"."event_table"
         WHERE
           "b" = 123
         LIMIT 10
@@ -540,18 +500,8 @@ def test_filter_assign_project(graph):
     assert sql_code == expected
 
 
-def test_project_multi_then_assign(graph):
+def test_project_multi_then_assign(graph, node_input):
     """Test graph with both projection and assign operations"""
-    node_input = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "columns": ["ts", "cust_id", "a", "b"],
-            "timestamp": "ts",
-            "dbtable": '"event_table"',
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
     proj_b = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["b"]},
@@ -578,7 +528,7 @@ def test_project_multi_then_assign(graph):
           "ts" AS "ts",
           "a" AS "a",
           "b" AS "new_col"
-        FROM "event_table"
+        FROM "db"."public"."event_table"
         LIMIT 10
         """
     ).strip()

@@ -195,7 +195,7 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
                     "warehouse": "sf_warehouse",
                 },
             },
-            "dbtable": '"sf_database"."sf_schema"."sf_table"',
+            "dbtable": "sf_table",
         },
         output_type=NodeOutputType.FRAME,
     )
