@@ -209,6 +209,8 @@ def snowflake_feature(fb_db_session, config):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
+    tile_id = "tile_id1"
+
     feature = Feature(
         name="test_feature1",
         version="v1",
@@ -219,7 +221,7 @@ def snowflake_feature(fb_db_session, config):
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
         column_names="col1",
-        tile_id="tile_id1",
+        tile_id=tile_id,
         online_enabled=False,
         datasource=config.db_sources["snowflake_datasource"],
     )
@@ -229,3 +231,6 @@ def snowflake_feature(fb_db_session, config):
     yield s_feature
 
     fb_db_session.execute_query("DELETE FROM FEATURE_REGISTRY")
+    fb_db_session.execute_query("DELETE FROM TILE_REGISTRY")
+    fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
+    fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")

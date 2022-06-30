@@ -15,6 +15,8 @@ from featurebyte.api.event_view import EventView
 from featurebyte.config import Configurations
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
+from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
+from featurebyte.models.event_data import EventDataStatus, Feature
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.session.manager import SessionManager
@@ -264,3 +266,30 @@ def mock_snowflake_tile(mock_execute_query, snowflake_database_source, snowflake
     )
 
     return tile_s
+
+
+@pytest.fixture
+def mock_snowflake_feature(snowflake_database_source, snowflake_connector, config):
+    """
+    Pytest Fixture for FeatureSnowflake instance
+    """
+    _ = snowflake_connector
+
+    feature = Feature(
+        name="test_feature1",
+        version="v1",
+        status=EventDataStatus.DRAFT,
+        is_default=True,
+        time_modulo_frequency_second=183,
+        blind_spot_second=3,
+        frequency_minute=5,
+        tile_sql="SELECT * FROM DUMMY",
+        column_names="col1",
+        tile_id="tile_id1",
+        online_enabled=False,
+        datasource=snowflake_database_source,
+    )
+
+    s_feature = FeatureSnowflake(feature=feature, credentials=config.credentials)
+
+    return s_feature

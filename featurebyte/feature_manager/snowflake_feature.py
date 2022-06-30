@@ -11,7 +11,7 @@ from pydantic import BaseModel, PrivateAttr
 from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedDatabaseSourceModel
 from featurebyte.logger import logger
-from featurebyte.models.event_data import EventDataStatus, Feature
+from featurebyte.models.event_data import Feature
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
@@ -71,7 +71,7 @@ class FeatureSnowflake(BaseModel):
         feature_versions = self.retrieve_features(version=self.feature.version)
         if len(feature_versions) == 0:
             self._session.execute_query(
-                "UPDATE FEATURE_REGISTRY SET IS_DEFAULT = False WHERE NAME = '{self.feature.name}'"
+                f"UPDATE FEATURE_REGISTRY SET IS_DEFAULT = False WHERE NAME = '{self.feature.name}'"
             )
             logger.debug("Done updating is_default of other versions to false")
             insert_sql = tm_ins_feature_registry.render(feature=self.feature)
@@ -82,23 +82,9 @@ class FeatureSnowflake(BaseModel):
                 f"Feature {self.feature.name} with version {self.feature.version} already exists"
             )
 
-    def update_feature_registry(
-        self, status: Optional[EventDataStatus] = None, online_enabled: Optional[bool] = None
-    ) -> None:
-        """
-        update feature registry record
-
-        Parameters
-        ----------
-        status: Optional[EventDataStatus]
-            record's status to be updated
-        online_enabled: Optional[bool]
-            record's online_enabled to be updated
-        """
-
     def retrieve_features(self, version: Optional[str] = None) -> List[Feature]:
         """
-        Retrieve Feature instances. If version parameter is not passed, return all the feature versions
+        Retrieve Feature instances. If version parameter is not presented, return all the feature versions
 
         Parameters
         ----------
@@ -109,9 +95,9 @@ class FeatureSnowflake(BaseModel):
         -------
             list of Feature instances
         """
-        sql = f" SELECT * FROM FEATURE_REGISTRY WHERE NAME = '{self.feature.name}' "
+        sql = f"SELECT * FROM FEATURE_REGISTRY WHERE NAME = '{self.feature.name}'"
         if version:
-            sql += f" AND VERSION = '{version}' "
+            sql += f" AND VERSION = '{version}'"
 
         dataframe = self._session.execute_query(sql)
         result = []
@@ -190,7 +176,7 @@ class FeatureSnowflake(BaseModel):
         tile_id = self.feature.tile_id
 
         result = self._session.execute_query(
-            f"SELECT LAST_TILE_INDEX_{tile_type} FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
+            f"SELECT LAST_TILE_INDEX_{tile_type} as LAST_TILE_INDEX FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
         )
         if result is not None and len(result) > 0:
             return int(result["LAST_TILE_INDEX"].iloc[0])
