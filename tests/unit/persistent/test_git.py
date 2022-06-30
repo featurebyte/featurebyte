@@ -10,6 +10,7 @@ import os.path
 import pytest
 from git import Repo
 
+from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.persistent.git import GitDB
 
 
@@ -24,7 +25,7 @@ def git_persistent_fixture() -> Tuple[GitDB, Repo]:
         Local GitDB object and local git repo
     """
     persistent = GitDB(branch="test")
-    yield persistent, persistent._repo  # pylint: disable=protected-access
+    yield persistent, persistent.repo
 
 
 def test_insert_one(git_persistent, test_document):
@@ -41,8 +42,8 @@ def test_insert_one(git_persistent, test_document):
     # check commit messages
     messages = [commit.message for commit in repo.iter_commits("test", max_count=5)][-1::-1]
     assert messages == [
-        "Initial commit",
-        "Create document: data/Generic Document",
+        "Initial commit\n",
+        "Create document: data/Generic Document\n",
     ]
 
 
@@ -63,10 +64,10 @@ def test_insert_many(git_persistent, test_documents):
     # check commit messages
     messages = [commit.message for commit in repo.iter_commits("test", max_count=5)][-1::-1]
     assert messages == [
-        "Initial commit",
-        "Create document: data/Object 0",
-        "Create document: data/Object 1",
-        "Create document: data/Object 2",
+        "Initial commit\n",
+        "Create document: data/Object 0\n",
+        "Create document: data/Object 1\n",
+        "Create document: data/Object 2\n",
     ]
 
 
@@ -76,7 +77,7 @@ def test_find_one(git_persistent, test_documents):
     """
     persistent, _ = git_persistent
     persistent.insert_many(collection_name="data", documents=test_documents)
-    doc = persistent.find_one(collection_name="data", filter_query={})
+    doc = persistent.find_one(collection_name="data", query_filter={})
     assert doc == test_documents[0]
 
 
@@ -86,27 +87,27 @@ def test_find_many(git_persistent, test_documents):
     """
     persistent, _ = git_persistent
     persistent.insert_many(collection_name="data", documents=test_documents)
-    docs, total = persistent.find(collection_name="data", filter_query={})
+    docs, total = persistent.find(collection_name="data", query_filter={})
     assert list(docs) == test_documents
     assert total == 3
 
     # test sort
     docs, total = persistent.find(
-        collection_name="data", filter_query={}, sort_by="id", sort_dir="desc"
+        collection_name="data", query_filter={}, sort_by="id", sort_dir="desc"
     )
     assert list(docs) == test_documents[-1::-1]
     assert total == 3
 
     # test search
     docs, total = persistent.find(
-        collection_name="data", filter_query={"name": "Object 1"}, sort_by="id", sort_dir="desc"
+        collection_name="data", query_filter={"name": "Object 1"}, sort_by="id", sort_dir="desc"
     )
     assert list(docs) == [test_documents[1]]
     assert total == 1
 
     docs, total = persistent.find(
         collection_name="data",
-        filter_query={"id": test_documents[2]["id"]},
+        query_filter={"id": test_documents[2]["id"]},
         sort_by="id",
         sort_dir="desc",
     )
@@ -114,15 +115,46 @@ def test_find_many(git_persistent, test_documents):
     assert total == 1
 
     # test pagination
-    docs, total = persistent.find(collection_name="data", filter_query={}, page_size=2, page=1)
+    docs, total = persistent.find(collection_name="data", query_filter={}, page_size=2, page=1)
     assert list(docs) == test_documents[:2]
     assert total == 3
-    docs, total = persistent.find(collection_name="data", filter_query={}, page_size=2, page=2)
+    docs, total = persistent.find(collection_name="data", query_filter={}, page_size=2, page=2)
     assert list(docs) == test_documents[2:]
     assert total == 3
-    docs, total = persistent.find(collection_name="data", filter_query={}, page_size=0, page=2)
+    docs, total = persistent.find(collection_name="data", query_filter={}, page_size=0, page=2)
     assert list(docs) == test_documents
     assert total == 3
+
+
+@pytest.mark.parametrize(
+    "query_filter,valid",
+    [
+        ({"key1": "Object 1", "key2": None}, True),
+        ({"key": {"key1": "Object 1", "key2": None}}, True),
+        ({"key": {"key": {"key1": "Object 1", "key2": None}}}, True),
+        ({"key": "Object 1", "key with $": None}, False),
+        ({"key": {"key": "Object 1", "key with $": None}}, False),
+        ({"key": {"key": {"key": "Object 1", "key with $": None}}}, False),
+        ({"key": "Object 1", "key.with.period": None}, False),
+        ({"key": {"key": "Object 1", "key.with.period": None}}, False),
+        ({"key": {"key": {"key": "Object 1", "key.with.period": None}}}, False),
+    ],
+)
+def test_filter_values(git_persistent, test_document, query_filter, valid):
+    """
+    Test find filter values validation
+    """
+    persistent, _ = git_persistent
+    persistent.insert_one(collection_name="data", document=test_document)
+
+    def run_find():
+        persistent.find_one(collection_name="data", query_filter=query_filter)
+
+    if valid:
+        run_find()
+    else:
+        with pytest.raises(NotImplementedError):
+            run_find()
 
 
 def test_update_one(git_persistent, test_documents):
@@ -132,11 +164,11 @@ def test_update_one(git_persistent, test_documents):
     persistent, repo = git_persistent
     persistent.insert_many(collection_name="data", documents=test_documents)
     result = persistent.update_one(
-        collection_name="data", filter_query={}, update={"$set": {"name": "apple"}}
+        collection_name="data", query_filter={}, update={"$set": {"name": "apple"}}
     )
 
     assert result == 1
-    results, total = persistent.find(collection_name="data", filter_query={})
+    results, total = persistent.find(collection_name="data", query_filter={})
 
     # only first document should be updated
     assert total == 3
@@ -147,12 +179,12 @@ def test_update_one(git_persistent, test_documents):
     # check commit messages
     messages = [commit.message for commit in repo.iter_commits("test", max_count=10)][-1::-1]
     assert messages == [
-        "Initial commit",
-        "Create document: data/Object 0",
-        "Create document: data/Object 1",
-        "Create document: data/Object 2",
-        "Renaming document data/Object 0 -> data/apple",
-        "Update document: data/apple",
+        "Initial commit\n",
+        "Create document: data/Object 0\n",
+        "Create document: data/Object 1\n",
+        "Create document: data/Object 2\n",
+        "Rename document: data/Object 0 -> data/apple\n",
+        "Update document: data/apple\n",
     ]
 
 
@@ -163,25 +195,68 @@ def test_update_many(git_persistent, test_documents):
     persistent, repo = git_persistent
     persistent.insert_many(collection_name="data", documents=test_documents)
     result = persistent.update_many(
-        collection_name="data", filter_query={}, update={"$set": {"value": 1}}
+        collection_name="data", query_filter={}, update={"$set": {"value": 1}}
     )
     # expect all documents to be updated
     assert result == 3
-    results, _ = persistent.find(collection_name="data", filter_query={})
+    results, _ = persistent.find(collection_name="data", query_filter={})
     for result in results:
         assert result["value"] == 1
 
     # check commit messages
     messages = [commit.message for commit in repo.iter_commits("test", max_count=10)][-1::-1]
     assert messages == [
-        "Initial commit",
-        "Create document: data/Object 0",
-        "Create document: data/Object 1",
-        "Create document: data/Object 2",
-        "Update document: data/Object 0",
-        "Update document: data/Object 1",
-        "Update document: data/Object 2",
+        "Initial commit\n",
+        "Create document: data/Object 0\n",
+        "Create document: data/Object 1\n",
+        "Create document: data/Object 2\n",
+        "Update document: data/Object 0\n",
+        "Update document: data/Object 1\n",
+        "Update document: data/Object 2\n",
     ]
+
+
+def test_update_name_to_existing(git_persistent, test_documents):
+    """
+    Test updating one document with name that already exists
+    """
+    persistent, _ = git_persistent
+    persistent.insert_many(collection_name="data", documents=test_documents)
+    with pytest.raises(DuplicateDocumentError) as exc:
+        persistent.update_one(
+            collection_name="data", query_filter={}, update={"$set": {"name": "Object 1"}}
+        )
+    assert str(exc.value) == "Document data/Object 1 already exists"
+
+
+@pytest.mark.parametrize(
+    "update,valid",
+    [
+        ({"$set": {"name": "Object 1"}}, True),
+        ({"$set": "not a dict"}, False),
+        ({"key is not $set": {"name": "Object 1"}}, False),
+        ({"$set": {"name": "Object 1"}, "more than 1 key in top level": True}, False),
+        ({"$set": {"name": "Object 1", "$ ok in key": None}}, True),
+        ({"$set": {"name": "Object 1", "id": "Update ID not allowed"}}, False),
+        ({"$set": {"name": "Object 1", "key.with.period": None}}, False),
+        ({"$set": {"name": {"key": "Object 1", "another.key.with.period": None}}}, False),
+    ],
+)
+def test_update_values(git_persistent, test_document, update, valid):
+    """
+    Test update values validation
+    """
+    persistent, _ = git_persistent
+    persistent.insert_one(collection_name="data", document=test_document)
+
+    def run_update():
+        persistent.update_one(collection_name="data", query_filter={}, update=update)
+
+    if valid:
+        run_update()
+    else:
+        with pytest.raises(NotImplementedError):
+            run_update()
 
 
 def test_delete_one(git_persistent, test_documents):
@@ -190,20 +265,20 @@ def test_delete_one(git_persistent, test_documents):
     """
     persistent, repo = git_persistent
     persistent.insert_many(collection_name="data", documents=test_documents)
-    result = persistent.delete_one(collection_name="data", filter_query={})
+    result = persistent.delete_one(collection_name="data", query_filter={})
     # expect only one document to be deleted
     assert result == 1
-    results, _ = persistent.find(collection_name="data", filter_query={})
+    results, _ = persistent.find(collection_name="data", query_filter={})
     assert len(results) == 2
 
     # check commit messages
     messages = [commit.message for commit in repo.iter_commits("test", max_count=10)][-1::-1]
     assert messages == [
-        "Initial commit",
-        "Create document: data/Object 0",
-        "Create document: data/Object 1",
-        "Create document: data/Object 2",
-        "Remove document: data/Object 0",
+        "Initial commit\n",
+        "Create document: data/Object 0\n",
+        "Create document: data/Object 1\n",
+        "Create document: data/Object 2\n",
+        "Delete document: data/Object 0\n",
     ]
 
 
@@ -213,20 +288,20 @@ def test_delete_many(git_persistent, test_documents):
     """
     persistent, repo = git_persistent
     persistent.insert_many(collection_name="data", documents=test_documents)
-    result = persistent.delete_many(collection_name="data", filter_query={})
+    result = persistent.delete_many(collection_name="data", query_filter={})
     # expect all documents to be deleted
     assert result == 3
-    results, _ = persistent.find(collection_name="data", filter_query={})
+    results, _ = persistent.find(collection_name="data", query_filter={})
     assert len(results) == 0
 
     # check commit messages
     messages = [commit.message for commit in repo.iter_commits("test", max_count=10)][-1::-1]
     assert messages == [
-        "Initial commit",
-        "Create document: data/Object 0",
-        "Create document: data/Object 1",
-        "Create document: data/Object 2",
-        "Remove document: data/Object 0",
-        "Remove document: data/Object 1",
-        "Remove document: data/Object 2",
+        "Initial commit\n",
+        "Create document: data/Object 0\n",
+        "Create document: data/Object 1\n",
+        "Create document: data/Object 2\n",
+        "Delete document: data/Object 0\n",
+        "Delete document: data/Object 1\n",
+        "Delete document: data/Object 2\n",
     ]

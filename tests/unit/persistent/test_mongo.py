@@ -58,7 +58,7 @@ def test_find_one(mongo_persistent, test_documents):
     """
     persistent, client = mongo_persistent
     client["test"]["data"].insert_many(test_documents)
-    doc = persistent.find_one(collection_name="data", filter_query={})
+    doc = persistent.find_one(collection_name="data", query_filter={})
     assert doc == test_documents[0]
 
 
@@ -68,24 +68,24 @@ def test_find_many(mongo_persistent, test_documents):
     """
     persistent, client = mongo_persistent
     client["test"]["data"].insert_many(test_documents)
-    docs, total = persistent.find(collection_name="data", filter_query={})
+    docs, total = persistent.find(collection_name="data", query_filter={})
     assert list(docs) == test_documents
     assert total == 3
 
     # test pagination
-    docs, total = persistent.find(collection_name="data", filter_query={}, page_size=2, page=1)
+    docs, total = persistent.find(collection_name="data", query_filter={}, page_size=2, page=1)
     assert list(docs) == test_documents[:2]
     assert total == 3
-    docs, total = persistent.find(collection_name="data", filter_query={}, page_size=2, page=2)
+    docs, total = persistent.find(collection_name="data", query_filter={}, page_size=2, page=2)
     assert list(docs) == test_documents[2:]
     assert total == 3
-    docs, total = persistent.find(collection_name="data", filter_query={}, page_size=0, page=2)
+    docs, total = persistent.find(collection_name="data", query_filter={}, page_size=0, page=2)
     assert list(docs) == test_documents
     assert total == 3
 
     # test sort
     docs, total = persistent.find(
-        collection_name="data", filter_query={}, sort_by="id", sort_dir="desc"
+        collection_name="data", query_filter={}, sort_by="id", sort_dir="desc"
     )
     assert list(docs) == test_documents[-1::-1]
     assert total == 3
@@ -99,7 +99,7 @@ def test_update_one(mongo_persistent, test_document, test_documents):
     test_documents = [{**test_document, **{"id": ObjectId()}} for _ in range(3)]
     client["test"]["data"].insert_many(test_documents)
     result = persistent.update_one(
-        collection_name="data", filter_query={}, update={"$set": {"value": 1}}
+        collection_name="data", query_filter={}, update={"$set": {"value": 1}}
     )
 
     assert result == 1
@@ -118,7 +118,7 @@ def test_update_many(mongo_persistent, test_documents):
     persistent, client = mongo_persistent
     client["test"]["data"].insert_many(test_documents)
     result = persistent.update_many(
-        collection_name="data", filter_query={}, update={"$set": {"value": 1}}
+        collection_name="data", query_filter={}, update={"$set": {"value": 1}}
     )
     # expect all documents to be updated
     assert result == 3
@@ -133,7 +133,7 @@ def test_delete_one(mongo_persistent, test_documents):
     """
     persistent, client = mongo_persistent
     client["test"]["data"].insert_many(test_documents)
-    result = persistent.delete_one(collection_name="data", filter_query={})
+    result = persistent.delete_one(collection_name="data", query_filter={})
     # expect only one document to be deleted
     assert result == 1
     results = list(client["test"]["data"].find({}))
@@ -146,7 +146,7 @@ def test_delete_many(mongo_persistent, test_documents):
     """
     persistent, client = mongo_persistent
     client["test"]["data"].insert_many(test_documents)
-    result = persistent.delete_many(collection_name="data", filter_query={})
+    result = persistent.delete_many(collection_name="data", query_filter={})
     # expect all documents to be deleted
     assert result == 3
     results = list(client["test"]["data"].find({}))

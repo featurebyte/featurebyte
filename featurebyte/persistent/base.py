@@ -3,13 +3,15 @@ Persistent persistent base class
 """
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Literal, MutableMapping, Optional, Tuple
+from typing import Any, Iterable, List, Literal, Mapping, MutableMapping, Optional, Tuple
 
 from abc import ABC, abstractmethod
 
 from bson.objectid import ObjectId
 
-DocumentType = MutableMapping[str, Any]
+Document = MutableMapping[str, Any]
+QueryFilter = MutableMapping[str, Any]
+DocumentUpdate = Mapping[str, Any]
 
 
 class DuplicateDocumentError(Exception):
@@ -24,7 +26,7 @@ class Persistent(ABC):
     """
 
     @abstractmethod
-    def insert_one(self, collection_name: str, document: DocumentType) -> ObjectId:
+    def insert_one(self, collection_name: str, document: Document) -> ObjectId:
         """
         Insert record into collection
 
@@ -32,7 +34,7 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        document: DocumentType
+        document: Document
             Document to insert
 
         Returns
@@ -47,9 +49,7 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    def insert_many(
-        self, collection_name: str, documents: Iterable[DocumentType]
-    ) -> List[ObjectId]:
+    def insert_many(self, collection_name: str, documents: Iterable[Document]) -> List[ObjectId]:
         """
         Insert records into collection
 
@@ -57,7 +57,7 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        documents: Iterable[DocumentType]
+        documents: Iterable[Document]
             Documents to insert
 
         Returns
@@ -72,7 +72,7 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    def find_one(self, collection_name: str, filter_query: DocumentType) -> Optional[DocumentType]:
+    def find_one(self, collection_name: str, query_filter: QueryFilter) -> Optional[Document]:
         """
         Find one record from collection
 
@@ -80,12 +80,12 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: DocumentType
+        query_filter: QueryFilter
             Conditions to filter on
 
         Returns
         -------
-        Optional[DocumentType]
+        Optional[Document]
             Retrieved document
         """
         return NotImplemented
@@ -94,12 +94,12 @@ class Persistent(ABC):
     def find(
         self,
         collection_name: str,
-        filter_query: DocumentType,
+        query_filter: QueryFilter,
         sort_by: Optional[str] = None,
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
         page_size: int = 0,
-    ) -> Tuple[Iterable[DocumentType], int]:
+    ) -> Tuple[Iterable[Document], int]:
         """
         Find all records from collection
 
@@ -107,7 +107,7 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: DocumentType
+        query_filter: QueryFilter
             Conditions to filter on
         sort_by: Optional[str]
             Column to sort by
@@ -120,7 +120,7 @@ class Persistent(ABC):
 
         Returns
         -------
-        Tuple[Iterable[DocumentType], int]
+        Tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
         return NotImplemented
@@ -129,8 +129,8 @@ class Persistent(ABC):
     def update_one(
         self,
         collection_name: str,
-        filter_query: DocumentType,
-        update: DocumentType,
+        query_filter: QueryFilter,
+        update: Document,
     ) -> int:
         """
         Update one record in collection
@@ -139,9 +139,9 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: DocumentType
+        query_filter: QueryFilter
             Conditions to filter on
-        update: DocumentType
+        update: Document
             Values to update
 
         Returns
@@ -155,8 +155,8 @@ class Persistent(ABC):
     def update_many(
         self,
         collection_name: str,
-        filter_query: DocumentType,
-        update: DocumentType,
+        query_filter: QueryFilter,
+        update: Document,
     ) -> int:
         """
         Update many records in collection
@@ -165,9 +165,9 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: DocumentType
+        query_filter: QueryFilter
             Conditions to filter on
-        update: DocumentType
+        update: Document
             Values to update
 
         Returns
@@ -178,7 +178,7 @@ class Persistent(ABC):
         return NotImplemented
 
     @abstractmethod
-    def delete_one(self, collection_name: str, filter_query: DocumentType) -> int:
+    def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete one record from collection
 
@@ -186,7 +186,7 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: DocumentType
+        query_filter: QueryFilter
             Conditions to filter on
 
         Returns
@@ -197,7 +197,7 @@ class Persistent(ABC):
         return NotImplemented
 
     @abstractmethod
-    def delete_many(self, collection_name: str, filter_query: DocumentType) -> int:
+    def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete many records from collection
 
@@ -205,7 +205,7 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: DocumentType
+        query_filter: QueryFilter
             Conditions to filter on
 
         Returns

@@ -44,9 +44,6 @@ def test_persistence(test_document):
     branch = f"integration-test-{str(ObjectId())}"
     remote_url = "git@github.com:featurebyte/playground.git"
     ssh_key_path = os.environ["GIT_SSH_KEY_PATH"]
-    print(f"*** {ssh_key_path}")
-    with open(ssh_key_path, encoding="utf-8") as file_obj:
-        print(file_obj.read(10))
     persistent = GitDB(
         branch=branch,
         remote_url=remote_url,
@@ -56,7 +53,7 @@ def test_persistence(test_document):
         # use a dynamic name for the document
         doc_name = test_document["name"] = str(ObjectId())
         persistent.insert_one(collection_name="data", document=test_document)
-        doc = persistent.find_one(collection_name="data", filter_query={"name": doc_name})
+        doc = persistent.find_one(collection_name="data", query_filter={"name": doc_name})
         assert doc == test_document
 
         # create another GitDB instance and try to read the saved document
@@ -65,7 +62,7 @@ def test_persistence(test_document):
             remote_url=remote_url,
             key_path=ssh_key_path,
         )
-        doc = persistent2.find_one(collection_name="data", filter_query={"name": doc_name})
+        doc = persistent2.find_one(collection_name="data", query_filter={"name": doc_name})
         assert doc == test_document
     finally:
         # cleanup local and remote repo
