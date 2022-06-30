@@ -53,15 +53,15 @@ def hash_node(
     return hash_result
 
 
-def get_tile_table_identifier(query_graph: QueryGraph, groupby_node: Node) -> str:
+def get_tile_table_identifier(transformations_hash: str, parameters: dict[str, Any]) -> str:
     """Get tile table identifier that can be used as tile table name
 
     Parameters
     ----------
-    query_graph : QueryGraph
-        Query graph
-    groupby_node : Node
-        Query graph node corresponding to the groupby operation
+    transformations_hash : str
+        Input node hash
+    parameters : dict[str, Any]
+        Node parameters
 
     Returns
     -------
@@ -71,7 +71,6 @@ def get_tile_table_identifier(query_graph: QueryGraph, groupby_node: Node) -> st
     hash_components: list[Any] = []
 
     # Aggregation related parameters
-    parameters = groupby_node.parameters
     aggregation_setting = (
         parameters["keys"],
         parameters["parent"],
@@ -96,9 +95,6 @@ def get_tile_table_identifier(query_graph: QueryGraph, groupby_node: Node) -> st
     )
 
     # EventView transformations
-    groupby_input_node_names = query_graph.backward_edges[groupby_node.name]
-    assert len(groupby_input_node_names) == 1
-    transformations_hash = query_graph.node_name_to_ref[groupby_input_node_names[0]]
     hash_components.append(transformations_hash)
 
     # Hash all the factors above as the tile table identifier

@@ -9,6 +9,7 @@ from featurebyte.common.feature_job_setting_validation import validate_job_setti
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.util import get_tile_table_identifier
 
 
 class EventViewGroupBy(OpsMixin):
@@ -104,19 +105,26 @@ class EventViewGroupBy(OpsMixin):
         if value_column not in self.obj.columns:
             raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
 
+        node_params = {
+            "keys": self.keys,
+            "parent": value_column,
+            "agg_func": method,
+            "value_by": value_by_column,
+            "windows": windows,
+            "timestamp": timestamp_column or self.obj.timestamp_column,
+            "blind_spot": blind_spot_seconds,
+            "time_modulo_frequency": time_modulo_frequency_seconds,
+            "frequency": frequency_seconds,
+            "names": feature_names,
+        }
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,
             node_params={
-                "keys": self.keys,
-                "parent": value_column,
-                "agg_func": method,
-                "value_by": value_by_column,
-                "windows": windows,
-                "timestamp": timestamp_column or self.obj.timestamp_column,
-                "blind_spot": blind_spot_seconds,
-                "time_modulo_frequency": time_modulo_frequency_seconds,
-                "frequency": frequency_seconds,
-                "names": feature_names,
+                **node_params,
+                "tile_id": get_tile_table_identifier(
+                    transformations_hash=self.obj.graph.node_name_to_ref[self.obj.node.name],
+                    parameters=node_params,
+                ),
             },
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[self.obj.node],

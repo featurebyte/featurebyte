@@ -294,8 +294,9 @@ class GlobalQueryGraph(QueryGraph):
         default_factory=GlobalQueryGraphState.get_ref_to_node_name
     )
 
+    @staticmethod
     def _update_node_parameters(
-        self, node_type: NodeType, node_params: dict[str, Any]
+        graph: QueryGraph, node_type: NodeType, node_params: dict[str, Any], input_nodes: list[Node]
     ) -> dict[str, Any]:
         """
         Update node parameter if the parameter is a function of node hash.
@@ -304,10 +305,14 @@ class GlobalQueryGraph(QueryGraph):
 
         Parameters
         ----------
+        graph: QueryGraph
+            Query graph
         node_type: NodeType
             Node type
         node_params: dict[str, Any]
             Node parameters
+        input_nodes: list[Node]
+            Input nodes
 
         Returns
         -------
@@ -315,7 +320,12 @@ class GlobalQueryGraph(QueryGraph):
             Updated node_params
         """
         if node_type == NodeType.GROUPBY:
-            node_params["tile_id"] = get_tile_table_identifier()
+            assert len(input_nodes) == 1
+            transformations_hash = graph.node_name_to_ref[input_nodes[0].name]
+            node_params["tile_id"] = get_tile_table_identifier(
+                transformations_hash=transformations_hash,
+                parameters=node_params,
+            )
 
         return node_params
 
@@ -370,17 +380,20 @@ class GlobalQueryGraph(QueryGraph):
 
         # add the node back to the pruned graph
         node_type = NodeType(target_node.type)
+        input_nodes = [
+            pruned_graph.get_node_by_name(node_name_map[node_name])
+            for node_name in mapped_input_node_names
+        ]
         node_pruned = pruned_graph.add_operation(
-            node_type=node_type,
+            node_type=NodeType(target_node.type),
             node_params=self._update_node_parameters(
+                graph=pruned_graph,
                 node_type=node_type,
                 node_params=target_node.parameters,
+                input_nodes=input_nodes,
             ),
             node_output_type=NodeOutputType(target_node.output_type),
-            input_nodes=[
-                pruned_graph.get_node_by_name(node_name_map[node_name])
-                for node_name in mapped_input_node_names
-            ],
+            input_nodes=input_nodes,
         )
 
         # update the container to store the mapped node name & processed nodes information

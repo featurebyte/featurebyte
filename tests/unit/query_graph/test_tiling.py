@@ -6,12 +6,7 @@ import copy
 import pytest
 
 from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.query_graph.tiling import (
-    AggFunc,
-    TileSpec,
-    get_aggregator,
-    get_tile_table_identifier,
-)
+from featurebyte.query_graph.tiling import AggFunc, TileSpec, get_aggregator
 
 
 @pytest.mark.parametrize(
@@ -92,8 +87,8 @@ def run_groupby_and_get_tile_table_identifier(event_view, aggregate_kwargs, grou
         event_view[by_key].as_entity(by_key)
     feature_names = set(aggregate_kwargs["feature_names"])
     features = event_view.groupby(**groupby_kwargs).aggregate(**aggregate_kwargs)
-    graph, node = GlobalQueryGraph().prune(features.node, feature_names)
-    tile_id = get_tile_table_identifier(graph, node)
+    _, node = GlobalQueryGraph().prune(features.node, feature_names)
+    tile_id = node.parameters["tile_id"]
     return tile_id
 
 
