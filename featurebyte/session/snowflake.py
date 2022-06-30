@@ -43,6 +43,10 @@ class SnowflakeSession(BaseSession):
             database=data["database"],
             schema=self._get_featurebyte_schema_name(),
         )
+
+        # If the featurebyte schema does not exist, the self._connection can still be created
+        # without errors. Below checks whether the schema actually exists. If not, it will be
+        # created and initialized with custom functions and procedures.
         self._init_featurebyte_schema_if_needed()
 
     def list_tables(self) -> list[str]:
@@ -89,15 +93,21 @@ class SnowflakeSession(BaseSession):
             }
         return column_name_type_map
 
-    def _init_featurebyte_schema_if_needed(self):
+    def _init_featurebyte_schema_if_needed(self) -> None:
+        # Note: self._connection.schema changes to None after execute_query() if the specified
+        # default schema doesn't exist, so the sequence of the two lines below matters
         featurebyte_schema_name = self._connection.schema
-        available_schemas = self.execute_query("SHOW SCHEMAS")["name"].tolist()
+        show_schemas_result = self.execute_query("SHOW SCHEMAS")
+        if show_schemas_result is not None:
+            available_schemas = show_schemas_result["name"].tolist()
+        else:
+            available_schemas = []
         if featurebyte_schema_name not in available_schemas:
             logger.debug(f"Initializing schema {featurebyte_schema_name}")
             self.execute_query(f"CREATE SCHEMA {featurebyte_schema_name}")
             self._register_custom_functions()
 
-    def _register_custom_functions(self):
+    def _register_custom_functions(self) -> None:
         for sql_filename in get_custom_function_sql_filenames():
             logger.debug(f"Executing {sql_filename}")
             with open(sql_filename, encoding="utf-8") as file_handle:

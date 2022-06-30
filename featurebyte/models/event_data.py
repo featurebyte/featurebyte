@@ -52,7 +52,7 @@ class DatabaseSourceModel(BaseModel):
         """
         return hash(str(self.type) + str(self.details))
 
-    def get_fully_qualified_table_name(self, table_name) -> str:
+    def get_fully_qualified_table_name(self, table_name: str) -> str:
         """
         Get fully qualified table name
 
@@ -60,6 +60,10 @@ class DatabaseSourceModel(BaseModel):
         ----------
         table_name : str
             Table name
+
+        Returns
+        -------
+        str
         """
         if self.type == SourceType.SNOWFLAKE:
             assert isinstance(self.details, SnowflakeDetails)
