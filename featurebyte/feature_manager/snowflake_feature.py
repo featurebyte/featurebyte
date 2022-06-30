@@ -5,26 +5,45 @@ from __future__ import annotations
 
 from typing import Any, List, Optional
 
+import json
+
+import pandas as pd
 from jinja2 import Template
 from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedDatabaseSourceModel
 from featurebyte.logger import logger
-from featurebyte.models.event_data import Feature
+from featurebyte.models.event_data import TileSpec
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
 tm_ins_feature_registry = Template(
     """
-    INSERT INTO FEATURE_REGISTRY (
-        NAME, VERSION, STATUS, FREQUENCY_MINUTES, TIME_MODULO_FREQUENCY_SECOND,
-        BLIND_SPOT_SECOND, TILE_SQL, COLUMN_NAMES, TILE_ID
-    )
-    VALUES (
-        '{{feature.name}}', '{{feature.version}}', '{{feature.status.value}}', {{feature.frequency_minute}}, {{feature.time_modulo_frequency_second}},
-        {{feature.blind_spot_second}}, '{{feature.tile_sql}}', '{{feature.column_names}}', '{{feature.tile_id}}'
-    )
+    INSERT INTO FEATURE_REGISTRY
+    SELECT
+        '{{feature.name}}' as NAME, '{{feature.version}}' as VERSION, True as IS_DEFAULT, '{{feature.status.value}}' as STATUS,
+        {{feature.frequency_minute}} as FREQUENCY_MINUTES, {{feature.time_modulo_frequency_second}} as TIME_MODULO_FREQUENCY_SECOND,
+        {{feature.blind_spot_second}} as BLIND_SPOT_SECOND, '{{feature.tile_sql}}' as TILE_SQL,
+        '{{feature.column_names}}' as COLUMN_NAMES, parse_json('{{tile_ids_str}}') as TILE_IDS,
+        False as ONLINE_ENABLED, SYSDATE() as CREATED_AT
+"""
+)
+
+tm_update_tile_ids = Template(
+    """
+    UPDATE FEATURE_REGISTRY SET TILE_IDS = parse_json('{{tile_ids_str}}') WHERE NAME = '{{feature.name}}' AND VERSION = '{{feature.version}}'
+"""
+)
+
+tm_last_tile_index = Template(
+    """
+    SELECT
+        t_reg.TILE_ID, t_reg.LAST_TILE_INDEX_ONLINE, t_reg.LAST_TILE_INDEX_OFFLINE
+    FROM
+        (SELECT value as TILE_ID FROM FEATURE_REGISTRY, LATERAL FLATTEN(input => TILE_IDS)
+        WHERE NAME = '{{feature.name}}' AND VERSION = '{{feature.version}}') t_id, TILE_REGISTRY t_reg
+    WHERE t_reg.TILE_ID = t_id.TILE_ID
 """
 )
 
@@ -35,13 +54,13 @@ class FeatureSnowflake(BaseModel):
 
     Parameters
     ----------
-    feature: Feature
+    feature: TileSpec
         feature instance
     credentials: Credentials
         credentials to the datasource
     """
 
-    feature: Feature
+    feature: TileSpec
     credentials: Credentials
     _session: BaseSession = PrivateAttr()
 
@@ -62,27 +81,28 @@ class FeatureSnowflake(BaseModel):
         """
         Insert feature registry record. Update the is_default of the existing feature registry records to be False,
         then insert the new registry record with is_default to True
-
-        Raises
-        -------
-        ValueError
-            when there is an existing feature registry record with the same name and version
         """
         feature_versions = self.retrieve_features(version=self.feature.version)
+        logger.debug(f"feature_versions: {feature_versions}")
         if len(feature_versions) == 0:
             self._session.execute_query(
                 f"UPDATE FEATURE_REGISTRY SET IS_DEFAULT = False WHERE NAME = '{self.feature.name}'"  # nosec
             )
             logger.debug("Done updating is_default of other versions to false")
-            insert_sql = tm_ins_feature_registry.render(feature=self.feature)
-            logger.debug(f"insert_sql: {insert_sql}")
-            self._session.execute_query(insert_sql)
+            tm_sql = tm_ins_feature_registry
         else:
-            raise ValueError(
-                f"Feature {self.feature.name} with version {self.feature.version} already exists"
-            )
+            existing_tile_ids = set(feature_versions[0].tile_ids)
+            existing_tile_ids.update(self.feature.tile_ids)
+            self.feature.tile_ids = list(existing_tile_ids)
+            logger.debug(f"Done updating tile_ids: {existing_tile_ids}")
+            tm_sql = tm_update_tile_ids
 
-    def retrieve_features(self, version: Optional[str] = None) -> List[Feature]:
+        tile_ids_str = str(self.feature.tile_ids).replace("'", '"').upper()
+        sql = tm_sql.render(feature=self.feature, tile_ids_str=tile_ids_str)
+        logger.debug(f"generated sql: {sql}")
+        self._session.execute_query(sql)
+
+    def retrieve_features(self, version: Optional[str] = None) -> List[TileSpec]:
         """
         Retrieve Feature instances. If version parameter is not presented, return all the feature versions
 
@@ -90,7 +110,6 @@ class FeatureSnowflake(BaseModel):
         ----------
         version: str
             version of Feature
-
         Returns
         -------
             list of Feature instances
@@ -103,7 +122,8 @@ class FeatureSnowflake(BaseModel):
         result = []
         if dataframe is not None:
             for _, row in dataframe.iterrows():
-                feature_version = Feature(
+                tile_ids = json.loads(row["TILE_IDS"]) if row["TILE_IDS"] else []
+                feature_version = TileSpec(
                     name=self.feature.name,
                     version=row["VERSION"],
                     status=row["STATUS"],
@@ -113,7 +133,7 @@ class FeatureSnowflake(BaseModel):
                     frequency_minute=row["FREQUENCY_MINUTES"],
                     tile_sql=row["TILE_SQL"],
                     column_names=row["COLUMN_NAMES"],
-                    tile_id=row["TILE_ID"],
+                    tile_ids=tile_ids,
                     online_enabled=row["ONLINE_ENABLED"],
                     datasource=self.feature.datasource,
                 )
@@ -128,57 +148,40 @@ class FeatureSnowflake(BaseModel):
         Parameters
         ----------
         """
-        tile_mgr = TileSnowflake(
-            feature_name=self.feature.name,
-            time_modulo_frequency_seconds=self.feature.time_modulo_frequency_second,
-            blind_spot_seconds=self.feature.blind_spot_second,
-            frequency_minute=self.feature.frequency_minute,
-            tile_sql=self.feature.tile_sql,
-            column_names=self.feature.column_names,
-            tile_id=self.feature.tile_id,
-            tabular_source=self.feature.datasource,
-            credentials=self.credentials,
-        )
-        # insert tile_registry record
-        tile_mgr.insert_tile_registry()
-        logger.debug("Done insert_tile_registry")
+        for tile_id in self.feature.tile_ids:
+            logger.info(f"tile_id: {tile_id}")
+            tile_mgr = TileSnowflake(
+                feature_name=self.feature.name,
+                time_modulo_frequency_seconds=self.feature.time_modulo_frequency_second,
+                blind_spot_seconds=self.feature.blind_spot_second,
+                frequency_minute=self.feature.frequency_minute,
+                tile_sql=self.feature.tile_sql,
+                column_names=self.feature.column_names,
+                tile_id=tile_id,
+                tabular_source=self.feature.datasource,
+                credentials=self.credentials,
+            )
+            # insert tile_registry record
+            tile_mgr.insert_tile_registry()
+            logger.debug(f"Done insert_tile_registry for {tile_id}")
 
-        # enable online tiles scheduled job
-        tile_mgr.schedule_online_tiles()
-        logger.debug("Done schedule_online_tiles")
+            # enable online tiles scheduled job
+            tile_mgr.schedule_online_tiles()
+            logger.debug(f"Done schedule_online_tiles for {tile_id}")
 
-        # enable offline tiles scheduled job
-        tile_mgr.schedule_offline_tiles()
-        logger.debug("Done schedule_offline_tiles")
+            # enable offline tiles scheduled job
+            tile_mgr.schedule_offline_tiles()
+            logger.debug(f"Done schedule_offline_tiles for {tile_id}")
 
-    def get_last_tile_index(self, tile_type: str) -> int:
+    def get_last_tile_index(self) -> pd.DataFrame:
         """
-        Get last_tile_index status of a tile_id
-
-        Parameters
-        ----------
-        tile_type: str
-            tile type. ie. ONLINE or OFFLINE
-
-        Raises
-        ----------
-        ValueError
-            if tile_type is not ONLINE or OFFLINE
+        Get last_tile_index of all the tile_ids as dataframe
 
         Returns
         -------
-            last tile index of the given tile_id and tile_type. Return -1 if record does not exist
+            last_tile_index of all the tile_ids as dataframe
         """
-        if tile_type is None or tile_type.strip().upper() not in ["ONLINE", "OFFLINE"]:
-            raise ValueError("tile_type must be either ONLINE or OFFLINE")
-
-        tile_type = tile_type.strip().upper()
-        tile_id = self.feature.tile_id
-
-        result = self._session.execute_query(
-            f"SELECT LAST_TILE_INDEX_{tile_type} as LAST_TILE_INDEX FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
-        )
-        if result is not None and len(result) > 0:
-            return int(result["LAST_TILE_INDEX"].iloc[0])
-
-        return -1
+        sql = tm_last_tile_index.render(feature=self.feature)
+        logger.debug(f"generated sql: {sql}")
+        result = self._session.execute_query(sql)
+        return result

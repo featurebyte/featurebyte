@@ -140,9 +140,9 @@ class EventDataModel(DatabaseTableModel):
     status: Optional[EventDataStatus] = Field(default=None)
 
 
-class Feature(BaseModel):
+class TileSpec(BaseModel):
     """
-    Model for Feature
+    Model for TileSpec
 
     Parameters
     ----------
@@ -182,7 +182,7 @@ class Feature(BaseModel):
     frequency_minute: int
     tile_sql: str
     column_names: str
-    tile_id: str
+    tile_ids: List[str]
 
     online_enabled: bool
     datasource: DatabaseSourceModel

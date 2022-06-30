@@ -159,7 +159,7 @@ class TileSnowflake(BaseModel):
         )
         if result is None or len(result) == 0:
             sql = tm_ins_tile_registry.render(tile_id=self.tile_id, tile_sql=self.tile_sql)
-            logger.info(f"generated sql: {sql}")
+            logger.info(f"generated tile insert sql: {sql}")
             self._session.execute_query(sql)
             return True
 

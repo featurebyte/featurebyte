@@ -4,7 +4,6 @@ This module contains unit tests for FeatureSnowflake
 from unittest import mock
 
 import pandas as pd
-import pytest
 
 from featurebyte.feature_manager.snowflake_feature import tm_ins_feature_registry
 
@@ -18,7 +17,9 @@ def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature):
     mock_snowflake_feature.insert_feature_registry()
     assert mock_execute_query.call_count == 3
 
-    insert_sql = tm_ins_feature_registry.render(feature=mock_snowflake_feature.feature)
+    insert_sql = tm_ins_feature_registry.render(
+        feature=mock_snowflake_feature.feature, tile_ids_str='["TILE_ID1"]'
+    )
     calls = [
         mock.call(
             f"SELECT * FROM FEATURE_REGISTRY WHERE NAME = '{mock_snowflake_feature.feature.name}'"
@@ -47,7 +48,7 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature):
             "FREQUENCY_MINUTES": [5],
             "TILE_SQL": ["SELECT DUMMY"],
             "COLUMN_NAMES": ["c1"],
-            "TILE_ID": ["tile_id1"],
+            "TILE_IDS": ['["tile_id1"]'],
             "ONLINE_ENABLED": [True],
         }
     )
@@ -63,7 +64,7 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature):
     assert len(fv_list) == 1
     assert fv_list[0].name == mock_snowflake_feature.feature.name
     assert fv_list[0].version == "v1"
-    assert fv_list[0].tile_id == "tile_id1"
+    assert fv_list[0].tile_ids == ["tile_id1"]
 
 
 @mock.patch("featurebyte.tile.snowflake_tile.TileSnowflake.insert_tile_registry")
@@ -90,14 +91,13 @@ def test_get_last_tile_index(mock_execute_query, mock_snowflake_feature):
     """
     Test get_last_tile_index
     """
-    with pytest.raises(ValueError) as excinfo:
-        mock_snowflake_feature.get_last_tile_index("online1")
-    assert str(excinfo.value) == "tile_type must be either ONLINE or OFFLINE"
-
     mock_execute_query.return_value = pd.DataFrame.from_dict(
         {
-            "LAST_TILE_INDEX": [100],
+            "TILE_ID": ["TILE_ID1"],
+            "LAST_TILE_INDEX_ONLINE": [100],
+            "LAST_TILE_INDEX_OFFLINE": [80],
         }
     )
-    last_index = mock_snowflake_feature.get_last_tile_index("online")
-    assert last_index == 100
+    last_index_df = mock_snowflake_feature.get_last_tile_index()
+    assert last_index_df.iloc[0]["TILE_ID"] == "TILE_ID1"
+    assert last_index_df.iloc[0]["LAST_TILE_INDEX_ONLINE"] == 100
