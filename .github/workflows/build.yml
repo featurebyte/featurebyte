@@ -16,6 +16,7 @@ env:
   SNOWFLAKE_DATABASE: FEATUREBYTE_TESTING
   SNOWFLAKE_SCHEMA: PUBLIC
   SNOWFLAKE_SCHEMA_FEATUREBYTE: FEATUREBYTE
+  GIT_SSH_KEY_PATH: "/tmp/git_key"
 
 jobs:
   build:
@@ -54,6 +55,10 @@ jobs:
 
     - name: Run tests
       run: |
+        echo "${{ secrets.PLAYGROUND_PRIVATE_KEY }}" > /tmp/git_key
+        chmod 400 /tmp/git_key
+        git config --global user.email "github@featurebyte.com"
+        git config --global user.name "FeatureByte Github Testing"
         make test
 
     - name: Run safety checks

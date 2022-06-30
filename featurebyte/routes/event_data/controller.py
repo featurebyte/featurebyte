@@ -1,7 +1,7 @@
 """
 EventData API routes
 """
-from typing import Any, Literal, Mapping, Optional
+from typing import Any, Literal, Optional
 
 import datetime
 from http import HTTPStatus
@@ -30,40 +30,38 @@ class EventDataController:
         """
         Create Event Data
         """
-        # ensure table name does not already exist
-        query_filter = {"name": data.name, "user_id": user.id}
-        if persistent.find_one(collection_name=TABLE_NAME, filter_query=query_filter):
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-                detail=f'Event Data "{data.name}" already exists.',
-            )
+        # exclude microseconds from timestamp as it's not supported in persistent
+        utc_now = datetime.datetime.utcnow()
+        utc_now = utc_now.replace(microsecond=int(utc_now.microsecond / 1000) * 1000)
 
         # init history and set status to draft
-        document = EventData(
-            user_id=user.id,
-            created_at=datetime.datetime.utcnow(),
-            status=EventDataStatus.DRAFT,
-            history=[
+        if data.default_feature_job_setting:
+            history = [
                 FeatureJobSettingHistoryEntry(
-                    creation_date=datetime.datetime.utcnow(),
+                    creation_date=utc_now,
                     setting=data.default_feature_job_setting,
                 )
-            ],
+            ]
+        else:
+            history = []
+
+        document = EventData(
+            user_id=user.id,
+            created_at=utc_now,
+            status=EventDataStatus.DRAFT,
+            history=history,
             **data.dict(),
         )
         try:
-            persistent.insert_one(collection_name=TABLE_NAME, document=document.dict())
+            insert_id = persistent.insert_one(collection_name=TABLE_NAME, document=document.dict())
+            assert insert_id == document.id
         except DuplicateDocumentError as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                 detail=f'Event Data "{data.name}" already exists.',
             ) from exc
 
-        event_data: Optional[Mapping[str, Any]] = persistent.find_one(
-            collection_name=TABLE_NAME, filter_query=query_filter
-        )
-        assert event_data
-        return EventData(**event_data)
+        return document
 
     @staticmethod
     def list_event_datas(
@@ -86,7 +84,7 @@ class EventDataController:
 
         docs, total = persistent.find(
             collection_name=TABLE_NAME,
-            filter_query=query_filter,
+            query_filter=query_filter,
             sort_by=sort_by,
             sort_dir=sort_dir,
             page=page,
@@ -104,7 +102,7 @@ class EventDataController:
         Retrieve Event Data
         """
         query_filter = {"name": event_data_name, "user_id": user.id}
-        event_data = persistent.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
+        event_data = persistent.find_one(collection_name=TABLE_NAME, query_filter=query_filter)
         if event_data is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
@@ -123,7 +121,7 @@ class EventDataController:
         Update scheduled task
         """
         query_filter = {"name": event_data_name, "user_id": user.id}
-        event_data = persistent.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
+        event_data = persistent.find_one(collection_name=TABLE_NAME, query_filter=query_filter)
         not_found_exception = HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail=f'Event Data "{event_data_name}" not found.'
         )
@@ -159,12 +157,12 @@ class EventDataController:
             update_payload.pop("status")
 
         updated_cnt = persistent.update_one(
-            collection_name=TABLE_NAME, filter_query=query_filter, update={"$set": update_payload}
+            collection_name=TABLE_NAME, query_filter=query_filter, update={"$set": update_payload}
         )
         if not updated_cnt:
             raise not_found_exception
 
-        event_data = persistent.find_one(collection_name=TABLE_NAME, filter_query=query_filter)
+        event_data = persistent.find_one(collection_name=TABLE_NAME, query_filter=query_filter)
         if not event_data:
             raise not_found_exception
         return EventData(**event_data)

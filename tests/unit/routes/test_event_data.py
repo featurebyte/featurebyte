@@ -49,8 +49,8 @@ def test_create_success(test_api_client, event_data_dict):
     assert response.status_code == HTTPStatus.CREATED
     result = response.json()
     assert datetime.datetime.fromisoformat(result.pop("created_at")) > utcnow
-    result.pop("_id")
-    assert result.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
+    result.pop("id")
+    assert result.pop("user_id") is None
     # history should contain the initial entry
     event_data_dict.pop("history")
     history = result.pop("history")
@@ -77,7 +77,7 @@ def test_create_fails_table_exists_during_insert(test_api_client, event_data_dic
     """
     Create Event Data fails if table with same name already exists during persistent insert
     """
-    with mock.patch("featurebyte.app.PERSISTENT.insert_one") as mock_insert:
+    with mock.patch("featurebyte.persistent.GitDB.insert_one") as mock_insert:
         mock_insert.side_effect = DuplicateDocumentError
         response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
@@ -117,10 +117,10 @@ def test_list(test_api_client, event_data_dict):
     assert results["page"] == 1
     assert results["total"] == 3
     data = results["data"][0]
-    data.pop("_id")
+    data.pop("id")
     data.pop("created_at")
     # should include the static user id
-    assert data.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
+    assert data.pop("user_id") is None
     assert data.pop("history")[0]["setting"] == event_data_dict["default_feature_job_setting"]
     event_data_dict.pop("history")
     event_data_dict["status"] = EventDataStatus.DRAFT
@@ -139,10 +139,10 @@ def test_retrieve_success(test_api_client, event_data_dict):
     response = test_api_client.request("GET", url="/event_data/订单表")
     assert response.status_code == HTTPStatus.OK
     data = response.json()
-    data.pop("_id")
+    data.pop("id")
     data.pop("created_at")
     # should include the static user id
-    assert data.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
+    assert data.pop("user_id") is None
     assert data.pop("history")[0]["setting"] == event_data_dict["default_feature_job_setting"]
     event_data_dict.pop("history")
     event_data_dict["status"] = EventDataStatus.DRAFT
@@ -172,9 +172,9 @@ def test_update_success(test_api_client, event_data_dict, event_data_update_dict
     response = test_api_client.request("PATCH", url="/event_data/订单表", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.OK
     data = response.json()
-    data.pop("_id")
+    data.pop("id")
     data.pop("created_at")
-    assert data.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
+    assert data.pop("user_id") is None
 
     # default_feature_job_setting should be updated
     assert (
@@ -225,9 +225,9 @@ def test_update_excludes_unsupported_fields(
     response = test_api_client.request("PATCH", url="/event_data/订单表", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.OK
     data = response.json()
-    data.pop("_id")
+    data.pop("id")
     data.pop("created_at")
-    assert data.pop("user_id") == "62a6d9d023e7a8f2a0dc041a"
+    assert data.pop("user_id") is None
 
     # default_feature_job_setting should be updated
     assert (

@@ -4,13 +4,15 @@ Read configurations from ini file
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Pattern
 
 import os
+import re
 from enum import Enum
+from pathlib import Path
 
 import yaml
-from pydantic import BaseSettings
+from pydantic import BaseSettings, ConstrainedStr
 from pydantic.error_wrappers import ValidationError
 
 from featurebyte.enum import SourceType
@@ -38,11 +40,29 @@ class LogLevel(str, Enum):
 
 class LoggingSettings(BaseSettings):
     """
-    Settings related with the logging
+    Settings for logging
     """
 
     level: LogLevel = LogLevel.DEBUG
     serialize: bool = False
+
+
+class GitRepoUrl(ConstrainedStr):
+    """
+    Git repo string
+    """
+
+    regex: Pattern[str] | None = re.compile(r".*\.git")
+
+
+class GitSettings(BaseSettings):
+    """
+    Settings for git access
+    """
+
+    remote_url: GitRepoUrl
+    key_path: Path
+    branch: str
 
 
 class Configurations:
@@ -123,3 +143,8 @@ class Configurations:
         if logging_settings:
             # parse logging settings
             self.logging = LoggingSettings(**logging_settings)
+
+        git_settings = self.settings.pop("git", None)
+        if git_settings:
+            # parse git settings
+            self.git = GitSettings(**git_settings)

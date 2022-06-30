@@ -1,13 +1,17 @@
 """
 Persistent persistent base class
 """
-from typing import Any, Iterable, Literal, Mapping, Optional, Tuple, Union
+from __future__ import annotations
+
+from typing import Any, Iterable, List, Literal, Mapping, MutableMapping, Optional, Tuple
 
 from abc import ABC, abstractmethod
 
-from pymongo.typings import _DocumentIn, _Pipeline
+from bson.objectid import ObjectId
 
-DocumentType = Mapping[str, Any]
+Document = MutableMapping[str, Any]
+QueryFilter = MutableMapping[str, Any]
+DocumentUpdate = Mapping[str, Any]
 
 
 class DuplicateDocumentError(Exception):
@@ -22,7 +26,7 @@ class Persistent(ABC):
     """
 
     @abstractmethod
-    def insert_one(self, collection_name: str, document: _DocumentIn) -> None:
+    def insert_one(self, collection_name: str, document: Document) -> ObjectId:
         """
         Insert record into collection
 
@@ -30,8 +34,13 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        document: _DocumentIn
+        document: Document
             Document to insert
+
+        Returns
+        -------
+        ObjectId
+            Id of the inserted document
 
         Raises
         ------
@@ -40,7 +49,7 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    def insert_many(self, collection_name: str, documents: Iterable[_DocumentIn]) -> None:
+    def insert_many(self, collection_name: str, documents: Iterable[Document]) -> List[ObjectId]:
         """
         Insert records into collection
 
@@ -48,8 +57,13 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        documents: Iterable[_DocumentIn]
+        documents: Iterable[Document]
             Documents to insert
+
+        Returns
+        -------
+        List[ObjectId]
+            Ids of the inserted document
 
         Raises
         ------
@@ -58,9 +72,7 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    def find_one(
-        self, collection_name: str, filter_query: Mapping[str, Any]
-    ) -> Optional[DocumentType]:
+    def find_one(self, collection_name: str, query_filter: QueryFilter) -> Optional[Document]:
         """
         Find one record from collection
 
@@ -68,12 +80,12 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        query_filter: QueryFilter
             Conditions to filter on
 
         Returns
         -------
-        Optional[DocumentType]
+        Optional[Document]
             Retrieved document
         """
         return NotImplemented
@@ -82,12 +94,12 @@ class Persistent(ABC):
     def find(
         self,
         collection_name: str,
-        filter_query: Mapping[str, Any],
+        query_filter: QueryFilter,
         sort_by: Optional[str] = None,
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
         page_size: int = 0,
-    ) -> Tuple[Iterable[DocumentType], int]:
+    ) -> Tuple[Iterable[Document], int]:
         """
         Find all records from collection
 
@@ -95,7 +107,7 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        query_filter: QueryFilter
             Conditions to filter on
         sort_by: Optional[str]
             Column to sort by
@@ -108,7 +120,7 @@ class Persistent(ABC):
 
         Returns
         -------
-        Tuple[Iterable[DocumentType], int]
+        Tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
         return NotImplemented
@@ -117,8 +129,8 @@ class Persistent(ABC):
     def update_one(
         self,
         collection_name: str,
-        filter_query: Mapping[str, Any],
-        update: Union[Mapping[str, Any], _Pipeline],
+        query_filter: QueryFilter,
+        update: Document,
     ) -> int:
         """
         Update one record in collection
@@ -127,9 +139,9 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        query_filter: QueryFilter
             Conditions to filter on
-        update: Union[Mapping[str, Any], _Pipeline]
+        update: Document
             Values to update
 
         Returns
@@ -143,8 +155,8 @@ class Persistent(ABC):
     def update_many(
         self,
         collection_name: str,
-        filter_query: Mapping[str, Any],
-        update: Union[Mapping[str, Any], _Pipeline],
+        query_filter: QueryFilter,
+        update: Document,
     ) -> int:
         """
         Update many records in collection
@@ -153,9 +165,9 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        query_filter: QueryFilter
             Conditions to filter on
-        update: Union[Mapping[str, Any], _Pipeline]
+        update: Document
             Values to update
 
         Returns
@@ -166,7 +178,7 @@ class Persistent(ABC):
         return NotImplemented
 
     @abstractmethod
-    def delete_one(self, collection_name: str, filter_query: Mapping[str, Any]) -> int:
+    def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete one record from collection
 
@@ -174,7 +186,7 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        query_filter: QueryFilter
             Conditions to filter on
 
         Returns
@@ -185,7 +197,7 @@ class Persistent(ABC):
         return NotImplemented
 
     @abstractmethod
-    def delete_many(self, collection_name: str, filter_query: Mapping[str, Any]) -> int:
+    def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete many records from collection
 
@@ -193,7 +205,7 @@ class Persistent(ABC):
         ----------
         collection_name: str
             Name of collection to use
-        filter_query: Mapping[str, Any]
+        query_filter: QueryFilter
             Conditions to filter on
 
         Returns
