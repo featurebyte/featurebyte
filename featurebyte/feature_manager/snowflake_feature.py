@@ -71,7 +71,7 @@ class FeatureSnowflake(BaseModel):
         feature_versions = self.retrieve_features(version=self.feature.version)
         if len(feature_versions) == 0:
             self._session.execute_query(
-                f"UPDATE FEATURE_REGISTRY SET IS_DEFAULT = False WHERE NAME = '{self.feature.name}'"
+                f"UPDATE FEATURE_REGISTRY SET IS_DEFAULT = False WHERE NAME = '{self.feature.name}'"  # nosec
             )
             logger.debug("Done updating is_default of other versions to false")
             insert_sql = tm_ins_feature_registry.render(feature=self.feature)
@@ -95,7 +95,7 @@ class FeatureSnowflake(BaseModel):
         -------
             list of Feature instances
         """
-        sql = f"SELECT * FROM FEATURE_REGISTRY WHERE NAME = '{self.feature.name}'"
+        sql = f"SELECT * FROM FEATURE_REGISTRY WHERE NAME = '{self.feature.name}'"  # nosec
         if version:
             sql += f" AND VERSION = '{version}'"
 

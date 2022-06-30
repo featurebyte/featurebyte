@@ -155,7 +155,7 @@ class TileSnowflake(BaseModel):
             whether the tile registry record is inserted successfully or not
         """
         result = self._session.execute_query(
-            f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{self.tile_id}'"
+            f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{self.tile_id}'"  # nosec
         )
         if result is None or len(result) == 0:
             sql = tm_ins_tile_registry.render(tile_id=self.tile_id, tile_sql=self.tile_sql)
@@ -179,7 +179,7 @@ class TileSnowflake(BaseModel):
             self._session.execute_query(f"ALTER TASK IF EXISTS {tile_task_name} SUSPEND")
 
         self._session.execute_query(
-            f"UPDATE TILE_REGISTRY SET ENABLED = 'N' WHERE TILE_ID = '{self.tile_id}'"
+            f"UPDATE TILE_REGISTRY SET ENABLED = 'N' WHERE TILE_ID = '{self.tile_id}'"  # nosec
         )
 
     def generate_tiles(
