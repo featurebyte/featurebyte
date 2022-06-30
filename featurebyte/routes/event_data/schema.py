@@ -46,8 +46,8 @@ class EventData(EventDataModel):
         User identifier
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    user_id: PydanticObjectId
+    id: PydanticObjectId = Field(default_factory=ObjectId)
+    user_id: Optional[PydanticObjectId]
     created_at: datetime.datetime
     status: EventDataStatus
 
