@@ -62,6 +62,7 @@ def query_graph_with_groupby_fixture(graph):
             "frequency": 30,
             "blind_spot": 1,
             "timestamp": "ts",
+            "tile_id": "avg_f30_m5_b1_ab21707e40d41cdb46c9d842652bcc14c483bcac",
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node],

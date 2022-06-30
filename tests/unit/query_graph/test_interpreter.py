@@ -9,6 +9,7 @@ import pytest
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState
 from featurebyte.query_graph.interpreter import GraphInterpreter, SQLOperationGraph, SQLType
+from featurebyte.query_graph.util import get_tile_table_identifier
 
 
 @pytest.fixture(name="graph", scope="function")
@@ -253,16 +254,22 @@ def test_graph_interpreter_snowflake(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
+    node_params = {
+        "keys": ["CUST_ID"],
+        "parent": "*",
+        "agg_func": "count",
+        "time_modulo_frequency": 600,
+        "frequency": 3600,
+        "blind_spot": 1,
+        "timestamp": "SERVER_TIMESTAMP",
+    }
     _groupby_node = graph.add_operation(
         node_type=NodeType.GROUPBY,
         node_params={
-            "keys": ["CUST_ID"],
-            "parent": "*",
-            "agg_func": "count",
-            "time_modulo_frequency": 600,
-            "frequency": 3600,
-            "blind_spot": 1,
-            "timestamp": "SERVER_TIMESTAMP",
+            **node_params,
+            "tile_id": get_tile_table_identifier(
+                transformations_hash=graph.node_name_to_ref[node_input.name], parameters=node_params
+            ),
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],
