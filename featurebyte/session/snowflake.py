@@ -95,38 +95,71 @@ class SnowflakeSession(BaseSession):
 
     def _init_featurebyte_schema_if_needed(self) -> None:
         # Note: self._connection.schema changes to None after execute_query() if the specified
-        # default schema doesn't exist, so the sequence of the two lines below matters
-        featurebyte_schema_name = self._connection.schema
-        show_schemas_result = self.execute_query("SHOW SCHEMAS")
-        if show_schemas_result is not None:
-            available_schemas = show_schemas_result["name"].tolist()
-        else:
-            available_schemas = []
-        if featurebyte_schema_name not in available_schemas:
-            logger.debug(f"Initializing schema {featurebyte_schema_name}")
-            self.execute_query(f"CREATE SCHEMA {featurebyte_schema_name}")
-            self._register_custom_functions()
-
-    def _register_custom_functions(self) -> None:
-        for sql_filename in get_custom_function_sql_filenames():
-            with open(sql_filename, encoding="utf-8") as file_handle:
-                self.execute_query(file_handle.read())
+        # default schema doesn't exist, so we should not rely on it
+        SchemaInitializer(self, self._get_featurebyte_schema_name()).initialize()
 
     def _get_featurebyte_schema_name(self) -> str:
         return Configurations().snowflake.featurebyte_schema
 
 
-def get_custom_function_sql_filenames() -> list[str]:
-    """Find the sourcefiles for all user defined functions and stored procedure
+class SchemaInitializer:
+    """Responsible for initializing featurebyte schema
 
-    Returns
-    -------
-    list[str]
+    Parameters
+    ----------
+    session : SnowflakeSession
+        Snowflake session object
+    featurebyte_schema_name : str
+        Featurebyte schema name
     """
-    sql_directory = os.path.join(os.path.dirname(featurebyte.__file__), "..", "sql", "snowflake")
-    output = []
-    for filename in os.listdir(sql_directory):
-        if filename.startswith("F_") or filename.startswith("SP_"):
-            full_filename = os.path.join(sql_directory, filename)
-            output.append(full_filename)
-    return output
+
+    def __init__(self, session: SnowflakeSession, featurebyte_schema_name: str):
+        self.session = session
+        self.featurebyte_schema_name = featurebyte_schema_name
+
+    def schema_exists(self) -> bool:
+        """Check whether the featurebyte schema exists
+
+        Returns
+        -------
+        bool
+        """
+        show_schemas_result = self.session.execute_query("SHOW SCHEMAS")
+        if show_schemas_result is not None:
+            available_schemas = show_schemas_result["name"].tolist()
+        else:
+            available_schemas = []
+        return self.featurebyte_schema_name in available_schemas
+
+    def initialize(self) -> None:
+        """Initialize the featurebyte schema if it doesn't exist"""
+        if self.schema_exists():
+            return
+        logger.debug(f"Initializing schema {self.featurebyte_schema_name}")
+        create_schema_query = f"CREATE SCHEMA {self.featurebyte_schema_name}"
+        self.session.execute_query(create_schema_query)
+        self.register_custom_functions()
+
+    def register_custom_functions(self) -> None:
+        """Register functions and procedures defined in the snowflake sql directory"""
+        for sql_filename in self.get_custom_function_sql_filenames():
+            with open(sql_filename, encoding="utf-8") as file_handle:
+                self.session.execute_query(file_handle.read())
+
+    @staticmethod
+    def get_custom_function_sql_filenames() -> list[str]:
+        """Find the sourcefiles for all user defined functions and stored procedure
+
+        Returns
+        -------
+        list[str]
+        """
+        sql_directory = os.path.join(
+            os.path.dirname(featurebyte.__file__), "..", "sql", "snowflake"
+        )
+        output = []
+        for filename in os.listdir(sql_directory):
+            if filename.startswith("F_") or filename.startswith("SP_"):
+                full_filename = os.path.join(sql_directory, filename)
+                output.append(full_filename)
+        return output
