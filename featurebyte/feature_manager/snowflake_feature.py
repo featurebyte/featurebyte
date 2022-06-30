@@ -151,7 +151,6 @@ class FeatureSnowflake(BaseModel):
         for tile_id in self.feature.tile_ids:
             logger.info(f"tile_id: {tile_id}")
             tile_mgr = TileSnowflake(
-                feature_name=self.feature.name,
                 time_modulo_frequency_seconds=self.feature.time_modulo_frequency_second,
                 blind_spot_seconds=self.feature.blind_spot_second,
                 frequency_minute=self.feature.frequency_minute,

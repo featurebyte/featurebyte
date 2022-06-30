@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, PrivateAttr, root_validator, validator
 from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedDatabaseSourceModel
 from featurebyte.logger import logger
-from featurebyte.models.event_data import DatabaseSourceModel
+from featurebyte.models.event_data import DatabaseSourceModel, TileType
 from featurebyte.session.base import BaseSession
 
 tm_ins_tile_registry = Template(
@@ -24,7 +24,7 @@ tm_gen_tile = Template(
     """
     call SP_TILE_GENERATE(
         '{{sql}}', {{time_modulo_frequency_seconds}}, {{blind_spot_seconds}}, {{frequency_minute}}, '{{column_names}}',
-        '{{table_name}}', '{{tile_type}}'
+        '{{table_name}}', '{{tile_type.value}}'
     )
 """
 )
@@ -37,7 +37,7 @@ tm_schedule_tile = Template(
     AS
         call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
             '{{temp_task_name}}', '{{warehouse}}', '{{tile_id}}', {{time_modulo_frequency_seconds}}, {{blind_spot_seconds}},
-            {{frequency_minute}}, {{offline_minutes}}, '{{sql}}', '{{column_names}}', '{{type}}', {{monitor_periods}}
+            {{frequency_minute}}, {{offline_minutes}}, '{{sql}}', '{{column_names}}', '{{tile_type.value}}', {{monitor_periods}}
         )
 """
 )
@@ -49,8 +49,6 @@ class TileSnowflake(BaseModel):
 
     Parameters
     ----------
-    feature_name: str
-        feature name
     time_modulo_frequency_seconds: int
         time modulo seconds for the tile
     blind_spot_seconds: int
@@ -69,7 +67,6 @@ class TileSnowflake(BaseModel):
         credentials to the datasource
     """
 
-    feature_name: str
     time_modulo_frequency_seconds: int = Field(gt=0)
     blind_spot_seconds: int
     frequency_minute: int = Field(gt=0, le=60)
@@ -94,7 +91,7 @@ class TileSnowflake(BaseModel):
         self._session = data_source.get_session(credentials=self.credentials)
 
     # pylint: disable=E0213
-    @validator("feature_name", "tile_id", "column_names")
+    @validator("tile_id", "column_names")
     def stripped_upper(cls, value: str) -> str:
         """
         Validator for non-empty attributes and return stripped and upper case of the value
@@ -174,7 +171,7 @@ class TileSnowflake(BaseModel):
         ----------
 
         """
-        for t_type in ["ONLINE", "OFFLINE"]:
+        for t_type in TileType:
             tile_task_name = f"TILE_TASK_{t_type}_{self.tile_id}"
             self._session.execute_query(f"ALTER TASK IF EXISTS {tile_task_name} SUSPEND")
 
@@ -184,7 +181,7 @@ class TileSnowflake(BaseModel):
 
     def generate_tiles(
         self,
-        tile_type: str,
+        tile_type: TileType,
         start_ts_str: str,
         end_ts_str: str,
     ) -> str:
@@ -193,7 +190,7 @@ class TileSnowflake(BaseModel):
 
         Parameters
         ----------
-        tile_type: str
+        tile_type: TileType
             tile type. ONLINE or OFFLINE
         start_ts_str: str
             start_timestamp of tile. ie. 2022-06-20 15:00:00
@@ -239,12 +236,11 @@ class TileSnowflake(BaseModel):
         -------
             generated sql to be executed
         """
-        tile_type = "ONLINE"
         start_minute = self.time_modulo_frequency_seconds // 60
         cron = f"{start_minute}-59/{self.frequency_minute} * * * *"
 
         return self._schedule_tiles(
-            tile_type=tile_type,
+            tile_type=TileType.ONLINE,
             cron_expr=cron,
             monitor_periods=monitor_periods,
         )
@@ -265,19 +261,18 @@ class TileSnowflake(BaseModel):
         -------
             generated sql to be executed
         """
-        tile_type = "OFFLINE"
         start_minute = self.time_modulo_frequency_seconds // 60
         cron = f"{start_minute} 0 * * *"
 
         return self._schedule_tiles(
-            tile_type=tile_type,
+            tile_type=TileType.OFFLINE,
             cron_expr=cron,
             offline_minutes=offline_minutes,
         )
 
     def _schedule_tiles(
         self,
-        tile_type: str,
+        tile_type: TileType,
         cron_expr: str,
         offline_minutes: int = 1440,
         monitor_periods: int = 10,
@@ -287,7 +282,7 @@ class TileSnowflake(BaseModel):
 
         Parameters
         ----------
-        tile_type: str
+        tile_type: TileType
             ONLINE or OFFLINE
         cron_expr: str
             cron expression for snowflake Task
@@ -313,7 +308,7 @@ class TileSnowflake(BaseModel):
             frequency_minute=self.frequency_minute,
             column_names=self.column_names,
             tile_id=self.tile_id,
-            type=tile_type,
+            tile_type=tile_type,
             offline_minutes=offline_minutes,
             monitor_periods=monitor_periods,
         )

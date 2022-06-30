@@ -5,6 +5,7 @@ from unittest import mock
 
 import pytest
 
+from featurebyte.models.event_data import TileType
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
@@ -17,7 +18,6 @@ def test_construct_snowflaketile_time_modulo_error(mock_execute_query, snowflake
 
     with pytest.raises(ValueError) as excinfo:
         TileSnowflake(
-            feature_name="featurename",
             time_modulo_frequency_seconds=183,
             blind_spot_seconds=3,
             frequency_minute=3,
@@ -33,7 +33,9 @@ def test_generate_tiles(mock_snowflake_tile):
     """
     Test generate_tiles method in TileSnowflake
     """
-    sql = mock_snowflake_tile.generate_tiles("ONLINE", "2022-06-20 15:00:00", "2022-06-21 15:00:00")
+    sql = mock_snowflake_tile.generate_tiles(
+        TileType.ONLINE, "2022-06-20 15:00:00", "2022-06-21 15:00:00"
+    )
     expected_sql = """
         call SP_TILE_GENERATE(
             'select c1 from dummy

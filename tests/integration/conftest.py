@@ -185,7 +185,6 @@ def snowflake_tile(fb_db_session, config):
     tile_id = "tile_id1"
 
     tile_s = TileSnowflake(
-        feature_name="feature1",
         time_modulo_frequency_seconds=183,
         blind_spot_seconds=3,
         frequency_minute=5,

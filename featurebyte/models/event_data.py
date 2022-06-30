@@ -186,3 +186,10 @@ class TileSpec(BaseModel):
 
     online_enabled: bool
     datasource: DatabaseSourceModel
+
+
+class TileType(str, Enum):
+    """Tile Type"""
+
+    ONLINE = "ONLINE"
+    OFFLINE = "OFFLINE"

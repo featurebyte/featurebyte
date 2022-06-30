@@ -254,7 +254,6 @@ def mock_snowflake_tile(mock_execute_query, snowflake_database_source, snowflake
     _ = snowflake_connector
 
     tile_s = TileSnowflake(
-        feature_name="featurename",
         time_modulo_frequency_seconds=183,
         blind_spot_seconds=3,
         frequency_minute=5,
