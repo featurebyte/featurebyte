@@ -1,13 +1,14 @@
 """
 This module contains integration tests for TileSnowflake
 """
+from featurebyte.models.event_data import TileType
 
 
 def test_generate_tile(snowflake_tile, fb_db_session):
     """
     Test generate_tiles method in TileSnowflake
     """
-    snowflake_tile.generate_tiles("ONLINE", "2022-06-05 23:33:00", "2022-06-05 23:58:00")
+    snowflake_tile.generate_tiles(TileType.ONLINE, "2022-06-05 23:33:00", "2022-06-05 23:58:00")
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {snowflake_tile.tile_id}"
     result = fb_db_session.execute_query(sql)

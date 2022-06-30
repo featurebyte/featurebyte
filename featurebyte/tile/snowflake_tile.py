@@ -3,16 +3,17 @@ Snowflake Tile class
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from jinja2 import Template
-from pydantic import BaseModel, Field, PrivateAttr, root_validator, validator
+from pydantic import PrivateAttr
 
 from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedDatabaseSourceModel
 from featurebyte.logger import logger
 from featurebyte.models.event_data import DatabaseSourceModel, TileType
 from featurebyte.session.base import BaseSession
+from featurebyte.tile.base import TileBase
 
 tm_ins_tile_registry = Template(
     """
@@ -43,36 +44,18 @@ tm_schedule_tile = Template(
 )
 
 
-class TileSnowflake(BaseModel):
+class TileSnowflake(TileBase):
     """
     Snowflake Tile class
 
     Parameters
     ----------
-    time_modulo_frequency_seconds: int
-        time modulo seconds for the tile
-    blind_spot_seconds: int
-        blind spot seconds for the tile
-    frequency_minute: int
-        frequency minute for the tile
-    tile_sql: str
-        sql for tile generation
-    column_names: str
-        comma separated string of column names for the tile table
-    tile_id: str
-        hash value of tile id and name
     tabular_source: DatabaseSourceModel
-        datasource instance
+        snowflake datasource instance
     credentials: Credentials
-        credentials to the datasource
+        credentials to the snowflake datasource
     """
 
-    time_modulo_frequency_seconds: int = Field(gt=0)
-    blind_spot_seconds: int
-    frequency_minute: int = Field(gt=0, le=60)
-    tile_sql: str
-    column_names: str
-    tile_id: str
     tabular_source: DatabaseSourceModel
     credentials: Credentials
     _session: BaseSession = PrivateAttr()
@@ -89,56 +72,6 @@ class TileSnowflake(BaseModel):
         super().__init__(**kw)
         data_source = ExtendedDatabaseSourceModel(**self.tabular_source.dict())
         self._session = data_source.get_session(credentials=self.credentials)
-
-    # pylint: disable=E0213
-    @validator("tile_id", "column_names")
-    def stripped_upper(cls, value: str) -> str:
-        """
-        Validator for non-empty attributes and return stripped and upper case of the value
-
-        Parameters
-        ----------
-        value: str
-            input value of attributes feature_name, tile_id, column_names
-
-        Raises
-        ------
-        ValueError
-            if the input value is None or empty
-
-        Returns
-        -------
-            stripped and upper case of the input value
-        """
-        if value is None or value.strip() == "":
-            raise ValueError("value cannot be empty")
-        return value.strip().upper()
-
-    # pylint: disable=E0213
-    @root_validator
-    def check_time_modulo_frequency_seconds(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Root Validator for time-modulo-frequency
-
-        Parameters
-        ----------
-        values: dict
-            dict of attribute and value
-
-        Raises
-        ------
-        ValueError
-            if time-modulo-frequency is greater than frequency in seconds
-
-        Returns
-        -------
-            original dict
-        """
-        if values["time_modulo_frequency_seconds"] > values["frequency_minute"] * 60:
-            raise ValueError(
-                f"time_modulo_frequency_seconds must be less than {values['frequency_minute'] * 60}"
-            )
-        return values
 
     def insert_tile_registry(self) -> bool:
         """
