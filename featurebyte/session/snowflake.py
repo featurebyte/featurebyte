@@ -109,7 +109,6 @@ class SnowflakeSession(BaseSession):
 
     def _register_custom_functions(self) -> None:
         for sql_filename in get_custom_function_sql_filenames():
-            logger.debug(f"Executing {sql_filename}")
             with open(sql_filename, encoding="utf-8") as file_handle:
                 self.execute_query(file_handle.read())
 

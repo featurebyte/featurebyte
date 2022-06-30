@@ -79,7 +79,7 @@ def test_make_input_node_escape_special_characters():
     """Test input node quotes all identifiers to handle special characters"""
     parameters = {
         "columns": ["SUM(a)", "b", "c"],
-        "dbtable": "my_table",
+        "dbtable": '"my_table"',
     }
     node = sql.make_input_node(parameters=parameters, sql_type=sql.SQLType.PREVIEW)
     expected = textwrap.dedent(

@@ -27,7 +27,7 @@ def test_graph_interpreter_super_simple(graph):
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
-            "dbtable": "event_table",
+            "dbtable": '"event_table"',
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
@@ -68,7 +68,7 @@ def test_graph_interpreter_multi_assign(graph):
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
-            "dbtable": "event_table",
+            "dbtable": '"event_table"',
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
@@ -155,7 +155,7 @@ def test_graph_interpreter_binary_operations(graph, node_type, expected_expr):
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
-            "dbtable": "event_table",
+            "dbtable": '"event_table"',
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
@@ -206,7 +206,7 @@ def test_graph_interpreter_project_multiple_columns(graph):
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
-            "dbtable": "event_table",
+            "dbtable": '"event_table"',
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
@@ -323,7 +323,7 @@ def test_graph_interpreter_preview(graph):
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
-            "dbtable": "event_table",
+            "dbtable": '"event_table"',
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
@@ -408,7 +408,7 @@ def test_filter_node(graph):
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
-            "dbtable": "event_table",
+            "dbtable": '"event_table"',
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
@@ -489,7 +489,7 @@ def test_filter_assign_project(graph):
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
-            "dbtable": "event_table",
+            "dbtable": '"event_table"',
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
@@ -547,7 +547,7 @@ def test_project_multi_then_assign(graph):
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
-            "dbtable": "event_table",
+            "dbtable": '"event_table"',
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],

@@ -45,7 +45,11 @@ def sqlite_database_source_fixture(config, graph):
 @patch("featurebyte.session.sqlite.os", Mock())
 @patch("featurebyte.session.sqlite.sqlite3", Mock())
 def test_session_manager__get_cached_properly(
-    snowflake_database_source, sqlite_database_source, session_manager, caplog_handle
+    snowflake_database_source,
+    snowflake_execute_query,
+    sqlite_database_source,
+    session_manager,
+    caplog_handle,
 ):
     """
     Test session manager get cached properly
@@ -55,23 +59,24 @@ def test_session_manager__get_cached_properly(
 
     # retrieve data source session for the first time
     _ = session_manager[snowflake_database_source]
-    assert len(caplog_handle.records) == 1
+    assert len(caplog_handle.records) == 2
     assert caplog_handle.records[0].msg == "Create a new session for snowflake"
+    assert caplog_handle.records[1].msg.startswith("Initializing schema")
 
     # retrieve same data source for the second time, check that cached is used
     _ = session_manager[snowflake_database_source]
-    assert len(caplog_handle.records) == 1
+    assert len(caplog_handle.records) == 2
 
     # retrieve different data source
     _ = session_manager[sqlite_database_source]
-    assert len(caplog_handle.records) == 2
-    assert caplog_handle.records[1].msg == "Create a new session for sqlite"
+    assert len(caplog_handle.records) == 3
+    assert caplog_handle.records[2].msg == "Create a new session for sqlite"
 
     # clear the cache & call again
     session_manager.__getitem__.cache_clear()
     _ = session_manager[snowflake_database_source]
-    assert len(caplog_handle.records) == 3
-    assert caplog_handle.records[2].msg == "Create a new session for snowflake"
+    assert len(caplog_handle.records) == 5
+    assert caplog_handle.records[3].msg == "Create a new session for snowflake"
 
 
 def test_session_manager__wrong_configuration_file(snowflake_database_source):

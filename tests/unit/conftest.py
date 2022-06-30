@@ -121,8 +121,13 @@ def mock_snowflake_execute_query():
                     "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
                 },
             ],
+            "SHOW SCHEMAS": [
+                {"name": "PUBLIC"},
+            ],
         }
-        return pd.DataFrame(query_map[query])
+        res = query_map.get(query)
+        if res is not None:
+            return pd.DataFrame(res)
 
     with mock.patch(
         "featurebyte.session.snowflake.SnowflakeSession.execute_query"
@@ -190,7 +195,7 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
                     "warehouse": "sf_warehouse",
                 },
             },
-            "dbtable": "sf_table",
+            "dbtable": '"sf_database"."sf_schema"."sf_table"',
         },
         output_type=NodeOutputType.FRAME,
     )
