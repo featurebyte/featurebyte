@@ -17,6 +17,7 @@ from featurebyte.config import Configurations
 from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
 from featurebyte.models.event_data import EventDataStatus, TileSpec
 from featurebyte.session.manager import SessionManager
+from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
