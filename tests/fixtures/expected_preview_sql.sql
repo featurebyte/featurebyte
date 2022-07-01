@@ -49,7 +49,7 @@ REQUEST_TABLE_W7200_F3600_BS900_M1800_cust_id AS (
             )
         )
     ) T
-    ),
+),
 REQUEST_TABLE_W172800_F3600_BS900_M1800_cust_id AS (
     SELECT
         REQ.POINT_IN_TIME,
@@ -67,7 +67,7 @@ REQUEST_TABLE_W172800_F3600_BS900_M1800_cust_id AS (
             )
         )
     ) T
-    ),
+),
 _FB_AGGREGATED AS (SELECT
   REQ.*,
   "T0"."agg_w7200_avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e" AS "agg_w7200_avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e",
