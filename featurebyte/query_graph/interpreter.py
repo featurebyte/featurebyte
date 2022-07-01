@@ -24,7 +24,6 @@ from featurebyte.query_graph.sql import (
     make_input_node,
     make_project_node,
 )
-from featurebyte.query_graph.tiling import get_tile_table_identifier
 
 
 class SQLOperationGraph:
@@ -227,7 +226,7 @@ class TileSQLGenerator:
         frequency = groupby_node.parameters["frequency"]
         blind_spot = groupby_node.parameters["blind_spot"]
         time_modulo_frequency = groupby_node.parameters["time_modulo_frequency"]
-        tile_table_id = get_tile_table_identifier(self.query_graph, groupby_node)
+        tile_table_id = groupby_node.parameters["tile_id"]
         info = TileGenSql(
             tile_table_id=tile_table_id,
             sql=sql.sql(pretty=True),

@@ -5,6 +5,7 @@ import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
+from featurebyte.query_graph.util import get_tile_table_identifier
 
 
 @pytest.fixture(name="query_graph_with_groupby")
@@ -52,16 +53,22 @@ def query_graph_with_groupby_fixture(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, sum_node],
     )
+    node_params = {
+        "keys": ["cust_id"],
+        "parent": "a",
+        "agg_func": "avg",
+        "time_modulo_frequency": 5,
+        "frequency": 30,
+        "blind_spot": 1,
+        "timestamp": "ts",
+    }
     graph.add_operation(
         node_type=NodeType.GROUPBY,
         node_params={
-            "keys": ["cust_id"],
-            "parent": "a",
-            "agg_func": "avg",
-            "time_modulo_frequency": 5,
-            "frequency": 30,
-            "blind_spot": 1,
-            "timestamp": "ts",
+            **node_params,
+            "tile_id": get_tile_table_identifier(
+                graph.node_name_to_ref[assign_node.name], node_params
+            ),
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node],
