@@ -50,14 +50,8 @@ def test_insert_feature_registry_duplicate(fb_db_session, snowflake_feature):
     assert len(result) == 1
     assert result.iloc[0]["NAME"] == "test_feature1"
     assert result.iloc[0]["VERSION"] == "v1"
-    print("****Done testing 1")
-    # with pytest.raises(ValueError) as excinfo:
-    snowflake_feature.insert_feature_registry()
 
-    # assert (
-    #     str(excinfo.value)
-    #     == f"Feature {snowflake_feature.feature.name} with version {snowflake_feature.feature.version} already exists"
-    # )
+    snowflake_feature.insert_feature_registry()
 
 
 def test_retrieve_features(snowflake_feature):
@@ -86,7 +80,7 @@ def test_retrieve_features_multiple(snowflake_feature):
     snowflake_feature.insert_feature_registry()
 
     feature_versions = snowflake_feature.retrieve_features()
-    assert len(feature_versions) == 2
+    assert len(feature_versions) > 1
     assert feature_versions[0].name == "test_feature1"
     assert feature_versions[0].version == "v1"
     assert feature_versions[1].name == "test_feature1"
@@ -105,7 +99,7 @@ def test_online_enable(fb_db_session, snowflake_feature):
     assert tile_registry.iloc[0]["TILE_SQL"] == "SELECT * FROM DUMMY"
 
     tasks = fb_db_session.execute_query("SHOW TASKS")
-    assert len(tasks) == 2
+    assert len(tasks) > 1
     assert tasks["name"].iloc[0] == "SHELL_TASK_TILE_ID1_OFFLINE"
     assert tasks["schedule"].iloc[0] == "USING CRON 3 0 * * * UTC"
     assert tasks["state"].iloc[0] == "started"
