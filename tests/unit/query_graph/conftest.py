@@ -17,13 +17,6 @@ def query_graph_with_groupby_fixture(graph):
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
             "dbtable": "event_table",
-            "database_source": {
-                "type": "snowflake",
-                "details": {
-                    "database": "db",
-                    "sf_schema": "public",
-                },
-            },
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],

@@ -5,7 +5,6 @@ import os
 import sqlite3
 import tempfile
 from datetime import datetime
-from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -72,9 +71,6 @@ def config_fixture(sqlite_filename):
     """
     Config object for integration testing
     """
-    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
-    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-
     config_dict = {
         "datasource": [
             {
@@ -93,10 +89,7 @@ def config_fixture(sqlite_filename):
                 "source_type": "sqlite",
                 "filename": sqlite_filename,
             },
-        ],
-        "snowflake": {
-            "featurebyte_schema": temp_schema_name,
-        },
+        ]
     }
     with tempfile.NamedTemporaryFile("w") as file_handle:
         file_handle.write(yaml.dump(config_dict))
@@ -111,17 +104,11 @@ def snowflake_session(transaction_data_upper_case, config):
     """
     session_manager = SessionManager(credentials=config.credentials)
     snowflake_database_source = config.db_sources["snowflake_datasource"]
-    with mock.patch("featurebyte.session.snowflake.Configurations", return_value=config):
-        session = session_manager[snowflake_database_source]
-    assert isinstance(session, SnowflakeSession)
-
+    session = session_manager[snowflake_database_source]
     table_name = "TEST_TABLE"
-    temp_schema_name = config.snowflake.featurebyte_schema
-    assert session.connection.schema == temp_schema_name
-
     session.execute_query(
         f"""
-        CREATE TEMPORARY TABLE {session.sf_schema}.{table_name}(
+        CREATE TEMPORARY TABLE {table_name}(
             CREATED_AT INT,
             CUST_ID INT,
             PRODUCT_ACTION STRING,
@@ -129,14 +116,8 @@ def snowflake_session(transaction_data_upper_case, config):
         )
         """
     )
-
-    write_pandas(
-        session.connection, transaction_data_upper_case, table_name, schema=session.sf_schema
-    )
-
+    write_pandas(session.connection, transaction_data_upper_case, table_name)
     yield session
-
-    session.execute_query(f"DROP SCHEMA IF EXISTS {temp_schema_name}")
 
 
 @pytest.fixture(scope="session")

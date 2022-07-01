@@ -65,14 +65,6 @@ class GitSettings(BaseSettings):
     branch: str
 
 
-class SnowflakeSettings(BaseSettings):
-    """
-    Settings specific to snowflake
-    """
-
-    featurebyte_schema: str = "FEATUREBYTE"
-
-
 class Configurations:
     """
     FeatureByte SDK settings. Contains general settings, database sources and credentials.
@@ -97,7 +89,6 @@ class Configurations:
         self.db_sources: dict[str, DatabaseSourceModel] = {}
         self.credentials: Credentials = {}
         self.logging: LoggingSettings = LoggingSettings()
-        self.snowflake = SnowflakeSettings()
         self._config_file_path = config_file_path
         self._parse_config(config_file_path)
 
@@ -157,7 +148,3 @@ class Configurations:
         if git_settings:
             # parse git settings
             self.git = GitSettings(**git_settings)
-
-        snowflake_settings = self.settings.pop("snowflake", None)
-        if snowflake_settings:
-            self.snowflake = SnowflakeSettings(**snowflake_settings)

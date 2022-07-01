@@ -28,7 +28,7 @@ def expected_snowflake_table_preview_query() -> str:
           "event_timestamp" AS "event_timestamp",
           "created_at" AS "created_at",
           "cust_id" AS "cust_id"
-        FROM "sf_database"."sf_schema"."sf_table"
+        FROM "sf_table"
         LIMIT 10
         """
     ).strip()
