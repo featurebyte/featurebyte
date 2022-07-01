@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import pandas as pd
 import sqlglot
 
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import Node
 from featurebyte.query_graph.tiling import get_aggregator
 
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
@@ -78,15 +78,12 @@ class AggregationSpec:
     @classmethod
     def from_groupby_query_node(
         cls,
-        graph: QueryGraph,
         groupby_node: Node,
     ) -> list[AggregationSpec]:
         """Construct an AggregationSpec from a query graph and groupby node
 
         Parameters
         ----------
-        graph : QueryGraph
-            Query graph
         groupby_node : Node
             Query graph node with groupby type
 

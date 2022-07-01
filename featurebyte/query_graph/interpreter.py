@@ -133,7 +133,7 @@ class SQLOperationGraph:
             if self.sql_type == SQLType.BUILD_TILE:
                 sql_node = make_build_tile_node(input_sql_nodes, parameters)
             elif self.sql_type == SQLType.GENERATE_FEATURE:
-                sql_node = make_aggregated_tiles_node(self.query_graph, cur_node)
+                sql_node = make_aggregated_tiles_node(cur_node)
             else:
                 raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
         else:

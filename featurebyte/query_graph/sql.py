@@ -16,7 +16,7 @@ from sqlglot import Expression, expressions, parse_one, select
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_common import AggregationSpec
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import Node
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 
 
@@ -644,13 +644,11 @@ def make_input_node(
     return sql_node
 
 
-def make_aggregated_tiles_node(graph: QueryGraph, groupby_node: Node) -> AggregatedTilesNode:
+def make_aggregated_tiles_node(groupby_node: Node) -> AggregatedTilesNode:
     """Create a TableNode representing the aggregated tiles
 
     Parameters
     ----------
-    graph : QueryGraph
-        Query graph
     groupby_node : Node
         Query graph node with groupby type
 
@@ -658,7 +656,7 @@ def make_aggregated_tiles_node(graph: QueryGraph, groupby_node: Node) -> Aggrega
     -------
     AggregatedTilesNode
     """
-    agg_specs = AggregationSpec.from_groupby_query_node(graph, groupby_node)
+    agg_specs = AggregationSpec.from_groupby_query_node(groupby_node)
     columns_map = {}
     for agg_spec in agg_specs:
         columns_map[agg_spec.feature_name] = expressions.Identifier(

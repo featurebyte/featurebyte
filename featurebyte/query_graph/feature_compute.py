@@ -18,6 +18,13 @@ from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.interpreter import SQLOperationGraph, find_parent_groupby_nodes
 from featurebyte.query_graph.sql import Project, SQLType, TableNode
 
+Window = int
+Frequency = int
+BlindSpot = int
+TimeModuloFreq = int
+AggSpecEntityIDs = Tuple[str, ...]
+TileIndicesIdType = Tuple[Window, Frequency, BlindSpot, TimeModuloFreq, AggSpecEntityIDs]
+
 
 class RequestTablePlan(ABC):
     """SQL generation for expanded request tables
@@ -57,15 +64,8 @@ class RequestTablePlan(ABC):
     The REQ_TILE_INDEX column will be used as a join key when joining with the tile table.
     """
 
-    Window = int
-    Frequency = int
-    BlindSpot = int
-    TimeModuloFreq = int
-    AggSpecEntityIDs = Tuple[str, ...]
-    TileIndicesIdType = Tuple[Window, Frequency, BlindSpot, TimeModuloFreq, AggSpecEntityIDs]
-
     def __init__(self) -> None:
-        self.expanded_request_table_names: dict[RequestTablePlan.TileIndicesIdType, str] = {}
+        self.expanded_request_table_names: dict[TileIndicesIdType, str] = {}
 
     def add_aggregation_spec(self, agg_spec: AggregationSpec) -> None:
         """Process a new AggregationSpec
@@ -185,10 +185,11 @@ class RequestTablePlan(ABC):
         str
             SQL code for expanding request table
         """
-        pass
 
 
 class SnowflakeRequestTablePlan(RequestTablePlan):
+    """Generator of Snowflake specific query to expand request table"""
+
     @staticmethod
     def construct_expanded_request_table_sql(
         window_size: int,
@@ -197,7 +198,6 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
         time_modulo_frequency: int,
         entity_columns: list[str],
     ) -> str:
-        # This query is Snowflake specific
         select_entity_columns = ", ".join([f"REQ.{col}" for col in entity_columns])
         sql = f"""
     SELECT
@@ -535,7 +535,7 @@ class FeatureExecutionPlanner:
         groupby_node : Node
             Groupby query node
         """
-        agg_specs = AggregationSpec.from_groupby_query_node(self.graph, groupby_node)
+        agg_specs = AggregationSpec.from_groupby_query_node(groupby_node)
         for agg_spec in agg_specs:
             self.plan.add_aggregation_spec(agg_spec)
 
