@@ -296,7 +296,11 @@ class GlobalQueryGraph(QueryGraph):
 
     @staticmethod
     def _update_node_parameters(
-        graph: QueryGraph, node_type: NodeType, node_params: dict[str, Any], input_nodes: list[Node]
+        to_update_params: bool,
+        graph: QueryGraph,
+        node_type: NodeType,
+        node_params: dict[str, Any],
+        input_nodes: list[Node],
     ) -> dict[str, Any]:
         """
         Update node parameter if the parameter is a function of node hash.
@@ -305,6 +309,8 @@ class GlobalQueryGraph(QueryGraph):
 
         Parameters
         ----------
+        to_update_params: bool
+            Whether to update node parameters
         graph: QueryGraph
             Query graph
         node_type: NodeType
@@ -319,13 +325,14 @@ class GlobalQueryGraph(QueryGraph):
         dict[str, Any]
             Updated node_params
         """
-        if node_type == NodeType.GROUPBY:
-            assert len(input_nodes) == 1
-            transformations_hash = graph.node_name_to_ref[input_nodes[0].name]
-            node_params["tile_id"] = get_tile_table_identifier(
-                transformations_hash=transformations_hash,
-                parameters=node_params,
-            )
+        if to_update_params:
+            if node_type == NodeType.GROUPBY:
+                assert len(input_nodes) == 1
+                transformations_hash = graph.node_name_to_ref[input_nodes[0].name]
+                node_params["tile_id"] = get_tile_table_identifier(
+                    transformations_hash=transformations_hash,
+                    parameters=node_params,
+                )
 
         return node_params
 
@@ -336,6 +343,7 @@ class GlobalQueryGraph(QueryGraph):
         pruned_graph: QueryGraph,
         processed_node_names: set[str],
         node_name_map: dict[str, str],
+        to_update_node_params: bool,
     ) -> QueryGraph:
         # pruning: move backward from target node to the input node
         to_prune_target_node = False
@@ -361,6 +369,7 @@ class GlobalQueryGraph(QueryGraph):
                 pruned_graph=pruned_graph,
                 processed_node_names=processed_node_names,
                 node_name_map=node_name_map,
+                to_update_node_params=to_update_node_params,
             )
 
         if to_prune_target_node:
@@ -385,8 +394,9 @@ class GlobalQueryGraph(QueryGraph):
             for node_name in mapped_input_node_names
         ]
         node_pruned = pruned_graph.add_operation(
-            node_type=NodeType(target_node.type),
+            node_type=node_type,
             node_params=self._update_node_parameters(
+                to_update_params=to_update_node_params,
                 graph=pruned_graph,
                 node_type=node_type,
                 node_params=target_node.parameters,
@@ -401,7 +411,9 @@ class GlobalQueryGraph(QueryGraph):
         processed_node_names.add(target_node.name)
         return pruned_graph
 
-    def prune(self, target_node: Node, target_columns: set[str]) -> tuple[QueryGraph, Node]:
+    def prune(
+        self, target_node: Node, target_columns: set[str], to_update_node_params: bool = False
+    ) -> tuple[QueryGraph, Node]:
         """
         Prune the query graph and return the pruned graph & mapped node.
 
@@ -415,6 +427,8 @@ class GlobalQueryGraph(QueryGraph):
             target end node
         target_columns: set[str]
             list of target columns
+        to_update_node_params: bool
+            whether to update hash sensitive parameters during graph pruning
 
         Returns
         -------
@@ -427,6 +441,7 @@ class GlobalQueryGraph(QueryGraph):
             pruned_graph=QueryGraph(),
             processed_node_names=set(),
             node_name_map=node_name_map,
+            to_update_node_params=to_update_node_params,
         )
         mapped_node = pruned_graph.get_node_by_name(node_name_map[target_node.name])
         return pruned_graph, mapped_node
