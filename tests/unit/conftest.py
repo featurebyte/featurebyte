@@ -124,8 +124,14 @@ def mock_snowflake_execute_query():
                     "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
                 },
             ],
+            "SHOW SCHEMAS": [
+                {"name": "PUBLIC"},
+            ],
         }
-        return pd.DataFrame(query_map[query])
+        res = query_map.get(query)
+        if res is not None:
+            return pd.DataFrame(res)
+        return None
 
     with mock.patch(
         "featurebyte.session.snowflake.SnowflakeSession.execute_query"
@@ -220,6 +226,13 @@ def dataframe_fixture(graph, snowflake_database_source):
             "columns": list(column_var_type_map.keys()),
             "timestamp": "VALUE",
             "dbtable": "transaction",
+            "database_source": {
+                "type": "snowflake",
+                "details": {
+                    "database": "db",
+                    "sf_schema": "public",
+                },
+            },
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],

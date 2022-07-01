@@ -22,6 +22,13 @@ def input_node_fixture():
         columns_map=columns_map,
         column_names=["col_1", "col_2", "col_3"],
         dbtable="dbtable",
+        database_source={
+            "type": "snowflake",
+            "details": {
+                "database": "db",
+                "sf_schema": "public",
+            },
+        },
     )
 
 
@@ -80,6 +87,13 @@ def test_make_input_node_escape_special_characters():
     parameters = {
         "columns": ["SUM(a)", "b", "c"],
         "dbtable": "my_table",
+        "database_source": {
+            "type": "snowflake",
+            "details": {
+                "database": "db",
+                "sf_schema": "public",
+            },
+        },
     }
     node = sql.make_input_node(parameters=parameters, sql_type=sql.SQLType.PREVIEW)
     expected = textwrap.dedent(
@@ -88,7 +102,7 @@ def test_make_input_node_escape_special_characters():
           "SUM(a)" AS "SUM(a)",
           "b" AS "b",
           "c" AS "c"
-        FROM "my_table"
+        FROM "db"."public"."my_table"
         """
     ).strip()
     assert node.sql.sql(pretty=True) == expected

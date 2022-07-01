@@ -13,6 +13,7 @@ from enum import Enum
 
 from sqlglot import Expression, expressions, parse_one, select
 
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 
@@ -197,6 +198,7 @@ class GenericInputNode(TableNode):
 
     column_names: list[str]
     dbtable: str
+    database_source: dict[str, Any]
 
     @property
     def sql(self) -> Expression:
@@ -212,7 +214,13 @@ class GenericInputNode(TableNode):
             col = expressions.Identifier(this=col, quoted=True)
             select_args.append(expressions.alias_(expr, col))
         select_expr = select(*select_args)
-        dbtable = escape_column_name(self.dbtable)
+        if self.database_source["type"] == SourceType.SNOWFLAKE:
+            details = self.database_source["details"]
+            database = details["database"]
+            sf_schema = details["sf_schema"]
+            dbtable = f'"{database}"."{sf_schema}"."{self.dbtable}"'
+        else:
+            dbtable = escape_column_name(self.dbtable)
         select_expr = select_expr.from_(dbtable)
         return select_expr
 
@@ -598,17 +606,20 @@ def make_input_node(
     for colname in parameters["columns"]:
         columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
     sql_node: BuildTileInputNode | GenericInputNode
+    database_source = parameters["database_source"]
     if sql_type == SQLType.BUILD_TILE:
         sql_node = BuildTileInputNode(
             columns_map=columns_map,
             column_names=parameters["columns"],
             timestamp=parameters["timestamp"],
             dbtable=parameters["dbtable"],
+            database_source=database_source,
         )
     else:
         sql_node = GenericInputNode(
             columns_map=columns_map,
             column_names=parameters["columns"],
             dbtable=parameters["dbtable"],
+            database_source=database_source,
         )
     return sql_node
