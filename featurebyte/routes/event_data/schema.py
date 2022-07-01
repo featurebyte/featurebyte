@@ -2,7 +2,7 @@
 EventData API payload schema
 """
 # pylint: disable=too-few-public-methods
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import datetime
 
@@ -30,6 +30,7 @@ class EventDataCreate(BaseModel):
     name: str
     tabular_source: Tuple[DatabaseSourceModel, str]
     event_timestamp_column: str
+    column_entity_map: Dict[str, str] = Field(default_factory=dict)
     record_creation_date_column: Optional[str]
     default_feature_job_setting: Optional[FeatureJobSetting]
 
