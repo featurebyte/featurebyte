@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_SCHEDULE(FEATURE_NAME varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, OFFLINE_PERIOD_MINUTE float, SQL varchar, COLUMN_NAMES varchar, TYPE varchar, MONITOR_PERIODS float, TILE_END_TS timestamp_tz)
+CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_SCHEDULE(TILE_ID varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, OFFLINE_PERIOD_MINUTE float, SQL varchar, COLUMN_NAMES varchar, TYPE varchar, MONITOR_PERIODS float, TILE_END_TS timestamp_tz)
 returns string
 language javascript
 as
@@ -24,7 +24,7 @@ $$
 
     var tile_type = TYPE.toUpperCase()
     var lookback_period = FREQUENCY_MINUTE * (MONITOR_PERIODS + 1)
-    var table_name = FEATURE_NAME.toUpperCase() + "_TILE"
+    var table_name = TILE_ID.toUpperCase()
 
     if (tile_type === "OFFLINE") {
         // offline schedule
@@ -59,7 +59,7 @@ $$
 
     // trigger stored procedure to generate tiles
     var generate_input_sql = SQL.replaceAll("FB_START_TS", "\\'"+tile_start_ts_str+"\\'").replaceAll("FB_END_TS", "\\'"+tile_end_ts_str+"\\'")
-    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}')`
+    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}')`
     var result = snowflake.execute(
         {
             sqlText: generate_stored_proc

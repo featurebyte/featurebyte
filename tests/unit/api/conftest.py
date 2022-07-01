@@ -28,7 +28,7 @@ def expected_snowflake_table_preview_query() -> str:
           "event_timestamp" AS "event_timestamp",
           "created_at" AS "created_at",
           "cust_id" AS "cust_id"
-        FROM "sf_table"
+        FROM "sf_database"."sf_schema"."sf_table"
         LIMIT 10
         """
     ).strip()
@@ -73,6 +73,7 @@ def feature_list_fixture(grouped_event_view):
             "time_modulo_frequency": 300,
             "frequency": 1800,
             "names": ["sum_30m", "sum_2h", "sum_1d"],
+            "tile_id": "sum_f1800_m300_b600_2ffe099df53ee760d5a551c17707fedd0cf861f9",
         },
         output_type=NodeOutputType.FRAME,
     )

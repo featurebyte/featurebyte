@@ -4,13 +4,15 @@ Read configurations from ini file
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Pattern
 
 import os
+import re
 from enum import Enum
+from pathlib import Path
 
 import yaml
-from pydantic import BaseSettings
+from pydantic import BaseSettings, ConstrainedStr
 from pydantic.error_wrappers import ValidationError
 
 from featurebyte.enum import SourceType
@@ -38,11 +40,37 @@ class LogLevel(str, Enum):
 
 class LoggingSettings(BaseSettings):
     """
-    Settings related with the logging
+    Settings for logging
     """
 
     level: LogLevel = LogLevel.DEBUG
     serialize: bool = False
+
+
+class GitRepoUrl(ConstrainedStr):
+    """
+    Git repo string
+    """
+
+    regex: Pattern[str] | None = re.compile(r".*\.git")
+
+
+class GitSettings(BaseSettings):
+    """
+    Settings for git access
+    """
+
+    remote_url: GitRepoUrl
+    key_path: Path
+    branch: str
+
+
+class SnowflakeSettings(BaseSettings):
+    """
+    Settings specific to snowflake
+    """
+
+    featurebyte_schema: str = "FEATUREBYTE"
 
 
 class Configurations:
@@ -69,6 +97,7 @@ class Configurations:
         self.db_sources: dict[str, DatabaseSourceModel] = {}
         self.credentials: Credentials = {}
         self.logging: LoggingSettings = LoggingSettings()
+        self.snowflake = SnowflakeSettings()
         self._config_file_path = config_file_path
         self._parse_config(config_file_path)
 
@@ -123,3 +152,12 @@ class Configurations:
         if logging_settings:
             # parse logging settings
             self.logging = LoggingSettings(**logging_settings)
+
+        git_settings = self.settings.pop("git", None)
+        if git_settings:
+            # parse git settings
+            self.git = GitSettings(**git_settings)
+
+        snowflake_settings = self.settings.pop("snowflake", None)
+        if snowflake_settings:
+            self.snowflake = SnowflakeSettings(**snowflake_settings)

@@ -15,8 +15,11 @@ from featurebyte.api.event_view import EventView
 from featurebyte.config import Configurations
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
+from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
+from featurebyte.models.event_data import EventDataStatus, TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
+from featurebyte.session.manager import SessionManager
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
@@ -121,8 +124,14 @@ def mock_snowflake_execute_query():
                     "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
                 },
             ],
+            "SHOW SCHEMAS": [
+                {"name": "PUBLIC"},
+            ],
         }
-        return pd.DataFrame(query_map[query])
+        res = query_map.get(query)
+        if res is not None:
+            return pd.DataFrame(res)
+        return None
 
     with mock.patch(
         "featurebyte.session.snowflake.SnowflakeSession.execute_query"
@@ -217,6 +226,13 @@ def dataframe_fixture(graph, snowflake_database_source):
             "columns": list(column_var_type_map.keys()),
             "timestamp": "VALUE",
             "dbtable": "transaction",
+            "database_source": {
+                "type": "snowflake",
+                "details": {
+                    "database": "db",
+                    "sf_schema": "public",
+                },
+            },
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
@@ -230,24 +246,62 @@ def dataframe_fixture(graph, snowflake_database_source):
     )
 
 
+@pytest.fixture(name="session_manager")
+def session_manager_fixture(config, snowflake_connector):
+    """
+    Session manager fixture
+    """
+    # pylint: disable=E1101
+    _ = snowflake_connector
+    SessionManager.__getitem__.cache_clear()
+    yield SessionManager(credentials=config.credentials)
+
+
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession")
-def mock_snowflake_tile(mock_execute_query, mock_snowflake_session):
+def mock_snowflake_tile(mock_execute_query, snowflake_database_source, snowflake_connector, config):
     """
     Pytest Fixture for TileSnowflake instance
     """
-    mock_snowflake_session.warehouse = "warehouse"
     mock_execute_query.size_effect = None
+    _ = snowflake_connector
 
     tile_s = TileSnowflake(
-        mock_snowflake_session,
-        "featurename",
-        183,
-        3,
-        5,
-        "select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
-        "c1",
-        "tile_id1",
+        time_modulo_frequency_seconds=183,
+        blind_spot_seconds=3,
+        frequency_minute=5,
+        tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
+        column_names="c1",
+        tile_id="tile_id1",
+        tabular_source=snowflake_database_source,
+        credentials=config.credentials,
     )
+
     return tile_s
+
+
+@pytest.fixture
+def mock_snowflake_feature(snowflake_database_source, snowflake_connector, config):
+    """
+    Pytest Fixture for FeatureSnowflake instance
+    """
+    _ = snowflake_connector
+
+    feature = TileSpec(
+        name="test_feature1",
+        version="v1",
+        status=EventDataStatus.DRAFT,
+        is_default=True,
+        time_modulo_frequency_second=183,
+        blind_spot_second=3,
+        frequency_minute=5,
+        tile_sql="SELECT * FROM DUMMY",
+        column_names="col1",
+        tile_ids=["tile_id1"],
+        online_enabled=False,
+        datasource=snowflake_database_source,
+    )
+
+    s_feature = FeatureSnowflake(feature=feature, credentials=config.credentials)
+
+    return s_feature

@@ -5,6 +5,7 @@ import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
+from featurebyte.query_graph.util import get_tile_table_identifier
 
 
 @pytest.fixture(name="query_graph_with_groupby")
@@ -17,6 +18,13 @@ def query_graph_with_groupby_fixture(graph):
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
             "dbtable": "event_table",
+            "database_source": {
+                "type": "snowflake",
+                "details": {
+                    "database": "db",
+                    "sf_schema": "public",
+                },
+            },
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
@@ -45,18 +53,24 @@ def query_graph_with_groupby_fixture(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, sum_node],
     )
+    node_params = {
+        "keys": ["cust_id"],
+        "parent": "a",
+        "agg_func": "avg",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["a_2h_average", "a_48h_average"],
+        "windows": ["2h", "48h"],
+    }
     graph.add_operation(
         node_type=NodeType.GROUPBY,
         node_params={
-            "keys": ["cust_id"],
-            "parent": "a",
-            "agg_func": "avg",
-            "time_modulo_frequency": 1800,  # 30m
-            "frequency": 3600,  # 1h
-            "blind_spot": 900,  # 15m
-            "timestamp": "ts",
-            "names": ["a_2h_average", "a_48h_average"],
-            "windows": ["2h", "48h"],
+            **node_params,
+            "tile_id": get_tile_table_identifier(
+                graph.node_name_to_ref[assign_node.name], node_params
+            ),
         },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node],

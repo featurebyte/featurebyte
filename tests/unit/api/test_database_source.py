@@ -4,11 +4,13 @@ Unit test for DatabaseSource
 from featurebyte.api.database_table import DatabaseTable
 
 
-def test_get_session(snowflake_connector, snowflake_database_source, config):
+def test_get_session(
+    snowflake_connector, snowflake_execute_query, snowflake_database_source, config
+):
     """
     Test DatabaseSource.get_session return expected session
     """
-    _ = snowflake_connector
+    _ = snowflake_connector, snowflake_execute_query
     session = snowflake_database_source.get_session(credentials=config.credentials)
     assert session.dict() == {
         "source_type": "snowflake",

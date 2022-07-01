@@ -9,7 +9,7 @@ import pandas as pd
 import sqlglot
 
 from featurebyte.query_graph.graph import Node, QueryGraph
-from featurebyte.query_graph.tiling import get_aggregator, get_tile_table_identifier
+from featurebyte.query_graph.tiling import get_aggregator
 
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
 
@@ -95,7 +95,7 @@ class AggregationSpec:
         list[AggregationSpec]
             List of AggregationSpec
         """
-        tile_table_id = get_tile_table_identifier(graph, groupby_node)
+        tile_table_id = groupby_node.parameters["tile_id"]
         params = groupby_node.parameters
         aggregation_specs = []
         for window, feature_name in zip(params["windows"], params["names"]):

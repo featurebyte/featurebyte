@@ -138,3 +138,58 @@ class EventDataModel(DatabaseTableModel):
     created_at: Optional[datetime] = Field(default=None)
     history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list)
     status: Optional[EventDataStatus] = Field(default=None)
+
+
+class TileSpec(BaseModel):
+    """
+    Model for TileSpec
+
+    Parameters
+    ----------
+    name : str
+        Name of the Feature
+    status : EventDataStatus
+        Status of the Feature
+    version : str
+        feature version
+    is_default : bool
+        whether it is the default feature
+    time_modulo_frequency_seconds: int
+        time modulo seconds for the tile
+    blind_spot_seconds: int
+        blind spot seconds for the tile
+    frequency_minute: int
+        frequency minute for the tile
+    tile_sql: str
+        sql for tile generation
+    column_names: str
+        comma separated string of column names for the tile table
+    tile_id: str
+        hash value of tile id and name
+    online_enabled: bool
+        whether feature is online enabled or not
+    datasource: DatabaseSourceModel
+        datasource instance
+    """
+
+    name: str
+    status: EventDataStatus
+    version: str
+    is_default: bool
+
+    time_modulo_frequency_second: int
+    blind_spot_second: int
+    frequency_minute: int
+    tile_sql: str
+    column_names: str
+    tile_ids: List[str]
+
+    online_enabled: bool
+    datasource: DatabaseSourceModel
+
+
+class TileType(str, Enum):
+    """Tile Type"""
+
+    ONLINE = "ONLINE"
+    OFFLINE = "OFFLINE"

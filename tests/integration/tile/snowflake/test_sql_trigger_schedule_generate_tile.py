@@ -9,16 +9,17 @@ def test_trigger_tile_schedule(fb_db_session):
     """
     col_names = "TILE_START_TS,PRODUCT_ACTION,CUST_ID,VALUE"
     table_name = "TEMP_TABLE"
+    tile_id = f"{table_name}_TILE"
     tile_monitor = 10
     tile_sql = (
         f" SELECT {col_names} FROM {table_name} "
         f" WHERE TILE_START_TS >= FB_START_TS "
         f" AND TILE_START_TS < FB_END_TS"
     )
-    task_name = f"TILE_TASK_ONLINE_{table_name}"
+    task_name = f"TILE_TASK_ONLINE_{tile_id}"
 
     sql = (
-        f"call SP_TILE_TRIGGER_GENERATE_SCHEDULE(null, 'COMPUTE_WH', '{table_name}', 181, 1, 5, 1440, "
+        f"call SP_TILE_TRIGGER_GENERATE_SCHEDULE(null, 'COMPUTE_WH', '{tile_id}', 181, 1, 5, 1440, "
         f"'{tile_sql}', '{col_names}', 'ONLINE', {tile_monitor})"
     )
     fb_db_session.execute_query(sql)
