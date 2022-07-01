@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Optional, Tuple
 
+from abc import ABC, abstractmethod
+
 from featurebyte.query_graph.feature_common import (
     REQUEST_TABLE_NAME,
     AggregationSpec,
@@ -17,7 +19,7 @@ from featurebyte.query_graph.interpreter import SQLOperationGraph, find_parent_g
 from featurebyte.query_graph.sql import Project, SQLType, TableNode
 
 
-class RequestTablePlan:
+class RequestTablePlan(ABC):
     """SQL generation for expanded request tables
 
     An expanded request table contains a tile index column (REQ_TILE_INDEX) representing the
@@ -142,7 +144,7 @@ class RequestTablePlan:
                 time_modulo_frequency,
                 entity_columns,
             ) = unique_tile_indices_id
-            expanded_table_sql = construct_expanded_request_table_sql(
+            expanded_table_sql = self.construct_expanded_request_table_sql(
                 window_size=window_size,
                 frequency=frequency,
                 blind_spot=blind_spot,
@@ -151,6 +153,71 @@ class RequestTablePlan:
             )
             expanded_request_ctes.append((table_name, expanded_table_sql))
         return expanded_request_ctes
+
+    @staticmethod
+    @abstractmethod
+    def construct_expanded_request_table_sql(
+        window_size: int,
+        frequency: int,
+        blind_spot: int,
+        time_modulo_frequency: int,
+        entity_columns: list[str],
+    ) -> str:
+        """Construct SQL for expanded SQLs
+
+        The query can be different for different data warehouses.
+
+        Parameters
+        ----------
+        window_size : int
+            Feature window size
+        frequency : int
+            Frequency in feature job setting
+        time_modulo_frequency : int
+            Time modulo frequency in feature job setting
+        blind_spot : int
+            Blind spot in feature job setting
+        entity_columns : list[str]
+            List of entity columns
+
+        Returns
+        -------
+        str
+            SQL code for expanding request table
+        """
+        pass
+
+
+class SnowflakeRequestTablePlan(RequestTablePlan):
+    @staticmethod
+    def construct_expanded_request_table_sql(
+        window_size: int,
+        frequency: int,
+        blind_spot: int,
+        time_modulo_frequency: int,
+        entity_columns: list[str],
+    ) -> str:
+        # This query is Snowflake specific
+        select_entity_columns = ", ".join([f"REQ.{col}" for col in entity_columns])
+        sql = f"""
+    SELECT
+        REQ.POINT_IN_TIME,
+        {select_entity_columns},
+        T.value AS REQ_TILE_INDEX
+    FROM REQUEST_TABLE REQ,
+    Table(
+        Flatten(
+            SELECT F_COMPUTE_TILE_INDICES(
+                DATE_PART(epoch, REQ.POINT_IN_TIME),
+                {window_size},
+                {frequency},
+                {blind_spot},
+                {time_modulo_frequency}
+            )
+        )
+    ) T
+"""
+        return sql
 
 
 class FeatureExecutionPlan:
@@ -161,7 +228,7 @@ class FeatureExecutionPlan:
     def __init__(self) -> None:
         self.aggregation_specs: dict[tuple[str, int], AggregationSpec] = {}
         self.feature_specs: dict[str, FeatureSpec] = {}
-        self.request_table_plan: RequestTablePlan = RequestTablePlan()
+        self.request_table_plan: RequestTablePlan = SnowflakeRequestTablePlan()
 
     def add_aggregation_spec(self, aggregation_spec: AggregationSpec) -> None:
         """Add AggregationSpec to be incorporated when generating SQL
@@ -505,52 +572,3 @@ class FeatureExecutionPlanner:
             feature_expr = sql_node.sql.sql()
             feature_spec = FeatureSpec(feature_name=feature_name, feature_expr=feature_expr)
             self.plan.add_feature_spec(feature_spec)
-
-
-def construct_expanded_request_table_sql(
-    window_size: int,
-    frequency: int,
-    blind_spot: int,
-    time_modulo_frequency: int,
-    entity_columns: list[str],
-) -> str:
-    """Construct SQL for expanded SQLs
-
-    Parameters
-    ----------
-    window_size : int
-        Feature window size
-    frequency : int
-        Frequency in feature job setting
-    time_modulo_frequency : int
-        Time modulo frequency in feature job setting
-    blind_spot : int
-        Blind spot in feature job setting
-    entity_columns : list[str]
-        List of entity columns
-
-    Returns
-    -------
-    str
-        SQL code for expanding request table
-    """
-    select_entity_columns = ", ".join([f"REQ.{col}" for col in entity_columns])
-    sql = f"""
-    SELECT
-        REQ.POINT_IN_TIME,
-        {select_entity_columns},
-        T.value AS REQ_TILE_INDEX
-    FROM REQUEST_TABLE REQ,
-    Table(
-        Flatten(
-            SELECT F_COMPUTE_TILE_INDICES(
-                DATE_PART(epoch, REQ.POINT_IN_TIME),
-                {window_size},
-                {frequency},
-                {blind_spot},
-                {time_modulo_frequency}
-            )
-        )
-    ) T
-    """
-    return sql
