@@ -13,12 +13,13 @@ import yaml
 from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
+from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
+from featurebyte.models.event_data import EventDataStatus, TileSpec
 from featurebyte.session.manager import SessionManager
-from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
-@pytest.fixture(name="transaction_data")
+@pytest.fixture(name="transaction_data", scope="session")
 def transaction_dataframe():
     """
     Simulated transaction Dataframe
@@ -43,7 +44,7 @@ def transaction_dataframe():
     yield data
 
 
-@pytest.fixture(name="transaction_data_upper_case")
+@pytest.fixture(name="transaction_data_upper_case", scope="session")
 def transaction_dataframe_upper_case(transaction_data):
     """
     Convert transaction data column names to upper case
@@ -53,7 +54,7 @@ def transaction_dataframe_upper_case(transaction_data):
     yield data
 
 
-@pytest.fixture(name="sqlite_filename")
+@pytest.fixture(name="sqlite_filename", scope="session")
 def sqlite_filename_fixture(transaction_data):
     """
     Create SQLite database file with data for testing
@@ -65,7 +66,7 @@ def sqlite_filename_fixture(transaction_data):
         yield file_handle.name
 
 
-@pytest.fixture(name="config")
+@pytest.fixture(name="config", scope="session")
 def config_fixture(sqlite_filename):
     """
     Config object for integration testing
@@ -96,7 +97,7 @@ def config_fixture(sqlite_filename):
         yield Configurations(config_file_path=file_handle.name)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def snowflake_session(transaction_data_upper_case, config):
     """
     Snowflake session
@@ -119,7 +120,7 @@ def snowflake_session(transaction_data_upper_case, config):
     yield session
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def sqlite_session(config):
     """
     SQLite session
@@ -129,25 +130,18 @@ def sqlite_session(config):
     return session_manager[sqlite_database_source]
 
 
-@pytest.fixture(name="fb_db_session")
-def snowflake_featurebyte_session():
+@pytest.fixture(name="fb_db_session", scope="session")
+def snowflake_featurebyte_session(config):
     """
     Create Snowflake session for integration tests of featurebyte sql scripts
     """
-    database_name = os.getenv("SNOWFLAKE_DATABASE")
+    session_manager = SessionManager(credentials=config.credentials)
+    snowflake_database_source = config.db_sources["snowflake_datasource"]
+    session = session_manager[snowflake_database_source]
+
     schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
-
-    session = SnowflakeSession(
-        account=os.getenv("SNOWFLAKE_ACCOUNT"),
-        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-        database=database_name,
-        sf_schema=schema_name,
-        username=os.getenv("SNOWFLAKE_USER"),
-        password=os.getenv("SNOWFLAKE_PASSWORD"),
-    )
-
     temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    session.execute_query(f"CREATE TRANSIENT SCHEMA {temp_schema_name}")
+    session.execute_query(f"CREATE OR REPLACE TRANSIENT SCHEMA {temp_schema_name}")
     session.execute_query(f"USE SCHEMA {temp_schema_name}")
 
     sql_dir = os.path.join(os.path.dirname(__file__), "..", "..", "sql", "snowflake")
@@ -158,6 +152,9 @@ def snowflake_featurebyte_session():
         "SP_TILE_MONITOR.sql",
         "SP_TILE_GENERATE_SCHEDULE.sql",
         "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql",
+        "T_TILE_REGISTRY.sql",
+        "T_FEATURE_REGISTRY.sql",
+        "T_FEATURE_LIST_REGISTRY.sql",
     ]
     for sql_file in sql_file_list:
         with open(os.path.join(sql_dir, sql_file), encoding="utf8") as file:
@@ -172,38 +169,13 @@ def snowflake_featurebyte_session():
 
     yield session
 
-    session.execute_query(
-        "DROP FUNCTION IF EXISTS F_TIMESTAMP_TO_INDEX(VARCHAR, NUMBER, NUMBER, NUMBER)"
-    )
-    session.execute_query(
-        "DROP FUNCTION IF EXISTS F_INDEX_TO_TIMESTAMP(NUMBER, NUMBER, NUMBER, NUMBER)"
-    )
-    session.execute_query(
-        "DROP PROCEDURE IF EXISTS SP_TILE_GENERATE(VARCHAR, FLOAT, FLOAT, FLOAT, VARCHAR, VARCHAR)"
-    )
-    session.execute_query(
-        "DROP PROCEDURE IF EXISTS SP_TILE_MONITOR(VARCHAR, FLOAT, FLOAT, FLOAT, VARCHAR, VARCHAR, "
-        "VARCHAR)"
-    )
-    session.execute_query(
-        "DROP PROCEDURE IF EXISTS SP_TILE_GENERATE_SCHEDULE(VARCHAR, FLOAT, FLOAT, FLOAT, FLOAT, VARCHAR, "
-        "VARCHAR, VARCHAR, VARCHAR, TIMESTAMP_TZ)"
-    )
-    session.execute_query(
-        "DROP PROCEDURE IF EXISTS SP_TILE_TRIGGER_GENERATE_SCHEDULE(VARCHAR, VARCHAR, VARCHAR, FLOAT, FLOAT, "
-        "FLOAT, FLOAT, VARCHAR, VARCHAR, VARCHAR, VARCHAR)"
-    )
-    session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE")
-    session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE_TILE")
-    session.execute_query("DROP TABLE IF EXISTS TEMP_TABLE_TILE_MONITOR")
-
     session.execute_query(f"DROP SCHEMA IF EXISTS {temp_schema_name}")
 
     session.connection.close()
 
 
 @pytest.fixture
-def snowflake_tile(fb_db_session):
+def snowflake_tile(fb_db_session, config):
     """
     Pytest Fixture for TileSnowflake instance
     """
@@ -213,18 +185,51 @@ def snowflake_tile(fb_db_session):
     tile_id = "tile_id1"
 
     tile_s = TileSnowflake(
-        fb_db_session,
-        "feature1",
-        183,
-        3,
-        5,
-        tile_sql,
-        col_names,
-        tile_id,
+        time_modulo_frequency_seconds=183,
+        blind_spot_seconds=3,
+        frequency_minute=5,
+        tile_sql=tile_sql,
+        column_names=col_names,
+        tile_id="tile_id1",
+        tabular_source=config.db_sources["snowflake_datasource"],
+        credentials=config.credentials,
     )
 
     yield tile_s
 
+    fb_db_session.execute_query("DELETE FROM TILE_REGISTRY")
     fb_db_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
+    fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
+    fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+
+
+@pytest.fixture
+def snowflake_feature(fb_db_session, config):
+    """
+    Pytest Fixture for FeatureSnowflake instance
+    """
+    tile_id = "tile_id1"
+
+    feature = TileSpec(
+        name="test_feature1",
+        version="v1",
+        status=EventDataStatus.DRAFT,
+        is_default=True,
+        time_modulo_frequency_second=183,
+        blind_spot_second=3,
+        frequency_minute=5,
+        tile_sql="SELECT * FROM DUMMY",
+        column_names="col1",
+        tile_ids=[tile_id],
+        online_enabled=False,
+        datasource=config.db_sources["snowflake_datasource"],
+    )
+
+    s_feature = FeatureSnowflake(feature=feature, credentials=config.credentials)
+
+    yield s_feature
+
+    fb_db_session.execute_query("DELETE FROM FEATURE_REGISTRY")
+    fb_db_session.execute_query("DELETE FROM TILE_REGISTRY")
     fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
     fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
