@@ -388,17 +388,16 @@ class GlobalQueryGraph(QueryGraph):
             mapped_input_node_names.append(input_node_name)
 
         # add the node back to the pruned graph
-        node_type = NodeType(target_node.type)
         input_nodes = [
             pruned_graph.get_node_by_name(node_name_map[node_name])
             for node_name in mapped_input_node_names
         ]
         node_pruned = pruned_graph.add_operation(
-            node_type=node_type,
+            node_type=NodeType(target_node.type),
             node_params=self._update_node_parameters(
                 to_update_params=to_update_node_params,
                 graph=pruned_graph,
-                node_type=node_type,
+                node_type=NodeType(target_node.type),
                 node_params=target_node.parameters,
                 input_nodes=input_nodes,
             ),
