@@ -3,30 +3,11 @@ Test MongoDB persistent backend
 """
 from __future__ import annotations
 
-from typing import Tuple
-
 import os.path
 
 import pytest
-from git import Repo
 
 from featurebyte.persistent import DuplicateDocumentError
-from featurebyte.persistent.git import GitDB
-
-
-@pytest.fixture(name="git_persistent")
-def git_persistent_fixture() -> Tuple[GitDB, Repo]:
-    """
-    Patched MongoDB fixture for testing
-
-    Returns
-    -------
-    Tuple[GitDB, Repo]
-        Local GitDB object and local git repo
-    """
-    persistent = GitDB(branch="test")
-    persistent.insert_doc_name_func("data", lambda doc: doc["name"])
-    yield persistent, persistent.repo
 
 
 def test_insert_one(git_persistent, test_document):

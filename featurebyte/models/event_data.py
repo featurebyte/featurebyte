@@ -21,8 +21,8 @@ class FeatureJobSetting(BaseModel):
     frequency: str
     time_modulo_frequency: str
 
-    # pylint: disable=no-self-argument
     @root_validator(pre=True)
+    @classmethod
     def validate_setting_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate feature job setting parameters
 

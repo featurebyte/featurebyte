@@ -3,9 +3,14 @@ Unit test for EventData class
 """
 from __future__ import annotations
 
+from datetime import datetime
+from unittest.mock import patch
+
 import pytest
 
 from featurebyte.api.event_data import EventData, EventDataColumn
+from featurebyte.exception import DuplicatedRecordException
+from featurebyte.models.event_data import EventDataStatus
 
 
 @pytest.fixture(name="event_data_dict")
@@ -39,6 +44,29 @@ def event_data_dict_fixture():
         "history": [],
         "status": None,
     }
+
+
+@pytest.fixture(name="mock_get_persistent")
+def mock_get_persistent_function(git_persistent):
+    """
+    Mock GitDB in featurebyte.app
+    """
+    with patch("featurebyte.app._get_persistent") as mock_persistent:
+        persistent, _ = git_persistent
+        mock_persistent.return_value = persistent
+        yield mock_persistent
+
+
+@pytest.fixture(name="saved_event_data")
+def save_event_data_fixture(mock_get_persistent, snowflake_event_data):
+    """
+    Saved event data fixture
+    """
+    _ = mock_get_persistent
+    snowflake_event_data.save_as_draft()
+    assert snowflake_event_data.status == EventDataStatus.DRAFT
+    assert isinstance(snowflake_event_data.created_at, datetime)
+    yield snowflake_event_data
 
 
 def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
@@ -109,3 +137,115 @@ def test_event_data_column__as_entity(snowflake_event_data):
     with pytest.raises(TypeError) as exc:
         snowflake_event_data.col_int.as_entity(1234)
     assert 'Unsupported type "<class \'int\'>" for tag name "1234"!' in str(exc.value)
+
+
+def test_event_data__save_as_draft__then__publish(saved_event_data):
+    """
+    Test save event data object to persistent layer
+    """
+    # test duplicated record exception when record exists
+    with pytest.raises(DuplicatedRecordException) as exc:
+        saved_event_data.save_as_draft()
+    assert exc.value.status_code == 409
+    assert exc.value.response.json()["detail"] == 'Event Data "sf_event_data" already exists.'
+
+    saved_event_data.publish()
+    assert saved_event_data.status == EventDataStatus.PUBLISHED
+
+
+def test_event_data__publish(mock_get_persistent, snowflake_event_data):
+    """
+    Test save event data object to persistent layer
+    """
+    _ = mock_get_persistent
+    snowflake_event_data.publish()
+    assert snowflake_event_data.status == EventDataStatus.PUBLISHED
+    assert isinstance(snowflake_event_data.created_at, datetime)
+
+
+def test_event_data__info__not_saved_event_data(mock_get_persistent, snowflake_event_data):
+    """
+    Test info on not-saved event data
+    """
+    _ = mock_get_persistent
+    snowflake_event_data.event_timestamp_column = "some_event_timestamp"
+    snowflake_event_data.record_creation_date_column = "some_random_date"
+    output = snowflake_event_data.info()
+    assert output == {
+        "name": "sf_event_data",
+        "record_creation_date_column": "some_random_date",
+        "column_entity_map": {},
+        "created_at": None,
+        "default_feature_job_setting": None,
+        "event_timestamp_column": "some_event_timestamp",
+        "history": [],
+        "status": None,
+        "tabular_source": (
+            {
+                "type": "snowflake",
+                "details": {
+                    "account": "sf_account",
+                    "database": "sf_database",
+                    "sf_schema": "sf_schema",
+                    "warehouse": "sf_warehouse",
+                },
+            },
+            {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": "sf_table",
+            },
+        ),
+    }
+
+
+def test_event_data__info__saved_event_data(saved_event_data, mock_config_path_env):
+    """
+    Test info on saved event data
+    """
+    _ = mock_config_path_env
+    saved_event_data_dict = saved_event_data.dict()
+
+    # perform some modifications
+    saved_event_data.event_timestamp_column = "some_event_timestamp"
+    saved_event_data.record_creation_date_column = "some_random_date"
+    assert (
+        saved_event_data.event_timestamp_column != saved_event_data_dict["event_timestamp_column"]
+    )
+    assert (
+        saved_event_data.record_creation_date_column
+        != saved_event_data_dict["record_creation_date_column"]
+    )
+
+    # call info & check that all those modifications gone
+    output = saved_event_data.info()
+    assert (
+        output
+        == saved_event_data_dict
+        == {
+            "name": "sf_event_data",
+            "record_creation_date_column": "created_at",
+            "column_entity_map": {},
+            "created_at": saved_event_data.created_at,
+            "default_feature_job_setting": None,
+            "event_timestamp_column": "event_timestamp",
+            "history": [],
+            "status": "DRAFT",
+            "tabular_source": (
+                {
+                    "type": "snowflake",
+                    "details": {
+                        "account": "sf_account",
+                        "database": "sf_database",
+                        "sf_schema": "sf_schema",
+                        "warehouse": "sf_warehouse",
+                    },
+                },
+                {
+                    "database_name": "sf_database",
+                    "schema_name": "sf_schema",
+                    "table_name": "sf_table",
+                },
+            ),
+        }
+    )

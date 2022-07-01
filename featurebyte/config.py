@@ -10,6 +10,7 @@ from enum import Enum
 from pathlib import Path
 
 import yaml
+from fastapi.testclient import TestClient
 from pydantic import BaseSettings, ConstrainedStr
 from pydantic.error_wrappers import ValidationError
 
@@ -147,3 +148,17 @@ class Configurations:
         if git_settings:
             # parse git settings
             self.git = GitSettings(**git_settings)
+
+    def get_client(self) -> TestClient:
+        """
+        Retrieve API client
+
+        Returns
+        -------
+        TestClient
+        """
+        # pylint: disable=import-outside-toplevel,cyclic-import
+        from featurebyte.app import app
+
+        client = TestClient(app, raise_server_exceptions=False)
+        return client

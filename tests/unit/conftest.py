@@ -1,6 +1,8 @@
 """
 Common test fixtures used across unit test directories
 """
+from __future__ import annotations
+
 import json
 import tempfile
 from unittest import mock
@@ -8,6 +10,7 @@ from unittest import mock
 import pandas as pd
 import pytest
 import yaml
+from git import Repo
 
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
@@ -17,16 +20,17 @@ from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
 from featurebyte.models.feature import FeatureModel, TileSpec
+from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.session.manager import SessionManager
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
-@pytest.fixture(name="config")
-def config_fixture():
+@pytest.fixture(name="config_file")
+def config_file_fixture():
     """
-    Config object for unit testing
+    Config file for unit testing
     """
     config_dict = {
         "featurestore": [
@@ -47,11 +51,34 @@ def config_fixture():
                 "filename": "some_filename.sqlite",
             },
         ],
+        "git": {
+            "branch": "some_branch",
+            "remote_url": "git@github.com:some_org/some_repo.git",
+            "key_path": "some_key_path",
+        },
     }
     with tempfile.NamedTemporaryFile("w") as file_handle:
         file_handle.write(yaml.dump(config_dict))
         file_handle.flush()
-        yield Configurations(config_file_path=file_handle.name)
+        yield file_handle.name
+
+
+@pytest.fixture(name="config")
+def config_fixture(config_file):
+    """
+    Config object for unit testing
+    """
+    yield Configurations(config_file_path=config_file)
+
+
+@pytest.fixture(name="mock_config_path_env")
+def mock_config_path_env_fixture(config_file):
+    """
+    Mock FEATUREBYTE_CONFIG_PATH in featurebyte/config.py
+    """
+    with mock.patch("featurebyte.config.os.environ.get") as mock_env_get:
+        mock_env_get.return_value = config_file
+        yield
 
 
 @pytest.fixture(name="graph")
@@ -339,3 +366,17 @@ def mock_snowflake_feature(mock_execute_query, snowflake_connector, config, snow
     s_feature = FeatureSnowflake(feature=feature_loaded, credentials=config.credentials)
 
     return s_feature
+
+
+@pytest.fixture(name="git_persistent")
+def git_persistent_fixture() -> tuple[GitDB, Repo]:
+    """
+    Patched MongoDB fixture for testing
+
+    Returns
+    -------
+    Tuple[GitDB, Repo]
+        Local GitDB object and local git repo
+    """
+    persistent = GitDB(branch="test")
+    yield persistent, persistent.repo
