@@ -89,6 +89,7 @@ def test_schema_initializer__sql_filenames():
     """Test retrieving SQL filenames"""
     filenames = {os.path.basename(x) for x in SchemaInitializer.get_custom_function_sql_filenames()}
     assert filenames == {
+        "F_COMPUTE_TILE_INDICES.sql",
         "SP_TILE_MONITOR.sql",
         "F_TIMESTAMP_TO_INDEX.sql",
         "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql",

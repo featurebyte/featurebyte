@@ -227,7 +227,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
     info_dict = asdict(info)
     info_dict.pop("sql")
     assert info_dict == {
-        "tile_table_id": "avg_f3600_m1800_b900_a9517392b77fa4e802cef0ed8abefd62a61a7da8",
+        "tile_table_id": "avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e",
         "columns": ["tile_start_date", "cust_id", "sum_value", "count_value"],
         "time_modulo_frequency": 1800,
         "frequency": 3600,

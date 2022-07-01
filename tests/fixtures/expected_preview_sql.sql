@@ -1,4 +1,4 @@
-WITH avg_f3600_m1800_b900_a9517392b77fa4e802cef0ed8abefd62a61a7da8 AS (
+WITH avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e AS (
     SELECT *, F_TIMESTAMP_TO_INDEX(  TILE_START_DATE,  1800,  900,  60) AS "INDEX" FROM (
         SELECT
   TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMP)) + tile_index * 3600) AS tile_start_date,
@@ -16,7 +16,7 @@ FROM (
           "a" AS "a",
           "b" AS "b",
           "a" + "b" AS "c"
-        FROM "event_table"
+        FROM "db"."public"."event_table"
         WHERE
           "ts" >= CAST('2022-04-18 09:15:00' AS TIMESTAMP)
           AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
@@ -70,16 +70,16 @@ REQUEST_TABLE_W172800_F3600_BS900_M1800_cust_id AS (
     ),
 _FB_AGGREGATED AS (SELECT
   REQ.*,
-  "T0"."agg_w7200_avg_f3600_m1800_b900_a9517392b77fa4e802cef0ed8abefd62a61a7da8" AS "agg_w7200_avg_f3600_m1800_b900_a9517392b77fa4e802cef0ed8abefd62a61a7da8",
-  "T1"."agg_w172800_avg_f3600_m1800_b900_a9517392b77fa4e802cef0ed8abefd62a61a7da8" AS "agg_w172800_avg_f3600_m1800_b900_a9517392b77fa4e802cef0ed8abefd62a61a7da8"
+  "T0"."agg_w7200_avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e" AS "agg_w7200_avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e",
+  "T1"."agg_w172800_avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e" AS "agg_w172800_avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e"
 FROM REQUEST_TABLE AS REQ
 LEFT JOIN (
     SELECT
       REQ.POINT_IN_TIME,
       REQ.cust_id,
-      SUM(sum_value) / SUM(count_value) AS "agg_w7200_avg_f3600_m1800_b900_a9517392b77fa4e802cef0ed8abefd62a61a7da8"
+      SUM(sum_value) / SUM(count_value) AS "agg_w7200_avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e"
     FROM REQUEST_TABLE_W7200_F3600_BS900_M1800_cust_id AS REQ
-    INNER JOIN avg_f3600_m1800_b900_a9517392b77fa4e802cef0ed8abefd62a61a7da8 AS TILE
+    INNER JOIN avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e AS TILE
       ON REQ.REQ_TILE_INDEX = TILE.INDEX
       AND REQ.cust_id = TILE.cust_id
     GROUP BY
@@ -92,9 +92,9 @@ LEFT JOIN (
     SELECT
       REQ.POINT_IN_TIME,
       REQ.cust_id,
-      SUM(sum_value) / SUM(count_value) AS "agg_w172800_avg_f3600_m1800_b900_a9517392b77fa4e802cef0ed8abefd62a61a7da8"
+      SUM(sum_value) / SUM(count_value) AS "agg_w172800_avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e"
     FROM REQUEST_TABLE_W172800_F3600_BS900_M1800_cust_id AS REQ
-    INNER JOIN avg_f3600_m1800_b900_a9517392b77fa4e802cef0ed8abefd62a61a7da8 AS TILE
+    INNER JOIN avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e AS TILE
       ON REQ.REQ_TILE_INDEX = TILE.INDEX
       AND REQ.cust_id = TILE.cust_id
     GROUP BY
@@ -106,6 +106,6 @@ LEFT JOIN (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."cust_id",
-  "agg_w7200_avg_f3600_m1800_b900_a9517392b77fa4e802cef0ed8abefd62a61a7da8" AS "a_2h_average",
-  "agg_w172800_avg_f3600_m1800_b900_a9517392b77fa4e802cef0ed8abefd62a61a7da8" AS "a_48h_average"
+  "agg_w7200_avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e" AS "a_2h_average",
+  "agg_w172800_avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e" AS "a_48h_average"
 FROM _FB_AGGREGATED AS AGG
