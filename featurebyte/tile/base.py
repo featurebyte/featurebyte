@@ -37,7 +37,7 @@ class TileBase(BaseModel):
 
     # pylint: disable=E0213
     @validator("tile_id", "column_names")
-    def stripped_upper(cls, value: str) -> str:
+    def stripped(cls, value: str) -> str:
         """
         Validator for non-empty attributes and return stripped and upper case of the value
 
@@ -57,7 +57,7 @@ class TileBase(BaseModel):
         """
         if value is None or value.strip() == "":
             raise ValueError("value cannot be empty")
-        return value.strip().upper()
+        return value.strip()
 
     # pylint: disable=E0213
     @root_validator

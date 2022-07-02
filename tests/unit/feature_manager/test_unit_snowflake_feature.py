@@ -5,7 +5,11 @@ from unittest import mock
 
 import pandas as pd
 
-from featurebyte.feature_manager.snowflake_feature import tm_ins_feature_registry
+from featurebyte.feature_manager.snowflake_feature import (
+    tm_insert_feature_registry,
+    tm_update_feature_registry,
+)
+from featurebyte.feature_manager.snowflake_sql_template import tm_select_feature_registry
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
@@ -17,17 +21,18 @@ def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature):
     mock_snowflake_feature.insert_feature_registry()
     assert mock_execute_query.call_count == 3
 
-    insert_sql = tm_ins_feature_registry.render(
-        feature=mock_snowflake_feature.feature, tile_ids_str='["TILE_ID1"]'
+    update_sql = tm_update_feature_registry.render(
+        feature_name=mock_snowflake_feature.feature.name, is_default=False
     )
+
+    tile_specs_lst = [tile_spec.dict() for tile_spec in mock_snowflake_feature.feature.tile_specs]
+    tile_specs_str = str(tile_specs_lst).replace("'", '"')
+    insert_sql = tm_insert_feature_registry.render(
+        feature=mock_snowflake_feature.feature, tile_specs_str=tile_specs_str
+    )
+
     calls = [
-        mock.call(
-            f"SELECT * FROM FEATURE_REGISTRY WHERE NAME = '{mock_snowflake_feature.feature.name}'"
-            f" AND VERSION = '{mock_snowflake_feature.feature.version}'"
-        ),
-        mock.call(
-            f"UPDATE FEATURE_REGISTRY SET IS_DEFAULT = False WHERE NAME = '{mock_snowflake_feature.feature.name}'"
-        ),
+        mock.call(update_sql),
         mock.call(insert_sql),
     ]
     mock_execute_query.assert_has_calls(calls, any_order=True)
@@ -41,30 +46,30 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature):
     mock_execute_query.return_value = pd.DataFrame.from_dict(
         {
             "VERSION": ["v1"],
-            "STATUS": ["DRAFT"],
+            "READINESS": ["DRAFT"],
             "IS_DEFAULT": [True],
             "TIME_MODULO_FREQUENCY_SECOND": [183],
             "BLIND_SPOT_SECOND": [3],
             "FREQUENCY_MINUTES": [5],
             "TILE_SQL": ["SELECT DUMMY"],
+            "TILE_SPECS": ["[]"],
             "COLUMN_NAMES": ["c1"],
-            "TILE_IDS": ['["tile_id1"]'],
             "ONLINE_ENABLED": [True],
         }
     )
     fv_list = mock_snowflake_feature.retrieve_features()
     assert mock_execute_query.call_count == 1
+
+    sql = tm_select_feature_registry.render(feature_name=mock_snowflake_feature.feature.name)
     calls = [
-        mock.call(
-            f"SELECT * FROM FEATURE_REGISTRY WHERE NAME = '{mock_snowflake_feature.feature.name}'"
-        ),
+        mock.call(sql),
     ]
     mock_execute_query.assert_has_calls(calls, any_order=True)
 
     assert len(fv_list) == 1
     assert fv_list[0].name == mock_snowflake_feature.feature.name
     assert fv_list[0].version == "v1"
-    assert fv_list[0].tile_ids == ["tile_id1"]
+    assert fv_list[0].tile_specs == []
 
 
 @mock.patch("featurebyte.tile.snowflake_tile.TileSnowflake.insert_tile_registry")

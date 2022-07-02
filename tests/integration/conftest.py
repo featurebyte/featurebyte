@@ -15,7 +15,7 @@ from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
 from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
-from featurebyte.models.event_data import EventDataStatus, TileSpec
+from featurebyte.models.event_data import Feature, TileSpec
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.tile.snowflake_tile import TileSnowflake
@@ -235,17 +235,21 @@ def snowflake_feature(fb_db_session, config):
     """
     tile_id = "tile_id1"
 
-    feature = TileSpec(
-        name="test_feature1",
-        version="v1",
-        status=EventDataStatus.DRAFT,
-        is_default=True,
+    tile_spec = TileSpec(
+        tile_id=tile_id,
         time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
         column_names="col1",
-        tile_ids=[tile_id],
+    )
+
+    feature = Feature(
+        name="test_feature1",
+        version="v1",
+        readiness="DRAFT",
+        is_default=True,
+        tile_specs=[tile_spec],
         online_enabled=False,
         datasource=config.db_sources["snowflake_datasource"],
     )
