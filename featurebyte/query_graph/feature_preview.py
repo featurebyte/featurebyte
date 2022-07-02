@@ -3,7 +3,7 @@ Feature preview SQL generation
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import time
 
@@ -57,7 +57,6 @@ def construct_preview_request_table_sql(
 def get_feature_preview_sql(
     graph: QueryGraph,
     node: Node,
-    entity_columns: Optional[list[str]],
     point_in_time_and_entity_id: dict[str, Any],
 ) -> str:
     """Get SQL code for previewing SQL
@@ -68,28 +67,14 @@ def get_feature_preview_sql(
         Query graph
     node : Node
         Query graph node
-    entity_columns : Optional[list[str]]
-        Entity columns
     point_in_time_and_entity_id : dict
-        Preview request consisting of point in time and entity ID(s)
+        Dictionary consisting the point in time and entity ids based on which the feature
+        preview will be computed
 
     Returns
     -------
     str
-
-    Raises
-    ------
-    KeyError
-        If any required entity columns is not provided
     """
-
-    if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_entity_id:
-        raise KeyError(f"Point in time not provided: {SpecialColumnName.POINT_IN_TIME}")
-
-    if entity_columns is not None:
-        for col in entity_columns:
-            if col not in point_in_time_and_entity_id:
-                raise KeyError(f"Entity column not provided: {col}")
 
     point_in_time = point_in_time_and_entity_id[SpecialColumnName.POINT_IN_TIME]
 

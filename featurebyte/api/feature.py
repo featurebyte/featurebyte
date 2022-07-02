@@ -13,6 +13,7 @@ from featurebyte.config import Credentials
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.enum import SpecialColumnName
 from featurebyte.logger import logger
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
@@ -81,10 +82,10 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
         pd.DataFrame
         """
         tic = time.time()
+        self._validate_point_in_time_and_entity_id(point_in_time_and_entity_id)
         preview_sql = get_feature_preview_sql(
             graph=self.graph,
             node=self.node,
-            entity_columns=self.entity_identifiers,
             point_in_time_and_entity_id=point_in_time_and_entity_id,
         )
         session = self.get_session(credentials)
@@ -92,6 +93,21 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
         return result
+
+    def _validate_point_in_time_and_entity_id(
+        self, point_in_time_and_entity_id: dict[str, Any]
+    ) -> None:
+
+        if not isinstance(point_in_time_and_entity_id, dict):
+            raise ValueError("point_in_time_and_entity_id should be a dict")
+
+        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_entity_id:
+            raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
+
+        if self.entity_identifiers is not None:
+            for col in self.entity_identifiers:
+                if col not in point_in_time_and_entity_id:
+                    raise KeyError(f"Entity column not provided: {col}")
 
 
 class Feature(FeatureQueryObject, Series):
