@@ -73,7 +73,7 @@ def feature_list_fixture(grouped_event_view):
             "time_modulo_frequency": 300,
             "frequency": 1800,
             "names": ["sum_30m", "sum_2h", "sum_1d"],
-            "tile_id": "sum_f1800_m300_b600_2ffe099df53ee760d5a551c17707fedd0cf861f9",
+            "tile_id": "sum_f1800_m300_b600_3cb3b2b28a359956be02abe635c4446cb50710d7",
         },
         output_type=NodeOutputType.FRAME,
     )
