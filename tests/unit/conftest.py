@@ -29,9 +29,9 @@ def config_fixture():
     Config object for unit testing
     """
     config_dict = {
-        "datasource": [
+        "featurestore": [
             {
-                "name": "sf_datasource",
+                "name": "sf_featurestore",
                 "source_type": "snowflake",
                 "account": "sf_account",
                 "warehouse": "sf_warehouse",
@@ -42,7 +42,7 @@ def config_fixture():
                 "password": "sf_password",
             },
             {
-                "name": "sq_datasource",
+                "name": "sq_featurestore",
                 "source_type": "sqlite",
                 "filename": "some_filename.sqlite",
             },
@@ -69,7 +69,7 @@ def snowflake_database_source_fixture(config, graph):
     Snowflake database source fixture
     """
     _ = graph
-    return DatabaseSource(**config.db_sources["sf_datasource"].dict())
+    return DatabaseSource(**config.feature_stores["sf_featurestore"].dict())
 
 
 @pytest.fixture(name="snowflake_connector")
@@ -89,6 +89,8 @@ def mock_snowflake_execute_query():
 
     def side_effect(query):
         query_map = {
+            "SHOW DATABASES": [{"name": "sf_database"}],
+            'SHOW SCHEMAS IN DATABASE "sf_database"': [{"name": "sf_schema"}],
             'SHOW TABLES IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_table"}],
             'SHOW VIEWS IN SCHEMA "sf_database"."sf_schema"': [{"name": "sf_view"}],
             'SHOW COLUMNS IN "sf_database"."sf_schema"."sf_table"': [
@@ -148,7 +150,12 @@ def snowflake_database_table_fixture(
     DatabaseTable object fixture
     """
     _ = snowflake_connector, snowflake_execute_query
-    yield snowflake_database_source["sf_table", config.credentials]
+    yield snowflake_database_source.get_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="sf_table",
+        credentials=config.credentials,
+    )
 
 
 @pytest.fixture(name="snowflake_event_data")
@@ -199,7 +206,11 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
                     "warehouse": "sf_warehouse",
                 },
             },
-            "dbtable": "sf_table",
+            "dbtable": {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": "sf_table",
+            },
         },
         output_type=NodeOutputType.FRAME,
     )
@@ -225,7 +236,11 @@ def dataframe_fixture(graph, snowflake_database_source):
         node_params={
             "columns": list(column_var_type_map.keys()),
             "timestamp": "VALUE",
-            "dbtable": "transaction",
+            "dbtable": {
+                "database_name": "db",
+                "schema_name": "public",
+                "table_name": "transaction",
+            },
             "database_source": {
                 "type": "snowflake",
                 "details": {
@@ -238,7 +253,10 @@ def dataframe_fixture(graph, snowflake_database_source):
         input_nodes=[],
     )
     yield Frame(
-        tabular_source=(snowflake_database_source, "some_table_name"),
+        tabular_source=(
+            snowflake_database_source,
+            {"database_name": "db", "schema_name": "public", "table_name": "some_table_name"},
+        ),
         node=node,
         column_var_type_map=column_var_type_map,
         column_lineage_map={col: (node.name,) for col in column_var_type_map},

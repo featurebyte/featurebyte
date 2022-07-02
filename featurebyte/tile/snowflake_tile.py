@@ -11,7 +11,8 @@ from pydantic import PrivateAttr
 from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedDatabaseSourceModel
 from featurebyte.logger import logger
-from featurebyte.models.event_data import DatabaseSourceModel, TileType
+from featurebyte.models.database_source import DatabaseSourceModel
+from featurebyte.models.event_data import TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.base import TileBase
 

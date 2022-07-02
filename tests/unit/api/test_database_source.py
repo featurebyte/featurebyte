@@ -41,5 +41,10 @@ def test__getitem__retrieve_database_table(
     Test retrieval database table by indexing
     """
     _ = snowflake_connector, snowflake_execute_query
-    database_table = snowflake_database_source["sf_table", config.credentials]
+    database_table = snowflake_database_source.get_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="sf_table",
+        credentials=config.credentials,
+    )
     assert isinstance(database_table, DatabaseTable)

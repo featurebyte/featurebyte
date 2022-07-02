@@ -33,9 +33,9 @@ class BaseSession(BaseModel):
         return self._connection
 
     @abstractmethod
-    def list_tables(self) -> list[str]:
+    def list_databases(self) -> list[str]:
         """
-        Execute SQL query to retrieve table names
+        Execute SQL query to retrieve database names
 
         Returns
         -------
@@ -43,13 +43,53 @@ class BaseSession(BaseModel):
         """
 
     @abstractmethod
-    def list_table_schema(self, table_name: str) -> dict[str, DBVarType]:
+    def list_schemas(self, database_name: str | None = None) -> list[str]:
+        """
+        Execute SQL query to retrieve schema names
+
+        Parameters
+        ----------
+        database_name: str | None
+            Database name
+
+        Returns
+        -------
+        list[str]
+        """
+
+    @abstractmethod
+    def list_tables(
+        self, database_name: str | None = None, schema_name: str | None = None
+    ) -> list[str]:
+        """
+        Execute SQL query to retrieve table names
+
+        Parameters
+        ----------
+        database_name: str | None
+            Database name
+        schema_name: str | None
+            Schema name
+
+        Returns
+        -------
+        list[str]
+        """
+
+    @abstractmethod
+    def list_table_schema(
+        self, database_name: str | None, schema_name: str | None, table_name: str | None
+    ) -> dict[str, DBVarType]:
         """
         Execute SQL query to retrieve table schema of a given table name and convert the
         schema type to internal variable type
 
         Parameters
         ----------
+        database_name: str
+            Database name
+        schema_name: str
+            Schema name
         table_name: str
             Table name
 

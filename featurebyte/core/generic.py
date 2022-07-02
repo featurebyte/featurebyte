@@ -11,7 +11,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 from featurebyte.config import Configurations, Credentials
-from featurebyte.models.event_data import DatabaseSourceModel
+from featurebyte.models.database_source import DatabaseSourceModel, TableDetails
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.session.base import BaseSession
@@ -51,7 +51,7 @@ class QueryObject(BaseModel):
     graph: GlobalQueryGraph = Field(default_factory=GlobalQueryGraph)
     node: Node
     row_index_lineage: Tuple[str, ...]
-    tabular_source: Tuple[DatabaseSourceModel, str]
+    tabular_source: Tuple[DatabaseSourceModel, TableDetails]
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"

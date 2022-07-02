@@ -6,7 +6,7 @@ import json
 import pytest
 
 from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
-from featurebyte.models.event_data import DatabaseSourceModel, SnowflakeDetails, SourceType
+from featurebyte.models.database_source import DatabaseSourceModel, SnowflakeDetails, SourceType
 
 
 @pytest.fixture(name="username_password_credential")

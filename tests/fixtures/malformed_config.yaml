@@ -1,5 +1,5 @@
-datasource:
-  - name: "snowflake 数据库"
+featurestore:
+  - name: "Snowflake FeatureStøre"
     source_type: snowflake
     account:  sf_account
     sf_schema: PUBLIC

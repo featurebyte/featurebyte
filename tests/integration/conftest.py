@@ -5,7 +5,6 @@ import os
 import sqlite3
 import tempfile
 from datetime import datetime
-from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -80,14 +79,14 @@ def config_fixture(sqlite_filename):
     temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
 
     config_dict = {
-        "datasource": [
+        "featurestore": [
             {
-                "name": "snowflake_datasource",
+                "name": "snowflake_featurestore",
                 "source_type": "snowflake",
                 "account": os.getenv("SNOWFLAKE_ACCOUNT"),
                 "warehouse": os.getenv("SNOWFLAKE_WAREHOUSE"),
-                "sf_schema": os.getenv("SNOWFLAKE_SCHEMA"),
                 "database": os.getenv("SNOWFLAKE_DATABASE"),
+                "sf_schema": temp_schema_name,
                 "credential_type": "USERNAME_PASSWORD",
                 "username": os.getenv("SNOWFLAKE_USER"),
                 "password": os.getenv("SNOWFLAKE_PASSWORD"),
@@ -98,9 +97,6 @@ def config_fixture(sqlite_filename):
                 "filename": sqlite_filename,
             },
         ],
-        "snowflake": {
-            "featurebyte_schema": temp_schema_name,
-        },
     }
     with tempfile.NamedTemporaryFile("w") as file_handle:
         file_handle.write(yaml.dump(config_dict))
@@ -114,14 +110,11 @@ def snowflake_session(transaction_data_upper_case, config):
     Snowflake session
     """
     session_manager = SessionManager(credentials=config.credentials)
-    snowflake_database_source = config.db_sources["snowflake_datasource"]
-    with mock.patch("featurebyte.session.snowflake.Configurations", return_value=config):
-        session = session_manager[snowflake_database_source]
+    snowflake_database_source = config.feature_stores["snowflake_featurestore"]
+    session = session_manager[snowflake_database_source]
     assert isinstance(session, SnowflakeSession)
 
     table_name = "TEST_TABLE"
-    temp_schema_name = config.snowflake.featurebyte_schema
-    assert session.connection.schema == temp_schema_name
 
     session.execute_query(
         f"""
@@ -142,7 +135,7 @@ def snowflake_session(transaction_data_upper_case, config):
 
     yield session
 
-    session.execute_query(f"DROP SCHEMA IF EXISTS {temp_schema_name}")
+    session.execute_query(f"DROP SCHEMA IF EXISTS {snowflake_database_source.details.sf_schema}")
 
 
 @pytest.fixture(scope="session")
@@ -151,7 +144,7 @@ def sqlite_session(config):
     SQLite session
     """
     session_manager = SessionManager(credentials=config.credentials)
-    sqlite_database_source = config.db_sources["sqlite_datasource"]
+    sqlite_database_source = config.feature_stores["sqlite_datasource"]
     return session_manager[sqlite_database_source]
 
 
@@ -161,7 +154,7 @@ def snowflake_featurebyte_session(config):
     Create Snowflake session for integration tests of featurebyte sql scripts
     """
     session_manager = SessionManager(credentials=config.credentials)
-    snowflake_database_source = config.db_sources["snowflake_datasource"]
+    snowflake_database_source = config.feature_stores["snowflake_featurestore"]
     session = session_manager[snowflake_database_source]
 
     schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
@@ -216,7 +209,7 @@ def snowflake_tile(fb_db_session, config):
         tile_sql=tile_sql,
         column_names=col_names,
         tile_id="tile_id1",
-        tabular_source=config.db_sources["snowflake_datasource"],
+        tabular_source=config.feature_stores["snowflake_featurestore"],
         credentials=config.credentials,
     )
 
@@ -247,7 +240,7 @@ def snowflake_feature(fb_db_session, config):
         column_names="col1",
         tile_ids=[tile_id],
         online_enabled=False,
-        datasource=config.db_sources["snowflake_datasource"],
+        datasource=config.feature_stores["snowflake_featurestore"],
     )
 
     s_feature = FeatureSnowflake(feature=feature, credentials=config.credentials)

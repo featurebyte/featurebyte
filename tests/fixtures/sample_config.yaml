@@ -1,10 +1,10 @@
-datasource:
-  - name: "snowflake 数据库"
+featurestore:
+  - name: "Snowflake FeatureStøre"
     source_type: snowflake
     account:  sf_account
     warehouse: COMPUTE_WH
-    sf_schema: PUBLIC
-    database: TEST_DB
+    database: FEATUREBYTE
+    sf_schema: FEATUREBYTE
     credential_type: USERNAME_PASSWORD
     username: user
     password: password

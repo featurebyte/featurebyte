@@ -13,10 +13,15 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
     Test loading event view from sqlite source
     """
     _ = sqlite_session
-    sqlite_database_source = DatabaseSource(**config.db_sources["sqlite_datasource"].dict())
+    sqlite_database_source = DatabaseSource(**config.feature_stores["sqlite_datasource"].dict())
     assert sqlite_database_source.list_tables(credentials=config.credentials) == ["test_table"]
 
-    sqlite_database_table = sqlite_database_source["test_table", config.credentials]
+    sqlite_database_table = sqlite_database_source.get_table(
+        database_name=None,
+        schema_name=None,
+        table_name="test_table",
+        credentials=config.credentials,
+    )
     expected_dtypes = pd.Series(
         {
             "event_timestamp": "VARCHAR",
@@ -67,10 +72,17 @@ def test_query_object_operation_on_snowflake_source(
     """
     _ = snowflake_session
     table_name = "TEST_TABLE"
-    snowflake_database_source = DatabaseSource(**config.db_sources["snowflake_datasource"].dict())
+    snowflake_database_source = DatabaseSource(
+        **config.feature_stores["snowflake_featurestore"].dict()
+    )
     assert table_name in snowflake_database_source.list_tables(credentials=config.credentials)
 
-    snowflake_database_table = snowflake_database_source[table_name, config.credentials]
+    snowflake_database_table = snowflake_database_source.get_table(
+        database_name=snowflake_session.database,
+        schema_name=snowflake_session.sf_schema,
+        table_name=table_name,
+        credentials=config.credentials,
+    )
     expected_dtypes = pd.Series(
         {
             "EVENT_TIMESTAMP": "TIMESTAMP",

@@ -10,7 +10,8 @@ from pydantic import validator
 from featurebyte.api.database_source import DatabaseSource
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.models.credential import Credential
-from featurebyte.models.event_data import DatabaseSourceModel, EventDataModel
+from featurebyte.models.database_source import DatabaseSourceModel, TableDetails
+from featurebyte.models.event_data import EventDataModel
 
 
 class EventDataColumn:
@@ -84,10 +85,10 @@ class EventData(EventDataModel, DatabaseTable):
         """
         node_parameters = tabular_source.node.parameters.copy()
         database_source = DatabaseSource(**node_parameters["database_source"])
-        table_name = node_parameters["dbtable"]
+        table_details = TableDetails(**node_parameters["dbtable"])
         return EventData(
             name=name,
-            tabular_source=(database_source, table_name),
+            tabular_source=(database_source, table_details),
             event_timestamp_column=event_timestamp_column,
             record_creation_date_column=record_creation_date_column,
             credentials=credentials,

@@ -30,7 +30,15 @@ class SQLiteSession(BaseSession):
 
         self._connection = sqlite3.connect(filename)
 
-    def list_tables(self) -> list[str]:
+    def list_databases(self) -> list[str]:
+        return []
+
+    def list_schemas(self, database_name: str | None = None) -> list[str]:
+        return []
+
+    def list_tables(
+        self, database_name: str | None = None, schema_name: str | None = None
+    ) -> list[str]:
         tables = self.execute_query("SELECT name FROM sqlite_master WHERE type = 'table'")
         output = []
         if tables is not None:
@@ -58,7 +66,9 @@ class SQLiteSession(BaseSession):
             return DBVarType.DATE
         raise ValueError(f"Not supported data type '{sqlite_data_type}'")
 
-    def list_table_schema(self, table_name: str) -> dict[str, DBVarType]:
+    def list_table_schema(
+        self, database_name: str | None, schema_name: str | None, table_name: str | None
+    ) -> dict[str, DBVarType]:
         schema = self.execute_query(f'PRAGMA table_info("{table_name}")')
         column_name_type_map = {}
         if schema is not None:

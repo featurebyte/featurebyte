@@ -29,7 +29,7 @@ def snowflake_session_dict_without_credentials_fixture():
         "account": "some_account",
         "warehouse": "some_warehouse",
         "database": "sf_database",
-        "sf_schema": "sf_schema",
+        "sf_schema": "FEATUREBYTE",
     }
 
 
@@ -51,8 +51,15 @@ def test_snowflake_session__credential_from_config(snowflake_session_dict):
     session = SnowflakeSession(**snowflake_session_dict)
     assert session.username == "username"
     assert session.password == "password"
-    assert session.list_tables() == ["sf_table", "sf_view"]
-    assert session.list_table_schema("sf_table") == {
+    assert session.list_databases() == ["sf_database"]
+    assert session.list_schemas(database_name="sf_database") == ["sf_schema"]
+    assert session.list_tables(database_name="sf_database", schema_name="sf_schema") == [
+        "sf_table",
+        "sf_view",
+    ]
+    assert session.list_table_schema(
+        database_name="sf_database", schema_name="sf_schema", table_name="sf_table"
+    ) == {
         "col_int": DBVarType.INT,
         "col_float": DBVarType.FLOAT,
         "col_char": DBVarType.CHAR,
@@ -63,7 +70,9 @@ def test_snowflake_session__credential_from_config(snowflake_session_dict):
         "cust_id": DBVarType.INT,
         "event_timestamp": DBVarType.TIMESTAMP,
     }
-    assert session.list_table_schema("sf_view") == {
+    assert session.list_table_schema(
+        database_name="sf_database", schema_name="sf_schema", table_name="sf_view"
+    ) == {
         "col_date": DBVarType.DATE,
         "col_time": DBVarType.TIME,
         "col_timestamp_ltz": DBVarType.TIMESTAMP,
@@ -73,7 +82,9 @@ def test_snowflake_session__credential_from_config(snowflake_session_dict):
 
 
 @pytest.fixture(name="patched_snowflake_session_cls")
-def patched_snowflake_session_cls_fixture(schema_exists):
+def patched_snowflake_session_cls_fixture(
+    snowflake_session_dict_without_credentials, schema_exists
+):
     """Fixture for a patched session class"""
     with patch("featurebyte.session.snowflake.SnowflakeSession", autospec=True) as patched_class:
         mock_session_obj = patched_class.return_value
@@ -81,6 +92,7 @@ def patched_snowflake_session_cls_fixture(schema_exists):
             schemas = pd.DataFrame({"name": ["PUBLIC", "FEATUREBYTE"]})
         else:
             schemas = pd.DataFrame({"name": ["PUBLIC"]})
+        mock_session_obj.sf_schema = snowflake_session_dict_without_credentials["sf_schema"]
         mock_session_obj.execute_query.side_effect = lambda _: schemas
         yield patched_class
 
@@ -103,7 +115,7 @@ def test_schema_initializer__sql_filenames():
 def test_schema_initializer(patched_snowflake_session_cls, schema_exists):
     """Test SchemaInitializer executes expected queries"""
     session = patched_snowflake_session_cls()
-    SchemaInitializer(session, "FEATUREBYTE").initialize()
+    SchemaInitializer(session).initialize()
     if schema_exists:
         # Nothing to do except checking schemas
         assert session.execute_query.call_args_list == [call("SHOW SCHEMAS")]

@@ -39,7 +39,7 @@ def sqlite_database_source_fixture(config, graph):
     SQLite database source fixture
     """
     _ = graph
-    return DatabaseSource(**config.db_sources["sq_datasource"].dict())
+    return DatabaseSource(**config.feature_stores["sq_featurestore"].dict())
 
 
 @patch("featurebyte.session.sqlite.os", Mock())

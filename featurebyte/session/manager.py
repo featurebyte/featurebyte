@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from featurebyte.enum import SourceType
 from featurebyte.logger import logger
 from featurebyte.models.credential import Credential
-from featurebyte.models.event_data import DatabaseSourceModel
+from featurebyte.models.database_source import DatabaseSourceModel
 from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.session.sqlite import SQLiteSession

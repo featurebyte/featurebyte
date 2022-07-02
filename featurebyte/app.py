@@ -12,7 +12,7 @@ from fastapi import Depends, FastAPI, Request
 import featurebyte.routes.event_data.api as event_data_api
 from featurebyte.config import Configurations
 from featurebyte.models.credential import Credential
-from featurebyte.models.event_data import DatabaseSourceModel
+from featurebyte.models.database_source import DatabaseSourceModel
 from featurebyte.persistent import GitDB, Persistent
 from featurebyte.routes.event_data.controller import EventDataController
 
