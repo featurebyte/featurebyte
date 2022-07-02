@@ -10,6 +10,7 @@ import time
 import pandas as pd
 from sqlglot import select
 
+from featurebyte.enum import SpecialColumnName
 from featurebyte.logger import logger
 from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME, prettify_sql
 from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
@@ -82,11 +83,15 @@ def get_feature_preview_sql(
         If any required entity columns is not provided
     """
 
-    point_in_time = point_in_time_and_entity_id["POINT_IN_TIME"]
+    if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_entity_id:
+        raise KeyError(f"Point in time not provided: {SpecialColumnName.POINT_IN_TIME}")
+
     if entity_columns is not None:
         for col in entity_columns:
             if col not in point_in_time_and_entity_id:
                 raise KeyError(f"Entity column not provided: {col}")
+
+    point_in_time = point_in_time_and_entity_id[SpecialColumnName.POINT_IN_TIME]
 
     cte_statements = []
 
@@ -103,14 +108,16 @@ def get_feature_preview_sql(
     # prepare request table
     tic = time.time()
     df_request = pd.DataFrame([point_in_time_and_entity_id])
-    request_table_sql = construct_preview_request_table_sql(df_request, ["POINT_IN_TIME"])
+    request_table_sql = construct_preview_request_table_sql(
+        df_request, [SpecialColumnName.POINT_IN_TIME]
+    )
     cte_statements.append((REQUEST_TABLE_NAME, request_table_sql))
     elapsed = time.time() - tic
     logger.debug(f"Constructing request table SQL took {elapsed:.2}s")
 
     tic = time.time()
     preview_sql = execution_plan.construct_combined_sql(
-        point_in_time_column="POINT_IN_TIME",
+        point_in_time_column=SpecialColumnName.POINT_IN_TIME,
         request_table_columns=df_request.columns.tolist(),
         prior_cte_statements=cte_statements,
     )

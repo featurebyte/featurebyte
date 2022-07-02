@@ -52,3 +52,11 @@ class SourceType(str, Enum):
 
     SNOWFLAKE = "snowflake"
     SQLITE = "sqlite"
+
+
+class SpecialColumnName(str, Enum):
+    """
+    Special column names such as POINT_IN_TIME
+    """
+
+    POINT_IN_TIME = "POINT_IN_TIME"
