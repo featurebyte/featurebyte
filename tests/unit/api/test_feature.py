@@ -85,7 +85,7 @@ def test_feature__preview_missing_point_in_time(float_feature):
     }
     with pytest.raises(KeyError) as exc_info:
         float_feature.preview(invalid_params)
-    assert "Entity column not provided: cust_id" in str(exc_info.value)
+    assert "Point in time column not provided: POINT_IN_TIME" in str(exc_info.value)
 
 
 def test_feature__preview_missing_entity_id(float_feature):
