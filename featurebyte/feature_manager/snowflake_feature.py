@@ -57,6 +57,13 @@ class FeatureSnowflake(BaseModel):
         """
         Insert feature registry record. Update the is_default of the existing feature registry records to be False,
         then insert the new registry record with is_default to True
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+            whether the feature registry record is inserted successfully or not
         """
         feature_versions = self.retrieve_features(version=self.feature.version)
         logger.debug(f"feature_versions: {feature_versions}")
