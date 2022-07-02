@@ -5,13 +5,13 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 
 
-def test_insert_feature_registry(fb_db_session, snowflake_feature):
+def test_insert_feature_registry(snowflake_session, snowflake_feature):
     """
     Test insert_feature_registry
     """
     snowflake_feature.insert_feature_registry()
 
-    result = fb_db_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
+    result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
     assert len(result) == 1
     assert result.iloc[0]["NAME"] == "test_feature1"
     assert result.iloc[0]["VERSION"] == "v1"
@@ -40,13 +40,13 @@ def test_insert_feature_registry(fb_db_session, snowflake_feature):
     assert_frame_equal(expected_df, result)
 
 
-def test_insert_feature_registry_duplicate(fb_db_session, snowflake_feature):
+def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature):
     """
     Test insert_feature_registry duplicate with exception
     """
     snowflake_feature.insert_feature_registry()
 
-    result = fb_db_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
+    result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
     assert len(result) == 1
     assert result.iloc[0]["NAME"] == "test_feature1"
     assert result.iloc[0]["VERSION"] == "v1"
@@ -87,18 +87,18 @@ def test_retrieve_features_multiple(snowflake_feature):
     assert feature_versions[1].version == "v2"
 
 
-def test_online_enable(fb_db_session, snowflake_feature):
+def test_online_enable(snowflake_session, snowflake_feature):
     """
     Test online_enable
     """
     snowflake_feature.online_enable()
 
-    tile_registry = fb_db_session.execute_query("SELECT * FROM TILE_REGISTRY")
+    tile_registry = snowflake_session.execute_query("SELECT * FROM TILE_REGISTRY")
     assert len(tile_registry) == 1
     assert tile_registry.iloc[0]["TILE_ID"] == "TILE_ID1"
     assert tile_registry.iloc[0]["TILE_SQL"] == "SELECT * FROM DUMMY"
 
-    tasks = fb_db_session.execute_query("SHOW TASKS")
+    tasks = snowflake_session.execute_query("SHOW TASKS")
     assert len(tasks) > 1
     assert tasks["name"].iloc[0] == "SHELL_TASK_TILE_ID1_OFFLINE"
     assert tasks["schedule"].iloc[0] == "USING CRON 3 0 * * * UTC"

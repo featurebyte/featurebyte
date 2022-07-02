@@ -4,7 +4,7 @@ This module contains integration tests for scheduled tile generation stored proc
 from datetime import datetime
 
 
-def test_schedule_generate_tile_online(fb_db_session):
+def test_schedule_generate_tile_online(snowflake_session):
     """
     Test the stored procedure of generating tiles
     """
@@ -20,15 +20,15 @@ def test_schedule_generate_tile_online(fb_db_session):
     )
 
     sql = f"call SP_TILE_GENERATE_SCHEDULE('{tile_id}', 183, 3, 5, 1440, '{tile_sql}', '{col_names}', 'ONLINE', {tile_monitor}, '{tile_end_ts}')"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE_SCHEDULE"].iloc[0]
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == (tile_monitor + 1)
 
 
-def test_schedule_monitor_tile_online(fb_db_session):
+def test_schedule_monitor_tile_online(snowflake_session):
     """
     Test the stored procedure of monitoring tiles
     """
@@ -44,16 +44,16 @@ def test_schedule_monitor_tile_online(fb_db_session):
     )
 
     sql = f"call SP_TILE_GENERATE_SCHEDULE('{tile_id}', 183, 3, 5, 1440, '{tile_sql}', '{col_names}', 'ONLINE', {tile_monitor}, '{tile_end_ts}')"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE_SCHEDULE"].iloc[0]
 
     sql = f"UPDATE {table_name} SET VALUE = VALUE + 1 WHERE TILE_START_TS in ('2022-06-05T23:48:00Z', '2022-06-05T23:33:00Z') "
-    fb_db_session.execute_query(sql)
+    snowflake_session.execute_query(sql)
 
     tile_end_ts_2 = "2022-06-05T23:58:00Z"
     sql = f"call SP_TILE_GENERATE_SCHEDULE('{tile_id}', 183, 3, 5, 1440, '{tile_sql}', '{col_names}', 'ONLINE', {tile_monitor}, '{tile_end_ts_2}')"
-    fb_db_session.execute_query(sql)
+    snowflake_session.execute_query(sql)
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}_MONITOR"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 2

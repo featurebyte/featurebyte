@@ -108,7 +108,7 @@ def config_fixture(sqlite_filename):
         yield Configurations(config_file_path=file_handle.name)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def snowflake_session(transaction_data_upper_case, config):
     """
     Snowflake session
@@ -140,6 +140,12 @@ def snowflake_session(transaction_data_upper_case, config):
         session.connection, transaction_data_upper_case, table_name, schema=session.sf_schema
     )
 
+    df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
+    df_tiles["TILE_START_TS"] = pd.to_datetime(df_tiles["TILE_START_TS"])
+    write_pandas(
+        session.connection, df_tiles, "TEMP_TABLE", auto_create_table=True, create_temp_table=True
+    )
+
     yield session
 
     session.execute_query(f"DROP SCHEMA IF EXISTS {temp_schema_name}")
@@ -155,52 +161,8 @@ def sqlite_session(config):
     return session_manager[sqlite_database_source]
 
 
-@pytest.fixture(name="fb_db_session", scope="session")
-def snowflake_featurebyte_session(config):
-    """
-    Create Snowflake session for integration tests of featurebyte sql scripts
-    """
-    session_manager = SessionManager(credentials=config.credentials)
-    snowflake_database_source = config.db_sources["snowflake_datasource"]
-    session = session_manager[snowflake_database_source]
-
-    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
-    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    session.execute_query(f"CREATE OR REPLACE TRANSIENT SCHEMA {temp_schema_name}")
-    session.execute_query(f"USE SCHEMA {temp_schema_name}")
-
-    sql_dir = os.path.join(os.path.dirname(__file__), "..", "..", "sql", "snowflake")
-    sql_file_list = [
-        "F_TIMESTAMP_TO_INDEX.sql",
-        "F_INDEX_TO_TIMESTAMP.sql",
-        "SP_TILE_GENERATE.sql",
-        "SP_TILE_MONITOR.sql",
-        "SP_TILE_GENERATE_SCHEDULE.sql",
-        "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql",
-        "T_TILE_REGISTRY.sql",
-        "T_FEATURE_REGISTRY.sql",
-        "T_FEATURE_LIST_REGISTRY.sql",
-    ]
-    for sql_file in sql_file_list:
-        with open(os.path.join(sql_dir, sql_file), encoding="utf8") as file:
-            sql_script = file.read()
-        session.execute_query(sql_script)
-
-    df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
-    df_tiles["TILE_START_TS"] = pd.to_datetime(df_tiles["TILE_START_TS"])
-    write_pandas(
-        session.connection, df_tiles, "TEMP_TABLE", auto_create_table=True, create_temp_table=True
-    )
-
-    yield session
-
-    session.execute_query(f"DROP SCHEMA IF EXISTS {temp_schema_name}")
-
-    session.connection.close()
-
-
 @pytest.fixture
-def snowflake_tile(fb_db_session, config):
+def snowflake_tile(snowflake_session, config):
     """
     Pytest Fixture for TileSnowflake instance
     """
@@ -222,14 +184,14 @@ def snowflake_tile(fb_db_session, config):
 
     yield tile_s
 
-    fb_db_session.execute_query("DELETE FROM TILE_REGISTRY")
-    fb_db_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
-    fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
-    fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+    snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
+    snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
+    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
+    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
 
 
 @pytest.fixture
-def snowflake_feature(fb_db_session, config):
+def snowflake_feature(snowflake_session, config):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
@@ -254,7 +216,7 @@ def snowflake_feature(fb_db_session, config):
 
     yield s_feature
 
-    fb_db_session.execute_query("DELETE FROM FEATURE_REGISTRY")
-    fb_db_session.execute_query("DELETE FROM TILE_REGISTRY")
-    fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
-    fb_db_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+    snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
+    snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
+    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
+    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")

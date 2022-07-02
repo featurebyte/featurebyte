@@ -159,7 +159,7 @@ class SchemaInitializer:
         )
         output = []
         for filename in os.listdir(sql_directory):
-            if filename.startswith("F_") or filename.startswith("SP_"):
+            if filename.startswith("F_") or filename.startswith("SP_") or filename.startswith("T_"):
                 full_filename = os.path.join(sql_directory, filename)
                 output.append(full_filename)
         return output
