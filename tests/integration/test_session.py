@@ -19,8 +19,10 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
     sqlite_database_table = sqlite_database_source["test_table", config.credentials]
     expected_dtypes = pd.Series(
         {
+            "event_timestamp": "VARCHAR",
             "created_at": "INT",
             "cust_id": "INT",
+            "user_id": "INT",
             "product_action": "VARCHAR",
             "session_id": "INT",
         }
@@ -34,7 +36,14 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
         credentials=config.credentials,
     )
     event_view = EventView.from_event_data(event_data)
-    assert event_view.columns == ["created_at", "cust_id", "product_action", "session_id"]
+    assert event_view.columns == [
+        "event_timestamp",
+        "created_at",
+        "cust_id",
+        "user_id",
+        "product_action",
+        "session_id",
+    ]
 
     # need to specify the constant as float, otherwise results will get truncated
     event_view["cust_id_x_session_id"] = event_view["cust_id"] * event_view["session_id"] / 1000.0
@@ -64,8 +73,10 @@ def test_query_object_operation_on_snowflake_source(
     snowflake_database_table = snowflake_database_source[table_name, config.credentials]
     expected_dtypes = pd.Series(
         {
+            "EVENT_TIMESTAMP": "TIMESTAMP",
             "CREATED_AT": "INT",
             "CUST_ID": "INT",
+            "USER_ID": "INT",
             "PRODUCT_ACTION": "VARCHAR",
             "SESSION_ID": "INT",
         }
@@ -75,11 +86,18 @@ def test_query_object_operation_on_snowflake_source(
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="snowflake_event_data",
-        event_timestamp_column="CREATED_AT",
+        event_timestamp_column="EVENT_TIMESTAMP",
         credentials=config.credentials,
     )
     event_view = EventView.from_event_data(event_data)
-    assert event_view.columns == ["CREATED_AT", "CUST_ID", "PRODUCT_ACTION", "SESSION_ID"]
+    assert event_view.columns == [
+        "EVENT_TIMESTAMP",
+        "CREATED_AT",
+        "CUST_ID",
+        "USER_ID",
+        "PRODUCT_ACTION",
+        "SESSION_ID",
+    ]
 
     # need to specify the constant as float, otherwise results will get truncated
     event_view["CUST_ID_X_SESSION_ID"] = event_view["CUST_ID"] * event_view["SESSION_ID"] / 1000.0
@@ -95,4 +113,35 @@ def test_query_object_operation_on_snowflake_source(
     output["CUST_ID_X_SESSION_ID"] = output["CUST_ID_X_SESSION_ID"].astype(
         float
     )  # type is not correct here
+    # the EVENT_TIMESTAMP has to be str for write_pandas to work correctly
+    output["EVENT_TIMESTAMP"] = output["EVENT_TIMESTAMP"].astype(str)
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
+
+    # create some features
+    event_view["USER_ID"].as_entity("User")
+    feature_group = event_view.groupby("USER_ID").aggregate(
+        "USER_ID",
+        "count",
+        windows=["2h", "24h"],
+        blind_spot="30m",
+        frequency="1h",
+        time_modulo_frequency="30m",
+        feature_names=["COUNT_2h", "COUNT_24h"],
+    )
+
+    # preview the features
+    preview_param = {
+        "POINT_IN_TIME": "2001-01-02 10:00:00",
+        "USER_ID": 1,
+    }
+    df_feature_preview = feature_group.preview(
+        preview_param,
+        credentials=config.credentials,
+    )
+    assert df_feature_preview.shape[0] == 1
+    assert df_feature_preview.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "USER_ID": 1,
+        "COUNT_2h": 1,
+        "COUNT_24h": 9,
+    }

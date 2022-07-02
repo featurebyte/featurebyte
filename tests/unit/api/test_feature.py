@@ -74,3 +74,37 @@ def test_feature__bool_series_key_scalar_value(float_feature, bool_feature):
         parameters={"value": 10},
         output_type=NodeOutputType.SERIES,
     )
+
+
+def test_feature__preview_missing_point_in_time(float_feature):
+    """
+    Test feature preview validation missing point in time
+    """
+    invalid_params = {
+        "cust_id": "C1",
+    }
+    with pytest.raises(KeyError) as exc_info:
+        float_feature.preview(invalid_params)
+    assert "Point in time column not provided: POINT_IN_TIME" in str(exc_info.value)
+
+
+def test_feature__preview_missing_entity_id(float_feature):
+    """
+    Test feature preview validation missing point in time
+    """
+    invalid_params = {
+        "POINT_IN_TIME": "2022-04-01",
+    }
+    with pytest.raises(KeyError) as exc_info:
+        float_feature.preview(invalid_params)
+    assert "Entity column not provided: cust_id" in str(exc_info.value)
+
+
+def test_feature__preview_not_a_dict(float_feature):
+    """
+    Test feature preview validation but dict is not provided
+    """
+    invalid_params = tuple(["2022-04-01", "C1"])
+    with pytest.raises(ValueError) as exc_info:
+        float_feature.preview(invalid_params)
+    assert "point_in_time_and_entity_id should be a dict" in str(exc_info.value)

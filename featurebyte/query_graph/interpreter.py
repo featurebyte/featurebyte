@@ -3,7 +3,7 @@ This module contains the Query Graph Interpreter
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Iterator
 
 from dataclasses import dataclass
 
@@ -18,6 +18,7 @@ from featurebyte.query_graph.sql import (
     SQLNode,
     SQLType,
     TableNode,
+    make_aggregated_tiles_node,
     make_binary_operation_node,
     make_build_tile_node,
     make_filter_node,
@@ -129,8 +130,12 @@ class SQLOperationGraph:
             sql_node = make_filter_node(input_sql_nodes, output_type)
 
         elif node_type == NodeType.GROUPBY:
-            sql_node = make_build_tile_node(input_sql_nodes, parameters)
-
+            if self.sql_type == SQLType.BUILD_TILE:
+                sql_node = make_build_tile_node(input_sql_nodes, parameters)
+            elif self.sql_type == SQLType.GENERATE_FEATURE:
+                sql_node = make_aggregated_tiles_node(cur_node)
+            else:
+                raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
         else:
             raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
 
@@ -157,6 +162,9 @@ class TileGenSql:
         Job frequency. Needed for job scheduling.
     blind_spot : int
         Blind spot. Needed for job scheduling.
+    windows : list[int]
+        List of window sizes. Not needed for job scheduling, but can be used for other purposes such
+        as determining the reuqired tiles to build on demand during preview.
     """
 
     tile_table_id: str
@@ -165,6 +173,27 @@ class TileGenSql:
     time_modulo_frequency: int
     frequency: int
     blind_spot: int
+    windows: list[int]
+
+
+def find_parent_groupby_nodes(query_graph: QueryGraph, starting_node: Node) -> Iterator[Node]:
+    """Helper function to find all groupby nodes in a Query Graph
+
+    Parameters
+    ----------
+    query_graph : QueryGraph
+        Query graph
+    starting_node : Node
+        Node from which to start the search
+
+    Yields
+    ------
+    Node
+        Query graph nodes of groupby type
+    """
+    for node in dfs_traversal(query_graph, starting_node):
+        if node.type == NodeType.GROUPBY:
+            yield node
 
 
 class TileSQLGenerator:
@@ -196,9 +225,8 @@ class TileSQLGenerator:
         """
         # Groupby operations requires building tiles (assuming the aggregation type supports tiling)
         tile_generating_nodes = {}
-        for node in dfs_traversal(self.query_graph, starting_node):
-            if node.type == "groupby":
-                tile_generating_nodes[node.name] = node
+        for node in find_parent_groupby_nodes(self.query_graph, starting_node):
+            tile_generating_nodes[node.name] = node
 
         sqls = []
         for node in tile_generating_nodes.values():
@@ -226,6 +254,7 @@ class TileSQLGenerator:
         frequency = groupby_node.parameters["frequency"]
         blind_spot = groupby_node.parameters["blind_spot"]
         time_modulo_frequency = groupby_node.parameters["time_modulo_frequency"]
+        windows = groupby_node.parameters["windows"]
         tile_table_id = groupby_node.parameters["tile_id"]
         info = TileGenSql(
             tile_table_id=tile_table_id,
@@ -234,6 +263,7 @@ class TileSQLGenerator:
             time_modulo_frequency=time_modulo_frequency,
             frequency=frequency,
             blind_spot=blind_spot,
+            windows=windows,
         )
         return info
 
@@ -299,7 +329,7 @@ class GraphInterpreter:
         str
             SQL code for preview purpose
         """
-        sql_graph = SQLOperationGraph(self.query_graph, sql_type=SQLType.PREVIEW)
+        sql_graph = SQLOperationGraph(self.query_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
         sql_graph.build(self.query_graph.get_node_by_name(node_name))
 
         sql_node = sql_graph.get_node(node_name)

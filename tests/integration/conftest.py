@@ -30,10 +30,13 @@ def transaction_dataframe():
     row_number = 100
     rng = np.random.RandomState(1234)
     product_actions = ["detail", "add", "purchase", "remove", None]
+    timestamps = pd.date_range("2001-01-01", freq="1h", periods=48).astype(str)
     data = pd.DataFrame(
         {
+            "event_timestamp": rng.choice(timestamps, row_number),
             "created_at": pd.date_range("2001-01-01", freq="1min", periods=row_number),
             "cust_id": rng.randint(1, 10, row_number),
+            "user_id": rng.randint(1, 10, row_number),
             "product_action": rng.choice(product_actions, row_number),
             "session_id": rng.randint(100, 1000, row_number),
         }
@@ -123,8 +126,10 @@ def snowflake_session(transaction_data_upper_case, config):
     session.execute_query(
         f"""
         CREATE TEMPORARY TABLE {session.sf_schema}.{table_name}(
+            EVENT_TIMESTAMP DATETIME,
             CREATED_AT INT,
             CUST_ID INT,
+            USER_ID INT,
             PRODUCT_ACTION STRING,
             SESSION_ID INT
         )

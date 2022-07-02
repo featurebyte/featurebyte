@@ -59,7 +59,7 @@ def test_graph_interpreter_super_simple(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, proj_a],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.PREVIEW)
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
     sql_graph.build(assign)
     sql_tree = sql_graph.get_node(assign.name).sql
     expected = textwrap.dedent(
@@ -202,7 +202,7 @@ def test_graph_interpreter_project_multiple_columns(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.PREVIEW)
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
     sql_graph.build(proj)
     sql_tree = sql_graph.get_node(proj.name).sql
     expected = textwrap.dedent(
@@ -227,11 +227,12 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
     info_dict = asdict(info)
     info_dict.pop("sql")
     assert info_dict == {
-        "tile_table_id": "avg_f30_m5_b1_38fdbe5f5add00ab0e39fa5db7c0e804934165bb",
+        "tile_table_id": "avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e",
         "columns": ["tile_start_date", "cust_id", "sum_value", "count_value"],
-        "time_modulo_frequency": 5,
-        "frequency": 30,
-        "blind_spot": 1,
+        "time_modulo_frequency": 1800,
+        "frequency": 3600,
+        "blind_spot": 900,
+        "windows": ["2h", "48h"],
     }
 
 
@@ -262,6 +263,7 @@ def test_graph_interpreter_snowflake(graph):
         "frequency": 3600,
         "blind_spot": 1,
         "timestamp": "SERVER_TIMESTAMP",
+        "windows": ["1d"],
     }
     _groupby_node = graph.add_operation(
         node_type=NodeType.GROUPBY,

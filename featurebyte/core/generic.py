@@ -111,13 +111,29 @@ class QueryObject(BaseModel):
         -------
         pd.DataFrame
         """
+        session = self.get_session(credentials)
+        return session.execute_query(self.preview_sql(limit=limit))
+
+    def get_session(self, credentials: Credentials | None = None) -> BaseSession:
+        """
+        Get a session based on underlying tabular source and provided credentials
+
+        Parameters
+        ----------
+        credentials : Credentials
+            data source to credential mapping used to initiate a new connection
+
+        Returns
+        -------
+        BaseSession
+        """
         if credentials is None:
             config = Configurations()
             credentials = config.credentials
 
         data_source = ExtendedDatabaseSourceModel(**self.tabular_source[0].dict())
         session = data_source.get_session(credentials=credentials)
-        return session.execute_query(self.preview_sql(limit=limit))
+        return session
 
 
 class ProtectedColumnsQueryObject(QueryObject):
