@@ -151,7 +151,7 @@ class SchemaInitializer:
     def register_missing_objects(self) -> None:
         """Detect database objects that are missing and register them"""
         sql_objects = self.get_sql_objects()
-        sql_objects_by_type = {
+        sql_objects_by_type: dict[SqlObjectType, list[dict[str, Any]]] = {
             SqlObjectType.FUNCTION: [],
             SqlObjectType.PROCEDURE: [],
             SqlObjectType.TABLE: [],
@@ -163,37 +163,65 @@ class SchemaInitializer:
         self.create_missing_tables(sql_objects_by_type[SqlObjectType.TABLE])
 
     def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
-        """Register functions defined in the snowflake sql directory"""
-        df = self.session.execute_query(f"SHOW USER FUNCTIONS IN DATABASE {self.session.database}")
-        df = df[df["schema_name"] == self.featurebyte_schema_name]
-        existing = set(df["name"].tolist())
+        """Register functions defined in the snowflake sql directory
+
+        Parameters
+        ----------
+        functions : list[dict[str, Any]]
+            List of functions to register
+        """
+        df_result = self.session.execute_query(
+            f"SHOW USER FUNCTIONS IN DATABASE {self.session.database}"
+        )
+        if df_result is None:
+            return
+        df_result = df_result[df_result["schema_name"] == self.featurebyte_schema_name]
+        existing = set(df_result["name"].tolist())
         for item in functions:
             if item["identifier"] not in existing:
                 self._register_sql_object(item)
 
     def register_missing_procedures(self, procedures: list[dict[str, Any]]) -> None:
-        """Register procedures defined in the snowflake sql directory"""
-        df = self.session.execute_query(f"SHOW PROCEDURES IN DATABASE {self.session.database}")
-        df = df[df["schema_name"] == self.featurebyte_schema_name]
-        existing = set(df["name"].tolist())
+        """Register procedures defined in the snowflake sql directory
+
+        Parameters
+        ----------
+        procedures: list[dict[str, Any]]
+            List of procedures to register
+        """
+        df_result = self.session.execute_query(
+            f"SHOW PROCEDURES IN DATABASE {self.session.database}"
+        )
+        if df_result is None:
+            return
+        df_result = df_result[df_result["schema_name"] == self.featurebyte_schema_name]
+        existing = set(df_result["name"].tolist())
         for item in procedures:
             if item["identifier"] not in existing:
                 self._register_sql_object(item)
 
     def create_missing_tables(self, tables: list[dict[str, Any]]) -> None:
-        """Create tables defined in snowflake sql directory"""
-        df = self.session.execute_query(
+        """Create tables defined in snowflake sql directory
+
+        Parameters
+        ----------
+        tables: list[dict[str, Any]]
+            List of tables to register
+        """
+        df_result = self.session.execute_query(
             f'SHOW TABLES IN SCHEMA "{self.session.database}"."{self.featurebyte_schema_name}"'
         )
-        existing = set(df["name"].tolist())
+        if df_result is None:
+            return
+        existing = set(df_result["name"].tolist())
         for item in tables:
             if item["identifier"] not in existing:
                 self._register_sql_object(item)
 
-    def _register_sql_object(self, item: dict[str, Any]):
+    def _register_sql_object(self, item: dict[str, Any]) -> None:
         logger.debug(f'Registering {item["identifier"]}')
-        with open(item["filename"]) as f:
-            query = f.read()
+        with open(item["filename"], encoding="utf-8") as f_handle:
+            query = f_handle.read()
         self.session.execute_query(query)
 
     @staticmethod

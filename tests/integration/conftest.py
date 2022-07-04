@@ -108,8 +108,8 @@ def config_fixture(sqlite_filename):
         yield Configurations(config_file_path=file_handle.name)
 
 
-@pytest.fixture(scope="session")
-def snowflake_session(transaction_data_upper_case, config):
+@pytest.fixture(name="snowflake_session", scope="session")
+def snowflake_session_fixture(transaction_data_upper_case, config):
     """
     Snowflake session
     """

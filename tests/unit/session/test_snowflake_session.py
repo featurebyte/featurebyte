@@ -138,16 +138,17 @@ def patched_snowflake_session_cls_fixture(
         )
 
     def mock_execute_query(query):
-        if query.startswith("SHOW "):
-            if query == "SHOW SCHEMAS":
-                return schemas_output
-            elif query.startswith("SHOW USER FUNCTIONS"):
-                return functions_output
-            elif query.startswith("SHOW PROCEDURES"):
-                return procedures_output
-            elif query.startswith("SHOW TABLES"):
-                return tables_output
-            raise AssertionError(f"Unknown query: {query}")
+        if not query.startswith("SHOW "):
+            return None
+        if query == "SHOW SCHEMAS":
+            return schemas_output
+        if query.startswith("SHOW USER FUNCTIONS"):
+            return functions_output
+        if query.startswith("SHOW PROCEDURES"):
+            return procedures_output
+        if query.startswith("SHOW TABLES"):
+            return tables_output
+        raise AssertionError(f"Unknown query: {query}")
 
     with patch("featurebyte.session.snowflake.SnowflakeSession", autospec=True) as patched_class:
         mock_session_obj = patched_class.return_value
@@ -234,6 +235,12 @@ def test_schema_initializer__everything_exists(
     is_tables_missing,
 ):
     """Test SchemaInitializer executes expected queries"""
+
+    _ = is_schema_missing
+    _ = is_functions_missing
+    _ = is_procedures_missing
+    _ = is_tables_missing
+
     session = patched_snowflake_session_cls()
     SchemaInitializer(session, "FEATUREBYTE").initialize()
     # Nothing to do except checking schemas and existing objects
@@ -259,6 +266,12 @@ def test_schema_initializer__all_missing(
     is_tables_missing,
 ):
     """Test SchemaInitializer executes expected queries"""
+
+    _ = is_schema_missing
+    _ = is_functions_missing
+    _ = is_procedures_missing
+    _ = is_tables_missing
+
     session = patched_snowflake_session_cls()
     SchemaInitializer(session, "FEATUREBYTE").initialize()
     # Should create schema if not exists
@@ -288,6 +301,11 @@ def test_schema_initializer__partial_missing(
     is_tables_missing,
 ):
     """Test SchemaInitializer executes expected queries"""
+    _ = is_schema_missing
+    _ = is_functions_missing
+    _ = is_procedures_missing
+    _ = is_tables_missing
+
     session = patched_snowflake_session_cls()
     SchemaInitializer(session, "FEATUREBYTE").initialize()
     # Should register custom functions and procedures
