@@ -146,7 +146,6 @@ class SchemaInitializer:
             logger.debug(f"Initializing schema {self.featurebyte_schema_name}")
             create_schema_query = f"CREATE SCHEMA {self.featurebyte_schema_name}"
             self.session.execute_query(create_schema_query)
-            self.register_missing_objects()
         self.register_missing_objects()
 
     def register_missing_objects(self) -> None:

@@ -72,16 +72,102 @@ def test_snowflake_session__credential_from_config(snowflake_session_dict):
     }
 
 
+@pytest.fixture(name="expected_all_functions")
+def expected_all_functions_fixture():
+    return [
+        "F_COMPUTE_TILE_INDICES",
+        "F_INDEX_TO_TIMESTAMP",
+        "F_TIMESTAMP_TO_INDEX",
+    ]
+
+
+@pytest.fixture(name="expected_all_procedures")
+def expected_all_procedures_fixture():
+    return [
+        "SP_TILE_GENERATE",
+        "SP_TILE_GENERATE_SCHEDULE",
+        "SP_TILE_MONITOR",
+        "SP_TILE_TRIGGER_GENERATE_SCHEDULE",
+    ]
+
+
+@pytest.fixture(name="expected_all_tables")
+def expected_all_tables_fixture():
+    return [
+        "FEATURE_LIST_REGISTRY",
+        "FEATURE_REGISTRY",
+        "TILE_REGISTRY",
+    ]
+
+
 @pytest.fixture(name="patched_snowflake_session_cls")
-def patched_snowflake_session_cls_fixture(schema_exists):
+def patched_snowflake_session_cls_fixture(
+    is_schema_missing,
+    is_functions_missing,
+    is_procedures_missing,
+    is_tables_missing,
+    expected_all_functions,
+    expected_all_procedures,
+    expected_all_tables,
+):
     """Fixture for a patched session class"""
+
+    if is_schema_missing:
+        schemas_output = pd.DataFrame({"name": ["PUBLIC"]})
+    else:
+        schemas_output = pd.DataFrame({"name": ["PUBLIC", "FEATUREBYTE"]})
+
+    if is_functions_missing:
+        functions_output = pd.DataFrame(
+            {
+                "name": [],
+                "schema_name": [],
+            }
+        )
+    else:
+        functions_output = pd.DataFrame(
+            {
+                "name": expected_all_functions,
+                "schema_name": ["FEATUREBYTE"] * len(expected_all_functions),
+            }
+        )
+
+    if is_procedures_missing:
+        procedures_output = pd.DataFrame({"name": [], "schema_name": []})
+    else:
+        procedures_output = pd.DataFrame(
+            {
+                "name": expected_all_procedures,
+                "schema_name": ["FEATUREBYTE"] * len(expected_all_procedures),
+            }
+        )
+
+    if is_tables_missing:
+        tables_output = pd.DataFrame({"name": [], "schema_name": []})
+    else:
+        tables_output = pd.DataFrame(
+            {
+                "name": expected_all_tables,
+                "schema_name": ["FEATUREBYTE"] * len(expected_all_tables),
+            }
+        )
+
+    def mock_execute_query(query):
+        if query.startswith("SHOW "):
+            if query == "SHOW SCHEMAS":
+                return schemas_output
+            elif query.startswith("SHOW USER FUNCTIONS"):
+                return functions_output
+            elif query.startswith("SHOW PROCEDURES"):
+                return procedures_output
+            elif query.startswith("SHOW TABLES"):
+                return tables_output
+            raise AssertionError(f"Unknown query: {query}")
+
     with patch("featurebyte.session.snowflake.SnowflakeSession", autospec=True) as patched_class:
         mock_session_obj = patched_class.return_value
-        if schema_exists:
-            schemas = pd.DataFrame({"name": ["PUBLIC", "FEATUREBYTE"]})
-        else:
-            schemas = pd.DataFrame({"name": ["PUBLIC"]})
-        mock_session_obj.execute_query.side_effect = lambda _: schemas
+        mock_session_obj.execute_query.side_effect = mock_execute_query
+        mock_session_obj.database = "TEST_DB"
         yield patched_class
 
 
@@ -130,24 +216,97 @@ def test_schema_initializer__sql_objects():
     assert sql_objects == expected
 
 
-@pytest.mark.parametrize("schema_exists", [True, False])
-def test_schema_initializer(patched_snowflake_session_cls, schema_exists):
+def check_create_commands(mock_session):
+    """Helper function to count the number of different create commands"""
+    counts = {
+        "schema": 0,
+        "tables": 0,
+        "functions": 0,
+        "procedures": 0,
+    }
+    for call_args in mock_session.execute_query.call_args_list:
+        args = call_args[0]
+        if args[0].startswith("CREATE SCHEMA"):
+            counts["schema"] += 1
+        if args[0].startswith("CREATE OR REPLACE PROCEDURE"):
+            counts["procedures"] += 1
+        elif args[0].startswith("CREATE OR REPLACE FUNCTION"):
+            counts["functions"] += 1
+        elif args[0].startswith("CREATE TABLE"):
+            counts["tables"] += 1
+    return counts
+
+
+@pytest.mark.parametrize("is_schema_missing", [False])
+@pytest.mark.parametrize("is_functions_missing", [False])
+@pytest.mark.parametrize("is_procedures_missing", [False])
+@pytest.mark.parametrize("is_tables_missing", [False])
+def test_schema_initializer__everything_exists(
+    patched_snowflake_session_cls,
+    is_schema_missing,
+    is_functions_missing,
+    is_procedures_missing,
+    is_tables_missing,
+):
     """Test SchemaInitializer executes expected queries"""
     session = patched_snowflake_session_cls()
     SchemaInitializer(session, "FEATUREBYTE").initialize()
-    if schema_exists:
-        # Nothing to do except checking schemas
-        assert session.execute_query.call_args_list == [call("SHOW SCHEMAS")]
-    else:
-        # Should create schema if not exists
-        assert session.execute_query.call_args_list[:2] == [
-            call("SHOW SCHEMAS"),
-            call("CREATE SCHEMA FEATUREBYTE"),
-        ]
-        # Should register custom functions and procedures
-        for call_args in session.execute_query.call_args_list[2:]:
-            args = call_args[0]
-            assert args[0].startswith("CREATE OR REPLACE PROCEDURE") or args[0].startswith(
-                "CREATE OR REPLACE FUNCTION"
-            )
-        assert session.execute_query.call_count > 2
+    # Nothing to do except checking schemas and existing objects
+    assert session.execute_query.call_args_list == [
+        call("SHOW SCHEMAS"),
+        call("SHOW USER FUNCTIONS IN DATABASE TEST_DB"),
+        call("SHOW PROCEDURES IN DATABASE TEST_DB"),
+        call('SHOW TABLES IN SCHEMA "TEST_DB"."FEATUREBYTE"'),
+    ]
+    counts = check_create_commands(session)
+    assert counts == {"schema": 0, "functions": 0, "procedures": 0, "tables": 0}
+
+
+@pytest.mark.parametrize("is_schema_missing", [True])
+@pytest.mark.parametrize("is_functions_missing", [True])
+@pytest.mark.parametrize("is_procedures_missing", [True])
+@pytest.mark.parametrize("is_tables_missing", [True])
+def test_schema_initializer__all_missing(
+    patched_snowflake_session_cls,
+    is_schema_missing,
+    is_functions_missing,
+    is_procedures_missing,
+    is_tables_missing,
+):
+    """Test SchemaInitializer executes expected queries"""
+    session = patched_snowflake_session_cls()
+    SchemaInitializer(session, "FEATUREBYTE").initialize()
+    # Should create schema if not exists
+    assert session.execute_query.call_args_list[:2] == [
+        call("SHOW SCHEMAS"),
+        call("CREATE SCHEMA FEATUREBYTE"),
+    ]
+    # Should register custom functions and procedures
+    counts = check_create_commands(session)
+    assert counts == {"schema": 1, "functions": 3, "procedures": 4, "tables": 3}
+
+
+@pytest.mark.parametrize("is_schema_missing", [False])
+@pytest.mark.parametrize("is_functions_missing", [True, False])
+@pytest.mark.parametrize("is_procedures_missing", [True, False])
+@pytest.mark.parametrize("is_tables_missing", [True, False])
+def test_schema_initializer__partial_missing(
+    patched_snowflake_session_cls,
+    is_schema_missing,
+    is_functions_missing,
+    is_procedures_missing,
+    is_tables_missing,
+):
+    """Test SchemaInitializer executes expected queries"""
+    session = patched_snowflake_session_cls()
+    SchemaInitializer(session, "FEATUREBYTE").initialize()
+    # Should register custom functions and procedures
+    counts = check_create_commands(session)
+    expected_counts = {"schema": 0, "functions": 0, "procedures": 0, "tables": 0}
+    if is_functions_missing:
+        expected_counts["functions"] = 3
+    if is_procedures_missing:
+        expected_counts["procedures"] = 4
+    if is_tables_missing:
+        expected_counts["tables"] = 3
+    assert counts == expected_counts
