@@ -3,7 +3,7 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Tuple
 
 from abc import abstractmethod
 
@@ -16,6 +16,9 @@ from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
+
+if TYPE_CHECKING:
+    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
 
 class ExtendedFeatureStoreModel(FeatureStoreModel):
@@ -158,6 +161,35 @@ class QueryObject(BaseModel):
             new_object.node = mapped_node
             return new_object.dict(**kwargs)
         return super().dict(*args, **kwargs)
+
+    def json(
+        self,
+        *,
+        include: AbstractSetIntStr | MappingIntStrAny | None = None,
+        exclude: AbstractSetIntStr | MappingIntStrAny | None = None,
+        by_alias: bool = False,
+        skip_defaults: bool = None,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        encoder: Callable[[Any], Any] | None = None,
+        models_as_dict: bool = True,
+        **dumps_kwargs: Any,
+    ) -> str:
+        # only support models_as_dict is True
+        assert models_as_dict is True, "models_as_dict option not supported!"
+        return self.__config__.json_dumps(
+            self.dict(
+                by_alias=by_alias,
+                include=include,
+                exclude=exclude,
+                exclude_unset=exclude_unset,
+                exclude_defaults=exclude_defaults,
+                exclude_none=exclude_none,
+            ),
+            default=encoder,
+            **dumps_kwargs,
+        )
 
 
 class ProtectedColumnsQueryObject(QueryObject):

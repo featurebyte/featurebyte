@@ -45,7 +45,7 @@ class DefaultVersionMode(str, Enum):
 
 class FeatureNameSpace(BaseModel):
     """
-    Feature family contains all the features with the same feature name
+    Feature group with the same feature name
 
     name: str
         Feature name
@@ -56,7 +56,7 @@ class FeatureNameSpace(BaseModel):
     """
 
     name: str
-    description: str
+    description: Optional[str]
     versions: List[FeatureVersionIdentifier]
     readiness: FeatureReadiness
     created_at: datetime
