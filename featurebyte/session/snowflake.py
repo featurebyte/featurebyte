@@ -177,14 +177,17 @@ class SchemaInitializer:
 
     def initialize(self) -> None:
         """Initialize the featurebyte schema if it doesn't exist"""
+
         if not self.schema_exists():
             logger.debug(f"Initializing schema {self.session.sf_schema}")
             create_schema_query = f"CREATE SCHEMA {self.session.sf_schema}"
             self.session.execute_query(create_schema_query)
+
         self.register_missing_objects()
 
     def register_missing_objects(self) -> None:
         """Detect database objects that are missing and register them"""
+
         sql_objects = self.get_sql_objects()
         sql_objects_by_type: dict[SqlObjectType, list[dict[str, Any]]] = {
             SqlObjectType.FUNCTION: [],
@@ -193,6 +196,7 @@ class SchemaInitializer:
         }
         for sql_object in sql_objects:
             sql_objects_by_type[sql_object["type"]].append(sql_object)
+
         self.register_missing_functions(sql_objects_by_type[SqlObjectType.FUNCTION])
         self.register_missing_procedures(sql_objects_by_type[SqlObjectType.PROCEDURE])
         self.create_missing_tables(sql_objects_by_type[SqlObjectType.TABLE])
@@ -271,8 +275,9 @@ class SchemaInitializer:
             os.path.dirname(featurebyte.__file__), "..", "sql", "snowflake"
         )
         output = []
+
         for filename in os.listdir(sql_directory):
-            full_filename = os.path.join(sql_directory, filename)
+
             sql_object_type = None
             if filename.startswith("F_"):
                 sql_object_type = SqlObjectType.FUNCTION
@@ -280,14 +285,19 @@ class SchemaInitializer:
                 sql_object_type = SqlObjectType.PROCEDURE
             elif filename.startswith("T_"):
                 sql_object_type = SqlObjectType.TABLE
+
             identifier = filename.replace(".sql", "")
             if sql_object_type == SqlObjectType.TABLE:
                 # Table naming convention does not include "T_" prefix
                 identifier = identifier[len("T_") :]
+
+            full_filename = os.path.join(sql_directory, filename)
+
             sql_object = {
                 "type": sql_object_type,
                 "filename": full_filename,
                 "identifier": identifier,
             }
             output.append(sql_object)
+
         return output
