@@ -85,18 +85,49 @@ def patched_snowflake_session_cls_fixture(schema_exists):
         yield patched_class
 
 
-def test_schema_initializer__sql_filenames():
-    """Test retrieving SQL filenames"""
-    filenames = {os.path.basename(x) for x in SchemaInitializer.get_custom_function_sql_filenames()}
-    assert filenames == {
-        "F_COMPUTE_TILE_INDICES.sql",
-        "SP_TILE_MONITOR.sql",
-        "F_TIMESTAMP_TO_INDEX.sql",
-        "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql",
-        "F_INDEX_TO_TIMESTAMP.sql",
-        "SP_TILE_GENERATE_SCHEDULE.sql",
-        "SP_TILE_GENERATE.sql",
-    }
+def test_schema_initializer__sql_objects():
+    """Test retrieving SQL objects"""
+    sql_objects = SchemaInitializer.get_sql_objects()
+    for item in sql_objects:
+        item["filename"] = os.path.basename(item["filename"])
+        item["type"] = item["type"].value
+    expected = [
+        {"filename": "SP_TILE_MONITOR.sql", "identifier": "SP_TILE_MONITOR", "type": "procedure"},
+        {
+            "filename": "F_TIMESTAMP_TO_INDEX.sql",
+            "identifier": "F_TIMESTAMP_TO_INDEX",
+            "type": "function",
+        },
+        {"filename": "T_FEATURE_REGISTRY.sql", "identifier": "FEATURE_REGISTRY", "type": "table"},
+        {
+            "filename": "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql",
+            "identifier": "SP_TILE_TRIGGER_GENERATE_SCHEDULE",
+            "type": "procedure",
+        },
+        {
+            "filename": "F_COMPUTE_TILE_INDICES.sql",
+            "identifier": "F_COMPUTE_TILE_INDICES",
+            "type": "function",
+        },
+        {
+            "filename": "F_INDEX_TO_TIMESTAMP.sql",
+            "identifier": "F_INDEX_TO_TIMESTAMP",
+            "type": "function",
+        },
+        {"filename": "T_TILE_REGISTRY.sql", "identifier": "TILE_REGISTRY", "type": "table"},
+        {
+            "filename": "SP_TILE_GENERATE_SCHEDULE.sql",
+            "identifier": "SP_TILE_GENERATE_SCHEDULE",
+            "type": "procedure",
+        },
+        {
+            "filename": "T_FEATURE_LIST_REGISTRY.sql",
+            "identifier": "FEATURE_LIST_REGISTRY",
+            "type": "table",
+        },
+        {"filename": "SP_TILE_GENERATE.sql", "identifier": "SP_TILE_GENERATE", "type": "procedure"},
+    ]
+    assert sql_objects == expected
 
 
 @pytest.mark.parametrize("schema_exists", [True, False])

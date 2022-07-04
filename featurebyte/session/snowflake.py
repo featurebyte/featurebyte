@@ -7,6 +7,7 @@ from typing import Any
 
 import json
 import os
+from enum import Enum
 
 from pydantic import Field
 from snowflake import connector
@@ -102,6 +103,14 @@ class SnowflakeSession(BaseSession):
         return Configurations().snowflake.featurebyte_schema
 
 
+class SqlObjectType(str, Enum):
+    """Enum for type of SQL objects to initialize in Snowflake"""
+
+    FUNCTION = "function"
+    PROCEDURE = "procedure"
+    TABLE = "table"
+
+
 class SchemaInitializer:
     """Responsible for initializing featurebyte schema
 
@@ -133,22 +142,64 @@ class SchemaInitializer:
 
     def initialize(self) -> None:
         """Initialize the featurebyte schema if it doesn't exist"""
-        if self.schema_exists():
-            return
-        logger.debug(f"Initializing schema {self.featurebyte_schema_name}")
-        create_schema_query = f"CREATE SCHEMA {self.featurebyte_schema_name}"
-        self.session.execute_query(create_schema_query)
-        self.register_custom_functions()
+        if not self.schema_exists():
+            logger.debug(f"Initializing schema {self.featurebyte_schema_name}")
+            create_schema_query = f"CREATE SCHEMA {self.featurebyte_schema_name}"
+            self.session.execute_query(create_schema_query)
+            self.register_missing_objects()
+        self.register_missing_objects()
 
-    def register_custom_functions(self) -> None:
-        """Register functions and procedures defined in the snowflake sql directory"""
-        for sql_filename in self.get_custom_function_sql_filenames():
-            with open(sql_filename, encoding="utf-8") as file_handle:
-                self.session.execute_query(file_handle.read())
+    def register_missing_objects(self) -> None:
+        """Detect database objects that are missing and register them"""
+        sql_objects = self.get_sql_objects()
+        sql_objects_by_type = {
+            SqlObjectType.FUNCTION: [],
+            SqlObjectType.PROCEDURE: [],
+            SqlObjectType.TABLE: [],
+        }
+        for sql_object in sql_objects:
+            sql_objects_by_type[sql_object["type"]].append(sql_object)
+        self.register_missing_functions(sql_objects_by_type[SqlObjectType.FUNCTION])
+        self.register_missing_procedures(sql_objects_by_type[SqlObjectType.PROCEDURE])
+        self.create_missing_tables(sql_objects_by_type[SqlObjectType.TABLE])
+
+    def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
+        """Register functions defined in the snowflake sql directory"""
+        df = self.session.execute_query(f"SHOW USER FUNCTIONS IN DATABASE {self.session.database}")
+        df = df[df["schema_name"] == self.featurebyte_schema_name]
+        existing = set(df["name"].tolist())
+        for item in functions:
+            if item["identifier"] not in existing:
+                self._register_sql_object(item)
+
+    def register_missing_procedures(self, procedures: list[dict[str, Any]]) -> None:
+        """Register procedures defined in the snowflake sql directory"""
+        df = self.session.execute_query(f"SHOW PROCEDURES IN DATABASE {self.session.database}")
+        df = df[df["schema_name"] == self.featurebyte_schema_name]
+        existing = set(df["name"].tolist())
+        for item in procedures:
+            if item["identifier"] not in existing:
+                self._register_sql_object(item)
+
+    def create_missing_tables(self, tables: list[dict[str, Any]]) -> None:
+        """Create tables defined in snowflake sql directory"""
+        df = self.session.execute_query(
+            f'SHOW TABLES IN SCHEMA "{self.session.database}"."{self.featurebyte_schema_name}"'
+        )
+        existing = set(df["name"].tolist())
+        for item in tables:
+            if item["identifier"] not in existing:
+                self._register_sql_object(item)
+
+    def _register_sql_object(self, item: dict[str, Any]):
+        logger.debug(f'Registering {item["identifier"]}')
+        with open(item["filename"]) as f:
+            query = f.read()
+        self.session.execute_query(query)
 
     @staticmethod
-    def get_custom_function_sql_filenames() -> list[str]:
-        """Find the sourcefiles for all user defined functions and stored procedure
+    def get_sql_objects() -> list[dict[str, Any]]:
+        """Find all the objects defined in the sql directory
 
         Returns
         -------
@@ -159,7 +210,22 @@ class SchemaInitializer:
         )
         output = []
         for filename in os.listdir(sql_directory):
-            if filename.startswith("F_") or filename.startswith("SP_") or filename.startswith("T_"):
-                full_filename = os.path.join(sql_directory, filename)
-                output.append(full_filename)
+            full_filename = os.path.join(sql_directory, filename)
+            sql_object_type = None
+            if filename.startswith("F_"):
+                sql_object_type = SqlObjectType.FUNCTION
+            elif filename.startswith("SP_"):
+                sql_object_type = SqlObjectType.PROCEDURE
+            elif filename.startswith("T_"):
+                sql_object_type = SqlObjectType.TABLE
+            identifier = filename.replace(".sql", "")
+            if sql_object_type == SqlObjectType.TABLE:
+                # Table naming convention does not include "T_" prefix
+                identifier = identifier[len("T_") :]
+            sql_object = {
+                "type": sql_object_type,
+                "filename": full_filename,
+                "identifier": identifier,
+            }
+            output.append(sql_object)
         return output
