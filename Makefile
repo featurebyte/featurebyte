@@ -36,7 +36,7 @@ formatting: codestyle
 #* Linting
 .PHONY: test
 test:
-	PYTHONPATH=$(PYTHONPATH) poetry run pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=featurebyte tests/ | tee pytest-coverage.txt
+	PYTHONPATH=$(PYTHONPATH) poetry run pytest --junitxml=pytest.xml --cov-report=term-missing --cov=featurebyte tests/ | tee pytest-coverage.txt
 	poetry run coverage-badge -o assets/images/coverage.svg -f
 
 .PHONY: check-codestyle

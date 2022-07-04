@@ -68,6 +68,7 @@ jobs:
         make test
 
     - name: Test Coverage Report
+      id: coverageComment
       uses: MishaKav/pytest-coverage-comment@main
       with:
         default-branch:
