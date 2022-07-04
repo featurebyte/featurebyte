@@ -7,13 +7,13 @@ import pytest
 from pydantic.error_wrappers import ValidationError
 
 from featurebyte.enum import SourceType
-from featurebyte.models.database_source import DatabaseSourceModel, SnowflakeDetails, TableDetails
 from featurebyte.models.event_data import (
     EventDataModel,
     EventDataStatus,
     FeatureJobSetting,
     FeatureJobSettingHistoryEntry,
 )
+from featurebyte.models.feature_store import FeatureStoreModel, SnowflakeDetails, TableDetails
 
 
 @pytest.fixture(name="snowflake_source")
@@ -25,7 +25,7 @@ def snowflake_source_fixture():
         database="database",
         sf_schema="schema",
     )
-    snowflake_source = DatabaseSourceModel(type=SourceType.SNOWFLAKE, details=snowflake_details)
+    snowflake_source = FeatureStoreModel(type=SourceType.SNOWFLAKE, details=snowflake_details)
     return snowflake_source
 
 

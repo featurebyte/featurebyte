@@ -9,9 +9,9 @@ from pydantic import Field, root_validator
 
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.frame import BaseFrame
-from featurebyte.core.generic import ExtendedDatabaseSourceModel
+from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import DBVarType
-from featurebyte.models.database_source import DatabaseSourceModel, DatabaseTableModel, TableDetails
+from featurebyte.models.feature_store import DatabaseTableModel, FeatureStoreModel, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
@@ -78,9 +78,9 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
 
         database_source, table_details = values["tabular_source"]
         if isinstance(database_source, dict):
-            database_source = ExtendedDatabaseSourceModel(**database_source)
-        elif isinstance(database_source, DatabaseSourceModel):
-            database_source = ExtendedDatabaseSourceModel(**database_source.dict())
+            database_source = ExtendedFeatureStoreModel(**database_source)
+        elif isinstance(database_source, FeatureStoreModel):
+            database_source = ExtendedFeatureStoreModel(**database_source.dict())
         if isinstance(table_details, dict):
             table_details = TableDetails(**table_details)
 

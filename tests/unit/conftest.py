@@ -9,9 +9,9 @@ import pandas as pd
 import pytest
 import yaml
 
-from featurebyte.api.database_source import DatabaseSource
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
@@ -63,13 +63,13 @@ def query_graph():
     yield GlobalQueryGraph()
 
 
-@pytest.fixture(name="snowflake_database_source")
-def snowflake_database_source_fixture(config, graph):
+@pytest.fixture(name="snowflake_feature_store")
+def snowflake_feature_store_fixture(config, graph):
     """
     Snowflake database source fixture
     """
     _ = graph
-    return DatabaseSource(**config.feature_stores["sf_featurestore"].dict())
+    return FeatureStore(**config.feature_stores["sf_featurestore"].dict())
 
 
 @pytest.fixture(name="snowflake_connector")
@@ -144,13 +144,13 @@ def mock_snowflake_execute_query():
 
 @pytest.fixture(name="snowflake_database_table")
 def snowflake_database_table_fixture(
-    snowflake_connector, snowflake_execute_query, snowflake_database_source, config
+    snowflake_connector, snowflake_execute_query, snowflake_feature_store, config
 ):
     """
     DatabaseTable object fixture
     """
     _ = snowflake_connector, snowflake_execute_query
-    yield snowflake_database_source.get_table(
+    yield snowflake_feature_store.get_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="sf_table",
@@ -221,7 +221,7 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
 
 
 @pytest.fixture(name="dataframe")
-def dataframe_fixture(graph, snowflake_database_source):
+def dataframe_fixture(graph, snowflake_feature_store):
     """
     Frame test fixture
     """
@@ -254,7 +254,7 @@ def dataframe_fixture(graph, snowflake_database_source):
     )
     yield Frame(
         tabular_source=(
-            snowflake_database_source,
+            snowflake_feature_store,
             {"database_name": "db", "schema_name": "public", "table_name": "some_table_name"},
         ),
         node=node,
@@ -277,7 +277,7 @@ def session_manager_fixture(config, snowflake_connector):
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_tile(mock_execute_query, snowflake_database_source, snowflake_connector, config):
+def mock_snowflake_tile(mock_execute_query, snowflake_feature_store, snowflake_connector, config):
     """
     Pytest Fixture for TileSnowflake instance
     """
@@ -291,7 +291,7 @@ def mock_snowflake_tile(mock_execute_query, snowflake_database_source, snowflake
         tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
         column_names="c1",
         tile_id="tile_id1",
-        tabular_source=snowflake_database_source,
+        tabular_source=snowflake_feature_store,
         credentials=config.credentials,
     )
 
@@ -299,7 +299,7 @@ def mock_snowflake_tile(mock_execute_query, snowflake_database_source, snowflake
 
 
 @pytest.fixture
-def mock_snowflake_feature(snowflake_database_source, snowflake_connector, config):
+def mock_snowflake_feature(snowflake_feature_store, snowflake_connector, config):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
@@ -317,7 +317,7 @@ def mock_snowflake_feature(snowflake_database_source, snowflake_connector, confi
         column_names="col1",
         tile_ids=["tile_id1"],
         online_enabled=False,
-        datasource=snowflake_database_source,
+        datasource=snowflake_feature_store,
     )
 
     s_feature = FeatureSnowflake(feature=feature, credentials=config.credentials)

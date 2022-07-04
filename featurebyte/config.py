@@ -15,10 +15,10 @@ from pydantic.error_wrappers import ValidationError
 
 from featurebyte.enum import SourceType
 from featurebyte.models.credential import Credential
-from featurebyte.models.database_source import DatabaseSourceModel
+from featurebyte.models.feature_store import FeatureStoreModel
 
 # data source to credential mapping
-Credentials = Dict[DatabaseSourceModel, Optional[Credential]]
+Credentials = Dict[FeatureStoreModel, Optional[Credential]]
 
 
 class LogLevel(str, Enum):
@@ -84,7 +84,7 @@ class Configurations:
             )
         )
         self.settings: Dict[str, Any] = {}
-        self.feature_stores: Dict[str, DatabaseSourceModel] = {}
+        self.feature_stores: Dict[str, FeatureStoreModel] = {}
         self.credentials: Credentials = {}
         self.logging: LoggingSettings = LoggingSettings()
         self._config_file_path = config_file_path
@@ -117,7 +117,7 @@ class Configurations:
                 if "source_type" in feature_store:
                     # parse and store feature store
                     source_type = SourceType(feature_store["source_type"])
-                    db_source = DatabaseSourceModel(
+                    db_source = FeatureStoreModel(
                         type=source_type,
                         details=feature_store,
                     )
@@ -126,6 +126,8 @@ class Configurations:
                     # parse and store credentials
                     credentials = None
                     if "credential_type" in feature_store:
+                        # credentials are stored together with feature store details in the config file,
+                        # Credential pydantic model will use only the relevant fields
                         credentials = Credential(
                             name=name,
                             source=db_source,

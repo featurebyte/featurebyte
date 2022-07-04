@@ -9,7 +9,7 @@ from enum import Enum
 import pymongo
 from pydantic import BaseModel
 
-from featurebyte.models.database_source import DatabaseSourceModel
+from featurebyte.models.feature_store import FeatureStoreModel
 
 
 class CredentialType(str, Enum):
@@ -35,7 +35,7 @@ class Credential(BaseModel):
     """
 
     name: str
-    source: DatabaseSourceModel
+    source: FeatureStoreModel
     credential_type: CredentialType
     credential: Union[UsernamePasswordCredential]
 

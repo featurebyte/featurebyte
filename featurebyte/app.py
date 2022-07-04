@@ -12,7 +12,7 @@ from fastapi import Depends, FastAPI, Request
 import featurebyte.routes.event_data.api as event_data_api
 from featurebyte.config import Configurations
 from featurebyte.models.credential import Credential
-from featurebyte.models.database_source import DatabaseSourceModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import GitDB, Persistent
 from featurebyte.routes.event_data.controller import EventDataController
 
@@ -41,16 +41,16 @@ def _get_persistent() -> Persistent:
     return PERSISTENT
 
 
-def _get_credential(user_id: ObjectId, db_source: DatabaseSourceModel) -> Credential | None:
+def _get_credential(user_id: ObjectId, db_source: FeatureStoreModel) -> Credential | None:
     """
-    Retrieve credential from DatabaseSourceModel
+    Retrieve credential from FeatureStoreModel
 
     Parameters
     ----------
     user_id: ObjectId
         User ID
-    db_source: DatabaseSourceModel
-        DatabaseSourceModel object
+    db_source: FeatureStoreModel
+        FeatureStoreModel object
 
     Returns
     -------

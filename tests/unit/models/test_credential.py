@@ -6,7 +6,7 @@ import json
 import pytest
 
 from featurebyte.models.credential import Credential, CredentialType, UsernamePasswordCredential
-from featurebyte.models.database_source import DatabaseSourceModel, SnowflakeDetails, SourceType
+from featurebyte.models.feature_store import FeatureStoreModel, SnowflakeDetails, SourceType
 
 
 @pytest.fixture(name="username_password_credential")
@@ -30,7 +30,7 @@ def source_fixture():
     Source
         Source object
     """
-    return DatabaseSourceModel(
+    return FeatureStoreModel(
         type=SourceType.SNOWFLAKE,
         details=SnowflakeDetails(
             account="account",

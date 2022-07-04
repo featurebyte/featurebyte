@@ -3,9 +3,9 @@ This module contains session to EventView integration tests
 """
 import pandas as pd
 
-from featurebyte.api.database_source import DatabaseSource
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
+from featurebyte.api.feature_store import FeatureStore
 
 
 def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data, config):
@@ -13,7 +13,7 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
     Test loading event view from sqlite source
     """
     _ = sqlite_session
-    sqlite_database_source = DatabaseSource(**config.feature_stores["sqlite_datasource"].dict())
+    sqlite_database_source = FeatureStore(**config.feature_stores["sqlite_datasource"].dict())
     assert sqlite_database_source.list_tables(credentials=config.credentials) == ["test_table"]
 
     sqlite_database_table = sqlite_database_source.get_table(
@@ -72,7 +72,7 @@ def test_query_object_operation_on_snowflake_source(
     """
     _ = snowflake_session
     table_name = "TEST_TABLE"
-    snowflake_database_source = DatabaseSource(
+    snowflake_database_source = FeatureStore(
         **config.feature_stores["snowflake_featurestore"].dict()
     )
     assert table_name in snowflake_database_source.list_tables(credentials=config.credentials)

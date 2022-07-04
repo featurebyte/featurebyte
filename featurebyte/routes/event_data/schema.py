@@ -10,8 +10,8 @@ from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field
 
-from featurebyte.models.database_source import DatabaseSourceModel, TableDetails
 from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
+from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.routes.common.schema import PaginationMixin
 
 
@@ -24,7 +24,7 @@ class EventDataCreate(BaseModel):
     """
 
     name: str
-    tabular_source: Tuple[DatabaseSourceModel, TableDetails]
+    tabular_source: Tuple[FeatureStoreModel, TableDetails]
     event_timestamp_column: str
     column_entity_map: Dict[str, str] = Field(default_factory=dict)
     record_creation_date_column: Optional[str]

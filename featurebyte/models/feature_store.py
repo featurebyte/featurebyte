@@ -28,8 +28,8 @@ class SQLiteDetails(BaseModel):
 DatabaseDetails = Union[SnowflakeDetails, SQLiteDetails]
 
 
-class DatabaseSourceModel(BaseModel):
-    """Model for a database source"""
+class FeatureStoreModel(BaseModel):
+    """Model for a feature store"""
 
     type: SourceType
     details: DatabaseDetails
@@ -55,6 +55,6 @@ class TableDetails(BaseModel):
 
 
 class DatabaseTableModel(BaseModel):
-    """Model for a table of database source"""
+    """Model for a database table used in a feature store"""
 
-    tabular_source: Tuple[DatabaseSourceModel, TableDetails]
+    tabular_source: Tuple[FeatureStoreModel, TableDetails]

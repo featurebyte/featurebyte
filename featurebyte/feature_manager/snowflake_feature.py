@@ -12,7 +12,7 @@ from jinja2 import Template
 from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.config import Credentials
-from featurebyte.core.generic import ExtendedDatabaseSourceModel
+from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.logger import logger
 from featurebyte.models.event_data import TileSpec
 from featurebyte.session.base import BaseSession
@@ -74,7 +74,7 @@ class FeatureSnowflake(BaseModel):
             constructor arguments
         """
         super().__init__(**kw)
-        data_source = ExtendedDatabaseSourceModel(**self.feature.datasource.dict())
+        data_source = ExtendedFeatureStoreModel(**self.feature.datasource.dict())
         self._session = data_source.get_session(credentials=self.credentials)
 
     def insert_feature_registry(self) -> None:

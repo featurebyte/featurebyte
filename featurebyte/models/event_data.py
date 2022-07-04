@@ -11,7 +11,7 @@ from enum import Enum
 from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
-from featurebyte.models.database_source import DatabaseSourceModel, DatabaseTableModel
+from featurebyte.models.feature_store import DatabaseTableModel, FeatureStoreModel
 
 
 class FeatureJobSetting(BaseModel):
@@ -67,7 +67,7 @@ class EventDataModel(DatabaseTableModel):
     ----------
     name : str
         Name of the EventData
-    tabular_source : Tuple[DatabaseSourceModel, TableDetails]
+    tabular_source : Tuple[FeatureStoreModel, TableDetails]
         Data warehouse connection information & table name tuple
     event_timestamp_column: str
         Event timestamp column name
@@ -123,7 +123,7 @@ class TileSpec(BaseModel):
         hash value of tile id and name
     online_enabled: bool
         whether feature is online enabled or not
-    datasource: DatabaseSourceModel
+    datasource: FeatureStoreModel
         datasource instance
     """
 
@@ -140,7 +140,7 @@ class TileSpec(BaseModel):
     tile_ids: List[str]
 
     online_enabled: bool
-    datasource: DatabaseSourceModel
+    datasource: FeatureStoreModel
 
 
 class TileType(str, Enum):

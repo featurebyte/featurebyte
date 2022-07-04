@@ -7,7 +7,7 @@ import pytest
 from loguru import logger
 from pytest import LogCaptureFixture
 
-from featurebyte.api.database_source import DatabaseSource
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.session.manager import SessionManager
 
@@ -39,13 +39,13 @@ def sqlite_database_source_fixture(config, graph):
     SQLite database source fixture
     """
     _ = graph
-    return DatabaseSource(**config.feature_stores["sq_featurestore"].dict())
+    return FeatureStore(**config.feature_stores["sq_featurestore"].dict())
 
 
 @patch("featurebyte.session.sqlite.os", Mock())
 @patch("featurebyte.session.sqlite.sqlite3", Mock())
 def test_session_manager__get_cached_properly(
-    snowflake_database_source,
+    snowflake_feature_store,
     sqlite_database_source,
     snowflake_execute_query,
     session_manager,
@@ -68,13 +68,13 @@ def test_session_manager__get_cached_properly(
         return total, latest_message
 
     # retrieve data source session for the first time
-    _ = session_manager[snowflake_database_source]
+    _ = session_manager[snowflake_feature_store]
     count, msg = count_create_session_logs()
     assert count == 1
     assert msg == "Create a new session for snowflake"
 
     # retrieve same data source for the second time, check that cached is used
-    _ = session_manager[snowflake_database_source]
+    _ = session_manager[snowflake_feature_store]
     count, msg = count_create_session_logs()
     assert count == 1
 
@@ -86,18 +86,18 @@ def test_session_manager__get_cached_properly(
 
     # clear the cache & call again
     session_manager.__getitem__.cache_clear()
-    _ = session_manager[snowflake_database_source]
+    _ = session_manager[snowflake_feature_store]
     count, msg = count_create_session_logs()
     assert count == 3
     assert msg == "Create a new session for snowflake"
 
 
-def test_session_manager__wrong_configuration_file(snowflake_database_source):
+def test_session_manager__wrong_configuration_file(snowflake_feature_store):
     """
     Test exception raised when wrong configuration file is used
     """
     config = Configurations()
     session_manager = SessionManager(credentials=config.credentials)
     with pytest.raises(ValueError) as exc:
-        _ = session_manager[snowflake_database_source]
+        _ = session_manager[snowflake_feature_store]
     assert "Credentials do not contain info for the database source" in str(exc.value)

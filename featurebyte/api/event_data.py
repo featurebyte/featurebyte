@@ -7,11 +7,11 @@ from typing import Any
 
 from pydantic import validator
 
-from featurebyte.api.database_source import DatabaseSource
 from featurebyte.api.database_table import DatabaseTable
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.models.credential import Credential
-from featurebyte.models.database_source import DatabaseSourceModel, TableDetails
 from featurebyte.models.event_data import EventDataModel
+from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 
 
 class EventDataColumn:
@@ -61,7 +61,7 @@ class EventData(EventDataModel, DatabaseTable):
         name: str,
         event_timestamp_column: str,
         record_creation_date_column: str | None = None,
-        credentials: dict[DatabaseSourceModel, Credential | None] | None = None,
+        credentials: dict[FeatureStoreModel, Credential | None] | None = None,
     ) -> EventData:
         """
         Create EventData object from tabular source
@@ -69,14 +69,14 @@ class EventData(EventDataModel, DatabaseTable):
         Parameters
         ----------
         tabular_source: DatabaseTable
-            DatabaseTable object constructed from DatabaseSource
+            DatabaseTable object constructed from FeatureStore
         name: str
             Event data name
         event_timestamp_column: str
             Event timestamp column from the given tabular source
         record_creation_date_column: str
             Record creation datetime column from the given tabular source
-        credentials: dict[DatabaseSourceModel, Credential | None] | None
+        credentials: dict[FeatureStoreModel, Credential | None] | None
             Credentials dictionary mapping from the config file
 
         Returns
@@ -84,7 +84,7 @@ class EventData(EventDataModel, DatabaseTable):
         EventData
         """
         node_parameters = tabular_source.node.parameters.copy()
-        database_source = DatabaseSource(**node_parameters["database_source"])
+        database_source = FeatureStore(**node_parameters["database_source"])
         table_details = TableDetails(**node_parameters["dbtable"])
         return EventData(
             name=name,
