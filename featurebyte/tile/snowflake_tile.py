@@ -5,42 +5,21 @@ from __future__ import annotations
 
 from typing import Any
 
-from jinja2 import Template
 from pydantic import PrivateAttr
 
 from featurebyte.config import Credentials
-from featurebyte.core.generic import ExtendedDatabaseSourceModel
+from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.logger import logger
-from featurebyte.models.event_data import DatabaseSourceModel, TileType
+from featurebyte.models.event_data import TileType
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.base import TileBase
-
-tm_ins_tile_registry = Template(
-    """
-    INSERT INTO TILE_REGISTRY (TILE_ID, TILE_SQL) VALUES ('{{tile_id}}', '{{tile_sql}}')
-"""
-)
-
-tm_gen_tile = Template(
-    """
-    call SP_TILE_GENERATE(
-        '{{sql}}', {{time_modulo_frequency_seconds}}, {{blind_spot_seconds}}, {{frequency_minute}}, '{{column_names}}',
-        '{{table_name}}', '{{tile_type.value}}'
-    )
-"""
-)
-
-tm_schedule_tile = Template(
-    """
-    CREATE OR REPLACE TASK {{temp_task_name}}
-      WAREHOUSE = {{warehouse}}
-      SCHEDULE = 'USING CRON {{cron}} UTC'
-    AS
-        call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
-            '{{temp_task_name}}', '{{warehouse}}', '{{tile_id}}', {{time_modulo_frequency_seconds}}, {{blind_spot_seconds}},
-            {{frequency_minute}}, {{offline_minutes}}, '{{sql}}', '{{column_names}}', '{{tile_type.value}}', {{monitor_periods}}
-        )
-"""
+from featurebyte.tile.snowflake_sql_template import (
+    tm_generate_tile,
+    tm_insert_tile_registry,
+    tm_schedule_tile,
+    tm_select_tile_registry,
+    tm_update_tile_registry,
 )
 
 
@@ -50,13 +29,13 @@ class TileSnowflake(TileBase):
 
     Parameters
     ----------
-    tabular_source: DatabaseSourceModel
+    tabular_source: FeatureStoreModel
         snowflake datasource instance
     credentials: Credentials
         credentials to the snowflake datasource
     """
 
-    tabular_source: DatabaseSourceModel
+    tabular_source: FeatureStoreModel
     credentials: Credentials
     _session: BaseSession = PrivateAttr()
 
@@ -70,7 +49,7 @@ class TileSnowflake(TileBase):
             constructor arguments
         """
         super().__init__(**kw)
-        data_source = ExtendedDatabaseSourceModel(**self.tabular_source.dict())
+        data_source = ExtendedFeatureStoreModel(**self.tabular_source.dict())
         self._session = data_source.get_session(credentials=self.credentials)
 
     def insert_tile_registry(self) -> bool:
@@ -84,11 +63,16 @@ class TileSnowflake(TileBase):
         -------
             whether the tile registry record is inserted successfully or not
         """
-        result = self._session.execute_query(
-            f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{self.tile_id}'"  # nosec
-        )
+        result = self._session.execute_query(tm_select_tile_registry.render(tile_id=self.tile_id))
         if result is None or len(result) == 0:
-            sql = tm_ins_tile_registry.render(tile_id=self.tile_id, tile_sql=self.tile_sql)
+            sql = tm_insert_tile_registry.render(
+                tile_id=self.tile_id,
+                tile_sql=self.tile_sql,
+                column_names=self.column_names,
+                time_modulo_frequency_seconds=self.time_modulo_frequency_seconds,
+                blind_spot_seconds=self.blind_spot_seconds,
+                frequency_minute=self.frequency_minute,
+            )
             logger.info(f"generated tile insert sql: {sql}")
             self._session.execute_query(sql)
             return True
@@ -109,7 +93,7 @@ class TileSnowflake(TileBase):
             self._session.execute_query(f"ALTER TASK IF EXISTS {tile_task_name} SUSPEND")
 
         self._session.execute_query(
-            f"UPDATE TILE_REGISTRY SET ENABLED = 'N' WHERE TILE_ID = '{self.tile_id}'"  # nosec
+            tm_update_tile_registry.render(tile_id=self.tile_id, is_enabled=False)
         )
 
     def generate_tiles(
@@ -139,13 +123,13 @@ class TileSnowflake(TileBase):
         )
         logger.info(f"tile_sql: {tile_sql}")
 
-        sql = tm_gen_tile.render(
-            sql=tile_sql,
+        sql = tm_generate_tile.render(
+            tile_sql=tile_sql,
             time_modulo_frequency_seconds=self.time_modulo_frequency_seconds,
             blind_spot_seconds=self.blind_spot_seconds,
             frequency_minute=self.frequency_minute,
             column_names=self.column_names,
-            table_name=self.tile_id,
+            tile_id=self.tile_id,
             tile_type=tile_type,
         )
         logger.info(f"generated sql: {sql}")

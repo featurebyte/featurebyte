@@ -1,6 +1,8 @@
 """
 This module contains integration tests for FeatureSnowflake
 """
+import json
+
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
@@ -9,7 +11,8 @@ def test_insert_feature_registry(snowflake_session, snowflake_feature):
     """
     Test insert_feature_registry
     """
-    snowflake_feature.insert_feature_registry()
+    flag = snowflake_feature.insert_feature_registry()
+    assert flag is True
 
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
     assert len(result) == 1
@@ -20,38 +23,44 @@ def test_insert_feature_registry(snowflake_session, snowflake_feature):
         {
             "NAME": ["test_feature1"],
             "VERSION": ["v1"],
-            "STATUS": ["DRAFT"],
-            "TIME_MODULO_FREQUENCY_SECOND": [183],
-            "BLIND_SPOT_SECOND": [3],
-            "FREQUENCY_MINUTES": [5],
+            "READINESS": ["DRAFT"],
         }
     )
-
-    result = result[
+    result_df = result[
         [
             "NAME",
             "VERSION",
-            "STATUS",
-            "TIME_MODULO_FREQUENCY_SECOND",
-            "BLIND_SPOT_SECOND",
-            "FREQUENCY_MINUTES",
+            "READINESS",
         ]
     ]
-    assert_frame_equal(expected_df, result)
+    assert_frame_equal(expected_df, result_df)
+
+    expected_tile_spec = {
+        "blind_spot_second": 3,
+        "column_names": "col1",
+        "frequency_minute": 5,
+        "tile_id": "tile_id1",
+        "tile_sql": "SELECT * FROM DUMMY",
+        "time_modulo_frequency_second": 183,
+    }
+    result_tile_spec = json.loads(result["TILE_SPECS"].iloc[0])[0]
+    assert expected_tile_spec == result_tile_spec
 
 
 def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature):
     """
     Test insert_feature_registry duplicate with exception
     """
-    snowflake_feature.insert_feature_registry()
+    flag = snowflake_feature.insert_feature_registry()
+    assert flag is True
 
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
     assert len(result) == 1
     assert result.iloc[0]["NAME"] == "test_feature1"
     assert result.iloc[0]["VERSION"] == "v1"
 
-    snowflake_feature.insert_feature_registry()
+    flag = snowflake_feature.insert_feature_registry()
+    assert flag is False
 
 
 def test_retrieve_features(snowflake_feature):
@@ -95,7 +104,7 @@ def test_online_enable(snowflake_session, snowflake_feature):
 
     tile_registry = snowflake_session.execute_query("SELECT * FROM TILE_REGISTRY")
     assert len(tile_registry) == 1
-    assert tile_registry.iloc[0]["TILE_ID"] == "TILE_ID1"
+    assert tile_registry.iloc[0]["TILE_ID"] == "tile_id1"
     assert tile_registry.iloc[0]["TILE_SQL"] == "SELECT * FROM DUMMY"
 
     tasks = snowflake_session.execute_query("SHOW TASKS")
@@ -116,5 +125,5 @@ def test_get_last_tile_index(snowflake_feature, snowflake_tile):
     snowflake_tile.insert_tile_registry()
     last_index_df = snowflake_feature.get_last_tile_index()
     assert len(last_index_df) == 1
-    assert last_index_df.iloc[0]["TILE_ID"] == "TILE_ID1"
+    assert last_index_df.iloc[0]["TILE_ID"] == snowflake_tile.tile_id
     assert last_index_df.iloc[0]["LAST_TILE_INDEX_ONLINE"] == -1

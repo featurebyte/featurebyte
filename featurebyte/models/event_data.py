@@ -3,7 +3,7 @@ This module contains EventData related models
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 from enum import Enum
@@ -11,46 +11,7 @@ from enum import Enum
 from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
-from featurebyte.enum import SourceType
-
-
-class SnowflakeDetails(BaseModel):
-    """Model for Snowflake data source information"""
-
-    account: str
-    warehouse: str
-    database: str
-    sf_schema: str  # schema shadows a BaseModel attribute
-
-
-class SQLiteDetails(BaseModel):
-    """Model for SQLite data source information"""
-
-    filename: str
-
-
-DB_DETAILS_CLASS = {
-    SourceType.SNOWFLAKE: SnowflakeDetails,
-    SourceType.SQLITE: SQLiteDetails,
-}
-
-
-class DatabaseSourceModel(BaseModel):
-    """Model for a database source"""
-
-    type: SourceType
-    details: Union[SnowflakeDetails, SQLiteDetails]
-
-    def __hash__(self) -> int:
-        """
-        Hash function to support use as a dict key
-
-        Returns
-        -------
-        int
-            hash_value
-        """
-        return hash(str(self.type) + str(self.details))
+from featurebyte.models.feature_store import DatabaseTableModel, FeatureStoreModel
 
 
 class FeatureJobSetting(BaseModel):
@@ -98,12 +59,6 @@ class EventDataStatus(str, Enum):
     DEPRECATED = "DEPRECATED"
 
 
-class DatabaseTableModel(BaseModel):
-    """Model for a table of database source"""
-
-    tabular_source: Tuple[DatabaseSourceModel, str]
-
-
 class EventDataModel(DatabaseTableModel):
     """
     Model for EventData entity
@@ -112,7 +67,7 @@ class EventDataModel(DatabaseTableModel):
     ----------
     name : str
         Name of the EventData
-    tabular_source : Tuple[DatabaseSourceModel, str]
+    tabular_source : Tuple[FeatureStoreModel, TableDetails]
         Data warehouse connection information & table name tuple
     event_timestamp_column: str
         Event timestamp column name
@@ -140,20 +95,14 @@ class EventDataModel(DatabaseTableModel):
     status: Optional[EventDataStatus] = Field(default=None)
 
 
+###### Temporary Definition of Feature and TileSpec ######
 class TileSpec(BaseModel):
     """
-    Model for TileSpec
-
+    Temporary Model for TileSpec
     Parameters
     ----------
-    name : str
-        Name of the Feature
-    status : EventDataStatus
-        Status of the Feature
-    version : str
-        feature version
-    is_default : bool
-        whether it is the default feature
+    tile_id: str
+        hash value of tile id and name
     time_modulo_frequency_seconds: int
         time modulo seconds for the tile
     blind_spot_seconds: int
@@ -164,28 +113,45 @@ class TileSpec(BaseModel):
         sql for tile generation
     column_names: str
         comma separated string of column names for the tile table
-    tile_id: str
-        hash value of tile id and name
-    online_enabled: bool
-        whether feature is online enabled or not
-    datasource: DatabaseSourceModel
-        datasource instance
     """
 
-    name: str
-    status: EventDataStatus
-    version: str
-    is_default: bool
+    tile_id: str
+    tile_sql: str
+    column_names: str
 
     time_modulo_frequency_second: int
     blind_spot_second: int
     frequency_minute: int
-    tile_sql: str
-    column_names: str
-    tile_ids: List[str]
+
+
+class Feature(BaseModel):
+    """
+    Temporary Model for Feature
+    Parameters
+    ----------
+    name : str
+        Name of the Feature
+    readiness : EventDataStatus
+        Status of the Feature
+    version : str
+        feature version
+    is_default : bool
+        whether it is the default feature
+    online_enabled: bool
+        whether feature is online enabled or not
+    datasource: FeatureStoreModel
+        datasource instance
+    """
+
+    name: str
+    readiness: str
+    version: str
+    is_default: bool
+
+    tile_specs: List[TileSpec] = Field(default=[])
 
     online_enabled: bool
-    datasource: DatabaseSourceModel
+    datasource: FeatureStoreModel
 
 
 class TileType(str, Enum):

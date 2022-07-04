@@ -13,7 +13,6 @@ from pydantic import Field
 from snowflake import connector
 
 import featurebyte
-from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
@@ -42,7 +41,7 @@ class SnowflakeSession(BaseSession):
             account=data["account"],
             warehouse=data["warehouse"],
             database=data["database"],
-            schema=self._get_featurebyte_schema_name(),
+            schema=data["sf_schema"],
         )
 
         # If the featurebyte schema does not exist, the self._connection can still be created
@@ -50,9 +49,47 @@ class SnowflakeSession(BaseSession):
         # created and initialized with custom functions and procedures.
         self._init_featurebyte_schema_if_needed()
 
-    def list_tables(self) -> list[str]:
-        tables = self.execute_query(f'SHOW TABLES IN SCHEMA "{self.database}"."{self.sf_schema}"')
-        views = self.execute_query(f'SHOW VIEWS IN SCHEMA "{self.database}"."{self.sf_schema}"')
+    def list_databases(self) -> list[str]:
+        """
+        Execute SQL query to retrieve database names
+
+        Returns
+        -------
+        list[str]
+        """
+        databases = self.execute_query("SHOW DATABASES")
+        output = []
+        if databases is not None:
+            output.extend(databases["name"])
+        return output
+
+    def list_schemas(self, database_name: str | None = None) -> list[str]:
+        """
+        Execute SQL query to retrieve schema names
+
+        Parameters
+        ----------
+        database_name: str | None
+            Database name
+
+        Returns
+        -------
+        list[str]
+        """
+        database_name = database_name or self.database
+        schemas = self.execute_query(f'SHOW SCHEMAS IN DATABASE "{database_name}"')
+        output = []
+        if schemas is not None:
+            output.extend(schemas["name"])
+        return output
+
+    def list_tables(
+        self, database_name: str | None = None, schema_name: str | None = None
+    ) -> list[str]:
+        database_name = database_name or self.database
+        schema_name = schema_name or self.sf_schema
+        tables = self.execute_query(f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"')
+        views = self.execute_query(f'SHOW VIEWS IN SCHEMA "{database_name}"."{schema_name}"')
         output = []
         if tables is not None:
             output.extend(tables["name"])
@@ -82,9 +119,13 @@ class SnowflakeSession(BaseSession):
             return DBVarType.TIMESTAMP
         raise ValueError(f"Not supported data type '{snowflake_var_info}'")
 
-    def list_table_schema(self, table_name: str) -> dict[str, DBVarType]:
+    def list_table_schema(
+        self, database_name: str | None, schema_name: str | None, table_name: str | None
+    ) -> dict[str, DBVarType]:
+        database_name = database_name or self.database
+        schema_name = schema_name or self.sf_schema
         schema = self.execute_query(
-            f'SHOW COLUMNS IN "{self.database}"."{self.sf_schema}"."{table_name}"'
+            f'SHOW COLUMNS IN "{database_name}"."{schema_name}"."{table_name}"'
         )
         column_name_type_map = {}
         if schema is not None:
@@ -97,10 +138,7 @@ class SnowflakeSession(BaseSession):
     def _init_featurebyte_schema_if_needed(self) -> None:
         # Note: self._connection.schema changes to None after execute_query() if the specified
         # default schema doesn't exist, so we should not rely on it
-        SchemaInitializer(self, self._get_featurebyte_schema_name()).initialize()
-
-    def _get_featurebyte_schema_name(self) -> str:
-        return Configurations().snowflake.featurebyte_schema
+        SchemaInitializer(self).initialize()
 
 
 class SqlObjectType(str, Enum):
@@ -118,13 +156,10 @@ class SchemaInitializer:
     ----------
     session : SnowflakeSession
         Snowflake session object
-    featurebyte_schema_name : str
-        Featurebyte schema name
     """
 
-    def __init__(self, session: SnowflakeSession, featurebyte_schema_name: str):
+    def __init__(self, session: SnowflakeSession):
         self.session = session
-        self.featurebyte_schema_name = featurebyte_schema_name
 
     def schema_exists(self) -> bool:
         """Check whether the featurebyte schema exists
@@ -138,13 +173,13 @@ class SchemaInitializer:
             available_schemas = show_schemas_result["name"].tolist()
         else:
             available_schemas = []
-        return self.featurebyte_schema_name in available_schemas
+        return self.session.sf_schema in available_schemas
 
     def initialize(self) -> None:
         """Initialize the featurebyte schema if it doesn't exist"""
         if not self.schema_exists():
-            logger.debug(f"Initializing schema {self.featurebyte_schema_name}")
-            create_schema_query = f"CREATE SCHEMA {self.featurebyte_schema_name}"
+            logger.debug(f"Initializing schema {self.session.sf_schema}")
+            create_schema_query = f"CREATE SCHEMA {self.session.sf_schema}"
             self.session.execute_query(create_schema_query)
         self.register_missing_objects()
 
@@ -175,7 +210,7 @@ class SchemaInitializer:
         )
         if df_result is None:
             return
-        df_result = df_result[df_result["schema_name"] == self.featurebyte_schema_name]
+        df_result = df_result[df_result["schema_name"] == self.session.sf_schema]
         existing = set(df_result["name"].tolist())
         for item in functions:
             if item["identifier"] not in existing:
@@ -194,7 +229,7 @@ class SchemaInitializer:
         )
         if df_result is None:
             return
-        df_result = df_result[df_result["schema_name"] == self.featurebyte_schema_name]
+        df_result = df_result[df_result["schema_name"] == self.session.sf_schema]
         existing = set(df_result["name"].tolist())
         for item in procedures:
             if item["identifier"] not in existing:
@@ -209,7 +244,7 @@ class SchemaInitializer:
             List of tables to register
         """
         df_result = self.session.execute_query(
-            f'SHOW TABLES IN SCHEMA "{self.session.database}"."{self.featurebyte_schema_name}"'
+            f'SHOW TABLES IN SCHEMA "{self.session.database}"."{self.session.sf_schema}"'
         )
         if df_result is None:
             return

@@ -29,7 +29,7 @@ def snowflake_session_dict_without_credentials_fixture():
         "account": "some_account",
         "warehouse": "some_warehouse",
         "database": "sf_database",
-        "sf_schema": "sf_schema",
+        "sf_schema": "FEATUREBYTE",
     }
 
 
@@ -51,8 +51,15 @@ def test_snowflake_session__credential_from_config(snowflake_session_dict):
     session = SnowflakeSession(**snowflake_session_dict)
     assert session.username == "username"
     assert session.password == "password"
-    assert session.list_tables() == ["sf_table", "sf_view"]
-    assert session.list_table_schema("sf_table") == {
+    assert session.list_databases() == ["sf_database"]
+    assert session.list_schemas(database_name="sf_database") == ["sf_schema"]
+    assert session.list_tables(database_name="sf_database", schema_name="sf_schema") == [
+        "sf_table",
+        "sf_view",
+    ]
+    assert session.list_table_schema(
+        database_name="sf_database", schema_name="sf_schema", table_name="sf_table"
+    ) == {
         "col_int": DBVarType.INT,
         "col_float": DBVarType.FLOAT,
         "col_char": DBVarType.CHAR,
@@ -63,7 +70,9 @@ def test_snowflake_session__credential_from_config(snowflake_session_dict):
         "cust_id": DBVarType.INT,
         "event_timestamp": DBVarType.TIMESTAMP,
     }
-    assert session.list_table_schema("sf_view") == {
+    assert session.list_table_schema(
+        database_name="sf_database", schema_name="sf_schema", table_name="sf_view"
+    ) == {
         "col_date": DBVarType.DATE,
         "col_time": DBVarType.TIME,
         "col_timestamp_ltz": DBVarType.TIMESTAMP,
@@ -94,6 +103,7 @@ def patched_snowflake_session_cls_fixture(
     is_functions_missing,
     is_procedures_missing,
     is_tables_missing,
+    snowflake_session_dict_without_credentials,
 ):
     """Fixture for a patched session class"""
 
@@ -153,7 +163,8 @@ def patched_snowflake_session_cls_fixture(
     with patch("featurebyte.session.snowflake.SnowflakeSession", autospec=True) as patched_class:
         mock_session_obj = patched_class.return_value
         mock_session_obj.execute_query.side_effect = mock_execute_query
-        mock_session_obj.database = "TEST_DB"
+        mock_session_obj.database = snowflake_session_dict_without_credentials["database"]
+        mock_session_obj.sf_schema = snowflake_session_dict_without_credentials["sf_schema"]
         yield patched_class
 
 
@@ -242,13 +253,13 @@ def test_schema_initializer__everything_exists(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    SchemaInitializer(session, "FEATUREBYTE").initialize()
+    SchemaInitializer(session).initialize()
     # Nothing to do except checking schemas and existing objects
     assert session.execute_query.call_args_list == [
         call("SHOW SCHEMAS"),
-        call("SHOW USER FUNCTIONS IN DATABASE TEST_DB"),
-        call("SHOW PROCEDURES IN DATABASE TEST_DB"),
-        call('SHOW TABLES IN SCHEMA "TEST_DB"."FEATUREBYTE"'),
+        call("SHOW USER FUNCTIONS IN DATABASE sf_database"),
+        call("SHOW PROCEDURES IN DATABASE sf_database"),
+        call('SHOW TABLES IN SCHEMA "sf_database"."FEATUREBYTE"'),
     ]
     counts = check_create_commands(session)
     assert counts == {"schema": 0, "functions": 0, "procedures": 0, "tables": 0}
@@ -273,7 +284,7 @@ def test_schema_initializer__all_missing(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    SchemaInitializer(session, "FEATUREBYTE").initialize()
+    SchemaInitializer(session).initialize()
     # Should create schema if not exists
     assert session.execute_query.call_args_list[:2] == [
         call("SHOW SCHEMAS"),
@@ -307,7 +318,7 @@ def test_schema_initializer__partial_missing(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    SchemaInitializer(session, "FEATUREBYTE").initialize()
+    SchemaInitializer(session).initialize()
     # Should register custom functions and procedures
     counts = check_create_commands(session)
     expected_counts = {"schema": 0, "functions": 0, "procedures": 0, "tables": 0}

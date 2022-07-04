@@ -5,7 +5,6 @@ import os
 import sqlite3
 import tempfile
 from datetime import datetime
-from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -15,7 +14,7 @@ from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
 from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
-from featurebyte.models.event_data import EventDataStatus, TileSpec
+from featurebyte.models.event_data import Feature, TileSpec
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.tile.snowflake_tile import TileSnowflake
@@ -80,14 +79,14 @@ def config_fixture(sqlite_filename):
     temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
 
     config_dict = {
-        "datasource": [
+        "featurestore": [
             {
-                "name": "snowflake_datasource",
+                "name": "snowflake_featurestore",
                 "source_type": "snowflake",
                 "account": os.getenv("SNOWFLAKE_ACCOUNT"),
                 "warehouse": os.getenv("SNOWFLAKE_WAREHOUSE"),
-                "sf_schema": os.getenv("SNOWFLAKE_SCHEMA"),
                 "database": os.getenv("SNOWFLAKE_DATABASE"),
+                "sf_schema": temp_schema_name,
                 "credential_type": "USERNAME_PASSWORD",
                 "username": os.getenv("SNOWFLAKE_USER"),
                 "password": os.getenv("SNOWFLAKE_PASSWORD"),
@@ -98,9 +97,6 @@ def config_fixture(sqlite_filename):
                 "filename": sqlite_filename,
             },
         ],
-        "snowflake": {
-            "featurebyte_schema": temp_schema_name,
-        },
     }
     with tempfile.NamedTemporaryFile("w") as file_handle:
         file_handle.write(yaml.dump(config_dict))
@@ -114,14 +110,11 @@ def snowflake_session_fixture(transaction_data_upper_case, config):
     Snowflake session
     """
     session_manager = SessionManager(credentials=config.credentials)
-    snowflake_database_source = config.db_sources["snowflake_datasource"]
-    with mock.patch("featurebyte.session.snowflake.Configurations", return_value=config):
-        session = session_manager[snowflake_database_source]
+    snowflake_database_source = config.feature_stores["snowflake_featurestore"]
+    session = session_manager[snowflake_database_source]
     assert isinstance(session, SnowflakeSession)
 
     table_name = "TEST_TABLE"
-    temp_schema_name = config.snowflake.featurebyte_schema
-    assert session.connection.schema == temp_schema_name
 
     session.execute_query(
         f"""
@@ -148,7 +141,7 @@ def snowflake_session_fixture(transaction_data_upper_case, config):
 
     yield session
 
-    session.execute_query(f"DROP SCHEMA IF EXISTS {temp_schema_name}")
+    session.execute_query(f"DROP SCHEMA IF EXISTS {snowflake_database_source.details.sf_schema}")
 
 
 @pytest.fixture(scope="session")
@@ -157,7 +150,7 @@ def sqlite_session(config):
     SQLite session
     """
     session_manager = SessionManager(credentials=config.credentials)
-    sqlite_database_source = config.db_sources["sqlite_datasource"]
+    sqlite_database_source = config.feature_stores["sqlite_datasource"]
     return session_manager[sqlite_database_source]
 
 
@@ -178,7 +171,7 @@ def snowflake_tile(snowflake_session, config):
         tile_sql=tile_sql,
         column_names=col_names,
         tile_id="tile_id1",
-        tabular_source=config.db_sources["snowflake_datasource"],
+        tabular_source=config.feature_stores["snowflake_featurestore"],
         credentials=config.credentials,
     )
 
@@ -197,19 +190,23 @@ def snowflake_feature(snowflake_session, config):
     """
     tile_id = "tile_id1"
 
-    feature = TileSpec(
-        name="test_feature1",
-        version="v1",
-        status=EventDataStatus.DRAFT,
-        is_default=True,
+    tile_spec = TileSpec(
+        tile_id=tile_id,
         time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
         column_names="col1",
-        tile_ids=[tile_id],
+    )
+
+    feature = Feature(
+        name="test_feature1",
+        version="v1",
+        readiness="DRAFT",
+        is_default=True,
+        tile_specs=[tile_spec],
         online_enabled=False,
-        datasource=config.db_sources["snowflake_datasource"],
+        datasource=config.feature_stores["snowflake_featurestore"],
     )
 
     s_feature = FeatureSnowflake(feature=feature, credentials=config.credentials)

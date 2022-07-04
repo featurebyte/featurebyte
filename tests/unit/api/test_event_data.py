@@ -25,7 +25,11 @@ def event_data_dict_fixture():
                     "warehouse": "sf_warehouse",
                 },
             },
-            "sf_table",
+            {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": "sf_table",
+            },
         ),
         "event_timestamp_column": "event_timestamp",
         "record_creation_date_column": "created_at",
