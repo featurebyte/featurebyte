@@ -11,7 +11,7 @@ import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.config import Credentials
-from featurebyte.core.generic import ExtendedDatabaseSourceModel
+from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_insert_feature_registry,
     tm_last_tile_index,

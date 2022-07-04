@@ -301,7 +301,7 @@ def mock_snowflake_tile(mock_execute_query, snowflake_feature_store, snowflake_c
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 def mock_snowflake_feature(
-    mock_execute_query, snowflake_database_source, snowflake_connector, config
+    mock_execute_query, snowflake_feature_store, snowflake_connector, config
 ):
     """
     Pytest Fixture for FeatureSnowflake instance
