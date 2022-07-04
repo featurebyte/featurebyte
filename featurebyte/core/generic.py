@@ -154,7 +154,7 @@ class QueryObject(BaseModel):
     def _to_dict(self, target_columns: set[str], *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):
             pruned_graph, mapped_node = self.graph.prune(
-                target_node=self.node, target_columns=target_columns
+                target_node=self.node, target_columns=target_columns, to_update_node_params=True
             )
             new_object = self.copy()
             new_object.graph = pruned_graph
