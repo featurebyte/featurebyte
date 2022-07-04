@@ -210,7 +210,11 @@ def test_schema_initializer__sql_objects():
         },
         {"filename": "SP_TILE_GENERATE.sql", "identifier": "SP_TILE_GENERATE", "type": "procedure"},
     ]
-    assert sql_objects == expected
+
+    def _sorted_result(lst):
+        return sorted(lst, key=lambda x: x["filename"])
+
+    assert _sorted_result(sql_objects) == _sorted_result(expected)
 
 
 def check_create_commands(mock_session):
