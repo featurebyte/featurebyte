@@ -33,33 +33,33 @@ def float_feature_dict_fixture(float_feature):
     yield feat_dict
 
 
-def test_feature_list__getitem__list_of_str(feature_list):
+def test_feature_group__getitem__list_of_str(feature_group):
     """
     Test retrieving single column
     """
-    feature_list_subset = feature_list[["sum_2h", "sum_1d"]]
-    assert isinstance(feature_list_subset, FeatureGroup)
-    assert feature_list_subset.protected_columns == {"cust_id"}
-    assert feature_list_subset.entity_identifiers == ["cust_id"]
-    assert feature_list_subset.inception_node == feature_list.inception_node
+    feature_group_subset = feature_group[["sum_2h", "sum_1d"]]
+    assert isinstance(feature_group_subset, FeatureGroup)
+    assert feature_group_subset.protected_columns == {"cust_id"}
+    assert feature_group_subset.entity_identifiers == ["cust_id"]
+    assert feature_group_subset.inception_node == feature_group.inception_node
 
 
-def test_feature_list__getitem__series_key(feature_list, bool_feature):
+def test_feature_group__getitem__series_key(feature_group, bool_feature):
     """
-    Test filtering on feature list object
+    Test filtering on feature group object
     """
-    feature_list_subset = feature_list[bool_feature]
-    assert isinstance(feature_list_subset, FeatureGroup)
-    assert feature_list_subset.inception_node == feature_list.inception_node
+    feature_group_subset = feature_group[bool_feature]
+    assert isinstance(feature_group_subset, FeatureGroup)
+    assert feature_group_subset.inception_node == feature_group.inception_node
 
 
-def test_feature_list__override_protected_column(feature_list):
+def test_feature_group__override_protected_column(feature_group):
     """
-    Test attempting to change feature list's protected column value
+    Test attempting to change feature group's protected column value
     """
-    assert "cust_id" in feature_list.protected_columns
+    assert "cust_id" in feature_group.protected_columns
     with pytest.raises(ValueError) as exc:
-        feature_list["cust_id"] = feature_list["cust_id"] * 2
+        feature_group["cust_id"] = feature_group["cust_id"] * 2
     expected_msg = "Entity identifier column 'cust_id' cannot be modified!"
     assert expected_msg in str(exc.value)
 
