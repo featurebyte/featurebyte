@@ -9,6 +9,8 @@ on:
       - main
 
 permissions:
+  contents: read
+  repository-projects: read
   issues: write
   pull-requests: write
 
