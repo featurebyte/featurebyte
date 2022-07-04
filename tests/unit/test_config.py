@@ -15,23 +15,23 @@ def test_configurations():
     config = Configurations("tests/fixtures/sample_config.yaml")
 
     # one database source with section name as key
-    assert len(config.db_sources) == 1
+    assert len(config.feature_stores) == 1
     expected_db_source_dict = {
         "type": SourceType.SNOWFLAKE,
         "details": {
             "account": "sf_account",
             "warehouse": "COMPUTE_WH",
-            "database": "TEST_DB",
-            "sf_schema": "PUBLIC",
+            "database": "FEATUREBYTE",
+            "sf_schema": "FEATUREBYTE",
         },
     }
-    db_source = config.db_sources["snowflake 数据库"]
-    assert db_source.dict() == expected_db_source_dict
+    feature_store = config.feature_stores["Snowflake FeatureStøre"]
+    assert feature_store.dict() == expected_db_source_dict
 
     # one credential with db source as key
     assert len(config.credentials) == 1
-    assert config.credentials[db_source].dict() == {
-        "name": "snowflake 数据库",
+    assert config.credentials[feature_store].dict() == {
+        "name": "Snowflake FeatureStøre",
         "source": expected_db_source_dict,
         "credential_type": CredentialType.USERNAME_PASSWORD,
         "credential": {"username": "user", "password": "password"},
@@ -65,4 +65,4 @@ def test_configurations_malformed_datasource():
     """
     with pytest.raises(ValueError) as exc_info:
         Configurations("tests/fixtures/malformed_config.yaml")
-    assert str(exc_info.value) == "Invalid settings for datasource: snowflake 数据库"
+    assert str(exc_info.value) == "Invalid settings for datasource: Snowflake FeatureStøre"

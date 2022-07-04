@@ -27,7 +27,11 @@ def node_input_fixture(graph):
     node_params = {
         "columns": ["ts", "cust_id", "a", "b"],
         "timestamp": "ts",
-        "dbtable": "event_table",
+        "dbtable": {
+            "database_name": "db",
+            "schema_name": "public",
+            "table_name": "event_table",
+        },
         "database_source": {
             "type": "snowflake",
             "details": {
@@ -227,7 +231,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
     info_dict = asdict(info)
     info_dict.pop("sql")
     assert info_dict == {
-        "tile_table_id": "avg_f3600_m1800_b900_b0be70004d05d448cb3b6a07883b542baba2296e",
+        "tile_table_id": "avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
         "columns": ["tile_start_date", "cust_id", "sum_value", "count_value"],
         "time_modulo_frequency": 1800,
         "frequency": 3600,
@@ -243,7 +247,11 @@ def test_graph_interpreter_snowflake(graph):
         node_params={
             "columns": ["SERVER_TIMESTAMP", "CUST_ID"],
             "timestamp": "SERVER_TIMESTAMP",
-            "dbtable": "BROWSING_TS",
+            "dbtable": {
+                "database_name": "FB_SIMULATE",
+                "schema_name": "PUBLIC",
+                "table_name": "BROWSING_TS",
+            },
             "database_source": {
                 "type": "snowflake",
                 "details": {

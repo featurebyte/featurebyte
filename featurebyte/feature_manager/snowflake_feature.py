@@ -50,7 +50,7 @@ class FeatureSnowflake(BaseModel):
             constructor arguments
         """
         super().__init__(**kw)
-        data_source = ExtendedDatabaseSourceModel(**self.feature.datasource.dict())
+        data_source = ExtendedFeatureStoreModel(**self.feature.datasource.dict())
         self._session = data_source.get_session(credentials=self.credentials)
 
     def insert_feature_registry(self) -> bool:

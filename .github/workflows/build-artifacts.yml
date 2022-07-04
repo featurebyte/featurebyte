@@ -24,7 +24,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - uses: abatilo/actions-poetry@v2.1.4
+      - uses: abatilo/actions-poetry@v2.1.5
       - name: Build artifacts
         run: |
           make build-artifacts

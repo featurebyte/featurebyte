@@ -2,8 +2,6 @@
 Read configurations from ini file
 """
 # pylint: disable=too-few-public-methods
-from __future__ import annotations
-
 from typing import Any, Dict, Optional, Pattern
 
 import os
@@ -16,11 +14,11 @@ from pydantic import BaseSettings, ConstrainedStr
 from pydantic.error_wrappers import ValidationError
 
 from featurebyte.enum import SourceType
-from featurebyte.models.credential import CREDENTIAL_CLASS, Credential, CredentialType
-from featurebyte.models.event_data import DB_DETAILS_CLASS, DatabaseSourceModel
+from featurebyte.models.credential import Credential
+from featurebyte.models.feature_store import FeatureStoreModel
 
 # data source to credential mapping
-Credentials = Dict[DatabaseSourceModel, Optional[Credential]]
+Credentials = Dict[FeatureStoreModel, Optional[Credential]]
 
 
 class LogLevel(str, Enum):
@@ -52,7 +50,7 @@ class GitRepoUrl(ConstrainedStr):
     Git repo string
     """
 
-    regex: Pattern[str] | None = re.compile(r".*\.git")
+    regex: Optional[Pattern[str]] = re.compile(r".*\.git")
 
 
 class GitSettings(BaseSettings):
@@ -61,16 +59,8 @@ class GitSettings(BaseSettings):
     """
 
     remote_url: GitRepoUrl
-    key_path: Path
+    key_path: Optional[Path]
     branch: str
-
-
-class SnowflakeSettings(BaseSettings):
-    """
-    Settings specific to snowflake
-    """
-
-    featurebyte_schema: str = "FEATUREBYTE"
 
 
 class Configurations:
@@ -78,7 +68,7 @@ class Configurations:
     FeatureByte SDK settings. Contains general settings, database sources and credentials.
     """
 
-    def __init__(self, config_file_path: str | None = None) -> None:
+    def __init__(self, config_file_path: Optional[str] = None) -> None:
         """
         Load and parse configurations
 
@@ -93,11 +83,10 @@ class Configurations:
                 "FEATUREBYTE_CONFIG_PATH", os.path.join(os.environ["HOME"], ".featurebyte.yaml")
             )
         )
-        self.settings: dict[str, Any] = {}
-        self.db_sources: dict[str, DatabaseSourceModel] = {}
+        self.settings: Dict[str, Any] = {}
+        self.feature_stores: Dict[str, FeatureStoreModel] = {}
         self.credentials: Credentials = {}
         self.logging: LoggingSettings = LoggingSettings()
-        self.snowflake = SnowflakeSettings()
         self._config_file_path = config_file_path
         self._parse_config(config_file_path)
 
@@ -121,28 +110,29 @@ class Configurations:
         with open(path, encoding="utf-8") as file_obj:
             self.settings = yaml.safe_load(file_obj)
 
-        datasources = self.settings.pop("datasource", [])
-        for datasource in datasources:
+        feature_stores = self.settings.pop("featurestore", [])
+        for feature_store in feature_stores:
+            name = feature_store.pop("name", "unnamed")
             try:
-                name = datasource.pop("name", "unnamed")
-                if "source_type" in datasource and datasource["source_type"] in DB_DETAILS_CLASS:
-                    # parse and store database source
-                    source_type = SourceType(datasource["source_type"])
-                    db_source = DatabaseSourceModel(
+                if "source_type" in feature_store:
+                    # parse and store feature store
+                    source_type = SourceType(feature_store["source_type"])
+                    db_source = FeatureStoreModel(
                         type=source_type,
-                        details=DB_DETAILS_CLASS[source_type](**datasource),
+                        details=feature_store,
                     )
-                    self.db_sources[name] = db_source
+                    self.feature_stores[name] = db_source
 
                     # parse and store credentials
                     credentials = None
-                    if datasource.get("credential_type"):
-                        credential_type = CredentialType(datasource["credential_type"])
+                    if "credential_type" in feature_store:
+                        # credentials are stored together with feature store details in the config file,
+                        # Credential pydantic model will use only the relevant fields
                         credentials = Credential(
                             name=name,
                             source=db_source,
-                            credential=CREDENTIAL_CLASS[credential_type](**datasource),
-                            **datasource,
+                            credential_type=feature_store["credential_type"],
+                            credential=feature_store,
                         )
                     self.credentials[db_source] = credentials
             except ValidationError as exc:
@@ -157,7 +147,3 @@ class Configurations:
         if git_settings:
             # parse git settings
             self.git = GitSettings(**git_settings)
-
-        snowflake_settings = self.settings.pop("snowflake", None)
-        if snowflake_settings:
-            self.snowflake = SnowflakeSettings(**snowflake_settings)

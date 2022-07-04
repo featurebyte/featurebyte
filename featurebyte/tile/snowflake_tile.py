@@ -8,9 +8,10 @@ from typing import Any
 from pydantic import PrivateAttr
 
 from featurebyte.config import Credentials
-from featurebyte.core.generic import ExtendedDatabaseSourceModel
+from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.logger import logger
-from featurebyte.models.event_data import DatabaseSourceModel, TileType
+from featurebyte.models.event_data import TileType
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.base import TileBase
 from featurebyte.tile.snowflake_sql_template import (
@@ -28,13 +29,13 @@ class TileSnowflake(TileBase):
 
     Parameters
     ----------
-    tabular_source: DatabaseSourceModel
+    tabular_source: FeatureStoreModel
         snowflake datasource instance
     credentials: Credentials
         credentials to the snowflake datasource
     """
 
-    tabular_source: DatabaseSourceModel
+    tabular_source: FeatureStoreModel
     credentials: Credentials
     _session: BaseSession = PrivateAttr()
 
@@ -48,7 +49,7 @@ class TileSnowflake(TileBase):
             constructor arguments
         """
         super().__init__(**kw)
-        data_source = ExtendedDatabaseSourceModel(**self.tabular_source.dict())
+        data_source = ExtendedFeatureStoreModel(**self.tabular_source.dict())
         self._session = data_source.get_session(credentials=self.credentials)
 
     def insert_tile_registry(self) -> bool:

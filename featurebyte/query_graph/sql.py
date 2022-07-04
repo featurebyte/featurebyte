@@ -200,7 +200,7 @@ class GenericInputNode(TableNode):
     """Input data node"""
 
     column_names: list[str]
-    dbtable: str
+    dbtable: dict[str, str]
     database_source: dict[str, Any]
 
     @property
@@ -218,12 +218,12 @@ class GenericInputNode(TableNode):
             select_args.append(expressions.alias_(expr, col))
         select_expr = select(*select_args)
         if self.database_source["type"] == SourceType.SNOWFLAKE:
-            details = self.database_source["details"]
-            database = details["database"]
-            sf_schema = details["sf_schema"]
-            dbtable = f'"{database}"."{sf_schema}"."{self.dbtable}"'
+            database = self.dbtable["database_name"]
+            schema = self.dbtable["schema_name"]
+            table = self.dbtable["table_name"]
+            dbtable = f'"{database}"."{schema}"."{table}"'
         else:
-            dbtable = escape_column_name(self.dbtable)
+            dbtable = escape_column_name(self.dbtable["table_name"])
         select_expr = select_expr.from_(dbtable)
         return select_expr
 

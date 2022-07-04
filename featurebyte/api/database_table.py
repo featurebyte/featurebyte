@@ -9,9 +9,9 @@ from pydantic import Field, root_validator
 
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.frame import BaseFrame
-from featurebyte.core.generic import ExtendedDatabaseSourceModel
+from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import DBVarType
-from featurebyte.models.event_data import DatabaseSourceModel, DatabaseTableModel
+from featurebyte.models.feature_store import DatabaseTableModel, FeatureStoreModel, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
@@ -76,20 +76,26 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             config = Configurations()
             credentials = config.credentials
 
-        database_source, table_name = values["tabular_source"]
+        database_source, table_details = values["tabular_source"]
         if isinstance(database_source, dict):
-            database_source = ExtendedDatabaseSourceModel(**database_source)
-        elif isinstance(database_source, DatabaseSourceModel):
-            database_source = ExtendedDatabaseSourceModel(**database_source.dict())
+            database_source = ExtendedFeatureStoreModel(**database_source)
+        elif isinstance(database_source, FeatureStoreModel):
+            database_source = ExtendedFeatureStoreModel(**database_source.dict())
+        if isinstance(table_details, dict):
+            table_details = TableDetails(**table_details)
 
         session = database_source.get_session(credentials=credentials)
-        table_schema = session.list_table_schema(table_name=table_name)
+        table_schema = session.list_table_schema(
+            database_name=table_details.database_name,
+            schema_name=table_details.schema_name,
+            table_name=table_details.table_name,
+        )
 
         node = GlobalQueryGraph().add_operation(
             node_type=NodeType.INPUT,
             node_params={
                 "columns": list(table_schema.keys()),
-                "dbtable": table_name,
+                "dbtable": table_details.dict(),
                 "database_source": database_source.dict(),
                 **cls._get_other_input_node_parameters(values),
             },

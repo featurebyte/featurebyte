@@ -17,7 +17,11 @@ def query_graph_with_groupby_fixture(graph):
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
-            "dbtable": "event_table",
+            "dbtable": {
+                "database_name": "db",
+                "schema_name": "public",
+                "table_name": "event_table",
+            },
             "database_source": {
                 "type": "snowflake",
                 "details": {

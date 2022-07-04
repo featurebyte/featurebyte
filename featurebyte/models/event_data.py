@@ -3,7 +3,7 @@ This module contains EventData related models
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 from enum import Enum
@@ -11,46 +11,7 @@ from enum import Enum
 from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
-from featurebyte.enum import SourceType
-
-
-class SnowflakeDetails(BaseModel):
-    """Model for Snowflake data source information"""
-
-    account: str
-    warehouse: str
-    database: str
-    sf_schema: str  # schema shadows a BaseModel attribute
-
-
-class SQLiteDetails(BaseModel):
-    """Model for SQLite data source information"""
-
-    filename: str
-
-
-DB_DETAILS_CLASS = {
-    SourceType.SNOWFLAKE: SnowflakeDetails,
-    SourceType.SQLITE: SQLiteDetails,
-}
-
-
-class DatabaseSourceModel(BaseModel):
-    """Model for a database source"""
-
-    type: SourceType
-    details: Union[SnowflakeDetails, SQLiteDetails]
-
-    def __hash__(self) -> int:
-        """
-        Hash function to support use as a dict key
-
-        Returns
-        -------
-        int
-            hash_value
-        """
-        return hash(str(self.type) + str(self.details))
+from featurebyte.models.feature_store import DatabaseTableModel, FeatureStoreModel
 
 
 class FeatureJobSetting(BaseModel):
@@ -98,12 +59,6 @@ class EventDataStatus(str, Enum):
     DEPRECATED = "DEPRECATED"
 
 
-class DatabaseTableModel(BaseModel):
-    """Model for a table of database source"""
-
-    tabular_source: Tuple[DatabaseSourceModel, str]
-
-
 class EventDataModel(DatabaseTableModel):
     """
     Model for EventData entity
@@ -112,7 +67,7 @@ class EventDataModel(DatabaseTableModel):
     ----------
     name : str
         Name of the EventData
-    tabular_source : Tuple[DatabaseSourceModel, str]
+    tabular_source : Tuple[FeatureStoreModel, TableDetails]
         Data warehouse connection information & table name tuple
     event_timestamp_column: str
         Event timestamp column name
@@ -184,7 +139,7 @@ class Feature(BaseModel):
         whether it is the default feature
     online_enabled: bool
         whether feature is online enabled or not
-    datasource: DatabaseSourceModel
+    datasource: FeatureStoreModel
         datasource instance
     """
 
@@ -196,7 +151,7 @@ class Feature(BaseModel):
     tile_specs: List[TileSpec] = Field(default=[])
 
     online_enabled: bool
-    datasource: DatabaseSourceModel
+    datasource: FeatureStoreModel
 
 
 class TileType(str, Enum):

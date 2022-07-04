@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from featurebyte.enum import SourceType
 from featurebyte.logger import logger
 from featurebyte.models.credential import Credential
-from featurebyte.models.event_data import DatabaseSourceModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.session.sqlite import SQLiteSession
@@ -29,7 +29,7 @@ class SessionManager(BaseModel):
     Session manager to manage session of different database sources
     """
 
-    credentials: Dict[DatabaseSourceModel, Optional[Credential]]
+    credentials: Dict[FeatureStoreModel, Optional[Credential]]
 
     def __hash__(self) -> int:
         return hash(
@@ -42,13 +42,13 @@ class SessionManager(BaseModel):
         )
 
     @cached(cache=TTLCache(maxsize=1024, ttl=1800))
-    def __getitem__(self, item: DatabaseSourceModel) -> BaseSession:
+    def __getitem__(self, item: FeatureStoreModel) -> BaseSession:
         """
         Retrieve or create a new session for the given database source key
 
         Parameters
         ----------
-        item: DatabaseSourceModel
+        item: FeatureStoreModel
             Database source object
 
         Returns

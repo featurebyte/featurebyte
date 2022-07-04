@@ -11,16 +11,16 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 from featurebyte.config import Configurations, Credentials
-from featurebyte.models.event_data import DatabaseSourceModel
+from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
 
 
-class ExtendedDatabaseSourceModel(DatabaseSourceModel):
+class ExtendedFeatureStoreModel(FeatureStoreModel):
     """
-    ExtendedDatabaseSourceModel class contains method to construct a session
+    ExtendedFeatureStoreModel class contains method to construct a session
     """
 
     def get_session(self, credentials: Credentials | None = None) -> BaseSession:
@@ -51,7 +51,7 @@ class QueryObject(BaseModel):
     graph: GlobalQueryGraph = Field(default_factory=GlobalQueryGraph)
     node: Node
     row_index_lineage: Tuple[str, ...]
-    tabular_source: Tuple[DatabaseSourceModel, str]
+    tabular_source: Tuple[FeatureStoreModel, TableDetails]
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
@@ -131,7 +131,7 @@ class QueryObject(BaseModel):
             config = Configurations()
             credentials = config.credentials
 
-        data_source = ExtendedDatabaseSourceModel(**self.tabular_source[0].dict())
+        data_source = ExtendedFeatureStoreModel(**self.tabular_source[0].dict())
         session = data_source.get_session(credentials=credentials)
         return session
 
