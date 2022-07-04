@@ -67,7 +67,10 @@ class SQLiteSession(BaseSession):
         raise ValueError(f"Not supported data type '{sqlite_data_type}'")
 
     def list_table_schema(
-        self, database_name: str | None, schema_name: str | None, table_name: str | None
+        self,
+        table_name: str | None,
+        database_name: str | None = None,
+        schema_name: str | None = None,
     ) -> dict[str, DBVarType]:
         schema = self.execute_query(f'PRAGMA table_info("{table_name}")')
         column_name_type_map = {}

@@ -71,6 +71,21 @@ def test_insert_many(mongo_persistent, test_documents):
     assert [doc["_id"] for doc in test_documents] == inserted_ids
 
 
+def test_insert_many__duplicate_key__(mongo_persistent, test_documents):
+    """
+    Test inserting many documents
+    """
+    persistent, _ = mongo_persistent
+    with pytest.raises(DuplicateDocumentError):
+        with patch.object(
+            persistent._db, "get_collection"  # pylint: disable=protected-access
+        ) as mock_get_collection:
+            mock_get_collection.return_value.insert_many.side_effect = DuplicateKeyError(
+                "Document exists"
+            )
+            persistent.insert_many(collection_name="data", documents=test_documents)
+
+
 def test_find_one(mongo_persistent, test_documents):
     """
     Test finding one document

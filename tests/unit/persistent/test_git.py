@@ -47,6 +47,27 @@ def test_insert_one(git_persistent, test_document):
     ]
 
 
+def test_insert_one__no_id(git_persistent, test_document):
+    """
+    Test inserting one document without id works, and id is added
+    """
+    persistent, repo = git_persistent
+    test_document.pop("id")
+    persistent.insert_one(collection_name="data", document=test_document)
+    assert "id" in test_document
+
+    # check document is inserted
+    expected_doc_path = os.path.join(repo.working_tree_dir, "data", test_document["name"] + ".json")
+    assert os.path.exists(expected_doc_path)
+
+    # check commit messages
+    messages = [commit.message for commit in repo.iter_commits("test", max_count=5)][-1::-1]
+    assert messages == [
+        "Initial commit\n",
+        "Create document: data/Generic Document\n",
+    ]
+
+
 def test_insert_many(git_persistent, test_documents):
     """
     Test inserting many documents
@@ -232,6 +253,7 @@ def test_update_name_to_existing(git_persistent, test_documents):
 @pytest.mark.parametrize(
     "update,valid",
     [
+        ({}, False),
         ({"$set": {"name": "Object 1"}}, True),
         ({"$set": "not a dict"}, False),
         ({"key is not $set": {"name": "Object 1"}}, False),
@@ -304,4 +326,19 @@ def test_delete_many(git_persistent, test_documents):
         "Delete document: data/Object 0\n",
         "Delete document: data/Object 1\n",
         "Delete document: data/Object 2\n",
+    ]
+
+
+def test_delete_one__collection_not_exist(git_persistent):
+    """
+    Test document from non-existent collection should work with no effect
+    """
+    persistent, repo = git_persistent
+    result = persistent.delete_one(collection_name="no_such_collection", query_filter={})
+    assert result == 0
+
+    # check commit messages, expect no message after initial commit
+    messages = [commit.message for commit in repo.iter_commits("test", max_count=10)][-1::-1]
+    assert messages == [
+        "Initial commit\n",
     ]

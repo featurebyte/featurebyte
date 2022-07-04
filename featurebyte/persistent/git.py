@@ -153,10 +153,6 @@ class GitDB(Persistent):
         """
         Fetch latest changes from remote
         """
-        # skip if no remote
-        if not self._origin:
-            return
-
         logger.debug("Fetch latest from branch", extra={"branch": self._branch})
         with self.repo.git.custom_environment(GIT_SSH_COMMAND=self._ssh_cmd):
             self.repo.git.fetch("--depth=1", "origin", self._branch)
