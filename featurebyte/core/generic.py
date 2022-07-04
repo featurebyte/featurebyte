@@ -148,7 +148,7 @@ class QueryObject(BaseModel):
         session = data_source.get_session(credentials=credentials)
         return session
 
-    def _to_dict(self, target_columns: set[str], **kwargs: Any) -> dict[str, Any]:
+    def _to_dict(self, target_columns: set[str], *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):
             pruned_graph, mapped_node = self.graph.prune(
                 target_node=self.node, target_columns=target_columns
@@ -157,7 +157,7 @@ class QueryObject(BaseModel):
             new_object.graph = pruned_graph
             new_object.node = mapped_node
             return new_object.dict(**kwargs)
-        return super().dict(**kwargs)
+        return super().dict(*args, **kwargs)
 
 
 class ProtectedColumnsQueryObject(QueryObject):

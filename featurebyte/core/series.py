@@ -340,8 +340,8 @@ class Series(QueryObject, OpsMixin):
             columns.append(self.name)
         return self._preview_sql(columns=columns, limit=limit)
 
-    def dict(self, **kwargs: Any) -> dict[str, Any]:
+    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         target_columns = set()
         if self.name:
             target_columns.add(self.name)
-        return self._to_dict(target_columns=target_columns, **kwargs)
+        return self._to_dict(target_columns, *args, **kwargs)

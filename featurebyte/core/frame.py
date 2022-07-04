@@ -241,5 +241,5 @@ class Frame(BaseFrame, OpsMixin):
         else:
             raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
 
-    def dict(self, **kwargs: Any) -> dict[str, Any]:
-        return self._to_dict(target_columns=set(self.column_var_type_map), **kwargs)
+    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        return self._to_dict(set(self.column_var_type_map), *args, **kwargs)
