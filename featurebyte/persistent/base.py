@@ -88,7 +88,6 @@ class Persistent(ABC):
         Optional[Document]
             Retrieved document
         """
-        return NotImplemented
 
     @abstractmethod
     def find(
@@ -123,7 +122,6 @@ class Persistent(ABC):
         Tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
-        return NotImplemented
 
     @abstractmethod
     def update_one(
@@ -149,7 +147,6 @@ class Persistent(ABC):
         int
             Number of records modified
         """
-        return NotImplemented
 
     @abstractmethod
     def update_many(
@@ -175,7 +172,6 @@ class Persistent(ABC):
         int
             Number of records modified
         """
-        return NotImplemented
 
     @abstractmethod
     def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
@@ -194,7 +190,6 @@ class Persistent(ABC):
         int
             Number of records deleted
         """
-        return NotImplemented
 
     @abstractmethod
     def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
@@ -213,4 +208,3 @@ class Persistent(ABC):
         int
             Number of records deleted
         """
-        return NotImplemented
