@@ -35,9 +35,9 @@ class TileBase(BaseModel):
     column_names: str
     tile_id: str
 
-    # pylint: disable=E0213
     @validator("tile_id", "column_names")
-    def stripped_upper(cls, value: str) -> str:
+    @classmethod
+    def stripped(cls, value: str) -> str:
         """
         Validator for non-empty attributes and return stripped and upper case of the value
 
@@ -57,10 +57,10 @@ class TileBase(BaseModel):
         """
         if value is None or value.strip() == "":
             raise ValueError("value cannot be empty")
-        return value.strip().upper()
+        return value.strip()
 
-    # pylint: disable=E0213
     @root_validator
+    @classmethod
     def check_time_modulo_frequency_seconds(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
         Root Validator for time-modulo-frequency

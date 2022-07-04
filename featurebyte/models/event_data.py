@@ -95,20 +95,14 @@ class EventDataModel(DatabaseTableModel):
     status: Optional[EventDataStatus] = Field(default=None)
 
 
+###### Temporary Definition of Feature and TileSpec ######
 class TileSpec(BaseModel):
     """
-    Model for TileSpec
-
+    Temporary Model for TileSpec
     Parameters
     ----------
-    name : str
-        Name of the Feature
-    status : EventDataStatus
-        Status of the Feature
-    version : str
-        feature version
-    is_default : bool
-        whether it is the default feature
+    tile_id: str
+        hash value of tile id and name
     time_modulo_frequency_seconds: int
         time modulo seconds for the tile
     blind_spot_seconds: int
@@ -119,8 +113,30 @@ class TileSpec(BaseModel):
         sql for tile generation
     column_names: str
         comma separated string of column names for the tile table
+    """
+
     tile_id: str
-        hash value of tile id and name
+    tile_sql: str
+    column_names: str
+
+    time_modulo_frequency_second: int
+    blind_spot_second: int
+    frequency_minute: int
+
+
+class Feature(BaseModel):
+    """
+    Temporary Model for Feature
+    Parameters
+    ----------
+    name : str
+        Name of the Feature
+    readiness : EventDataStatus
+        Status of the Feature
+    version : str
+        feature version
+    is_default : bool
+        whether it is the default feature
     online_enabled: bool
         whether feature is online enabled or not
     datasource: FeatureStoreModel
@@ -128,16 +144,11 @@ class TileSpec(BaseModel):
     """
 
     name: str
-    status: EventDataStatus
+    readiness: str
     version: str
     is_default: bool
 
-    time_modulo_frequency_second: int
-    blind_spot_second: int
-    frequency_minute: int
-    tile_sql: str
-    column_names: str
-    tile_ids: List[str]
+    tile_specs: List[TileSpec] = Field(default=[])
 
     online_enabled: bool
     datasource: FeatureStoreModel

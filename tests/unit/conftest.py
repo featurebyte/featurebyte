@@ -16,7 +16,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
-from featurebyte.models.event_data import EventDataStatus, TileSpec
+from featurebyte.models.event_data import Feature, TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.session.manager import SessionManager
@@ -299,23 +299,33 @@ def mock_snowflake_tile(mock_execute_query, snowflake_feature_store, snowflake_c
 
 
 @pytest.fixture
-def mock_snowflake_feature(snowflake_feature_store, snowflake_connector, config):
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def mock_snowflake_feature(
+    mock_execute_query, snowflake_feature_store, snowflake_connector, config
+):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
+    mock_execute_query.size_effect = None
     _ = snowflake_connector
 
-    feature = TileSpec(
-        name="test_feature1",
-        version="v1",
-        status=EventDataStatus.DRAFT,
-        is_default=True,
+    tile_id = "tile_id1"
+
+    tile_spec = TileSpec(
+        tile_id=tile_id,
         time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
         column_names="col1",
-        tile_ids=["tile_id1"],
+    )
+
+    feature = Feature(
+        name="test_feature1",
+        version="v1",
+        readiness="DRAFT",
+        is_default=True,
+        tile_specs=[tile_spec],
         online_enabled=False,
         datasource=snowflake_feature_store,
     )
