@@ -11,7 +11,7 @@ from enum import Enum
 from pydantic import BaseModel
 
 from featurebyte.enum import DBVarType
-from featurebyte.models.event_data import DatabaseSourceModel
+from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 FeatureVersionIdentifier = str
@@ -82,7 +82,7 @@ class FeatureModel(BaseModel):
         Graph contains steps of transformation to generate the feature
     node: Node
         Node of the graph which represent the feature
-    tabular_source: Tuple[DatabaseSourceModel, str]
+    tabular_source: Tuple[FeatureStoreModel, TableDetails]
         Tabular source used to construct this feature
     readiness: Optional[FeatureReadiness]
         Feature readiness
@@ -99,7 +99,7 @@ class FeatureModel(BaseModel):
     row_index_lineage: Tuple[str, ...]
     graph: QueryGraph
     node: Node
-    tabular_source: Tuple[DatabaseSourceModel, str]
+    tabular_source: Tuple[FeatureStoreModel, TableDetails]
     readiness: Optional[FeatureReadiness]
     version: Optional[FeatureVersionIdentifier]
     created_at: Optional[datetime]
