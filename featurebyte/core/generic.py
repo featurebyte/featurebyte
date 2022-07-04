@@ -168,7 +168,7 @@ class QueryObject(BaseModel):
         include: AbstractSetIntStr | MappingIntStrAny | None = None,
         exclude: AbstractSetIntStr | MappingIntStrAny | None = None,
         by_alias: bool = False,
-        skip_defaults: bool = None,
+        skip_defaults: bool | None = None,
         exclude_unset: bool = False,
         exclude_defaults: bool = False,
         exclude_none: bool = False,
@@ -181,8 +181,9 @@ class QueryObject(BaseModel):
         return self.__config__.json_dumps(
             self.dict(
                 by_alias=by_alias,
-                include=include,
-                exclude=exclude,
+                skip_defaults=skip_defaults,  # type: ignore
+                include=include,  # type: ignore
+                exclude=exclude,  # type: ignore
                 exclude_unset=exclude_unset,
                 exclude_defaults=exclude_defaults,
                 exclude_none=exclude_none,

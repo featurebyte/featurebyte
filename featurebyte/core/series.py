@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from pydantic import Field
 
@@ -11,9 +11,6 @@ from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-
-if TYPE_CHECKING:
-    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
 
 class Series(QueryObject, OpsMixin):
