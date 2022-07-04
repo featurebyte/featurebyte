@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from pydantic import BaseModel, Field, validator
 
-from featurebyte.query_graph.algorithms import topological_sort
+from featurebyte.query_graph.algorithm import topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.util import get_tile_table_identifier, hash_node
 
