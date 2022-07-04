@@ -72,32 +72,20 @@ def test_snowflake_session__credential_from_config(snowflake_session_dict):
     }
 
 
-@pytest.fixture(name="expected_all_functions")
-def expected_all_functions_fixture():
-    return [
-        "F_COMPUTE_TILE_INDICES",
-        "F_INDEX_TO_TIMESTAMP",
-        "F_TIMESTAMP_TO_INDEX",
-    ]
+EXPECTED_FUNCTIONS = ["F_COMPUTE_TILE_INDICES", "F_INDEX_TO_TIMESTAMP", "F_TIMESTAMP_TO_INDEX"]
 
+EXPECTED_PROCEDURES = [
+    "SP_TILE_GENERATE",
+    "SP_TILE_GENERATE_SCHEDULE",
+    "SP_TILE_MONITOR",
+    "SP_TILE_TRIGGER_GENERATE_SCHEDULE",
+]
 
-@pytest.fixture(name="expected_all_procedures")
-def expected_all_procedures_fixture():
-    return [
-        "SP_TILE_GENERATE",
-        "SP_TILE_GENERATE_SCHEDULE",
-        "SP_TILE_MONITOR",
-        "SP_TILE_TRIGGER_GENERATE_SCHEDULE",
-    ]
-
-
-@pytest.fixture(name="expected_all_tables")
-def expected_all_tables_fixture():
-    return [
-        "FEATURE_LIST_REGISTRY",
-        "FEATURE_REGISTRY",
-        "TILE_REGISTRY",
-    ]
+EXPECTED_TABLES = [
+    "FEATURE_LIST_REGISTRY",
+    "FEATURE_REGISTRY",
+    "TILE_REGISTRY",
+]
 
 
 @pytest.fixture(name="patched_snowflake_session_cls")
@@ -106,9 +94,6 @@ def patched_snowflake_session_cls_fixture(
     is_functions_missing,
     is_procedures_missing,
     is_tables_missing,
-    expected_all_functions,
-    expected_all_procedures,
-    expected_all_tables,
 ):
     """Fixture for a patched session class"""
 
@@ -127,8 +112,8 @@ def patched_snowflake_session_cls_fixture(
     else:
         functions_output = pd.DataFrame(
             {
-                "name": expected_all_functions,
-                "schema_name": ["FEATUREBYTE"] * len(expected_all_functions),
+                "name": EXPECTED_FUNCTIONS,
+                "schema_name": ["FEATUREBYTE"] * len(EXPECTED_FUNCTIONS),
             }
         )
 
@@ -137,8 +122,8 @@ def patched_snowflake_session_cls_fixture(
     else:
         procedures_output = pd.DataFrame(
             {
-                "name": expected_all_procedures,
-                "schema_name": ["FEATUREBYTE"] * len(expected_all_procedures),
+                "name": EXPECTED_PROCEDURES,
+                "schema_name": ["FEATUREBYTE"] * len(EXPECTED_PROCEDURES),
             }
         )
 
@@ -147,8 +132,8 @@ def patched_snowflake_session_cls_fixture(
     else:
         tables_output = pd.DataFrame(
             {
-                "name": expected_all_tables,
-                "schema_name": ["FEATUREBYTE"] * len(expected_all_tables),
+                "name": EXPECTED_TABLES,
+                "schema_name": ["FEATUREBYTE"] * len(EXPECTED_TABLES),
             }
         )
 
@@ -283,7 +268,12 @@ def test_schema_initializer__all_missing(
     ]
     # Should register custom functions and procedures
     counts = check_create_commands(session)
-    assert counts == {"schema": 1, "functions": 3, "procedures": 4, "tables": 3}
+    assert counts == {
+        "schema": 1,
+        "functions": len(EXPECTED_FUNCTIONS),
+        "procedures": len(EXPECTED_PROCEDURES),
+        "tables": len(EXPECTED_TABLES),
+    }
 
 
 @pytest.mark.parametrize("is_schema_missing", [False])
@@ -304,9 +294,9 @@ def test_schema_initializer__partial_missing(
     counts = check_create_commands(session)
     expected_counts = {"schema": 0, "functions": 0, "procedures": 0, "tables": 0}
     if is_functions_missing:
-        expected_counts["functions"] = 3
+        expected_counts["functions"] = len(EXPECTED_FUNCTIONS)
     if is_procedures_missing:
-        expected_counts["procedures"] = 4
+        expected_counts["procedures"] = len(EXPECTED_PROCEDURES)
     if is_tables_missing:
-        expected_counts["tables"] = 3
+        expected_counts["tables"] = len(EXPECTED_TABLES)
     assert counts == expected_counts

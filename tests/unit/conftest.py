@@ -127,6 +127,13 @@ def mock_snowflake_execute_query():
             "SHOW SCHEMAS": [
                 {"name": "PUBLIC"},
             ],
+            "SHOW USER FUNCTIONS IN DATABASE sf_database": [
+                {"name": "F_SOME_FUNCTION", "schema_name": "FEATUREBYTE"}
+            ],
+            "SHOW PROCEDURES IN DATABASE sf_database": [
+                {"name": "SP_SOME_PROCEDURE", "schema_name": "FEATUREBYTE"}
+            ],
+            'SHOW TABLES IN SCHEMA "sf_database"."FEATUREBYTE"': [{"name": "SOME_TILE_TABLE"}],
         }
         res = query_map.get(query)
         if res is not None:
