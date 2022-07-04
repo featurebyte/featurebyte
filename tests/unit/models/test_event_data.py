@@ -8,13 +8,12 @@ from pydantic.error_wrappers import ValidationError
 
 from featurebyte.enum import SourceType
 from featurebyte.models.event_data import (
-    DatabaseSourceModel,
     EventDataModel,
     EventDataStatus,
     FeatureJobSetting,
     FeatureJobSettingHistoryEntry,
-    SnowflakeDetails,
 )
+from featurebyte.models.feature_store import FeatureStoreModel, SnowflakeDetails, TableDetails
 
 
 @pytest.fixture(name="snowflake_source")
@@ -26,7 +25,7 @@ def snowflake_source_fixture():
         database="database",
         sf_schema="schema",
     )
-    snowflake_source = DatabaseSourceModel(type=SourceType.SNOWFLAKE, details=snowflake_details)
+    snowflake_source = FeatureStoreModel(type=SourceType.SNOWFLAKE, details=snowflake_details)
     return snowflake_source
 
 
@@ -72,7 +71,11 @@ def event_data_model_dict_fixture():
                     "sf_schema": "schema",
                 },
             },
-            "table",
+            {
+                "database_name": "database",
+                "schema_name": "schema",
+                "table_name": "table",
+            },
         ),
         "event_timestamp_column": "event_date",
         "record_creation_date_column": "created_at",
@@ -111,7 +114,10 @@ def test_event_data_model(
     """Test creation, serialization and deserialization of an EventData"""
     event_data = EventDataModel(
         name="my_event_data",
-        tabular_source=(snowflake_source, "table"),
+        tabular_source=(
+            snowflake_source,
+            TableDetails(database_name="database", schema_name="schema", table_name="table"),
+        ),
         event_timestamp_column="event_date",
         record_creation_date_column="created_at",
         default_feature_job_setting=feature_job_setting,

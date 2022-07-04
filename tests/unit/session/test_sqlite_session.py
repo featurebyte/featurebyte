@@ -66,7 +66,9 @@ def test_sqlite_session(sqlite_db_filename):
     """
     session = SQLiteSession(filename=sqlite_db_filename)
     assert session.list_tables() == ["type_table"]
-    assert session.list_table_schema("type_table") == {
+    assert session.list_table_schema(
+        database_name=None, schema_name=None, table_name="type_table"
+    ) == {
         "int": DBVarType.INT,
         "integer": DBVarType.INT,
         "tinyint": DBVarType.INT,
