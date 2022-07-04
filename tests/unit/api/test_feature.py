@@ -1,6 +1,8 @@
 """
 Unit test for Feature & FeatureList classes
 """
+from datetime import datetime
+
 import pytest
 
 from featurebyte.api.feature import Feature, FeatureGroup
@@ -148,3 +150,26 @@ def test_feature_deserialization(float_feature, float_feature_dict):
     assert deserialized_float_feature.graph.dict() == global_graph_dict
     assert deserialized_float_feature.row_index_lineage == float_feature.row_index_lineage
     assert deserialized_float_feature.tabular_source == float_feature.tabular_source
+
+
+def test_feature_to_json(float_feature):
+    """
+    Test feature to_json
+    """
+    # do not include any keys
+    output_include = float_feature.json(include={})
+    assert output_include == "{}"
+
+    # exclude graph key
+    output_exclude = float_feature.json(exclude={"graph": True})
+    assert "graph" not in output_exclude
+
+    # exclude_none
+    assert float_feature.version is None
+    output_exclude_none = float_feature.json(exclude_none=True)
+    assert "version" not in output_exclude_none
+
+    # check encoder
+    float_feature.created_at = datetime.now()
+    output_encoder = float_feature.json(encoder=lambda v: "__default__")
+    assert '"created_at": "__default__"' in output_encoder
