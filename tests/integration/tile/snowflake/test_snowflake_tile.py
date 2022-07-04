@@ -8,7 +8,9 @@ def test_generate_tile(snowflake_tile, snowflake_session):
     """
     Test generate_tiles method in TileSnowflake
     """
-    snowflake_tile.generate_tiles(TileType.ONLINE, "2022-06-05 23:33:00", "2022-06-05 23:58:00")
+    snowflake_tile.generate_tiles(
+        TileType.ONLINE, "2022-06-05 23:33:00", "2022-06-05 23:58:00", "2022-06-05 23:53:00"
+    )
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {snowflake_tile.tile_id}"
     result = snowflake_session.execute_query(sql)

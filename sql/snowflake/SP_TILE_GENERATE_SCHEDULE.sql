@@ -59,7 +59,12 @@ $$
 
     // trigger stored procedure to generate tiles
     var generate_input_sql = SQL.replaceAll("FB_START_TS", "\\'"+tile_start_ts_str+"\\'").replaceAll("FB_END_TS", "\\'"+tile_end_ts_str+"\\'")
-    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}')`
+
+    var last_tile_start_ts = new Date(tile_end_ts.getTime())
+    last_tile_start_ts.setMinutes(last_tile_start_ts.getMinutes() - FREQUENCY_MINUTE)
+    last_tile_start_ts_str = last_tile_start_ts.toISOString()
+
+    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}', '${last_tile_start_ts_str}')`
     var result = snowflake.execute(
         {
             sqlText: generate_stored_proc

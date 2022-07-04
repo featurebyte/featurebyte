@@ -68,12 +68,12 @@ def test_retrieve_features(snowflake_feature):
     Test retrieve_features
     """
     snowflake_feature.insert_feature_registry()
-    feature_versions = snowflake_feature.retrieve_features()
+    feature_versions = snowflake_feature.retrieve_feature_registries()
     assert len(feature_versions) == 1
     assert feature_versions[0].name == "test_feature1"
     assert feature_versions[0].version == "v1"
 
-    feature_versions = snowflake_feature.retrieve_features(version="v1")
+    feature_versions = snowflake_feature.retrieve_feature_registries(version="v1")
     assert len(feature_versions) == 1
     assert feature_versions[0].name == "test_feature1"
     assert feature_versions[0].version == "v1"
@@ -88,7 +88,7 @@ def test_retrieve_features_multiple(snowflake_feature):
     snowflake_feature.feature.version = "v2"
     snowflake_feature.insert_feature_registry()
 
-    feature_versions = snowflake_feature.retrieve_features()
+    feature_versions = snowflake_feature.retrieve_feature_registries()
     assert len(feature_versions) > 1
     assert feature_versions[0].name == "test_feature1"
     assert feature_versions[0].version == "v1"
