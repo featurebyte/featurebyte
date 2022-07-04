@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+permissions:
+  issues: write
+  pull-requests: write
+
 env:
   SNOWFLAKE_USER: github
   SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
