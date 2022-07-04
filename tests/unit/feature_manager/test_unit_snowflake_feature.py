@@ -57,7 +57,7 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature):
             "ONLINE_ENABLED": [True],
         }
     )
-    fv_list = mock_snowflake_feature.retrieve_features()
+    fv_list = mock_snowflake_feature.retrieve_feature_registries()
     assert mock_execute_query.call_count == 1
 
     sql = tm_select_feature_registry.render(feature_name=mock_snowflake_feature.feature.name)

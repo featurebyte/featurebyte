@@ -65,7 +65,7 @@ class FeatureSnowflake(BaseModel):
         -------
             whether the feature registry record is inserted successfully or not
         """
-        feature_versions = self.retrieve_features(version=self.feature.version)
+        feature_versions = self.retrieve_feature_registries(version=self.feature.version)
         logger.debug(f"feature_versions: {feature_versions}")
         if len(feature_versions) == 0:
             self._session.execute_query(
@@ -86,7 +86,7 @@ class FeatureSnowflake(BaseModel):
         )
         return False
 
-    def retrieve_features(self, version: Optional[str] = None) -> List[Feature]:
+    def retrieve_feature_registries(self, version: Optional[str] = None) -> List[Feature]:
         """
         Retrieve Feature instances. If version parameter is not presented, return all the feature versions
 
