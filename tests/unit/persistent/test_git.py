@@ -52,9 +52,8 @@ def test_insert_one__no_id(git_persistent, test_document):
     Test inserting one document without id works, and id is added
     """
     persistent, repo = git_persistent
-    test_document.pop("id")
     persistent.insert_one(collection_name="data", document=test_document)
-    assert "id" in test_document
+    assert "_id" in test_document
 
     # check document is inserted
     expected_doc_path = os.path.join(repo.working_tree_dir, "data", test_document["name"] + ".json")
@@ -114,22 +113,22 @@ def test_find_many(git_persistent, test_documents):
 
     # test sort
     docs, total = persistent.find(
-        collection_name="data", query_filter={}, sort_by="id", sort_dir="desc"
+        collection_name="data", query_filter={}, sort_by="_id", sort_dir="desc"
     )
     assert list(docs) == test_documents[-1::-1]
     assert total == 3
 
     # test search
     docs, total = persistent.find(
-        collection_name="data", query_filter={"name": "Object 1"}, sort_by="id", sort_dir="desc"
+        collection_name="data", query_filter={"name": "Object 1"}, sort_by="_id", sort_dir="desc"
     )
     assert list(docs) == [test_documents[1]]
     assert total == 1
 
     docs, total = persistent.find(
         collection_name="data",
-        query_filter={"id": test_documents[2]["id"]},
-        sort_by="id",
+        query_filter={"_id": test_documents[2]["_id"]},
+        sort_by="_id",
         sort_dir="desc",
     )
     assert list(docs) == [test_documents[2]]
@@ -259,7 +258,7 @@ def test_update_name_to_existing(git_persistent, test_documents):
         ({"key is not $set": {"name": "Object 1"}}, False),
         ({"$set": {"name": "Object 1"}, "more than 1 key in top level": True}, False),
         ({"$set": {"name": "Object 1", "$ ok in key": None}}, True),
-        ({"$set": {"name": "Object 1", "id": "Update ID not allowed"}}, False),
+        ({"$set": {"name": "Object 1", "_id": "Update ID not allowed"}}, False),
         ({"$set": {"name": "Object 1", "key.with.period": None}}, False),
         ({"$set": {"name": {"key": "Object 1", "another.key.with.period": None}}}, False),
     ],

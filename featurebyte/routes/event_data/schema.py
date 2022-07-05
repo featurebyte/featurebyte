@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
-from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.routes.common.schema import PaginationMixin, ResponseModel
 
 
 class EventDataCreate(BaseModel):
@@ -31,19 +31,16 @@ class EventDataCreate(BaseModel):
     default_feature_job_setting: Optional[FeatureJobSetting]
 
 
-class EventData(EventDataModel):
+class EventData(EventDataModel, ResponseModel):
     """
     Event Data
 
-    Parameters
-    ----------
     id: ObjectId
         Document identifier
     user_id: ObjectId
         User identifier
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId)
     user_id: Optional[PydanticObjectId]
     created_at: datetime.datetime
     status: EventDataStatus

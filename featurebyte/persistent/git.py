@@ -252,10 +252,10 @@ class GitDB(Persistent):
             os.mkdir(collection_path)
 
         # ensures document id is set
-        doc_id = document.get("id")
+        doc_id = document.get("_id")
         if not doc_id:
             doc_id = ObjectId()
-            document["id"] = doc_id
+            document["_id"] = doc_id
 
         # strip user id
         document.pop("user_id", None)
@@ -312,7 +312,7 @@ class GitDB(Persistent):
             return
 
         # remove document
-        doc_name = str(document.get("name", str(document["id"])))
+        doc_name = str(document.get("name", str(document["_id"])))
         doc_path = self._get_doc_path(collection_path, doc_name)
 
         logger.debug("Remove file", extra={"doc_path": doc_path})
@@ -499,7 +499,7 @@ class GitDB(Persistent):
         if next(iter(update.keys())) != "$set":
             raise NotImplementedError("Top key must be $set")
 
-        if "id" in update["$set"]:
+        if "_id" in update["$set"]:
             raise NotImplementedError("ID update not supported")
 
         if not isinstance(update["$set"], dict):
@@ -624,7 +624,7 @@ class GitDB(Persistent):
         Tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
-        sort_col = sort_by or "id"
+        sort_col = sort_by or "_id"
         self._reset_branch()
         docs = self._find_files(
             collection_name=collection_name, query_filter=query_filter, multiple=True

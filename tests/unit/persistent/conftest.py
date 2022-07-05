@@ -20,7 +20,7 @@ def test_document_fixture() -> Dict[str, Any]:
         Document for testing
     """
     return {
-        "id": ObjectId(),
+        "_id": ObjectId(),
         "name": "Generic Document",
         "value": [
             {
@@ -41,4 +41,4 @@ def test_documents_fixture(test_document) -> List[Dict[str, Any]]:
     List[Dict[str, Any]]
         Document for testing
     """
-    return [{**test_document, **{"id": ObjectId(), "name": f"Object {i}"}} for i in range(3)]
+    return [{**test_document, **{"_id": ObjectId(), "name": f"Object {i}"}} for i in range(3)]
