@@ -15,6 +15,7 @@ from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.enum import SpecialColumnName
 from featurebyte.logger import logger
+from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
 
@@ -110,7 +111,7 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
                     raise KeyError(f"Entity column not provided: {col}")
 
 
-class Feature(FeatureQueryObject, Series):
+class Feature(FeatureQueryObject, Series, FeatureModel):
     """
     Feature class
     """

@@ -45,12 +45,12 @@ def grouped_event_view_fixture(snowflake_event_view):
     yield grouped
 
 
-@pytest.fixture(name="feature_list")
-def feature_list_fixture(grouped_event_view):
+@pytest.fixture(name="feature_group")
+def feature_group_fixture(grouped_event_view):
     """
     FeatureList fixture
     """
-    feature_list = grouped_event_view.aggregate(
+    feature_group = grouped_event_view.aggregate(
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "1d"],
@@ -77,29 +77,29 @@ def feature_list_fixture(grouped_event_view):
         },
         output_type=NodeOutputType.FRAME,
     )
-    assert isinstance(feature_list, FeatureGroup)
-    assert feature_list.protected_columns == {"cust_id"}
-    assert feature_list.inception_node == expected_inception_node
-    assert feature_list.entity_identifiers == ["cust_id"]
-    assert feature_list.columns == ["cust_id", "sum_30m", "sum_2h", "sum_1d"]
-    assert feature_list.column_lineage_map == {
+    assert isinstance(feature_group, FeatureGroup)
+    assert feature_group.protected_columns == {"cust_id"}
+    assert feature_group.inception_node == expected_inception_node
+    assert feature_group.entity_identifiers == ["cust_id"]
+    assert feature_group.columns == ["cust_id", "sum_30m", "sum_2h", "sum_1d"]
+    assert feature_group.column_lineage_map == {
         "cust_id": ("groupby_1",),
         "sum_30m": ("groupby_1",),
         "sum_2h": ("groupby_1",),
         "sum_1d": ("groupby_1",),
     }
-    yield feature_list
+    yield feature_group
 
 
 @pytest.fixture(name="float_feature")
-def float_feature_fixture(feature_list):
+def float_feature_fixture(feature_group):
     """
     Float Feature fixture
     """
-    feature = feature_list["sum_1d"]
+    feature = feature_group["sum_1d"]
     assert isinstance(feature, Feature)
     assert feature.protected_columns == {"cust_id"}
-    assert feature.inception_node == feature_list.inception_node
+    assert feature.inception_node == feature_group.inception_node
     yield feature
 
 

@@ -1,7 +1,7 @@
 """
 Unit tests for featurebyte.query_graph.algorithms
 """
-from featurebyte.query_graph.algorithms import dfs_traversal, topological_sort
+from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 
 
 def test_dfs__1(query_graph_with_groupby):

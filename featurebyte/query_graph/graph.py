@@ -8,9 +8,9 @@ from typing import Any, Dict, List, TypedDict
 import json
 from collections import defaultdict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
-from featurebyte.query_graph.algorithms import topological_sort
+from featurebyte.query_graph.algorithm import topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.util import get_tile_table_identifier, hash_node
 
@@ -49,6 +49,24 @@ class Graph(BaseModel):
     backward_edges: Dict[str, List[str]] = Field(default=defaultdict(list))
     nodes: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     node_type_counter: Dict[str, int] = Field(default=defaultdict(int))
+
+    @validator("edges", "backward_edges")
+    @classmethod
+    def _convert_to_defaultdict_list(cls, value: dict[str, list[str]]) -> dict[str, list[str]]:
+        if not isinstance(value, defaultdict):
+            new_value: dict[str, list[str]] = defaultdict(list)
+            new_value.update(value)
+            return new_value
+        return value
+
+    @validator("node_type_counter")
+    @classmethod
+    def _convert_to_defaultdict_int(cls, value: dict[str, int]) -> dict[str, int]:
+        if not isinstance(value, defaultdict):
+            new_value: dict[str, int] = defaultdict(int)
+            new_value.update(value)
+            return new_value
+        return value
 
     def add_edge(self, parent: Node, child: Node) -> None:
         """
@@ -107,8 +125,21 @@ class QueryGraph(Graph):
     Query graph object
     """
 
+    # pylint: disable=too-few-public-methods
+
     node_name_to_ref: Dict[str, str] = Field(default_factory=dict)
     ref_to_node_name: Dict[str, str] = Field(default_factory=dict)
+
+    class Config:
+        """
+        Pydantic Config class
+        """
+
+        fields = {
+            "node_name_to_ref": {"exclude": True},
+            "ref_to_node_name": {"exclude": True},
+            "node_type_counter": {"exclude": True},
+        }
 
     def get_node_by_name(self, node_name: str) -> Node:
         """
@@ -412,7 +443,7 @@ class GlobalQueryGraph(QueryGraph):
 
     def prune(
         self, target_node: Node, target_columns: set[str], to_update_node_params: bool = False
-    ) -> tuple[QueryGraph, Node]:
+    ) -> tuple[QueryGraph, dict[str, str]]:
         """
         Prune the query graph and return the pruned graph & mapped node.
 
@@ -431,7 +462,7 @@ class GlobalQueryGraph(QueryGraph):
 
         Returns
         -------
-        QueryGraph, Node
+        QueryGraph, node_name_map
         """
         node_name_map: dict[str, str] = {}
         pruned_graph = self._prune(
@@ -442,8 +473,7 @@ class GlobalQueryGraph(QueryGraph):
             node_name_map=node_name_map,
             to_update_node_params=to_update_node_params,
         )
-        mapped_node = pruned_graph.get_node_by_name(node_name_map[target_node.name])
-        return pruned_graph, mapped_node
+        return pruned_graph, node_name_map
 
     def load(self, graph: QueryGraph) -> tuple[GlobalQueryGraph, dict[str, str]]:
         """

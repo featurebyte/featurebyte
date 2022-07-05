@@ -1,6 +1,8 @@
 """
 Unit test for query graph
 """
+from collections import defaultdict
+
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
@@ -55,9 +57,10 @@ def test_prune__redundant_assign_nodes(dataframe):
     assert dataframe.node == Node(
         name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
     )
-    pruned_graph, mapped_node = dataframe.graph.prune(
+    pruned_graph, node_name_map = dataframe.graph.prune(
         target_node=dataframe.node, target_columns={"target"}
     )
+    mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.edges == {
         "input_1": ["project_1", "project_2", "assign_1"],
         "project_1": ["mul_1"],
@@ -87,9 +90,10 @@ def test_prune__redundant_assign_node_with_same_target_column_name(dataframe):
     }
     assert dataframe.graph.nodes["assign_1"]["parameters"] == {"value": 1, "name": "VALUE"}
     assert dataframe.graph.nodes["assign_2"]["parameters"] == {"name": "VALUE"}
-    pruned_graph, mapped_node = dataframe.graph.prune(
+    pruned_graph, node_name_map = dataframe.graph.prune(
         target_node=dataframe.node, target_columns={"VALUE"}
     )
+    mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.edges == {
         "input_1": ["project_1", "assign_1"],
         "project_1": ["mul_1"],
@@ -107,7 +111,8 @@ def test_prune__redundant_project_nodes(dataframe):
     _ = dataframe["VALUE"]
     mask = dataframe["MASK"]
     assert dataframe.graph.edges == {"input_1": ["project_1", "project_2", "project_3"]}
-    pruned_graph, mapped_node = dataframe.graph.prune(target_node=mask.node, target_columns=set())
+    pruned_graph, node_name_map = dataframe.graph.prune(target_node=mask.node, target_columns=set())
+    mapped_node = pruned_graph.get_node_by_name(node_name_map[mask.node.name])
     assert pruned_graph.edges == {"input_1": ["project_1"]}
     assert pruned_graph.nodes["project_1"]["parameters"]["columns"] == ["MASK"]
     assert mapped_node.name == "project_1"
@@ -123,9 +128,10 @@ def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(datafra
     assert dataframe.node == Node(
         name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
     )
-    pruned_graph, mapped_node = dataframe.graph.prune(
+    pruned_graph, node_name_map = dataframe.graph.prune(
         target_node=dataframe.node, target_columns={"target"}
     )
+    mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.edges == {
         "input_1": ["project_1", "assign_1", "project_3"],
         "project_1": ["div_1"],
@@ -157,9 +163,10 @@ def test_prune__multiple_non_redundant_assign_nodes__cascading_pattern(dataframe
     assert dataframe.node == Node(
         name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
     )
-    pruned_graph, mapped_node = dataframe.graph.prune(
+    pruned_graph, node_name_map = dataframe.graph.prune(
         target_node=dataframe.node, target_columns={"target"}
     )
+    mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.edges == {
         "input_1": ["project_1", "assign_1"],
         "project_1": ["div_1"],
@@ -200,15 +207,17 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
     """
     Test serialization & deserialization of query graph object (non-empty global query graph)
     """
+    # pylint: disable=too-many-locals
     # construct a graph
     dataframe["feature"] = dataframe["VALUE"] * dataframe["CUST_ID"] / 100.0
     dataframe = dataframe[dataframe["MASK"]]
 
     # serialize the graph with the last node of the graph
     node_names = set(dataframe.graph.nodes)
-    pruned_graph, mapped_node = dataframe.graph.prune(
+    pruned_graph, node_name_map = dataframe.graph.prune(
         target_node=dataframe.node, target_columns=set(dataframe.columns)
     )
+    mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     query_before_serialization = GraphInterpreter(pruned_graph).construct_preview_sql(
         mapped_node.name
     )
@@ -227,8 +236,11 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
 
     # construct the query of the last node
     node_before_load, columns_before_load = dataframe.node, dataframe.columns
-    pruned_graph_before_load, mapped_node_before_load = dataframe.graph.prune(
+    pruned_graph_before_load, node_name_map_before_load = dataframe.graph.prune(
         target_node=node_before_load, target_columns=set(columns_before_load)
+    )
+    mapped_node_before_load = pruned_graph_before_load.get_node_by_name(
+        node_name_map_before_load[node_before_load.name]
     )
     query_before_load = GraphInterpreter(pruned_graph_before_load).construct_preview_sql(
         mapped_node_before_load.name
@@ -242,6 +254,9 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
         GraphInterpreter(GlobalQueryGraph()).construct_preview_sql(node_global.name)
         == query_before_serialization
     )
+    assert isinstance(graph.edges, defaultdict)
+    assert isinstance(graph.backward_edges, defaultdict)
+    assert isinstance(graph.node_type_counter, defaultdict)
 
     # check that loading the deserialized graph back to global won't affect other node
     pruned_graph_after_load, _ = GlobalQueryGraph().prune(

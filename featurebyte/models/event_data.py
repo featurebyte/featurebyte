@@ -63,8 +63,6 @@ class EventDataModel(DatabaseTableModel):
     """
     Model for EventData entity
 
-    Parameters
-    ----------
     name : str
         Name of the EventData
     tabular_source : Tuple[FeatureStoreModel, TableDetails]
@@ -78,7 +76,7 @@ class EventDataModel(DatabaseTableModel):
     default_feature_job_setting : Optional[FeatureJobSetting]
         Default feature job setting
     created_at : Optional[datetime]
-        Date when the EventData was first saved or published
+        Datetime when the EventData was first saved or published
     history : list[FeatureJobSettingHistoryEntry]
         History of feature job settings
     status : Optional[EventDataStatus]

@@ -88,8 +88,11 @@ def run_groupby_and_get_tile_table_identifier(event_view, aggregate_kwargs, grou
     feature_names = set(aggregate_kwargs["feature_names"])
     features = event_view.groupby(**groupby_kwargs).aggregate(**aggregate_kwargs)
     tile_id = features.node.parameters["tile_id"]
-    _, node = GlobalQueryGraph().prune(features.node, feature_names, to_update_node_params=True)
-    tile_id_pruned = node.parameters["tile_id"]
+    pruned_graph, node_name_map = GlobalQueryGraph().prune(
+        features.node, feature_names, to_update_node_params=True
+    )
+    mapped_node = pruned_graph.get_node_by_name(node_name_map[features.node.name])
+    tile_id_pruned = mapped_node.parameters["tile_id"]
     return tile_id, tile_id_pruned
 
 

@@ -1,6 +1,8 @@
 """
 Unit test for Feature & FeatureList classes
 """
+from datetime import datetime
+
 import pytest
 
 from featurebyte.api.feature import Feature, FeatureGroup
@@ -8,33 +10,58 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
 
 
-def test_feature_list__getitem__list_of_str(feature_list):
+@pytest.fixture(name="float_feature_dict")
+def float_feature_dict_fixture(float_feature):
+    """
+    Serialize float feature in dictionary format
+    """
+    # before serialization, global query graph is used
+    assert set(float_feature.graph.nodes) == {
+        "input_1",
+        "input_2",
+        "project_1",
+        "project_2",
+        "groupby_1",
+    }
+    assert float_feature.graph.edges == {
+        "input_2": ["project_1", "groupby_1"],
+        "groupby_1": ["project_2"],
+    }
+
+    feat_dict = float_feature.dict()
+    # after serialization, pruned query graph is used
+    assert set(feat_dict["graph"]["nodes"]) == {"input_1", "groupby_1", "project_1"}
+    assert feat_dict["graph"]["edges"] == {"input_1": ["groupby_1"], "groupby_1": ["project_1"]}
+    yield feat_dict
+
+
+def test_feature_group__getitem__list_of_str(feature_group):
     """
     Test retrieving single column
     """
-    feature_list_subset = feature_list[["sum_2h", "sum_1d"]]
-    assert isinstance(feature_list_subset, FeatureGroup)
-    assert feature_list_subset.protected_columns == {"cust_id"}
-    assert feature_list_subset.entity_identifiers == ["cust_id"]
-    assert feature_list_subset.inception_node == feature_list.inception_node
+    feature_group_subset = feature_group[["sum_2h", "sum_1d"]]
+    assert isinstance(feature_group_subset, FeatureGroup)
+    assert feature_group_subset.protected_columns == {"cust_id"}
+    assert feature_group_subset.entity_identifiers == ["cust_id"]
+    assert feature_group_subset.inception_node == feature_group.inception_node
 
 
-def test_feature_list__getitem__series_key(feature_list, bool_feature):
+def test_feature_group__getitem__series_key(feature_group, bool_feature):
     """
-    Test filtering on feature list object
+    Test filtering on feature group object
     """
-    feature_list_subset = feature_list[bool_feature]
-    assert isinstance(feature_list_subset, FeatureGroup)
-    assert feature_list_subset.inception_node == feature_list.inception_node
+    feature_group_subset = feature_group[bool_feature]
+    assert isinstance(feature_group_subset, FeatureGroup)
+    assert feature_group_subset.inception_node == feature_group.inception_node
 
 
-def test_feature_list__override_protected_column(feature_list):
+def test_feature_group__override_protected_column(feature_group):
     """
-    Test attempting to change feature list's protected column value
+    Test attempting to change feature group's protected column value
     """
-    assert "cust_id" in feature_list.protected_columns
+    assert "cust_id" in feature_group.protected_columns
     with pytest.raises(ValueError) as exc:
-        feature_list["cust_id"] = feature_list["cust_id"] * 2
+        feature_group["cust_id"] = feature_group["cust_id"] * 2
     expected_msg = "Entity identifier column 'cust_id' cannot be modified!"
     assert expected_msg in str(exc.value)
 
@@ -108,3 +135,61 @@ def test_feature__preview_not_a_dict(float_feature):
     with pytest.raises(ValueError) as exc_info:
         float_feature.preview(invalid_params)
     assert "point_in_time_and_entity_id should be a dict" in str(exc_info.value)
+
+
+def test_feature_deserialization(float_feature, float_feature_dict, snowflake_event_view):
+    """
+    Test feature deserialization
+    """
+    global_graph_dict = float_feature.graph.dict()
+    deserialized_float_feature = Feature.parse_obj(float_feature_dict)
+    assert deserialized_float_feature.name == float_feature.name
+    assert deserialized_float_feature.var_type == float_feature.var_type
+    assert deserialized_float_feature.lineage == float_feature.lineage
+    assert deserialized_float_feature.node == float_feature.node
+    assert deserialized_float_feature.graph.dict() == global_graph_dict
+    assert deserialized_float_feature.row_index_lineage == float_feature.row_index_lineage
+    assert deserialized_float_feature.tabular_source == float_feature.tabular_source
+    tile_id1 = float_feature.graph.nodes["groupby_1"]["parameters"]["tile_id"]
+
+    # construct another identical float feature with an additional unused column,
+    # check that the tile_ids are different before serialization, serialized object are the same
+    snowflake_event_view["unused_feat"] = 10.0 * snowflake_event_view["cust_id"]
+    snowflake_event_view.cust_id.as_entity("customer")
+    grouped = snowflake_event_view.groupby("cust_id")
+    feature_group = grouped.aggregate(
+        value_column="col_float",
+        method="sum",
+        windows=["30m", "2h", "1d"],
+        blind_spot="10m",
+        frequency="30m",
+        time_modulo_frequency="5m",
+        feature_names=["sum_30m", "sum_2h", "sum_1d"],
+    )
+    same_float_feature_dict = feature_group["sum_1d"].dict()
+    tile_id2 = float_feature.graph.nodes["groupby_2"]["parameters"]["tile_id"]
+    assert tile_id1 != tile_id2
+    assert float_feature_dict == same_float_feature_dict
+
+
+def test_feature_to_json(float_feature):
+    """
+    Test feature to_json
+    """
+    # do not include any keys
+    output_include = float_feature.json(include={})
+    assert output_include == "{}"
+
+    # exclude graph key
+    output_exclude = float_feature.json(exclude={"graph": True})
+    assert "graph" not in output_exclude
+
+    # exclude_none
+    assert float_feature.version is None
+    output_exclude_none = float_feature.json(exclude_none=True)
+    assert "version" not in output_exclude_none
+
+    # check encoder
+    float_feature.created_at = datetime.now()
+    output_encoder = float_feature.json(encoder=lambda v: "__default__")
+    assert '"created_at": "__default__"' in output_encoder
