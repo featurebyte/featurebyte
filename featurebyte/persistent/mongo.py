@@ -17,6 +17,29 @@ from featurebyte.persistent.base import (
 )
 
 
+def _populate_document_id(document: Document) -> Document:
+    """
+    Ensure _id and id are synced
+
+    Parameters
+    ----------
+    document: Document
+        Document object to update
+
+    Returns
+    -------
+    Document
+        Updated document
+    """
+    if "id" in document:
+        document["_id"] = document["id"]
+    elif "_id" in document:
+        document["id"] = document["_id"]
+    else:
+        document["_id"] = document["id"] = ObjectId()
+    return document
+
+
 class MongoDB(Persistent):
     """
     Persistent storage using MongoDB
@@ -61,7 +84,7 @@ class MongoDB(Persistent):
             Document already exist
         """
         try:
-            result = self._db[collection_name].insert_one(document)
+            result = self._db[collection_name].insert_one(_populate_document_id(document))
             return ObjectId(result.inserted_id)
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
@@ -88,7 +111,9 @@ class MongoDB(Persistent):
             Document already exist
         """
         try:
-            result = self._db[collection_name].insert_many(documents)
+            result = self._db[collection_name].insert_many(
+                [_populate_document_id(document) for document in documents]
+            )
             return result.inserted_ids
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
