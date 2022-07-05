@@ -49,9 +49,6 @@ class EventDataRead(EventData, ResponseModel):
 class EventDataCreate(BaseModel):
     """
     Event Data Creation schema
-
-    Parameters
-    ----------
     """
 
     name: str
