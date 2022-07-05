@@ -5,11 +5,15 @@ from __future__ import annotations
 
 from typing import Tuple
 
+from unittest.mock import patch
+
 import mongomock
 import pymongo
 import pytest
 from bson import ObjectId
+from pymongo.errors import DuplicateKeyError
 
+from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.persistent.mongo import MongoDB
 
 
@@ -41,6 +45,21 @@ def test_insert_one(mongo_persistent, test_document):
     assert results[0]["_id"] == inserted_id
 
 
+def test_insert_one__duplicate_key__(mongo_persistent, test_document):
+    """
+    Test inserting one document
+    """
+    persistent, _ = mongo_persistent
+    with pytest.raises(DuplicateDocumentError):
+        with patch.object(
+            persistent._db, "get_collection"  # pylint: disable=protected-access
+        ) as mock_get_collection:
+            mock_get_collection.return_value.insert_one.side_effect = DuplicateKeyError(
+                "Document exists"
+            )
+            persistent.insert_one(collection_name="data", document=test_document)
+
+
 def test_insert_many(mongo_persistent, test_documents):
     """
     Test inserting many documents
@@ -50,6 +69,21 @@ def test_insert_many(mongo_persistent, test_documents):
     # check documents are inserted
     assert list(client["test"]["data"].find({})) == test_documents
     assert [doc["_id"] for doc in test_documents] == inserted_ids
+
+
+def test_insert_many__duplicate_key__(mongo_persistent, test_documents):
+    """
+    Test inserting many documents
+    """
+    persistent, _ = mongo_persistent
+    with pytest.raises(DuplicateDocumentError):
+        with patch.object(
+            persistent._db, "get_collection"  # pylint: disable=protected-access
+        ) as mock_get_collection:
+            mock_get_collection.return_value.insert_many.side_effect = DuplicateKeyError(
+                "Document exists"
+            )
+            persistent.insert_many(collection_name="data", documents=test_documents)
 
 
 def test_find_one(mongo_persistent, test_documents):

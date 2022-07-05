@@ -21,6 +21,26 @@ def test_get_session(snowflake_connector, snowflake_execute_query, snowflake_fea
     }
 
 
+def test_list_databases(
+    snowflake_connector, snowflake_execute_query, snowflake_feature_store, config
+):
+    """
+    Test list_databases return expected results
+    """
+    _ = snowflake_connector, snowflake_execute_query
+    output = snowflake_feature_store.list_databases(credentials=config.credentials)
+    assert output == ["sf_database"]
+
+
+def test_list_schema(snowflake_connector, snowflake_execute_query, snowflake_feature_store, config):
+    """
+    Test test_list_schema return expected results
+    """
+    _ = snowflake_connector, snowflake_execute_query
+    output = snowflake_feature_store.list_schemas(credentials=config.credentials)
+    assert output == ["sf_schema"]
+
+
 def test_list_tables(snowflake_connector, snowflake_execute_query, snowflake_feature_store, config):
     """
     Test list_tables return expected results

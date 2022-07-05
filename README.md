@@ -11,7 +11,7 @@
 [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/featurebyte/featurebyte/blob/main/.pre-commit-config.yaml)
 [![Semantic Versions](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--versions-e10079.svg)](https://github.com/featurebyte/featurebyte/releases)
 [![License](https://img.shields.io/github/license/featurebyte/featurebyte)](https://github.com/featurebyte/featurebyte/blob/main/LICENSE)
-![Coverage Report](assets/images/coverage.svg)
+![Coverage Report](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/kchua78/773e2960183c0a6fe24c644d95d71fdb/raw/coverage.json)
 
 Manage and serve Machine Learning Features for Data Science applications
 
@@ -58,7 +58,7 @@ Read the latest [documentation](https://featurebyte.github.io/featurebyte/).
 
 ## 📈 Releases
 
-You can see the list of available releases on the [GitHub Releases](https://github.com/featurebyte/featurebyte/releases) page. 
+You can see the list of available releases on the [GitHub Releases](https://github.com/featurebyte/featurebyte/releases) page.
 Releases are versioned using the [Semantic Versions](https://semver.org/) specification.
 
 ## 🛡 License
@@ -84,7 +84,7 @@ This project is licensed under the terms of the `Apache Software License 2.0` li
 Request a feature or report a bug using [Github Issues](https://github.com/featurebyte/featurebyte/issues).
 
 ## Contributing
-All contributions are welcomed. Please adhere to the [CODE_OF_CONDUCT](https://github.com/featurebyte/featurebyte/blob/main/CODE_OF_CONDUCT.md) and read the 
+All contributions are welcomed. Please adhere to the [CODE_OF_CONDUCT](https://github.com/featurebyte/featurebyte/blob/main/CODE_OF_CONDUCT.md) and read the
 [Developer's Guide](https://github.com/featurebyte/featurebyte/blob/main/CONTRIBUTING.md) to get started.
 
 ## Credits [![🚀 Your next Python package needs a bleeding-edge project structure.](https://img.shields.io/badge/python--package--template-%F0%9F%9A%80-brightgreen)](https://github.com/TezRomacH/python-package-template)

@@ -78,7 +78,10 @@ class BaseSession(BaseModel):
 
     @abstractmethod
     def list_table_schema(
-        self, database_name: str | None, schema_name: str | None, table_name: str | None
+        self,
+        table_name: str | None,
+        database_name: str | None = None,
+        schema_name: str | None = None,
     ) -> dict[str, DBVarType]:
         """
         Execute SQL query to retrieve table schema of a given table name and convert the
@@ -86,9 +89,9 @@ class BaseSession(BaseModel):
 
         Parameters
         ----------
-        database_name: str
+        database_name: str | None
             Database name
-        schema_name: str
+        schema_name: str | None
             Schema name
         table_name: str
             Table name

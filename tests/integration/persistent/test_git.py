@@ -53,8 +53,6 @@ def test_persistence(test_document):
         # use a dynamic name for the document
         doc_name = test_document["name"] = str(ObjectId())
         persistent.insert_one(collection_name="data", document=test_document)
-        doc = persistent.find_one(collection_name="data", query_filter={"name": doc_name})
-        assert doc == test_document
 
         # create another GitDB instance and try to read the saved document
         persistent2 = GitDB(

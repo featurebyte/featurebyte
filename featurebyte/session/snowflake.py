@@ -119,7 +119,10 @@ class SnowflakeSession(BaseSession):
         raise ValueError(f"Not supported data type '{snowflake_var_info}'")
 
     def list_table_schema(
-        self, database_name: str | None, schema_name: str | None, table_name: str | None
+        self,
+        table_name: str | None,
+        database_name: str | None = None,
+        schema_name: str | None = None,
     ) -> dict[str, DBVarType]:
         database_name = database_name or self.database
         schema_name = schema_name or self.sf_schema
