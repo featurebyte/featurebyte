@@ -12,7 +12,13 @@ from fastapi import HTTPException
 from featurebyte.models.event_data import EventDataStatus, FeatureJobSettingHistoryEntry
 from featurebyte.persistent import DuplicateDocumentError, Persistent
 
-from .schema import EventData, EventDataCreate, EventDataList, EventDataUpdate
+from .schema import (
+    EventDataCreate,
+    EventDataDocument,
+    EventDataList,
+    EventDataRead,
+    EventDataUpdate,
+)
 
 TABLE_NAME = "event_data"
 
@@ -27,7 +33,7 @@ class EventDataController:
         user: Any,
         persistent: Persistent,
         data: EventDataCreate,
-    ) -> EventData:
+    ) -> EventDataDocument:
         """
         Create Event Data
         """
@@ -46,7 +52,7 @@ class EventDataController:
         else:
             history = []
 
-        document = EventData(
+        document = EventDataDocument(
             user_id=user.id,
             created_at=utc_now,
             status=EventDataStatus.DRAFT,
@@ -55,17 +61,17 @@ class EventDataController:
         )
         try:
             insert_id = persistent.insert_one(
-                collection_name=TABLE_NAME, document=document.dict(exclude={"id": True})
+                collection_name=TABLE_NAME, document=document.dict(by_alias=True)
             )
             assert isinstance(insert_id, ObjectId)
-            document.id = insert_id
+            setattr(document, "id", insert_id)
         except DuplicateDocumentError as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                 detail=f'Event Data "{data.name}" already exists.',
             ) from exc
 
-        return document
+        return EventDataRead(**document.dict())
 
     @staticmethod
     def list_event_datas(
@@ -101,7 +107,7 @@ class EventDataController:
         user: Any,
         persistent: Persistent,
         event_data_name: str,
-    ) -> Optional[EventData]:
+    ) -> Optional[EventDataRead]:
         """
         Retrieve Event Data
         """
@@ -112,7 +118,7 @@ class EventDataController:
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f'Event Data "{event_data_name}" not found.',
             )
-        return EventData(**event_data)
+        return EventDataRead(**event_data)
 
     @staticmethod
     def update_event_data(
@@ -120,7 +126,7 @@ class EventDataController:
         persistent: Persistent,
         event_data_name: str,
         data: EventDataUpdate,
-    ) -> EventData:
+    ) -> EventDataRead:
         """
         Update scheduled task
         """
@@ -169,4 +175,4 @@ class EventDataController:
         event_data = persistent.find_one(collection_name=TABLE_NAME, query_filter=query_filter)
         if not event_data:
             raise not_found_exception
-        return EventData(**event_data)
+        return EventDataRead(**event_data)
