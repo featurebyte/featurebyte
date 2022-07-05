@@ -42,7 +42,7 @@ def test_insert_one(mongo_persistent, test_document):
     # check document is inserted
     results = list(client["test"]["data"].find({}))
     assert results[0] == test_document
-    assert results[0]["id"] == inserted_id
+    assert results[0]["_id"] == inserted_id
 
 
 def test_insert_one__duplicate_key__(mongo_persistent, test_document):
@@ -68,7 +68,7 @@ def test_insert_many(mongo_persistent, test_documents):
     inserted_ids = persistent.insert_many(collection_name="data", documents=test_documents)
     # check documents are inserted
     assert list(client["test"]["data"].find({})) == test_documents
-    assert [doc["id"] for doc in test_documents] == inserted_ids
+    assert [doc["_id"] for doc in test_documents] == inserted_ids
 
 
 def test_insert_many__duplicate_key__(mongo_persistent, test_documents):
