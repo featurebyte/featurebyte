@@ -8,6 +8,7 @@ from typing import Any, Dict, Tuple
 import copy
 
 import pandas as pd
+from pydantic import root_validator
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
@@ -241,6 +242,22 @@ class Frame(BaseFrame, OpsMixin):
             )
         else:
             raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
+
+    @root_validator()
+    @classmethod
+    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(values["graph"], GlobalQueryGraph):
+            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
+            values["graph"] = global_graph
+            values["node"] = global_graph.get_node_by_name(node_name_map[values["node"].name])
+            column_lineage_map = {}
+            for col, lineage in values["column_lineage_map"].items():
+                column_lineage_map[col] = tuple(node_name_map[node_name] for node_name in lineage)
+            values["column_lineage_map"] = column_lineage_map
+            values["row_index_lineage"] = tuple(
+                node_name_map[node_name] for node_name in values["row_index_lineage"]
+            )
+        return values
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):

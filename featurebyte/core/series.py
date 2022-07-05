@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Tuple
 
-from pydantic import Field
+from pydantic import Field, root_validator
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
@@ -340,6 +340,19 @@ class Series(QueryObject, OpsMixin):
         if self.name:
             columns.append(self.name)
         return self._preview_sql(columns=columns, limit=limit)
+
+    @root_validator()
+    @classmethod
+    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(values["graph"], GlobalQueryGraph):
+            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
+            values["graph"] = global_graph
+            values["node"] = global_graph.get_node_by_name(node_name_map[values["node"].name])
+            values["lineage"] = tuple(node_name_map[node_name] for node_name in values["lineage"])
+            values["row_index_lineage"] = tuple(
+                node_name_map[node_name] for node_name in values["row_index_lineage"]
+            )
+        return values
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):

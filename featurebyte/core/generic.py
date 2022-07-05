@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, Tuple
 from abc import abstractmethod
 
 import pandas as pd
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field
 
 from featurebyte.config import Configurations, Credentials
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
@@ -61,17 +61,6 @@ class QueryObject(BaseModel):
 
     def __str__(self) -> str:
         return repr(self)
-
-    @root_validator()
-    @classmethod
-    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if not isinstance(values["graph"], GlobalQueryGraph):
-            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
-            values["graph"] = global_graph
-            values["node"] = global_graph.get_node_by_name(node_name_map[values["node"].name])
-            for key in ["lineage", "row_index_lineage"]:
-                values[key] = tuple(node_name_map[node_name] for node_name in values[key])
-        return values
 
     def _preview_sql(self, columns: list[str], limit: int = 10) -> str:
         """
