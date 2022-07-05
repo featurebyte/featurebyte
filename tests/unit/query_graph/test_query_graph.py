@@ -207,6 +207,7 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
     """
     Test serialization & deserialization of query graph object (non-empty global query graph)
     """
+    # pylint: disable=too-many-locals
     # construct a graph
     dataframe["feature"] = dataframe["VALUE"] * dataframe["CUST_ID"] / 100.0
     dataframe = dataframe[dataframe["MASK"]]
