@@ -35,7 +35,7 @@ class Credential(BaseModel):
     """
 
     name: str
-    source: FeatureStoreModel
+    feature_store: FeatureStoreModel
     credential_type: CredentialType
     credential: Union[UsernamePasswordCredential]
 
