@@ -14,19 +14,19 @@ from featurebyte.models.feature import FeatureListModel, FeatureListStatus, Feat
 
 
 class FeatureList(FeatureListModel):
+    """FeatureList class
+
+    Parameters
+    ----------
+    items : list[Union[Feature, FeatureGroup]]
+        List of feature like objects to be used to create the FeatureList
+    name : str
+        Name of the FeatureList
+    """
 
     feature_objects: Optional[list[Feature]] = Field(exclude=True)
 
     def __init__(self, items: list[Union[Feature, FeatureGroup]], name: str):
-        """FeatureList class
-
-        Parameters
-        ----------
-        items : list[Union[Feature, FeatureGroup]]
-            List of feature like objects to be used to create the FeatureList
-        name : str
-            Name of the FeatureList
-        """
 
         if not isinstance(items, list):
             raise ValueError(f"Cannot create feature list using {type(items)}; expected a list")
@@ -54,7 +54,7 @@ class FeatureList(FeatureListModel):
         self.feature_objects = feature_versions
 
     @staticmethod
-    def derive_features_readiness(features: list[Feature]) -> FeatureReadiness:
+    def derive_features_readiness(features: list[Feature]) -> Optional[FeatureReadiness]:
         """Derive the features readiness based on the readiness of provided Features
 
         Parameters
@@ -72,9 +72,11 @@ class FeatureList(FeatureListModel):
             FeatureReadiness.DRAFT: 2,
             FeatureReadiness.QUARANTINE: 1,
             FeatureReadiness.DEPRECATED: 0,
+            None: 0,
         }
         minimum_feature_readiness = min(
-            features, key=lambda feature: readiness_to_order[feature.readiness]
+            features,
+            key=lambda feature: readiness_to_order[feature.readiness],
         ).readiness
         return minimum_feature_readiness
 
@@ -87,7 +89,9 @@ class FeatureList(FeatureListModel):
             else:
                 feature_group = item
                 for feature_name in feature_group.columns:
-                    flattened_items.append(feature_group[feature_name])
+                    feature = feature_group[feature_name]
+                    assert isinstance(feature, Feature)
+                    flattened_items.append(feature)
         return flattened_items
 
     @staticmethod
