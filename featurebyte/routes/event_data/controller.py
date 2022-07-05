@@ -6,6 +6,7 @@ from typing import Any, Literal, Optional
 import datetime
 from http import HTTPStatus
 
+from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.models.event_data import EventDataStatus, FeatureJobSettingHistoryEntry
@@ -53,8 +54,11 @@ class EventDataController:
             **data.dict(),
         )
         try:
-            insert_id = persistent.insert_one(collection_name=TABLE_NAME, document=document.dict())
-            assert insert_id == document.id
+            insert_id = persistent.insert_one(
+                collection_name=TABLE_NAME, document=document.dict(exclude={"id": True})
+            )
+            assert isinstance(insert_id, ObjectId)
+            document.id = insert_id
         except DuplicateDocumentError as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY,

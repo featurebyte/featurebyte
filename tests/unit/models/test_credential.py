@@ -21,14 +21,14 @@ def username_password_credential_fixture():
     return UsernamePasswordCredential(username="test", password="password")
 
 
-@pytest.fixture(name="source")
-def source_fixture():
+@pytest.fixture(name="feature_store")
+def feature_store_fixture():
     """
-    Fixture for a Source object
+    Fixture for a FeatureStoreModel object
     Returns
     -------
-    Source
-        Source object
+    FeatureStoreModel
+        FeatureStoreModel object
     """
     return FeatureStoreModel(
         type=SourceType.SNOWFLAKE,
@@ -42,7 +42,7 @@ def source_fixture():
 
 
 @pytest.fixture(name="credential")
-def credential_fixture(source, username_password_credential):
+def credential_fixture(feature_store, username_password_credential):
     """
     Fixture for a Credential object
     Returns
@@ -52,7 +52,7 @@ def credential_fixture(source, username_password_credential):
     """
     return Credential(
         name="SF Credentials",
-        source=source,
+        feature_store=feature_store,
         credential_type=CredentialType.USERNAME_PASSWORD,
         credential=username_password_credential,
     )

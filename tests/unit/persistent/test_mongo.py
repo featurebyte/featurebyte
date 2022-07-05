@@ -119,7 +119,7 @@ def test_find_many(mongo_persistent, test_documents):
 
     # test sort
     docs, total = persistent.find(
-        collection_name="data", query_filter={}, sort_by="id", sort_dir="desc"
+        collection_name="data", query_filter={}, sort_by="_id", sort_dir="desc"
     )
     assert list(docs) == test_documents[-1::-1]
     assert total == 3
@@ -130,7 +130,7 @@ def test_update_one(mongo_persistent, test_document, test_documents):
     Test updating one document
     """
     persistent, client = mongo_persistent
-    test_documents = [{**test_document, **{"id": ObjectId()}} for _ in range(3)]
+    test_documents = [{**test_document, **{"_id": ObjectId()}} for _ in range(3)]
     client["test"]["data"].insert_many(test_documents)
     result = persistent.update_one(
         collection_name="data", query_filter={}, update={"$set": {"value": 1}}

@@ -111,30 +111,30 @@ class Configurations:
             self.settings = yaml.safe_load(file_obj)
 
         feature_stores = self.settings.pop("featurestore", [])
-        for feature_store in feature_stores:
-            name = feature_store.pop("name", "unnamed")
+        for feature_store_details in feature_stores:
+            name = feature_store_details.pop("name", "unnamed")
             try:
-                if "source_type" in feature_store:
+                if "source_type" in feature_store_details:
                     # parse and store feature store
-                    source_type = SourceType(feature_store["source_type"])
-                    db_source = FeatureStoreModel(
+                    source_type = SourceType(feature_store_details["source_type"])
+                    feature_store = FeatureStoreModel(
                         type=source_type,
-                        details=feature_store,
+                        details=feature_store_details,
                     )
-                    self.feature_stores[name] = db_source
+                    self.feature_stores[name] = feature_store
 
                     # parse and store credentials
                     credentials = None
-                    if "credential_type" in feature_store:
+                    if "credential_type" in feature_store_details:
                         # credentials are stored together with feature store details in the config file,
                         # Credential pydantic model will use only the relevant fields
                         credentials = Credential(
                             name=name,
-                            source=db_source,
-                            credential_type=feature_store["credential_type"],
-                            credential=feature_store,
+                            feature_store=feature_store,
+                            credential_type=feature_store_details["credential_type"],
+                            credential=feature_store_details,
                         )
-                    self.credentials[db_source] = credentials
+                    self.credentials[feature_store] = credentials
             except ValidationError as exc:
                 raise ValueError(f"Invalid settings for datasource: {name}") from exc
 

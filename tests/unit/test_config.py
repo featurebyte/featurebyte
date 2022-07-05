@@ -16,7 +16,7 @@ def test_configurations():
 
     # one database source with section name as key
     assert len(config.feature_stores) == 1
-    expected_db_source_dict = {
+    expected_feature_store_dict = {
         "type": SourceType.SNOWFLAKE,
         "details": {
             "account": "sf_account",
@@ -26,13 +26,13 @@ def test_configurations():
         },
     }
     feature_store = config.feature_stores["Snowflake FeatureStøre"]
-    assert feature_store.dict() == expected_db_source_dict
+    assert feature_store.dict() == expected_feature_store_dict
 
     # one credential with db source as key
     assert len(config.credentials) == 1
     assert config.credentials[feature_store].dict() == {
         "name": "Snowflake FeatureStøre",
-        "source": expected_db_source_dict,
+        "feature_store": expected_feature_store_dict,
         "credential_type": CredentialType.USERNAME_PASSWORD,
         "credential": {"username": "user", "password": "password"},
     }

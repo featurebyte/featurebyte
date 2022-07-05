@@ -47,7 +47,6 @@ def test_create_success(test_api_client, event_data_dict):
     """
     utcnow = datetime.datetime.utcnow()
     response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
-    print(response.json())
     assert response.status_code == HTTPStatus.CREATED
     result = response.json()
     assert datetime.datetime.fromisoformat(result.pop("created_at")) > utcnow
