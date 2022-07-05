@@ -161,12 +161,11 @@ def test_query_object_operation_on_snowflake_source(
     }
 
     # preview one feature only
-    single_feature = feature_group["COUNT_2h"]
-    df_single_feature_preview = single_feature.preview(
+    df_feature_preview = feature_group["COUNT_2h"].preview(
         preview_param,
         credentials=config.credentials,
     )
-    assert df_single_feature_preview.iloc[0].to_dict() == {
+    assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "USER_ID": 1,
         "COUNT_2h": 1,
@@ -174,12 +173,12 @@ def test_query_object_operation_on_snowflake_source(
 
     # preview a not-yet-assigned feature
     new_feature = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
-    df_new_feature_preview = new_feature.preview(
+    df_feature_preview = new_feature.preview(
         preview_param,
         credentials=config.credentials,
     )
-    assert df_new_feature_preview.shape[0] == 1
-    assert df_new_feature_preview.iloc[0].to_dict() == {
+    assert df_feature_preview.shape[0] == 1
+    assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "USER_ID": 1,
         "Unnamed": Decimal("0.111111"),
