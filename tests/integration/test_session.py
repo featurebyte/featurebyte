@@ -1,6 +1,8 @@
 """
 This module contains session to EventView integration tests
 """
+from decimal import Decimal
+
 import pandas as pd
 
 from featurebyte.api.event_data import EventData
@@ -156,4 +158,43 @@ def test_query_object_operation_on_snowflake_source(
         "USER_ID": 1,
         "COUNT_2h": 1,
         "COUNT_24h": 9,
+    }
+
+    # preview one feature only
+    df_feature_preview = feature_group["COUNT_2h"].preview(
+        preview_param,
+        credentials=config.credentials,
+    )
+    assert df_feature_preview.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "USER_ID": 1,
+        "COUNT_2h": 1,
+    }
+
+    # preview a not-yet-assigned feature
+    new_feature = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+    df_feature_preview = new_feature.preview(
+        preview_param,
+        credentials=config.credentials,
+    )
+    assert df_feature_preview.shape[0] == 1
+    assert df_feature_preview.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "USER_ID": 1,
+        "Unnamed": Decimal("0.111111"),
+    }
+
+    # assign new feature and preview again
+    feature_group["COUNT_2h DIV COUNT_24h"] = new_feature
+    df_feature_preview = feature_group.preview(
+        preview_param,
+        credentials=config.credentials,
+    )
+    assert df_feature_preview.shape[0] == 1
+    assert df_feature_preview.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "USER_ID": 1,
+        "COUNT_2h": 1,
+        "COUNT_24h": 9,
+        "COUNT_2h DIV COUNT_24h": Decimal("0.111111"),
     }
