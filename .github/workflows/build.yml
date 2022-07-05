@@ -76,6 +76,7 @@ jobs:
         junitxml-path: ./pytest.xml
 
     - name: Update Coverage Badge
+      if: github.event_name == 'push'
       uses: schneegans/dynamic-badges-action@v1.4.0
       with:
         auth: ${{ secrets.GIST_SECRET }}
