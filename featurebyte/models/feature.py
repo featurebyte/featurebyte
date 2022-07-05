@@ -45,7 +45,7 @@ class DefaultVersionMode(str, Enum):
 
 class FeatureNameSpace(BaseModel):
     """
-    Feature group with the same feature name
+    Feature set with the same feature name
 
     name: str
         Feature name
