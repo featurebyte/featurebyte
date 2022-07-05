@@ -154,23 +154,6 @@ class QueryObject(BaseModel):
         session = data_source.get_session(credentials=credentials)
         return session
 
-    def _to_dict(self, target_columns: set[str], *args: Any, **kwargs: Any) -> dict[str, Any]:
-        if isinstance(self.graph, GlobalQueryGraph):
-            pruned_graph, node_name_map = self.graph.prune(
-                target_node=self.node, target_columns=target_columns, to_update_node_params=True
-            )
-            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
-            new_object = self.copy()
-            new_object.graph = pruned_graph
-            new_object.node = mapped_node
-            for attr in ["lineage", "row_index_lineage"]:
-                new_value = tuple(
-                    node_name_map[node_name] for node_name in getattr(new_object, attr)
-                )
-                setattr(new_object, attr, new_value)
-            return new_object.dict(**kwargs)
-        return super().dict(*args, **kwargs)
-
     def json(
         self,
         *,

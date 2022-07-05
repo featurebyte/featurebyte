@@ -11,6 +11,7 @@ from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
 class Series(QueryObject, OpsMixin):
@@ -341,7 +342,20 @@ class Series(QueryObject, OpsMixin):
         return self._preview_sql(columns=columns, limit=limit)
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
-        target_columns = set()
-        if self.name:
-            target_columns.add(self.name)
-        return self._to_dict(target_columns, *args, **kwargs)
+        if isinstance(self.graph, GlobalQueryGraph):
+            target_columns = set()
+            if self.name:
+                target_columns.add(self.name)
+            pruned_graph, node_name_map = self.graph.prune(
+                target_node=self.node, target_columns=target_columns, to_update_node_params=True
+            )
+            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
+            new_object = self.copy()
+            new_object.graph = pruned_graph
+            new_object.node = mapped_node
+            new_object.lineage = tuple(node_name_map[node_name] for node_name in new_object.lineage)
+            new_object.row_index_lineage = tuple(
+                node_name_map[node_name] for node_name in new_object.row_index_lineage
+            )
+            return new_object.dict(*args, **kwargs)
+        return super().dict(*args, **kwargs)
