@@ -3,7 +3,7 @@ FeatureListVersion class
 """
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import datetime
 
@@ -24,7 +24,7 @@ class FeatureList(FeatureListModel):
         Name of the FeatureList
     """
 
-    feature_objects: Optional[list[Feature]] = Field(exclude=True)
+    feature_objects: Optional[List[Feature]] = Field(exclude=True)
 
     def __init__(self, items: list[Union[Feature, FeatureGroup]], name: str):
 
