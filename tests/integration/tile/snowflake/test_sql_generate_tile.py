@@ -7,7 +7,7 @@ import pytest
 from snowflake.connector.errors import ProgrammingError
 
 
-def test_generate_tile(fb_db_session):
+def test_generate_tile(snowflake_session):
     """
     Test normal generation of tiles
     """
@@ -17,15 +17,15 @@ def test_generate_tile(fb_db_session):
     tile_sql = f"SELECT {col_names} FROM {table_name}"
 
     sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE')"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 100
 
 
-def test_generate_tile_no_data(fb_db_session):
+def test_generate_tile_no_data(snowflake_session):
     """
     Test generation of tile with no tile data
     """
@@ -37,15 +37,15 @@ def test_generate_tile_no_data(fb_db_session):
     )
 
     sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE')"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 0
 
 
-def test_generate_tile_non_exist_table(fb_db_session):
+def test_generate_tile_non_exist_table(snowflake_session):
     """
     Test generation of tile with error in tile query
     """
@@ -56,4 +56,4 @@ def test_generate_tile_non_exist_table(fb_db_session):
     sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{table_name}_TILE', 'ONLINE')"
 
     with pytest.raises(ProgrammingError):
-        fb_db_session.execute_query(sql)
+        snowflake_session.execute_query(sql)

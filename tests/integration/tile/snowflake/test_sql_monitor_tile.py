@@ -4,7 +4,7 @@ This module contains integration tests for tile monitoring stored procedure
 from datetime import datetime
 
 
-def test_monitor_tile_missing_tile(fb_db_session):
+def test_monitor_tile_missing_tile(snowflake_session):
     """
     Test monitoring with missing tiles
     """
@@ -15,15 +15,15 @@ def test_monitor_tile_missing_tile(fb_db_session):
     monitor_tile_sql = f"SELECT {col_names} FROM {table_name} limit 100"
 
     sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE')"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
 
     sql = f"call SP_TILE_MONITOR('{monitor_tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE')"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_MONITOR"].iloc[0]
 
     sql = f"SELECT * FROM {tile_id}_MONITOR"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert len(result) == 5
 
     assert result.iloc[-1]["VALUE"] == 4
@@ -35,7 +35,7 @@ def test_monitor_tile_missing_tile(fb_db_session):
     assert result.iloc[-3]["客户"] == 1
 
 
-def test_monitor_tile_updated_tile(fb_db_session):
+def test_monitor_tile_updated_tile(snowflake_session):
     """
     Test monitoring with outdated tiles in which the tile value has been incremented by 1
     """
@@ -46,18 +46,18 @@ def test_monitor_tile_updated_tile(fb_db_session):
     monitor_tile_sql = tile_sql
 
     sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE')"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
 
     sql = f"UPDATE {table_name} SET VALUE = VALUE + 1"
-    fb_db_session.execute_query(sql)
+    snowflake_session.execute_query(sql)
 
     sql = f"call SP_TILE_MONITOR('{monitor_tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE')"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_MONITOR"].iloc[0]
 
     sql = f"SELECT * FROM {tile_id}_MONITOR"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert len(result) == 10
 
     assert result.iloc[0]["VALUE"] == 6

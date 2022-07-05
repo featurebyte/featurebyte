@@ -20,7 +20,7 @@ import pytest
     ],
 )
 def test_timestamp_to_index(
-    fb_db_session,
+    snowflake_session,
     time_modulo_frequency_seconds,
     blind_spot_seconds,
     frequency_minute,
@@ -31,7 +31,7 @@ def test_timestamp_to_index(
     Test timestamp to tile index conversion with both iso/non-iso format and different job settings
     """
     sql = f"SELECT F_TIMESTAMP_TO_INDEX('{test_input}', {time_modulo_frequency_seconds}, {blind_spot_seconds}, {frequency_minute}) as INDEX"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert result["INDEX"].iloc[0] == expected
 
 
@@ -45,7 +45,7 @@ def test_timestamp_to_index(
     ],
 )
 def test_index_to_timestamp(
-    fb_db_session,
+    snowflake_session,
     time_modulo_frequency_seconds,
     blind_spot_seconds,
     frequency_minute,
@@ -56,5 +56,5 @@ def test_index_to_timestamp(
     Test tile index conversion to timestamp conversion with different job settings
     """
     sql = f"SELECT F_INDEX_TO_TIMESTAMP({test_input}, {time_modulo_frequency_seconds}, {blind_spot_seconds}, {frequency_minute}) as TS"
-    result = fb_db_session.execute_query(sql)
+    result = snowflake_session.execute_query(sql)
     assert result["TS"].iloc[0] == expected

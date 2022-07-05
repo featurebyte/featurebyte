@@ -7,6 +7,7 @@ from typing import Any
 
 import json
 import os
+from enum import Enum
 
 from pydantic import Field
 from snowflake import connector
@@ -143,6 +144,14 @@ class SnowflakeSession(BaseSession):
         SchemaInitializer(self).initialize()
 
 
+class SqlObjectType(str, Enum):
+    """Enum for type of SQL objects to initialize in Snowflake"""
+
+    FUNCTION = "function"
+    PROCEDURE = "procedure"
+    TABLE = "table"
+
+
 class SchemaInitializer:
     """Responsible for initializing featurebyte schema
 
@@ -171,22 +180,95 @@ class SchemaInitializer:
 
     def initialize(self) -> None:
         """Initialize the featurebyte schema if it doesn't exist"""
-        if self.schema_exists():
-            return
-        logger.debug(f"Initializing schema {self.session.sf_schema}")
-        create_schema_query = f"CREATE SCHEMA {self.session.sf_schema}"
-        self.session.execute_query(create_schema_query)
-        self.register_custom_functions()
 
-    def register_custom_functions(self) -> None:
-        """Register functions and procedures defined in the snowflake sql directory"""
-        for sql_filename in self.get_custom_function_sql_filenames():
-            with open(sql_filename, encoding="utf-8") as file_handle:
-                self.session.execute_query(file_handle.read())
+        if not self.schema_exists():
+            logger.debug(f"Initializing schema {self.session.sf_schema}")
+            create_schema_query = f"CREATE SCHEMA {self.session.sf_schema}"
+            self.session.execute_query(create_schema_query)
+
+        self.register_missing_objects()
+
+    def register_missing_objects(self) -> None:
+        """Detect database objects that are missing and register them"""
+
+        sql_objects = self.get_sql_objects()
+        sql_objects_by_type: dict[SqlObjectType, list[dict[str, Any]]] = {
+            SqlObjectType.FUNCTION: [],
+            SqlObjectType.PROCEDURE: [],
+            SqlObjectType.TABLE: [],
+        }
+        for sql_object in sql_objects:
+            sql_objects_by_type[sql_object["type"]].append(sql_object)
+
+        self.register_missing_functions(sql_objects_by_type[SqlObjectType.FUNCTION])
+        self.register_missing_procedures(sql_objects_by_type[SqlObjectType.PROCEDURE])
+        self.create_missing_tables(sql_objects_by_type[SqlObjectType.TABLE])
+
+    def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
+        """Register functions defined in the snowflake sql directory
+
+        Parameters
+        ----------
+        functions : list[dict[str, Any]]
+            List of functions to register
+        """
+        df_result = self.session.execute_query(
+            f"SHOW USER FUNCTIONS IN DATABASE {self.session.database}"
+        )
+        if df_result is None:
+            return
+        df_result = df_result[df_result["schema_name"] == self.session.sf_schema]
+        existing = set(df_result["name"].tolist())
+        for item in functions:
+            if item["identifier"] not in existing:
+                self._register_sql_object(item)
+
+    def register_missing_procedures(self, procedures: list[dict[str, Any]]) -> None:
+        """Register procedures defined in the snowflake sql directory
+
+        Parameters
+        ----------
+        procedures: list[dict[str, Any]]
+            List of procedures to register
+        """
+        df_result = self.session.execute_query(
+            f"SHOW PROCEDURES IN DATABASE {self.session.database}"
+        )
+        if df_result is None:
+            return
+        df_result = df_result[df_result["schema_name"] == self.session.sf_schema]
+        existing = set(df_result["name"].tolist())
+        for item in procedures:
+            if item["identifier"] not in existing:
+                self._register_sql_object(item)
+
+    def create_missing_tables(self, tables: list[dict[str, Any]]) -> None:
+        """Create tables defined in snowflake sql directory
+
+        Parameters
+        ----------
+        tables: list[dict[str, Any]]
+            List of tables to register
+        """
+        df_result = self.session.execute_query(
+            f'SHOW TABLES IN SCHEMA "{self.session.database}"."{self.session.sf_schema}"'
+        )
+        if df_result is None:
+            return
+        existing = set(df_result["name"].tolist())
+        for item in tables:
+            if item["identifier"] not in existing:
+                self._register_sql_object(item)
+
+    def _register_sql_object(self, item: dict[str, Any]) -> None:
+        logger.debug(f'Registering {item["identifier"]}')
+        with open(item["filename"], encoding="utf-8") as f_handle:
+            query = f_handle.read()
+        self.session.execute_query(query)
 
     @staticmethod
-    def get_custom_function_sql_filenames() -> list[str]:
-        """Find the sourcefiles for all user defined functions and stored procedure
+    def get_sql_objects() -> list[dict[str, Any]]:
+        """Find all the objects defined in the sql directory
 
         Returns
         -------
@@ -196,8 +278,29 @@ class SchemaInitializer:
             os.path.dirname(featurebyte.__file__), "..", "sql", "snowflake"
         )
         output = []
+
         for filename in os.listdir(sql_directory):
-            if filename.startswith("F_") or filename.startswith("SP_"):
-                full_filename = os.path.join(sql_directory, filename)
-                output.append(full_filename)
+
+            sql_object_type = None
+            if filename.startswith("F_"):
+                sql_object_type = SqlObjectType.FUNCTION
+            elif filename.startswith("SP_"):
+                sql_object_type = SqlObjectType.PROCEDURE
+            elif filename.startswith("T_"):
+                sql_object_type = SqlObjectType.TABLE
+
+            identifier = filename.replace(".sql", "")
+            if sql_object_type == SqlObjectType.TABLE:
+                # Table naming convention does not include "T_" prefix
+                identifier = identifier[len("T_") :]
+
+            full_filename = os.path.join(sql_directory, filename)
+
+            sql_object = {
+                "type": sql_object_type,
+                "filename": full_filename,
+                "identifier": identifier,
+            }
+            output.append(sql_object)
+
         return output
