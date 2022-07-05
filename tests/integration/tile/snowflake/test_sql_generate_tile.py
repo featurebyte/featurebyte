@@ -27,7 +27,9 @@ def test_generate_tile(snowflake_session):
     result = snowflake_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 2
 
-    result = snowflake_session.execute_query(f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'")
+    result = snowflake_session.execute_query(
+        f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
+    )
     assert (
         result["LAST_TILE_START_DATE_OFFLINE"].iloc[0].strftime("%Y-%m-%d %H:%M:%S")
         == "2022-06-05 23:53:00"
