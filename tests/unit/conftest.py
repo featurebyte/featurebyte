@@ -16,7 +16,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
-from featurebyte.models.event_data import Feature, TileSpec
+from featurebyte.models.feature import FeatureModel, TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.session.manager import SessionManager
@@ -300,36 +300,37 @@ def mock_snowflake_tile(mock_execute_query, snowflake_feature_store, snowflake_c
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature(
-    mock_execute_query, snowflake_feature_store, snowflake_connector, config
-):
+def mock_snowflake_feature(mock_execute_query, snowflake_connector, config, snowflake_event_view):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
     mock_execute_query.size_effect = None
     _ = snowflake_connector
 
-    tile_id = "tile_id1"
+    snowflake_event_view.cust_id.as_entity("customer")
+    feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        blind_spot="10m",
+        frequency="30m",
+        time_modulo_frequency="5m",
+        feature_names=["sum_30m"],
+    )
+    feature = feature_group["sum_30m"]
+    feature_json = feature.json()
+    feature_loaded = FeatureModel.parse_raw(feature_json)
 
     tile_spec = TileSpec(
-        tile_id=tile_id,
+        tile_id="tile_id1",
         time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
         column_names="col1",
     )
+    feature_loaded.tile_specs = [tile_spec]
 
-    feature = Feature(
-        name="test_feature1",
-        version="v1",
-        readiness="DRAFT",
-        is_default=True,
-        tile_specs=[tile_spec],
-        online_enabled=False,
-        datasource=snowflake_feature_store,
-    )
-
-    s_feature = FeatureSnowflake(feature=feature, credentials=config.credentials)
+    s_feature = FeatureSnowflake(feature=feature_loaded, credentials=config.credentials)
 
     return s_feature

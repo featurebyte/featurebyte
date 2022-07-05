@@ -16,6 +16,7 @@ def test_monitor_tile_missing_tile(snowflake_session):
 
     sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE', null)"
     result = snowflake_session.execute_query(sql)
+
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
 
     sql = f"call SP_TILE_MONITOR('{monitor_tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE')"

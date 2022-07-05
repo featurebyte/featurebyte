@@ -47,6 +47,7 @@ def test_generate_tile_no_data(snowflake_session):
     tile_sql = (
         f"SELECT {col_names} FROM {table_name} WHERE TILE_START_TS > \\'2022-06-05T23:58:00Z\\'"
     )
+
     sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE', null)"
     result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]

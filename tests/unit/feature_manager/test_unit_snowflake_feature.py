@@ -45,6 +45,7 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature):
     """
     mock_execute_query.return_value = pd.DataFrame.from_dict(
         {
+            "NAME": ["feature1"],
             "VERSION": ["v1"],
             "READINESS": ["DRAFT"],
             "IS_DEFAULT": [True],
@@ -52,12 +53,12 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature):
             "BLIND_SPOT_SECOND": [3],
             "FREQUENCY_MINUTES": [5],
             "TILE_SQL": ["SELECT DUMMY"],
-            "TILE_SPECS": ["[]"],
+            "TILE_SPECS": [[]],
             "COLUMN_NAMES": ["c1"],
             "ONLINE_ENABLED": [True],
         }
     )
-    fv_list = mock_snowflake_feature.retrieve_feature_registries()
+    f_reg_df = mock_snowflake_feature.retrieve_feature_registries()
     assert mock_execute_query.call_count == 1
 
     sql = tm_select_feature_registry.render(feature_name=mock_snowflake_feature.feature.name)
@@ -66,10 +67,10 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature):
     ]
     mock_execute_query.assert_has_calls(calls, any_order=True)
 
-    assert len(fv_list) == 1
-    assert fv_list[0].name == mock_snowflake_feature.feature.name
-    assert fv_list[0].version == "v1"
-    assert fv_list[0].tile_specs == []
+    assert len(f_reg_df) == 1
+    assert f_reg_df.iloc[0]["NAME"] == "feature1"
+    assert f_reg_df.iloc[0]["VERSION"] == "v1"
+    assert f_reg_df.iloc[0]["TILE_SPECS"] == []
 
 
 @mock.patch("featurebyte.tile.snowflake_tile.TileSnowflake.insert_tile_registry")

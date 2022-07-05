@@ -1,7 +1,7 @@
 """
 This module contains integration tests for TileSnowflake
 """
-from featurebyte.models.event_data import TileType
+from featurebyte.models.feature import TileType
 
 
 def test_generate_tile(snowflake_tile, snowflake_session):

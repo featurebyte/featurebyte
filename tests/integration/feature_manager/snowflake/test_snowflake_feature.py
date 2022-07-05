@@ -6,6 +6,8 @@ import json
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
+from featurebyte.models.feature import FeatureReadiness
+
 
 def test_insert_feature_registry(snowflake_session, snowflake_feature):
     """
@@ -16,12 +18,12 @@ def test_insert_feature_registry(snowflake_session, snowflake_feature):
 
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
     assert len(result) == 1
-    assert result.iloc[0]["NAME"] == "test_feature1"
+    assert result.iloc[0]["NAME"] == "sum_30m"
     assert result.iloc[0]["VERSION"] == "v1"
 
     expected_df = pd.DataFrame.from_dict(
         {
-            "NAME": ["test_feature1"],
+            "NAME": ["sum_30m"],
             "VERSION": ["v1"],
             "READINESS": ["DRAFT"],
         }
@@ -56,7 +58,7 @@ def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature)
 
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
     assert len(result) == 1
-    assert result.iloc[0]["NAME"] == "test_feature1"
+    assert result.iloc[0]["NAME"] == "sum_30m"
     assert result.iloc[0]["VERSION"] == "v1"
 
     flag = snowflake_feature.insert_feature_registry()
@@ -68,15 +70,17 @@ def test_retrieve_features(snowflake_feature):
     Test retrieve_features
     """
     snowflake_feature.insert_feature_registry()
-    feature_versions = snowflake_feature.retrieve_feature_registries()
-    assert len(feature_versions) == 1
-    assert feature_versions[0].name == "test_feature1"
-    assert feature_versions[0].version == "v1"
+    f_reg_df = snowflake_feature.retrieve_feature_registries()
+    assert len(f_reg_df) == 1
+    assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
+    assert f_reg_df.iloc[0]["VERSION"] == "v1"
+    assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
 
-    feature_versions = snowflake_feature.retrieve_feature_registries(version="v1")
-    assert len(feature_versions) == 1
-    assert feature_versions[0].name == "test_feature1"
-    assert feature_versions[0].version == "v1"
+    f_reg_df = snowflake_feature.retrieve_feature_registries(version="v1")
+    assert len(f_reg_df) == 1
+    assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
+    assert f_reg_df.iloc[0]["VERSION"] == "v1"
+    assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
 
 
 def test_retrieve_features_multiple(snowflake_feature):
@@ -86,14 +90,17 @@ def test_retrieve_features_multiple(snowflake_feature):
     snowflake_feature.insert_feature_registry()
 
     snowflake_feature.feature.version = "v2"
+    snowflake_feature.feature.readiness = FeatureReadiness.PRODUCTION_READY
     snowflake_feature.insert_feature_registry()
 
-    feature_versions = snowflake_feature.retrieve_feature_registries()
-    assert len(feature_versions) > 1
-    assert feature_versions[0].name == "test_feature1"
-    assert feature_versions[0].version == "v1"
-    assert feature_versions[1].name == "test_feature1"
-    assert feature_versions[1].version == "v2"
+    f_reg_df = snowflake_feature.retrieve_feature_registries()
+    assert len(f_reg_df) > 1
+    assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
+    assert f_reg_df.iloc[0]["VERSION"] == "v1"
+    assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
+    assert f_reg_df.iloc[1]["NAME"] == "sum_30m"
+    assert f_reg_df.iloc[1]["VERSION"] == "v2"
+    assert f_reg_df.iloc[1]["READINESS"] == "PRODUCTION_READY"
 
 
 def test_online_enable(snowflake_session, snowflake_feature):

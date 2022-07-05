@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-from featurebyte.models.event_data import TileType
+from featurebyte.models.feature import TileType
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
