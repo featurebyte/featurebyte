@@ -21,7 +21,7 @@ def feature_model_dict_feature():
         "name": "sum_30m",
         "description": None,
         "var_type": "FLOAT",
-        "lineage": ("groupby_1", "project_2"),
+        "lineage": ("groupby_1", "project_1"),
         "row_index_lineage": ("groupby_1",),
         "graph": {
             "edges": {
@@ -165,11 +165,9 @@ def test_feature_model(snowflake_event_view, feature_model_dict):
     feature_json = feature.json()
     feature_loaded = FeatureModel.parse_raw(feature_json)
     for key in feature_model_dict.keys():
-        if key in {"graph", "node"}:
+        if not key in {"graph", "node", "lineage", "row_index_lineage"}:
             # feature_json uses pruned graph, feature uses global graph,
-            # therefore the graph & node are different
-            assert getattr(feature, key) != getattr(feature_loaded, key)
-        else:
+            # therefore the graph & node could be different
             assert getattr(feature, key) == getattr(feature_loaded, key)
 
 

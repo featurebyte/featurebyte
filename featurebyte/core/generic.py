@@ -69,6 +69,8 @@ class QueryObject(BaseModel):
             global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
             values["graph"] = global_graph
             values["node"] = global_graph.get_node_by_name(node_name_map[values["node"].name])
+            for key in ["lineage", "row_index_lineage"]:
+                values[key] = tuple(node_name_map[node_name] for node_name in values[key])
         return values
 
     def _preview_sql(self, columns: list[str], limit: int = 10) -> str:
@@ -87,9 +89,10 @@ class QueryObject(BaseModel):
         str
         """
         if isinstance(self.graph, GlobalQueryGraph):
-            pruned_graph, mapped_node = self.graph.prune(
+            pruned_graph, node_name_map = self.graph.prune(
                 target_node=self.node, target_columns=set(columns)
             )
+            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             return GraphInterpreter(pruned_graph).construct_preview_sql(
                 node_name=mapped_node.name, num_rows=limit
             )
@@ -153,12 +156,18 @@ class QueryObject(BaseModel):
 
     def _to_dict(self, target_columns: set[str], *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):
-            pruned_graph, mapped_node = self.graph.prune(
+            pruned_graph, node_name_map = self.graph.prune(
                 target_node=self.node, target_columns=target_columns, to_update_node_params=True
             )
+            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
             new_object.graph = pruned_graph
             new_object.node = mapped_node
+            for attr in ["lineage", "row_index_lineage"]:
+                new_value = tuple(
+                    node_name_map[node_name] for node_name in getattr(new_object, attr)
+                )
+                setattr(new_object, attr, new_value)
             return new_object.dict(**kwargs)
         return super().dict(*args, **kwargs)
 

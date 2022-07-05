@@ -443,7 +443,7 @@ class GlobalQueryGraph(QueryGraph):
 
     def prune(
         self, target_node: Node, target_columns: set[str], to_update_node_params: bool = False
-    ) -> tuple[QueryGraph, Node]:
+    ) -> tuple[QueryGraph, dict[str, str]]:
         """
         Prune the query graph and return the pruned graph & mapped node.
 
@@ -462,7 +462,7 @@ class GlobalQueryGraph(QueryGraph):
 
         Returns
         -------
-        QueryGraph, Node
+        QueryGraph, node_name_map
         """
         node_name_map: dict[str, str] = {}
         pruned_graph = self._prune(
@@ -473,8 +473,7 @@ class GlobalQueryGraph(QueryGraph):
             node_name_map=node_name_map,
             to_update_node_params=to_update_node_params,
         )
-        mapped_node = pruned_graph.get_node_by_name(node_name_map[target_node.name])
-        return pruned_graph, mapped_node
+        return pruned_graph, node_name_map
 
     def load(self, graph: QueryGraph) -> tuple[GlobalQueryGraph, dict[str, str]]:
         """

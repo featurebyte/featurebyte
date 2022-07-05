@@ -151,14 +151,9 @@ def test_feature_deserialization(float_feature, float_feature_dict, snowflake_ev
     assert deserialized_float_feature.row_index_lineage == float_feature.row_index_lineage
     assert deserialized_float_feature.tabular_source == float_feature.tabular_source
     tile_id1 = float_feature.graph.nodes["groupby_1"]["parameters"]["tile_id"]
-    assert (
-        len([node for node in float_feature_dict["graph"]["nodes"] if node.startswith("groupby")])
-        == 1
-    )
-    tile_id1_pruned = float_feature_dict["graph"]["nodes"]["groupby_1"]["parameters"]["tile_id"]
 
     # construct another identical float feature with an additional unused column,
-    # check that the tile_ids are different before serialization, tile_ids are the same after serialization
+    # check that the tile_ids are different before serialization, serialized object are the same
     snowflake_event_view["unused_feat"] = 10.0 * snowflake_event_view["cust_id"]
     snowflake_event_view.cust_id.as_entity("customer")
     grouped = snowflake_event_view.groupby("cust_id")
@@ -173,21 +168,8 @@ def test_feature_deserialization(float_feature, float_feature_dict, snowflake_ev
     )
     same_float_feature_dict = feature_group["sum_1d"].dict()
     tile_id2 = float_feature.graph.nodes["groupby_2"]["parameters"]["tile_id"]
-    assert (
-        len(
-            [
-                node
-                for node in same_float_feature_dict["graph"]["nodes"]
-                if node.startswith("groupby")
-            ]
-        )
-        == 1
-    )
-    tile_id2_pruned = same_float_feature_dict["graph"]["nodes"]["groupby_1"]["parameters"][
-        "tile_id"
-    ]
     assert tile_id1 != tile_id2
-    assert tile_id1_pruned == tile_id2_pruned
+    assert float_feature_dict == same_float_feature_dict
 
 
 def test_feature_to_json(float_feature):
