@@ -518,22 +518,33 @@ class FeatureExecutionPlanner:
         self.graph = graph
         self.plan = FeatureExecutionPlan()
 
-    def generate_plan(self, node: Node) -> FeatureExecutionPlan:
+    def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
+        """Generate FeatureExecutionPlan for given query graph Node
+
+        Parameters
+        ----------
+        nodes : list[Node]
+            Query graph nodes
+
+        Returns
+        -------
+        FeatureExecutionPlan
+        """
+        for node in nodes:
+            self.process_node(node)
+        return self.plan
+
+    def process_node(self, node: Node) -> None:
         """Generate FeatureExecutionPlan for given query graph Node
 
         Parameters
         ----------
         node : Node
             Query graph node
-
-        Returns
-        -------
-        FeatureExecutionPlan
         """
         for groupby_node in find_parent_groupby_nodes(self.graph, node):
             self.parse_and_update_specs_from_groupby(groupby_node)
         self.update_feature_specs(node)
-        return self.plan
 
     def parse_and_update_specs_from_groupby(self, groupby_node: Node) -> None:
         """Update FeatureExecutionPlan with a groupby query node
