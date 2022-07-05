@@ -5,12 +5,13 @@ from __future__ import annotations
 
 from typing import Any, Optional, Tuple
 
-from pydantic import Field
+from pydantic import Field, root_validator
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
 class Series(QueryObject, OpsMixin):
@@ -340,8 +341,34 @@ class Series(QueryObject, OpsMixin):
             columns.append(self.name)
         return self._preview_sql(columns=columns, limit=limit)
 
+    @root_validator()
+    @classmethod
+    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(values["graph"], GlobalQueryGraph):
+            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
+            values["graph"] = global_graph
+            values["node"] = global_graph.get_node_by_name(node_name_map[values["node"].name])
+            values["lineage"] = tuple(node_name_map[node_name] for node_name in values["lineage"])
+            values["row_index_lineage"] = tuple(
+                node_name_map[node_name] for node_name in values["row_index_lineage"]
+            )
+        return values
+
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
-        target_columns = set()
-        if self.name:
-            target_columns.add(self.name)
-        return self._to_dict(target_columns, *args, **kwargs)
+        if isinstance(self.graph, GlobalQueryGraph):
+            target_columns = set()
+            if self.name:
+                target_columns.add(self.name)
+            pruned_graph, node_name_map = self.graph.prune(
+                target_node=self.node, target_columns=target_columns, to_update_node_params=True
+            )
+            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
+            new_object = self.copy()
+            new_object.graph = pruned_graph
+            new_object.node = mapped_node
+            new_object.lineage = tuple(node_name_map[node_name] for node_name in new_object.lineage)
+            new_object.row_index_lineage = tuple(
+                node_name_map[node_name] for node_name in new_object.row_index_lineage
+            )
+            return new_object.dict(*args, **kwargs)
+        return super().dict(*args, **kwargs)

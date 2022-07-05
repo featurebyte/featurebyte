@@ -299,3 +299,30 @@ def test_frame_column_order(dataframe):
         "second_added_column",
         "third_added_column",
     ]
+
+
+def test_frame__dict(dataframe):
+    """
+    Test frame serialization to dictionary format
+    """
+    dataframe["feat"] = dataframe["VALUE"] * dataframe["CUST_ID"]
+    unused_dataframe = dataframe[dataframe["VALUE"] > 100.0]
+    filtered_dataframe = dataframe[dataframe["MASK"]]
+    sub_dataframe = filtered_dataframe[["VALUE", "CUST_ID"]]
+    sub_dataframe_dict = sub_dataframe.dict()
+    assert isinstance(unused_dataframe, Frame)
+    assert sub_dataframe.column_lineage_map == {
+        "CUST_ID": ("input_1", "filter_2", "project_4"),
+        "VALUE": ("input_1", "filter_2", "project_4"),
+    }
+    assert sub_dataframe_dict["column_lineage_map"] == {
+        "CUST_ID": ("input_1", "filter_1", "project_2"),
+        "VALUE": ("input_1", "filter_1", "project_2"),
+    }
+    assert sub_dataframe.row_index_lineage == ("input_1", "filter_2")
+    assert sub_dataframe_dict["row_index_lineage"] == ("input_1", "filter_1")
+    loaded_sub_dataframe = Frame.parse_obj(sub_dataframe_dict)
+    # note that loaded_sub_dataframe & sub_dataframe are not fully identical (ideally, we should make them identical)
+    # loaded_sub_dataframe = input -> filter (input_frame, "MASK") -> project ["VALUE", "CUST_ID"]
+    # sub_dataframe = input -> filter (assign_frame, "MASK") -> project ["VALUE", "CUST_ID"]
+    assert sub_dataframe.preview_sql() == loaded_sub_dataframe.preview_sql()

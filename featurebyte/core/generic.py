@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, Tuple
 from abc import abstractmethod
 
 import pandas as pd
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field
 
 from featurebyte.config import Configurations, Credentials
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
@@ -61,17 +61,6 @@ class QueryObject(BaseModel):
 
     def __str__(self) -> str:
         return repr(self)
-
-    @root_validator()
-    @classmethod
-    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if not isinstance(values["graph"], GlobalQueryGraph):
-            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
-            values["graph"] = global_graph
-            values["node"] = global_graph.get_node_by_name(node_name_map[values["node"].name])
-            for key in ["lineage", "row_index_lineage"]:
-                values[key] = tuple(node_name_map[node_name] for node_name in values[key])
-        return values
 
     def _preview_sql(self, columns: list[str], limit: int = 10) -> str:
         """
@@ -153,23 +142,6 @@ class QueryObject(BaseModel):
         data_source = ExtendedFeatureStoreModel(**self.tabular_source[0].dict())
         session = data_source.get_session(credentials=credentials)
         return session
-
-    def _to_dict(self, target_columns: set[str], *args: Any, **kwargs: Any) -> dict[str, Any]:
-        if isinstance(self.graph, GlobalQueryGraph):
-            pruned_graph, node_name_map = self.graph.prune(
-                target_node=self.node, target_columns=target_columns, to_update_node_params=True
-            )
-            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
-            new_object = self.copy()
-            new_object.graph = pruned_graph
-            new_object.node = mapped_node
-            for attr in ["lineage", "row_index_lineage"]:
-                new_value = tuple(
-                    node_name_map[node_name] for node_name in getattr(new_object, attr)
-                )
-                setattr(new_object, attr, new_value)
-            return new_object.dict(**kwargs)
-        return super().dict(*args, **kwargs)
 
     def json(
         self,

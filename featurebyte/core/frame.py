@@ -8,12 +8,14 @@ from typing import Any, Dict, Tuple
 import copy
 
 import pandas as pd
+from pydantic import root_validator
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
 class BaseFrame(QueryObject):
@@ -241,5 +243,39 @@ class Frame(BaseFrame, OpsMixin):
         else:
             raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
 
+    @root_validator()
+    @classmethod
+    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(values["graph"], GlobalQueryGraph):
+            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
+            values["graph"] = global_graph
+            values["node"] = global_graph.get_node_by_name(node_name_map[values["node"].name])
+            column_lineage_map = {}
+            for col, lineage in values["column_lineage_map"].items():
+                column_lineage_map[col] = tuple(node_name_map[node_name] for node_name in lineage)
+            values["column_lineage_map"] = column_lineage_map
+            values["row_index_lineage"] = tuple(
+                node_name_map[node_name] for node_name in values["row_index_lineage"]
+            )
+        return values
+
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
-        return self._to_dict(set(self.column_var_type_map), *args, **kwargs)
+        if isinstance(self.graph, GlobalQueryGraph):
+            pruned_graph, node_name_map = self.graph.prune(
+                target_node=self.node,
+                target_columns=set(self.column_var_type_map),
+                to_update_node_params=True,
+            )
+            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
+            new_object = self.copy()
+            new_object.graph = pruned_graph
+            new_object.node = mapped_node
+            column_lineage_map = {}
+            for col, lineage in new_object.column_lineage_map.items():
+                column_lineage_map[col] = tuple(node_name_map[node_name] for node_name in lineage)
+            new_object.column_lineage_map = column_lineage_map
+            new_object.row_index_lineage = tuple(
+                node_name_map[node_name] for node_name in new_object.row_index_lineage
+            )
+            return new_object.dict(*args, **kwargs)
+        return super().dict(*args, **kwargs)
