@@ -274,9 +274,7 @@ class SchemaInitializer:
         -------
         list[str]
         """
-        sql_directory = os.path.join(
-            os.path.dirname(featurebyte.__file__), "..", "sql", "snowflake"
-        )
+        sql_directory = os.path.join(os.path.dirname(featurebyte.__file__), "sql", "snowflake")
         output = []
 
         for filename in os.listdir(sql_directory):

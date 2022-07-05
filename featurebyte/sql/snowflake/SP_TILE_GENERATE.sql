@@ -76,7 +76,7 @@ $$
 
     // update last_tile index
     update_tile_last_ind_sql = `
-        UPDATE TILE_REGISTRY 
+        UPDATE TILE_REGISTRY
             SET LAST_TILE_INDEX_${TILE_TYPE} = (SELECT MAX(INDEX) FROM (${tile_sql}))
         WHERE TILE_ID = '${TABLE_NAME}'
     `
