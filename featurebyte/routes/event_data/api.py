@@ -10,20 +10,20 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
-from .schema import EventData, EventDataCreate, EventDataList, EventDataUpdate
+from .schema import EventDataCreate, EventDataList, EventDataRead, EventDataUpdate
 
 router = APIRouter(prefix="/event_data")
 
 
-@router.post("", response_model=EventData, status_code=HTTPStatus.CREATED)
+@router.post("", response_model=EventDataRead, status_code=HTTPStatus.CREATED)
 def create_event_data(
     request: Request,
     data: EventDataCreate,
-) -> EventData:
+) -> EventDataRead:
     """
     Create Event Data
     """
-    event_data: EventData = request.state.controller.create_event_data(
+    event_data: EventDataRead = request.state.controller.create_event_data(
         user=request.state.user, persistent=request.state.persistent, data=data
     )
     return event_data
@@ -53,15 +53,15 @@ def list_event_datas(
     return event_data_list
 
 
-@router.get("/{event_data_name}", response_model=EventData)
+@router.get("/{event_data_name}", response_model=EventDataRead)
 def retrieve_event_data(
     request: Request,
     event_data_name: str,
-) -> Optional[EventData]:
+) -> Optional[EventDataRead]:
     """
     Retrieve Event Data
     """
-    event_data: Optional[EventData] = request.state.controller.retrieve_event_data(
+    event_data: Optional[EventDataRead] = request.state.controller.retrieve_event_data(
         user=request.state.user,
         persistent=request.state.persistent,
         event_data_name=event_data_name,
@@ -69,16 +69,16 @@ def retrieve_event_data(
     return event_data
 
 
-@router.patch("/{event_data_name}", response_model=EventData)
+@router.patch("/{event_data_name}", response_model=EventDataRead)
 def update_event_data(
     request: Request,
     event_data_name: str,
     data: EventDataUpdate,
-) -> EventData:
+) -> EventDataRead:
     """
     Update scheduled task
     """
-    event_data: EventData = request.state.controller.update_event_data(
+    event_data: EventDataRead = request.state.controller.update_event_data(
         user=request.state.user,
         persistent=request.state.persistent,
         event_data_name=event_data_name,

@@ -12,33 +12,12 @@ from pydantic import BaseModel, Field
 
 from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
-from featurebyte.routes.common.schema import PaginationMixin, ResponseModel
+from featurebyte.routes.common.schema import DocumentModel, PaginationMixin, ResponseModel
 
 
-class EventDataCreate(BaseModel):
+class EventData(EventDataModel):
     """
-    Event Data Creation Payload
-
-    Parameters
-    ----------
-    """
-
-    name: str
-    tabular_source: Tuple[FeatureStoreModel, TableDetails]
-    event_timestamp_column: str
-    column_entity_map: Dict[str, str] = Field(default_factory=dict)
-    record_creation_date_column: Optional[str]
-    default_feature_job_setting: Optional[FeatureJobSetting]
-
-
-class EventData(EventDataModel, ResponseModel):
-    """
-    Event Data
-
-    id: ObjectId
-        Document identifier
-    user_id: ObjectId
-        User identifier
+    Event Data Document Model
     """
 
     user_id: Optional[PydanticObjectId]
@@ -55,12 +34,37 @@ class EventData(EventDataModel, ResponseModel):
         json_encoders = {ObjectId: str}
 
 
-class EventDataList(PaginationMixin):
+class EventDataDocument(EventData, DocumentModel):
     """
-    Paginated list of Event Datas
+    Event Data Persistent Document
     """
 
-    data: List[EventData]
+
+class EventDataRead(EventData, ResponseModel):
+    """
+    Event Data Read schema
+    """
+
+
+class EventDataCreate(BaseModel):
+    """
+    Event Data Creation schema
+    """
+
+    name: str
+    tabular_source: Tuple[FeatureStoreModel, TableDetails]
+    event_timestamp_column: str
+    column_entity_map: Dict[str, str] = Field(default_factory=dict)
+    record_creation_date_column: Optional[str]
+    default_feature_job_setting: Optional[FeatureJobSetting]
+
+
+class EventDataList(PaginationMixin):
+    """
+    Paginated list of Event Data Read
+    """
+
+    data: List[EventDataRead]
 
     class Config:
         """
