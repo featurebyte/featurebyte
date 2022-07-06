@@ -360,7 +360,7 @@ class BuildTileNode(TableNode):
         keys = escape_column_names(self.keys)
         groupby_sql = (
             select(
-                f"{tile_start_date} AS tile_start_date",
+                f"{tile_start_date} AS {InternalName.TILE_START_DATE}",
                 *keys,
                 *[f"{spec.tile_expr} AS {spec.tile_column_name}" for spec in self.tile_specs],
             )
@@ -589,7 +589,9 @@ def make_build_tile_node(
     aggregator = get_aggregator(parameters["agg_func"])
     tile_specs = aggregator.tile(parameters["parent"])
     columns = (
-        ["tile_start_date"] + parameters["keys"] + [spec.tile_column_name for spec in tile_specs]
+        [InternalName.TILE_START_DATE]
+        + parameters["keys"]
+        + [spec.tile_column_name for spec in tile_specs]
     )
     columns_map = {col: expressions.Identifier(this=col, quoted=True) for col in columns}
     sql_node = BuildTileNode(

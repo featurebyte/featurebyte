@@ -223,7 +223,7 @@ def get_tile_sql_parameterized_by_job_settings(
     frequency_minute = frequency // 60
     index_expr = (
         f"F_TIMESTAMP_TO_INDEX("
-        f"  TILE_START_DATE,"
+        f"  {InternalName.TILE_START_DATE},"
         f"  {time_modulo_frequency},"
         f"  {blind_spot},"
         f"  {frequency_minute}"
