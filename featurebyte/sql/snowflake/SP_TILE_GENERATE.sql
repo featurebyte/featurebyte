@@ -32,14 +32,14 @@ $$
     }
     debug = debug + " - tile_exist: " + tile_exist
 
-    var col_list = COLUMN_NAMES.split(",").filter(item => item.trim().toUpperCase() !== "TILE_START_TS")
+    var col_list = COLUMN_NAMES.split(",").filter(item => item.trim().toUpperCase() !== "TILE_START_DATE")
     col_list_str = col_list.join(',')
     debug = debug + " - col_list_str: " + col_list_str
 
     //replace SQL template with start and end date strings for tile generation sql
     var tile_sql = `
         select
-            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}) as INDEX,
+            F_TIMESTAMP_TO_INDEX(TILE_START_DATE, ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}) as INDEX,
             ${col_list_str},
             SYSDATE() as CREATED_AT
         from (${SQL})

@@ -14,7 +14,7 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.core.frame import Frame
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
 from featurebyte.models.feature import FeatureModel, TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -284,11 +284,16 @@ def mock_snowflake_tile(mock_execute_query, snowflake_feature_store, snowflake_c
     mock_execute_query.size_effect = None
     _ = snowflake_connector
 
+    tile_sql = (
+        f"select c1 from dummy where"
+        f" tile_start_ts >= {SpecialColumnName.TILE_START_DATE_SQL_PLACEHOLDER} and"
+        f" tile_start_ts < {SpecialColumnName.TILE_END_DATE_SQL_PLACEHOLDER}"
+    )
     tile_s = TileSnowflake(
         time_modulo_frequency_seconds=183,
         blind_spot_seconds=3,
         frequency_minute=5,
-        tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
+        tile_sql=tile_sql,
         column_names="c1",
         tile_id="tile_id1",
         tabular_source=snowflake_feature_store,
