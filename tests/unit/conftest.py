@@ -15,7 +15,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
-from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
+from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.feature import FeatureModel, TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
@@ -300,7 +300,7 @@ def mock_snowflake_tile(mock_execute_query, snowflake_feature_store, snowflake_c
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature(mock_execute_query, snowflake_connector, config, snowflake_event_view):
+def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_event_view):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
@@ -331,6 +331,12 @@ def mock_snowflake_feature(mock_execute_query, snowflake_connector, config, snow
     )
     feature_loaded.tile_specs = [tile_spec]
 
-    s_feature = FeatureSnowflake(feature=feature_loaded, credentials=config.credentials)
+    return feature_loaded
 
-    return s_feature
+
+@pytest.fixture
+def feature_manager(config):
+    """
+    Feature Manager fixture
+    """
+    return FeatureManagerSnowflake(credentials=config.credentials)

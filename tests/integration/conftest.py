@@ -13,7 +13,7 @@ import yaml
 from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
-from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
+from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.feature import FeatureModel, FeatureReadiness, TileSpec
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
@@ -206,11 +206,17 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
     mock_feature.readiness = FeatureReadiness.DRAFT
     mock_feature.is_default = True
 
-    s_feature = FeatureSnowflake(feature=mock_feature, credentials=config.credentials)
-
-    yield s_feature
+    yield mock_feature
 
     snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
     snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
     snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
     snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+
+
+@pytest.fixture
+def feature_manager(config):
+    """
+    Feature Manager fixture
+    """
+    return FeatureManagerSnowflake(credentials=config.credentials)
