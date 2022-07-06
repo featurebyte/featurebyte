@@ -21,7 +21,23 @@ def test_schedule_generate_tile_online(snowflake_session):
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
 
-    sql = f"call SP_TILE_GENERATE_SCHEDULE('{tile_id}', 183, 3, 5, 1440, '{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}', '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}', '{col_names}', 'ONLINE', {tile_monitor}, '{tile_end_ts}')"
+    sql = f"""
+        call SP_TILE_GENERATE_SCHEDULE(
+          '{tile_id}',
+          183,
+          3,
+          5,
+          1440,
+          '{tile_sql}',
+          '{InternalName.TILE_START_DATE}',
+          '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',
+          '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
+          '{col_names}',
+          'ONLINE',
+          {tile_monitor},
+          '{tile_end_ts}'
+        )
+        """
     result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE_SCHEDULE"].iloc[0]
 
@@ -45,23 +61,23 @@ def test_schedule_monitor_tile_online(snowflake_session):
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
 
-    sql = (
-        f"call SP_TILE_GENERATE_SCHEDULE("
-        f"  '{tile_id}',"
-        f"  183,"
-        f"  3,"
-        f"  5,"
-        f"  1440,"
-        f"  '{tile_sql}',"
-        f"  '{InternalName.TILE_START_DATE}',"
-        f"  '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',"
-        f"  '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',"
-        f"  '{col_names}',"
-        f"  'ONLINE',"
-        f"  {tile_monitor},"
-        f"  '{tile_end_ts}'"
-        f")"
-    )
+    sql = f"""
+        call SP_TILE_GENERATE_SCHEDULE(
+          '{tile_id}',
+          183,
+          3,
+          5,
+          1440,
+          '{tile_sql}',
+          '{InternalName.TILE_START_DATE}',
+          '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',
+          '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
+          '{col_names}',
+          'ONLINE',
+          {tile_monitor},
+          '{tile_end_ts}'
+        )
+        """
     result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE_SCHEDULE"].iloc[0]
 
@@ -69,23 +85,23 @@ def test_schedule_monitor_tile_online(snowflake_session):
     snowflake_session.execute_query(sql)
 
     tile_end_ts_2 = "2022-06-05T23:58:00Z"
-    sql = (
-        f"call SP_TILE_GENERATE_SCHEDULE("
-        f"  '{tile_id}',"
-        f"  183,"
-        f"  3,"
-        f"  5,"
-        f"  1440,"
-        f"  '{tile_sql}',"
-        f"  '{InternalName.TILE_START_DATE}',"
-        f"  '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',"
-        f"  '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',"
-        f"  '{col_names}',"
-        f"  'ONLINE',"
-        f"  {tile_monitor},"
-        f"  '{tile_end_ts_2}'"
-        f")"
-    )
+    sql = f"""
+        call SP_TILE_GENERATE_SCHEDULE(
+          '{tile_id}',
+          183,
+          3,
+          5,
+          1440,
+          '{tile_sql}',
+          '{InternalName.TILE_START_DATE}',
+          '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',
+          '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
+          '{col_names}',
+          'ONLINE',
+          {tile_monitor},
+          '{tile_end_ts_2}'
+        )
+        """
     snowflake_session.execute_query(sql)
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}_MONITOR"
