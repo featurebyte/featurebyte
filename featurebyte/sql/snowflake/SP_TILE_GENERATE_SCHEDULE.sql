@@ -5,6 +5,9 @@ CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_SCHEDULE(
     FREQUENCY_MINUTE float,
     OFFLINE_PERIOD_MINUTE float,
     SQL varchar,
+    TILE_START_DATE_COLUMN varchar,
+    TILE_START_DATE_PLACEHOLDER varchar,
+    TILE_END_DATE_PLACEHOLDER varchar,
     COLUMN_NAMES varchar,
     TYPE varchar,
     MONITOR_PERIODS float,
@@ -58,8 +61,8 @@ $$
     monitor_tile_end_ts_str = monitor_end_ts.toISOString()
     debug = debug + " - monitor_tile_end_ts_str: " + monitor_tile_end_ts_str
 
-    var monitor_input_sql = SQL.replaceAll("FB_START_TS", "\\'"+tile_start_ts_str+"\\'").replaceAll("FB_END_TS", "\\'"+monitor_tile_end_ts_str+"\\'")
-    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}')`
+    var monitor_input_sql = SQL.replaceAll(`${TILE_START_DATE_PLACEHOLDER}`, "\\'"+tile_start_ts_str+"\\'").replaceAll(`${TILE_END_DATE_PLACEHOLDER}`, "\\'"+monitor_tile_end_ts_str+"\\'")
+    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', '${TILE_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}')`
     result = snowflake.execute(
         {
             sqlText: monitor_stored_proc
@@ -69,13 +72,13 @@ $$
     debug = debug + " - SP_TILE_MONITOR: " + result.getColumnValue(1)
 
     // trigger stored procedure to generate tiles
-    var generate_input_sql = SQL.replaceAll("FB_START_TS", "\\'"+tile_start_ts_str+"\\'").replaceAll("FB_END_TS", "\\'"+tile_end_ts_str+"\\'")
+    var generate_input_sql = SQL.replaceAll(`${TILE_START_DATE_PLACEHOLDER}`, "\\'"+tile_start_ts_str+"\\'").replaceAll(`${TILE_END_DATE_PLACEHOLDER}`, "\\'"+tile_end_ts_str+"\\'")
 
     var last_tile_start_ts = new Date(tile_end_ts.getTime())
     last_tile_start_ts.setMinutes(last_tile_start_ts.getMinutes() - FREQUENCY_MINUTE)
     last_tile_start_ts_str = last_tile_start_ts.toISOString()
 
-    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}', '${last_tile_start_ts_str}')`
+    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}', '${last_tile_start_ts_str}', '${TILE_START_DATE_COLUMN}')`
     var result = snowflake.execute(
         {
             sqlText: generate_stored_proc
