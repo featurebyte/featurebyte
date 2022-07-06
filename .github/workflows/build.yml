@@ -65,7 +65,6 @@ jobs:
         chmod 400 /tmp/git_key
         git config --global user.email "github@featurebyte.com"
         git config --global user.name "FeatureByte Github Testing"
-        set -o pipefail
         make test
 
     - name: Test Coverage Report
