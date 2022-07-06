@@ -125,6 +125,7 @@ class TileSnowflake(TileBase):
 
         sql = tm_generate_tile.render(
             tile_sql=tile_sql,
+            tile_start_date_column=InternalName.TILE_START_DATE.value,
             time_modulo_frequency_seconds=self.time_modulo_frequency_seconds,
             blind_spot_seconds=self.blind_spot_seconds,
             frequency_minute=self.frequency_minute,
@@ -132,7 +133,6 @@ class TileSnowflake(TileBase):
             tile_id=self.tile_id,
             tile_type=tile_type,
             last_tile_start_ts_str=last_tile_start_ts_str,
-            tile_start_date_column=InternalName.TILE_START_DATE.value,
         )
         logger.info(f"generated sql: {sql}")
         self._session.execute_query(sql)

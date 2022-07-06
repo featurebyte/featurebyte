@@ -22,7 +22,7 @@ def test_generate_tile(snowflake_session):
         f"AND {InternalName.TILE_START_DATE} < \\'2022-06-05T23:58:00Z\\'"
     )
 
-    sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'OFFLINE', '2022-06-05T23:53:00Z', '{InternalName.TILE_START_DATE}')"
+    sql = f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{col_names}', '{tile_id}', 'OFFLINE', '2022-06-05T23:53:00Z')"
     snowflake_session.execute_query(sql)
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
@@ -48,7 +48,7 @@ def test_generate_tile_no_data(snowflake_session):
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     tile_sql = f"SELECT {col_names} FROM {table_name} WHERE {InternalName.TILE_START_DATE} > \\'2022-06-05T23:58:00Z\\'"
 
-    sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE', null, '{InternalName.TILE_START_DATE}')"
+    sql = f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE', null)"
     result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
 
@@ -65,7 +65,7 @@ def test_generate_tile_non_exist_table(snowflake_session):
     table_name = "TEMP_TABLE"
     tile_sql = f"SELECT {col_names} FROM NON_EXIST_TABLE"
 
-    sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{table_name}_TILE', 'ONLINE', null, '{InternalName.TILE_START_DATE}')"
+    sql = f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{col_names}', '{table_name}_TILE', 'ONLINE', null)"
 
     with pytest.raises(ProgrammingError) as exc_info:
         snowflake_session.execute_query(sql)

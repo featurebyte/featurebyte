@@ -1,13 +1,13 @@
 CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE(
     SQL varchar,
+    TILE_START_DATE_COLUMN varchar,
     TIME_MODULO_FREQUENCY_SECOND float,
     BLIND_SPOT_SECOND float,
     FREQUENCY_MINUTE float,
     COLUMN_NAMES varchar,
     TILE_ID varchar,
     TILE_TYPE varchar,
-    LAST_TILE_START_STR varchar,
-    TILE_START_DATE_COLUMN varchar
+    LAST_TILE_START_STR varchar
 )
 returns string
 language javascript

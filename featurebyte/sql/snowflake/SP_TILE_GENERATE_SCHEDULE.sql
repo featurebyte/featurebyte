@@ -78,7 +78,7 @@ $$
     last_tile_start_ts.setMinutes(last_tile_start_ts.getMinutes() - FREQUENCY_MINUTE)
     last_tile_start_ts_str = last_tile_start_ts.toISOString()
 
-    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}', '${last_tile_start_ts_str}', '${TILE_START_DATE_COLUMN}')`
+    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', '${TILE_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${COLUMN_NAMES}', '${table_name}', '${tile_type}', '${last_tile_start_ts_str}')`
     var result = snowflake.execute(
         {
             sqlText: generate_stored_proc

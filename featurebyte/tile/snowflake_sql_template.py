@@ -38,8 +38,8 @@ tm_insert_tile_registry = Template(
 tm_generate_tile = Template(
     """
     call SP_TILE_GENERATE(
-        '{{tile_sql}}', {{time_modulo_frequency_seconds}}, {{blind_spot_seconds}}, {{frequency_minute}}, '{{column_names}}',
-        '{{tile_id}}', '{{tile_type.value}}', '{{last_tile_start_ts_str}}', '{{tile_start_date_column}}'
+        '{{tile_sql}}', '{{tile_start_date_column}}', {{time_modulo_frequency_seconds}}, {{blind_spot_seconds}}, {{frequency_minute}}, '{{column_names}}',
+        '{{tile_id}}', '{{tile_type.value}}', '{{last_tile_start_ts_str}}'
     )
 """
 )
