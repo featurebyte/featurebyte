@@ -11,10 +11,8 @@ import pandas as pd
 from pydantic import Field
 
 from featurebyte.api.feature import Feature, FeatureGroup
-from featurebyte.enum import SpecialColumnName
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
-from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.feature_historical import get_historical_features
 
 
 class FeatureList(FeatureListModel):
@@ -58,14 +56,7 @@ class FeatureList(FeatureListModel):
         self.feature_objects = feature_versions
 
     def get_historical_features(self, training_events: pd.DataFrame):
-        feature_nodes = [feature.node for feature in self.feature_objects]
-        planner = FeatureExecutionPlanner(GlobalQueryGraph())
-        plan = planner.generate_plan(feature_nodes)
-        sql = plan.construct_combined_sql(
-            point_in_time_column=SpecialColumnName.POINT_IN_TIME,
-            request_table_columns=training_events.columns.tolist(),
-        )
-        raise
+        return get_historical_features(self.feature_objects, training_events)
 
     @staticmethod
     def derive_features_readiness(features: list[Feature]) -> Optional[FeatureReadiness]:
