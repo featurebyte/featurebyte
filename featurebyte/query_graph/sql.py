@@ -13,7 +13,7 @@ from enum import Enum
 
 from sqlglot import Expression, expressions, parse_one, select
 
-from featurebyte.enum import SourceType, SpecialColumnName
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_common import AggregationSpec
 from featurebyte.query_graph.graph import Node
@@ -247,11 +247,9 @@ class BuildTileInputNode(GenericInputNode):
         assert isinstance(select_expr, expressions.Select)
         timestamp = escape_column_name(self.timestamp)
         start_cond = (
-            f"{timestamp} >= CAST({SpecialColumnName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
+            f"{timestamp} >= CAST({InternalName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
         )
-        end_cond = (
-            f"{timestamp} < CAST({SpecialColumnName.TILE_END_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
-        )
+        end_cond = f"{timestamp} < CAST({InternalName.TILE_END_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
         select_expr = select_expr.where(start_cond, end_cond)
         return select_expr
 
@@ -345,7 +343,7 @@ class BuildTileNode(TableNode):
 
     @property
     def sql(self) -> Expression:
-        start_date_placeholder = SpecialColumnName.TILE_START_DATE_SQL_PLACEHOLDER
+        start_date_placeholder = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
         start_date_placeholder_epoch = (
             f"DATE_PART(EPOCH_SECOND, CAST({start_date_placeholder} AS TIMESTAMP))"
         )

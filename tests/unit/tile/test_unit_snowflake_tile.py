@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import InternalName
 from featurebyte.models.feature import TileType
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
@@ -53,8 +53,8 @@ def test_schedule_online_tiles(mock_snowflake_tile):
     Test schedule_online_tiles method in TileSnowflake
     """
     sql = mock_snowflake_tile.schedule_online_tiles()
-    start_placeholder = SpecialColumnName.TILE_START_DATE_SQL_PLACEHOLDER
-    end_placeholder = SpecialColumnName.TILE_END_DATE_SQL_PLACEHOLDER
+    start_placeholder = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
+    end_placeholder = InternalName.TILE_END_DATE_SQL_PLACEHOLDER
     expected_sql = f"""
         CREATE OR REPLACE TASK SHELL_TASK_tile_id1_ONLINE
           WAREHOUSE = sf_warehouse
@@ -73,8 +73,8 @@ def test_schedule_offline_tiles(mock_snowflake_tile):
     Test schedule_offline_tiles method in TileSnowflake
     """
     sql = mock_snowflake_tile.schedule_offline_tiles()
-    start_placeholder = SpecialColumnName.TILE_START_DATE_SQL_PLACEHOLDER
-    end_placeholder = SpecialColumnName.TILE_END_DATE_SQL_PLACEHOLDER
+    start_placeholder = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
+    end_placeholder = InternalName.TILE_END_DATE_SQL_PLACEHOLDER
     expected_sql = f"""
         CREATE OR REPLACE TASK SHELL_TASK_tile_id1_OFFLINE
           WAREHOUSE = sf_warehouse

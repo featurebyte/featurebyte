@@ -133,8 +133,8 @@ def test_graph_interpreter_multi_assign(graph, node_input):
           "a" + "b" AS "c2"
         FROM "db"."public"."event_table"
         WHERE
-          "ts" >= CAST(FBT_START_DATE AS TIMESTAMP)
-          AND "ts" < CAST(FBT_END_DATE AS TIMESTAMP)
+          "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+          AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -191,8 +191,8 @@ def test_graph_interpreter_binary_operations(graph, node_input, node_type, expec
           {expected_expr} AS "a2"
         FROM "db"."public"."event_table"
         WHERE
-          "ts" >= CAST(FBT_START_DATE AS TIMESTAMP)
-          AND "ts" < CAST(FBT_END_DATE AS TIMESTAMP)
+          "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+          AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -291,21 +291,21 @@ def test_graph_interpreter_snowflake(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(FBT_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS tile_start_date,
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS tile_start_date,
           "CUST_ID",
           COUNT(*) AS value
         FROM (
             SELECT
               *,
-              FLOOR((DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(FBT_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+              FLOOR((DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
                 SELECT
                   "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
                   "CUST_ID" AS "CUST_ID"
                 FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
                 WHERE
-                  "SERVER_TIMESTAMP" >= CAST(FBT_START_DATE AS TIMESTAMP)
-                  AND "SERVER_TIMESTAMP" < CAST(FBT_END_DATE AS TIMESTAMP)
+                  "SERVER_TIMESTAMP" >= CAST(__FB_START_DATE AS TIMESTAMP)
+                  AND "SERVER_TIMESTAMP" < CAST(__FB_END_DATE AS TIMESTAMP)
             )
         )
         GROUP BY
