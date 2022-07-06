@@ -1,5 +1,5 @@
 #* Variables
-SHELL := /usr/bin/env bash
+SHELL := /usr/bin/env bash -o pipefail
 PYTHON := python
 PYTHONPATH := `pwd`
 
