@@ -22,7 +22,18 @@ def test_generate_tile(snowflake_session):
         f"AND {InternalName.TILE_START_DATE} < \\'2022-06-05T23:58:00Z\\'"
     )
 
-    sql = f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{col_names}', '{tile_id}', 'OFFLINE', '2022-06-05T23:53:00Z')"
+    sql = (
+        f"call SP_TILE_GENERATE("
+        f"  '{tile_sql}',"
+        f"  '{InternalName.TILE_START_DATE}',"
+        f"  183,"
+        f"  3,"
+        f"  5,"
+        f"  '{col_names}',"
+        f"  '{tile_id}',"
+        f"  'OFFLINE',"
+        f"  '2022-06-05T23:53:00Z')"
+    )
     snowflake_session.execute_query(sql)
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"

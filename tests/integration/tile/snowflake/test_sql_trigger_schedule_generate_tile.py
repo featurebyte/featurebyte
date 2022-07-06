@@ -20,10 +20,23 @@ def test_trigger_tile_schedule(snowflake_session):
     )
     task_name = f"TILE_TASK_ONLINE_{tile_id}"
 
-    internal_names = f"'{InternalName.TILE_START_DATE}', '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}', '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}'"
     sql = (
-        f"call SP_TILE_TRIGGER_GENERATE_SCHEDULE(null, 'COMPUTE_WH', '{tile_id}', 181, 1, 5, 1440, "
-        f"'{tile_sql}', {internal_names}, '{col_names}', 'ONLINE', {tile_monitor})"
+        f"call SP_TILE_TRIGGER_GENERATE_SCHEDULE("
+        f"  null,"
+        f"  'COMPUTE_WH',"
+        f"  '{tile_id}',"
+        f"  181,"
+        f"  1,"
+        f"  5,"
+        f"  1440,"
+        f"  '{tile_sql}',"
+        f"  '{InternalName.TILE_START_DATE}',"
+        f"  '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',"
+        f"  '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',"
+        f"  '{col_names}',"
+        f"  'ONLINE',"
+        f"  {tile_monitor}"
+        f")"
     )
     snowflake_session.execute_query(sql)
 

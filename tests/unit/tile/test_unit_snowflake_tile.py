@@ -61,7 +61,7 @@ def test_schedule_online_tiles(mock_snowflake_tile):
     """
     sql = mock_snowflake_tile.schedule_online_tiles()
     expected_sql = textwrap.dedent(
-        f"""
+        """
         CREATE OR REPLACE TASK SHELL_TASK_tile_id1_ONLINE
           WAREHOUSE = sf_warehouse
           SCHEDULE = 'USING CRON 3-59/5 * * * * UTC'
@@ -93,7 +93,7 @@ def test_schedule_offline_tiles(mock_snowflake_tile):
     """
     sql = mock_snowflake_tile.schedule_offline_tiles()
     expected_sql = textwrap.dedent(
-        f"""
+        """
         CREATE OR REPLACE TASK SHELL_TASK_tile_id1_OFFLINE
           WAREHOUSE = sf_warehouse
           SCHEDULE = 'USING CRON 3 0 * * * UTC'
