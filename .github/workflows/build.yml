@@ -27,9 +27,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
     strategy:
       matrix:
         python-version: ["3.8"]
