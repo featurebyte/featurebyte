@@ -589,7 +589,7 @@ def make_build_tile_node(
     aggregator = get_aggregator(parameters["agg_func"])
     tile_specs = aggregator.tile(parameters["parent"])
     columns = (
-        [InternalName.TILE_START_DATE]
+        [InternalName.TILE_START_DATE.value]
         + parameters["keys"]
         + [spec.tile_column_name for spec in tile_specs]
     )
