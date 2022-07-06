@@ -70,7 +70,7 @@ def test_create_fails_table_exists(test_api_client, event_data_dict):
     response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
     assert response.status_code == HTTPStatus.CREATED
     response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
-    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {"detail": 'Event Data "订单表" already exists.'}
 
 
@@ -81,7 +81,7 @@ def test_create_fails_table_exists_during_insert(test_api_client, event_data_dic
     with mock.patch("featurebyte.persistent.GitDB.insert_one") as mock_insert:
         mock_insert.side_effect = DuplicateDocumentError
         response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
-    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {"detail": 'Event Data "订单表" already exists.'}
 
 

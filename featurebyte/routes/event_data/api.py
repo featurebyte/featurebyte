@@ -10,26 +10,33 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
-from .schema import EventDataCreate, EventDataList, EventDataRead, EventDataUpdate
+from featurebyte.routes.event_data.schema import (
+    EventData,
+    EventDataCreate,
+    EventDataList,
+    EventDataUpdate,
+)
 
 router = APIRouter(prefix="/event_data")
 
 
-@router.post("", response_model=EventDataRead, status_code=HTTPStatus.CREATED)
+@router.post(
+    "", response_model=EventData, response_model_by_alias=False, status_code=HTTPStatus.CREATED
+)
 def create_event_data(
     request: Request,
     data: EventDataCreate,
-) -> EventDataRead:
+) -> EventData:
     """
     Create Event Data
     """
-    event_data: EventDataRead = request.state.controller.create_event_data(
+    event_data: EventData = request.state.controller.create_event_data(
         user=request.state.user, persistent=request.state.persistent, data=data
     )
     return event_data
 
 
-@router.get("", response_model=EventDataList)
+@router.get("", response_model=EventDataList, response_model_by_alias=False)
 def list_event_datas(
     request: Request,
     page: int = 1,
@@ -53,15 +60,15 @@ def list_event_datas(
     return event_data_list
 
 
-@router.get("/{event_data_name}", response_model=EventDataRead)
+@router.get("/{event_data_name}", response_model=EventData, response_model_by_alias=False)
 def retrieve_event_data(
     request: Request,
     event_data_name: str,
-) -> Optional[EventDataRead]:
+) -> EventData:
     """
     Retrieve Event Data
     """
-    event_data: Optional[EventDataRead] = request.state.controller.retrieve_event_data(
+    event_data: EventData = request.state.controller.retrieve_event_data(
         user=request.state.user,
         persistent=request.state.persistent,
         event_data_name=event_data_name,
@@ -69,16 +76,16 @@ def retrieve_event_data(
     return event_data
 
 
-@router.patch("/{event_data_name}", response_model=EventDataRead)
+@router.patch("/{event_data_name}", response_model=EventData, response_model_by_alias=False)
 def update_event_data(
     request: Request,
     event_data_name: str,
     data: EventDataUpdate,
-) -> EventDataRead:
+) -> EventData:
     """
     Update scheduled task
     """
-    event_data: EventDataRead = request.state.controller.update_event_data(
+    event_data: EventData = request.state.controller.update_event_data(
         user=request.state.user,
         persistent=request.state.persistent,
         event_data_name=event_data_name,

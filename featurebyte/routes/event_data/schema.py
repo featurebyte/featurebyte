@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
-from featurebyte.routes.common.schema import DocumentModel, PaginationMixin, ResponseModel
+from featurebyte.routes.common.schema import PaginationMixin
 
 
 class EventData(EventDataModel):
@@ -20,6 +20,7 @@ class EventData(EventDataModel):
     Event Data Document Model
     """
 
+    id: Optional[PydanticObjectId] = Field(alias="_id", default_factory=ObjectId)
     user_id: Optional[PydanticObjectId]
     created_at: datetime.datetime
     status: EventDataStatus
@@ -29,21 +30,7 @@ class EventData(EventDataModel):
         Configuration for Event Data schema
         """
 
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
-
-
-class EventDataDocument(EventData, DocumentModel):
-    """
-    Event Data Persistent Document
-    """
-
-
-class EventDataRead(EventData, ResponseModel):
-    """
-    Event Data Read schema
-    """
 
 
 class EventDataCreate(BaseModel):
@@ -64,7 +51,7 @@ class EventDataList(PaginationMixin):
     Paginated list of Event Data Read
     """
 
-    data: List[EventDataRead]
+    data: List[EventData]
 
     class Config:
         """

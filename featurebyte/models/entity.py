@@ -22,7 +22,7 @@ class EntityModel(BaseModel):
         Name of the serving column
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId)
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: str
     serving_column_names: List[str]
 

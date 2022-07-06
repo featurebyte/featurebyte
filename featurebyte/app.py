@@ -7,13 +7,15 @@ from __future__ import annotations
 from typing import Callable
 
 from bson.objectid import ObjectId
-from fastapi import Depends, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request
 
+import featurebyte.routes.entity.api as entity_api
 import featurebyte.routes.event_data.api as event_data_api
 from featurebyte.config import Configurations
 from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import GitDB, Persistent
+from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_data.controller import EventDataController
 
 app = FastAPI()
@@ -104,3 +106,4 @@ def _get_api_deps(controller: type) -> Callable[[Request], None]:
 app.include_router(
     event_data_api.router, dependencies=[Depends(_get_api_deps(EventDataController))]
 )
+app.include_router(entity_api.router, dependencies=[Depends(_get_api_deps(EntityController))])
