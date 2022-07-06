@@ -10,11 +10,12 @@ from bson import ObjectId
 from pydantic import BaseModel
 
 from featurebyte.models.entity import EntityModel
+from featurebyte.routes.common.schema import PaginationMixin
 
 
 class Entity(EntityModel):
     """
-    Entity Data Document Model
+    Entity Document Model
     """
 
     user_id: Optional[PydanticObjectId]
@@ -25,13 +26,31 @@ class Entity(EntityModel):
         Configuration for Entity schema
         """
 
+        # pylint: disable=too-few-public-methods
+
         json_encoders = {ObjectId: str}
 
 
 class EntityCreate(BaseModel):
     """
-    Entity Data Creation schema
+    Entity Creation schema
     """
 
     name: str
     serving_column_names: List[str]
+
+
+class EntityList(PaginationMixin):
+    """
+    Paginated list of Entity
+    """
+
+    data: List[Entity]
+
+
+class EntityUpdate(BaseModel):
+    """
+    Entity update schema
+    """
+
+    name: str

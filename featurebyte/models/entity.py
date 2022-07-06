@@ -31,4 +31,6 @@ class EntityModel(BaseModel):
         Configuration for EntityModel schema
         """
 
+        # pylint: disable=too-few-public-methods
+
         json_encoders = {ObjectId: str}

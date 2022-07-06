@@ -1,7 +1,6 @@
 """
 EventData API payload schema
 """
-# pylint: disable=too-few-public-methods
 from typing import Dict, List, Optional, Tuple
 
 import datetime
@@ -30,6 +29,8 @@ class EventData(EventDataModel):
         Configuration for Event Data schema
         """
 
+        # pylint: disable=too-few-public-methods
+
         json_encoders = {ObjectId: str}
 
 
@@ -48,19 +49,10 @@ class EventDataCreate(BaseModel):
 
 class EventDataList(PaginationMixin):
     """
-    Paginated list of Event Data Read
+    Paginated list of Event Data
     """
 
     data: List[EventData]
-
-    class Config:
-        """
-        Configuration for Event Datas schema
-        """
-
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
 
 
 class EventDataUpdate(BaseModel):

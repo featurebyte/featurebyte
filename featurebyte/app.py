@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Callable
 
 from bson.objectid import ObjectId
-from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 
 import featurebyte.routes.entity.api as entity_api
 import featurebyte.routes.event_data.api as event_data_api

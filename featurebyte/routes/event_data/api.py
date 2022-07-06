@@ -43,7 +43,6 @@ def list_event_datas(
     page_size: int = 10,
     sort_by: Optional[str] = "created_at",
     sort_dir: Literal["asc", "desc"] = "desc",
-    search: Optional[str] = None,
 ) -> EventDataList:
     """
     List Event Datas
@@ -55,7 +54,6 @@ def list_event_datas(
         page_size=page_size,
         sort_by=sort_by,
         sort_dir=sort_dir,
-        search=search,
     )
     return event_data_list
 
