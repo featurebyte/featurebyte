@@ -18,10 +18,17 @@ class EntityModel(BaseModel):
         Entity id of the object
     name: str
         Name of the Entity
-    serving_column_name: List[str]
+    serving_column_names: List[str]
         Name of the serving column
     """
 
     id: PydanticObjectId = Field(default_factory=ObjectId)
     name: str
-    serving_column_name: List[str]
+    serving_column_names: List[str]
+
+    class Config:
+        """
+        Configuration for EntityModel schema
+        """
+
+        json_encoders = {ObjectId: str}
