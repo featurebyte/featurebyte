@@ -28,7 +28,7 @@ class FeatureSnowflake(BaseModel):
 
     Parameters
     ----------
-    feature: Feature
+    feature: FeatureModel
         feature instance
     credentials: Credentials
         credentials to the datasource
@@ -90,7 +90,8 @@ class FeatureSnowflake(BaseModel):
 
     def retrieve_feature_registries(self, version: Optional[str] = None) -> pd.DataFrame:
         """
-        Retrieve Feature instances. If version parameter is not presented, return all the feature versions
+        Retrieve Feature instances. If version parameter is not presented, return all the feature versions.
+        It will retrieve the rows from table FEATURE_REGISTRY as DataFrame
 
         Parameters
         ----------
@@ -98,7 +99,8 @@ class FeatureSnowflake(BaseModel):
             version of Feature
         Returns
         -------
-            dataframe of Feature Registries
+            dataframe of the FEATURE_REGISTRY rows with the following columns:
+                NAME, VERSION, READINESS, STATUS, TILE_SPECS, IS_DEFAULT, ONLINE_ENABLED, CREATED_AT
         """
         sql = tm_select_feature_registry.render(feature_name=self.feature.name)
         if version:
