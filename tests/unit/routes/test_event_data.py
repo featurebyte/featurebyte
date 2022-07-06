@@ -50,7 +50,7 @@ def test_create_success(test_api_client, event_data_dict):
     assert response.status_code == HTTPStatus.CREATED
     result = response.json()
     assert datetime.datetime.fromisoformat(result.pop("created_at")) > utcnow
-    result.pop("id")
+    assert result.pop("id")
     assert result.pop("user_id") is None
     # history should contain the initial entry
     event_data_dict.pop("history")
@@ -113,18 +113,24 @@ def test_list(test_api_client, event_data_dict):
     List Event Datas
     """
     # insert a few records
+    insert_ids = []
     for i in range(3):
         event_data_dict["name"] = f"Table {i}"
         response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
         assert response.status_code == HTTPStatus.CREATED
+        insert_id = response.json()["id"]
+        assert insert_id
+        insert_ids.append(insert_id)
+
     response = test_api_client.request("GET", url="/event_data")
     assert response.status_code == HTTPStatus.OK
     results = response.json()
     assert results["page"] == 1
     assert results["total"] == 3
     data = results["data"][0]
-    data.pop("id")
+    assert data.pop("id") == insert_ids[-1]
     data.pop("created_at")
+
     # should include the static user id
     assert data.pop("user_id") is None
     assert data.pop("history")[0]["setting"] == event_data_dict["default_feature_job_setting"]
@@ -140,12 +146,14 @@ def test_retrieve_success(test_api_client, event_data_dict):
     # insert a record
     response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
     assert response.status_code == HTTPStatus.CREATED
+    insert_id = response.json()["id"]
+    assert insert_id
 
     # retrieve by table name
     response = test_api_client.request("GET", url="/event_data/订单表")
     assert response.status_code == HTTPStatus.OK
     data = response.json()
-    data.pop("id")
+    assert data.pop("id") == insert_id
     data.pop("created_at")
     # should include the static user id
     assert data.pop("user_id") is None
@@ -173,12 +181,14 @@ def test_update_success(test_api_client, event_data_dict, event_data_update_dict
     response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
     assert response.status_code == HTTPStatus.CREATED
     data = response.json()
+    insert_id = data["id"]
+    assert insert_id
     previous_history = data["history"]
 
     response = test_api_client.request("PATCH", url="/event_data/订单表", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.OK
     data = response.json()
-    data.pop("id")
+    assert data.pop("id") == insert_id
     data.pop("created_at")
     assert data.pop("user_id") is None
 
@@ -220,6 +230,8 @@ def test_update_excludes_unsupported_fields(
     response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
     assert response.status_code == HTTPStatus.CREATED
     data = response.json()
+    insert_id = data["id"]
+    assert insert_id
     previous_history = data["history"]
 
     # expect status to be draft
@@ -231,7 +243,7 @@ def test_update_excludes_unsupported_fields(
     response = test_api_client.request("PATCH", url="/event_data/订单表", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.OK
     data = response.json()
-    data.pop("id")
+    assert data.pop("id") == insert_id
     data.pop("created_at")
     assert data.pop("user_id") is None
 

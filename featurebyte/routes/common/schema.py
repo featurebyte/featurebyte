@@ -4,7 +4,15 @@ Common classes mixin for API payload schema
 from typing import Any, Optional
 
 from beanie import PydanticObjectId
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, validator
+
+
+class DocumentModel(BaseModel):
+    """
+    Persistent Document Base Class
+    """
+
+    id: Optional[PydanticObjectId] = Field(alias="_id")
 
 
 class ResponseModel(BaseModel):
@@ -16,7 +24,7 @@ class ResponseModel(BaseModel):
 
     def __init__(self, **pydict: Any) -> None:
         super().__init__(**pydict)
-        self.id = pydict.pop("_id", None)  # pylint: disable=invalid-name
+        self.id = pydict.pop("_id", pydict.pop("id", None))  # pylint: disable=invalid-name
 
 
 class PaginationMixin(BaseModel):
