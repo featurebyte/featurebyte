@@ -8,7 +8,7 @@ tm_insert_feature_registry = Template(
     INSERT INTO FEATURE_REGISTRY (NAME, VERSION, READINESS, TILE_SPECS)
     SELECT
         '{{feature.name}}' as NAME, '{{feature.version}}' as VERSION,
-        '{{feature.readiness}}' as READINESS, parse_json('{{tile_specs_str}}') as TILE_SPECS
+        '{{feature.readiness.value}}' as READINESS, parse_json('{{tile_specs_str}}') as TILE_SPECS
 """
 )
 

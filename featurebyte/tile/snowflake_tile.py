@@ -10,7 +10,7 @@ from pydantic import PrivateAttr
 from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.logger import logger
-from featurebyte.models.event_data import TileType
+from featurebyte.models.feature import TileType
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.base import TileBase
@@ -97,10 +97,7 @@ class TileSnowflake(TileBase):
         )
 
     def generate_tiles(
-        self,
-        tile_type: TileType,
-        start_ts_str: str,
-        end_ts_str: str,
+        self, tile_type: TileType, start_ts_str: str, end_ts_str: str, last_tile_start_ts_str: str
     ) -> str:
         """
         Manually trigger tile generation
@@ -113,6 +110,8 @@ class TileSnowflake(TileBase):
             start_timestamp of tile. ie. 2022-06-20 15:00:00
         end_ts_str: str
             end_timestamp of tile. ie. 2022-06-21 15:00:00
+        last_tile_start_ts_str: str
+            start date string of last tile used to update the tile_registry table
 
         Returns
         -------
@@ -131,6 +130,7 @@ class TileSnowflake(TileBase):
             column_names=self.column_names,
             tile_id=self.tile_id,
             tile_type=tile_type,
+            last_tile_start_ts_str=last_tile_start_ts_str,
         )
         logger.info(f"generated sql: {sql}")
         self._session.execute_query(sql)

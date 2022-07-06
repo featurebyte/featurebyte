@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE(SQL varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME varchar, TILE_TYPE varchar)
+CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE(SQL varchar, TIME_MODULO_FREQUENCY_SECOND float, BLIND_SPOT_SECOND float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TILE_ID varchar, TILE_TYPE varchar, LAST_TILE_START_STR varchar)
 returns string
 language javascript
 as
@@ -10,10 +10,23 @@ $$
 
     var debug = "Debug"
 
-    //check whether tile table for the feature already exists
+    //check whether the tile registry record already exists
+    var result = snowflake.execute({sqlText: `SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '${TILE_ID}'`})
+    if (result.getRowCount() === 0) {
+        // no registry record exists, insert a new registry record
+        var tile_sql = SQL.replaceAll("'", "\\'")
+        var insert_sql = `
+            INSERT INTO TILE_REGISTRY (TILE_ID, TILE_SQL, COLUMN_NAMES, FREQUENCY_MINUTE, TIME_MODULO_FREQUENCY_SECOND, BLIND_SPOT_SECOND, IS_ENABLED)
+            VALUES ('${TILE_ID}', '${tile_sql}', '${COLUMN_NAMES}', ${FREQUENCY_MINUTE}, ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, False)
+        `
+        snowflake.execute({sqlText: insert_sql})
+        debug = debug + " - inserted new tile registry record with " + insert_sql
+    }
+
+    //check whether tile table already exists
     var tile_exist = true
     try {
-        snowflake.execute({sqlText: `SELECT * FROM ${TABLE_NAME} LIMIT 1`})
+        snowflake.execute({sqlText: `SELECT * FROM ${TILE_ID} LIMIT 1`})
     } catch (err)  {
         tile_exist = false
     }
@@ -26,7 +39,7 @@ $$
     //replace SQL template with start and end date strings for tile generation sql
     var tile_sql = `
         select
-            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX,
+            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}) as INDEX,
             ${col_list_str},
             SYSDATE() as CREATED_AT
         from (${SQL})
@@ -35,7 +48,7 @@ $$
     if (tile_exist === false) {
 
         //feature tile table does not exist, create the table with the input tile sql
-        var tile_create_sql = `create table ${TABLE_NAME} as ${tile_sql}`
+        var tile_create_sql = `create table ${TILE_ID} as ${tile_sql}`
         snowflake.execute(
             {
                 sqlText: tile_create_sql
@@ -58,7 +71,7 @@ $$
         insert_cols_str = insert_cols_str.slice(0, -1)
 
         var tile_insert_sql = `
-            merge into ${TABLE_NAME} a using (${tile_sql}) b
+            merge into ${TILE_ID} a using (${tile_sql}) b
                 on a.INDEX = b.INDEX ${filter_cols_str}
                 when matched then
                     update set a.VALUE = b.VALUE, a.CREATED_AT = SYSDATE()
@@ -71,16 +84,18 @@ $$
             }
         )
         debug = debug + " - tile_insert_sql: " + tile_insert_sql
-
     }
 
-    // update last_tile index
-    update_tile_last_ind_sql = `
-        UPDATE TILE_REGISTRY
-            SET LAST_TILE_INDEX_${TILE_TYPE} = (SELECT MAX(INDEX) FROM (${tile_sql}))
-        WHERE TILE_ID = '${TABLE_NAME}'
-    `
-    snowflake.execute({sqlText: update_tile_last_ind_sql})
+    if (LAST_TILE_START_STR != null) {
+        // update last_tile index
+        update_tile_last_ind_sql = `
+            UPDATE TILE_REGISTRY
+            SET LAST_TILE_INDEX_${TILE_TYPE} = F_TIMESTAMP_TO_INDEX('${LAST_TILE_START_STR}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}),
+                LAST_TILE_START_DATE_${TILE_TYPE} = '${LAST_TILE_START_STR}'
+            WHERE TILE_ID = '${TILE_ID}'
+        `
+        snowflake.execute({sqlText: update_tile_last_ind_sql})
+    }
 
   return debug
 $$;

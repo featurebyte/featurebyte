@@ -14,7 +14,7 @@ from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
 from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
-from featurebyte.models.event_data import Feature, TileSpec
+from featurebyte.models.feature import FeatureModel, FeatureReadiness, TileSpec
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.tile.snowflake_tile import TileSnowflake
@@ -184,12 +184,13 @@ def snowflake_tile(snowflake_session, config):
 
 
 @pytest.fixture
-def snowflake_feature(snowflake_session, config):
+def snowflake_feature(feature_model_dict, snowflake_session, config):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
-    tile_id = "tile_id1"
+    mock_feature = FeatureModel(**feature_model_dict)
 
+    tile_id = "tile_id1"
     tile_spec = TileSpec(
         tile_id=tile_id,
         time_modulo_frequency_second=183,
@@ -199,17 +200,13 @@ def snowflake_feature(snowflake_session, config):
         column_names="col1",
     )
 
-    feature = Feature(
-        name="test_feature1",
-        version="v1",
-        readiness="DRAFT",
-        is_default=True,
-        tile_specs=[tile_spec],
-        online_enabled=False,
-        datasource=config.feature_stores["snowflake_featurestore"],
-    )
+    mock_feature.tabular_source = (config.feature_stores["snowflake_featurestore"],)
+    mock_feature.tile_specs = [tile_spec]
+    mock_feature.version = "v1"
+    mock_feature.readiness = FeatureReadiness.DRAFT
+    mock_feature.is_default = True
 
-    s_feature = FeatureSnowflake(feature=feature, credentials=config.credentials)
+    s_feature = FeatureSnowflake(feature=mock_feature, credentials=config.credentials)
 
     yield s_feature
 

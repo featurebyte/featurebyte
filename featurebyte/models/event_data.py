@@ -11,7 +11,7 @@ from enum import Enum
 from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
-from featurebyte.models.feature_store import DatabaseTableModel, FeatureStoreModel
+from featurebyte.models.feature_store import DatabaseTableModel
 
 
 class FeatureJobSetting(BaseModel):
@@ -91,69 +91,3 @@ class EventDataModel(DatabaseTableModel):
     created_at: Optional[datetime] = Field(default=None)
     history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list)
     status: Optional[EventDataStatus] = Field(default=None)
-
-
-###### Temporary Definition of Feature and TileSpec ######
-class TileSpec(BaseModel):
-    """
-    Temporary Model for TileSpec
-    Parameters
-    ----------
-    tile_id: str
-        hash value of tile id and name
-    time_modulo_frequency_seconds: int
-        time modulo seconds for the tile
-    blind_spot_seconds: int
-        blind spot seconds for the tile
-    frequency_minute: int
-        frequency minute for the tile
-    tile_sql: str
-        sql for tile generation
-    column_names: str
-        comma separated string of column names for the tile table
-    """
-
-    tile_id: str
-    tile_sql: str
-    column_names: str
-
-    time_modulo_frequency_second: int
-    blind_spot_second: int
-    frequency_minute: int
-
-
-class Feature(BaseModel):
-    """
-    Temporary Model for Feature
-    Parameters
-    ----------
-    name : str
-        Name of the Feature
-    readiness : EventDataStatus
-        Status of the Feature
-    version : str
-        feature version
-    is_default : bool
-        whether it is the default feature
-    online_enabled: bool
-        whether feature is online enabled or not
-    datasource: FeatureStoreModel
-        datasource instance
-    """
-
-    name: str
-    readiness: str
-    version: str
-    is_default: bool
-
-    tile_specs: List[TileSpec] = Field(default=[])
-
-    online_enabled: bool
-    datasource: FeatureStoreModel
-
-
-class TileType(str, Enum):
-    """Tile Type"""
-
-    ONLINE = "ONLINE"
-    OFFLINE = "OFFLINE"

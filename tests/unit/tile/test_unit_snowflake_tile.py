@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-from featurebyte.models.event_data import TileType
+from featurebyte.models.feature import TileType
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
@@ -34,14 +34,14 @@ def test_generate_tiles(mock_snowflake_tile):
     Test generate_tiles method in TileSnowflake
     """
     sql = mock_snowflake_tile.generate_tiles(
-        TileType.ONLINE, "2022-06-20 15:00:00", "2022-06-21 15:00:00"
+        TileType.ONLINE, "2022-06-20 15:00:00", "2022-06-21 16:00:00", "2022-06-21 15:55:00"
     )
     expected_sql = """
         call SP_TILE_GENERATE(
             'select c1 from dummy
             where tile_start_ts >= \\'2022-06-20 15:00:00\\'
-            and tile_start_ts < \\'2022-06-21 15:00:00\\'',
-            183, 3, 5, 'c1', 'tile_id1', 'ONLINE'
+            and tile_start_ts < \\'2022-06-21 16:00:00\\'',
+            183, 3, 5, 'c1', 'tile_id1', 'ONLINE', '2022-06-21 15:55:00'
         )
     """
     assert "".join(sql.split()) == "".join(expected_sql.split())

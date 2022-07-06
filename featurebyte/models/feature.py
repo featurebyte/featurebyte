@@ -43,6 +43,40 @@ class DefaultVersionMode(str, Enum):
     MANUAL = "MANUAL"
 
 
+class TileType(str, Enum):
+    """Tile Type"""
+
+    ONLINE = "ONLINE"
+    OFFLINE = "OFFLINE"
+
+
+class TileSpec(BaseModel):
+    """
+    Model for TileSpec
+
+    tile_id: str
+        hash value of tile id and name
+    time_modulo_frequency_seconds: int
+        time modulo seconds for the tile
+    blind_spot_seconds: int
+        blind spot seconds for the tile
+    frequency_minute: int
+        frequency minute for the tile
+    tile_sql: str
+        sql for tile generation
+    column_names: str
+        comma separated string of column names for the tile table
+    """
+
+    tile_id: str
+    tile_sql: str
+    column_names: str
+
+    time_modulo_frequency_second: int
+    blind_spot_second: int
+    frequency_minute: int
+
+
 class FeatureNameSpace(BaseModel):
     """
     Feature set with the same feature name
@@ -102,6 +136,8 @@ class FeatureModel(BaseModel):
     tabular_source: Tuple[FeatureStoreModel, TableDetails]
     readiness: Optional[FeatureReadiness]
     version: Optional[FeatureVersionIdentifier]
+    tile_specs: Optional[List[TileSpec]]
+    is_default: Optional[bool]
     created_at: Optional[datetime]
 
 
