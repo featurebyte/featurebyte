@@ -5,18 +5,19 @@ from jinja2 import Template
 
 tm_insert_feature_registry = Template(
     """
-    INSERT INTO FEATURE_REGISTRY (NAME, VERSION, READINESS, TILE_SPECS)
+    INSERT INTO FEATURE_REGISTRY (NAME, VERSION, DESCRIPTION, READINESS, TILE_SPECS)
     SELECT
-        '{{feature.name}}' as NAME, '{{feature.version}}' as VERSION,
+        '{{feature.name}}' as NAME, '{{feature.version}}' as VERSION, '{{feature.description}}' as DESCRIPTION,
         '{{feature.readiness.value}}' as READINESS, parse_json('{{tile_specs_str}}') as TILE_SPECS
 """
 )
 
 tm_update_feature_registry = Template(
     """
-    UPDATE FEATURE_REGISTRY SET IS_DEFAULT = {{is_default}} WHERE NAME = '{{feature_name}}'
+    UPDATE FEATURE_REGISTRY SET {{col_name}} = {{col_value}} WHERE NAME = '{{feature_name}}'
 """
 )
+
 
 tm_select_feature_registry = Template(
     """

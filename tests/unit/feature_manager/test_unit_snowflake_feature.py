@@ -22,7 +22,7 @@ def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature, fea
     assert mock_execute_query.call_count == 3
 
     update_sql = tm_update_feature_registry.render(
-        feature_name=mock_snowflake_feature.name, is_default=False
+        feature_name=mock_snowflake_feature.name, col_name="is_default", col_value=False
     )
 
     tile_specs_lst = [tile_spec.dict() for tile_spec in mock_snowflake_feature.tile_specs]

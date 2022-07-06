@@ -55,7 +55,9 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"feature_versions: {feature_versions}")
         if len(feature_versions) == 0:
             session.execute_query(
-                tm_update_feature_registry.render(feature_name=feature.name, is_default=False)
+                tm_update_feature_registry.render(
+                    feature_name=feature.name, col_name="is_default", col_value=False
+                )
             )
             logger.debug("Done updating is_default of other versions to false")
 
@@ -99,7 +101,9 @@ class FeatureManagerSnowflake(BaseModel):
 
         return self._get_session(feature).execute_query(sql)
 
-    def update_feature_registry(self, feature: FeatureModel) -> None:
+    def update_feature_registry(
+        self, feature: FeatureModel, attribute_name: str, attribute_value: str
+    ) -> None:
         """
         Update Feature Registry record
 
@@ -107,6 +111,10 @@ class FeatureManagerSnowflake(BaseModel):
         ----------
         feature: FeatureModel
             input feature instance
+        attribute_name: str
+            attribute/column name
+        attribute_value: str
+            attribute/column value
         """
         feature_versions = self.retrieve_feature_registries(
             feature=feature, version=feature.version
@@ -115,9 +123,13 @@ class FeatureManagerSnowflake(BaseModel):
             raise ValueError(
                 f"feature {feature.name} with version {feature.version} does not exist"
             )
-
         logger.debug(f"feature_versions: {feature_versions}")
-        # TODO: update sql
+
+        self._get_session(feature).execute_query(
+            tm_update_feature_registry.render(
+                feature_name=feature.name, col_name=attribute_name, col_value=f"'{attribute_value}'"
+            )
+        )
 
     def online_enable(self, feature: FeatureModel) -> None:
         """

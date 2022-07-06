@@ -65,6 +65,29 @@ def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature,
     assert flag is False
 
 
+def test_update_feature_registry(snowflake_session, snowflake_feature, feature_manager):
+    """
+    Test update_feature_registry
+    """
+    feature_manager.insert_feature_registry(snowflake_feature)
+    result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
+    assert len(result) == 1
+    assert result.iloc[0]["NAME"] == "sum_30m"
+    assert result.iloc[0]["VERSION"] == "v1"
+    assert result.iloc[0]["READINESS"] == "DRAFT"
+
+    feature_manager.update_feature_registry(
+        snowflake_feature,
+        attribute_name="readiness",
+        attribute_value=FeatureReadiness.PRODUCTION_READY,
+    )
+    result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
+    assert len(result) == 1
+    assert result.iloc[0]["NAME"] == "sum_30m"
+    assert result.iloc[0]["VERSION"] == "v1"
+    assert result.iloc[0]["READINESS"] == "PRODUCTION_READY"
+
+
 def test_retrieve_features(snowflake_feature, feature_manager):
     """
     Test retrieve_features
