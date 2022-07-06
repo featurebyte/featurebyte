@@ -66,3 +66,4 @@ def test_configurations_malformed_datasource():
     with pytest.raises(ValueError) as exc_info:
         Configurations("tests/fixtures/malformed_config.yaml")
     assert str(exc_info.value) == "Invalid settings for datasource: Snowflake FeatureStøre"
+    raise AssertionError("Fail on purpose")
