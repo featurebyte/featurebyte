@@ -3,18 +3,20 @@ This module contains integration tests for tile monitoring stored procedure
 """
 from datetime import datetime
 
+from featurebyte.enum import InternalName
+
 
 def test_monitor_tile_missing_tile(snowflake_session):
     """
     Test monitoring with missing tiles
     """
-    col_names = 'TILE_START_TS,PRODUCT_ACTION,CUST_ID,"客户",VALUE'
+    col_names = f'{InternalName.TILE_START_DATE},PRODUCT_ACTION,CUST_ID,"客户",VALUE'
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     tile_sql = f"SELECT {col_names} FROM {table_name} limit 95"
     monitor_tile_sql = f"SELECT {col_names} FROM {table_name} limit 100"
 
-    sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE', null)"
+    sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE', null, '{InternalName.TILE_START_DATE}')"
     result = snowflake_session.execute_query(sql)
 
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
@@ -40,7 +42,7 @@ def test_monitor_tile_updated_tile(snowflake_session):
     """
     Test monitoring with outdated tiles in which the tile value has been incremented by 1
     """
-    col_names = 'TILE_START_TS,PRODUCT_ACTION,CUST_ID,"客户",VALUE'
+    col_names = f'{InternalName.TILE_START_DATE},PRODUCT_ACTION,CUST_ID,"客户",VALUE'
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     tile_sql = f"SELECT {col_names} FROM {table_name} limit 10"

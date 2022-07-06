@@ -132,6 +132,7 @@ class TileSnowflake(TileBase):
             tile_id=self.tile_id,
             tile_type=tile_type,
             last_tile_start_ts_str=last_tile_start_ts_str,
+            tile_start_date_column=InternalName.TILE_START_DATE.value,
         )
         logger.info(f"generated sql: {sql}")
         self._session.execute_query(sql)
