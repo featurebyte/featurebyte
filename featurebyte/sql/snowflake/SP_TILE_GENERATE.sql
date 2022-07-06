@@ -42,7 +42,7 @@ $$
     }
     debug = debug + " - tile_exist: " + tile_exist
 
-    var col_list = COLUMN_NAMES.split(",").filter(item => item.trim().toUpperCase() !== '${TILE_START_DATE_COLUMN}')
+    var col_list = COLUMN_NAMES.split(",").filter(item => item.trim().toUpperCase() !== `${TILE_START_DATE_COLUMN}`)
     col_list_str = col_list.join(',')
     debug = debug + " - col_list_str: " + col_list_str
 

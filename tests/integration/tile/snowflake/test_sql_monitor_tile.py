@@ -21,7 +21,7 @@ def test_monitor_tile_missing_tile(snowflake_session):
 
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
 
-    sql = f"call SP_TILE_MONITOR('{monitor_tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE')"
+    sql = f"call SP_TILE_MONITOR('{monitor_tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE')"
     result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_MONITOR"].iloc[0]
 
@@ -48,14 +48,14 @@ def test_monitor_tile_updated_tile(snowflake_session):
     tile_sql = f"SELECT {col_names} FROM {table_name} limit 10"
     monitor_tile_sql = tile_sql
 
-    sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE', null)"
+    sql = f"call SP_TILE_GENERATE('{tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE', null, '{InternalName.TILE_START_DATE}')"
     result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
 
     sql = f"UPDATE {table_name} SET VALUE = VALUE + 1"
     snowflake_session.execute_query(sql)
 
-    sql = f"call SP_TILE_MONITOR('{monitor_tile_sql}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE')"
+    sql = f"call SP_TILE_MONITOR('{monitor_tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{col_names}', '{tile_id}', 'ONLINE')"
     result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_MONITOR"].iloc[0]
 
