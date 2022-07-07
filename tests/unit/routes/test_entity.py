@@ -42,6 +42,7 @@ def create_multiple_entries_fixture(test_api_client):
     assert res_region.status_code == HTTPStatus.CREATED
     assert res_cust.status_code == HTTPStatus.CREATED
     assert res_prod.status_code == HTTPStatus.CREATED
+    return [res_region.json()["id"], res_cust.json()["id"], res_prod.json()["id"]]
 
 
 def test_create_201(create_success_response):
@@ -58,6 +59,20 @@ def test_create_201(create_success_response):
     assert datetime.fromisoformat(result.pop("created_at")) < utcnow
 
 
+def test_create_409(create_success_response, test_api_client, entity_dict):
+    """
+    Test entity creation (conflict)
+    """
+    response = test_api_client.post("/entity", json=entity_dict)
+    assert response.status_code == HTTPStatus.CONFLICT
+    assert response.json() == {"detail": 'Entity name "customer" already exists.'}
+
+    entity_dict["name"] = "Customer"
+    response = test_api_client.post("/entity", json=entity_dict)
+    assert response.status_code == HTTPStatus.CONFLICT
+    assert response.json() == {"detail": 'Entity serving column name "cust_id" already exists.'}
+
+
 def test_create_422(test_api_client, entity_dict):
     """
     Test entity creation (unprocessable entity)
@@ -71,6 +86,20 @@ def test_create_422(test_api_client, entity_dict):
                 "loc": ["body", "serving_column_names"],
                 "msg": "value is not a valid list",
                 "type": "type_error.list",
+            }
+        ]
+    }
+
+    entity_dict["serving_column_names"] = ["cust_id", "customer_id"]
+    response = test_api_client.post("/entity", json=entity_dict)
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.json() == {
+        "detail": [
+            {
+                "loc": ["body", "serving_column_names"],
+                "msg": "ensure this value has at most 1 items",
+                "type": "value_error.list.max_items",
+                "ctx": {"limit_value": 1},
             }
         ]
     }
@@ -125,6 +154,11 @@ def test_update_200(create_success_response, test_api_client):
         if key != "name":
             assert result[key] == response_dict[key]
 
+    # test special case when the name is the same
+    response = test_api_client.patch(f"/entity/{entity_id}", json={"name": "Customer"})
+    assert response.status_code == HTTPStatus.OK
+    assert response.json() == result
+
 
 def test_update_404(test_api_client):
     """
@@ -134,6 +168,17 @@ def test_update_404(test_api_client):
     response = test_api_client.patch(f"/entity/{unknown_entity_id}", json={"name": "random_name"})
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {"detail": f'Entity ID "{unknown_entity_id}" not found.'}
+
+
+def test_update_409(create_multiple_entries, test_api_client):
+    """ "
+    Test entity update (conflict)
+    """
+    response = test_api_client.patch(
+        f"/entity/{create_multiple_entries[0]}", json={"name": "customer"}
+    )
+    assert response.status_code == HTTPStatus.CONFLICT
+    assert response.json() == {"detail": 'Entity name "customer" already exists.'}
 
 
 def test_update_422(test_api_client):

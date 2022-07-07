@@ -34,17 +34,30 @@ class EntityController:
         Create Entity
         """
         document = Entity(user_id=user.id, created_at=get_utc_now(), **data.dict())
-        try:
-            insert_id = persistent.insert_one(
-                collection_name=cls.collection_name, document=document.dict(by_alias=True)
-            )
-            assert insert_id == document.id
-        except DuplicateDocumentError as exc:
+
+        conflict_entity = persistent.find_one(
+            collection_name=cls.collection_name, query_filter={"name": data.name}
+        )
+        if conflict_entity:
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=f'Entity "{data.name}" already exists.',
-            ) from exc
+                detail=f'Entity name "{data.name}" already exists.',
+            )
 
+        conflict_entity = persistent.find_one(
+            collection_name=cls.collection_name,
+            query_filter={"serving_column_names": data.serving_column_names},
+        )
+        if conflict_entity:
+            raise HTTPException(
+                status_code=HTTPStatus.CONFLICT,
+                detail=f'Entity serving column name "{data.serving_column_names[0]}" already exists.',
+            )
+
+        insert_id = persistent.insert_one(
+            collection_name=cls.collection_name, document=document.dict(by_alias=True)
+        )
+        assert insert_id == document.id
         return document
 
     @classmethod
@@ -80,11 +93,30 @@ class EntityController:
         """
         query_filter = {"_id": ObjectId(entity_id), "user_id": user.id}
         entity = persistent.find_one(collection_name=cls.collection_name, query_filter=query_filter)
+
+        # check that entity id exists
         not_found_exception = HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail=f'Entity ID "{entity_id}" not found.'
         )
         if not entity:
             raise not_found_exception
+
+        # check whether conflict with other entity name
+        entities, total_cnt = persistent.find(
+            collection_name=cls.collection_name,
+            query_filter={"user_id": user.id, "name": data.name},
+            page_size=2,
+        )
+        if total_cnt:
+            for entity in entities:
+                if str(entity["_id"]) == entity_id:
+                    # update the same entity with the same name
+                    return Entity(**entity)
+                else:
+                    raise HTTPException(
+                        status_code=HTTPStatus.CONFLICT,
+                        detail=f'Entity name "{data.name}" already exists.',
+                    )
 
         updated_cnt = persistent.update_one(
             collection_name=cls.collection_name,
