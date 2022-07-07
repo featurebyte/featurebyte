@@ -36,6 +36,17 @@ class FeatureListManagerSnowflake(BaseModel):
         pass
 
     def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
+        """
+        Generate Tiles and update tile entity checking table
+
+        Parameters
+        ----------
+        tile_inputs:
+
+        Returns
+        -------
+
+        """
         for tile_spec, entity_table in tile_inputs:
             tile_mgr = TileSnowflake(
                 time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,

@@ -7,11 +7,8 @@ from typing import Any, Optional
 
 from pydantic import PrivateAttr
 
-from featurebyte.config import Credentials
-from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.logger import logger
 from featurebyte.models.feature import TileType
-from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.base import TileBase
 from featurebyte.tile.snowflake_sql_template import (

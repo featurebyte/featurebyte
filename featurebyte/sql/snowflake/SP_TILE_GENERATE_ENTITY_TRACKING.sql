@@ -8,7 +8,7 @@ $$
     */
 
     var debug = "Debug"
-    var tile_tracking_table = TILE_ID + "_ENTITY_TRACK"
+    var tile_tracking_table = TILE_ID + "_ENTITY_TRACKER"
 
     debug = debug + " - ENTITY_COLUMN_NAMES: " + ENTITY_COLUMN_NAMES
 
