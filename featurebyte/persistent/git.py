@@ -28,7 +28,7 @@ from featurebyte.persistent.base import (
     QueryFilter,
 )
 
-DOC_NAME_FUNC_TYPE = Callable[[MutableMapping[str, Any]], str]
+DocNameFuncType = Callable[[MutableMapping[str, Any]], str]
 
 
 class GitDocumentAction(str, Enum):
@@ -100,7 +100,7 @@ class GitDB(Persistent):
         self._ssh_cmd = f"ssh -i {key_path}" if key_path else "ssh"
         self._origin: Optional[Remote] = None
         self._working_tree_dir: str = str(repo.working_tree_dir)
-        self._collection_to_doc_name_func_map: dict[str, DOC_NAME_FUNC_TYPE] = {}
+        self._collection_to_doc_name_func_map: dict[str, DocNameFuncType] = {}
 
         if remote_url:
             # create remote origin if does not exist
@@ -534,7 +534,7 @@ class GitDB(Persistent):
         """
         return str(doc["_id"])
 
-    def insert_doc_name_func(self, collection_name: str, doc_name_func: DOC_NAME_FUNC_TYPE) -> None:
+    def insert_doc_name_func(self, collection_name: str, doc_name_func: DocNameFuncType) -> None:
         """
         Insert document name function to customize function name
 
@@ -547,7 +547,7 @@ class GitDB(Persistent):
         """
         self._collection_to_doc_name_func_map[collection_name] = doc_name_func
 
-    def get_doc_name_func(self, collection: str) -> DOC_NAME_FUNC_TYPE:
+    def get_doc_name_func(self, collection: str) -> DocNameFuncType:
         """
         Retrieve function to generate document name
 

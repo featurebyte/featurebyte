@@ -3,7 +3,6 @@ Fixture for API unit tests
 """
 from __future__ import annotations
 
-import pdb
 from unittest.mock import patch
 
 import mongomock
@@ -25,8 +24,8 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("persistent", ["gitdb", "mongodb"], indirect=True)
 
 
-@pytest.fixture
-def persistent(request):
+@pytest.fixture(name="persistent")
+def persistent_fixture(request):
     """
     Persistent fixture
     """
@@ -34,7 +33,7 @@ def persistent(request):
         with mongomock.patch(servers=(("server.example.com", 27017),)):
             persistent = MongoDB(uri="mongodb://server.example.com:27017", database="test")
             mongo_client = pymongo.MongoClient("mongodb://server.example.com:27017")
-            db = mongo_client["test"]
+            database = mongo_client["test"]
             collection_index_map = {
                 CollectionName.EVENT_DATA: [
                     ("_id", {}),
@@ -46,7 +45,7 @@ def persistent(request):
             }
             for collection_name, create_index_param_list in collection_index_map.items():
                 for param, param_kwargs in create_index_param_list:
-                    db[collection_name].create_index(param, **param_kwargs)
+                    database[collection_name].create_index(param, **param_kwargs)
             yield persistent
 
     if request.param == "gitdb":

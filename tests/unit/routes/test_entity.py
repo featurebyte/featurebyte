@@ -63,6 +63,7 @@ def test_create_409(create_success_response, test_api_client, entity_dict):
     """
     Test entity creation (conflict)
     """
+    _ = create_success_response
     response = test_api_client.post("/entity", json=entity_dict)
     assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {"detail": 'Entity name "customer" already exists.'}

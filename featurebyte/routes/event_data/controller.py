@@ -104,7 +104,7 @@ class EventDataController:
             return EventDataList(page=page, page_size=page_size, total=total, data=list(docs))
         except NotImplementedError as exc:
             raise HTTPException(
-                status_code=HTTPStatus.NOT_IMPLEMENTED, detail=f"Query not supported."
+                status_code=HTTPStatus.NOT_IMPLEMENTED, detail="Query not supported."
             ) from exc
 
     @classmethod

@@ -155,6 +155,7 @@ def test_list__not_supported(inserted_event_data_ids, test_api_client):
     """
     Test search event data by search term
     """
+    _ = inserted_event_data_ids
     response = test_api_client.get("/event_data", params={"search": "abc"})
     assert response.status_code == HTTPStatus.NOT_IMPLEMENTED
     results = response.json()

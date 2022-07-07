@@ -11,7 +11,7 @@ from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.enum import CollectionName
-from featurebyte.persistent import DuplicateDocumentError, Persistent
+from featurebyte.persistent import Persistent
 from featurebyte.routes.common.helpers import get_utc_now
 from featurebyte.routes.entity.schema import Entity, EntityCreate, EntityList, EntityUpdate
 
@@ -112,11 +112,10 @@ class EntityController:
                 if str(entity["_id"]) == entity_id:
                     # update the same entity with the same name
                     return Entity(**entity)
-                else:
-                    raise HTTPException(
-                        status_code=HTTPStatus.CONFLICT,
-                        detail=f'Entity name "{data.name}" already exists.',
-                    )
+                raise HTTPException(
+                    status_code=HTTPStatus.CONFLICT,
+                    detail=f'Entity name "{data.name}" already exists.',
+                )
 
         updated_cnt = persistent.update_one(
             collection_name=cls.collection_name,
