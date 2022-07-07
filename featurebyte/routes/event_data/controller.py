@@ -9,10 +9,10 @@ from http import HTTPStatus
 
 from fastapi import HTTPException
 
+from featurebyte.enum import CollectionName
 from featurebyte.models.event_data import EventDataStatus, FeatureJobSettingHistoryEntry
 from featurebyte.persistent import DuplicateDocumentError, Persistent
 from featurebyte.routes.common.helpers import get_utc_now
-from featurebyte.routes.enum import CollectionName
 from featurebyte.routes.event_data.schema import (
     EventData,
     EventDataCreate,

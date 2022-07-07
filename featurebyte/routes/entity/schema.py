@@ -6,8 +6,8 @@ from typing import List, Optional
 import datetime
 
 from beanie import PydanticObjectId
-from bson import ObjectId
-from pydantic import BaseModel
+from bson.objectid import ObjectId
+from pydantic import BaseModel, Field
 
 from featurebyte.models.entity import EntityModel
 from featurebyte.routes.common.schema import PaginationMixin

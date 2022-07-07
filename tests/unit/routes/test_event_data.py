@@ -10,6 +10,7 @@ import pytest
 
 from featurebyte.models.event_data import EventDataModel, EventDataStatus
 from featurebyte.persistent import DuplicateDocumentError
+from featurebyte.persistent.git import GitDB
 from tests.unit.models.test_event_data import (  # pylint: disable=unused-import
     event_data_model_dict_fixture,
 )
@@ -74,11 +75,15 @@ def test_create_fails_table_exists(test_api_client, event_data_dict):
     assert response.json() == {"detail": 'Event Data "订单表" already exists.'}
 
 
-def test_create_fails_table_exists_during_insert(test_api_client, event_data_dict):
+def test_create_fails_table_exists_during_insert(test_api_client, event_data_dict, persistent):
     """
     Create Event Data fails if table with same name already exists during persistent insert
     """
-    with mock.patch("featurebyte.persistent.GitDB.insert_one") as mock_insert:
+    if isinstance(persistent, GitDB):
+        func_path = "featurebyte.persistent.GitDB.insert_one"
+    else:
+        func_path = "featurebyte.persistent.MongoDB.insert_one"
+    with mock.patch(func_path) as mock_insert:
         mock_insert.side_effect = DuplicateDocumentError
         response = test_api_client.request("POST", url="/event_data", json=event_data_dict)
     assert response.status_code == HTTPStatus.CONFLICT

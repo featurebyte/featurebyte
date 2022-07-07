@@ -12,6 +12,7 @@ from fastapi import Depends, FastAPI, Request
 import featurebyte.routes.entity.api as entity_api
 import featurebyte.routes.event_data.api as event_data_api
 from featurebyte.config import Configurations
+from featurebyte.enum import CollectionName
 from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import GitDB, Persistent
@@ -39,7 +40,12 @@ def _get_persistent() -> Persistent:
         config = Configurations()
         if not config.git:
             raise ValueError("Git settings not available in configurations")
-        PERSISTENT = GitDB(**config.git.dict())
+        git_db = GitDB(**config.git.dict())
+
+        # GitDB configuration
+        git_db.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])
+
+        PERSISTENT = git_db
     return PERSISTENT
 
 

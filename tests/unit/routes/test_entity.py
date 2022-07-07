@@ -5,7 +5,7 @@ from datetime import datetime
 from http import HTTPStatus
 
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
 
 
 @pytest.fixture(name="entity_dict")
@@ -44,7 +44,7 @@ def create_multiple_entries_fixture(test_api_client):
     assert res_prod.status_code == HTTPStatus.CREATED
 
 
-def test_create_201(create_success_response, entity_dict):
+def test_create_201(create_success_response):
     """
     Test entity creation (success)
     """
@@ -58,7 +58,7 @@ def test_create_201(create_success_response, entity_dict):
     assert datetime.fromisoformat(result.pop("created_at")) < utcnow
 
 
-def test_create_404(test_api_client, entity_dict):
+def test_create_422(test_api_client, entity_dict):
     """
     Test entity creation (unprocessable entity)
     """
@@ -76,21 +76,11 @@ def test_create_404(test_api_client, entity_dict):
     }
 
 
-def test_create_409(create_success_response, test_api_client, entity_dict):
-    """
-    Test entity creation (conflict)
-    """
-    _ = create_success_response
-
-    response = test_api_client.post("/entity", json=entity_dict)
-    assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'Entity "customer" already exists.'}
-
-
 def test_list_200(create_multiple_entries, test_api_client):
     """
     Test list entities (success)
     """
+    _ = create_multiple_entries
     response = test_api_client.get("/entity")
     assert response.status_code == HTTPStatus.OK
     result = response.json()
@@ -118,3 +108,47 @@ def test_list_200(create_multiple_entries, test_api_client):
     assert [elem["name"] for elem in result_data] == expected_sorted_name_asc
     assert [elem["serving_column_names"] for elem in result_data] == expected_sorted_serv_name_asc
     assert result == expected_paginated_info
+
+
+def test_update_200(create_success_response, test_api_client):
+    """
+    Test entity update (success)
+    """
+    response_dict = create_success_response.json()
+    entity_id = response_dict["id"]
+    response = test_api_client.patch(f"/entity/{entity_id}", json={"name": "Customer"})
+    assert response.status_code == HTTPStatus.OK
+    result = response.json()
+
+    assert result["name"] == "Customer"
+    for key in result.keys():
+        if key != "name":
+            assert result[key] == response_dict[key]
+
+
+def test_update_404(test_api_client):
+    """
+    Test entity update (not found)
+    """
+    unknown_entity_id = ObjectId()
+    response = test_api_client.patch(f"/entity/{unknown_entity_id}", json={"name": "random_name"})
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"detail": f'Entity ID "{unknown_entity_id}" not found.'}
+
+
+def test_update_422(test_api_client):
+    """
+    Test entity update (unprocessable entity)
+    """
+    unknown_entity_id = ObjectId()
+    response = test_api_client.patch(f"/entity/{unknown_entity_id}")
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.json() == {
+        "detail": [
+            {
+                "loc": ["body"],
+                "msg": "field required",
+                "type": "value_error.missing",
+            }
+        ]
+    }

@@ -7,12 +7,13 @@ from typing import Any, Literal
 
 from http import HTTPStatus
 
+from bson.objectid import ObjectId
 from fastapi import HTTPException
 
+from featurebyte.enum import CollectionName
 from featurebyte.persistent import DuplicateDocumentError, Persistent
 from featurebyte.routes.common.helpers import get_utc_now
 from featurebyte.routes.entity.schema import Entity, EntityCreate, EntityList, EntityUpdate
-from featurebyte.routes.enum import CollectionName
 
 
 class EntityController:
@@ -55,7 +56,7 @@ class EntityController:
         page_size: int = 10,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
-    ):
+    ) -> EntityList:
         """
         List Entities
         """
@@ -71,14 +72,29 @@ class EntityController:
         return EntityList(page=page, page_size=page_size, total=total, data=list(docs))
 
     @classmethod
-    def update_entity(cls, user: Any, persistent: Persistent, entity_id: str, data: EntityUpdate):
+    def update_entity(
+        cls, user: Any, persistent: Persistent, entity_id: ObjectId, data: EntityUpdate
+    ) -> Entity:
         """
         Update Entity
         """
-        query_filter = {"_id": entity_id, "user_id": user.id}
+        query_filter = {"_id": ObjectId(entity_id), "user_id": user.id}
         entity = persistent.find_one(collection_name=cls.collection_name, query_filter=query_filter)
         not_found_exception = HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail=f'Entity ID "{entity_id}" not found.'
         )
         if not entity:
             raise not_found_exception
+
+        updated_cnt = persistent.update_one(
+            collection_name=cls.collection_name,
+            query_filter=query_filter,
+            update={"$set": data.dict()},
+        )
+        if not updated_cnt:
+            raise not_found_exception
+
+        entity = persistent.find_one(collection_name=cls.collection_name, query_filter=data.dict())
+        if entity is None:
+            raise not_found_exception
+        return Entity(**entity)
