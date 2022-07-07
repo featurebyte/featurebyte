@@ -14,7 +14,7 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.core.frame import Frame
-from featurebyte.enum import DBVarType, InternalName
+from featurebyte.enum import CollectionName, DBVarType, InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.feature import (
@@ -24,16 +24,17 @@ from featurebyte.models.feature import (
     FeatureReadiness,
 )
 from featurebyte.models.tile import TileSpec
+from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.session.manager import SessionManager
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
-@pytest.fixture(name="config")
-def config_fixture():
+@pytest.fixture(name="config_file")
+def config_file_fixture():
     """
-    Config object for unit testing
+    Config file for unit testing
     """
     config_dict = {
         "featurestore": [
@@ -58,7 +59,25 @@ def config_fixture():
     with tempfile.NamedTemporaryFile("w") as file_handle:
         file_handle.write(yaml.dump(config_dict))
         file_handle.flush()
-        yield Configurations(config_file_path=file_handle.name)
+        yield file_handle.name
+
+
+@pytest.fixture(name="config")
+def config_fixture(config_file):
+    """
+    Config object for unit testing
+    """
+    yield Configurations(config_file_path=config_file)
+
+
+@pytest.fixture(name="mock_config_path_env")
+def mock_config_path_env_fixture(config_file):
+    """
+    Mock FEATUREBYTE_CONFIG_PATH in featurebyte/config.py
+    """
+    with mock.patch("featurebyte.config.os.environ.get") as mock_env_get:
+        mock_env_get.return_value = config_file
+        yield
 
 
 @pytest.fixture(name="graph")
@@ -280,6 +299,18 @@ def session_manager_fixture(config, snowflake_connector):
     _ = snowflake_connector
     SessionManager.__getitem__.cache_clear()
     yield SessionManager(credentials=config.credentials)
+
+
+@pytest.fixture(name="mock_get_persistent")
+def mock_get_persistent_fixture():
+    """
+    Mock _get_persistent for testing
+    """
+    with mock.patch("featurebyte.app._get_persistent") as mock_get_persistent:
+        gitdb = GitDB()
+        gitdb.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])
+        mock_get_persistent.return_value = gitdb
+        yield mock_get_persistent
 
 
 @pytest.fixture
