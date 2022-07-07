@@ -88,8 +88,10 @@ class FeatureList(FeatureListModel):
                 flattened_items.append(item)
             else:
                 feature_group = item
-                for feature_name in feature_group.columns:
-                    feature = feature_group[feature_name]
+                for column_name in feature_group.columns:
+                    if column_name in feature_group.entity_identifiers:
+                        continue
+                    feature = feature_group[column_name]
                     assert isinstance(feature, Feature)
                     flattened_items.append(feature)
         return flattened_items

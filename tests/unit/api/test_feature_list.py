@@ -127,6 +127,30 @@ def test_feature_list_creation__success(production_ready_feature):
         assert isinstance(obj, Feature)
 
 
+@freeze_time("2022-05-01")
+def test_feature_list_creation__feature_and_group(production_ready_feature, feature_group):
+    """Test FeatureList can be created with valid inputs"""
+    flist = FeatureList(
+        [production_ready_feature, feature_group[["sum_30m", "sum_1d"]]],
+        name="my_feature_list",
+    )
+    assert flist.dict() == {
+        "created_at": None,
+        "description": None,
+        "feature_list_version": "my_feature_list.V220501",
+        "features": [
+            ("production_ready_feature", "V220401"),
+            ("sum_30m", None),
+            ("sum_1d", None),
+        ],
+        "name": "my_feature_list",
+        "readiness": None,
+        "status": "DRAFT",
+    }
+    for obj in flist.feature_objects:
+        assert isinstance(obj, Feature)
+
+
 def test_feature_list_creation__not_a_list():
     """Test FeatureList must be created from a list"""
     with pytest.raises(ValueError) as exc_info:

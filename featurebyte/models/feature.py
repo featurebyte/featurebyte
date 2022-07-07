@@ -127,7 +127,7 @@ class FeatureListModel(BaseModel):
 
     name: str
     description: Optional[str]
-    features: List[Tuple[str, FeatureVersionIdentifier]]
+    features: List[Tuple[str, Optional[FeatureVersionIdentifier]]]
     readiness: Optional[FeatureReadiness]
     status: Optional[FeatureListStatus]
     feature_list_version: FeatureListVersionIdentifier
