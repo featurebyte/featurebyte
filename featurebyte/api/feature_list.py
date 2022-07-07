@@ -11,6 +11,7 @@ import pandas as pd
 from pydantic import Field
 
 from featurebyte.api.feature import Feature, FeatureGroup
+from featurebyte.config import Configurations, Credentials
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.query_graph.feature_historical import get_historical_features
 
@@ -55,20 +56,30 @@ class FeatureList(FeatureListModel):
         )
         self.feature_objects = feature_versions
 
-    def get_historical_features(self, training_events: pd.DataFrame) -> pd.DataFrame:
+    def get_historical_features(
+        self,
+        training_events: pd.DataFrame,
+        credentials: Credentials | None = None,
+    ) -> pd.DataFrame:
         """Get historical features
 
         Parameters
         ----------
         training_events : pd.DataFrame
             Training events DataFrame
+        credentials : Credentials | None
+            Optional feature store to credential mapping
 
         Returns
         -------
         pd.DataFrame
         """
         assert self.feature_objects is not None
-        return get_historical_features(self.feature_objects, training_events)
+        if credentials is None:
+            credentials = Configurations().credentials
+        return get_historical_features(
+            self.feature_objects, training_events, credentials=credentials
+        )
 
     @staticmethod
     def derive_features_readiness(features: list[Feature]) -> Optional[FeatureReadiness]:

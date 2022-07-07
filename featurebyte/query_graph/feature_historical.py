@@ -12,6 +12,7 @@ from pandas.api.types import is_datetime64_dtype
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.config import Credentials
 from featurebyte.enum import SpecialColumnName
 from featurebyte.errors import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logger import logger
@@ -23,7 +24,9 @@ from featurebyte.session.base import BaseSession
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
 
-def get_session_from_feature_objects(feature_objects: list[Feature]) -> BaseSession:
+def get_session_from_feature_objects(
+    feature_objects: list[Feature], credentials: Credentials | None = None
+) -> BaseSession:
     """Get a session object from a list of Feature objects
 
     Parameters
@@ -51,7 +54,7 @@ def get_session_from_feature_objects(feature_objects: list[Feature]) -> BaseSess
                 "Historical features request using multiple stores not supported"
             )
     assert feature_store is not None
-    return feature_store.get_session()
+    return feature_store.get_session(credentials=credentials)
 
 
 def validate_historical_requests_point_in_time(training_events: pd.DataFrame) -> pd.DataFrame:
@@ -143,6 +146,7 @@ def get_historical_features_sql(
 def get_historical_features(
     feature_objects: list[Feature],
     training_events: pd.DataFrame,
+    credentials: Credentials | None = None,
 ) -> pd.DataFrame:
     """Get historical features
 
@@ -152,6 +156,8 @@ def get_historical_features(
         List of Feature objects
     training_events : pd.DataFrame
         Training events DataFrame
+    credentials : Credentials | None
+        Optional feature store to credential mapping
 
     Returns
     -------
@@ -168,7 +174,7 @@ def get_historical_features(
     logger.debug(f"Historical features SQL:\n{sql}")
 
     # Execute feature SQL code
-    session = get_session_from_feature_objects(feature_objects)
+    session = get_session_from_feature_objects(feature_objects, credentials=credentials)
     session.register_temp_table(REQUEST_TABLE_NAME, training_events)
 
     return session.execute_query(sql)
