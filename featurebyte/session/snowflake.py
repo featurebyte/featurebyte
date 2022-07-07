@@ -176,7 +176,7 @@ class SnowflakeSession(BaseSession):
         # Ideally we should avoid making a copy, but so far the only way to get write_pandas() to
         # create DATETIME type columns in Snowflake for datetime columns in DataFrame is to specify
         # DATETIME type in the schema when creating table, and convert the dtype in DataFrame to
-        # object before calling write_pandas()
+        # object before calling write_pandas(). A copy is made to prevent unintended side effects.
         dataframe = dataframe.copy()
         for date_col in dataframe.select_dtypes(include=[np.datetime64]):
             dataframe[date_col] = dataframe[date_col].astype(str)

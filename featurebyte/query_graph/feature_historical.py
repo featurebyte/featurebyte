@@ -9,6 +9,7 @@ import pandas as pd
 from pandas.api.types import is_datetime64_dtype
 
 from featurebyte.api.feature import Feature
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.enum import SpecialColumnName
 from featurebyte.errors import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logger import logger
@@ -21,6 +22,17 @@ HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
 
 def get_session_from_feature_objects(feature_objects: list[Feature]) -> BaseSession:
+    """Get a session object from a list of Feature objects
+
+    Parameters
+    ----------
+    feature_objects : list[Feature]
+        Feature objects
+
+    Returns
+    -------
+    BaseSession
+    """
     feature_store = None
     for feature in feature_objects:
         store = feature.tabular_source[0]
@@ -30,18 +42,34 @@ def get_session_from_feature_objects(feature_objects: list[Feature]) -> BaseSess
             raise NotImplementedError(
                 "Historical features request using multiple stores not supported"
             )
-    assert feature_store is not None
+    assert isinstance(feature_store, FeatureStore)
     return feature_store.get_session()
 
 
 def validate_historical_requests_point_in_time(training_events: pd.DataFrame) -> pd.DataFrame:
+    """Validate the point in time column in the request input and perform type conversion if needed
 
+    A copy will be made if the point in time column does not already have timestamp dtype.
+
+    Parameters
+    ----------
+    training_events : pd.DataFrame
+        Training events
+
+    Returns
+    -------
+    pd.DataFrame
+    """
+
+    # Check dtype and convert if necessary. The converted DataFrame will later be used to create a
+    # temp table in the session.
     if not is_datetime64_dtype(training_events[SpecialColumnName.POINT_IN_TIME]):
         training_events = training_events.copy()
         training_events[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
             training_events[SpecialColumnName.POINT_IN_TIME]
         )
 
+    # Latest point in time must be older than 48 hours
     latest_point_in_time = training_events[SpecialColumnName.POINT_IN_TIME].max()
     recency = datetime.datetime.now() - latest_point_in_time
     if recency <= pd.Timedelta(HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR, unit="h"):
@@ -54,6 +82,15 @@ def validate_historical_requests_point_in_time(training_events: pd.DataFrame) ->
 
 
 def validate_request_schema(training_events: pd.DataFrame) -> None:
+    """Validate training events schema
+
+    Parameters
+    ----------
+    training_events : DataFrame
+        Training events DataFrame
+    """
+    # Currently this only checks the existence of point in time column. Later this should include
+    # other validation such as existence of required serving names based on Features' entities.
     if SpecialColumnName.POINT_IN_TIME not in training_events:
         raise MissingPointInTimeColumnError("POINT_IN_TIME column is required")
 
@@ -62,6 +99,19 @@ def get_historical_features_sql(
     feature_objects: list[Feature],
     request_table_columns: list[str],
 ) -> str:
+    """Construct the SQL code that extracts historical features
+
+    Parameters
+    ----------
+    feature_objects : list[Feature]
+        List of Feature objects
+    request_table_columns : list[str]
+        List of column names in the training events
+
+    Returns
+    -------
+    str
+    """
     feature_nodes = [feature.node for feature in feature_objects]
     planner = FeatureExecutionPlanner(GlobalQueryGraph())
     plan = planner.generate_plan(feature_nodes)
@@ -76,7 +126,19 @@ def get_historical_features(
     feature_objects: list[Feature],
     training_events: pd.DataFrame,
 ) -> pd.DataFrame:
+    """Get historical features
 
+    Parameters
+    ----------
+    feature_objects : list[Feature]
+        List of Feature objects
+    training_events : pd.DataFrame
+        Training events DataFrame
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     # Validate request
     validate_request_schema(training_events)
     training_events = validate_historical_requests_point_in_time(training_events)
