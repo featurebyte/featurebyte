@@ -7,13 +7,10 @@ from unittest import mock
 import pytest
 
 from featurebyte.models.tile import TileSpec, TileType
-from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_construct_snowflaketile_time_modulo_error(
-    mock_execute_query, snowflake_feature_store, session_manager
-):
+def test_construct_snowflaketile_time_modulo_error(mock_execute_query):
     """
     Pytest Fixture for TileSnowflake instance
     """
@@ -25,8 +22,8 @@ def test_construct_snowflaketile_time_modulo_error(
             blind_spot_second=3,
             frequency_minute=3,
             tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
-            column_names="c1",
-            entity_column_names="col1",
+            column_names=["c1"],
+            entity_column_names=["col1"],
         )
     assert "time_modulo_frequency_second must be less than 180" in str(excinfo.value)
 

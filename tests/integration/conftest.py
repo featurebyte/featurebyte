@@ -163,11 +163,12 @@ def sqlite_session(config):
 
 
 @pytest.fixture
-def snowflake_tile(snowflake_session, config):
+def snowflake_tile(snowflake_session):
     """
     Pytest Fixture for TileSnowflake instance
     """
-    col_names = f"{InternalName.TILE_START_DATE},PRODUCT_ACTION,CUST_ID,VALUE"
+    col_names_list = [InternalName.TILE_START_DATE, "PRODUCT_ACTION", "CUST_ID", "VALUE"]
+    col_names = ",".join(col_names_list)
     table_name = "TEMP_TABLE"
     start = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
     end = InternalName.TILE_END_DATE_SQL_PLACEHOLDER
@@ -179,8 +180,8 @@ def snowflake_tile(snowflake_session, config):
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql=tile_sql,
-        column_names=col_names,
-        entity_column_names="PRODUCT_ACTION,CUST_ID",
+        column_names=col_names_list,
+        entity_column_names=["PRODUCT_ACTION", "CUST_ID"],
         tile_id="tile_id1",
     )
 
@@ -211,8 +212,8 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
-        column_names="col1",
-        entity_column_names="col1",
+        column_names=["col1"],
+        entity_column_names=["col1"],
     )
 
     mock_feature.tabular_source = (config.feature_stores["snowflake_featurestore"],)

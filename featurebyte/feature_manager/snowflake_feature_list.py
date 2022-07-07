@@ -33,6 +33,8 @@ class FeatureListManagerSnowflake(BaseModel):
 
         Parameters
         ----------
+        session: BaseSession
+            input session for datasource
         kw: Any
             constructor arguments
         """
@@ -118,6 +120,11 @@ class FeatureListManagerSnowflake(BaseModel):
             attribute/column name
         attribute_value: str
             attribute/column value
+
+        Raises
+        ----------
+        ValueError
+            when the feature registry record does not exist
         """
         feature_list_versions = self.retrieve_feature_list_registries(
             feature_list=feature_list, version=feature_list.version
@@ -142,11 +149,8 @@ class FeatureListManagerSnowflake(BaseModel):
 
         Parameters
         ----------
-        tile_inputs:
-
-        Returns
-        -------
-
+        tile_inputs: List[Tuple[TileSpec, str]]
+            list of TileSpec, temp_entity_table to update the feature store
         """
         for tile_spec, entity_table in tile_inputs:
             tile_mgr = TileSnowflake(
@@ -156,3 +160,6 @@ class FeatureListManagerSnowflake(BaseModel):
 
             tile_mgr.generate_tiles(tile_type=TileType.OFFLINE, start_ts_str=None, end_ts_str=None)
             logger.debug(f"Done generating tiles for {tile_spec}")
+
+            tile_mgr.update_tile_entity_tracker(temp_entity_table=entity_table)
+            logger.debug(f"Done update_tile_entity_tracker for {tile_spec}")

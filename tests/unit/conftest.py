@@ -303,9 +303,9 @@ def mock_snowflake_tile(
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql=tile_sql,
-        column_names="c1",
+        column_names=["c1"],
         tile_id="tile_id1",
-        entity_column_names="col1",
+        entity_column_names=["col1"],
     )
 
     tile_s = TileSnowflake(
@@ -345,8 +345,8 @@ def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_ev
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
-        column_names="col1",
-        entity_column_names="col1",
+        column_names=["col1"],
+        entity_column_names=["col1"],
     )
     feature_loaded.tile_specs = [tile_spec]
 
@@ -390,8 +390,8 @@ def mock_snowflake_feature_list(mock_execute_query, snowflake_connector, snowfla
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
-        column_names="col1",
-        entity_column_names="col1",
+        column_names=["col1"],
+        entity_column_names=["col1"],
     )
     feature_loaded.tile_specs = [tile_spec]
     feature_loaded.version = "v1"

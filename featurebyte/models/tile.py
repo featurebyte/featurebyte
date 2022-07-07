@@ -1,7 +1,7 @@
 """
 This module contains Tile related models
 """
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from enum import Enum
 
@@ -39,11 +39,12 @@ class TileSpec(BaseModel):
     blind_spot_second: int
     frequency_minute: int = Field(gt=0, le=60)
     tile_sql: str
-    column_names: str
-    entity_column_names: str
+    column_names: List[str]  # to be deprecated
+    entity_column_names: List[str]
+    value_column_names: List[str] = Field(default=["VALUE"])
     tile_id: str
 
-    @validator("tile_id", "column_names", "entity_column_names")
+    @validator("tile_id")
     @classmethod
     def stripped(cls, value: str) -> str:
         """

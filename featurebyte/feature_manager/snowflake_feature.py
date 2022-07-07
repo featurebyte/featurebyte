@@ -33,6 +33,8 @@ class FeatureManagerSnowflake(BaseModel):
 
         Parameters
         ----------
+        session: BaseSession
+            input session for datasource
         kw: Any
             constructor arguments
         """
@@ -120,6 +122,11 @@ class FeatureManagerSnowflake(BaseModel):
             attribute/column name
         attribute_value: str
             attribute/column value
+
+        Raises
+        ----------
+        ValueError
+            when the feature registry record does not exist
         """
         feature_versions = self.retrieve_feature_registries(
             feature=feature, version=feature.version

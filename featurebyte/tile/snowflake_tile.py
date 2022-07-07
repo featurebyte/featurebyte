@@ -35,6 +35,8 @@ class TileSnowflake(TileBase):
 
         Parameters
         ----------
+        session: BaseSession
+            input session for datasource
         kw: Any
             constructor arguments
         """
@@ -59,7 +61,7 @@ class TileSnowflake(TileBase):
             sql = tm_insert_tile_registry.render(
                 tile_id=self.tile_spec.tile_id,
                 tile_sql=self.tile_spec.tile_sql,
-                column_names=self.tile_spec.column_names,
+                column_names=",".join(self.tile_spec.column_names),
                 time_modulo_frequency_seconds=self.tile_spec.time_modulo_frequency_second,
                 blind_spot_seconds=self.tile_spec.blind_spot_second,
                 frequency_minute=self.tile_spec.frequency_minute,
@@ -102,7 +104,7 @@ class TileSnowflake(TileBase):
         """
         sql = tm_tile_entity_tracking.render(
             tile_id=self.tile_spec.tile_id,
-            entity_column_names=self.tile_spec.entity_column_names,
+            entity_column_names=",".join(self.tile_spec.entity_column_names),
             entity_table=temp_entity_table,
         )
         logger.info(f"generated sql: {sql}")
@@ -157,7 +159,7 @@ class TileSnowflake(TileBase):
             time_modulo_frequency_seconds=self.tile_spec.time_modulo_frequency_second,
             blind_spot_seconds=self.tile_spec.blind_spot_second,
             frequency_minute=self.tile_spec.frequency_minute,
-            column_names=self.tile_spec.column_names,
+            column_names=",".join(self.tile_spec.column_names),
             tile_id=self.tile_spec.tile_id,
             tile_type=tile_type,
             last_tile_start_ts_str=last_tile_start_ts_str,
@@ -256,7 +258,7 @@ class TileSnowflake(TileBase):
             time_modulo_frequency_seconds=self.tile_spec.time_modulo_frequency_second,
             blind_spot_seconds=self.tile_spec.blind_spot_second,
             frequency_minute=self.tile_spec.frequency_minute,
-            column_names=self.tile_spec.column_names,
+            column_names=",".join(self.tile_spec.column_names),
             tile_id=self.tile_spec.tile_id,
             tile_type=tile_type,
             offline_minutes=offline_minutes,

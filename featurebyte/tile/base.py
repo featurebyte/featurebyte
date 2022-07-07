@@ -3,7 +3,7 @@ Base class for Tile Management
 """
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from featurebyte.models.tile import TileSpec
 
