@@ -13,7 +13,7 @@ from enum import Enum
 
 from sqlglot import Expression, expressions, parse_one, select
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_common import AggregationSpec
 from featurebyte.query_graph.graph import Node
@@ -246,10 +246,11 @@ class BuildTileInputNode(GenericInputNode):
         select_expr = super().sql
         assert isinstance(select_expr, expressions.Select)
         timestamp = escape_column_name(self.timestamp)
-        select_expr = select_expr.where(
-            f"{timestamp} >= CAST(FBT_START_DATE AS TIMESTAMP)",
-            f"{timestamp} < CAST(FBT_END_DATE AS TIMESTAMP)",
+        start_cond = (
+            f"{timestamp} >= CAST({InternalName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
         )
+        end_cond = f"{timestamp} < CAST({InternalName.TILE_END_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
+        select_expr = select_expr.where(start_cond, end_cond)
         return select_expr
 
 
@@ -342,7 +343,7 @@ class BuildTileNode(TableNode):
 
     @property
     def sql(self) -> Expression:
-        start_date_placeholder = "FBT_START_DATE"
+        start_date_placeholder = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
         start_date_placeholder_epoch = (
             f"DATE_PART(EPOCH_SECOND, CAST({start_date_placeholder} AS TIMESTAMP))"
         )
@@ -359,7 +360,7 @@ class BuildTileNode(TableNode):
         keys = escape_column_names(self.keys)
         groupby_sql = (
             select(
-                f"{tile_start_date} AS tile_start_date",
+                f"{tile_start_date} AS {InternalName.TILE_START_DATE}",
                 *keys,
                 *[f"{spec.tile_expr} AS {spec.tile_column_name}" for spec in self.tile_specs],
             )
@@ -588,7 +589,9 @@ def make_build_tile_node(
     aggregator = get_aggregator(parameters["agg_func"])
     tile_specs = aggregator.tile(parameters["parent"])
     columns = (
-        ["tile_start_date"] + parameters["keys"] + [spec.tile_column_name for spec in tile_specs]
+        [InternalName.TILE_START_DATE.value]
+        + parameters["keys"]
+        + [spec.tile_column_name for spec in tile_specs]
     )
     columns_map = {col: expressions.Identifier(this=col, quoted=True) for col in columns}
     sql_node = BuildTileNode(

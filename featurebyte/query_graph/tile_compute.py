@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from featurebyte.enum import InternalName
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter, TileGenSql
 
@@ -188,8 +189,8 @@ def get_tile_sql_from_point_in_time(
         num_tiles=num_tiles,
     )
     sql = sql_template
-    sql = sql.replace("FBT_START_DATE", f"'{start_date}'")
-    sql = sql.replace("FBT_END_DATE", f"'{end_date}'")
+    sql = sql.replace(InternalName.TILE_START_DATE_SQL_PLACEHOLDER, f"'{start_date}'")
+    sql = sql.replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, f"'{end_date}'")
     return sql
 
 
@@ -222,7 +223,7 @@ def get_tile_sql_parameterized_by_job_settings(
     frequency_minute = frequency // 60
     index_expr = (
         f"F_TIMESTAMP_TO_INDEX("
-        f"  TILE_START_DATE,"
+        f"  {InternalName.TILE_START_DATE},"
         f"  {time_modulo_frequency},"
         f"  {blind_spot},"
         f"  {frequency_minute}"

@@ -6,6 +6,7 @@ from dataclasses import asdict
 
 import pytest
 
+from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState
 from featurebyte.query_graph.interpreter import GraphInterpreter, SQLOperationGraph, SQLType
@@ -133,8 +134,8 @@ def test_graph_interpreter_multi_assign(graph, node_input):
           "a" + "b" AS "c2"
         FROM "db"."public"."event_table"
         WHERE
-          "ts" >= CAST(FBT_START_DATE AS TIMESTAMP)
-          AND "ts" < CAST(FBT_END_DATE AS TIMESTAMP)
+          "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+          AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -191,8 +192,8 @@ def test_graph_interpreter_binary_operations(graph, node_input, node_type, expec
           {expected_expr} AS "a2"
         FROM "db"."public"."event_table"
         WHERE
-          "ts" >= CAST(FBT_START_DATE AS TIMESTAMP)
-          AND "ts" < CAST(FBT_END_DATE AS TIMESTAMP)
+          "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+          AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
@@ -232,7 +233,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
     info_dict.pop("sql")
     assert info_dict == {
         "tile_table_id": "avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
-        "columns": ["tile_start_date", "cust_id", "sum_value", "count_value"],
+        "columns": [InternalName.TILE_START_DATE.value, "cust_id", "sum_value", "count_value"],
         "time_modulo_frequency": 1800,
         "frequency": 3600,
         "blind_spot": 900,
@@ -291,21 +292,21 @@ def test_graph_interpreter_snowflake(graph):
     expected = textwrap.dedent(
         """
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(FBT_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS tile_start_date,
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "CUST_ID",
           COUNT(*) AS value
         FROM (
             SELECT
               *,
-              FLOOR((DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(FBT_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+              FLOOR((DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
                 SELECT
                   "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
                   "CUST_ID" AS "CUST_ID"
                 FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
                 WHERE
-                  "SERVER_TIMESTAMP" >= CAST(FBT_START_DATE AS TIMESTAMP)
-                  AND "SERVER_TIMESTAMP" < CAST(FBT_END_DATE AS TIMESTAMP)
+                  "SERVER_TIMESTAMP" >= CAST(__FB_START_DATE AS TIMESTAMP)
+                  AND "SERVER_TIMESTAMP" < CAST(__FB_END_DATE AS TIMESTAMP)
             )
         )
         GROUP BY

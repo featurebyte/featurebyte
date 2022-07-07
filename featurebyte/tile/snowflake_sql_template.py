@@ -38,8 +38,15 @@ tm_insert_tile_registry = Template(
 tm_generate_tile = Template(
     """
     call SP_TILE_GENERATE(
-        '{{tile_sql}}', {{time_modulo_frequency_seconds}}, {{blind_spot_seconds}}, {{frequency_minute}}, '{{column_names}}',
-        '{{tile_id}}', '{{tile_type.value}}', '{{last_tile_start_ts_str}}'
+        '{{tile_sql}}',
+        '{{tile_start_date_column}}',
+        {{time_modulo_frequency_seconds}},
+        {{blind_spot_seconds}},
+        {{frequency_minute}},
+        '{{column_names}}',
+        '{{tile_id}}',
+        '{{tile_type.value}}',
+        '{{last_tile_start_ts_str}}'
     )
 """
 )
@@ -51,8 +58,20 @@ tm_schedule_tile = Template(
       SCHEDULE = 'USING CRON {{cron}} UTC'
     AS
         call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
-            '{{temp_task_name}}', '{{warehouse}}', '{{tile_id}}', {{time_modulo_frequency_seconds}}, {{blind_spot_seconds}},
-            {{frequency_minute}}, {{offline_minutes}}, '{{sql}}', '{{column_names}}', '{{tile_type.value}}', {{monitor_periods}}
+            '{{temp_task_name}}',
+            '{{warehouse}}',
+            '{{tile_id}}',
+            {{time_modulo_frequency_seconds}},
+            {{blind_spot_seconds}},
+            {{frequency_minute}},
+            {{offline_minutes}},
+            '{{sql}}',
+            '{{tile_start_date_column}}',
+            '{{tile_start_placeholder}}',
+            '{{tile_end_placeholder}}',
+            '{{column_names}}',
+            '{{tile_type.value}}',
+            {{monitor_periods}}
         )
 """
 )

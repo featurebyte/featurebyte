@@ -1,4 +1,13 @@
-CREATE OR REPLACE PROCEDURE SP_TILE_MONITOR(MONITOR_SQL varchar, TIME_MODULO_FREQUENCY_SECONDS float, BLIND_SPOT_SECONDS float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TABLE_NAME varchar, TILE_TYPE varchar)
+CREATE OR REPLACE PROCEDURE SP_TILE_MONITOR(
+    MONITOR_SQL varchar,
+    TILE_START_DATE_COLUMN varchar,
+    TIME_MODULO_FREQUENCY_SECONDS float,
+    BLIND_SPOT_SECONDS float,
+    FREQUENCY_MINUTE float,
+    COLUMN_NAMES varchar,
+    TABLE_NAME varchar,
+    TILE_TYPE varchar
+)
 returns string
 language javascript
 as
@@ -24,7 +33,7 @@ $$
         return debug
     }
 
-    var col_list = COLUMN_NAMES.split(",").filter(item => item.trim().toUpperCase() !== "TILE_START_TS")
+    var col_list = COLUMN_NAMES.split(",").filter(item => item.trim().toUpperCase() !== `${TILE_START_DATE_COLUMN}`)
     col_list_str = col_list.join(',')
     debug = debug + " - col_list_str: " + col_list_str
 
@@ -39,8 +48,8 @@ $$
     //replace SQL template with start and end date strings for tile generation sql
     var new_tile_sql = `
         select
-            TILE_START_TS,
-            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX,
+            ${TILE_START_DATE_COLUMN},
+            F_TIMESTAMP_TO_INDEX(${TILE_START_DATE_COLUMN}, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX,
             ${col_list_str}
         from (${MONITOR_SQL})
     `
@@ -51,7 +60,7 @@ $$
                 a.*,
                 b.VALUE as OLD_VALUE,
                 '${TILE_TYPE}'::VARCHAR(8) as TILE_TYPE,
-                DATEADD(SECOND, (${BLIND_SPOT_SECONDS}+${FREQUENCY_MINUTE}*60), a.TILE_START_TS) as EXPECTED_CREATED_AT,
+                DATEADD(SECOND, (${BLIND_SPOT_SECONDS}+${FREQUENCY_MINUTE}*60), a.${TILE_START_DATE_COLUMN}) as EXPECTED_CREATED_AT,
                 SYSDATE() as CREATED_AT
             from
                 (${new_tile_sql}) a left outer join ${TABLE_NAME} b

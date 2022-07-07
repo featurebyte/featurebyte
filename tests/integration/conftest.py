@@ -13,6 +13,7 @@ import yaml
 from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
+from featurebyte.enum import InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
 from featurebyte.models.feature import FeatureModel, FeatureReadiness, TileSpec
 from featurebyte.session.manager import SessionManager
@@ -134,7 +135,7 @@ def snowflake_session_fixture(transaction_data_upper_case, config):
     )
 
     df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
-    df_tiles["TILE_START_TS"] = pd.to_datetime(df_tiles["TILE_START_TS"])
+    df_tiles[InternalName.TILE_START_DATE] = pd.to_datetime(df_tiles[InternalName.TILE_START_DATE])
     write_pandas(
         session.connection, df_tiles, "TEMP_TABLE", auto_create_table=True, create_temp_table=True
     )
@@ -159,9 +160,11 @@ def snowflake_tile(snowflake_session, config):
     """
     Pytest Fixture for TileSnowflake instance
     """
-    col_names = "TILE_START_TS,PRODUCT_ACTION,CUST_ID,VALUE"
+    col_names = f"{InternalName.TILE_START_DATE},PRODUCT_ACTION,CUST_ID,VALUE"
     table_name = "TEMP_TABLE"
-    tile_sql = f"SELECT {col_names} FROM {table_name} WHERE TILE_START_TS >= FB_START_TS and TILE_START_TS < FB_END_TS"
+    start = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
+    end = InternalName.TILE_END_DATE_SQL_PLACEHOLDER
+    tile_sql = f"SELECT {col_names} FROM {table_name} WHERE {InternalName.TILE_START_DATE} >= {start} and {InternalName.TILE_START_DATE} < {end}"
     tile_id = "tile_id1"
 
     tile_s = TileSnowflake(

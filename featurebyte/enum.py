@@ -60,3 +60,13 @@ class SpecialColumnName(str, Enum):
     """
 
     POINT_IN_TIME = "POINT_IN_TIME"
+
+
+class InternalName(str, Enum):
+    """
+    Names reserved for featurebyte's internal usage
+    """
+
+    TILE_START_DATE = "__FB_TILE_START_DATE_COLUMN"
+    TILE_START_DATE_SQL_PLACEHOLDER = "__FB_START_DATE"
+    TILE_END_DATE_SQL_PLACEHOLDER = "__FB_END_DATE"

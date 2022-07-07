@@ -9,6 +9,7 @@ from pydantic import PrivateAttr
 
 from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedFeatureStoreModel
+from featurebyte.enum import InternalName
 from featurebyte.logger import logger
 from featurebyte.models.feature import TileType
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -117,13 +118,14 @@ class TileSnowflake(TileBase):
         -------
             tile generation sql
         """
-        tile_sql = self.tile_sql.replace("FB_START_TS", f"\\'{start_ts_str}\\'").replace(
-            "FB_END_TS", f"\\'{end_ts_str}\\'"
-        )
+        tile_sql = self.tile_sql.replace(
+            InternalName.TILE_START_DATE_SQL_PLACEHOLDER, f"\\'{start_ts_str}\\'"
+        ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, f"\\'{end_ts_str}\\'")
         logger.info(f"tile_sql: {tile_sql}")
 
         sql = tm_generate_tile.render(
             tile_sql=tile_sql,
+            tile_start_date_column=InternalName.TILE_START_DATE.value,
             time_modulo_frequency_seconds=self.time_modulo_frequency_seconds,
             blind_spot_seconds=self.blind_spot_seconds,
             frequency_minute=self.frequency_minute,
@@ -220,6 +222,9 @@ class TileSnowflake(TileBase):
             warehouse=self._session.dict()["warehouse"],
             cron=cron_expr,
             sql=self.tile_sql,
+            tile_start_date_column=InternalName.TILE_START_DATE.value,
+            tile_start_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER.value,
+            tile_end_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER.value,
             time_modulo_frequency_seconds=self.time_modulo_frequency_seconds,
             blind_spot_seconds=self.blind_spot_seconds,
             frequency_minute=self.frequency_minute,
