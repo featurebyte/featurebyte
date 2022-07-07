@@ -81,20 +81,31 @@ class EventDataController:
         page_size: int = 10,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
+        search: str | None = None,
     ) -> EventDataList:
         """
         List Event Datas
         """
         query_filter = {"user_id": user.id}
-        docs, total = persistent.find(
-            collection_name=cls.collection_name,
-            query_filter=query_filter,
-            sort_by=sort_by,
-            sort_dir=sort_dir,
-            page=page,
-            page_size=page_size,
-        )
-        return EventDataList(page=page, page_size=page_size, total=total, data=list(docs))
+
+        # Apply search
+        if search:
+            query_filter["$text"] = {"$search": search}
+
+        try:
+            docs, total = persistent.find(
+                collection_name=cls.collection_name,
+                query_filter=query_filter,
+                sort_by=sort_by,
+                sort_dir=sort_dir,
+                page=page,
+                page_size=page_size,
+            )
+            return EventDataList(page=page, page_size=page_size, total=total, data=list(docs))
+        except NotImplementedError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_IMPLEMENTED, detail=f"Query not supported."
+            ) from exc
 
     @classmethod
     def retrieve_event_data(

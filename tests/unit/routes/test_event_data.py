@@ -113,9 +113,10 @@ def test_create_fails_wrong_field_type(test_api_client, event_data_dict):
     }
 
 
-def test_list(test_api_client, event_data_dict):
+@pytest.fixture(name="inserted_event_data_ids")
+def inserted_event_data_ids_fixture(test_api_client, event_data_dict):
     """
-    List Event Datas
+    Inserted multiple event data results & return its ids as fixture
     """
     # insert a few records
     insert_ids = []
@@ -126,14 +127,20 @@ def test_list(test_api_client, event_data_dict):
         insert_id = response.json()["id"]
         assert insert_id
         insert_ids.append(insert_id)
+    yield insert_ids
 
+
+def test_list(inserted_event_data_ids, test_api_client, event_data_dict):
+    """
+    List Event Datas
+    """
     response = test_api_client.get("/event_data")
     assert response.status_code == HTTPStatus.OK
     results = response.json()
     assert results["page"] == 1
     assert results["total"] == 3
     data = results["data"][0]
-    assert data.pop("id") == insert_ids[-1]
+    assert data.pop("id") == inserted_event_data_ids[-1]
     data.pop("created_at")
 
     # should include the static user id
@@ -142,6 +149,16 @@ def test_list(test_api_client, event_data_dict):
     event_data_dict.pop("history")
     event_data_dict["status"] = EventDataStatus.DRAFT
     assert data == event_data_dict
+
+
+def test_list__not_supported(inserted_event_data_ids, test_api_client):
+    """
+    Test search event data by search term
+    """
+    response = test_api_client.get("/event_data", params={"search": "abc"})
+    assert response.status_code == HTTPStatus.NOT_IMPLEMENTED
+    results = response.json()
+    assert results == {"detail": "Query not supported."}
 
 
 def test_retrieve_success(test_api_client, event_data_dict):
