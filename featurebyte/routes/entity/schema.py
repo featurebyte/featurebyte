@@ -37,7 +37,7 @@ class EntityCreate(BaseModel):
     """
 
     name: str
-    serving_column_names: List[str] = Field(min_items=1, max_items=1)
+    serving_names: List[str] = Field(min_items=1, max_items=1)
 
 
 class EntityList(PaginationMixin):

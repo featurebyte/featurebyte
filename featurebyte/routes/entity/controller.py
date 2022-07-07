@@ -46,12 +46,12 @@ class EntityController:
 
         conflict_entity = persistent.find_one(
             collection_name=cls.collection_name,
-            query_filter={"serving_column_names": data.serving_column_names},
+            query_filter={"serving_names": data.serving_names},
         )
         if conflict_entity:
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=f'Entity serving column name "{data.serving_column_names[0]}" already exists.',
+                detail=f'Entity serving name "{data.serving_names[0]}" already exists.',
             )
 
         insert_id = persistent.insert_one(
