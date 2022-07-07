@@ -69,14 +69,31 @@ class Entity(EntityModel):
         Parameters
         ----------
         response: Response
+            API response object
+
+        Returns
+        -------
+        dict[str, Any]
         """
-        response_dict = response.json()
+        response_dict: dict[str, Any] = response.json()
         response_dict["_id"] = response_dict.pop("id")
         return response_dict
 
-    def update_name(self, name) -> None:
+    def update_name(self, name: str) -> None:
         """
         Change entity name
+
+        Parameters
+        ----------
+        name: str
+            New entity name
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When there exists entity with the same name or serving name
+        RecordUpdateException
+            When exception happens during record update at persistent
         """
         client = Configurations().get_client()
         response = client.patch(f"/entity/{self.id}", json={"name": name})
