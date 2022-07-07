@@ -7,6 +7,7 @@ import pandas as pd
 
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 
 

@@ -9,8 +9,11 @@ import json
 import os
 from enum import Enum
 
+import numpy as np
+import pandas as pd
 from pydantic import Field
 from snowflake import connector
+from snowflake.connector.pandas_tools import write_pandas
 
 import featurebyte
 from featurebyte.enum import DBVarType, SourceType
@@ -47,7 +50,7 @@ class SnowflakeSession(BaseSession):
         # If the featurebyte schema does not exist, the self._connection can still be created
         # without errors. Below checks whether the schema actually exists. If not, it will be
         # created and initialized with custom functions and procedures.
-        self._init_featurebyte_schema_if_needed()
+        SchemaInitializer(self).initialize()
 
     def list_databases(self) -> list[str]:
         """
@@ -97,6 +100,18 @@ class SnowflakeSession(BaseSession):
             output.extend(views["name"])
         return output
 
+    def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
+        schema = self.get_schema_from_dataframe(dataframe)
+        self.execute_query(
+            f"""
+            CREATE OR REPLACE TEMP TABLE {table_name}(
+                {schema}
+            )
+            """
+        )
+        dataframe = self._prep_dataframe_before_write_pandas(dataframe)
+        write_pandas(self._connection, dataframe, table_name)
+
     @staticmethod
     def _convert_to_internal_variable_type(snowflake_var_info: dict[str, Any]) -> DBVarType:
         to_internal_variable_map = {
@@ -138,10 +153,34 @@ class SnowflakeSession(BaseSession):
             }
         return column_name_type_map
 
-    def _init_featurebyte_schema_if_needed(self) -> None:
-        # Note: self._connection.schema changes to None after execute_query() if the specified
-        # default schema doesn't exist, so we should not rely on it
-        SchemaInitializer(self).initialize()
+    @staticmethod
+    def get_schema_from_dataframe(dataframe: pd.DataFrame) -> str:
+        schema = []
+        for colname, dtype in dataframe.dtypes.to_dict().items():
+            if pd.api.types.is_datetime64_dtype(dataframe[colname]):
+                db_type = "DATETIME"
+            elif dtype == float:
+                db_type = "DOUBLE"
+            elif dtype == int:
+                db_type = "INT"
+            elif dtype == object:
+                db_type = "VARCHAR"
+            else:
+                raise RuntimeError(f"Unhandled type: {dtype}")
+            schema.append(f"{colname} {db_type}")
+        schema = ", ".join(schema)
+        return schema
+
+    @staticmethod
+    def _prep_dataframe_before_write_pandas(dataframe: pd.DataFrame) -> pd.DataFrame:
+        # Ideally we should avoid making a copy, but so far the only way to get write_pandas() to
+        # create DATETIME type columns in Snowflake for datetime columns in DataFrame is to specify
+        # DATETIME type in the schema when creating table, and convert the dtype in DataFrame to
+        # object before calling write_pandas()
+        dataframe = dataframe.copy()
+        for date_col in dataframe.select_dtypes(include=[np.datetime64]):
+            dataframe[date_col] = dataframe[date_col].astype(str)
+        return dataframe
 
 
 class SqlObjectType(str, Enum):
