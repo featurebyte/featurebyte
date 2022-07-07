@@ -3,7 +3,7 @@ Snowflake Feature Manager class
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
@@ -25,13 +25,21 @@ from featurebyte.tile.snowflake_tile import TileSnowflake
 class FeatureManagerSnowflake(BaseModel):
     """
     Snowflake Feature Manager class
-
-    credentials: Credentials
-        credentials to the datasource
     """
 
-    credentials: Credentials
-    _session: BaseSession = PrivateAttr(default=None)
+    _session: BaseSession = PrivateAttr()
+
+    def __init__(self, session: BaseSession, **kw: Any) -> None:
+        """
+        Custom constructor for TileSnowflake to instantiate a datasource session
+
+        Parameters
+        ----------
+        kw: Any
+            constructor arguments
+        """
+        super().__init__(**kw)
+        self._session = session
 
     def insert_feature_registry(self, feature: FeatureModel) -> bool:
         """
@@ -47,14 +55,13 @@ class FeatureManagerSnowflake(BaseModel):
         -------
             whether the feature registry record is inserted successfully or not
         """
-        session = self._get_session(feature)
         feature_versions = self.retrieve_feature_registries(
             feature=feature, version=feature.version
         )
 
         logger.debug(f"feature_versions: {feature_versions}")
         if len(feature_versions) == 0:
-            session.execute_query(
+            self._session.execute_query(
                 tm_update_feature_registry.render(
                     feature_name=feature.name, col_name="is_default", col_value=False
                 )
@@ -69,7 +76,7 @@ class FeatureManagerSnowflake(BaseModel):
 
             sql = tm_insert_feature_registry.render(feature=feature, tile_specs_str=tile_specs_str)
             logger.debug(f"generated sql: {sql}")
-            session.execute_query(sql)
+            self._session.execute_query(sql)
             return True
 
         logger.debug(
@@ -99,7 +106,7 @@ class FeatureManagerSnowflake(BaseModel):
         if version:
             sql += f" AND VERSION = '{version}'"
 
-        return self._get_session(feature).execute_query(sql)
+        return self._session.execute_query(sql)
 
     def update_feature_registry(
         self, feature: FeatureModel, attribute_name: str, attribute_value: str
@@ -125,7 +132,7 @@ class FeatureManagerSnowflake(BaseModel):
             )
         logger.debug(f"feature_versions: {feature_versions}")
 
-        self._get_session(feature).execute_query(
+        self._session.execute_query(
             tm_update_feature_registry.render(
                 feature_name=feature.name, col_name=attribute_name, col_value=f"'{attribute_value}'"
             )
@@ -150,8 +157,7 @@ class FeatureManagerSnowflake(BaseModel):
                     tile_sql=tile_spec.tile_sql,
                     column_names=tile_spec.column_names,
                     tile_id=tile_spec.tile_id,
-                    tabular_source=feature.tabular_source[0],
-                    credentials=self.credentials,
+                    session=self._session,
                 )
                 # insert tile_registry record
                 tile_mgr.insert_tile_registry()
@@ -180,23 +186,5 @@ class FeatureManagerSnowflake(BaseModel):
         """
         sql = tm_last_tile_index.render(feature=feature)
         logger.debug(f"generated sql: {sql}")
-        result = self._get_session(feature).execute_query(sql)
+        result = self._session.execute_query(sql)
         return result
-
-    def _get_session(self, feature: FeatureModel) -> BaseSession:
-        """
-        Helper method to get the datasource session from FeatureModel
-
-        Parameters
-        ----------
-        feature: FeatureModel
-            input feature instance
-
-        Returns
-        -------
-            database session
-        """
-        if not self._session:
-            feature_store = ExtendedFeatureStoreModel(**feature.tabular_source[0].dict())
-            self._session = feature_store.get_session(credentials=self.credentials)
-        return self._session

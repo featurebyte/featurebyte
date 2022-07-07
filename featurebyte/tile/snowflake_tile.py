@@ -3,7 +3,7 @@ Snowflake Tile class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import PrivateAttr
 
@@ -26,22 +26,13 @@ from featurebyte.tile.snowflake_sql_template import (
 class TileSnowflake(TileBase):
     """
     Snowflake Tile class
-
-    Parameters
-    ----------
-    tabular_source: FeatureStoreModel
-        snowflake datasource instance
-    credentials: Credentials
-        credentials to the snowflake datasource
     """
 
-    tabular_source: FeatureStoreModel
-    credentials: Credentials
     _session: BaseSession = PrivateAttr()
 
-    def __init__(self, **kw: Any) -> None:
+    def __init__(self, session: BaseSession, **kw: Any) -> None:
         """
-        Custom constructor for TileSnowflake to instantiate a datasource session with credentials
+        Custom constructor for TileSnowflake to instantiate a datasource session
 
         Parameters
         ----------
@@ -49,8 +40,7 @@ class TileSnowflake(TileBase):
             constructor arguments
         """
         super().__init__(**kw)
-        data_source = ExtendedFeatureStoreModel(**self.tabular_source.dict())
-        self._session = data_source.get_session(credentials=self.credentials)
+        self._session = session
 
     def insert_tile_registry(self) -> bool:
         """
@@ -97,7 +87,11 @@ class TileSnowflake(TileBase):
         )
 
     def generate_tiles(
-        self, tile_type: TileType, start_ts_str: str, end_ts_str: str, last_tile_start_ts_str: str
+        self,
+        tile_type: TileType,
+        start_ts_str: str,
+        end_ts_str: str,
+        last_tile_start_ts_str: Optional[str] = None,
     ) -> str:
         """
         Manually trigger tile generation
@@ -121,6 +115,11 @@ class TileSnowflake(TileBase):
             "FB_END_TS", f"\\'{end_ts_str}\\'"
         )
         logger.info(f"tile_sql: {tile_sql}")
+
+        if last_tile_start_ts_str:
+            last_tile_start_ts_str = f"'{last_tile_start_ts_str}'"
+        else:
+            last_tile_start_ts_str = "null"
 
         sql = tm_generate_tile.render(
             tile_sql=tile_sql,

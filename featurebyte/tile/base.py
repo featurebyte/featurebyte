@@ -12,8 +12,6 @@ class TileBase(BaseModel):
     """
     Snowflake Tile class
 
-    Parameters
-    ----------
     time_modulo_frequency_seconds: int
         time modulo seconds for the tile
     blind_spot_seconds: int

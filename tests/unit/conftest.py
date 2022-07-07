@@ -277,7 +277,9 @@ def session_manager_fixture(config, snowflake_connector):
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_tile(mock_execute_query, snowflake_feature_store, snowflake_connector, config):
+def mock_snowflake_tile(
+    mock_execute_query, snowflake_feature_store, snowflake_connector, session_manager
+):
     """
     Pytest Fixture for TileSnowflake instance
     """
@@ -291,8 +293,7 @@ def mock_snowflake_tile(mock_execute_query, snowflake_feature_store, snowflake_c
         tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
         column_names="c1",
         tile_id="tile_id1",
-        tabular_source=snowflake_feature_store,
-        credentials=config.credentials,
+        session=session_manager[snowflake_feature_store],
     )
 
     return tile_s
@@ -335,8 +336,8 @@ def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_ev
 
 
 @pytest.fixture
-def feature_manager(config):
+def feature_manager(session_manager, snowflake_feature_store):
     """
     Feature Manager fixture
     """
-    return FeatureManagerSnowflake(credentials=config.credentials)
+    return FeatureManagerSnowflake(session=session_manager[snowflake_feature_store])

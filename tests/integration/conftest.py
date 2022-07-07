@@ -171,8 +171,7 @@ def snowflake_tile(snowflake_session, config):
         tile_sql=tile_sql,
         column_names=col_names,
         tile_id="tile_id1",
-        tabular_source=config.feature_stores["snowflake_featurestore"],
-        credentials=config.credentials,
+        session=snowflake_session,
     )
 
     yield tile_s
@@ -215,8 +214,8 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
 
 
 @pytest.fixture
-def feature_manager(config):
+def feature_manager(snowflake_session):
     """
     Feature Manager fixture
     """
-    return FeatureManagerSnowflake(credentials=config.credentials)
+    return FeatureManagerSnowflake(session=snowflake_session)
