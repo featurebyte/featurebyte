@@ -33,6 +33,8 @@ def get_session_from_feature_objects(
     ----------
     feature_objects : list[Feature]
         Feature objects
+    credentials : Credentials | None
+        Optional feature store to credential mapping
 
     Returns
     -------
