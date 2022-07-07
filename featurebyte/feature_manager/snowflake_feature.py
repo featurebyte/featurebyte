@@ -149,13 +149,7 @@ class FeatureManagerSnowflake(BaseModel):
             for tile_spec in feature.tile_specs:
                 logger.info(f"tile_spec: {tile_spec}")
                 tile_mgr = TileSnowflake(
-                    time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-                    blind_spot_seconds=tile_spec.blind_spot_second,
-                    frequency_minute=tile_spec.frequency_minute,
-                    tile_sql=tile_spec.tile_sql,
-                    column_names=tile_spec.column_names,
-                    entity_column_names=tile_spec.entity_column_names,
-                    tile_id=tile_spec.tile_id,
+                    tile_spec=tile_spec,
                     session=self._session,
                 )
                 # insert tile_registry record

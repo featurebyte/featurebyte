@@ -156,5 +156,5 @@ def test_get_last_tile_index(snowflake_feature, snowflake_tile, feature_manager)
     snowflake_tile.insert_tile_registry()
     last_index_df = feature_manager.get_last_tile_index(snowflake_feature)
     assert len(last_index_df) == 1
-    assert last_index_df.iloc[0]["TILE_ID"] == snowflake_tile.tile_id
+    assert last_index_df.iloc[0]["TILE_ID"] == snowflake_tile.tile_spec.tile_id
     assert last_index_df.iloc[0]["LAST_TILE_INDEX_ONLINE"] == -1

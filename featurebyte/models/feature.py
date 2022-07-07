@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
+from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 FeatureVersionIdentifier = str
@@ -41,41 +42,6 @@ class DefaultVersionMode(str, Enum):
 
     AUTO = "AUTO"
     MANUAL = "MANUAL"
-
-
-class TileType(str, Enum):
-    """Tile Type"""
-
-    ONLINE = "ONLINE"
-    OFFLINE = "OFFLINE"
-
-
-class TileSpec(BaseModel):
-    """
-    Model for TileSpec
-
-    tile_id: str
-        hash value of tile id and name
-    time_modulo_frequency_seconds: int
-        time modulo seconds for the tile
-    blind_spot_seconds: int
-        blind spot seconds for the tile
-    frequency_minute: int
-        frequency minute for the tile
-    tile_sql: str
-        sql for tile generation
-    column_names: str
-        comma separated string of column names for the tile table
-    """
-
-    tile_id: str
-    tile_sql: str
-    column_names: str
-    entity_column_names: str
-
-    time_modulo_frequency_second: int
-    blind_spot_second: int
-    frequency_minute: int
 
 
 class FeatureNameSpace(BaseModel):

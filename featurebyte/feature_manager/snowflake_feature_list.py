@@ -14,12 +14,8 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_update_feature_list_registry,
 )
 from featurebyte.logger import logger
-from featurebyte.models.feature import (
-    FeatureListModel,
-    FeatureListVersionIdentifier,
-    TileSpec,
-    TileType,
-)
+from featurebyte.models.feature import FeatureListModel, FeatureListVersionIdentifier
+from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
@@ -154,13 +150,7 @@ class FeatureListManagerSnowflake(BaseModel):
         """
         for tile_spec, entity_table in tile_inputs:
             tile_mgr = TileSnowflake(
-                time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-                blind_spot_seconds=tile_spec.blind_spot_second,
-                frequency_minute=tile_spec.frequency_minute,
-                tile_sql=tile_spec.tile_sql,
-                column_names=tile_spec.column_names,
-                entity_column_names=tile_spec.entity_column_names,
-                tile_id=tile_spec.tile_id,
+                tile_spec=tile_spec,
                 session=self._session,
             )
 

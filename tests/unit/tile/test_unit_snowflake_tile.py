@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 
-from featurebyte.models.feature import TileType
+from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
 
@@ -20,16 +20,15 @@ def test_construct_snowflaketile_time_modulo_error(
     mock_execute_query.size_effect = None
 
     with pytest.raises(ValueError) as excinfo:
-        TileSnowflake(
-            time_modulo_frequency_seconds=183,
-            blind_spot_seconds=3,
+        TileSpec(
+            time_modulo_frequency_second=183,
+            blind_spot_second=3,
             frequency_minute=3,
             tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
             column_names="c1",
             entity_column_names="col1",
-            session=session_manager[snowflake_feature_store],
         )
-    assert "time_modulo_frequency_seconds must be less than 180" in str(excinfo.value)
+    assert "time_modulo_frequency_second must be less than 180" in str(excinfo.value)
 
 
 def test_generate_tiles(mock_snowflake_tile):

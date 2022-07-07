@@ -22,8 +22,8 @@ from featurebyte.models.feature import (
     FeatureListStatus,
     FeatureModel,
     FeatureReadiness,
-    TileSpec,
 )
+from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.session.manager import SessionManager
@@ -298,14 +298,18 @@ def mock_snowflake_tile(
         f" tile_start_ts >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} and"
         f" tile_start_ts < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
-    tile_s = TileSnowflake(
-        time_modulo_frequency_seconds=183,
-        blind_spot_seconds=3,
+    tile_spec = TileSpec(
+        time_modulo_frequency_second=183,
+        blind_spot_second=3,
         frequency_minute=5,
         tile_sql=tile_sql,
         column_names="c1",
         tile_id="tile_id1",
         entity_column_names="col1",
+    )
+
+    tile_s = TileSnowflake(
+        tile_spec=tile_spec,
         session=session_manager[snowflake_feature_store],
     )
 

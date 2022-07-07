@@ -174,14 +174,18 @@ def snowflake_tile(snowflake_session, config):
     tile_sql = f"SELECT {col_names} FROM {table_name} WHERE {InternalName.TILE_START_DATE} >= {start} and {InternalName.TILE_START_DATE} < {end}"
     tile_id = "tile_id1"
 
-    tile_s = TileSnowflake(
-        time_modulo_frequency_seconds=183,
-        blind_spot_seconds=3,
+    tile_spec = TileSpec(
+        time_modulo_frequency_second=183,
+        blind_spot_second=3,
         frequency_minute=5,
         tile_sql=tile_sql,
         column_names=col_names,
         entity_column_names="PRODUCT_ACTION,CUST_ID",
         tile_id="tile_id1",
+    )
+
+    tile_s = TileSnowflake(
+        tile_spec=tile_spec,
         session=snowflake_session,
     )
 
