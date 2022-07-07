@@ -26,6 +26,7 @@ def test_construct_snowflaketile_time_modulo_error(
             frequency_minute=3,
             tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
             column_names="c1",
+            entity_column_names="col1",
             session=session_manager[snowflake_feature_store],
         )
     assert "time_modulo_frequency_seconds must be less than 180" in str(excinfo.value)

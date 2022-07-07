@@ -1,4 +1,8 @@
-CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_ENTITY_TRACKING(TILE_ID varchar, ENTITY_COLUMN_NAMES varchar, ENTITY_TABLE varchar)
+CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_ENTITY_TRACKING(
+    TILE_ID varchar,
+    ENTITY_COLUMN_NAMES varchar,
+    ENTITY_TABLE varchar
+)
 returns string
 language javascript
 as
@@ -56,7 +60,6 @@ $$
         snowflake.execute({sqlText: insert_sql})
         debug = debug + " - insert_sql: " + insert_sql
     }
-
 
   return debug
 $$;

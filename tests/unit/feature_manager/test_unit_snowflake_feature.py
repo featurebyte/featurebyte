@@ -1,5 +1,5 @@
 """
-This module contains unit tests for FeatureSnowflake
+This module contains unit tests for FeatureManagerSnowflake
 """
 from unittest import mock
 
@@ -71,6 +71,26 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature, feature_m
     assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
     assert f_reg_df.iloc[0]["VERSION"] == "v1"
     assert f_reg_df.iloc[0]["TILE_SPECS"] == []
+
+
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def test_update_feature_list(mock_execute_query, mock_snowflake_feature, feature_manager):
+    """
+    Test retrieve_features
+    """
+    mock_execute_query.return_value = ["feature_list1"]
+    feature_manager.update_feature_registry(
+        mock_snowflake_feature, attribute_name="status", attribute_value="DRAFT"
+    )
+    assert mock_execute_query.call_count == 2
+
+    sql = tm_update_feature_registry.render(
+        feature_name=mock_snowflake_feature.name, col_name="status", col_value="'DRAFT'"
+    )
+    calls = [
+        mock.call(sql),
+    ]
+    mock_execute_query.assert_has_calls(calls, any_order=True)
 
 
 @mock.patch("featurebyte.tile.snowflake_tile.TileSnowflake.insert_tile_registry")

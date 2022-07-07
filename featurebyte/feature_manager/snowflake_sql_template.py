@@ -5,10 +5,19 @@ from jinja2 import Template
 
 tm_insert_feature_registry = Template(
     """
-    INSERT INTO FEATURE_REGISTRY (NAME, VERSION, DESCRIPTION, READINESS, TILE_SPECS)
+    INSERT INTO FEATURE_REGISTRY (
+        NAME,
+        VERSION,
+        DESCRIPTION,
+        READINESS,
+        TILE_SPECS
+    )
     SELECT
-        '{{feature.name}}' as NAME, '{{feature.version}}' as VERSION, '{{feature.description}}' as DESCRIPTION,
-        '{{feature.readiness.value}}' as READINESS, parse_json('{{tile_specs_str}}') as TILE_SPECS
+        '{{feature.name}}' as NAME,
+        '{{feature.version}}' as VERSION,
+        '{{feature.description}}' as DESCRIPTION,
+        '{{feature.readiness.value}}' as READINESS,
+        parse_json('{{tile_specs_str}}') as TILE_SPECS
 """
 )
 
@@ -28,10 +37,47 @@ tm_select_feature_registry = Template(
 tm_last_tile_index = Template(
     """
     SELECT
-        t_reg.TILE_ID, t_reg.LAST_TILE_INDEX_ONLINE, t_reg.LAST_TILE_INDEX_OFFLINE
+        t_reg.TILE_ID,
+        t_reg.LAST_TILE_INDEX_ONLINE,
+        t_reg.LAST_TILE_INDEX_OFFLINE
     FROM
-        (SELECT value:tile_id as TILE_ID FROM FEATURE_REGISTRY, LATERAL FLATTEN(input => TILE_SPECS)
-        WHERE NAME = '{{feature.name}}' AND VERSION = '{{feature.version}}') t_spec, TILE_REGISTRY t_reg
+        (
+            SELECT value:tile_id as TILE_ID FROM FEATURE_REGISTRY, LATERAL FLATTEN(input => TILE_SPECS)
+            WHERE NAME = '{{feature.name}}' AND VERSION = '{{feature.version}}'
+        ) t_spec,
+        TILE_REGISTRY t_reg
     WHERE t_reg.TILE_ID = t_spec.TILE_ID
+"""
+)
+
+tm_insert_feature_list_registry = Template(
+    """
+    INSERT INTO FEATURE_LIST_REGISTRY (
+        NAME,
+        VERSION,
+        DESCRIPTION,
+        READINESS,
+        STATUS,
+        FEATURE_VERSIONS
+    )
+    SELECT
+        '{{feature_list.name}}' as NAME,
+        '{{feature_list.version}}' as VERSION,
+        '{{feature_list.description}}' as DESCRIPTION,
+        '{{feature_list.readiness.value}}' as READINESS,
+        '{{feature_list.status.value}}' as STATUS,
+        parse_json('{{feature_lst_str}}') as FEATURE_VERSIONS
+"""
+)
+
+tm_select_feature_list_registry = Template(
+    """
+    SELECT * FROM FEATURE_LIST_REGISTRY WHERE NAME = '{{feature_list_name}}'
+"""
+)
+
+tm_update_feature_list_registry = Template(
+    """
+    UPDATE FEATURE_LIST_REGISTRY SET {{col_name}} = {{col_value}} WHERE NAME = '{{feature_list_name}}'
 """
 )

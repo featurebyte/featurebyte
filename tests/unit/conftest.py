@@ -16,7 +16,14 @@ from featurebyte.config import Configurations
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.models.feature import FeatureModel, TileSpec
+from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
+from featurebyte.models.feature import (
+    FeatureListModel,
+    FeatureListStatus,
+    FeatureModel,
+    FeatureReadiness,
+    TileSpec,
+)
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.session.manager import SessionManager
@@ -298,6 +305,7 @@ def mock_snowflake_tile(
         tile_sql=tile_sql,
         column_names="c1",
         tile_id="tile_id1",
+        entity_column_names="col1",
         session=session_manager[snowflake_feature_store],
     )
 
@@ -334,6 +342,7 @@ def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_ev
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
         column_names="col1",
+        entity_column_names="col1",
     )
     feature_loaded.tile_specs = [tile_spec]
 
@@ -346,3 +355,58 @@ def feature_manager(session_manager, snowflake_feature_store):
     Feature Manager fixture
     """
     return FeatureManagerSnowflake(session=session_manager[snowflake_feature_store])
+
+
+@pytest.fixture
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def mock_snowflake_feature_list(mock_execute_query, snowflake_connector, snowflake_event_view):
+    """
+    Pytest Fixture for FeatureSnowflake instance
+    """
+    mock_execute_query.size_effect = None
+    _ = snowflake_connector
+
+    snowflake_event_view.cust_id.as_entity("customer")
+    feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        blind_spot="10m",
+        frequency="30m",
+        time_modulo_frequency="5m",
+        feature_names=["sum_30m"],
+    )
+    feature = feature_group["sum_30m"]
+    feature_json = feature.json()
+    feature_loaded = FeatureModel.parse_raw(feature_json)
+
+    tile_spec = TileSpec(
+        tile_id="tile_id1",
+        time_modulo_frequency_second=183,
+        blind_spot_second=3,
+        frequency_minute=5,
+        tile_sql="SELECT * FROM DUMMY",
+        column_names="col1",
+        entity_column_names="col1",
+    )
+    feature_loaded.tile_specs = [tile_spec]
+    feature_loaded.version = "v1"
+
+    mock_feature_list = FeatureListModel(
+        name="feature_list1",
+        description="test_description1",
+        features=[(feature_loaded.name, feature_loaded.version)],
+        readiness=FeatureReadiness.DRAFT,
+        status=FeatureListStatus.DRAFT,
+        version="v1",
+    )
+
+    return mock_feature_list
+
+
+@pytest.fixture
+def feature_list_manager(session_manager, snowflake_feature_store):
+    """
+    Feature List Manager fixture
+    """
+    return FeatureListManagerSnowflake(session=session_manager[snowflake_feature_store])

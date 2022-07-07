@@ -15,7 +15,14 @@ from snowflake.connector.pandas_tools import write_pandas
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.models.feature import FeatureModel, FeatureReadiness, TileSpec
+from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
+from featurebyte.models.feature import (
+    FeatureListModel,
+    FeatureListStatus,
+    FeatureModel,
+    FeatureReadiness,
+    TileSpec,
+)
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.tile.snowflake_tile import TileSnowflake
@@ -173,6 +180,7 @@ def snowflake_tile(snowflake_session, config):
         frequency_minute=5,
         tile_sql=tile_sql,
         column_names=col_names,
+        entity_column_names="PRODUCT_ACTION,CUST_ID",
         tile_id="tile_id1",
         session=snowflake_session,
     )
@@ -200,6 +208,7 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
         column_names="col1",
+        entity_column_names="col1",
     )
 
     mock_feature.tabular_source = (config.feature_stores["snowflake_featurestore"],)
@@ -222,3 +231,38 @@ def feature_manager(snowflake_session):
     Feature Manager fixture
     """
     return FeatureManagerSnowflake(session=snowflake_session)
+
+
+@pytest.fixture
+def snowflake_feature_list(feature_model_dict, snowflake_session, config):
+    """
+    Pytest Fixture for FeatureSnowflake instance
+    """
+    mock_feature = FeatureModel(**feature_model_dict)
+    mock_feature.tabular_source = (config.feature_stores["snowflake_featurestore"],)
+    mock_feature.version = "v1"
+    mock_feature.readiness = FeatureReadiness.DRAFT
+    mock_feature.is_default = True
+
+    mock_feature_list = FeatureListModel(
+        name="feature_list1",
+        description="test_description1",
+        features=[(mock_feature.name, mock_feature.version)],
+        readiness=FeatureReadiness.DRAFT,
+        status=FeatureListStatus.DRAFT,
+        version="v1",
+    )
+
+    yield mock_feature_list
+
+    snowflake_session.execute_query("DELETE FROM FEATURE_LIST_REGISTRY")
+    snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
+    snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
+
+
+@pytest.fixture
+def feature_list_manager(snowflake_session):
+    """
+    Feature Manager fixture
+    """
+    return FeatureListManagerSnowflake(session=snowflake_session)

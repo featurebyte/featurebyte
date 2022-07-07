@@ -15,7 +15,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_update_feature_registry,
 )
 from featurebyte.logger import logger
-from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature import FeatureModel, FeatureVersionIdentifier
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileSnowflake
 
@@ -83,7 +83,7 @@ class FeatureManagerSnowflake(BaseModel):
         return False
 
     def retrieve_feature_registries(
-        self, feature: FeatureModel, version: Optional[str] = None
+        self, feature: FeatureModel, version: Optional[FeatureVersionIdentifier] = None
     ) -> pd.DataFrame:
         """
         Retrieve Feature instances. If version parameter is not presented, return all the feature versions.
@@ -154,6 +154,7 @@ class FeatureManagerSnowflake(BaseModel):
                     frequency_minute=tile_spec.frequency_minute,
                     tile_sql=tile_spec.tile_sql,
                     column_names=tile_spec.column_names,
+                    entity_column_names=tile_spec.entity_column_names,
                     tile_id=tile_spec.tile_id,
                     session=self._session,
                 )

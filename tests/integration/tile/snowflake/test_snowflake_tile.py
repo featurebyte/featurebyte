@@ -103,3 +103,68 @@ def test_disable_tiles(snowflake_tile, snowflake_session):
     assert len(result) == 1
     assert result["TILE_ID"].iloc[0] == snowflake_tile.tile_id
     assert bool(result["IS_ENABLED"].iloc[0]) is False
+
+
+def test_update_tile_entity_tracker(snowflake_tile, snowflake_session):
+    """
+    Test update_tile_entity_tracker method in TileSnowflake
+    """
+
+    temp_entity_table = "TEMP_ENTITY_TRACKER"
+    last_tile_start_date_1 = "2022-07-06 10:52:14"
+    last_tile_start_date_2 = "2022-07-07 10:52:14"
+
+    snowflake_session.execute_query(
+        f"CREATE TEMPORARY TABLE {temp_entity_table} (PRODUCT_ACTION VARCHAR, CUST_ID VARCHAR, LAST_TILE_START_DATE TIMESTAMP_TZ)"
+    )
+    snowflake_session.execute_query(
+        f"INSERT INTO {temp_entity_table} VALUES ('P1', 'C1', '{last_tile_start_date_1}') "
+    )
+    snowflake_session.execute_query(
+        f"INSERT INTO {temp_entity_table} VALUES ('P2', 'C2', '{last_tile_start_date_2}') "
+    )
+
+    snowflake_tile.update_tile_entity_tracker(temp_entity_table=temp_entity_table)
+
+    sql = f"SELECT * FROM {snowflake_tile.tile_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
+    result = snowflake_session.execute_query(sql)
+    assert len(result) == 2
+    assert result["PRODUCT_ACTION"].iloc[0] == "P1"
+    assert result["CUST_ID"].iloc[0] == "C1"
+    assert (
+        result["LAST_TILE_START_DATE"].iloc[0].strftime("%Y-%m-%d %H:%M:%S")
+        == last_tile_start_date_1
+    )
+    assert result["PRODUCT_ACTION"].iloc[1] == "P2"
+    assert result["CUST_ID"].iloc[1] == "C2"
+    assert (
+        result["LAST_TILE_START_DATE"].iloc[1].strftime("%Y-%m-%d %H:%M:%S")
+        == last_tile_start_date_2
+    )
+
+    last_tile_start_date_2_new = "2022-07-08 00:00:00"
+    snowflake_session.execute_query(
+        f"UPDATE {temp_entity_table} SET LAST_TILE_START_DATE = '{last_tile_start_date_2_new}' WHERE PRODUCT_ACTION = 'P2'"
+    )
+    last_tile_start_date_3 = "2022-07-08 10:52:14"
+    snowflake_session.execute_query(
+        f"INSERT INTO {temp_entity_table} VALUES ('P3', 'C3', '{last_tile_start_date_3}') "
+    )
+
+    snowflake_tile.update_tile_entity_tracker(temp_entity_table=temp_entity_table)
+
+    sql = f"SELECT * FROM {snowflake_tile.tile_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
+    result = snowflake_session.execute_query(sql)
+    assert len(result) == 3
+    assert result["PRODUCT_ACTION"].iloc[1] == "P2"
+    assert result["CUST_ID"].iloc[1] == "C2"
+    assert (
+        result["LAST_TILE_START_DATE"].iloc[1].strftime("%Y-%m-%d %H:%M:%S")
+        == last_tile_start_date_2_new
+    )
+    assert result["PRODUCT_ACTION"].iloc[2] == "P3"
+    assert result["CUST_ID"].iloc[2] == "C3"
+    assert (
+        result["LAST_TILE_START_DATE"].iloc[2].strftime("%Y-%m-%d %H:%M:%S")
+        == last_tile_start_date_3
+    )

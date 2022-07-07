@@ -22,6 +22,8 @@ class TileBase(BaseModel):
         sql for tile generation
     column_names: str
         comma separated string of column names for the tile table
+    column_names: str
+        comma separated string of column names for the tile table
     tile_id: str
         hash value of tile id and name
     """
@@ -31,9 +33,10 @@ class TileBase(BaseModel):
     frequency_minute: int = Field(gt=0, le=60)
     tile_sql: str
     column_names: str
+    entity_column_names: str
     tile_id: str
 
-    @validator("tile_id", "column_names")
+    @validator("tile_id", "column_names", "entity_column_names")
     @classmethod
     def stripped(cls, value: str) -> str:
         """

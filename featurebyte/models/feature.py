@@ -71,6 +71,7 @@ class TileSpec(BaseModel):
     tile_id: str
     tile_sql: str
     column_names: str
+    entity_column_names: str
 
     time_modulo_frequency_second: int
     blind_spot_second: int
@@ -153,7 +154,7 @@ class FeatureListModel(BaseModel):
         Aggregated readiness of the features/feature classes
     status: FeatureListStatus
         FeatureList status
-    feature_list_version: FeatureListVersionIdentifier
+    version: FeatureListVersionIdentifier
         Feature list version
     created_at: Optional[datetime]
         Datetime when the FeatureList was first saved or published
@@ -164,5 +165,5 @@ class FeatureListModel(BaseModel):
     features: List[Tuple[str, FeatureVersionIdentifier]]
     readiness: Optional[FeatureReadiness]
     status: Optional[FeatureListStatus]
-    feature_list_version: FeatureListVersionIdentifier
+    version: FeatureListVersionIdentifier
     created_at: Optional[datetime]

@@ -40,6 +40,7 @@ def test_insert_feature_registry(snowflake_session, snowflake_feature, feature_m
     expected_tile_spec = {
         "blind_spot_second": 3,
         "column_names": "col1",
+        "entity_column_names": "col1",
         "frequency_minute": 5,
         "tile_id": "tile_id1",
         "tile_sql": "SELECT * FROM DUMMY",

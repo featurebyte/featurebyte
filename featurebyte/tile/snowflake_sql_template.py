@@ -51,6 +51,16 @@ tm_generate_tile = Template(
 """
 )
 
+tm_tile_entity_tracking = Template(
+    """
+    call SP_TILE_GENERATE_ENTITY_TRACKING(
+        '{{tile_id}}',
+        '{{entity_column_names}}',
+        '{{entity_table}}'
+    )
+"""
+)
+
 tm_schedule_tile = Template(
     """
     CREATE OR REPLACE TASK {{temp_task_name}}

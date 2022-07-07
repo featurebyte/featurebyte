@@ -17,6 +17,7 @@ from featurebyte.tile.snowflake_sql_template import (
     tm_insert_tile_registry,
     tm_schedule_tile,
     tm_select_tile_registry,
+    tm_tile_entity_tracking,
     tm_update_tile_registry,
 )
 
@@ -84,11 +85,34 @@ class TileSnowflake(TileBase):
             tm_update_tile_registry.render(tile_id=self.tile_id, is_enabled=False)
         )
 
+    def update_tile_entity_tracker(self, temp_entity_table: str) -> str:
+        """
+        Update <tile_id>_entity_tracker table for last_tile_start_date
+
+        Parameters
+        ----------
+        temp_entity_table: str
+            temporary entity table to be merge into <tile_id>_entity_tracker
+
+        Returns
+        -------
+            generated sql
+        """
+        sql = tm_tile_entity_tracking.render(
+            tile_id=self.tile_id,
+            entity_column_names=self.entity_column_names,
+            entity_table=temp_entity_table,
+        )
+        logger.info(f"generated sql: {sql}")
+        self._session.execute_query(sql)
+
+        return sql
+
     def generate_tiles(
         self,
         tile_type: TileType,
-        start_ts_str: str,
-        end_ts_str: str,
+        start_ts_str: Optional[str],
+        end_ts_str: Optional[str],
         last_tile_start_ts_str: Optional[str] = None,
     ) -> str:
         """
@@ -109,15 +133,21 @@ class TileSnowflake(TileBase):
         -------
             tile generation sql
         """
-        tile_sql = self.tile_sql.replace(
-            InternalName.TILE_START_DATE_SQL_PLACEHOLDER, f"\\'{start_ts_str}\\'"
-        ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, f"\\'{end_ts_str}\\'")
+        if start_ts_str and end_ts_str:
+            tile_sql = self.tile_sql.replace(
+                InternalName.TILE_START_DATE_SQL_PLACEHOLDER, f"\\'{start_ts_str}\\'"
+            ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, f"\\'{end_ts_str}\\'")
+        else:
+            tile_sql = self.tile_sql
+
         logger.info(f"tile_sql: {tile_sql}")
 
         if last_tile_start_ts_str:
             last_tile_start_ts_str = f"'{last_tile_start_ts_str}'"
         else:
             last_tile_start_ts_str = "null"
+
+        logger.info(f"last_tile_start_ts_str: {last_tile_start_ts_str}")
 
         sql = tm_generate_tile.render(
             tile_sql=tile_sql,
