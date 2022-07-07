@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import pytest
 
+from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData, EventDataColumn
 
 
@@ -97,15 +98,30 @@ def test_event_data_column__not_exists(snowflake_event_data):
     assert expected in str(exc.value)
 
 
-def test_event_data_column__as_entity(snowflake_event_data):
+def test_event_data_column__as_entity(
+    snowflake_event_data, mock_config_path_env, mock_get_persistent
+):
     """
     Test setting a column in the event data as entity
     """
+    _ = mock_config_path_env, mock_get_persistent
+
+    # create entity
+    Entity(name="customer", serving_name="cust_id")
+
     col_int = snowflake_event_data.col_int
     assert isinstance(col_int, EventDataColumn)
-    snowflake_event_data.col_int.as_entity("col_id")
-    assert snowflake_event_data.column_entity_map == {"col_int": "col_id"}
+    snowflake_event_data.col_int.as_entity("customer")
+    assert "col_int" in snowflake_event_data.column_entity_map
 
     with pytest.raises(TypeError) as exc:
         snowflake_event_data.col_int.as_entity(1234)
     assert 'Unsupported type "<class \'int\'>" for tag name "1234"!' in str(exc.value)
+
+    with pytest.raises(ValueError) as exc:
+        snowflake_event_data.col_int.as_entity("some_random_entity")
+    assert 'Entity name "some_random_entity" not found!' in str(exc.value)
+
+    # remove entity association
+    snowflake_event_data.col_int.as_entity(None)
+    assert snowflake_event_data.column_entity_map == {}

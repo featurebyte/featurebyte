@@ -5,10 +5,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from http import HTTPStatus
+
 from pydantic import validator
+from requests.models import Response
 
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.config import Configurations
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
@@ -25,24 +30,88 @@ class EventDataColumn:
         self.event_data = event_data
         self.column_name = column_name
 
-    def as_entity(self, tag_name: str) -> None:
+    @classmethod
+    def _get_response(cls, response: Response) -> dict[str, Any]:
+        """
+        Extract response into dictionary format
+
+        Parameters
+        ----------
+        response: Response
+            API response
+
+        Returns
+        -------
+        dict[str, Any]
+            Response in dictionary format
+        """
+        if response.status_code == HTTPStatus.OK:
+            response_dict: dict[str, Any] = response.json()
+            return response_dict
+        raise RecordRetrievalException(response)
+
+    @classmethod
+    def _get_entity_id(cls, entity_name: str) -> str | None:
+        """
+        Retrieve entity_id given entity name
+
+        Parameters
+        ----------
+        entity_name: str
+            Entity name
+
+        Returns
+        -------
+        str | None
+            Entity id or None
+        """
+        client = Configurations().get_client()
+        response = client.get("/entity")
+        if response.status_code == HTTPStatus.OK:
+            response_dict: dict[str, Any] = cls._get_response(response)
+            for item in response_dict["data"]:
+                if item["name"] == entity_name:
+                    return item["id"]  # type: ignore
+            page, page_size, total = (
+                response_dict["page"],
+                response_dict["page_size"],
+                response_dict["total"],
+            )
+            while total >= (page + page_size):
+                page += page_size
+                response = client.get("/entity", params={"page": page, "page_size": page_size})
+                response_dict = cls._get_response(response)
+                for item in response_dict["data"]:
+                    if item["name"] == entity_name:
+                        return item["id"]  # type: ignore
+        return None
+
+    def as_entity(self, entity_name: str | None) -> None:
         """
         Set the column name as entity with tag name
 
         Parameters
         ----------
-        tag_name: str
-            Tag name of the entity
+        entity_name: str | None
+            Associate column name to the entity, remove association if entity name is None
 
         Raises
         ------
+        ValueError
+            When the entity name is not found
         TypeError
-            When the tag name has non-string type
+            When the entity name has non-string type
         """
-        if isinstance(tag_name, str):
-            self.event_data.column_entity_map[self.column_name] = tag_name
+        if entity_name is None:
+            self.event_data.column_entity_map.pop(self.column_name, None)
+        elif isinstance(entity_name, str):
+            entity_id = self._get_entity_id(entity_name)
+            if entity_id:
+                self.event_data.column_entity_map[self.column_name] = entity_id
+            else:
+                raise ValueError(f'Entity name "{entity_name}" not found!')
         else:
-            raise TypeError(f'Unsupported type "{type(tag_name)}" for tag name "{tag_name}"!')
+            raise TypeError(f'Unsupported type "{type(entity_name)}" for tag name "{entity_name}"!')
 
 
 class EventData(EventDataModel, DatabaseTable):
