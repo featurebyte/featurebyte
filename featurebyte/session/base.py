@@ -128,4 +128,13 @@ class BaseSession(BaseModel):
 
     @abstractmethod
     def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
-        """Register a temporary table"""
+        """
+        Register a temporary table
+
+        Parameters
+        ----------
+        table_name : str
+            Temp table name
+        dataframe : pd.DataFrame
+            DataFrame to register
+        """

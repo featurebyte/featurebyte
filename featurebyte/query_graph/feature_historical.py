@@ -3,6 +3,8 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
+from typing import Optional
+
 import datetime
 
 import pandas as pd
@@ -32,17 +34,23 @@ def get_session_from_feature_objects(feature_objects: list[Feature]) -> BaseSess
     Returns
     -------
     BaseSession
+
+    Raises
+    ------
+    NotImplementedError
+        If the list of Features do not all use the same store
     """
-    feature_store = None
+    feature_store: Optional[FeatureStore] = None
     for feature in feature_objects:
         store = feature.tabular_source[0]
+        assert isinstance(store, FeatureStore)
         if feature_store is None:
             feature_store = store
         elif feature_store != store:
             raise NotImplementedError(
                 "Historical features request using multiple stores not supported"
             )
-    assert isinstance(feature_store, FeatureStore)
+    assert feature_store is not None
     return feature_store.get_session()
 
 
@@ -59,6 +67,11 @@ def validate_historical_requests_point_in_time(training_events: pd.DataFrame) ->
     Returns
     -------
     pd.DataFrame
+
+    Raises
+    ------
+    TooRecentPointInTimeError
+        If any of the provided point in time values are too recent
     """
 
     # Check dtype and convert if necessary. The converted DataFrame will later be used to create a
@@ -88,6 +101,11 @@ def validate_request_schema(training_events: pd.DataFrame) -> None:
     ----------
     training_events : DataFrame
         Training events DataFrame
+
+    Raises
+    ------
+    MissingPointInTimeColumnError
+        If point in time column is not provided
     """
     # Currently this only checks the existence of point in time column. Later this should include
     # other validation such as existence of required serving names based on Features' entities.

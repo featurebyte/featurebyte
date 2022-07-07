@@ -55,7 +55,19 @@ class FeatureList(FeatureListModel):
         )
         self.feature_objects = feature_versions
 
-    def get_historical_features(self, training_events: pd.DataFrame):
+    def get_historical_features(self, training_events: pd.DataFrame) -> pd.DataFrame:
+        """Get historical features
+
+        Parameters
+        ----------
+        training_events : pd.DataFrame
+            Training events DataFrame
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+        assert self.feature_objects is not None
         return get_historical_features(self.feature_objects, training_events)
 
     @staticmethod

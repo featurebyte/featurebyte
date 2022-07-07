@@ -115,13 +115,13 @@ def test_features_readiness__production_ready(
 def test_feature_list_creation__success(production_ready_feature):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
-    df = pd.DataFrame(
+    dataframe = pd.DataFrame(
         {
             "POINT_IN_TIME": ["2022-04-01", "2022-04-01"],
             "CUST_ID": ["C1", "C2"],
         }
     )
-    flist.get_historical_features(df)
+    flist.get_historical_features(dataframe)
     assert flist.dict() == {
         "name": "my_feature_list",
         "description": None,

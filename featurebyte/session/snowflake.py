@@ -155,6 +155,17 @@ class SnowflakeSession(BaseSession):
 
     @staticmethod
     def get_schema_from_dataframe(dataframe: pd.DataFrame) -> str:
+        """Get schema that can be used in CREATE TABLE statement from pandas DataFrame
+
+        Parameters
+        ----------
+        dataframe : pd.DataFrame
+            Input DataFrame
+
+        Returns
+        -------
+        str
+        """
         schema = []
         for colname, dtype in dataframe.dtypes.to_dict().items():
             if pd.api.types.is_datetime64_dtype(dataframe[colname]):
@@ -163,13 +174,11 @@ class SnowflakeSession(BaseSession):
                 db_type = "DOUBLE"
             elif dtype == int:
                 db_type = "INT"
-            elif dtype == object:
-                db_type = "VARCHAR"
             else:
-                raise RuntimeError(f"Unhandled type: {dtype}")
+                db_type = "VARCHAR"
             schema.append(f"{colname} {db_type}")
-        schema = ", ".join(schema)
-        return schema
+        schema_str = ", ".join(schema)
+        return schema_str
 
     @staticmethod
     def _prep_dataframe_before_write_pandas(dataframe: pd.DataFrame) -> pd.DataFrame:

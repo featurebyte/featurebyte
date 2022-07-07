@@ -1,3 +1,6 @@
+"""
+Tests for featurebyte.query_graph.feature_historical.py
+"""
 import pandas as pd
 import pytest
 from freezegun import freeze_time
@@ -10,6 +13,7 @@ from featurebyte.query_graph.feature_historical import (
 
 
 def test_get_historical_features__missing_point_in_time(mock_snowflake_feature):
+    """Test validation of missing point in time for historical features"""
     training_events = pd.DataFrame(
         {
             "CUST_ID": ["C1", "C2", "C3"],
@@ -27,7 +31,7 @@ def test_get_historical_features__missing_point_in_time(mock_snowflake_feature):
 def test_get_historical_features__too_recent_point_in_time(
     mock_snowflake_feature, point_in_time_is_datetime_dtype
 ):
-
+    """Test validation of too recent point in time for historical features"""
     point_in_time_vals = ["2022-04-15", "2022-04-30"]
     if point_in_time_is_datetime_dtype:
         point_in_time_vals = pd.to_datetime(point_in_time_vals)
@@ -48,11 +52,13 @@ def test_get_historical_features__too_recent_point_in_time(
 
 
 def test_get_historical_feature_sql(float_feature):
+    """Test SQL code generated for historical features is expected"""
     feature_objects = [float_feature]
     request_table_columns = ["POINT_IN_TIME", "CUST_ID", "A", "B", "C"]
     sql = get_historical_features_sql(
         feature_objects=feature_objects, request_table_columns=request_table_columns
     )
+
     update_fixtures = False
     if update_fixtures:
         with open(
@@ -62,4 +68,5 @@ def test_get_historical_feature_sql(float_feature):
             raise AssertionError("Fixture updated, please set update_fixture to False")
     with open("tests/fixtures/expected_historical_requests.sql", encoding="utf-8") as f_handle:
         expected_feature_sql = f_handle.read()
+
     assert sql.strip() == expected_feature_sql.strip()
