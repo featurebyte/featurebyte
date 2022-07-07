@@ -56,7 +56,7 @@ class EventDataColumn:
         raise RecordRetrievalException(response)
 
     @classmethod
-    def get_entity_id(cls, entity_name: str) -> str | None:
+    def get_entity_id(cls, entity_name: str, page_size: int = 10) -> str | None:
         """
         Retrieve entity_id given entity name
 
@@ -64,6 +64,8 @@ class EventDataColumn:
         ----------
         entity_name: str
             Entity name
+        page_size: int
+            Number of max items to retrieve per API request
 
         Returns
         -------
@@ -71,19 +73,17 @@ class EventDataColumn:
             Entity id or None
         """
         client = Configurations().get_client()
-        response = client.get("/entity")
+        response = client.get("/entity", params={"page_size": page_size})
         if response.status_code == HTTPStatus.OK:
             response_dict: dict[str, Any] = cls._get_response(response)
             for item in response_dict["data"]:
                 if item["name"] == entity_name:
                     return item["id"]  # type: ignore
-            page, page_size, total = (
-                response_dict["page"],
-                response_dict["page_size"],
-                response_dict["total"],
-            )
-            while total >= (page + page_size):
-                page += page_size
+            page = response_dict["page"]
+            page_size = response_dict["page_size"]
+            total = response_dict["total"]
+            while total > page * page_size:
+                page += 1
                 response = client.get("/entity", params={"page": page, "page_size": page_size})
                 response_dict = cls._get_response(response)
                 for item in response_dict["data"]:

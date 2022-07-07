@@ -125,3 +125,24 @@ def test_event_data_column__as_entity(
     # remove entity association
     snowflake_event_data.col_int.as_entity(None)
     assert snowflake_event_data.column_entity_map == {}
+
+
+def test_event_data_column__get_entity_id(mock_config_path_env, mock_get_persistent):
+    """
+    Test get_entity_id given entity name
+    """
+    # create a list of entity for testing
+    entity_id_map = {}
+    for idx in range(10):
+        entity_id_map[idx] = Entity(name=f"entity_{idx}", serving_name=f"entity_{idx}").id
+
+    # test retrieval
+    for page_size in {3, 5}:
+        for idx, expected_entity_id in entity_id_map.items():
+            entity_id = EventDataColumn.get_entity_id(
+                entity_name=f"entity_{idx}", page_size=page_size
+            )
+            assert entity_id == str(expected_entity_id)
+
+    # test unknown entity
+    assert EventDataColumn.get_entity_id("unknown_entity") is None
