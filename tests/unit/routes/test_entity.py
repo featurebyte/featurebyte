@@ -151,11 +151,12 @@ def test_update_200(create_success_response, test_api_client):
     result = response.json()
 
     assert result["name"] == "Customer"
+    assert result["name_history"] == ["customer"]
     for key in result.keys():
-        if key != "name":
+        if key not in {"name", "name_history"}:
             assert result[key] == response_dict[key]
 
-    # test special case when the name is the same
+    # test special case when the name is the same, should not update name history
     response = test_api_client.patch(f"/entity/{entity_id}", json={"name": "Customer"})
     assert response.status_code == HTTPStatus.OK
     assert response.json() == result

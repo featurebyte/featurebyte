@@ -101,6 +101,10 @@ class EntityController:
         if not entity:
             raise not_found_exception
 
+        # store current name & name_history
+        cur_name = entity["name"]
+        name_history = entity["name_history"]
+
         # check whether conflict with other entity name
         entities, total_cnt = persistent.find(
             collection_name=cls.collection_name,
@@ -117,10 +121,13 @@ class EntityController:
                     detail=f'Entity name "{data.name}" already exists.',
                 )
 
+        name_history.append(cur_name)
+        new_data = data.dict()
+        new_data["name_history"] = name_history
         updated_cnt = persistent.update_one(
             collection_name=cls.collection_name,
             query_filter=query_filter,
-            update={"$set": data.dict()},
+            update={"$set": new_data},
         )
         if not updated_cnt:
             raise not_found_exception
