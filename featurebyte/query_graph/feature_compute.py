@@ -7,6 +7,7 @@ from typing import Optional, Tuple
 
 from abc import ABC, abstractmethod
 
+from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.feature_common import (
     REQUEST_TABLE_NAME,
     AggregationSpec,
@@ -198,17 +199,24 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
         time_modulo_frequency: int,
         entity_columns: list[str],
     ) -> str:
+        # Input request table can have duplicated time points but aggregation should be done only on
+        # distinct time points
+        select_distinct_columns = ", ".join(
+            [SpecialColumnName.POINT_IN_TIME.value] + entity_columns
+        )
         select_entity_columns = ", ".join([f"REQ.{col}" for col in entity_columns])
         sql = f"""
     SELECT
-        REQ.POINT_IN_TIME,
+        REQ.{SpecialColumnName.POINT_IN_TIME},
         {select_entity_columns},
         T.value AS REQ_TILE_INDEX
-    FROM REQUEST_TABLE REQ,
+    FROM (
+        SELECT DISTINCT {select_distinct_columns} FROM {REQUEST_TABLE_NAME}
+    ) REQ,
     Table(
         Flatten(
             SELECT F_COMPUTE_TILE_INDICES(
-                DATE_PART(epoch, REQ.POINT_IN_TIME),
+                DATE_PART(epoch, REQ.{SpecialColumnName.POINT_IN_TIME}),
                 {window_size},
                 {frequency},
                 {blind_spot},
