@@ -49,6 +49,7 @@ def test_persistence(test_document):
         remote_url=remote_url,
         key_path=ssh_key_path,
     )
+    persistent.insert_doc_name_func("data", lambda doc: doc["name"])
     try:
         # use a dynamic name for the document
         doc_name = test_document["name"] = str(ObjectId())
@@ -60,6 +61,7 @@ def test_persistence(test_document):
             remote_url=remote_url,
             key_path=ssh_key_path,
         )
+        persistent2.insert_doc_name_func("data", lambda doc: doc["name"])
         doc = persistent2.find_one(collection_name="data", query_filter={"name": doc_name})
         assert doc == test_document
     finally:

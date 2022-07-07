@@ -9,11 +9,14 @@ from typing import Callable
 from bson.objectid import ObjectId
 from fastapi import Depends, FastAPI, Request
 
+import featurebyte.routes.entity.api as entity_api
 import featurebyte.routes.event_data.api as event_data_api
 from featurebyte.config import Configurations
+from featurebyte.enum import CollectionName
 from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import GitDB, Persistent
+from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_data.controller import EventDataController
 
 app = FastAPI()
@@ -37,7 +40,12 @@ def _get_persistent() -> Persistent:
         config = Configurations()
         if not config.git:
             raise ValueError("Git settings not available in configurations")
-        PERSISTENT = GitDB(**config.git.dict())
+        git_db = GitDB(**config.git.dict())
+
+        # GitDB configuration
+        git_db.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])  # type: ignore
+
+        PERSISTENT = git_db
     return PERSISTENT
 
 
@@ -104,3 +112,4 @@ def _get_api_deps(controller: type) -> Callable[[Request], None]:
 app.include_router(
     event_data_api.router, dependencies=[Depends(_get_api_deps(EventDataController))]
 )
+app.include_router(entity_api.router, dependencies=[Depends(_get_api_deps(EntityController))])

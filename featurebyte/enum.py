@@ -6,6 +6,15 @@ from __future__ import annotations
 from enum import Enum
 
 
+class CollectionName(str, Enum):
+    """
+    Collection name
+    """
+
+    EVENT_DATA = "event_data"
+    ENTITY = "entity"
+
+
 class DBVarType(str, Enum):
     """
     Database variable type
