@@ -44,6 +44,11 @@ class EventDataColumn:
         -------
         dict[str, Any]
             Response in dictionary format
+
+        Raises
+        ------
+        RecordRetrievalException
+            When unexpected failure to retrieve resource
         """
         if response.status_code == HTTPStatus.OK:
             response_dict: dict[str, Any] = response.json()
@@ -51,7 +56,7 @@ class EventDataColumn:
         raise RecordRetrievalException(response)
 
     @classmethod
-    def _get_entity_id(cls, entity_name: str) -> str | None:
+    def get_entity_id(cls, entity_name: str) -> str | None:
         """
         Retrieve entity_id given entity name
 
@@ -105,7 +110,7 @@ class EventDataColumn:
         if entity_name is None:
             self.event_data.column_entity_map.pop(self.column_name, None)
         elif isinstance(entity_name, str):
-            entity_id = self._get_entity_id(entity_name)
+            entity_id = self.get_entity_id(entity_name)
             if entity_id:
                 self.event_data.column_entity_map[self.column_name] = entity_id
             else:
