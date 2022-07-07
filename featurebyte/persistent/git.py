@@ -542,7 +542,7 @@ class GitDB(Persistent):
         ----------
         collection_name: str
             Document naming function applied to given collection name
-        doc_name_func: DOC_NAME_FUNC_TYPE
+        doc_name_func: DocNameFuncType
             Function derive document name given document input
         """
         self._collection_to_doc_name_func_map[collection_name] = doc_name_func
@@ -558,7 +558,7 @@ class GitDB(Persistent):
 
         Returns
         -------
-        DOC_NAME_FUNC_TYPE
+        DocNameFuncType
             Function to generate document name
         """
         return self._collection_to_doc_name_func_map.get(collection, self.default_doc_name_func)
