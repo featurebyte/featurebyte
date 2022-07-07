@@ -379,4 +379,6 @@ def git_persistent_fixture() -> tuple[GitDB, Repo]:
         Local GitDB object and local git repo
     """
     persistent = GitDB(branch="test")
+    persistent.insert_doc_name_func("event_data", lambda doc: doc["name"])
+    persistent.insert_doc_name_func("data", lambda doc: doc["name"])
     yield persistent, persistent.repo
