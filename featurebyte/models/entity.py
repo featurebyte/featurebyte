@@ -25,6 +25,7 @@ class EntityModel(BaseModel):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: str
     serving_names: List[str]
+    name_history: List[str] = Field(default_factory=list)
 
     class Config:
         """
