@@ -45,3 +45,21 @@ def test_get_historical_features__too_recent_point_in_time(
         "The latest point in time (2022-04-30 00:00:00) should not be more recent than 48 hours "
         "from now"
     )
+
+
+def test_get_historical_feature_sql(float_feature):
+    feature_objects = [float_feature]
+    request_table_columns = ["POINT_IN_TIME", "CUST_ID", "A", "B", "C"]
+    sql = get_historical_features_sql(
+        feature_objects=feature_objects, request_table_columns=request_table_columns
+    )
+    update_fixtures = False
+    if update_fixtures:
+        with open(
+            "tests/fixtures/expected_historical_requests.sql", "w", encoding="utf-8"
+        ) as f_handle:
+            f_handle.write(sql)
+            raise AssertionError("Fixture updated, please set update_fixture to False")
+    with open("tests/fixtures/expected_historical_requests.sql", encoding="utf-8") as f_handle:
+        expected_feature_sql = f_handle.read()
+    assert sql.strip() == expected_feature_sql.strip()
