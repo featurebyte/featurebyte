@@ -12,7 +12,7 @@ from requests.models import Response
 
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.config import Configurations
+from featurebyte.api.util import get_entity
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import EventDataModel
@@ -55,42 +55,6 @@ class EventDataColumn:
             return response_dict
         raise RecordRetrievalException(response)
 
-    @classmethod
-    def get_entity_id(cls, entity_name: str, page_size: int = 10) -> str | None:
-        """
-        Retrieve entity_id given entity name
-
-        Parameters
-        ----------
-        entity_name: str
-            Entity name
-        page_size: int
-            Number of max items to retrieve per API request
-
-        Returns
-        -------
-        str | None
-            Entity id or None
-        """
-        client = Configurations().get_client()
-        response = client.get("/entity", params={"page_size": page_size})
-        if response.status_code == HTTPStatus.OK:
-            response_dict: dict[str, Any] = cls._get_response(response)
-            for item in response_dict["data"]:
-                if item["name"] == entity_name:
-                    return item["id"]  # type: ignore
-            page = response_dict["page"]
-            page_size = response_dict["page_size"]
-            total = response_dict["total"]
-            while total > page * page_size:
-                page += 1
-                response = client.get("/entity", params={"page": page, "page_size": page_size})
-                response_dict = cls._get_response(response)
-                for item in response_dict["data"]:
-                    if item["name"] == entity_name:
-                        return item["id"]  # type: ignore
-        return None
-
     def as_entity(self, entity_name: str | None) -> None:
         """
         Set the column name as entity with tag name
@@ -110,11 +74,11 @@ class EventDataColumn:
         if entity_name is None:
             self.event_data.column_entity_map.pop(self.column_name, None)
         elif isinstance(entity_name, str):
-            entity_id = self.get_entity_id(entity_name)
-            if entity_id:
-                self.event_data.column_entity_map[self.column_name] = entity_id
-            else:
-                raise ValueError(f'Entity name "{entity_name}" not found!')
+            entity_dict = get_entity(entity_name)
+            if entity_dict:
+                self.event_data.column_entity_map[self.column_name] = entity_dict["id"]
+                return
+            raise ValueError(f'Entity name "{entity_name}" not found!')
         else:
             raise TypeError(f'Unsupported type "{type(entity_name)}" for tag name "{entity_name}"!')
 
