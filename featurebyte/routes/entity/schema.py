@@ -7,7 +7,7 @@ import datetime
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import BaseModel, conlist
+from pydantic import BaseModel, Field
 
 from featurebyte.models.entity import EntityModel
 from featurebyte.routes.common.schema import PaginationMixin
@@ -37,7 +37,7 @@ class EntityCreate(BaseModel):
     """
 
     name: str
-    serving_column_names: conlist(str, min_items=1, max_items=1)
+    serving_column_names: List[str] = Field(min_items=1, max_items=1)
 
 
 class EntityList(PaginationMixin):

@@ -43,7 +43,7 @@ def _get_persistent() -> Persistent:
         git_db = GitDB(**config.git.dict())
 
         # GitDB configuration
-        git_db.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])
+        git_db.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])  # type: ignore
 
         PERSISTENT = git_db
     return PERSISTENT

@@ -4,7 +4,7 @@ Persistent storage using Git
 # pylint: disable=protected-access
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable, List, Literal, Optional, Tuple
+from typing import Any, Callable, Iterable, List, Literal, MutableMapping, Optional, Tuple
 
 import functools
 import json
@@ -27,6 +27,8 @@ from featurebyte.persistent.base import (
     Persistent,
     QueryFilter,
 )
+
+DOC_NAME_FUNC_TYPE = Callable[[MutableMapping[str, Any]], str]
 
 
 class GitDocumentAction(str, Enum):
@@ -98,7 +100,7 @@ class GitDB(Persistent):
         self._ssh_cmd = f"ssh -i {key_path}" if key_path else "ssh"
         self._origin: Optional[Remote] = None
         self._working_tree_dir: str = str(repo.working_tree_dir)
-        self._collection_to_doc_name_func_map: dict[str, Callable] = {}
+        self._collection_to_doc_name_func_map: dict[str, DOC_NAME_FUNC_TYPE] = {}
 
         if remote_url:
             # create remote origin if does not exist
@@ -517,7 +519,7 @@ class GitDB(Persistent):
                     items.append(value)
 
     @staticmethod
-    def default_doc_name_func(doc: dict[str, Any]) -> str:
+    def default_doc_name_func(doc: MutableMapping[str, Any]) -> str:
         """
         Default function to extract document name from the document
 
@@ -532,7 +534,7 @@ class GitDB(Persistent):
         """
         return str(doc["_id"])
 
-    def insert_doc_name_func(self, collection_name: str, doc_name_func: Callable) -> None:
+    def insert_doc_name_func(self, collection_name: str, doc_name_func: DOC_NAME_FUNC_TYPE) -> None:
         """
         Insert document name function to customize function name
 
@@ -540,12 +542,12 @@ class GitDB(Persistent):
         ----------
         collection_name: str
             Document naming function applied to given collection name
-        doc_name_func: Callable
+        doc_name_func: DOC_NAME_FUNC_TYPE
             Function derive document name given document input
         """
         self._collection_to_doc_name_func_map[collection_name] = doc_name_func
 
-    def get_doc_name_func(self, collection) -> Callable:
+    def get_doc_name_func(self, collection: str) -> DOC_NAME_FUNC_TYPE:
         """
         Retrieve function to generate document name
 
@@ -556,7 +558,7 @@ class GitDB(Persistent):
 
         Returns
         -------
-        Callable
+        DOC_NAME_FUNC_TYPE
             Function to generate document name
         """
         return self._collection_to_doc_name_func_map.get(collection, self.default_doc_name_func)

@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import List
 
 from beanie import PydanticObjectId
-from bson import ObjectId
+from bson.objectid import ObjectId
 from pydantic import BaseModel, Field
 
 
