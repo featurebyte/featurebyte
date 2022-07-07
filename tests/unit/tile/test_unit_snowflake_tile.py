@@ -1,6 +1,7 @@
 """
 Unit test for snowflake tile
 """
+import textwrap
 from unittest import mock
 
 import pytest
@@ -37,15 +38,22 @@ def test_generate_tiles(mock_snowflake_tile):
     sql = mock_snowflake_tile.generate_tiles(
         TileType.ONLINE, "2022-06-20 15:00:00", "2022-06-21 16:00:00", "2022-06-21 15:55:00"
     )
-    expected_sql = """
+    expected_sql = textwrap.dedent(
+        """
         call SP_TILE_GENERATE(
-            'select c1 from dummy
-            where tile_start_ts >= \\'2022-06-20 15:00:00\\'
-            and tile_start_ts < \\'2022-06-21 16:00:00\\'',
-            183, 3, 5, 'c1', 'tile_id1', 'ONLINE', '2022-06-21 15:55:00'
+            'select c1 from dummy where tile_start_ts >= \\'2022-06-20 15:00:00\\' and tile_start_ts < \\'2022-06-21 16:00:00\\'',
+            '__FB_TILE_START_DATE_COLUMN',
+            183,
+            3,
+            5,
+            'c1',
+            'tile_id1',
+            'ONLINE',
+            '2022-06-21 15:55:00'
         )
-    """
-    assert "".join(sql.split()) == "".join(expected_sql.split())
+        """
+    ).strip()
+    assert textwrap.dedent(sql).strip() == expected_sql
 
 
 def test_schedule_online_tiles(mock_snowflake_tile):
@@ -53,17 +61,31 @@ def test_schedule_online_tiles(mock_snowflake_tile):
     Test schedule_online_tiles method in TileSnowflake
     """
     sql = mock_snowflake_tile.schedule_online_tiles()
-    expected_sql = """
+    expected_sql = textwrap.dedent(
+        """
         CREATE OR REPLACE TASK SHELL_TASK_tile_id1_ONLINE
           WAREHOUSE = sf_warehouse
           SCHEDULE = 'USING CRON 3-59/5 * * * * UTC'
         AS
             call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
-                'SHELL_TASK_tile_id1_ONLINE', 'sf_warehouse', 'tile_id1', 183, 3,
-                5, 1440, 'select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS', 'c1', 'ONLINE', 10
+                'SHELL_TASK_tile_id1_ONLINE',
+                'sf_warehouse',
+                'tile_id1',
+                183,
+                3,
+                5,
+                1440,
+                'select c1 from dummy where tile_start_ts >= __FB_START_DATE and tile_start_ts < __FB_END_DATE',
+                '__FB_TILE_START_DATE_COLUMN',
+                '__FB_START_DATE',
+                '__FB_END_DATE',
+                'c1',
+                'ONLINE',
+                10
             )
-    """
-    assert "".join(sql.split()) == "".join(expected_sql.split())
+        """
+    ).strip()
+    assert textwrap.dedent(sql).strip() == expected_sql
 
 
 def test_schedule_offline_tiles(mock_snowflake_tile):
@@ -71,17 +93,31 @@ def test_schedule_offline_tiles(mock_snowflake_tile):
     Test schedule_offline_tiles method in TileSnowflake
     """
     sql = mock_snowflake_tile.schedule_offline_tiles()
-    expected_sql = """
+    expected_sql = textwrap.dedent(
+        """
         CREATE OR REPLACE TASK SHELL_TASK_tile_id1_OFFLINE
           WAREHOUSE = sf_warehouse
           SCHEDULE = 'USING CRON 3 0 * * * UTC'
         AS
             call SP_TILE_TRIGGER_GENERATE_SCHEDULE(
-                'SHELL_TASK_tile_id1_OFFLINE', 'sf_warehouse', 'tile_id1', 183, 3,
-                5, 1440, 'select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS', 'c1', 'OFFLINE', 10
+                'SHELL_TASK_tile_id1_OFFLINE',
+                'sf_warehouse',
+                'tile_id1',
+                183,
+                3,
+                5,
+                1440,
+                'select c1 from dummy where tile_start_ts >= __FB_START_DATE and tile_start_ts < __FB_END_DATE',
+                '__FB_TILE_START_DATE_COLUMN',
+                '__FB_START_DATE',
+                '__FB_END_DATE',
+                'c1',
+                'OFFLINE',
+                10
             )
-    """
-    assert "".join(sql.split()) == "".join(expected_sql.split())
+        """
+    ).strip()
+    assert textwrap.dedent(sql).strip() == expected_sql
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")

@@ -1,4 +1,14 @@
-CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE(SQL varchar, TIME_MODULO_FREQUENCY_SECOND float, BLIND_SPOT_SECOND float, FREQUENCY_MINUTE float, COLUMN_NAMES varchar, TILE_ID varchar, TILE_TYPE varchar, LAST_TILE_START_STR varchar)
+CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE(
+    SQL varchar,
+    TILE_START_DATE_COLUMN varchar,
+    TIME_MODULO_FREQUENCY_SECOND float,
+    BLIND_SPOT_SECOND float,
+    FREQUENCY_MINUTE float,
+    COLUMN_NAMES varchar,
+    TILE_ID varchar,
+    TILE_TYPE varchar,
+    LAST_TILE_START_STR varchar
+)
 returns string
 language javascript
 as
@@ -32,14 +42,14 @@ $$
     }
     debug = debug + " - tile_exist: " + tile_exist
 
-    var col_list = COLUMN_NAMES.split(",").filter(item => item.trim().toUpperCase() !== "TILE_START_TS")
+    var col_list = COLUMN_NAMES.split(",").filter(item => item.trim().toUpperCase() !== `${TILE_START_DATE_COLUMN}`)
     col_list_str = col_list.join(',')
     debug = debug + " - col_list_str: " + col_list_str
 
     //replace SQL template with start and end date strings for tile generation sql
     var tile_sql = `
         select
-            F_TIMESTAMP_TO_INDEX(TILE_START_TS, ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}) as INDEX,
+            F_TIMESTAMP_TO_INDEX(${TILE_START_DATE_COLUMN}, ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}) as INDEX,
             ${col_list_str},
             SYSDATE() as CREATED_AT
         from (${SQL})
