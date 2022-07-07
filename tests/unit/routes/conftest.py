@@ -39,7 +39,10 @@ def persistent_fixture(request):
                     ("_id", {}),
                     ("user_id", {}),
                     ("source", {}),
-                    ([("name", pymongo.ASCENDING)], {"unique": True}),
+                    (
+                        [("user_id", pymongo.ASCENDING), ("name", pymongo.ASCENDING)],
+                        {"unique": True},
+                    ),
                     ([("name", pymongo.TEXT), ("source.type", pymongo.TEXT)], {}),
                 ]
             }
