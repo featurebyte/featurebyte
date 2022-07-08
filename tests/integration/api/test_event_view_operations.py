@@ -130,12 +130,18 @@ def test_query_object_operation_on_snowflake_source(
     )
     pd.testing.assert_series_equal(expected_dtypes, snowflake_database_table.dtypes)
 
+    # create entity & event data
+    Entity(name="User", serving_name="uid")
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="snowflake_event_data",
         event_timestamp_column="EVENT_TIMESTAMP",
         credentials=config.credentials,
     )
+    event_data["USER_ID"].as_entity("User")
+    event_data.save_as_draft()
+
+    # create event view
     event_view = EventView.from_event_data(event_data)
     assert event_view.columns == [
         "EVENT_TIMESTAMP",
@@ -165,8 +171,6 @@ def test_query_object_operation_on_snowflake_source(
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
     # create some features
-    Entity(name="User", serving_name="uid")
-    event_view["USER_ID"].as_entity("User")
     feature_group = event_view.groupby("USER_ID").aggregate(
         "USER_ID",
         "count",
