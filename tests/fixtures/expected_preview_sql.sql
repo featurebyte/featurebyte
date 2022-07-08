@@ -37,7 +37,9 @@ REQUEST_TABLE_W7200_F3600_BS900_M1800_cust_id AS (
         REQ.POINT_IN_TIME,
         REQ.cust_id,
         T.value AS REQ_TILE_INDEX
-    FROM REQUEST_TABLE REQ,
+    FROM (
+        SELECT DISTINCT POINT_IN_TIME, cust_id FROM REQUEST_TABLE
+    ) REQ,
     Table(
         Flatten(
             SELECT F_COMPUTE_TILE_INDICES(
@@ -55,7 +57,9 @@ REQUEST_TABLE_W172800_F3600_BS900_M1800_cust_id AS (
         REQ.POINT_IN_TIME,
         REQ.cust_id,
         T.value AS REQ_TILE_INDEX
-    FROM REQUEST_TABLE REQ,
+    FROM (
+        SELECT DISTINCT POINT_IN_TIME, cust_id FROM REQUEST_TABLE
+    ) REQ,
     Table(
         Flatten(
             SELECT F_COMPUTE_TILE_INDICES(

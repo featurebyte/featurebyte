@@ -1,30 +1,7 @@
 """
 Common classes mixin for API payload schema
 """
-from typing import Any, Optional
-
-from beanie import PydanticObjectId
-from pydantic import BaseModel, Field, validator
-
-
-class DocumentModel(BaseModel):
-    """
-    Persistent Document Base Class
-    """
-
-    id: Optional[PydanticObjectId] = Field(alias="_id")
-
-
-class ResponseModel(BaseModel):
-    """
-    API Response Payload Base Class
-    """
-
-    id: Optional[PydanticObjectId]
-
-    def __init__(self, **pydict: Any) -> None:
-        super().__init__(**pydict)
-        self.id = pydict.pop("_id", pydict.pop("id", None))  # pylint: disable=invalid-name
+from pydantic import BaseModel, validator
 
 
 class PaginationMixin(BaseModel):

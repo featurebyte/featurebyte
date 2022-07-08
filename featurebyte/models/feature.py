@@ -112,7 +112,9 @@ class FeatureListModel(BaseModel):
     """
     Model for feature list entity
 
-    description: str
+    name: str
+        Name of the feature list
+    description: Optional[str]
         Description of the feature list
     features: List[Tuple[str, FeatureVersionIdentifier]]
         List of tuples which contain (feature name, feature version)
@@ -128,7 +130,7 @@ class FeatureListModel(BaseModel):
 
     name: str
     description: Optional[str]
-    features: List[Tuple[str, FeatureVersionIdentifier]]
+    features: List[Tuple[str, Optional[FeatureVersionIdentifier]]]
     readiness: Optional[FeatureReadiness]
     status: Optional[FeatureListStatus]
     version: FeatureListVersionIdentifier

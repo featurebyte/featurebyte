@@ -4,7 +4,7 @@ Persistent storage using Git
 # pylint: disable=protected-access
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Literal, Optional, Tuple
+from typing import Any, Callable, Iterable, List, Literal, MutableMapping, Optional, Tuple
 
 import functools
 import json
@@ -27,6 +27,8 @@ from featurebyte.persistent.base import (
     Persistent,
     QueryFilter,
 )
+
+DocNameFuncType = Callable[[MutableMapping[str, Any]], str]
 
 
 class GitDocumentAction(str, Enum):
@@ -98,6 +100,7 @@ class GitDB(Persistent):
         self._ssh_cmd = f"ssh -i {key_path}" if key_path else "ssh"
         self._origin: Optional[Remote] = None
         self._working_tree_dir: str = str(repo.working_tree_dir)
+        self._collection_to_doc_name_func_map: dict[str, DocNameFuncType] = {}
 
         if remote_url:
             # create remote origin if does not exist
@@ -261,7 +264,7 @@ class GitDB(Persistent):
         document.pop("user_id", None)
 
         # create document
-        new_doc_name = document["name"]
+        new_doc_name = self.get_doc_name_func(collection_name)(document)
         new_doc_path = self._get_doc_path(collection_path, new_doc_name)
 
         doc_exists = os.path.exists(new_doc_path)
@@ -404,7 +407,7 @@ class GitDB(Persistent):
 
         for doc in docs:
             # track original doc name
-            doc_name = doc["name"]
+            doc_name = self.get_doc_name_func(collection_name)(doc)
             doc.update(update["$set"])
             self._add_file(
                 collection_name=collection_name,
@@ -515,6 +518,51 @@ class GitDB(Persistent):
                 if isinstance(value, dict):
                     items.append(value)
 
+    @staticmethod
+    def default_doc_name_func(doc: MutableMapping[str, Any]) -> str:
+        """
+        Default function to extract document name from the document
+
+        Parameters
+        ----------
+        doc: dict[str, Any]
+            Document record
+
+        Returns
+        -------
+        str
+        """
+        return str(doc["_id"])
+
+    def insert_doc_name_func(self, collection_name: str, doc_name_func: DocNameFuncType) -> None:
+        """
+        Insert document name function to customize function name
+
+        Parameters
+        ----------
+        collection_name: str
+            Document naming function applied to given collection name
+        doc_name_func: DocNameFuncType
+            Function derive document name given document input
+        """
+        self._collection_to_doc_name_func_map[collection_name] = doc_name_func
+
+    def get_doc_name_func(self, collection: str) -> DocNameFuncType:
+        """
+        Retrieve function to generate document name
+
+        Parameters
+        ----------
+        collection: str
+            Collection name
+
+        Returns
+        -------
+        DocNameFuncType
+            Function to generate document name
+        """
+        return self._collection_to_doc_name_func_map.get(collection, self.default_doc_name_func)
+
     @_sync_push
     def insert_one(self, collection_name: str, document: Document) -> ObjectId:
         """
@@ -535,7 +583,7 @@ class GitDB(Persistent):
         return self._add_file(
             collection_name=collection_name,
             document=document,
-            doc_name=document["name"],
+            doc_name=self.get_doc_name_func(collection_name)(document),
             replace=False,
         )
 
@@ -562,7 +610,7 @@ class GitDB(Persistent):
                 self._add_file(
                     collection_name=collection_name,
                     document=document,
-                    doc_name=document["name"],
+                    doc_name=self.get_doc_name_func(collection_name)(document),
                     replace=False,
                 )
             )
