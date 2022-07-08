@@ -5,13 +5,12 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from pydantic import PrivateAttr
+from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.enum import InternalName
 from featurebyte.logger import logger
-from featurebyte.models.tile import TileType
+from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.base import TileBase
 from featurebyte.tile.snowflake_sql_template import (
     tm_generate_tile,
     tm_insert_tile_registry,
@@ -22,7 +21,7 @@ from featurebyte.tile.snowflake_sql_template import (
 )
 
 
-class TileSnowflake(TileBase):
+class TileManagerSnowflake(BaseModel):
     """
     Snowflake Tile class
     """
@@ -43,58 +42,62 @@ class TileSnowflake(TileBase):
         super().__init__(**kw)
         self._session = session
 
-    def insert_tile_registry(self) -> bool:
+    def insert_tile_registry(self, tile_spec: TileSpec) -> bool:
         """
         Insert new tile registry record if it does not exist
 
         Parameters
         ----------
-
+        tile_spec: TileSpec
+            the input TileSpec
         Returns
         -------
             whether the tile registry record is inserted successfully or not
         """
         result = self._session.execute_query(
-            tm_select_tile_registry.render(tile_id=self.tile_spec.tile_id)
+            tm_select_tile_registry.render(tile_id=tile_spec.tile_id)
         )
         if result is None or len(result) == 0:
             sql = tm_insert_tile_registry.render(
-                tile_id=self.tile_spec.tile_id,
-                tile_sql=self.tile_spec.tile_sql,
-                column_names=",".join(self.tile_spec.column_names),
-                time_modulo_frequency_seconds=self.tile_spec.time_modulo_frequency_second,
-                blind_spot_seconds=self.tile_spec.blind_spot_second,
-                frequency_minute=self.tile_spec.frequency_minute,
+                tile_id=tile_spec.tile_id,
+                tile_sql=tile_spec.tile_sql,
+                column_names=",".join(tile_spec.column_names),
+                time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
+                blind_spot_seconds=tile_spec.blind_spot_second,
+                frequency_minute=tile_spec.frequency_minute,
             )
-            logger.info(f"generated tile insert sql: {sql}")
+            logger.debug(f"generated tile insert sql: {sql}")
             self._session.execute_query(sql)
             return True
 
-        logger.warning(f"Tile id {self.tile_spec.tile_id} already exists")
+        logger.warning(f"Tile id {tile_spec.tile_id} already exists")
         return False
 
-    def disable_tiles(self) -> None:
+    def disable_tiles(self, tile_spec: TileSpec) -> None:
         """
         Disable tile jobs
 
         Parameters
         ----------
-
+        tile_spec: TileSpec
+            the input TileSpec
         """
         for t_type in TileType:
-            tile_task_name = f"TILE_TASK_{t_type}_{self.tile_spec.tile_id}"
+            tile_task_name = f"TILE_TASK_{t_type}_{tile_spec.tile_id}"
             self._session.execute_query(f"ALTER TASK IF EXISTS {tile_task_name} SUSPEND")
 
         self._session.execute_query(
-            tm_update_tile_registry.render(tile_id=self.tile_spec.tile_id, is_enabled=False)
+            tm_update_tile_registry.render(tile_id=tile_spec.tile_id, is_enabled=False)
         )
 
-    def update_tile_entity_tracker(self, temp_entity_table: str) -> str:
+    def update_tile_entity_tracker(self, tile_spec: TileSpec, temp_entity_table: str) -> str:
         """
         Update <tile_id>_entity_tracker table for last_tile_start_date
 
         Parameters
         ----------
+        tile_spec: TileSpec
+            the input TileSpec
         temp_entity_table: str
             temporary entity table to be merge into <tile_id>_entity_tracker
 
@@ -103,8 +106,8 @@ class TileSnowflake(TileBase):
             generated sql
         """
         sql = tm_tile_entity_tracking.render(
-            tile_id=self.tile_spec.tile_id,
-            entity_column_names=",".join(self.tile_spec.entity_column_names),
+            tile_id=tile_spec.tile_id,
+            entity_column_names=",".join(tile_spec.entity_column_names),
             entity_table=temp_entity_table,
         )
         logger.info(f"generated sql: {sql}")
@@ -114,6 +117,7 @@ class TileSnowflake(TileBase):
 
     def generate_tiles(
         self,
+        tile_spec: TileSpec,
         tile_type: TileType,
         start_ts_str: Optional[str],
         end_ts_str: Optional[str],
@@ -124,6 +128,8 @@ class TileSnowflake(TileBase):
 
         Parameters
         ----------
+        tile_spec: TileSpec
+            the input TileSpec
         tile_type: TileType
             tile type. ONLINE or OFFLINE
         start_ts_str: str
@@ -138,11 +144,11 @@ class TileSnowflake(TileBase):
             tile generation sql
         """
         if start_ts_str and end_ts_str:
-            tile_sql = self.tile_spec.tile_sql.replace(
+            tile_sql = tile_spec.tile_sql.replace(
                 InternalName.TILE_START_DATE_SQL_PLACEHOLDER, f"\\'{start_ts_str}\\'"
             ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, f"\\'{end_ts_str}\\'")
         else:
-            tile_sql = self.tile_spec.tile_sql
+            tile_sql = tile_spec.tile_sql
 
         logger.info(f"tile_sql: {tile_sql}")
 
@@ -156,11 +162,11 @@ class TileSnowflake(TileBase):
         sql = tm_generate_tile.render(
             tile_sql=tile_sql,
             tile_start_date_column=InternalName.TILE_START_DATE.value,
-            time_modulo_frequency_seconds=self.tile_spec.time_modulo_frequency_second,
-            blind_spot_seconds=self.tile_spec.blind_spot_second,
-            frequency_minute=self.tile_spec.frequency_minute,
-            column_names=",".join(self.tile_spec.column_names),
-            tile_id=self.tile_spec.tile_id,
+            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
+            blind_spot_seconds=tile_spec.blind_spot_second,
+            frequency_minute=tile_spec.frequency_minute,
+            column_names=",".join(tile_spec.column_names),
+            tile_id=tile_spec.tile_id,
             tile_type=tile_type,
             last_tile_start_ts_str=last_tile_start_ts_str,
         )
@@ -171,6 +177,7 @@ class TileSnowflake(TileBase):
 
     def schedule_online_tiles(
         self,
+        tile_spec: TileSpec,
         monitor_periods: int = 10,
     ) -> str:
         """
@@ -178,6 +185,8 @@ class TileSnowflake(TileBase):
 
         Parameters
         ----------
+        tile_spec: TileSpec
+            the input TileSpec
         monitor_periods: int
             number of tile periods to monitor and re-generate. Default is 10
 
@@ -185,10 +194,11 @@ class TileSnowflake(TileBase):
         -------
             generated sql to be executed
         """
-        start_minute = self.tile_spec.time_modulo_frequency_second // 60
-        cron = f"{start_minute}-59/{self.tile_spec.frequency_minute} * * * *"
+        start_minute = tile_spec.time_modulo_frequency_second // 60
+        cron = f"{start_minute}-59/{tile_spec.frequency_minute} * * * *"
 
         return self._schedule_tiles(
+            tile_spec=tile_spec,
             tile_type=TileType.ONLINE,
             cron_expr=cron,
             monitor_periods=monitor_periods,
@@ -196,6 +206,7 @@ class TileSnowflake(TileBase):
 
     def schedule_offline_tiles(
         self,
+        tile_spec: TileSpec,
         offline_minutes: int = 1440,
     ) -> str:
         """
@@ -203,6 +214,8 @@ class TileSnowflake(TileBase):
 
         Parameters
         ----------
+        tile_spec: TileSpec
+            the input TileSpec
         offline_minutes: int
             offline tile lookback minutes to monitor and re-generate. Default is 1440
 
@@ -210,10 +223,11 @@ class TileSnowflake(TileBase):
         -------
             generated sql to be executed
         """
-        start_minute = self.tile_spec.time_modulo_frequency_second // 60
+        start_minute = tile_spec.time_modulo_frequency_second // 60
         cron = f"{start_minute} 0 * * *"
 
         return self._schedule_tiles(
+            tile_spec=tile_spec,
             tile_type=TileType.OFFLINE,
             cron_expr=cron,
             offline_minutes=offline_minutes,
@@ -221,6 +235,7 @@ class TileSnowflake(TileBase):
 
     def _schedule_tiles(
         self,
+        tile_spec: TileSpec,
         tile_type: TileType,
         cron_expr: str,
         offline_minutes: int = 1440,
@@ -231,6 +246,8 @@ class TileSnowflake(TileBase):
 
         Parameters
         ----------
+        tile_spec: TileSpec
+            the input TileSpec
         tile_type: TileType
             ONLINE or OFFLINE
         cron_expr: str
@@ -245,21 +262,21 @@ class TileSnowflake(TileBase):
             generated sql to be executed
         """
 
-        temp_task_name = f"SHELL_TASK_{self.tile_spec.tile_id}_{tile_type}"
+        temp_task_name = f"SHELL_TASK_{tile_spec.tile_id}_{tile_type}"
 
         sql = tm_schedule_tile.render(
             temp_task_name=temp_task_name,
             warehouse=self._session.dict()["warehouse"],
             cron=cron_expr,
-            sql=self.tile_spec.tile_sql,
+            sql=tile_spec.tile_sql,
             tile_start_date_column=InternalName.TILE_START_DATE.value,
             tile_start_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER.value,
             tile_end_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER.value,
-            time_modulo_frequency_seconds=self.tile_spec.time_modulo_frequency_second,
-            blind_spot_seconds=self.tile_spec.blind_spot_second,
-            frequency_minute=self.tile_spec.frequency_minute,
-            column_names=",".join(self.tile_spec.column_names),
-            tile_id=self.tile_spec.tile_id,
+            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
+            blind_spot_seconds=tile_spec.blind_spot_second,
+            frequency_minute=tile_spec.frequency_minute,
+            column_names=",".join(tile_spec.column_names),
+            tile_id=tile_spec.tile_id,
             tile_type=tile_type,
             offline_minutes=offline_minutes,
             monitor_periods=monitor_periods,

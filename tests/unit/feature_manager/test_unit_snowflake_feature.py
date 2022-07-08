@@ -9,6 +9,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_insert_feature_registry,
     tm_select_feature_registry,
     tm_update_feature_registry,
+    tm_update_feature_registry_default_false,
 )
 
 
@@ -21,9 +22,7 @@ def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature, fea
     feature_manager.insert_feature_registry(mock_snowflake_feature)
     assert mock_execute_query.call_count == 3
 
-    update_sql = tm_update_feature_registry.render(
-        feature_name=mock_snowflake_feature.name, col_name="is_default", col_value=False
-    )
+    update_sql = tm_update_feature_registry_default_false.render(feature=mock_snowflake_feature)
 
     tile_specs_lst = [tile_spec.dict() for tile_spec in mock_snowflake_feature.tile_specs]
     tile_specs_str = str(tile_specs_lst).replace("'", '"')
@@ -79,23 +78,19 @@ def test_update_feature_list(mock_execute_query, mock_snowflake_feature, feature
     Test retrieve_features
     """
     mock_execute_query.return_value = ["feature_list1"]
-    feature_manager.update_feature_registry(
-        mock_snowflake_feature, attribute_name="status", attribute_value="DRAFT"
-    )
+    feature_manager.update_feature_registry(mock_snowflake_feature)
     assert mock_execute_query.call_count == 2
 
-    sql = tm_update_feature_registry.render(
-        feature_name=mock_snowflake_feature.name, col_name="status", col_value="'DRAFT'"
-    )
+    sql = tm_update_feature_registry.render(feature=mock_snowflake_feature)
     calls = [
         mock.call(sql),
     ]
     mock_execute_query.assert_has_calls(calls, any_order=True)
 
 
-@mock.patch("featurebyte.tile.snowflake_tile.TileSnowflake.insert_tile_registry")
-@mock.patch("featurebyte.tile.snowflake_tile.TileSnowflake.schedule_online_tiles")
-@mock.patch("featurebyte.tile.snowflake_tile.TileSnowflake.schedule_offline_tiles")
+@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.insert_tile_registry")
+@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_online_tiles")
+@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_offline_tiles")
 def test_online_enable(
     mock_insert_tile_registry,
     mock_schedule_online_tiles,

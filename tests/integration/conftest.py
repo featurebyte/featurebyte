@@ -25,7 +25,7 @@ from featurebyte.models.feature import (
 )
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.tile.snowflake_tile import TileSnowflake
+from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
 @pytest.fixture(name="transaction_data", scope="session")
@@ -186,17 +186,20 @@ def snowflake_tile(snowflake_session):
         tile_id="tile_id1",
     )
 
-    tile_s = TileSnowflake(
-        tile_spec=tile_spec,
-        session=snowflake_session,
-    )
-
-    yield tile_s
+    yield tile_spec
 
     snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
     snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
     snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
     snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+
+
+@pytest.fixture
+def tile_manager(snowflake_session):
+    """
+    Feature Manager fixture
+    """
+    return TileManagerSnowflake(session=snowflake_session)
 
 
 @pytest.fixture
@@ -222,6 +225,7 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
     mock_feature.version = "v1"
     mock_feature.readiness = FeatureReadiness.DRAFT
     mock_feature.is_default = True
+    mock_feature.description = "test_description_1"
 
     yield mock_feature
 

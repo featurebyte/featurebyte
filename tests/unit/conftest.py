@@ -27,7 +27,7 @@ from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.session.manager import SessionManager
-from featurebyte.tile.snowflake_tile import TileSnowflake
+from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
 @pytest.fixture(name="config")
@@ -283,15 +283,10 @@ def session_manager_fixture(config, snowflake_connector):
 
 
 @pytest.fixture
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_tile(
-    mock_execute_query, snowflake_feature_store, snowflake_connector, session_manager
-):
+def mock_snowflake_tile():
     """
     Pytest Fixture for TileSnowflake instance
     """
-    mock_execute_query.size_effect = None
-    _ = snowflake_connector
 
     tile_sql = (
         f"select c1 from dummy where"
@@ -308,12 +303,17 @@ def mock_snowflake_tile(
         entity_column_names=["col1"],
     )
 
-    tile_s = TileSnowflake(
-        tile_spec=tile_spec,
-        session=session_manager[snowflake_feature_store],
-    )
+    return tile_spec
 
-    return tile_s
+
+@pytest.fixture
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def tile_manager(mock_execute_query, session_manager, snowflake_feature_store):
+    """
+    Tile Manager fixture
+    """
+    _ = mock_execute_query
+    return TileManagerSnowflake(session=session_manager[snowflake_feature_store])
 
 
 @pytest.fixture
@@ -354,10 +354,12 @@ def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_ev
 
 
 @pytest.fixture
-def feature_manager(session_manager, snowflake_feature_store):
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def feature_manager(mock_execute_query, session_manager, snowflake_feature_store):
     """
     Feature Manager fixture
     """
+    _ = mock_execute_query
     return FeatureManagerSnowflake(session=session_manager[snowflake_feature_store])
 
 
@@ -409,8 +411,10 @@ def mock_snowflake_feature_list(mock_execute_query, snowflake_connector, snowfla
 
 
 @pytest.fixture
-def feature_list_manager(session_manager, snowflake_feature_store):
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def feature_list_manager(mock_execute_query, session_manager, snowflake_feature_store):
     """
     Feature List Manager fixture
     """
+    _ = mock_execute_query
     return FeatureListManagerSnowflake(session=session_manager[snowflake_feature_store])

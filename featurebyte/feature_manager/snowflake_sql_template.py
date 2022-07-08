@@ -21,9 +21,21 @@ tm_insert_feature_registry = Template(
 """
 )
 
+tm_update_feature_registry_default_false = Template(
+    """
+    UPDATE FEATURE_REGISTRY SET IS_DEFAULT = False WHERE NAME = '{{feature.name}}'
+"""
+)
+
 tm_update_feature_registry = Template(
     """
-    UPDATE FEATURE_REGISTRY SET {{col_name}} = {{col_value}} WHERE NAME = '{{feature_name}}'
+    UPDATE FEATURE_REGISTRY
+    SET
+        READINESS = '{{feature.readiness.value}}',
+        DESCRIPTION = '{{feature.description}}',
+        IS_DEFAULT = {{feature.is_default}}
+    WHERE NAME = '{{feature.name}}'
+    AND VERSION = '{{feature.version}}'
 """
 )
 
@@ -78,6 +90,12 @@ tm_select_feature_list_registry = Template(
 
 tm_update_feature_list_registry = Template(
     """
-    UPDATE FEATURE_LIST_REGISTRY SET {{col_name}} = {{col_value}} WHERE NAME = '{{feature_list_name}}'
+    UPDATE FEATURE_LIST_REGISTRY
+    SET
+        READINESS = '{{feature_list.readiness.value}}',
+        STATUS = '{{feature_list.status.value}}',
+        DESCRIPTION = '{{feature_list.description}}'
+    WHERE NAME = '{{feature_list.name}}'
+    AND VERSION = '{{feature_list.version}}'
 """
 )

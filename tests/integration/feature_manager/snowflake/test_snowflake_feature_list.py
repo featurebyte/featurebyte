@@ -7,7 +7,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import InternalName
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
 
 
 def test_insert_feature_list_registry(
@@ -99,17 +99,21 @@ def test_update_feature_list_registry(
     assert result.iloc[0]["NAME"] == "feature_list1"
     assert result.iloc[0]["VERSION"] == "v1"
     assert result.iloc[0]["READINESS"] == "DRAFT"
+    assert result.iloc[0]["STATUS"] == "DRAFT"
+    assert result.iloc[0]["DESCRIPTION"] == "test_description1"
 
-    feature_list_manager.update_feature_list_registry(
-        snowflake_feature_list,
-        attribute_name="readiness",
-        attribute_value=FeatureReadiness.PRODUCTION_READY,
-    )
+    snowflake_feature_list.readiness = FeatureReadiness.PRODUCTION_READY
+    snowflake_feature_list.status = FeatureListStatus.PUBLISHED
+    snowflake_feature_list.description = "test_description2"
+    feature_list_manager.update_feature_list_registry(snowflake_feature_list)
+
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_LIST_REGISTRY")
     assert len(result) == 1
     assert result.iloc[0]["NAME"] == "feature_list1"
     assert result.iloc[0]["VERSION"] == "v1"
     assert result.iloc[0]["READINESS"] == "PRODUCTION_READY"
+    assert result.iloc[0]["STATUS"] == "PUBLISHED"
+    assert result.iloc[0]["DESCRIPTION"] == "test_description2"
 
 
 def test_generate_tiles_on_demand(snowflake_session, snowflake_tile, feature_list_manager):
@@ -125,17 +129,17 @@ def test_generate_tiles_on_demand(snowflake_session, snowflake_tile, feature_lis
         f"INSERT INTO {temp_entity_table} VALUES ('P1', 'C1', '{last_tile_start_date_1}') "
     )
 
-    snowflake_tile.tile_spec.tile_sql = snowflake_tile.tile_spec.tile_sql.replace(
+    snowflake_tile.tile_sql = snowflake_tile.tile_sql.replace(
         InternalName.TILE_START_DATE_SQL_PLACEHOLDER, "\\'2022-06-05 23:33:00\\'"
     ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, "\\'2022-06-05 23:58:00\\'")
 
-    feature_list_manager.generate_tiles_on_demand([(snowflake_tile.tile_spec, temp_entity_table)])
+    feature_list_manager.generate_tiles_on_demand([(snowflake_tile, temp_entity_table)])
 
-    sql = f"SELECT COUNT(*) as TILE_COUNT FROM {snowflake_tile.tile_spec.tile_id}"
+    sql = f"SELECT COUNT(*) as TILE_COUNT FROM {snowflake_tile.tile_id}"
     result = snowflake_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 5
 
-    sql = f"SELECT * FROM {snowflake_tile.tile_spec.tile_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
+    sql = f"SELECT * FROM {snowflake_tile.tile_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
     result = snowflake_session.execute_query(sql)
     assert len(result) == 1
     assert result["PRODUCT_ACTION"].iloc[0] == "P1"

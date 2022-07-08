@@ -17,7 +17,7 @@ from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureListModel, FeatureListVersionIdentifier
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.snowflake_tile import TileSnowflake
+from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
 class FeatureListManagerSnowflake(BaseModel):
@@ -106,20 +106,14 @@ class FeatureListManagerSnowflake(BaseModel):
 
         return self._session.execute_query(sql)
 
-    def update_feature_list_registry(
-        self, feature_list: FeatureListModel, attribute_name: str, attribute_value: str
-    ) -> None:
+    def update_feature_list_registry(self, new_feature_list: FeatureListModel) -> None:
         """
-        Update Feature Registry record
+        Update Feature List Registry record. Only readiness, description and status might be updated
 
         Parameters
         ----------
-        feature_list: FeatureListModel
-            input feature instance
-        attribute_name: str
-            attribute/column name
-        attribute_value: str
-            attribute/column value
+        new_feature_list: FeatureListModel
+            new input feature instance
 
         Raises
         ----------
@@ -127,20 +121,16 @@ class FeatureListManagerSnowflake(BaseModel):
             when the feature registry record does not exist
         """
         feature_list_versions = self.retrieve_feature_list_registries(
-            feature_list=feature_list, version=feature_list.version
+            feature_list=new_feature_list, version=new_feature_list.version
         )
         if len(feature_list_versions) == 0:
             raise ValueError(
-                f"feature_list {feature_list.name} with version {feature_list.version} does not exist"
+                f"feature_list {new_feature_list.name} with version {new_feature_list.version} does not exist"
             )
         logger.debug(f"feature_list_versions: {feature_list_versions}")
 
         self._session.execute_query(
-            tm_update_feature_list_registry.render(
-                feature_list_name=feature_list.name,
-                col_name=attribute_name,
-                col_value=f"'{attribute_value}'",
-            )
+            tm_update_feature_list_registry.render(feature_list=new_feature_list)
         )
 
     def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
@@ -153,13 +143,14 @@ class FeatureListManagerSnowflake(BaseModel):
             list of TileSpec, temp_entity_table to update the feature store
         """
         for tile_spec, entity_table in tile_inputs:
-            tile_mgr = TileSnowflake(
-                tile_spec=tile_spec,
+            tile_mgr = TileManagerSnowflake(
                 session=self._session,
             )
 
-            tile_mgr.generate_tiles(tile_type=TileType.OFFLINE, start_ts_str=None, end_ts_str=None)
+            tile_mgr.generate_tiles(
+                tile_spec=tile_spec, tile_type=TileType.OFFLINE, start_ts_str=None, end_ts_str=None
+            )
             logger.debug(f"Done generating tiles for {tile_spec}")
 
-            tile_mgr.update_tile_entity_tracker(temp_entity_table=entity_table)
+            tile_mgr.update_tile_entity_tracker(tile_spec=tile_spec, temp_entity_table=entity_table)
             logger.debug(f"Done update_tile_entity_tracker for {tile_spec}")

@@ -13,11 +13,12 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_last_tile_index,
     tm_select_feature_registry,
     tm_update_feature_registry,
+    tm_update_feature_registry_default_false,
 )
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureModel, FeatureVersionIdentifier
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.snowflake_tile import TileSnowflake
+from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
 class FeatureManagerSnowflake(BaseModel):
@@ -61,11 +62,8 @@ class FeatureManagerSnowflake(BaseModel):
 
         logger.debug(f"feature_versions: {feature_versions}")
         if len(feature_versions) == 0:
-            self._session.execute_query(
-                tm_update_feature_registry.render(
-                    feature_name=feature.name, col_name="is_default", col_value=False
-                )
-            )
+            update_sql = tm_update_feature_registry_default_false.render(feature=feature)
+            self._session.execute_query(update_sql)
             logger.debug("Done updating is_default of other versions to false")
 
             if feature.tile_specs:
@@ -108,20 +106,14 @@ class FeatureManagerSnowflake(BaseModel):
 
         return self._session.execute_query(sql)
 
-    def update_feature_registry(
-        self, feature: FeatureModel, attribute_name: str, attribute_value: str
-    ) -> None:
+    def update_feature_registry(self, new_feature: FeatureModel) -> None:
         """
-        Update Feature Registry record
+        Update Feature Registry record. Only readiness, description and is_default might be updated
 
         Parameters
         ----------
-        feature: FeatureModel
-            input feature instance
-        attribute_name: str
-            attribute/column name
-        attribute_value: str
-            attribute/column value
+        new_feature: FeatureModel
+            new input feature instance
 
         Raises
         ----------
@@ -129,19 +121,17 @@ class FeatureManagerSnowflake(BaseModel):
             when the feature registry record does not exist
         """
         feature_versions = self.retrieve_feature_registries(
-            feature=feature, version=feature.version
+            feature=new_feature, version=new_feature.version
         )
         if len(feature_versions) == 0:
             raise ValueError(
-                f"feature {feature.name} with version {feature.version} does not exist"
+                f"feature {new_feature.name} with version {new_feature.version} does not exist"
             )
         logger.debug(f"feature_versions: {feature_versions}")
 
-        self._session.execute_query(
-            tm_update_feature_registry.render(
-                feature_name=feature.name, col_name=attribute_name, col_value=f"'{attribute_value}'"
-            )
-        )
+        update_sql = tm_update_feature_registry.render(feature=new_feature)
+        logger.debug(f"update_sql: {update_sql}")
+        self._session.execute_query(update_sql)
 
     def online_enable(self, feature: FeatureModel) -> None:
         """
@@ -155,20 +145,19 @@ class FeatureManagerSnowflake(BaseModel):
         if feature.tile_specs:
             for tile_spec in feature.tile_specs:
                 logger.info(f"tile_spec: {tile_spec}")
-                tile_mgr = TileSnowflake(
-                    tile_spec=tile_spec,
+                tile_mgr = TileManagerSnowflake(
                     session=self._session,
                 )
                 # insert tile_registry record
-                tile_mgr.insert_tile_registry()
+                tile_mgr.insert_tile_registry(tile_spec=tile_spec)
                 logger.debug(f"Done insert_tile_registry for {tile_spec}")
 
                 # enable online tiles scheduled job
-                tile_mgr.schedule_online_tiles()
+                tile_mgr.schedule_online_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_online_tiles for {tile_spec}")
 
                 # enable offline tiles scheduled job
-                tile_mgr.schedule_offline_tiles()
+                tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
 
     def get_last_tile_index(self, feature: FeatureModel) -> pd.DataFrame:

@@ -9,13 +9,10 @@ import pytest
 from featurebyte.models.tile import TileSpec, TileType
 
 
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_construct_snowflaketile_time_modulo_error(mock_execute_query):
+def test_construct_snowflaketile_time_modulo_error():
     """
-    Pytest Fixture for TileSnowflake instance
+    Test construct TileSpec validation error
     """
-    mock_execute_query.size_effect = None
-
     with pytest.raises(ValueError) as excinfo:
         TileSpec(
             time_modulo_frequency_second=183,
@@ -28,12 +25,16 @@ def test_construct_snowflaketile_time_modulo_error(mock_execute_query):
     assert "time_modulo_frequency_second must be less than 180" in str(excinfo.value)
 
 
-def test_generate_tiles(mock_snowflake_tile):
+def test_generate_tiles(mock_snowflake_tile, tile_manager):
     """
     Test generate_tiles method in TileSnowflake
     """
-    sql = mock_snowflake_tile.generate_tiles(
-        TileType.ONLINE, "2022-06-20 15:00:00", "2022-06-21 16:00:00", "2022-06-21 15:55:00"
+    sql = tile_manager.generate_tiles(
+        mock_snowflake_tile,
+        TileType.ONLINE,
+        "2022-06-20 15:00:00",
+        "2022-06-21 16:00:00",
+        "2022-06-21 15:55:00",
     )
     expected_sql = textwrap.dedent(
         """
@@ -53,11 +54,11 @@ def test_generate_tiles(mock_snowflake_tile):
     assert textwrap.dedent(sql).strip() == expected_sql
 
 
-def test_schedule_online_tiles(mock_snowflake_tile):
+def test_schedule_online_tiles(mock_snowflake_tile, tile_manager):
     """
     Test schedule_online_tiles method in TileSnowflake
     """
-    sql = mock_snowflake_tile.schedule_online_tiles()
+    sql = tile_manager.schedule_online_tiles(mock_snowflake_tile)
     expected_sql = textwrap.dedent(
         """
         CREATE OR REPLACE TASK SHELL_TASK_tile_id1_ONLINE
@@ -85,11 +86,11 @@ def test_schedule_online_tiles(mock_snowflake_tile):
     assert textwrap.dedent(sql).strip() == expected_sql
 
 
-def test_schedule_offline_tiles(mock_snowflake_tile):
+def test_schedule_offline_tiles(mock_snowflake_tile, tile_manager):
     """
     Test schedule_offline_tiles method in TileSnowflake
     """
-    sql = mock_snowflake_tile.schedule_offline_tiles()
+    sql = tile_manager.schedule_offline_tiles(mock_snowflake_tile)
     expected_sql = textwrap.dedent(
         """
         CREATE OR REPLACE TASK SHELL_TASK_tile_id1_OFFLINE
@@ -118,14 +119,14 @@ def test_schedule_offline_tiles(mock_snowflake_tile):
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_insert_tile_registry(mock_execute_query, mock_snowflake_tile):
+def test_insert_tile_registry(mock_execute_query, mock_snowflake_tile, tile_manager):
     """
     Test schedule_offline_tiles method in TileSnowflake
     """
     mock_execute_query.return_value = ["Element"]
-    flag = mock_snowflake_tile.insert_tile_registry()
+    flag = tile_manager.insert_tile_registry(mock_snowflake_tile)
     assert flag is False
 
     mock_execute_query.return_value = []
-    flag = mock_snowflake_tile.insert_tile_registry()
+    flag = tile_manager.insert_tile_registry(mock_snowflake_tile)
     assert flag is True
