@@ -5,7 +5,6 @@ import os
 import sqlite3
 import tempfile
 from datetime import datetime
-from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -116,10 +115,7 @@ def config_fixture(sqlite_filename):
     with tempfile.NamedTemporaryFile("w") as file_handle:
         file_handle.write(yaml.dump(config_dict))
         file_handle.flush()
-        config = Configurations(config_file_path=file_handle.name)
-        with mock.patch("featurebyte.config.Configurations") as mock_config:
-            mock_config.return_value = config
-            yield config
+        yield Configurations(config_file_path=file_handle.name)
 
 
 @pytest.fixture(name="snowflake_session", scope="session")
