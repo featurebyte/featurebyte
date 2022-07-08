@@ -66,12 +66,12 @@ def test_persistence(test_document):
         assert doc == test_document
     finally:
         # cleanup local and remote repo
-        repo, origin, ssh_cmd, branch = (
-            persistent._repo,
-            persistent._origin,
-            persistent._ssh_cmd,
-            persistent._branch,
+        repo, ssh_cmd, branch = (
+            persistent.repo,
+            persistent.ssh_cmd,
+            persistent.branch,
         )
+        origin = repo.remotes.origin
         if origin:
             with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
                 origin.push(refspec=(f":{branch}"))
