@@ -449,3 +449,18 @@ def feature_list_manager(mock_execute_query, session_manager, snowflake_feature_
     """
     _ = mock_execute_query
     return FeatureListManagerSnowflake(session=session_manager[snowflake_feature_store])
+
+
+@pytest.fixture(name="git_persistent")
+def git_persistent_fixture():
+    """
+    Patched MongoDB fixture for testing
+    Returns
+    -------
+    Tuple[GitDB, Repo]
+        Local GitDB object and local git repo
+    """
+    persistent = GitDB(branch="test")
+    persistent.insert_doc_name_func("event_data", lambda doc: doc["name"])
+    persistent.insert_doc_name_func("data", lambda doc: doc["name"])
+    yield persistent, persistent.repo

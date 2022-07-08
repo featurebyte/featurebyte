@@ -61,7 +61,7 @@ def get_entity(entity_name: str) -> dict[str, Any] | None:
         Entity not found
     """
     client = Configurations().get_client()
-    response = client.get("/entity", params={"name": entity_name})
+    response = client.get(url="/entity", params={"name": entity_name})
     if response.status_code == HTTPStatus.OK:
         response_dict: dict[str, Any] = _get_response(
             response=response,
@@ -73,3 +73,21 @@ def get_entity(entity_name: str) -> dict[str, Any] | None:
             first_item: dict[str, Any] = response_data[0]
             return first_item
     return None
+
+
+def convert_response_to_dict(response: Response) -> dict[str, Any]:
+    """
+    Convert API response to dictionary format
+
+    Parameters
+    ----------
+    response: Response
+        API response object
+
+    Returns
+    -------
+    dict[str, Any]
+    """
+    response_dict: dict[str, Any] = response.json()
+    response_dict["_id"] = response_dict.pop("id")
+    return response_dict
