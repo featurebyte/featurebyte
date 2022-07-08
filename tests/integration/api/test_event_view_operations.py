@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import pandas as pd
 
+from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_store import FeatureStore
@@ -132,6 +133,7 @@ def test_query_object_operation_on_snowflake_source(
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
     # create some features
+    Entity(name="User", serving_name="uid")
     event_view["USER_ID"].as_entity("User")
     feature_group = event_view.groupby("USER_ID").aggregate(
         "USER_ID",

@@ -160,5 +160,5 @@ class Configurations:
         # pylint: disable=import-outside-toplevel,cyclic-import
         from featurebyte.app import app
 
-        client = TestClient(app, raise_server_exceptions=False)
+        client = TestClient(app)
         return client

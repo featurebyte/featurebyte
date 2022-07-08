@@ -5,11 +5,13 @@ import os
 import sqlite3
 import tempfile
 from datetime import datetime
+from unittest import mock
 
 import numpy as np
 import pandas as pd
 import pytest
 import yaml
+from bson.objectid import ObjectId
 from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
@@ -105,11 +107,19 @@ def config_fixture(sqlite_filename):
                 "filename": sqlite_filename,
             },
         ],
+        "git": {
+            "remote_url": "git@github.com:featurebyte/playground.git",
+            "key_path": os.getenv("GIT_SSH_KEY_PATH"),
+            "branch": f"integration-test-{str(ObjectId())}",
+        },
     }
     with tempfile.NamedTemporaryFile("w") as file_handle:
         file_handle.write(yaml.dump(config_dict))
         file_handle.flush()
-        yield Configurations(config_file_path=file_handle.name)
+        config = Configurations(config_file_path=file_handle.name)
+        with mock.patch("featurebyte.config.Configurations") as mock_config:
+            mock_config.return_value = config
+            yield config
 
 
 @pytest.fixture(name="snowflake_session", scope="session")

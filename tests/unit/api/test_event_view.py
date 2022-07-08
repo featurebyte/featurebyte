@@ -3,6 +3,7 @@ Unit test for EventView class
 """
 import pytest
 
+from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
@@ -10,7 +11,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
 
 
-def test_from_event_data(snowflake_event_data):
+def test_from_event_data(snowflake_event_data, mock_get_persistent):
     """
     Test from_event_data
     """
@@ -21,13 +22,11 @@ def test_from_event_data(snowflake_event_data):
     assert event_view_first.row_index_lineage == snowflake_event_data.row_index_lineage
     assert event_view_first.column_entity_map == snowflake_event_data.column_entity_map == {}
 
+    Entity(name="customer", serving_name="cust_id")
     snowflake_event_data.cust_id.as_entity("customer")
     event_view_second = EventView.from_event_data(snowflake_event_data)
-    assert (
-        event_view_second.column_entity_map
-        == snowflake_event_data.column_entity_map
-        == {"cust_id": "customer"}
-    )
+    assert event_view_second.column_entity_map == snowflake_event_data.column_entity_map
+    assert "cust_id" in event_view_second.column_entity_map
 
 
 def test_getitem__str(snowflake_event_view):
