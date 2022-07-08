@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from featurebyte.enum import CollectionName
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.helpers import get_utc_now
-from featurebyte.routes.entity.schema import Entity, EntityCreate, EntityList, EntityUpdate
+from featurebyte.schema.entity import Entity, EntityCreate, EntityList, EntityUpdate
 
 
 class EntityController:
@@ -33,7 +33,12 @@ class EntityController:
         """
         Create Entity
         """
-        document = Entity(user_id=user.id, created_at=get_utc_now(), **data.dict())
+        document = Entity(
+            name=data.name,
+            serving_names=[data.serving_name],
+            user_id=user.id,
+            created_at=get_utc_now(),
+        )
 
         conflict_entity = persistent.find_one(
             collection_name=cls.collection_name, query_filter={"name": data.name}
@@ -46,12 +51,12 @@ class EntityController:
 
         conflict_entity = persistent.find_one(
             collection_name=cls.collection_name,
-            query_filter={"serving_names": data.serving_names},
+            query_filter={"serving_names": document.serving_names},
         )
         if conflict_entity:
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=f'Entity serving name "{data.serving_names[0]}" already exists.',
+                detail=f'Entity serving name "{data.serving_name}" already exists.',
             )
 
         insert_id = persistent.insert_one(

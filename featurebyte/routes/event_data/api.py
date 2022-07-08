@@ -10,12 +10,7 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
-from featurebyte.routes.event_data.schema import (
-    EventData,
-    EventDataCreate,
-    EventDataList,
-    EventDataUpdate,
-)
+from featurebyte.schema.event_data import EventData, EventDataCreate, EventDataList, EventDataUpdate
 
 router = APIRouter(prefix="/event_data")
 

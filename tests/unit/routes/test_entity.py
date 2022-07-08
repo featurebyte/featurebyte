@@ -13,7 +13,7 @@ def entity_dict_fixture():
     """
     Entity dictionary fixture
     """
-    return {"name": "customer", "serving_names": ["cust_id"]}
+    return {"name": "customer", "serving_name": "cust_id"}
 
 
 @pytest.fixture(name="create_success_response")
@@ -30,15 +30,9 @@ def create_multiple_entries_fixture(test_api_client):
     """
     Create multiple entries to the persistent
     """
-    res_region = test_api_client.post(
-        "/entity", json={"name": "region", "serving_names": ["region"]}
-    )
-    res_cust = test_api_client.post(
-        "/entity", json={"name": "customer", "serving_names": ["cust_id"]}
-    )
-    res_prod = test_api_client.post(
-        "/entity", json={"name": "product", "serving_names": ["prod_id"]}
-    )
+    res_region = test_api_client.post("/entity", json={"name": "region", "serving_name": "region"})
+    res_cust = test_api_client.post("/entity", json={"name": "customer", "serving_name": "cust_id"})
+    res_prod = test_api_client.post("/entity", json={"name": "product", "serving_name": "prod_id"})
     assert res_region.status_code == HTTPStatus.CREATED
     assert res_cust.status_code == HTTPStatus.CREATED
     assert res_prod.status_code == HTTPStatus.CREATED
@@ -78,29 +72,15 @@ def test_create_422(test_api_client, entity_dict):
     """
     Test entity creation (unprocessable entity)
     """
-    entity_dict["serving_names"] = "cust_id"
+    entity_dict["serving_name"] = ["cust_id"]
     response = test_api_client.post("/entity", json=entity_dict)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert response.json() == {
         "detail": [
             {
-                "loc": ["body", "serving_names"],
-                "msg": "value is not a valid list",
-                "type": "type_error.list",
-            }
-        ]
-    }
-
-    entity_dict["serving_names"] = ["cust_id", "customer_id"]
-    response = test_api_client.post("/entity", json=entity_dict)
-    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert response.json() == {
-        "detail": [
-            {
-                "loc": ["body", "serving_names"],
-                "msg": "ensure this value has at most 1 items",
-                "type": "value_error.list.max_items",
-                "ctx": {"limit_value": 1},
+                "loc": ["body", "serving_name"],
+                "msg": "str type expected",
+                "type": "type_error.str",
             }
         ]
     }

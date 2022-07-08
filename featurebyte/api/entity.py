@@ -45,7 +45,7 @@ class Entity(EntityModel):
         self._validate_serving_name(serving_name)
 
         client = Configurations().get_client()
-        payload = {"name": name, "serving_names": [serving_name]}
+        payload = {"name": name, "serving_name": serving_name}
         response = client.post("/entity", json=payload)
         if response.status_code != HTTPStatus.CREATED:
             if response.status_code == HTTPStatus.CONFLICT:

@@ -9,7 +9,7 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
-from featurebyte.routes.entity.schema import Entity, EntityCreate, EntityList, EntityUpdate
+from featurebyte.schema.entity import Entity, EntityCreate, EntityList, EntityUpdate
 
 router = APIRouter(prefix="/entity")
 

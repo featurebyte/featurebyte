@@ -13,12 +13,7 @@ from featurebyte.enum import CollectionName
 from featurebyte.models.event_data import EventDataStatus, FeatureJobSettingHistoryEntry
 from featurebyte.persistent import DuplicateDocumentError, Persistent
 from featurebyte.routes.common.helpers import get_utc_now
-from featurebyte.routes.event_data.schema import (
-    EventData,
-    EventDataCreate,
-    EventDataList,
-    EventDataUpdate,
-)
+from featurebyte.schema.event_data import EventData, EventDataCreate, EventDataList, EventDataUpdate
 
 
 class EventDataController:
