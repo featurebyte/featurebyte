@@ -39,9 +39,9 @@ class TileSpec(BaseModel):
     blind_spot_second: int
     frequency_minute: int = Field(gt=0, le=60)
     tile_sql: str
-    column_names: List[str]  # to be deprecated
-    entity_column_names: List[str]
-    value_column_names: List[str] = Field(default=["VALUE"])
+    column_names: List[str]  # in use, to be deprecated
+    entity_column_names: List[str]  # in use
+    value_column_names: List[str] = Field(default=["VALUE"])  # not in use yet
     tile_id: str
 
     @validator("tile_id")

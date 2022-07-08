@@ -172,6 +172,7 @@ def snowflake_tile(snowflake_session):
     table_name = "TEMP_TABLE"
     start = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
     end = InternalName.TILE_END_DATE_SQL_PLACEHOLDER
+
     tile_sql = f"SELECT {col_names} FROM {table_name} WHERE {InternalName.TILE_START_DATE} >= {start} and {InternalName.TILE_START_DATE} < {end}"
     tile_id = "tile_id1"
 

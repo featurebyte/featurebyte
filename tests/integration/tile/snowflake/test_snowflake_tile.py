@@ -110,7 +110,7 @@ def test_update_tile_entity_tracker(snowflake_tile, snowflake_session):
     Test update_tile_entity_tracker method in TileSnowflake
     """
 
-    temp_entity_table = "TEMP_ENTITY_TRACKER"
+    temp_entity_table = "TEMP_ENTITY_TRACKER_1"
     last_tile_start_date_1 = "2022-07-06 10:52:14"
     last_tile_start_date_2 = "2022-07-07 10:52:14"
 

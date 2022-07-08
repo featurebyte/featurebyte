@@ -86,3 +86,25 @@ def test_update_feature_list(mock_execute_query, mock_snowflake_feature_list, fe
         mock.call(sql),
     ]
     mock_execute_query.assert_has_calls(calls, any_order=True)
+
+
+@mock.patch("featurebyte.tile.snowflake_tile.TileSnowflake.generate_tiles")
+@mock.patch("featurebyte.tile.snowflake_tile.TileSnowflake.update_tile_entity_tracker")
+def test_generate_tiles_on_demand(
+    mock_generate_tiles,
+    mock_update_tile_entity_tracker,
+    mock_snowflake_tile,
+    feature_list_manager,
+):
+    """
+    Test generate_tiles_on_demand
+    """
+    mock_generate_tiles.size_effect = None
+    mock_update_tile_entity_tracker.size_effect = None
+
+    feature_list_manager.generate_tiles_on_demand(
+        [(mock_snowflake_tile.tile_spec, "temp_entity_table")]
+    )
+
+    mock_generate_tiles.assert_called_once()
+    mock_update_tile_entity_tracker.assert_called_once()
