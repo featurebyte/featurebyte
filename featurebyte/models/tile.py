@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 from enum import Enum
 
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, StrictStr, root_validator, validator
 
 
 class TileType(str, Enum):
@@ -38,11 +38,11 @@ class TileSpec(BaseModel):
     time_modulo_frequency_second: int = Field(gt=0)
     blind_spot_second: int
     frequency_minute: int = Field(gt=0, le=60)
-    tile_sql: str
-    column_names: List[str]  # in use, to be deprecated
-    entity_column_names: List[str]  # in use
-    value_column_names: List[str] = Field(default=["VALUE"])  # not in use yet
-    tile_id: str
+    tile_sql: StrictStr
+    column_names: List[StrictStr]  # in use, to be deprecated
+    entity_column_names: List[StrictStr]  # in use
+    value_column_names: List[StrictStr] = Field(default=["VALUE"])  # not in use yet
+    tile_id: StrictStr
 
     @validator("tile_id")
     @classmethod

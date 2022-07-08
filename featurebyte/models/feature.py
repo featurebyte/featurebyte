@@ -8,15 +8,15 @@ from typing import List, Optional, Tuple
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictStr
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import Node, QueryGraph
 
-FeatureVersionIdentifier = str
-FeatureListVersionIdentifier = str
+FeatureVersionIdentifier = StrictStr
+FeatureListVersionIdentifier = StrictStr
 
 
 class FeatureReadiness(str, Enum):
@@ -56,8 +56,8 @@ class FeatureNameSpace(BaseModel):
         List of available feature version
     """
 
-    name: str
-    description: Optional[str]
+    name: StrictStr
+    description: Optional[StrictStr]
     versions: List[FeatureVersionIdentifier]
     readiness: FeatureReadiness
     created_at: datetime
@@ -93,11 +93,11 @@ class FeatureModel(BaseModel):
         Datetime when the Feature was first saved or published
     """
 
-    name: Optional[str]
-    description: Optional[str]
+    name: Optional[StrictStr]
+    description: Optional[StrictStr]
     var_type: DBVarType
-    lineage: Tuple[str, ...]
-    row_index_lineage: Tuple[str, ...]
+    lineage: Tuple[StrictStr, ...]
+    row_index_lineage: Tuple[StrictStr, ...]
     graph: QueryGraph
     node: Node
     tabular_source: Tuple[FeatureStoreModel, TableDetails]
@@ -128,9 +128,9 @@ class FeatureListModel(BaseModel):
         Datetime when the FeatureList was first saved or published
     """
 
-    name: str
-    description: Optional[str]
-    features: List[Tuple[str, Optional[FeatureVersionIdentifier]]]
+    name: StrictStr
+    description: Optional[StrictStr]
+    features: List[Tuple[StrictStr, Optional[FeatureVersionIdentifier]]]
     readiness: Optional[FeatureReadiness]
     status: Optional[FeatureListStatus]
     version: FeatureListVersionIdentifier
