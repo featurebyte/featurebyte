@@ -3,7 +3,7 @@ Entity API routes
 """
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Dict, Literal, Optional
 
 from http import HTTPStatus
 
@@ -69,11 +69,14 @@ class EntityController:
         page_size: int = 10,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
+        name: Optional[str] = None,
     ) -> EntityList:
         """
         List Entities
         """
         query_filter = {"user_id": user.id}
+        if name is not None:
+            query_filter["name"] = name
         docs, total = persistent.find(
             collection_name=cls.collection_name,
             query_filter=query_filter,

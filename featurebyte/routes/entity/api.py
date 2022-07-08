@@ -34,6 +34,7 @@ def list_entities(
     page_size: int = 10,
     sort_by: Optional[str] = "created_at",
     sort_dir: Literal["asc", "desc"] = "desc",
+    name: Optional[str] = None,
 ) -> EntityList:
     """
     List Entity
@@ -45,6 +46,7 @@ def list_entities(
         page_size=page_size,
         sort_by=sort_by,
         sort_dir=sort_dir,
+        name=name,
     )
     return entity_list
 

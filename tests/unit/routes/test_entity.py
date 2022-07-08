@@ -139,6 +139,14 @@ def test_list_200(create_multiple_entries, test_api_client):
     assert [elem["serving_names"] for elem in result_data] == expected_sorted_serv_name_asc
     assert result == expected_paginated_info
 
+    # test search with entity name
+    response_with_entity_name = test_api_client.get("/entity", params={"name": "customer"})
+    assert response_with_entity_name.status_code == HTTPStatus.OK
+    result = response_with_entity_name.json()
+    result_data = result["data"]
+    assert len(result_data) == 1
+    assert result_data[0]["name"] == "customer"
+
 
 def test_update_200(create_success_response, test_api_client):
     """
