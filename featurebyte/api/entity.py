@@ -44,8 +44,7 @@ class Entity(EntityModel):
         """
         data = EntityCreate(name=name, serving_name=serving_name)
         client = Configurations().get_client()
-        payload = {"name": data.name, "serving_name": data.serving_name}
-        response = client.post("/entity", json=payload)
+        response = client.post("/entity", json=data.dict())
         if response.status_code != HTTPStatus.CREATED:
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response=response)
@@ -99,7 +98,7 @@ class Entity(EntityModel):
         """
         data = EntityUpdate(name=name)
         client = Configurations().get_client()
-        response = client.patch(f"/entity/{self.id}", json={"name": data.name})
+        response = client.patch(f"/entity/{self.id}", json=data.dict())
         if response.status_code != HTTPStatus.OK:
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response=response)
