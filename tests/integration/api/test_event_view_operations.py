@@ -59,7 +59,7 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
     )
     expected_dtypes = pd.Series(
         {
-            "event_timestamp": "VARCHAR",
+            "event_timestamp": "TIMESTAMP",
             "created_at": "INT",
             "cust_id": "INT",
             "user_id": "INT",
@@ -96,6 +96,8 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
 
     # check agreement
     output = event_view.preview(limit=expected.shape[0], credentials=config.credentials)
+    # sqlite returns str for timestamp columns
+    expected["event_timestamp"] = expected["event_timestamp"].astype(str)
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
 

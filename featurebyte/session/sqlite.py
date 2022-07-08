@@ -61,7 +61,7 @@ class SQLiteSession(BaseSession):
             return DBVarType.FLOAT
         if "BOOLEAN" in sqlite_data_type:
             return DBVarType.BOOL
-        if "DATETIME" in sqlite_data_type:
+        if "DATETIME" in sqlite_data_type or "TIMESTAMP" in sqlite_data_type:
             return DBVarType.TIMESTAMP
         if "DATE" in sqlite_data_type:
             return DBVarType.DATE
