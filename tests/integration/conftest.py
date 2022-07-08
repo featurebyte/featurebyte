@@ -11,7 +11,6 @@ import pandas as pd
 import pytest
 import yaml
 from bson.objectid import ObjectId
-from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
@@ -38,7 +37,7 @@ def transaction_dataframe():
     row_number = 100
     rng = np.random.RandomState(1234)
     product_actions = ["detail", "add", "purchase", "remove", None]
-    timestamps = pd.date_range("2001-01-01", freq="1h", periods=48).astype(str)
+    timestamps = pd.date_range("2001-01-01", freq="1h", periods=48)
     data = pd.DataFrame(
         {
             "event_timestamp": rng.choice(timestamps, row_number),
@@ -128,30 +127,11 @@ def snowflake_session_fixture(transaction_data_upper_case, config):
     session = session_manager[snowflake_database_source]
     assert isinstance(session, SnowflakeSession)
 
-    table_name = "TEST_TABLE"
-
-    session.execute_query(
-        f"""
-        CREATE TEMPORARY TABLE {session.sf_schema}.{table_name}(
-            EVENT_TIMESTAMP DATETIME,
-            CREATED_AT INT,
-            CUST_ID INT,
-            USER_ID INT,
-            PRODUCT_ACTION STRING,
-            SESSION_ID INT
-        )
-        """
-    )
-
-    write_pandas(
-        session.connection, transaction_data_upper_case, table_name, schema=session.sf_schema
-    )
+    session.register_temp_table("TEST_TABLE", transaction_data_upper_case)
 
     df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
     df_tiles[InternalName.TILE_START_DATE] = pd.to_datetime(df_tiles[InternalName.TILE_START_DATE])
-    write_pandas(
-        session.connection, df_tiles, "TEMP_TABLE", auto_create_table=True, create_temp_table=True
-    )
+    session.register_temp_table("TEMP_TABLE", df_tiles)
 
     yield session
 

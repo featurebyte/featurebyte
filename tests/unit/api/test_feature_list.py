@@ -1,6 +1,7 @@
 """
 Tests for featurebyte.api.feature_list
 """
+import pandas as pd
 import pytest
 from freezegun import freeze_time
 
@@ -11,7 +12,7 @@ from featurebyte.models.feature import FeatureReadiness
 @pytest.fixture(name="production_ready_feature")
 def production_ready_feature_fixture(feature_group):
     """Fixture for a production ready feature"""
-    feature_group["production_ready_feature"] = 123
+    feature_group["production_ready_feature"] = feature_group["sum_30m"]
     feature = feature_group["production_ready_feature"]
     feature.readiness = FeatureReadiness.PRODUCTION_READY
     feature.version = "V220401"
@@ -111,9 +112,16 @@ def test_features_readiness__production_ready(
 
 
 @freeze_time("2022-05-01")
-def test_feature_list_creation__success(production_ready_feature):
+def test_feature_list_creation__success(production_ready_feature, config):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
+    dataframe = pd.DataFrame(
+        {
+            "POINT_IN_TIME": ["2022-04-01", "2022-04-01"],
+            "CUST_ID": ["C1", "C2"],
+        }
+    )
+    flist.get_historical_features(dataframe, credentials=config.credentials)
     assert flist.dict() == {
         "name": "my_feature_list",
         "description": None,

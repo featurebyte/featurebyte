@@ -8,6 +8,7 @@ from typing import Any
 import os
 import sqlite3
 
+import pandas as pd
 from pydantic import Field
 
 from featurebyte.enum import DBVarType, SourceType
@@ -60,7 +61,7 @@ class SQLiteSession(BaseSession):
             return DBVarType.FLOAT
         if "BOOLEAN" in sqlite_data_type:
             return DBVarType.BOOL
-        if "DATETIME" in sqlite_data_type:
+        if "DATETIME" in sqlite_data_type or "TIMESTAMP" in sqlite_data_type:
             return DBVarType.TIMESTAMP
         if "DATE" in sqlite_data_type:
             return DBVarType.DATE
@@ -80,3 +81,6 @@ class SQLiteSession(BaseSession):
                 for _, (column_name, data_type) in schema[["name", "type"]].iterrows()
             }
         return column_name_type_map
+
+    def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
+        raise NotImplementedError()

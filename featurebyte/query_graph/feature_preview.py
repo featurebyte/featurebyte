@@ -81,7 +81,7 @@ def get_feature_preview_sql(
     cte_statements = []
 
     planner = FeatureExecutionPlanner(graph)
-    execution_plan = planner.generate_plan(node)
+    execution_plan = planner.generate_plan([node])
 
     # build required tiles
     tic = time.time()
