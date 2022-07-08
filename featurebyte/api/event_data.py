@@ -5,11 +5,20 @@ from __future__ import annotations
 
 from typing import Any
 
+import json
+from http import HTTPStatus
+
 from pydantic import validator
 
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.util import get_entity
+from featurebyte.api.util import convert_response_to_dict, get_entity
+from featurebyte.config import Configurations
+from featurebyte.exception import (
+    DuplicatedRecordException,
+    RecordCreationException,
+    RecordRetrievalException,
+)
 from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
@@ -141,3 +150,51 @@ class EventData(EventDataModel, DatabaseTable):
 
     def __getattr__(self, item: str) -> EventDataColumn:
         return self.__getitem__(item)
+
+    def save_as_draft(self) -> None:
+        """
+        Save event data to persistent as draft
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When record with the same key exists at the persistent layer
+        RecordCreationException
+            When fail to save the event data (general failure)
+        """
+        client = Configurations().get_client()
+        payload = json.loads(self.json())
+        response = client.post(url="/event_data", json=payload)
+        if response.status_code != HTTPStatus.CREATED:
+            if response.status_code == HTTPStatus.CONFLICT:
+                raise DuplicatedRecordException(response)
+            raise RecordCreationException(response)
+        super().__init__(**{**convert_response_to_dict(response), "credentials": self.credentials})
+
+    def info(self) -> dict[str, Any]:
+        """
+        Retrieve object info
+
+        If the object is not saved at persistent layer, object at memory info is retrieved.
+        Otherwise, object info at persistent layer is retrieved (local object will be overridden).
+
+        Returns
+        -------
+        dict[str, Any]
+            Saved object stored at persistent layer
+
+        Raises
+        ------
+        RecordRetrievalException
+            When unexpected retrieval failure
+        """
+        client = Configurations().get_client()
+        response = client.get(url=f"/event_data/{self.name}")
+        if response.status_code == HTTPStatus.OK:
+            super().__init__(
+                **{**convert_response_to_dict(response), "credentials": self.credentials}
+            )
+            return self.dict()
+        if response.status_code == HTTPStatus.NOT_FOUND:
+            return self.dict()
+        raise RecordRetrievalException(response)

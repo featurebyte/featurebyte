@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Tuple
 
+import json
 from abc import abstractmethod
 
 import pandas as pd
@@ -157,21 +158,31 @@ class QueryObject(BaseModel):
         models_as_dict: bool = True,
         **dumps_kwargs: Any,
     ) -> str:
-        # only support models_as_dict is True
-        assert models_as_dict is True, "models_as_dict option not supported!"
-        return self.__config__.json_dumps(
-            self.dict(
-                by_alias=by_alias,
-                skip_defaults=skip_defaults,  # type: ignore
-                include=include,  # type: ignore
-                exclude=exclude,  # type: ignore
-                exclude_unset=exclude_unset,
-                exclude_defaults=exclude_defaults,
-                exclude_none=exclude_none,
-            ),
-            default=encoder,
+        # Serialization of query object requires both graph & node (to prune the graph).
+        # However, pydantic `json()` does not call `dict()` directly. It iterates inner attributes
+        # and trigger theirs `dict()`. To fix this issue, we call the pydantic `json()` first to
+        # serialize the whole object, then calling `QueryObject.dict()` to construct pruned graph & node map.
+        # After that, use the `QueryObject.dict()` result to overwrite pydantic `json()` results.
+        json_object = super().json(
+            include=include,  # type: ignore
+            exclude=exclude,  # type: ignore
+            by_alias=by_alias,
+            skip_defaults=skip_defaults,  # type: ignore
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+            encoder=encoder,
+            models_as_dict=models_as_dict,
             **dumps_kwargs,
         )
+        dict_object = json.loads(json_object)
+        if "graph" in dict_object:
+            pruned_dict_object = self.dict()
+            for key in ["graph", "node", "lineage", "column_lineage_map", "row_index_lineage"]:
+                if key in dict_object:
+                    dict_object[key] = pruned_dict_object[key]
+            json_object = self.__config__.json_dumps(dict_object, default=encoder, **dumps_kwargs)
+        return json_object
 
 
 class ProtectedColumnsQueryObject(QueryObject):
