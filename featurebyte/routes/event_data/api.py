@@ -39,6 +39,7 @@ def list_event_datas(
     sort_by: Optional[str] = "created_at",
     sort_dir: Literal["asc", "desc"] = "desc",
     search: Optional[str] = None,
+    name: Optional[str] = None,
 ) -> EventDataList:
     """
     List Event Datas
@@ -51,14 +52,15 @@ def list_event_datas(
         sort_by=sort_by,
         sort_dir=sort_dir,
         search=search,
+        name=name,
     )
     return event_data_list
 
 
-@router.get("/{event_data_name}", response_model=EventData, response_model_by_alias=False)
+@router.get("/{event_data_id}", response_model=EventData, response_model_by_alias=False)
 def retrieve_event_data(
     request: Request,
-    event_data_name: str,
+    event_data_id: str,
 ) -> EventData:
     """
     Retrieve Event Data
@@ -66,15 +68,15 @@ def retrieve_event_data(
     event_data: EventData = request.state.controller.retrieve_event_data(
         user=request.state.user,
         persistent=request.state.persistent,
-        event_data_name=event_data_name,
+        event_data_id=event_data_id,
     )
     return event_data
 
 
-@router.patch("/{event_data_name}", response_model=EventData, response_model_by_alias=False)
+@router.patch("/{event_data_id}", response_model=EventData, response_model_by_alias=False)
 def update_event_data(
     request: Request,
-    event_data_name: str,
+    event_data_id: str,
     data: EventDataUpdate,
 ) -> EventData:
     """
@@ -83,7 +85,7 @@ def update_event_data(
     event_data: EventData = request.state.controller.update_event_data(
         user=request.state.user,
         persistent=request.state.persistent,
-        event_data_name=event_data_name,
+        event_data_id=event_data_id,
         data=data,
     )
     return event_data

@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 from http import HTTPStatus
 
+from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.enum import CollectionName
@@ -77,11 +78,15 @@ class EventDataController:
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         search: str | None = None,
+        name: str | None = None,
     ) -> EventDataList:
         """
         List Event Datas
         """
         query_filter = {"user_id": user.id}
+
+        if name is not None:
+            query_filter["name"] = name
 
         # Apply search
         if search:
@@ -107,19 +112,19 @@ class EventDataController:
         cls,
         user: Any,
         persistent: Persistent,
-        event_data_name: str,
+        event_data_id: str,
     ) -> EventData:
         """
         Retrieve Event Data
         """
-        query_filter = {"name": event_data_name, "user_id": user.id}
+        query_filter = {"_id": ObjectId(event_data_id), "user_id": user.id}
         event_data = persistent.find_one(
             collection_name=cls.collection_name, query_filter=query_filter
         )
         if event_data is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
-                detail=f'Event Data "{event_data_name}" not found.',
+                detail=f'Event Data ID "{event_data_id}" not found.',
             )
         return EventData(**event_data)
 
@@ -128,18 +133,18 @@ class EventDataController:
         cls,
         user: Any,
         persistent: Persistent,
-        event_data_name: str,
+        event_data_id: str,
         data: EventDataUpdate,
     ) -> EventData:
         """
         Update scheduled task
         """
-        query_filter = {"name": event_data_name, "user_id": user.id}
+        query_filter = {"_id": ObjectId(event_data_id), "user_id": user.id}
         event_data = persistent.find_one(
             collection_name=cls.collection_name, query_filter=query_filter
         )
         not_found_exception = HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail=f'Event Data "{event_data_name}" not found.'
+            status_code=HTTPStatus.NOT_FOUND, detail=f'Event Data ID "{event_data_id}" not found.'
         )
         if not event_data:
             raise not_found_exception
