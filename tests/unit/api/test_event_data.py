@@ -10,7 +10,11 @@ import pytest
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData, EventDataColumn
-from featurebyte.exception import DuplicatedRecordException
+from featurebyte.exception import (
+    DuplicatedRecordException,
+    RecordCreationException,
+    RecordRetrievalException,
+)
 from featurebyte.models.event_data import EventDataStatus
 
 
@@ -111,6 +115,12 @@ def test_deserialization__column_name_not_found(event_data_dict, config, snowfla
         EventData.parse_obj(event_data_dict)
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
 
+    event_data_dict["record_created_date_column"] = "created_at"
+    event_data_dict["event_timestamp_column"] = "some_timestamp_column"
+    with pytest.raises(ValueError) as exc:
+        EventData.parse_obj(event_data_dict)
+    assert 'Column "some_timestamp_column" not found in the table!' in str(exc.value)
+
 
 def test_event_data_column__not_exists(snowflake_event_data):
     """
@@ -153,7 +163,7 @@ def test_event_data_column__as_entity(snowflake_event_data, mock_get_persistent)
     assert snowflake_event_data.column_entity_map == {}
 
 
-def test_event_data__save_as_draft__then__publish(saved_event_data):
+def test_event_data__save_as_draft__exceptions(saved_event_data):
     """
     Test save event data object to persistent layer
     """
@@ -162,6 +172,11 @@ def test_event_data__save_as_draft__then__publish(saved_event_data):
         saved_event_data.save_as_draft()
     assert exc.value.status_code == 409
     assert exc.value.response.json()["detail"] == 'Event Data "sf_event_data" already exists.'
+
+    # check unhandled response status code
+    with pytest.raises(RecordCreationException):
+        with patch("featurebyte.api.event_data.Configurations"):
+            saved_event_data.save_as_draft()
 
 
 def test_event_data__info__not_saved_event_data(mock_get_persistent, snowflake_event_data):
@@ -198,6 +213,11 @@ def test_event_data__info__not_saved_event_data(mock_get_persistent, snowflake_e
             },
         ),
     }
+
+    # check unhandled response status code
+    with pytest.raises(RecordRetrievalException):
+        with patch("featurebyte.api.event_data.Configurations"):
+            snowflake_event_data.info()
 
 
 def test_event_data__info__saved_event_data(saved_event_data, mock_config_path_env):
