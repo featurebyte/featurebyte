@@ -52,8 +52,6 @@ def get_entity(entity_name: str) -> dict[str, Any] | None:
     ----------
     entity_name: str
         Entity name
-    page_size: int
-        Number of max items to retrieve per API request
 
     Returns
     -------
@@ -70,6 +68,8 @@ def get_entity(entity_name: str) -> dict[str, Any] | None:
             response_exception_class=RecordRetrievalException,
             success_status_code=HTTPStatus.OK,
         )
-        if len(response_dict["data"]):
-            return response_dict["data"][0]
+        response_data = response_dict["data"]
+        if len(response_data):
+            first_item: dict[str, Any] = response_data[0]
+            return first_item
     return None
