@@ -105,12 +105,12 @@ def test_event_data_column__as_entity(snowflake_event_data, mock_get_persistent)
     _ = mock_get_persistent
 
     # create entity
-    Entity(name="customer", serving_name="cust_id")
+    entity = Entity(name="customer", serving_name="cust_id")
 
     col_int = snowflake_event_data.col_int
     assert isinstance(col_int, EventDataColumn)
     snowflake_event_data.col_int.as_entity("customer")
-    assert "col_int" in snowflake_event_data.column_entity_map
+    assert snowflake_event_data.column_entity_map["col_int"] == str(entity.id)
 
     with pytest.raises(TypeError) as exc:
         snowflake_event_data.col_int.as_entity(1234)
