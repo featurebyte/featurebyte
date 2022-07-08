@@ -168,7 +168,7 @@ class SnowflakeSession(BaseSession):
         """
         schema = []
         for colname, dtype in dataframe.dtypes.to_dict().items():
-            if pd.api.types.is_datetime64_dtype(dataframe[colname]):
+            if pd.api.types.is_datetime64_any_dtype(dataframe[colname]):
                 db_type = "DATETIME"
             elif pd.api.types.is_float_dtype(dtype):
                 db_type = "DOUBLE"
@@ -176,7 +176,7 @@ class SnowflakeSession(BaseSession):
                 db_type = "INT"
             else:
                 db_type = "VARCHAR"
-            schema.append(f"{colname} {db_type}")
+            schema.append(f'"{colname}" {db_type}')
         schema_str = ", ".join(schema)
         return schema_str
 

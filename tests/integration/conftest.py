@@ -119,9 +119,7 @@ def snowflake_session_fixture(transaction_data_upper_case, config):
 
     df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
     df_tiles[InternalName.TILE_START_DATE] = pd.to_datetime(df_tiles[InternalName.TILE_START_DATE])
-    write_pandas(
-        session.connection, df_tiles, "TEMP_TABLE", auto_create_table=True, create_temp_table=True
-    )
+    session.register_temp_table("TEMP_TABLE", df_tiles)
 
     yield session
 

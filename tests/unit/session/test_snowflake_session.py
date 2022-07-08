@@ -363,5 +363,5 @@ def test_get_columns_schema_from_dataframe():
         "x_float32": "DOUBLE",
         "x_float16": "DOUBLE",
     }
-    expected_schema = ", ".join(f"{k} {v}" for (k, v) in expected_dict.items())
+    expected_schema = ", ".join(f'"{k}" {v}' for (k, v) in expected_dict.items())
     assert schema == expected_schema
