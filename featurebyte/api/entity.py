@@ -41,6 +41,9 @@ class Entity(EntityModel):
         RecordCreationException
             When exception happens during record creation at persistent
         """
+        self._validate_name(name)
+        self._validate_serving_name(serving_name)
+
         client = Configurations().get_client()
         payload = {"name": name, "serving_names": [serving_name]}
         response = client.post("/entity", json=payload)
@@ -49,6 +52,16 @@ class Entity(EntityModel):
                 raise DuplicatedRecordException(response=response)
             raise RecordCreationException(response=response)
         super().__init__(**self._response_to_dict(response))
+
+    @staticmethod
+    def _validate_name(name: str) -> None:
+        if not isinstance(name, str):
+            raise ValueError("name must be string!")
+
+    @staticmethod
+    def _validate_serving_name(name: str) -> None:
+        if not isinstance(name, str):
+            raise ValueError("serving_name must be string!")
 
     @property
     def serving_name(self) -> str:
@@ -95,6 +108,8 @@ class Entity(EntityModel):
         RecordUpdateException
             When exception happens during record update at persistent
         """
+        self._validate_name(name)
+
         client = Configurations().get_client()
         response = client.patch(f"/entity/{self.id}", json={"name": name})
         if response.status_code != HTTPStatus.OK:

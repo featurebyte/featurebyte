@@ -1,10 +1,16 @@
 """
 Unit test for Entity class
 """
+from unittest import mock
+
 import pytest
 
 from featurebyte.api.entity import Entity
-from featurebyte.exception import DuplicatedRecordException
+from featurebyte.exception import (
+    DuplicatedRecordException,
+    RecordCreationException,
+    RecordUpdateException,
+)
 
 
 @pytest.fixture(name="entity")
@@ -14,6 +20,19 @@ def entity_fixture(mock_config_path_env, mock_get_persistent):
     """
     _ = mock_config_path_env, mock_get_persistent
     yield Entity(name="customer", serving_name="cust_id")
+
+
+def test_entity_creation__input_validation():
+    """
+    Test entity creation input validation
+    """
+    with pytest.raises(ValueError) as exc:
+        Entity(name=1234, serving_name="hello")
+    assert "name must be string!" in str(exc.value)
+
+    with pytest.raises(ValueError) as exc:
+        Entity(name="world", serving_name=5678)
+    assert "serving_name must be string!" in str(exc.value)
 
 
 def test_entity_creation(entity):
@@ -32,6 +51,10 @@ def test_entity_creation(entity):
         Entity(name="Customer", serving_name="cust_id")
     assert exc.value.response.json() == {"detail": 'Entity serving name "cust_id" already exists.'}
 
+    with mock.patch("featurebyte.api.entity.Configurations"):
+        with pytest.raises(RecordCreationException):
+            Entity(name="Customer", serving_name="cust_id")
+
 
 def test_entity_update_name(entity):
     """
@@ -46,6 +69,14 @@ def test_entity_update_name(entity):
     # create another entity
     Entity(name="product", serving_name="product_id")
 
+    with pytest.raises(ValueError) as exc:
+        entity.update_name(1234)
+    assert "name must be string!" in str(exc.value)
+
     with pytest.raises(DuplicatedRecordException) as exc:
         entity.update_name("product")
     assert exc.value.response.json() == {"detail": 'Entity name "product" already exists.'}
+
+    with mock.patch("featurebyte.api.entity.Configurations"):
+        with pytest.raises(RecordUpdateException):
+            entity.update_name("hello")
