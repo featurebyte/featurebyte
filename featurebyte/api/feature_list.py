@@ -48,7 +48,7 @@ class FeatureList(FeatureListModel):
             features=versions_with_names,
             readiness=readiness,
             status=FeatureListStatus.DRAFT,
-            feature_list_version=feature_list_version_name,
+            version=feature_list_version_name,
             created_at=None,
         )
         self.feature_objects = feature_versions

@@ -46,7 +46,17 @@ tm_generate_tile = Template(
         '{{column_names}}',
         '{{tile_id}}',
         '{{tile_type.value}}',
-        '{{last_tile_start_ts_str}}'
+        {{last_tile_start_ts_str}}
+    )
+"""
+)
+
+tm_tile_entity_tracking = Template(
+    """
+    call SP_TILE_GENERATE_ENTITY_TRACKING(
+        '{{tile_id}}',
+        '{{entity_column_names}}',
+        '{{entity_table}}'
     )
 """
 )

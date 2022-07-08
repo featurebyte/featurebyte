@@ -14,11 +14,18 @@ from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
-from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
-from featurebyte.models.feature import FeatureModel, FeatureReadiness, TileSpec
+from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
+from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
+from featurebyte.models.feature import (
+    FeatureListModel,
+    FeatureListStatus,
+    FeatureModel,
+    FeatureReadiness,
+    TileSpec,
+)
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.tile.snowflake_tile import TileSnowflake
+from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
 @pytest.fixture(name="transaction_data", scope="session")
@@ -156,34 +163,43 @@ def sqlite_session(config):
 
 
 @pytest.fixture
-def snowflake_tile(snowflake_session, config):
+def snowflake_tile(snowflake_session):
     """
     Pytest Fixture for TileSnowflake instance
     """
-    col_names = f"{InternalName.TILE_START_DATE},PRODUCT_ACTION,CUST_ID,VALUE"
+    col_names_list = [InternalName.TILE_START_DATE, "PRODUCT_ACTION", "CUST_ID", "VALUE"]
+    col_names = ",".join(col_names_list)
     table_name = "TEMP_TABLE"
     start = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
     end = InternalName.TILE_END_DATE_SQL_PLACEHOLDER
+
     tile_sql = f"SELECT {col_names} FROM {table_name} WHERE {InternalName.TILE_START_DATE} >= {start} and {InternalName.TILE_START_DATE} < {end}"
     tile_id = "tile_id1"
 
-    tile_s = TileSnowflake(
-        time_modulo_frequency_seconds=183,
-        blind_spot_seconds=3,
+    tile_spec = TileSpec(
+        time_modulo_frequency_second=183,
+        blind_spot_second=3,
         frequency_minute=5,
         tile_sql=tile_sql,
-        column_names=col_names,
+        column_names=col_names_list,
+        entity_column_names=["PRODUCT_ACTION", "CUST_ID"],
         tile_id="tile_id1",
-        tabular_source=config.feature_stores["snowflake_featurestore"],
-        credentials=config.credentials,
     )
 
-    yield tile_s
+    yield tile_spec
 
     snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
     snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
     snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
     snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+
+
+@pytest.fixture
+def tile_manager(snowflake_session):
+    """
+    Feature Manager fixture
+    """
+    return TileManagerSnowflake(session=snowflake_session)
 
 
 @pytest.fixture
@@ -200,7 +216,8 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
-        column_names="col1",
+        column_names=["col1"],
+        entity_column_names=["col1"],
     )
 
     mock_feature.tabular_source = (config.feature_stores["snowflake_featurestore"],)
@@ -208,12 +225,54 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
     mock_feature.version = "v1"
     mock_feature.readiness = FeatureReadiness.DRAFT
     mock_feature.is_default = True
+    mock_feature.description = "test_description_1"
 
-    s_feature = FeatureSnowflake(feature=mock_feature, credentials=config.credentials)
-
-    yield s_feature
+    yield mock_feature
 
     snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
     snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
     snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
     snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+
+
+@pytest.fixture
+def feature_manager(snowflake_session):
+    """
+    Feature Manager fixture
+    """
+    return FeatureManagerSnowflake(session=snowflake_session)
+
+
+@pytest.fixture
+def snowflake_feature_list(feature_model_dict, snowflake_session, config):
+    """
+    Pytest Fixture for FeatureSnowflake instance
+    """
+    mock_feature = FeatureModel(**feature_model_dict)
+    mock_feature.tabular_source = (config.feature_stores["snowflake_featurestore"],)
+    mock_feature.version = "v1"
+    mock_feature.readiness = FeatureReadiness.DRAFT
+    mock_feature.is_default = True
+
+    mock_feature_list = FeatureListModel(
+        name="feature_list1",
+        description="test_description1",
+        features=[(mock_feature.name, mock_feature.version)],
+        readiness=FeatureReadiness.DRAFT,
+        status=FeatureListStatus.DRAFT,
+        version="v1",
+    )
+
+    yield mock_feature_list
+
+    snowflake_session.execute_query("DELETE FROM FEATURE_LIST_REGISTRY")
+    snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
+    snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
+
+
+@pytest.fixture
+def feature_list_manager(snowflake_session):
+    """
+    Feature Manager fixture
+    """
+    return FeatureListManagerSnowflake(session=snowflake_session)

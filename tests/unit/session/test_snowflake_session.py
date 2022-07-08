@@ -88,6 +88,7 @@ EXPECTED_PROCEDURES = [
     "SP_TILE_GENERATE_SCHEDULE",
     "SP_TILE_MONITOR",
     "SP_TILE_TRIGGER_GENERATE_SCHEDULE",
+    "SP_TILE_GENERATE_ENTITY_TRACKING",
 ]
 
 EXPECTED_TABLES = [
@@ -209,6 +210,11 @@ def test_schema_initializer__sql_objects():
             "type": "table",
         },
         {"filename": "SP_TILE_GENERATE.sql", "identifier": "SP_TILE_GENERATE", "type": "procedure"},
+        {
+            "filename": "SP_TILE_GENERATE_ENTITY_TRACKING.sql",
+            "identifier": "SP_TILE_GENERATE_ENTITY_TRACKING",
+            "type": "procedure",
+        },
     ]
 
     def _sorted_result(lst):

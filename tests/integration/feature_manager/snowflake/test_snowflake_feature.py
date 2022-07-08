@@ -9,11 +9,11 @@ from pandas.testing import assert_frame_equal
 from featurebyte.models.feature import FeatureReadiness
 
 
-def test_insert_feature_registry(snowflake_session, snowflake_feature):
+def test_insert_feature_registry(snowflake_session, snowflake_feature, feature_manager):
     """
     Test insert_feature_registry
     """
-    flag = snowflake_feature.insert_feature_registry()
+    flag = feature_manager.insert_feature_registry(snowflake_feature)
     assert flag is True
 
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
@@ -39,7 +39,9 @@ def test_insert_feature_registry(snowflake_session, snowflake_feature):
 
     expected_tile_spec = {
         "blind_spot_second": 3,
-        "column_names": "col1",
+        "column_names": ["col1"],
+        "entity_column_names": ["col1"],
+        "value_column_names": ["VALUE"],
         "frequency_minute": 5,
         "tile_id": "tile_id1",
         "tile_sql": "SELECT * FROM DUMMY",
@@ -49,11 +51,11 @@ def test_insert_feature_registry(snowflake_session, snowflake_feature):
     assert expected_tile_spec == result_tile_spec
 
 
-def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature):
+def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature, feature_manager):
     """
     Test insert_feature_registry duplicate with exception
     """
-    flag = snowflake_feature.insert_feature_registry()
+    flag = feature_manager.insert_feature_registry(snowflake_feature)
     assert flag is True
 
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
@@ -61,39 +63,65 @@ def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature)
     assert result.iloc[0]["NAME"] == "sum_30m"
     assert result.iloc[0]["VERSION"] == "v1"
 
-    flag = snowflake_feature.insert_feature_registry()
+    flag = feature_manager.insert_feature_registry(snowflake_feature)
     assert flag is False
 
 
-def test_retrieve_features(snowflake_feature):
+def test_update_feature_registry(snowflake_session, snowflake_feature, feature_manager):
+    """
+    Test update_feature_registry
+    """
+    feature_manager.insert_feature_registry(snowflake_feature)
+    result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
+    assert len(result) == 1
+    assert result.iloc[0]["NAME"] == "sum_30m"
+    assert result.iloc[0]["VERSION"] == "v1"
+    assert result.iloc[0]["READINESS"] == "DRAFT"
+    assert result.iloc[0]["DESCRIPTION"] == "test_description_1"
+    assert bool(result.iloc[0]["IS_DEFAULT"]) is True
+
+    snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY
+    snowflake_feature.is_default = False
+    snowflake_feature.description = "test_description_2"
+    feature_manager.update_feature_registry(new_feature=snowflake_feature)
+    result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
+    assert len(result) == 1
+    assert result.iloc[0]["NAME"] == "sum_30m"
+    assert result.iloc[0]["VERSION"] == "v1"
+    assert result.iloc[0]["READINESS"] == "PRODUCTION_READY"
+    assert result.iloc[0]["DESCRIPTION"] == "test_description_2"
+    assert bool(result.iloc[0]["IS_DEFAULT"]) is False
+
+
+def test_retrieve_features(snowflake_feature, feature_manager):
     """
     Test retrieve_features
     """
-    snowflake_feature.insert_feature_registry()
-    f_reg_df = snowflake_feature.retrieve_feature_registries()
+    feature_manager.insert_feature_registry(snowflake_feature)
+    f_reg_df = feature_manager.retrieve_feature_registries(snowflake_feature)
     assert len(f_reg_df) == 1
     assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
     assert f_reg_df.iloc[0]["VERSION"] == "v1"
     assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
 
-    f_reg_df = snowflake_feature.retrieve_feature_registries(version="v1")
+    f_reg_df = feature_manager.retrieve_feature_registries(feature=snowflake_feature, version="v1")
     assert len(f_reg_df) == 1
     assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
     assert f_reg_df.iloc[0]["VERSION"] == "v1"
     assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
 
 
-def test_retrieve_features_multiple(snowflake_feature):
+def test_retrieve_features_multiple(snowflake_feature, feature_manager):
     """
     Test retrieve_features return multiple features
     """
-    snowflake_feature.insert_feature_registry()
+    feature_manager.insert_feature_registry(snowflake_feature)
 
-    snowflake_feature.feature.version = "v2"
-    snowflake_feature.feature.readiness = FeatureReadiness.PRODUCTION_READY
-    snowflake_feature.insert_feature_registry()
+    snowflake_feature.version = "v2"
+    snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY
+    feature_manager.insert_feature_registry(snowflake_feature)
 
-    f_reg_df = snowflake_feature.retrieve_feature_registries()
+    f_reg_df = feature_manager.retrieve_feature_registries(snowflake_feature)
     assert len(f_reg_df) > 1
     assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
     assert f_reg_df.iloc[0]["VERSION"] == "v1"
@@ -103,11 +131,11 @@ def test_retrieve_features_multiple(snowflake_feature):
     assert f_reg_df.iloc[1]["READINESS"] == "PRODUCTION_READY"
 
 
-def test_online_enable(snowflake_session, snowflake_feature):
+def test_online_enable(snowflake_session, snowflake_feature, feature_manager):
     """
     Test online_enable
     """
-    snowflake_feature.online_enable()
+    feature_manager.online_enable(snowflake_feature)
 
     tile_registry = snowflake_session.execute_query("SELECT * FROM TILE_REGISTRY")
     assert len(tile_registry) == 1
@@ -124,13 +152,13 @@ def test_online_enable(snowflake_session, snowflake_feature):
     assert tasks["state"].iloc[1] == "started"
 
 
-def test_get_last_tile_index(snowflake_feature, snowflake_tile):
+def test_get_last_tile_index(snowflake_feature, snowflake_tile, feature_manager, tile_manager):
     """
     Test get_last_tile_index
     """
-    snowflake_feature.insert_feature_registry()
-    snowflake_tile.insert_tile_registry()
-    last_index_df = snowflake_feature.get_last_tile_index()
+    feature_manager.insert_feature_registry(snowflake_feature)
+    tile_manager.insert_tile_registry(tile_spec=snowflake_tile)
+    last_index_df = feature_manager.get_last_tile_index(snowflake_feature)
     assert len(last_index_df) == 1
     assert last_index_df.iloc[0]["TILE_ID"] == snowflake_tile.tile_id
     assert last_index_df.iloc[0]["LAST_TILE_INDEX_ONLINE"] == -1

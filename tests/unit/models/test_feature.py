@@ -23,7 +23,7 @@ def feature_list_model_dict_fixture():
         "features": [],
         "readiness": None,
         "status": None,
-        "feature_list_version": "",
+        "version": "",
         "created_at": None,
     }
 
