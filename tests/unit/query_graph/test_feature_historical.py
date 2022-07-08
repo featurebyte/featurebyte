@@ -8,9 +8,13 @@ import pytest
 from freezegun import freeze_time
 
 from featurebyte import exception
+from featurebyte.api.feature_store import FeatureStore
+from featurebyte.enum import SourceType
+from featurebyte.models.feature_store import SQLiteDetails
 from featurebyte.query_graph.feature_historical import (
     get_historical_features,
     get_historical_features_sql,
+    get_session_from_feature_objects,
 )
 
 
@@ -23,6 +27,15 @@ def mocked_session_fixture():
         session_manager.__getitem__.return_value = mocked_session
         session_manager_cls.return_value = session_manager
         yield mocked_session
+
+
+@pytest.fixture(name="mock_sqlite_feature")
+def mock_sqlite_feature_fixture():
+    """Fixture for a mocked sqlite feature"""
+    feature = Mock(name="MockFeature")
+    feature_store = FeatureStore(type=SourceType.SQLITE, details=SQLiteDetails(filename="data.csv"))
+    feature.tabular_source = (feature_store, Mock(name="MockTableDetails"))
+    return feature
 
 
 def test_get_historical_features__missing_point_in_time(mock_snowflake_feature):
@@ -62,6 +75,13 @@ def test_get_historical_features__too_recent_point_in_time(
         "The latest point in time (2022-04-30 00:00:00) should not be more recent than 48 hours "
         "from now"
     )
+
+
+def test_get_session__multiple_stores_not_supported(float_feature, mock_sqlite_feature):
+    """Test multiple stores not supported"""
+    with pytest.raises(NotImplementedError) as exc_info:
+        get_session_from_feature_objects([float_feature, mock_sqlite_feature])
+    assert str(exc_info.value) == "Historical features request using multiple stores not supported"
 
 
 def test_get_historical_features__point_in_time_dtype_conversion(
