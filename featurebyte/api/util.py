@@ -44,7 +44,7 @@ def _get_response(
     raise response_exception_class(response)
 
 
-def get_entity(entity_name: str, page_size: int = 10) -> dict[str, Any] | None:
+def get_entity(entity_name: str) -> dict[str, Any] | None:
     """
     Get entity dictionary given entity name
 
@@ -63,29 +63,13 @@ def get_entity(entity_name: str, page_size: int = 10) -> dict[str, Any] | None:
         Entity not found
     """
     client = Configurations().get_client()
-    response = client.get("/entity", params={"page_size": page_size})
+    response = client.get("/entity", params={"name": entity_name})
     if response.status_code == HTTPStatus.OK:
         response_dict: dict[str, Any] = _get_response(
             response=response,
             response_exception_class=RecordRetrievalException,
             success_status_code=HTTPStatus.OK,
         )
-        item: dict[str, Any]
-        for item in response_dict["data"]:
-            if item["name"] == entity_name:
-                return item
-        page = response_dict["page"]
-        page_size = response_dict["page_size"]
-        total = response_dict["total"]
-        while total > page * page_size:
-            page += 1
-            response = client.get("/entity", params={"page": page, "page_size": page_size})
-            response_dict = _get_response(
-                response=response,
-                response_exception_class=RecordRetrievalException,
-                success_status_code=HTTPStatus.OK,
-            )
-            for item in response_dict["data"]:
-                if item["name"] == entity_name:
-                    return item
+        if len(response_dict["data"]):
+            return response_dict["data"][0]
     return None
