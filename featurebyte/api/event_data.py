@@ -30,31 +30,6 @@ class EventDataColumn:
         self.event_data = event_data
         self.column_name = column_name
 
-    @classmethod
-    def _get_response(cls, response: Response) -> dict[str, Any]:
-        """
-        Extract response into dictionary format
-
-        Parameters
-        ----------
-        response: Response
-            API response
-
-        Returns
-        -------
-        dict[str, Any]
-            Response in dictionary format
-
-        Raises
-        ------
-        RecordRetrievalException
-            When unexpected failure to retrieve resource
-        """
-        if response.status_code == HTTPStatus.OK:
-            response_dict: dict[str, Any] = response.json()
-            return response_dict
-        raise RecordRetrievalException(response)
-
     def as_entity(self, entity_name: str | None) -> None:
         """
         Set the column name as entity with tag name
