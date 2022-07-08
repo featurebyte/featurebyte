@@ -7,7 +7,7 @@ import datetime
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictStr
 
 from featurebyte.models.entity import EntityModel
 from featurebyte.routes.common.schema import PaginationMixin
@@ -36,8 +36,8 @@ class EntityCreate(BaseModel):
     Entity Creation schema
     """
 
-    name: str
-    serving_name: str
+    name: StrictStr
+    serving_name: StrictStr
 
 
 class EntityList(PaginationMixin):
@@ -53,4 +53,4 @@ class EntityUpdate(BaseModel):
     Entity update schema
     """
 
-    name: str
+    name: StrictStr

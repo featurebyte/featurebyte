@@ -27,13 +27,13 @@ def test_entity_creation__input_validation():
     Test entity creation input validation
     """
     with pytest.raises(ValueError) as exc:
-        Entity(name=type, serving_name="hello")
+        Entity(name=1234, serving_name="hello")
     assert exc.value.errors() == [
         {"loc": ("name",), "msg": "str type expected", "type": "type_error.str"}
     ]
 
     with pytest.raises(ValueError) as exc:
-        Entity(name="world", serving_name=type)
+        Entity(name="world", serving_name=234)
     assert exc.value.errors() == [
         {"loc": ("serving_name",), "msg": "str type expected", "type": "type_error.str"}
     ]
