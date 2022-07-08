@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import yaml
-from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
