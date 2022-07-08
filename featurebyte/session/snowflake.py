@@ -101,7 +101,7 @@ class SnowflakeSession(BaseSession):
         return output
 
     def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
-        schema = self.get_schema_from_dataframe(dataframe)
+        schema = self.get_columns_schema_from_dataframe(dataframe)
         self.execute_query(
             f"""
             CREATE OR REPLACE TEMP TABLE {table_name}(
@@ -154,7 +154,7 @@ class SnowflakeSession(BaseSession):
         return column_name_type_map
 
     @staticmethod
-    def get_schema_from_dataframe(dataframe: pd.DataFrame) -> str:
+    def get_columns_schema_from_dataframe(dataframe: pd.DataFrame) -> str:
         """Get schema that can be used in CREATE TABLE statement from pandas DataFrame
 
         Parameters
@@ -170,9 +170,9 @@ class SnowflakeSession(BaseSession):
         for colname, dtype in dataframe.dtypes.to_dict().items():
             if pd.api.types.is_datetime64_dtype(dataframe[colname]):
                 db_type = "DATETIME"
-            elif dtype == float:
+            elif pd.api.types.is_float_dtype(dtype):
                 db_type = "DOUBLE"
-            elif dtype == int:
+            elif pd.api.types.is_integer_dtype(dtype):
                 db_type = "INT"
             else:
                 db_type = "VARCHAR"

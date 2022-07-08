@@ -4,6 +4,7 @@ Unit test for snowflake session
 import os
 from unittest.mock import call, patch
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -333,3 +334,34 @@ def test_schema_initializer__partial_missing(
     if is_tables_missing:
         expected_counts["tables"] = len(EXPECTED_TABLES)
     assert counts == expected_counts
+
+
+def test_get_columns_schema_from_dataframe():
+    """Test get_columns_schema_from_dataframe"""
+    dataframe = pd.DataFrame(
+        {
+            "x_int": [1, 2, 3, 4],
+            "x_float": [1.1, 2.2, 3.3, 4.4],
+            "x_string": ["C1", "C2", "C3", "C4"],
+            "x_date": pd.date_range("2022-01-01", periods=4),
+        }
+    )
+    dataframe["x_int32"] = dataframe["x_int"].astype(np.int32)
+    dataframe["x_int16"] = dataframe["x_int"].astype(np.int16)
+    dataframe["x_int8"] = dataframe["x_int"].astype(np.int8)
+    dataframe["x_float32"] = dataframe["x_float"].astype(np.float32)
+    dataframe["x_float16"] = dataframe["x_float"].astype(np.float16)
+    schema = SnowflakeSession.get_columns_schema_from_dataframe(dataframe)
+    expected_dict = {
+        "x_int": "INT",
+        "x_float": "DOUBLE",
+        "x_string": "VARCHAR",
+        "x_date": "DATETIME",
+        "x_int32": "INT",
+        "x_int16": "INT",
+        "x_int8": "INT",
+        "x_float32": "DOUBLE",
+        "x_float16": "DOUBLE",
+    }
+    expected_schema = ", ".join(f"{k} {v}" for (k, v) in expected_dict.items())
+    assert schema == expected_schema
