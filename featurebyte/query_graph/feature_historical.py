@@ -8,13 +8,13 @@ from typing import Optional
 import datetime
 
 import pandas as pd
-from pandas.api.types import is_datetime64_dtype
+from pandas.api.types import is_datetime64_any_dtype
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Credentials
 from featurebyte.enum import SpecialColumnName
-from featurebyte.errors import MissingPointInTimeColumnError, TooRecentPointInTimeError
+from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logger import logger
 from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
@@ -81,7 +81,7 @@ def validate_historical_requests_point_in_time(training_events: pd.DataFrame) ->
 
     # Check dtype and convert if necessary. The converted DataFrame will later be used to create a
     # temp table in the session.
-    if not is_datetime64_dtype(training_events[SpecialColumnName.POINT_IN_TIME]):
+    if not is_datetime64_any_dtype(training_events[SpecialColumnName.POINT_IN_TIME]):
         training_events = training_events.copy()
         training_events[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
             training_events[SpecialColumnName.POINT_IN_TIME]

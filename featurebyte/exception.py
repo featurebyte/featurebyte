@@ -60,3 +60,11 @@ class RecordRetrievalException(ResponseException):
     """
     General failure during retrieving an existing record at persistent layer
     """
+
+
+class MissingPointInTimeColumnError(Exception):
+    """Raised when point in time column is not provided in historical requests"""
+
+
+class TooRecentPointInTimeError(Exception):
+    """Raised when the latest point in time value is too recent in historical requests"""

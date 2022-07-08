@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from freezegun import freeze_time
 
-from featurebyte import errors
+from featurebyte import exception
 from featurebyte.query_graph.feature_historical import (
     get_historical_features,
     get_historical_features_sql,
@@ -32,7 +32,7 @@ def test_get_historical_features__missing_point_in_time(mock_snowflake_feature):
             "CUST_ID": ["C1", "C2", "C3"],
         }
     )
-    with pytest.raises(errors.MissingPointInTimeColumnError) as exc_info:
+    with pytest.raises(exception.MissingPointInTimeColumnError) as exc_info:
         get_historical_features(
             feature_objects=[mock_snowflake_feature], training_events=training_events
         )
@@ -54,7 +54,7 @@ def test_get_historical_features__too_recent_point_in_time(
             "CUST_ID": ["C1", "C2"],
         }
     )
-    with pytest.raises(errors.TooRecentPointInTimeError) as exc_info:
+    with pytest.raises(exception.TooRecentPointInTimeError) as exc_info:
         get_historical_features(
             feature_objects=[mock_snowflake_feature], training_events=training_events
         )
