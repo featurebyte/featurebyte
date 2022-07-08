@@ -3,7 +3,7 @@ Entity API routes
 """
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 
 from http import HTTPStatus
 
@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from featurebyte.enum import CollectionName
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.helpers import get_utc_now
-from featurebyte.routes.entity.schema import Entity, EntityCreate, EntityList, EntityUpdate
+from featurebyte.schema.entity import Entity, EntityCreate, EntityList, EntityUpdate
 
 
 class EntityController:
@@ -33,7 +33,12 @@ class EntityController:
         """
         Create Entity
         """
-        document = Entity(user_id=user.id, created_at=get_utc_now(), **data.dict())
+        document = Entity(
+            name=data.name,
+            serving_names=[data.serving_name],
+            user_id=user.id,
+            created_at=get_utc_now(),
+        )
 
         conflict_entity = persistent.find_one(
             collection_name=cls.collection_name, query_filter={"name": data.name}
@@ -46,12 +51,12 @@ class EntityController:
 
         conflict_entity = persistent.find_one(
             collection_name=cls.collection_name,
-            query_filter={"serving_column_names": data.serving_column_names},
+            query_filter={"serving_names": document.serving_names},
         )
         if conflict_entity:
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=f'Entity serving column name "{data.serving_column_names[0]}" already exists.',
+                detail=f'Entity serving name "{data.serving_name}" already exists.',
             )
 
         insert_id = persistent.insert_one(
@@ -69,11 +74,14 @@ class EntityController:
         page_size: int = 10,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
+        name: Optional[str] = None,
     ) -> EntityList:
         """
         List Entities
         """
         query_filter = {"user_id": user.id}
+        if name is not None:
+            query_filter["name"] = name
         docs, total = persistent.find(
             collection_name=cls.collection_name,
             query_filter=query_filter,
@@ -101,6 +109,10 @@ class EntityController:
         if not entity:
             raise not_found_exception
 
+        # store current name & name_history
+        cur_name = entity["name"]
+        name_history = entity["name_history"]
+
         # check whether conflict with other entity name
         entities, total_cnt = persistent.find(
             collection_name=cls.collection_name,
@@ -117,10 +129,13 @@ class EntityController:
                     detail=f'Entity name "{data.name}" already exists.',
                 )
 
+        name_history.append(cur_name)
+        new_data = data.dict()
+        new_data["name_history"] = name_history
         updated_cnt = persistent.update_one(
             collection_name=cls.collection_name,
             query_filter=query_filter,
-            update={"$set": data.dict()},
+            update={"$set": new_data},
         )
         if not updated_cnt:
             raise not_found_exception

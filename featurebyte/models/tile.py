@@ -1,19 +1,26 @@
 """
-Base class for Tile Management
+This module contains Tile related models
 """
-from __future__ import annotations
+from typing import Any, Dict, List
 
-from typing import Any, Dict
+from enum import Enum
 
 from pydantic import BaseModel, Field, root_validator, validator
 
 
-class TileBase(BaseModel):
-    """
-    Snowflake Tile class
+class TileType(str, Enum):
+    """Tile Type"""
 
-    Parameters
-    ----------
+    ONLINE = "ONLINE"
+    OFFLINE = "OFFLINE"
+
+
+class TileSpec(BaseModel):
+    """
+    Model for TileSpec
+
+    tile_id: str
+        hash value of tile id and name
     time_modulo_frequency_seconds: int
         time modulo seconds for the tile
     blind_spot_seconds: int
@@ -24,18 +31,20 @@ class TileBase(BaseModel):
         sql for tile generation
     column_names: str
         comma separated string of column names for the tile table
-    tile_id: str
-        hash value of tile id and name
+    entity_column_names: str
+        comma separated string of entity column names for the tile table
     """
 
-    time_modulo_frequency_seconds: int = Field(gt=0)
-    blind_spot_seconds: int
+    time_modulo_frequency_second: int = Field(gt=0)
+    blind_spot_second: int
     frequency_minute: int = Field(gt=0, le=60)
     tile_sql: str
-    column_names: str
+    column_names: List[str]  # in use, to be deprecated
+    entity_column_names: List[str]  # in use
+    value_column_names: List[str] = Field(default=["VALUE"])  # not in use yet
     tile_id: str
 
-    @validator("tile_id", "column_names")
+    @validator("tile_id")
     @classmethod
     def stripped(cls, value: str) -> str:
         """
@@ -61,7 +70,7 @@ class TileBase(BaseModel):
 
     @root_validator
     @classmethod
-    def check_time_modulo_frequency_seconds(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def check_time_modulo_frequency_second(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
         Root Validator for time-modulo-frequency
 
@@ -79,8 +88,8 @@ class TileBase(BaseModel):
         -------
             original dict
         """
-        if values["time_modulo_frequency_seconds"] > values["frequency_minute"] * 60:
+        if values["time_modulo_frequency_second"] > values["frequency_minute"] * 60:
             raise ValueError(
-                f"time_modulo_frequency_seconds must be less than {values['frequency_minute'] * 60}"
+                f"time_modulo_frequency_second must be less than {values['frequency_minute'] * 60}"
             )
         return values

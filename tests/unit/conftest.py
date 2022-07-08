@@ -16,19 +16,27 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.config import Configurations
 from featurebyte.core.frame import Frame
-from featurebyte.enum import DBVarType, InternalName
-from featurebyte.feature_manager.snowflake_feature import FeatureSnowflake
-from featurebyte.models.feature import FeatureModel, TileSpec
+from featurebyte.enum import CollectionName, DBVarType, InternalName
+from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
+from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
+from featurebyte.models.feature import (
+    FeatureListModel,
+    FeatureListStatus,
+    FeatureModel,
+    FeatureReadiness,
+)
+from featurebyte.models.tile import TileSpec
+from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.session.manager import SessionManager
-from featurebyte.tile.snowflake_tile import TileSnowflake
+from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
-@pytest.fixture(name="config")
-def config_fixture():
+@pytest.fixture(name="config_file")
+def config_file_fixture():
     """
-    Config object for unit testing
+    Config file for unit testing
     """
     config_dict = {
         "featurestore": [
@@ -53,7 +61,25 @@ def config_fixture():
     with tempfile.NamedTemporaryFile("w") as file_handle:
         file_handle.write(yaml.dump(config_dict))
         file_handle.flush()
-        yield Configurations(config_file_path=file_handle.name)
+        yield file_handle.name
+
+
+@pytest.fixture(name="config")
+def config_fixture(config_file):
+    """
+    Config object for unit testing
+    """
+    yield Configurations(config_file_path=config_file)
+
+
+@pytest.fixture(name="mock_config_path_env")
+def mock_config_path_env_fixture(config_file):
+    """
+    Mock FEATUREBYTE_CONFIG_PATH in featurebyte/config.py
+    """
+    with mock.patch("featurebyte.config.os.environ.get") as mock_env_get:
+        mock_env_get.return_value = config_file
+        yield
 
 
 @pytest.fixture(name="graph")
@@ -358,37 +384,55 @@ def session_manager_fixture(config, snowflake_connector):
     yield SessionManager(credentials=config.credentials)
 
 
+@pytest.fixture(name="mock_get_persistent")
+def mock_get_persistent_fixture():
+    """
+    Mock _get_persistent for testing
+    """
+    with mock.patch("featurebyte.app._get_persistent") as mock_get_persistent:
+        gitdb = GitDB()
+        gitdb.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])
+        mock_get_persistent.return_value = gitdb
+        yield mock_get_persistent
+
+
 @pytest.fixture
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_tile(mock_execute_query, snowflake_feature_store, snowflake_connector, config):
+def mock_snowflake_tile():
     """
     Pytest Fixture for TileSnowflake instance
     """
-    mock_execute_query.size_effect = None
-    _ = snowflake_connector
 
     tile_sql = (
         f"select c1 from dummy where"
         f" tile_start_ts >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} and"
         f" tile_start_ts < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
-    tile_s = TileSnowflake(
-        time_modulo_frequency_seconds=183,
-        blind_spot_seconds=3,
+    tile_spec = TileSpec(
+        time_modulo_frequency_second=183,
+        blind_spot_second=3,
         frequency_minute=5,
         tile_sql=tile_sql,
-        column_names="c1",
+        column_names=["c1"],
         tile_id="tile_id1",
-        tabular_source=snowflake_feature_store,
-        credentials=config.credentials,
+        entity_column_names=["col1"],
     )
 
-    return tile_s
+    return tile_spec
 
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature(mock_execute_query, snowflake_connector, config, snowflake_event_view):
+def tile_manager(mock_execute_query, session_manager, snowflake_feature_store):
+    """
+    Tile Manager fixture
+    """
+    _ = mock_execute_query
+    return TileManagerSnowflake(session=session_manager[snowflake_feature_store])
+
+
+@pytest.fixture
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_event_view):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
@@ -415,10 +459,76 @@ def mock_snowflake_feature(mock_execute_query, snowflake_connector, config, snow
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
-        column_names="col1",
+        column_names=["col1"],
+        entity_column_names=["col1"],
     )
     feature_loaded.tile_specs = [tile_spec]
 
-    s_feature = FeatureSnowflake(feature=feature_loaded, credentials=config.credentials)
+    return feature_loaded
 
-    return s_feature
+
+@pytest.fixture
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def feature_manager(mock_execute_query, session_manager, snowflake_feature_store):
+    """
+    Feature Manager fixture
+    """
+    _ = mock_execute_query
+    return FeatureManagerSnowflake(session=session_manager[snowflake_feature_store])
+
+
+@pytest.fixture
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def mock_snowflake_feature_list(mock_execute_query, snowflake_connector, snowflake_event_view):
+    """
+    Pytest Fixture for FeatureSnowflake instance
+    """
+    mock_execute_query.size_effect = None
+    _ = snowflake_connector
+
+    snowflake_event_view.cust_id.as_entity("customer")
+    feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        blind_spot="10m",
+        frequency="30m",
+        time_modulo_frequency="5m",
+        feature_names=["sum_30m"],
+    )
+    feature = feature_group["sum_30m"]
+    feature_json = feature.json()
+    feature_loaded = FeatureModel.parse_raw(feature_json)
+
+    tile_spec = TileSpec(
+        tile_id="tile_id1",
+        time_modulo_frequency_second=183,
+        blind_spot_second=3,
+        frequency_minute=5,
+        tile_sql="SELECT * FROM DUMMY",
+        column_names=["col1"],
+        entity_column_names=["col1"],
+    )
+    feature_loaded.tile_specs = [tile_spec]
+    feature_loaded.version = "v1"
+
+    mock_feature_list = FeatureListModel(
+        name="feature_list1",
+        description="test_description1",
+        features=[(feature_loaded.name, feature_loaded.version)],
+        readiness=FeatureReadiness.DRAFT,
+        status=FeatureListStatus.DRAFT,
+        version="v1",
+    )
+
+    return mock_feature_list
+
+
+@pytest.fixture
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def feature_list_manager(mock_execute_query, session_manager, snowflake_feature_store):
+    """
+    Feature List Manager fixture
+    """
+    _ = mock_execute_query
+    return FeatureListManagerSnowflake(session=session_manager[snowflake_feature_store])

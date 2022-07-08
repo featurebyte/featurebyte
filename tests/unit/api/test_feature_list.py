@@ -128,7 +128,7 @@ def test_feature_list_creation__success(production_ready_feature, config):
         "features": [("production_ready_feature", "V220401")],
         "readiness": FeatureReadiness.PRODUCTION_READY,
         "status": FeatureListStatus.DRAFT,
-        "feature_list_version": "my_feature_list.V220501",
+        "version": "my_feature_list.V220501",
         "created_at": None,
     }
     for obj in flist.feature_objects:
@@ -145,7 +145,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
     assert flist.dict() == {
         "created_at": None,
         "description": None,
-        "feature_list_version": "my_feature_list.V220501",
+        "version": "my_feature_list.V220501",
         "features": [
             ("production_ready_feature", "V220401"),
             ("sum_30m", None),
