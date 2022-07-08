@@ -127,8 +127,6 @@ def test_query_object_operation_on_snowflake_source(
     output["CUST_ID_X_SESSION_ID"] = output["CUST_ID_X_SESSION_ID"].astype(
         float
     )  # type is not correct here
-    # the EVENT_TIMESTAMP has to be str for write_pandas to work correctly
-    output["EVENT_TIMESTAMP"] = output["EVENT_TIMESTAMP"].astype(str)
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
     # create some features
