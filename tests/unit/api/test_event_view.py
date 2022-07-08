@@ -15,6 +15,7 @@ def test_from_event_data(snowflake_event_data, mock_get_persistent):
     """
     Test from_event_data
     """
+    _ = mock_get_persistent
     event_view_first = EventView.from_event_data(snowflake_event_data)
     assert event_view_first.tabular_source == snowflake_event_data.tabular_source
     assert event_view_first.node == snowflake_event_data.node
