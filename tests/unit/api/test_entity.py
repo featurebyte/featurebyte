@@ -27,12 +27,16 @@ def test_entity_creation__input_validation():
     Test entity creation input validation
     """
     with pytest.raises(ValueError) as exc:
-        Entity(name=1234, serving_name="hello")
-    assert "name must be string!" in str(exc.value)
+        Entity(name=type, serving_name="hello")
+    assert exc.value.errors() == [
+        {"loc": ("name",), "msg": "str type expected", "type": "type_error.str"}
+    ]
 
     with pytest.raises(ValueError) as exc:
-        Entity(name="world", serving_name=5678)
-    assert "serving_name must be string!" in str(exc.value)
+        Entity(name="world", serving_name=type)
+    assert exc.value.errors() == [
+        {"loc": ("serving_name",), "msg": "str type expected", "type": "type_error.str"}
+    ]
 
 
 def test_entity_creation(entity):
@@ -70,8 +74,10 @@ def test_entity_update_name(entity):
     Entity(name="product", serving_name="product_id")
 
     with pytest.raises(ValueError) as exc:
-        entity.update_name(1234)
-    assert "name must be string!" in str(exc.value)
+        entity.update_name(type)
+    assert exc.value.errors() == [
+        {"loc": ("name",), "msg": "str type expected", "type": "type_error.str"}
+    ]
 
     with pytest.raises(DuplicatedRecordException) as exc:
         entity.update_name("product")

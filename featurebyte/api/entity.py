@@ -16,6 +16,7 @@ from featurebyte.exception import (
     RecordUpdateException,
 )
 from featurebyte.models.entity import EntityModel
+from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
 
 class Entity(EntityModel):
@@ -41,27 +42,15 @@ class Entity(EntityModel):
         RecordCreationException
             When exception happens during record creation at persistent
         """
-        self._validate_name(name)
-        self._validate_serving_name(serving_name)
-
+        data = EntityCreate(name=name, serving_name=serving_name)
         client = Configurations().get_client()
-        payload = {"name": name, "serving_name": serving_name}
+        payload = {"name": data.name, "serving_name": data.serving_name}
         response = client.post("/entity", json=payload)
         if response.status_code != HTTPStatus.CREATED:
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response=response)
             raise RecordCreationException(response=response)
         super().__init__(**self._response_to_dict(response))
-
-    @staticmethod
-    def _validate_name(name: str) -> None:
-        if not isinstance(name, str):
-            raise ValueError("name must be string!")
-
-    @staticmethod
-    def _validate_serving_name(name: str) -> None:
-        if not isinstance(name, str):
-            raise ValueError("serving_name must be string!")
 
     @property
     def serving_name(self) -> str:
@@ -108,10 +97,9 @@ class Entity(EntityModel):
         RecordUpdateException
             When exception happens during record update at persistent
         """
-        self._validate_name(name)
-
+        data = EntityUpdate(name=name)
         client = Configurations().get_client()
-        response = client.patch(f"/entity/{self.id}", json={"name": name})
+        response = client.patch(f"/entity/{self.id}", json={"name": data.name})
         if response.status_code != HTTPStatus.OK:
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response=response)
