@@ -5,15 +5,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from http import HTTPStatus
-
 from pydantic import validator
-from requests.models import Response
 
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.util import get_entity
-from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
