@@ -9,6 +9,7 @@ from pydantic import validator
 
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.api.util import get_entity
 from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
@@ -25,24 +26,32 @@ class EventDataColumn:
         self.event_data = event_data
         self.column_name = column_name
 
-    def as_entity(self, tag_name: str) -> None:
+    def as_entity(self, entity_name: str | None) -> None:
         """
         Set the column name as entity with tag name
 
         Parameters
         ----------
-        tag_name: str
-            Tag name of the entity
+        entity_name: str | None
+            Associate column name to the entity, remove association if entity name is None
 
         Raises
         ------
+        ValueError
+            When the entity name is not found
         TypeError
-            When the tag name has non-string type
+            When the entity name has non-string type
         """
-        if isinstance(tag_name, str):
-            self.event_data.column_entity_map[self.column_name] = tag_name
+        if entity_name is None:
+            self.event_data.column_entity_map.pop(self.column_name, None)
+        elif isinstance(entity_name, str):
+            entity_dict = get_entity(entity_name)
+            if entity_dict:
+                self.event_data.column_entity_map[self.column_name] = entity_dict["id"]
+                return
+            raise ValueError(f'Entity name "{entity_name}" not found!')
         else:
-            raise TypeError(f'Unsupported type "{type(tag_name)}" for tag name "{tag_name}"!')
+            raise TypeError(f'Unsupported type "{type(entity_name)}" for tag name "{entity_name}"!')
 
 
 class EventData(EventDataModel, DatabaseTable):

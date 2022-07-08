@@ -18,13 +18,14 @@ class EntityModel(BaseModel):
         Entity id of the object
     name: str
         Name of the Entity
-    serving_column_names: List[str]
+    serving_names: List[str]
         Name of the serving column
     """
 
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: str
-    serving_column_names: List[str]
+    serving_names: List[str]
+    name_history: List[str] = Field(default_factory=list)
 
     class Config:
         """

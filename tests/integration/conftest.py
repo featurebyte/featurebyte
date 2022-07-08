@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import yaml
+from bson.objectid import ObjectId
 from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.config import Configurations
@@ -105,6 +106,11 @@ def config_fixture(sqlite_filename):
                 "filename": sqlite_filename,
             },
         ],
+        "git": {
+            "remote_url": "git@github.com:featurebyte/playground.git",
+            "key_path": os.getenv("GIT_SSH_KEY_PATH"),
+            "branch": f"integration-test-{str(ObjectId())}",
+        },
     }
     with tempfile.NamedTemporaryFile("w") as file_handle:
         file_handle.write(yaml.dump(config_dict))

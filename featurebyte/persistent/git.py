@@ -152,6 +152,30 @@ class GitDB(Persistent):
         """
         return self._repo
 
+    @property
+    def branch(self) -> str:
+        """
+        Retrieve branch used
+
+        Returns
+        -------
+        str
+            Git branch
+        """
+        return self._branch
+
+    @property
+    def ssh_cmd(self) -> str:
+        """
+        SSH command used to access the remote
+
+        Returns
+        -------
+        str
+            SSH command
+        """
+        return self._ssh_cmd
+
     def _fetch(self) -> None:
         """
         Fetch latest changes from remote
