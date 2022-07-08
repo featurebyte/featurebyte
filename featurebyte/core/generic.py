@@ -158,6 +158,11 @@ class QueryObject(BaseModel):
         models_as_dict: bool = True,
         **dumps_kwargs: Any,
     ) -> str:
+        # Serialization of query object requires both graph & node (to prune the graph).
+        # However, pydantic `json()` does not call `dict()` directly. It iterates inner attributes
+        # and trigger theirs `dict()`. To fix this issue, we call the pydantic `json()` first to
+        # serialize the whole object, then calling `QueryObject.dict()` to construct pruned graph & node map.
+        # After that, use the `QueryObject.dict()` result to overwrite pydantic `json()` results.
         json_object = super().json(
             include=include,  # type: ignore
             exclude=exclude,  # type: ignore
