@@ -36,6 +36,12 @@ def mock_get_persistent_fixture(config):
         mock_get_persistent.return_value = git_db
         yield mock_get_persistent
 
+    repo, ssh_cmd, branch = git_db.repo, git_db.ssh_cmd, git_db.branch
+    origin = repo.remotes.origin
+    if origin:
+        with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
+            origin.push(refspec=(f":{branch}"))
+
 
 def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data, config):
     """
