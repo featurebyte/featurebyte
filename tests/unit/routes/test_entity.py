@@ -6,6 +6,7 @@ from http import HTTPStatus
 
 import pytest
 from bson.objectid import ObjectId
+from freezegun import freeze_time
 
 
 @pytest.fixture(name="entity_dict")
@@ -128,6 +129,7 @@ def test_list_200(create_multiple_entries, test_api_client):
     assert result_data[0]["name"] == "customer"
 
 
+@freeze_time("2022-07-01")
 def test_update_200(create_success_response, test_api_client):
     """
     Test entity update (success)
@@ -139,7 +141,7 @@ def test_update_200(create_success_response, test_api_client):
     result = response.json()
 
     assert result["name"] == "Customer"
-    assert result["name_history"] == ["customer"]
+    assert result["name_history"] == [{"created_at": "2022-07-01T00:00:00", "name": "customer"}]
     for key in result.keys():
         if key not in {"name", "name_history"}:
             assert result[key] == response_dict[key]

@@ -11,6 +11,7 @@ from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.enum import CollectionName
+from featurebyte.models.entity import EntityNameHistoryEntry
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.helpers import get_utc_now
 from featurebyte.schema.entity import Entity, EntityCreate, EntityList, EntityUpdate
@@ -129,13 +130,11 @@ class EntityController:
                     detail=f'Entity name "{data.name}" already exists.',
                 )
 
-        name_history.append(cur_name)
-        new_data = data.dict()
-        new_data["name_history"] = name_history
+        name_history.append(EntityNameHistoryEntry(created_at=get_utc_now(), name=cur_name).dict())
         updated_cnt = persistent.update_one(
             collection_name=cls.collection_name,
             query_filter=query_filter,
-            update={"$set": new_data},
+            update={"$set": {"name": data.name, "name_history": name_history}},
         )
         if not updated_cnt:
             raise not_found_exception

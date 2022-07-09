@@ -5,9 +5,20 @@ from __future__ import annotations
 
 from typing import List
 
+from datetime import datetime
+
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field
+
+
+class EntityNameHistoryEntry(BaseModel):
+    """
+    Model for an entry in name history
+    """
+
+    created_at: datetime
+    name: str
 
 
 class EntityModel(BaseModel):
@@ -25,7 +36,7 @@ class EntityModel(BaseModel):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: str
     serving_names: List[str]
-    name_history: List[str] = Field(default_factory=list)
+    name_history: List[EntityNameHistoryEntry] = Field(default_factory=list)
 
     class Config:
         """
