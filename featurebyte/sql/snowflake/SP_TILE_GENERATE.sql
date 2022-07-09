@@ -69,6 +69,7 @@ $$
     } else {
 
         //feature tile table already exists, insert tile records with the input tile sql
+        /*
         insert_cols_str = ""
         filter_cols_str = ""
         for (element of col_list) {
@@ -79,10 +80,22 @@ $$
             }
         }
         insert_cols_str = insert_cols_str.slice(0, -1)
+        */
+        insert_cols = []
+        filter_cols = []
+        for (const [i, element] of col_list.entries()) {
+
+            insert_cols.push("b."+element)
+            if (element.toUpperCase() !== 'VALUE') {
+                filter_cols.push("a." + element + " = b."+ element)
+            }
+        }
+        insert_cols_str = insert_cols.join(",")
+        filter_cols_str = filter_cols.join(" AND ")
 
         var tile_insert_sql = `
             merge into ${TILE_ID} a using (${tile_sql}) b
-                on a.INDEX = b.INDEX ${filter_cols_str}
+                on a.INDEX = b.INDEX AND ${filter_cols_str}
                 when matched then
                     update set a.VALUE = b.VALUE, a.CREATED_AT = SYSDATE()
                 when not matched then

@@ -4,6 +4,7 @@ This module contains integration tests for FeatureListManagerSnowflake
 import json
 
 import pandas as pd
+import pytest
 from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import InternalName
@@ -16,8 +17,7 @@ def test_insert_feature_list_registry(
     """
     Test insert_feature_list_registry
     """
-    flag = feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
-    assert flag is True
+    feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
 
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_LIST_REGISTRY")
     assert len(result) == 1
@@ -45,6 +45,28 @@ def test_insert_feature_list_registry(
     expected_fv = {"feature": "sum_30m", "version": "v1"}
     result_fv = json.loads(result["FEATURE_VERSIONS"].iloc[0])[0]
     assert expected_fv == result_fv
+
+
+def test_insert_feature_list_registry_duplicate(
+    snowflake_session, snowflake_feature_list, feature_list_manager
+):
+    """
+    Test insert_feature_list_registry duplicate with exception
+    """
+    feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
+
+    result = snowflake_session.execute_query("SELECT * FROM FEATURE_LIST_REGISTRY")
+    assert len(result) == 1
+    assert result.iloc[0]["NAME"] == "feature_list1"
+    assert result.iloc[0]["VERSION"] == "v1"
+
+    with pytest.raises(ValueError) as excinfo:
+        feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
+
+    assert (
+        str(excinfo.value)
+        == f"FeatureList version already exist for {snowflake_feature_list.name} with version {snowflake_feature_list.version}"
+    )
 
 
 def test_retrieve_feature_list_registry(snowflake_feature_list, feature_list_manager):

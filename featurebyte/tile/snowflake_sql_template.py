@@ -29,8 +29,8 @@ tm_insert_tile_registry = Template(
         '{{tile_sql}}',
         '{{column_names}}',
         {{frequency_minute}},
-        {{time_modulo_frequency_seconds}},
-        {{blind_spot_seconds}}
+        {{time_modulo_frequency_second}},
+        {{blind_spot_second}}
     )
 """
 )
@@ -40,8 +40,8 @@ tm_generate_tile = Template(
     call SP_TILE_GENERATE(
         '{{tile_sql}}',
         '{{tile_start_date_column}}',
-        {{time_modulo_frequency_seconds}},
-        {{blind_spot_seconds}},
+        {{time_modulo_frequency_second}},
+        {{blind_spot_second}},
         {{frequency_minute}},
         '{{column_names}}',
         '{{tile_id}}',
@@ -71,8 +71,8 @@ tm_schedule_tile = Template(
             '{{temp_task_name}}',
             '{{warehouse}}',
             '{{tile_id}}',
-            {{time_modulo_frequency_seconds}},
-            {{blind_spot_seconds}},
+            {{time_modulo_frequency_second}},
+            {{blind_spot_second}},
             {{frequency_minute}},
             {{offline_minutes}},
             '{{sql}}',

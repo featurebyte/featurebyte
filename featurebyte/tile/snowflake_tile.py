@@ -62,8 +62,8 @@ class TileManagerSnowflake(BaseModel):
                 tile_id=tile_spec.tile_id,
                 tile_sql=tile_spec.tile_sql,
                 column_names=",".join(tile_spec.column_names),
-                time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-                blind_spot_seconds=tile_spec.blind_spot_second,
+                time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+                blind_spot_second=tile_spec.blind_spot_second,
                 frequency_minute=tile_spec.frequency_minute,
             )
             logger.debug(f"generated tile insert sql: {sql}")
@@ -162,8 +162,8 @@ class TileManagerSnowflake(BaseModel):
         sql = tm_generate_tile.render(
             tile_sql=tile_sql,
             tile_start_date_column=InternalName.TILE_START_DATE.value,
-            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-            blind_spot_seconds=tile_spec.blind_spot_second,
+            time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+            blind_spot_second=tile_spec.blind_spot_second,
             frequency_minute=tile_spec.frequency_minute,
             column_names=",".join(tile_spec.column_names),
             tile_id=tile_spec.tile_id,
@@ -272,8 +272,8 @@ class TileManagerSnowflake(BaseModel):
             tile_start_date_column=InternalName.TILE_START_DATE.value,
             tile_start_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER.value,
             tile_end_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER.value,
-            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-            blind_spot_seconds=tile_spec.blind_spot_second,
+            time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+            blind_spot_second=tile_spec.blind_spot_second,
             frequency_minute=tile_spec.frequency_minute,
             column_names=",".join(tile_spec.column_names),
             tile_id=tile_spec.tile_id,
