@@ -3,13 +3,13 @@ This module contains Entity related models
 """
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 from datetime import datetime
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictStr
 
 
 class EntityNameHistoryEntry(BaseModel):
@@ -18,7 +18,7 @@ class EntityNameHistoryEntry(BaseModel):
     """
 
     created_at: datetime
-    name: str
+    name: StrictStr
 
 
 class EntityModel(BaseModel):
@@ -34,13 +34,14 @@ class EntityModel(BaseModel):
     """
 
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    name: str
-    serving_names: List[str]
+    name: StrictStr
+    serving_names: List[StrictStr]
     name_history: List[EntityNameHistoryEntry] = Field(default_factory=list)
+    created_at: Optional[datetime] = Field(default=None)
 
     class Config:
         """
-        Configuration for EntityModel schema
+        Configuration for Entity Model schema
         """
 
         # pylint: disable=too-few-public-methods
