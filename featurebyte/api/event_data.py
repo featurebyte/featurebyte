@@ -8,6 +8,7 @@ from typing import Any
 import json
 from http import HTTPStatus
 
+from bson.objectid import ObjectId
 from pydantic import validator
 
 from featurebyte.api.database_table import DatabaseTable
@@ -68,6 +69,22 @@ class EventData(EventDataModel, DatabaseTable):
     EventData class
     """
 
+    class Config:
+        """
+        Pydantic Config class
+        """
+
+        # pylint: disable=too-few-public-methods
+
+        fields = {
+            "credentials": {"exclude": True},
+            "graph": {"exclude": True},
+            "node": {"exclude": True},
+            "row_index_lineage": {"exclude": True},
+            "column_var_type_map": {"exclude": True},
+        }
+        json_encoders = {ObjectId: str}
+
     @classmethod
     def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         return {"timestamp": values["event_timestamp_column"]}
@@ -100,6 +117,13 @@ class EventData(EventDataModel, DatabaseTable):
         Returns
         -------
         EventData
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When record with the same key exists at the persistent layer
+        RecordRetrievalException
+            When unexpected retrieval failure
         """
         data = EventDataCreate(
             name=name,
@@ -108,7 +132,7 @@ class EventData(EventDataModel, DatabaseTable):
             record_creation_date_column=record_creation_date_column,
         )
         client = Configurations().get_client()
-        response = client.get(url=f"/event_data/", params={"name": name})
+        response = client.get(url="/event_data/", params={"name": name})
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             if not response_dict["data"]:

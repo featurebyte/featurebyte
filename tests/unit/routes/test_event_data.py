@@ -78,6 +78,7 @@ def test_create_fails_table_exists(test_api_client, event_data_dict, event_data_
     """
     Create Event Data fails if table with same name already exists
     """
+    _ = event_data_response
     response = test_api_client.post("/event_data", json=event_data_dict)
     assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {"detail": 'Event Data "订单表" already exists.'}
