@@ -47,7 +47,7 @@ class FeatureJobSetting(BaseModel):
 class FeatureJobSettingHistoryEntry(BaseModel):
     """Model for an entry in setting history"""
 
-    creation_date: datetime
+    created_at: datetime
     setting: FeatureJobSetting
 
 

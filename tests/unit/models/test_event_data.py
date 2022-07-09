@@ -45,11 +45,11 @@ def feature_job_setting_history_fixture(feature_job_setting):
     """Fixture for a Feature Job Setting history"""
     history = [
         FeatureJobSettingHistoryEntry(
-            creation_date=datetime.datetime(2022, 4, 1),
+            created_at=datetime.datetime(2022, 4, 1),
             setting=feature_job_setting,
         ),
         FeatureJobSettingHistoryEntry(
-            creation_date=datetime.datetime(2022, 2, 1),
+            created_at=datetime.datetime(2022, 2, 1),
             setting=feature_job_setting,
         ),
     ]
@@ -88,7 +88,7 @@ def event_data_model_dict_fixture():
         "created_at": datetime.datetime(2022, 2, 1),
         "history": [
             {
-                "creation_date": datetime.datetime(2022, 4, 1),
+                "created_at": datetime.datetime(2022, 4, 1),
                 "setting": {
                     "blind_spot": "10m",
                     "frequency": "30m",
@@ -96,7 +96,7 @@ def event_data_model_dict_fixture():
                 },
             },
             {
-                "creation_date": datetime.datetime(2022, 2, 1),
+                "created_at": datetime.datetime(2022, 2, 1),
                 "setting": {
                     "blind_spot": "10m",
                     "frequency": "30m",

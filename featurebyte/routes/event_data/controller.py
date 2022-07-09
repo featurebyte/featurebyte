@@ -41,7 +41,7 @@ class EventDataController:
         if data.default_feature_job_setting:
             history = [
                 FeatureJobSettingHistoryEntry(
-                    creation_date=utc_now,
+                    created_at=utc_now,
                     setting=data.default_feature_job_setting,
                 )
             ]
@@ -154,7 +154,7 @@ class EventDataController:
         if data.default_feature_job_setting:
             update_payload["history"] = [
                 FeatureJobSettingHistoryEntry(
-                    creation_date=get_utc_now(),
+                    created_at=get_utc_now(),
                     setting=update_payload["default_feature_job_setting"],
                 ).dict()
             ] + event_data["history"]
