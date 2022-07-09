@@ -3,15 +3,15 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 import datetime
+import time
 
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Credentials
 from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
@@ -20,6 +20,7 @@ from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.session.base import BaseSession
+from featurebyte.tile.tile_cache import SnowflakeTileCache
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
@@ -45,18 +46,16 @@ def get_session_from_feature_objects(
     NotImplementedError
         If the list of Features do not all use the same store
     """
-    feature_store: Optional[FeatureStore] = None
+    feature_store: Optional[dict[str, Any]] = None
     for feature in feature_objects:
-        store = feature.tabular_source[0]
-        assert isinstance(store, FeatureStore)
+        store = feature.tabular_source[0].dict()
         if feature_store is None:
             feature_store = store
         elif feature_store != store:
             raise NotImplementedError(
                 "Historical features request using multiple stores not supported"
             )
-    assert feature_store is not None
-    return feature_store.get_session(credentials=credentials)
+    return feature_objects[0].get_session(credentials=credentials)
 
 
 def validate_historical_requests_point_in_time(training_events: pd.DataFrame) -> pd.DataFrame:
@@ -165,6 +164,8 @@ def get_historical_features(
     -------
     pd.DataFrame
     """
+    tic_ = time.time()
+
     # Validate request
     validate_request_schema(training_events)
     training_events = validate_historical_requests_point_in_time(training_events)
@@ -179,4 +180,10 @@ def get_historical_features(
     session = get_session_from_feature_objects(feature_objects, credentials=credentials)
     session.register_temp_table(REQUEST_TABLE_NAME, training_events)
 
+    tic = time.time()
+    SnowflakeTileCache.compute_tiles_on_demand(session=session, features=feature_objects)
+    elapsed = time.time() - tic
+    logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
+
+    logger.debug(f"get_historical_features took {time.time() - tic_:.2f}s")
     return session.execute_query(sql)

@@ -24,6 +24,7 @@ class SQLType(Enum):
     """Type of SQL code corresponding to different operations"""
 
     BUILD_TILE = "build_tile"
+    BUILD_TILE_ON_DEMAND = "build_tile_on_demand"
     EVENT_VIEW_PREVIEW = "event_view_preview"
     GENERATE_FEATURE = "generate_feature"
 
@@ -255,6 +256,41 @@ class BuildTileInputNode(GenericInputNode):
 
 
 @dataclass
+class SelectedEntityBuildTileInputNode(GenericInputNode):
+
+    timestamp: str
+    entity_columns: list[str]
+
+    @property
+    def sql(self) -> Expression:
+
+        entity_table = InternalName.ENTITY_TABLE_SQL_PLACEHOLDER
+        start_date = InternalName.ENTITY_TABLE_START_DATE
+        end_date = InternalName.ENTITY_TABLE_END_DATE
+
+        join_conditions = []
+        for col in self.entity_columns:
+            condition = parse_one(f'R."{col}" = {entity_table}."{col}"')
+            join_conditions.append(condition)
+        join_conditions.append(parse_one(f'R."{self.timestamp}" >= {entity_table}.{start_date}'))
+        join_conditions.append(parse_one(f'R."{self.timestamp}" < {entity_table}.{end_date}'))
+        join_conditions_expr = expressions.and_(*join_conditions)
+
+        table_sql = super().sql
+        result = (
+            select(f"R.*", InternalName.ENTITY_TABLE_START_DATE.value)
+            .from_(InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.value)
+            .join(
+                table_sql,
+                join_alias="R",
+                join_type="left",
+                on=join_conditions_expr,
+            )
+        )
+        return result
+
+
+@dataclass
 class BinaryOp(ExpressionNode):
     """Binary operation node"""
 
@@ -340,24 +376,29 @@ class BuildTileNode(TableNode):
     timestamp: str
     agg_func: str
     frequency: int
+    is_on_demand: bool
 
     @property
     def sql(self) -> Expression:
-        start_date_placeholder = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
-        start_date_placeholder_epoch = (
-            f"DATE_PART(EPOCH_SECOND, CAST({start_date_placeholder} AS TIMESTAMP))"
-        )
+        if self.is_on_demand:
+            start_date_expr = InternalName.ENTITY_TABLE_START_DATE
+        else:
+            start_date_expr = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
+
+        start_date_epoch = f"DATE_PART(EPOCH_SECOND, CAST({start_date_expr} AS TIMESTAMP))"
         timestamp_epoch = f"DATE_PART(EPOCH_SECOND, {escape_column_name(self.timestamp)})"
 
         input_tiled = select(
             "*",
-            f"FLOOR(({timestamp_epoch} - {start_date_placeholder_epoch}) / {self.frequency}) AS tile_index",
+            f"FLOOR(({timestamp_epoch} - {start_date_epoch}) / {self.frequency}) AS tile_index",
         ).from_(self.input_node.sql_nested())
 
-        tile_start_date = (
-            f"TO_TIMESTAMP({start_date_placeholder_epoch} + tile_index * {self.frequency})"
-        )
+        tile_start_date = f"TO_TIMESTAMP({start_date_epoch} + tile_index * {self.frequency})"
         keys = escape_column_names(self.keys)
+        if self.is_on_demand:
+            groupby_keys = keys + [InternalName.ENTITY_TABLE_START_DATE.value]
+        else:
+            groupby_keys = keys
         groupby_sql = (
             select(
                 f"{tile_start_date} AS {InternalName.TILE_START_DATE}",
@@ -365,7 +406,7 @@ class BuildTileNode(TableNode):
                 *[f"{spec.tile_expr} AS {spec.tile_column_name}" for spec in self.tile_specs],
             )
             .from_(input_tiled.subquery())
-            .group_by("tile_index", *keys)
+            .group_by("tile_index", *groupby_keys)
             .order_by("tile_index")
         )
 
@@ -569,7 +610,7 @@ def make_filter_node(
 
 
 def make_build_tile_node(
-    input_sql_nodes: list[SQLNode], parameters: dict[str, Any]
+    input_sql_nodes: list[SQLNode], parameters: dict[str, Any], is_on_demand: bool
 ) -> BuildTileNode:
     """Create a BuildTileNode
 
@@ -602,6 +643,7 @@ def make_build_tile_node(
         timestamp=parameters["timestamp"],
         agg_func=parameters["agg_func"],
         frequency=parameters["frequency"],
+        is_on_demand=is_on_demand,
     )
     return sql_node
 
@@ -609,6 +651,7 @@ def make_build_tile_node(
 def make_input_node(
     parameters: dict[str, Any],
     sql_type: SQLType,
+    groupby_keys: list[str],
 ) -> BuildTileInputNode | GenericInputNode:
     """Create a SQLNode corresponding to a query graph input node
 
@@ -627,7 +670,7 @@ def make_input_node(
     columns_map = {}
     for colname in parameters["columns"]:
         columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
-    sql_node: BuildTileInputNode | GenericInputNode
+    sql_node: BuildTileInputNode | SelectedEntityBuildTileInputNode | GenericInputNode
     database_source = parameters["database_source"]
     if sql_type == SQLType.BUILD_TILE:
         sql_node = BuildTileInputNode(
@@ -636,6 +679,16 @@ def make_input_node(
             timestamp=parameters["timestamp"],
             dbtable=parameters["dbtable"],
             database_source=database_source,
+        )
+    elif sql_type == SQLType.BUILD_TILE_ON_DEMAND:
+        assert groupby_keys is not None
+        sql_node = SelectedEntityBuildTileInputNode(
+            columns_map=columns_map,
+            column_names=parameters["columns"],
+            timestamp=parameters["timestamp"],
+            dbtable=parameters["dbtable"],
+            database_source=database_source,
+            entity_columns=groupby_keys,
         )
     else:
         sql_node = GenericInputNode(

@@ -73,7 +73,7 @@ def get_tile_gen_info(graph: QueryGraph, node: Node) -> list[TileGenSql]:
     list[TileGenSql]
     """
     interpreter = GraphInterpreter(graph)
-    tile_gen_info = interpreter.construct_tile_gen_sql(node)
+    tile_gen_info = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
     return tile_gen_info
 
 

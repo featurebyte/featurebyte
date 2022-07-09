@@ -225,7 +225,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
     """Test tile building SQL"""
     interpreter = GraphInterpreter(query_graph_with_groupby)
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
-    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node)
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
     assert len(tile_gen_sqls) == 1
 
     info = tile_gen_sqls[0]
@@ -235,6 +235,30 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
         "tile_table_id": "avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
         "columns": [InternalName.TILE_START_DATE.value, "cust_id", "sum_value", "count_value"],
         "time_modulo_frequency": 1800,
+        "entity_columns": ["cust_id"],
+        "tile_value_columns": ["sum_value", "count_value"],
+        "frequency": 3600,
+        "blind_spot": 900,
+        "windows": ["2h", "48h"],
+    }
+
+
+def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
+    """Test tile building SQL"""
+    interpreter = GraphInterpreter(query_graph_with_groupby)
+    groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=True)
+    assert len(tile_gen_sqls) == 1
+
+    info = tile_gen_sqls[0]
+    info_dict = asdict(info)
+    info_dict.pop("sql")
+    assert info_dict == {
+        "tile_table_id": "avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+        "columns": [InternalName.TILE_START_DATE.value, "cust_id", "sum_value", "count_value"],
+        "time_modulo_frequency": 1800,
+        "entity_columns": ["cust_id"],
+        "tile_value_columns": ["sum_value", "count_value"],
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["2h", "48h"],

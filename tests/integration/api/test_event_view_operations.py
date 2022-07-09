@@ -10,6 +10,7 @@ import pytest
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.enum import CollectionName
 from featurebyte.persistent.git import GitDB
@@ -236,3 +237,20 @@ def test_query_object_operation_on_snowflake_source(
         "COUNT_24h": 9,
         "COUNT_2h DIV COUNT_24h": Decimal("0.111111"),
     }
+
+    df_training_events = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
+            "USER_ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        }
+    )
+    feature_list = FeatureList(
+        [feature_group["COUNT_2h"], feature_group["COUNT_24h"]], name="My FeatureList"
+    )
+    df_historical_features = feature_list.get_historical_features(
+        df_training_events, credentials=config.credentials
+    )
+    df_historical_features_2 = feature_list.get_historical_features(
+        df_training_events, credentials=config.credentials
+    )
+    pd.testing.assert_frame_equal(df_historical_features, df_historical_features_2)
