@@ -43,6 +43,7 @@ def mock_get_persistent_fixture(config):
             origin.push(refspec=(f":{branch}"))
 
 
+@pytest.mark.usefixtures("mock_entity_config", "mock_get_persistent")
 def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data, config):
     """
     Test loading event view from sqlite source

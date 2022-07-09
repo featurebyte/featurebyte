@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime
 from enum import Enum
 
+from beanie import PydanticObjectId
+from bson.objectid import ObjectId
 from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
@@ -47,7 +49,7 @@ class FeatureJobSetting(BaseModel):
 class FeatureJobSettingHistoryEntry(BaseModel):
     """Model for an entry in setting history"""
 
-    creation_date: datetime
+    created_at: datetime
     setting: FeatureJobSetting
 
 
@@ -63,6 +65,8 @@ class EventDataModel(DatabaseTableModel):
     """
     Model for EventData entity
 
+    id: PydanticObjectId
+        EventData id of the object
     name : str
         Name of the EventData
     tabular_source : Tuple[FeatureStoreModel, TableDetails]
@@ -83,6 +87,7 @@ class EventDataModel(DatabaseTableModel):
         Status of the EventData
     """
 
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: str
     event_timestamp_column: str
     record_creation_date_column: Optional[str]
@@ -91,3 +96,12 @@ class EventDataModel(DatabaseTableModel):
     created_at: Optional[datetime] = Field(default=None)
     history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list)
     status: Optional[EventDataStatus] = Field(default=None)
+
+    class Config:
+        """
+        Configuration for Event Data schema
+        """
+
+        # pylint: disable=too-few-public-methods
+
+        json_encoders = {ObjectId: str}
