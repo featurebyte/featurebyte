@@ -74,10 +74,13 @@ def save_event_data_fixture(mock_get_persistent, snowflake_event_data):
     yield snowflake_event_data
 
 
-def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
+def test_from_tabular_source(
+    snowflake_database_table, config, event_data_dict, mock_get_persistent
+):
     """
     Test EventData creation using tabular source
     """
+    _ = mock_get_persistent
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
@@ -85,7 +88,39 @@ def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
         record_creation_date_column="created_at",
         credentials=config.credentials,
     )
+    event_data_dict["id"] = event_data.id
     assert event_data.dict() == event_data_dict
+
+
+def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_database_table, config):
+    """
+    Test EventData creation failure due to duplicated event data name
+    """
+    _ = saved_event_data
+    with pytest.raises(DuplicatedRecordException) as exc:
+        EventData.from_tabular_source(
+            tabular_source=snowflake_database_table,
+            name="sf_event_data",
+            event_timestamp_column="event_timestamp",
+            record_creation_date_column="created_at",
+            credentials=config.credentials,
+        )
+    assert 'EventData name "sf_event_data" exists in saved record.' in str(exc.value)
+
+
+def test_from_tabular_source__retrieval_exception(snowflake_database_table, config):
+    """
+    Test EventData creation failure due to retrieval exception
+    """
+    with pytest.raises(RecordRetrievalException):
+        with patch("featurebyte.api.event_data.Configurations"):
+            EventData.from_tabular_source(
+                tabular_source=snowflake_database_table,
+                name="sf_event_data",
+                event_timestamp_column="event_timestamp",
+                record_creation_date_column="created_at",
+                credentials=config.credentials,
+            )
 
 
 def test_deserialization(
@@ -188,6 +223,7 @@ def test_event_data__info__not_saved_event_data(mock_get_persistent, snowflake_e
     snowflake_event_data.record_creation_date_column = "some_random_date"
     output = snowflake_event_data.info()
     assert output == {
+        "id": snowflake_event_data.id,
         "name": "sf_event_data",
         "record_creation_date_column": "some_random_date",
         "column_entity_map": {},
@@ -244,6 +280,7 @@ def test_event_data__info__saved_event_data(saved_event_data, mock_config_path_e
         output
         == saved_event_data_dict
         == {
+            "id": saved_event_data.id,
             "name": "sf_event_data",
             "record_creation_date_column": "created_at",
             "column_entity_map": {},
