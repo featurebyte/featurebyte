@@ -3,7 +3,7 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Tuple
 
 import json
 from http import HTTPStatus
@@ -12,6 +12,7 @@ from bson.objectid import ObjectId
 from pydantic import validator
 
 from featurebyte.api.database_table import DatabaseTable
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.util import convert_response_to_dict, get_entity
 from featurebyte.config import Configurations
 from featurebyte.exception import (
@@ -21,7 +22,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import EventDataModel
-from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.schema.event_data import EventDataCreate
 
 
@@ -68,6 +69,8 @@ class EventData(EventDataModel, DatabaseTable):
     """
     EventData class
     """
+
+    tabular_source: Tuple[FeatureStore, TableDetails]
 
     class Config:
         """
