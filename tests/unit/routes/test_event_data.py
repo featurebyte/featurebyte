@@ -24,6 +24,7 @@ def event_data_dict_fixture(event_data_model_dict):
     """
     event_data_dict = json.loads(EventDataModel(**event_data_model_dict).json())
     event_data_dict["name"] = "订单表"
+    event_data_dict.pop("id")
     event_data_dict.pop("created_at")
     event_data_dict["column_entity_map"] = {"O_CUSTKEY": "Customer"}
     return event_data_dict

@@ -125,8 +125,9 @@ def test_event_data_model(
         history=feature_job_setting_history,
         status=EventDataStatus.PUBLISHED,
     )
+    event_data_model_dict["id"] = event_data.id
     assert event_data.dict() == event_data_model_dict
-    event_data_json = event_data.json()
+    event_data_json = event_data.json(by_alias=True)
     event_data_loaded = event_data.parse_raw(event_data_json)
     assert event_data_loaded == event_data
 
