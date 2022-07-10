@@ -180,8 +180,10 @@ def get_historical_features(
     session = get_session_from_feature_objects(feature_objects, credentials=credentials)
     session.register_temp_table(REQUEST_TABLE_NAME, training_events)
 
+    # Compute tiles on demand if required
     tic = time.time()
-    SnowflakeTileCache.compute_tiles_on_demand(session=session, features=feature_objects)
+    tile_cache = SnowflakeTileCache(session=session)
+    tile_cache.compute_tiles_on_demand(features=feature_objects)
     elapsed = time.time() - tic
     logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
 
