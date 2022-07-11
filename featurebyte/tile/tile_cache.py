@@ -69,10 +69,11 @@ class SnowflakeTileCache(TileCache):
         elapsed = time.time() - tic
         logger.debug(f"Getting required tiles computation took {elapsed:.2f}s")
 
-        tic = time.time()
-        self.invoke_tile_manager(required_requests)
-        elapsed = time.time() - tic
-        logger.debug(f"Compute tiles on demand took {elapsed:.2f}s")
+        if required_requests:
+            tic = time.time()
+            self.invoke_tile_manager(required_requests)
+            elapsed = time.time() - tic
+            logger.debug(f"Compute tiles on demand took {elapsed:.2f}s")
 
     def get_required_computation(
         self, features: list[FeatureModel]
@@ -107,7 +108,6 @@ class SnowflakeTileCache(TileCache):
         tile_manager = FeatureListManagerSnowflake(session=self.session)
         tile_inputs = []
         for request in required_requests:
-
             tile_input = request.to_tile_manager_input()
             tile_inputs.append(tile_input)
         tile_manager.generate_tiles_on_demand(tile_inputs=tile_inputs)

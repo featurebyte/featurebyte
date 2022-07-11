@@ -4,6 +4,7 @@ This module contains session to EventView integration tests
 from decimal import Decimal
 from unittest import mock
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -238,6 +239,11 @@ def test_query_object_operation_on_snowflake_source(
         "COUNT_2h DIV COUNT_24h": Decimal("0.111111"),
     }
 
+    run_and_test_get_historical_features(config, feature_group)
+
+
+def run_and_test_get_historical_features(config, feature_group):
+    """Test getting historical features from FeatureList"""
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
@@ -245,12 +251,18 @@ def test_query_object_operation_on_snowflake_source(
         }
     )
     feature_list = FeatureList(
-        [feature_group["COUNT_2h"], feature_group["COUNT_24h"]], name="My FeatureList"
+        [feature_group["COUNT_2h"], feature_group["COUNT_24h"]],
+        name="My FeatureList",
     )
     df_historical_features = feature_list.get_historical_features(
         df_training_events, credentials=config.credentials
     )
-    df_historical_features_2 = feature_list.get_historical_features(
-        df_training_events, credentials=config.credentials
+    df_historical_expected = pd.DataFrame(
+        {
+            "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
+            "USER_ID": df_training_events["USER_ID"],
+            "COUNT_2h": [1.0, 1.0, np.nan, 1.0, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
+            "COUNT_24h": [9.0, 7.0, 2.0, 5.0, 5.0, 4.0, 4.0, 7.0, 5.0, np.nan],
+        }
     )
-    pd.testing.assert_frame_equal(df_historical_features, df_historical_features_2)
+    pd.testing.assert_frame_equal(df_historical_features, df_historical_expected)
