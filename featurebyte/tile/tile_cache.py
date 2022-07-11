@@ -239,13 +239,12 @@ class SnowflakeTileCache(TileCache):
         """
         session = self.session
         working_schema = getattr(session, "sf_schema")
-        existing_tracker_tables = session.execute_query(
-            f"""
+        query = f""""
             SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
             WHERE TABLE_SCHEMA = '{working_schema}'
             AND TABLE_NAME LIKE '%{InternalName.TILE_ENTITY_TRACKER_SUFFIX}'
             """
-        )
+        existing_tracker_tables = session.execute_query(query)
         if existing_tracker_tables is not None:
             all_trackers = set(existing_tracker_tables["TABLE_NAME"].tolist())
         else:
