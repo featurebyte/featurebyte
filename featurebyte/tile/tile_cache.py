@@ -67,7 +67,9 @@ class SnowflakeTileCache(TileCache):
         tic = time.time()
         required_requests = self.get_required_computation(features)
         elapsed = time.time() - tic
-        logger.debug(f"Getting required tiles computation took {elapsed:.2f}s")
+        logger.debug(
+            f"Getting required tiles computation took {elapsed:.2f}s ({len(required_requests)})"
+        )
 
         if required_requests:
             tic = time.time()

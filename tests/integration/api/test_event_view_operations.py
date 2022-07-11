@@ -8,13 +8,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.enum import CollectionName
-from featurebyte.persistent.git import GitDB
 
 
 @pytest.fixture(name="mock_entity_config")
@@ -25,24 +22,6 @@ def mock_entity_conf_fixture(config):
     with mock.patch("featurebyte.config.Configurations") as mock_config:
         mock_config.return_value = config
         yield mock_config
-
-
-@pytest.fixture(name="mock_get_persistent")
-def mock_get_persistent_fixture(config):
-    """
-    Mock get_persistent in featurebyte/app.py
-    """
-    git_db = GitDB(**config.git.dict())
-    git_db.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])
-    with mock.patch("featurebyte.app._get_persistent") as mock_get_persistent:
-        mock_get_persistent.return_value = git_db
-        yield mock_get_persistent
-
-    repo, ssh_cmd, branch = git_db.repo, git_db.ssh_cmd, git_db.branch
-    origin = repo.remotes.origin
-    if origin:
-        with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
-            origin.push(refspec=(f":{branch}"))
 
 
 def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data, config):
@@ -105,46 +84,13 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
 
 @pytest.mark.usefixtures("mock_entity_config", "mock_get_persistent")
 def test_query_object_operation_on_snowflake_source(
-    snowflake_session, transaction_data_upper_case, config
+    transaction_data_upper_case,
+    config,
+    event_data,
 ):
     """
     Test loading event view from snowflake source
     """
-    table_name = "TEST_TABLE"
-    snowflake_database_source = FeatureStore(
-        **config.feature_stores["snowflake_featurestore"].dict()
-    )
-    assert table_name in snowflake_database_source.list_tables(credentials=config.credentials)
-
-    snowflake_database_table = snowflake_database_source.get_table(
-        database_name=snowflake_session.database,
-        schema_name=snowflake_session.sf_schema,
-        table_name=table_name,
-        credentials=config.credentials,
-    )
-    expected_dtypes = pd.Series(
-        {
-            "EVENT_TIMESTAMP": "TIMESTAMP",
-            "CREATED_AT": "INT",
-            "CUST_ID": "INT",
-            "USER_ID": "INT",
-            "PRODUCT_ACTION": "VARCHAR",
-            "SESSION_ID": "INT",
-        }
-    )
-    pd.testing.assert_series_equal(expected_dtypes, snowflake_database_table.dtypes)
-
-    # create entity & event data
-    Entity(name="User", serving_name="uid")
-    event_data = EventData.from_tabular_source(
-        tabular_source=snowflake_database_table,
-        name="snowflake_event_data",
-        event_timestamp_column="EVENT_TIMESTAMP",
-        credentials=config.credentials,
-    )
-    event_data["USER_ID"].as_entity("User")
-    event_data.save_as_draft()
-
     # create event view
     event_view = EventView.from_event_data(event_data)
     assert event_view.columns == [
