@@ -244,7 +244,11 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
 
 
 def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
-    """Test tile building SQL"""
+    """Test tile building SQL with on-demand tile generation
+
+    Note that the input table query contains a left-join with an entity table to filter only data
+    belonging to specific entity IDs and date range
+    """
     interpreter = GraphInterpreter(query_graph_with_groupby)
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=True)
@@ -252,7 +256,47 @@ def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop("sql")
+
+    sql = info_dict.pop("sql")
+    expected_sql = textwrap.dedent(
+        """
+        SELECT
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          "cust_id",
+          SUM("a") AS sum_value,
+          COUNT(*) AS count_value
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+            FROM (
+                SELECT
+                  R.*,
+                  __FB_ENTITY_TABLE_START_DATE
+                FROM __FB_ENTITY_TABLE_NAME
+                LEFT JOIN (
+                    SELECT
+                      "ts" AS "ts",
+                      "cust_id" AS "cust_id",
+                      "a" AS "a",
+                      "b" AS "b",
+                      "a" + "b" AS "c"
+                    FROM "db"."public"."event_table"
+                ) AS R
+                  ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+                  AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+                  AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+            )
+        )
+        GROUP BY
+          tile_index,
+          "cust_id",
+          __FB_ENTITY_TABLE_START_DATE
+        ORDER BY
+          tile_index
+        """
+    ).strip()
+    assert sql == expected_sql
     assert info_dict == {
         "tile_table_id": "avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
         "columns": [InternalName.TILE_START_DATE.value, "cust_id", "sum_value", "count_value"],
