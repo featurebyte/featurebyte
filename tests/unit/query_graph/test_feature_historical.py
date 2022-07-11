@@ -23,10 +23,19 @@ def mocked_session_fixture():
     """Fixture for a mocked session object"""
     with patch("featurebyte.core.generic.SessionManager") as session_manager_cls:
         session_manager = MagicMock(name="MockedSessionManager")
-        mocked_session = Mock(name="MockedSession")
+        mocked_session = Mock(name="MockedSession", sf_schema="FEATUREBYTE")
         session_manager.__getitem__.return_value = mocked_session
         session_manager_cls.return_value = session_manager
         yield mocked_session
+
+
+@pytest.fixture(name="mocked_tile_cache")
+def mocked_tile_cache_fixture():
+    """Fixture for a mocked SnowflakeTileCache object"""
+    with patch(
+        "featurebyte.query_graph.feature_historical.SnowflakeTileCache", autospec=True
+    ) as mocked_cls:
+        yield mocked_cls.return_value
 
 
 @pytest.fixture(name="mock_sqlite_feature")
@@ -88,6 +97,7 @@ def test_get_historical_features__point_in_time_dtype_conversion(
     float_feature,
     config,
     mocked_session,
+    mocked_tile_cache,
 ):
     """
     Test that if point in time column is provided as string, it is converted to datetime before
@@ -115,6 +125,8 @@ def test_get_historical_features__point_in_time_dtype_conversion(
     args, _ = mocked_session.register_temp_table.call_args_list[0]
     df_training_events_registered = args[1]
     assert df_training_events_registered.dtypes["POINT_IN_TIME"] == "datetime64[ns]"
+
+    mocked_tile_cache.compute_tiles_on_demand.assert_called_once()
 
 
 def test_get_historical_feature_sql(float_feature):

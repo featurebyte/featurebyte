@@ -12,7 +12,6 @@ from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME, prettify_sql
 from featurebyte.query_graph.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.session.base import BaseSession
-from featurebyte.session.snowflake import SnowflakeSession
 
 
 class TileCache(ABC):
@@ -150,8 +149,7 @@ class SnowflakeTileCache(TileCache):
 
     def filter_tile_ids_with_tracker(self, tile_ids: list[str]) -> list[str]:
         session = self.session
-        assert isinstance(session, SnowflakeSession)
-        working_schema = session.sf_schema
+        working_schema = getattr(session, "sf_schema")
         existing_tracker_tables = session.execute_query(
             f"""
             SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES

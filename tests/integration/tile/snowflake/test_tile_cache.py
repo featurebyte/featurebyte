@@ -57,7 +57,7 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests):
     )
     snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
 
-    # No cache existed before for this feature. Check that one tile table need to be recomputed
+    # No cache existed before for this feature. Check that one tile table needs to be computed
     requests = tile_cache.get_required_computation(feature_objects)
     assert len(requests) == 1
     check_entity_table_sql_and_tile_compute_sql(
