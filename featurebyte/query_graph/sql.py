@@ -651,7 +651,7 @@ def make_build_tile_node(
 def make_input_node(
     parameters: dict[str, Any],
     sql_type: SQLType,
-    groupby_keys: list[str],
+    groupby_keys: list[str] | None = None,
 ) -> BuildTileInputNode | GenericInputNode:
     """Create a SQLNode corresponding to a query graph input node
 
@@ -661,10 +661,14 @@ def make_input_node(
         Query graph node parameters
     sql_type: SQLType
         Type of SQL code to generate
+    groupby_keys : list[str] | None
+        List of groupby keys that is used for the downstream groupby operation. This information is
+        required so that only tiles corresponding to specific entities are built (vs building tiles
+        using all available data). This option is only used when SQLType is BUILD_TILE_ON_DEMAND.
 
     Returns
     -------
-    BuildTileInputNode | GenericInputNode
+    BuildTileInputNode | GenericInputNode | SelectedEntityBuildTileInputNode
         SQLNode corresponding to the query graph input node
     """
     columns_map = {}

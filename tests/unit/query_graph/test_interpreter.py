@@ -310,7 +310,7 @@ def test_graph_interpreter_snowflake(graph):
         input_nodes=[node_input],
     )
     interpreter = GraphInterpreter(graph)
-    tile_gen_sql = interpreter.construct_tile_gen_sql(_groupby_node)
+    tile_gen_sql = interpreter.construct_tile_gen_sql(_groupby_node, is_on_demand=False)
     assert len(tile_gen_sql) == 1
     sql_template = tile_gen_sql[0].sql
     expected = textwrap.dedent(
