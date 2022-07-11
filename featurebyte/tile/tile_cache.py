@@ -3,16 +3,14 @@ Module for TileCache and its implementors
 """
 from __future__ import annotations
 
-from typing import Any
-
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+from featurebyte.api.feature import Feature
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.logger import logger
-from featurebyte.models.feature import FeatureModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME, prettify_sql
 from featurebyte.query_graph.interpreter import GraphInterpreter, TileGenSql
@@ -34,12 +32,12 @@ class TileCache(ABC):
         self.session = session
 
     @abstractmethod
-    def compute_tiles_on_demand(self, features: list[FeatureModel]) -> None:
+    def compute_tiles_on_demand(self, features: list[Feature]) -> None:
         """Check tile status for the provided features and compute missing tiles if required
 
         Parameters
         ----------
-        features : list[FeatureModel]
+        features : list[Feature]
             Feature objects
         """
 
@@ -78,13 +76,13 @@ class SnowflakeOnDemandTileComputeRequest:
 class SnowflakeTileCache(TileCache):
     """Responsible for on-demand tile computation and caching for Snowflake"""
 
-    def compute_tiles_on_demand(self, features: list[FeatureModel]) -> None:
+    def compute_tiles_on_demand(self, features: list[Feature]) -> None:
         """Compute missing tiles for the given list of Features
 
         Parameters
         ----------
-        features : list[FeatureModel]
-            FeatureModel objects
+        features : list[Feature]
+            Feature objects
         """
         tic = time.time()
         required_requests = self.get_required_computation(features)
@@ -100,14 +98,14 @@ class SnowflakeTileCache(TileCache):
             logger.debug(f"Compute tiles on demand took {elapsed:.2f}s")
 
     def get_required_computation(
-        self, features: list[FeatureModel]
+        self, features: list[Feature]
     ) -> list[SnowflakeOnDemandTileComputeRequest]:
         """Check for missing or outdated tiles and construct a list of required computations
 
         Parameters
         ----------
-        features : list[FeatureModel]
-            FeatureModel objects
+        features : list[Feature]
+            Feature objects
 
         Returns
         -------
@@ -178,17 +176,15 @@ class SnowflakeTileCache(TileCache):
         )
         return result.iloc[0]["COUNT"]  # type: ignore
 
-    def _check_cache(
-        self, features: list[FeatureModel]
-    ) -> list[SnowflakeOnDemandTileComputeRequest]:
+    def _check_cache(self, features: list[Feature]) -> list[SnowflakeOnDemandTileComputeRequest]:
         """Query the entity tracker tables on Snowflake and construct a list computation potentially
         required. To know whether each computation is required, each corresponding entity table has
         to be materialised.
 
         Parameters
         ----------
-        features : list[FeatureModel]
-            FeatureModel objects
+        features : list[Feature]
+            Feature objects
 
         Returns
         -------
@@ -207,13 +203,13 @@ class SnowflakeTileCache(TileCache):
         return requests
 
     @staticmethod
-    def _get_unique_tile_infos(features: list[FeatureModel]) -> dict[str, TileGenSql]:
+    def _get_unique_tile_infos(features: list[Feature]) -> dict[str, TileGenSql]:
         """Construct mapping from tile_table_id to TileGenSql for easier manipulation
 
         Parameters
         ----------
-        features : list[FeatureModel]
-            List of FeatureModel objects
+        features : list[Feature]
+            List of Feature objects
 
         Returns
         -------
@@ -388,7 +384,9 @@ class SnowflakeTileCache(TileCache):
         tracker_table_name = SnowflakeTileCache._get_tracker_name_from_tile_id(
             tile_info.tile_table_id
         )
-        join_conditions = ", ".join([f'L."{col}" = R."{col}"' for col in tile_info.entity_columns])
+        join_conditions = " AND ".join(
+            [f'L."{col}" = R."{col}"' for col in tile_info.entity_columns]
+        )
         tracker_sql_filtered = f"""
         SELECT
             L.*,
