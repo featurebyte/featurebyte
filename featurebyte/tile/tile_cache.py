@@ -1,3 +1,6 @@
+"""
+Module for TileCache and its implementors
+"""
 from __future__ import annotations
 
 import time
@@ -23,6 +26,8 @@ class TileCache(ABC):
         Session object to interact with database
     """
 
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, session: BaseSession):
         self.session = session
 
@@ -39,6 +44,7 @@ class TileCache(ABC):
 
 @dataclass
 class SnowflakeOnDemandTileComputeRequest:
+    """Representation of information required to compute and update a single tile table"""
 
     tile_table_id: str
     tracker_sql: str
@@ -47,6 +53,13 @@ class SnowflakeOnDemandTileComputeRequest:
     tile_gen_info: TileGenSql
 
     def to_tile_manager_input(self) -> tuple[TileSpec, str]:
+        """Returns a tuple required by FeatureListManagerSnowflake to compute tiles on-demand
+
+        Returns
+        -------
+        tuple[TileSpec, str]
+            Tuple of TileSpec and temp table name
+        """
         tile_spec = TileSpec(
             time_modulo_frequency_second=self.tile_gen_info.time_modulo_frequency,
             blind_spot_second=self.tile_gen_info.blind_spot,
@@ -61,8 +74,16 @@ class SnowflakeOnDemandTileComputeRequest:
 
 
 class SnowflakeTileCache(TileCache):
-    def compute_tiles_on_demand(self, features: list[FeatureModel]) -> None:
+    """Responsible for on-demand tile computation and caching for Snowflake"""
 
+    def compute_tiles_on_demand(self, features: list[FeatureModel]) -> None:
+        """Compute missing tiles for the given list of Features
+
+        Parameters
+        ----------
+        features : list[FeatureModel]
+            FeatureModel objects
+        """
         tic = time.time()
         required_requests = self.get_required_computation(features)
         elapsed = time.time() - tic
@@ -79,9 +100,19 @@ class SnowflakeTileCache(TileCache):
     def get_required_computation(
         self, features: list[FeatureModel]
     ) -> list[SnowflakeOnDemandTileComputeRequest]:
+        """Check for missing or outdated tiles and construct a list of required computations
 
+        Parameters
+        ----------
+        features : list[FeatureModel]
+            FeatureModel objects
+
+        Returns
+        -------
+        list[SnowflakeOnDemandTileComputeRequest]
+        """
         tic = time.time()
-        requests = self.check_cache(features=features)
+        requests = self._check_cache(features=features)
         elapsed = time.time() - tic
         logger.debug(f"Checking existence of tracking tables took {elapsed:.2f}s")
 
@@ -89,7 +120,7 @@ class SnowflakeTileCache(TileCache):
 
         tic = time.time()
         for request in requests:
-            num_entities_to_compute = self.materialize_table(request)
+            num_entities_to_compute = self._materialize_table(request)
             if num_entities_to_compute:
                 logger.debug(
                     f"Need to update tile cache for {request.tile_table_id}"
@@ -106,6 +137,7 @@ class SnowflakeTileCache(TileCache):
     def invoke_tile_manager(
         self, required_requests: list[SnowflakeOnDemandTileComputeRequest]
     ) -> None:
+        """Interacts with FeatureListManagerSnowflake to compute tiles and update cache"""
         tile_manager = FeatureListManagerSnowflake(session=self.session)
         tile_inputs = []
         for request in required_requests:
@@ -113,7 +145,12 @@ class SnowflakeTileCache(TileCache):
             tile_inputs.append(tile_input)
         tile_manager.generate_tiles_on_demand(tile_inputs=tile_inputs)
 
-    def materialize_table(self, request: SnowflakeOnDemandTileComputeRequest) -> int:
+    def _materialize_table(self, request: SnowflakeOnDemandTileComputeRequest) -> int:
+        """Materialize entity table and return its size.
+
+        If the materialized table row count is larger than 1, it means tiles for some entities are
+        missing and need to be computed.
+        """
         self.session.execute_query(
             f"CREATE OR REPLACE TEMP TABLE {request.tracker_temp_table_name} AS "
             f"{request.tracker_sql}"
@@ -123,21 +160,26 @@ class SnowflakeTileCache(TileCache):
         )
         return result.iloc[0]["COUNT"]
 
-    def check_cache(self, features: list[FeatureModel]) -> [SnowflakeOnDemandTileComputeRequest]:
-        unique_tile_infos = SnowflakeTileCache.get_unique_tile_infos(features)
-        tile_ids_with_tracker = self.filter_tile_ids_with_tracker(list(unique_tile_infos.keys()))
+    def _check_cache(self, features: list[FeatureModel]) -> [SnowflakeOnDemandTileComputeRequest]:
+        """Query the entity tracker tables on Snowflake and construct a list computation potentially
+        required. To know whether each computation is required, each corresponding entity table has
+        to be materialised.
+        """
+        unique_tile_infos = SnowflakeTileCache._get_unique_tile_infos(features)
+        tile_ids_with_tracker = self._filter_tile_ids_with_tracker(list(unique_tile_infos.keys()))
         tile_ids_without_tracker = list(set(unique_tile_infos.keys()) - set(tile_ids_with_tracker))
-        requests_new = SnowflakeTileCache.construct_requests_no_tracker(
+        requests_new = SnowflakeTileCache._construct_requests_no_tracker(
             tile_ids_without_tracker, unique_tile_infos
         )
-        requests_existing = SnowflakeTileCache.construct_requests_with_tracker(
+        requests_existing = SnowflakeTileCache._construct_requests_with_tracker(
             tile_ids_with_tracker, unique_tile_infos
         )
         requests = requests_new + requests_existing
         return requests
 
     @staticmethod
-    def get_unique_tile_infos(features: list[FeatureModel]) -> dict[str, TileGenSql]:
+    def _get_unique_tile_infos(features: list[FeatureModel]) -> dict[str, TileGenSql]:
+        """Construct mapping from tile_table_id to TileGenSql for easier manipulation"""
         out = {}
         for feature in features:
             interpreter = GraphInterpreter(feature.graph)
@@ -147,7 +189,8 @@ class SnowflakeTileCache(TileCache):
                     out[info.tile_table_id] = info
         return out
 
-    def filter_tile_ids_with_tracker(self, tile_ids: list[str]) -> list[str]:
+    def _filter_tile_ids_with_tracker(self, tile_ids: list[str]) -> list[str]:
+        """Query tracker tables in Snowflake to identify tile IDs with existing tracking tables"""
         session = self.session
         working_schema = getattr(session, "sf_schema")
         existing_tracker_tables = session.execute_query(
@@ -170,9 +213,10 @@ class SnowflakeTileCache(TileCache):
         return f"{tile_id}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
 
     @staticmethod
-    def construct_requests_with_tracker(
+    def _construct_requests_with_tracker(
         tile_ids: list[str], tile_infos: dict[str, TileGenSql]
     ) -> list[SnowflakeOnDemandTileComputeRequest]:
+        """Construct computations for tile tables with existing entity tracker table"""
         out = []
         for tile_id in tile_ids:
             tile_info = tile_infos[tile_id]
@@ -181,7 +225,7 @@ class SnowflakeTileCache(TileCache):
         return out
 
     @staticmethod
-    def construct_requests_no_tracker(
+    def _construct_requests_no_tracker(
         tile_ids: list[str], tile_infos: dict[str, TileGenSql]
     ) -> list[SnowflakeOnDemandTileComputeRequest]:
         out = []
@@ -196,6 +240,48 @@ class SnowflakeTileCache(TileCache):
         tile_info: TileGenSql,
     ) -> SnowflakeOnDemandTileComputeRequest:
         tracker_sql = SnowflakeTileCache._construct_entity_table_sql(tile_info)
+        tracker_sql_filtered = SnowflakeTileCache._construct_entity_table_sql_with_existing_tracker(
+            tracker_sql=tracker_sql, tile_info=tile_info
+        )
+        request = SnowflakeTileCache._construct_compute_request(tracker_sql_filtered, tile_info)
+        return request
+
+    @staticmethod
+    def _construct_one_request_no_tracker(
+        tile_info: TileGenSql,
+    ) -> SnowflakeOnDemandTileComputeRequest:
+        """Construct entity table query for a tile table without existing entity tracker table"""
+        tracker_sql = SnowflakeTileCache._construct_entity_table_sql(tile_info)
+        request = SnowflakeTileCache._construct_compute_request(tracker_sql, tile_info)
+        return request
+
+    @staticmethod
+    def _construct_compute_request(tracker_sql: str, tile_info: TileGenSql):
+        """Construct an instance of SnowflakeOnDemandTileComputeRequest based on the constructed SQL
+        queries by filling in necessary placeholders
+        """
+        tile_id = tile_info.tile_table_id
+        tracker_temp_table_name = f"{tile_id}_ENTITY_TRACKER_UPDATE"
+        tile_compute_sql = tile_info.sql
+        tile_compute_sql = tile_compute_sql.replace(
+            InternalName.ENTITY_TABLE_SQL_PLACEHOLDER, tracker_temp_table_name
+        )
+        request = SnowflakeOnDemandTileComputeRequest(
+            tile_table_id=tile_id,
+            tracker_sql=tracker_sql,
+            tile_compute_sql=tile_compute_sql,
+            tracker_temp_table_name=tracker_temp_table_name,
+            tile_gen_info=tile_info,
+        )
+        return request
+
+    @staticmethod
+    def _construct_entity_table_sql_with_existing_tracker(tracker_sql: str, tile_info: TileGenSql):
+        """Construct entity table query for a tile table with existing entity tracker table
+
+        This query will be slightly more complex because it involves joining with the existing
+        tracker table and filter for entities without tiles or with outdated tiles.
+        """
         tracker_table_name = SnowflakeTileCache._get_tracker_name_from_tile_id(
             tile_info.tile_table_id
         )
@@ -212,38 +298,16 @@ class SnowflakeTileCache(TileCache):
             OR {InternalName.LAST_TILE_START_DATE_PREVIOUS} IS NULL
         """
         tracker_sql_filtered = prettify_sql(tracker_sql_filtered)
-        request = SnowflakeTileCache._construct_compute_request(tracker_sql_filtered, tile_info)
-        return request
-
-    @staticmethod
-    def _construct_one_request_no_tracker(
-        tile_info: TileGenSql,
-    ) -> SnowflakeOnDemandTileComputeRequest:
-        tracker_sql = SnowflakeTileCache._construct_entity_table_sql(tile_info)
-        request = SnowflakeTileCache._construct_compute_request(tracker_sql, tile_info)
-        return request
-
-    @staticmethod
-    def _construct_compute_request(tracker_sql: str, tile_info: TileGenSql):
-
-        tile_id = tile_info.tile_table_id
-        tracker_temp_table_name = f"{tile_id}_ENTITY_TRACKER_UPDATE"
-        tile_compute_sql = tile_info.sql
-        tile_compute_sql = tile_compute_sql.replace(
-            InternalName.ENTITY_TABLE_SQL_PLACEHOLDER, tracker_temp_table_name
-        )
-
-        request = SnowflakeOnDemandTileComputeRequest(
-            tile_table_id=tile_id,
-            tracker_sql=tracker_sql,
-            tile_compute_sql=tile_compute_sql,
-            tracker_temp_table_name=tracker_temp_table_name,
-            tile_gen_info=tile_info,
-        )
-        return request
+        return tracker_sql_filtered
 
     @staticmethod
     def _construct_entity_table_sql(tile_info: TileGenSql) -> str:
+        """Construct the query for an entity table
+
+        The entity table is simply the unique entity IDs in the request table with their latest
+        point-in-time (adjusted as last-tile-start-date according to job settings as required by
+        tile manager)
+        """
 
         blind_spot = tile_info.blind_spot
         groupby_columns = ", ".join([f'"{col}"' for col in tile_info.entity_columns])

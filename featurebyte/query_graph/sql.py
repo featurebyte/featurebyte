@@ -257,6 +257,18 @@ class BuildTileInputNode(GenericInputNode):
 
 @dataclass
 class SelectedEntityBuildTileInputNode(GenericInputNode):
+    """Input data node used when building tiles for selected entities only
+
+    The selected entities are expected to be available in an "entity table" (table name used in the
+    SQL query is InternalName.ENTITY_TABLE_SQL_PLACEHOLDER).
+
+    Entity table is expected to have these columns:
+    * entity column(s)
+    * InternalName.ENTITY_TABLE_START_DATE
+    * InternalName.ENTITY_TABLE_END_DATE
+
+    Entity column(s) is expected to be unique in the entity table (in the primary key sense).
+    """
 
     timestamp: str
     entity_columns: list[str]
@@ -278,7 +290,7 @@ class SelectedEntityBuildTileInputNode(GenericInputNode):
 
         table_sql = super().sql
         result = (
-            select(f"R.*", InternalName.ENTITY_TABLE_START_DATE.value)
+            select("R.*", InternalName.ENTITY_TABLE_START_DATE.value)
             .from_(InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.value)
             .join(
                 table_sql,
@@ -620,6 +632,8 @@ def make_build_tile_node(
         List of input SQL nodes
     parameters : dict[str, Any]
         Query node parameters
+    is_on_demand : bool
+        Whether the SQL is for on-demand tile building for historical features
 
     Returns
     -------

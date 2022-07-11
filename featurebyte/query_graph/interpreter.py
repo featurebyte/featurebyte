@@ -134,18 +134,51 @@ class SQLOperationGraph:
             sql_node = make_filter_node(input_sql_nodes, output_type)
 
         elif node_type == NodeType.GROUPBY:
-            if self.sql_type == SQLType.BUILD_TILE:
-                sql_node = make_build_tile_node(input_sql_nodes, parameters, is_on_demand=False)
-            elif self.sql_type == SQLType.BUILD_TILE_ON_DEMAND:
-                sql_node = make_build_tile_node(input_sql_nodes, parameters, is_on_demand=True)
-            elif self.sql_type == SQLType.GENERATE_FEATURE:
-                sql_node = make_aggregated_tiles_node(cur_node)
-            else:
-                raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
+            sql_node = self.handle_groupby_node(
+                groupby_node=cur_node,
+                parameters=parameters,
+                input_sql_nodes=input_sql_nodes,
+            )
         else:
             raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
 
         self.sql_nodes[node_id] = sql_node
+        return sql_node
+
+    def handle_groupby_node(
+        self,
+        groupby_node: Node,
+        parameters: dict[str, Any],
+        input_sql_nodes: list[SQLNode],
+    ) -> SQLNode:
+        """Handle a groupby query graph node and create an appropriate SQLNode
+
+        Parameters
+        ----------
+        groupby_node : Node
+            Groupby query graph
+        parameters : dict[str, Any]
+            Query node parameters
+        input_sql_nodes : list[SQLNode]
+            Input SQL nodes
+
+        Returns
+        -------
+        SQLNode
+
+        Raises
+        ------
+        NotImplementedError
+            If the provided query node is not supported
+        """
+        if self.sql_type == SQLType.BUILD_TILE:
+            sql_node = make_build_tile_node(input_sql_nodes, parameters, is_on_demand=False)
+        elif self.sql_type == SQLType.BUILD_TILE_ON_DEMAND:
+            sql_node = make_build_tile_node(input_sql_nodes, parameters, is_on_demand=True)
+        elif self.sql_type == SQLType.GENERATE_FEATURE:
+            sql_node = make_aggregated_tiles_node(groupby_node)
+        else:
+            raise NotImplementedError(f"SQLNode not implemented for {groupby_node}")
         return sql_node
 
 
@@ -173,6 +206,7 @@ class TileGenSql:
         as determining the reuqired tiles to build on demand during preview.
     """
 
+    # pylint: disable=too-many-instance-attributes
     tile_table_id: str
     sql: str
     columns: list[str]
@@ -303,6 +337,8 @@ class GraphInterpreter:
         ----------
         starting_node : Node
             Starting node (typically corresponding to selected features) to search from
+        is_on_demand : bool
+            Whether the SQL is for on-demand tile building for historical features
 
         Returns
         -------
