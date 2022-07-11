@@ -737,3 +737,44 @@ def make_aggregated_tiles_node(groupby_node: Node) -> AggregatedTilesNode:
             this=agg_spec.agg_result_name, quoted=True
         )
     return AggregatedTilesNode(columns_map=columns_map)
+
+
+def handle_groupby_node(
+    groupby_node: Node,
+    parameters: dict[str, Any],
+    input_sql_nodes: list[SQLNode],
+    sql_type: SQLType,
+) -> BuildTileNode | AggregatedTilesNode:
+    """Handle a groupby query graph node and create an appropriate SQLNode
+
+    Parameters
+    ----------
+    groupby_node : Node
+        Groupby query graph
+    parameters : dict[str, Any]
+        Query node parameters
+    input_sql_nodes : list[SQLNode]
+        Input SQL nodes
+    sql_type : SQLType
+        Type of SQL code to generate
+
+    Returns
+    -------
+    BuildTileNode | AggregatedTilesNode
+        Resulting SQLNode
+
+    Raises
+    ------
+    NotImplementedError
+        If the provided query node is not supported
+    """
+    sql_node: BuildTileNode | AggregatedTilesNode
+    if sql_type == SQLType.BUILD_TILE:
+        sql_node = make_build_tile_node(input_sql_nodes, parameters, is_on_demand=False)
+    elif sql_type == SQLType.BUILD_TILE_ON_DEMAND:
+        sql_node = make_build_tile_node(input_sql_nodes, parameters, is_on_demand=True)
+    elif sql_type == SQLType.GENERATE_FEATURE:
+        sql_node = make_aggregated_tiles_node(groupby_node)
+    else:
+        raise NotImplementedError(f"SQLNode not implemented for {groupby_node}")
+    return sql_node
