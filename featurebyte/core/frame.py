@@ -8,7 +8,7 @@ from typing import Any, Dict, Tuple
 import copy
 
 import pandas as pd
-from pydantic import root_validator
+from pydantic import StrictStr, root_validator
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
@@ -23,7 +23,7 @@ class BaseFrame(QueryObject):
     BaseFrame class
     """
 
-    column_var_type_map: Dict[str, DBVarType]
+    column_var_type_map: Dict[StrictStr, DBVarType]
 
     @property
     def dtypes(self) -> pd.Series:

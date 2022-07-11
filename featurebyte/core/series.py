@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Tuple
 
-from pydantic import Field, root_validator
+from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin
@@ -19,9 +19,9 @@ class Series(QueryObject, OpsMixin):
     Implement operations to manipulate database column
     """
 
-    name: Optional[str] = Field(default=None)
+    name: Optional[StrictStr] = Field(default=None)
     var_type: DBVarType
-    lineage: Tuple[str, ...]
+    lineage: Tuple[StrictStr, ...]
 
     def __repr__(self) -> str:
         return (

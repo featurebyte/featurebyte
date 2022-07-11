@@ -7,6 +7,7 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
+from pydantic.error_wrappers import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData, EventDataColumn
@@ -90,6 +91,26 @@ def test_from_tabular_source(
     )
     event_data_dict["id"] = event_data.id
     assert event_data.dict() == event_data_dict
+
+    # user input validation
+    with pytest.raises(ValidationError) as exc:
+        EventData.from_tabular_source(
+            tabular_source=snowflake_database_table,
+            name=123,
+            event_timestamp_column=234,
+            record_creation_date_column=345,
+            credentials=config.credentials,
+        )
+
+    assert exc.value.errors() == [
+        {"loc": ("name",), "msg": "str type expected", "type": "type_error.str"},
+        {"loc": ("event_timestamp_column",), "msg": "str type expected", "type": "type_error.str"},
+        {
+            "loc": ("record_creation_date_column",),
+            "msg": "str type expected",
+            "type": "type_error.str",
+        },
+    ]
 
 
 def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_database_table, config):
