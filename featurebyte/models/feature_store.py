@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Optional, Tuple, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictStr
 
 from featurebyte.enum import SourceType
 
@@ -13,16 +13,16 @@ from featurebyte.enum import SourceType
 class SnowflakeDetails(BaseModel):
     """Model for Snowflake data source information"""
 
-    account: str
-    warehouse: str
-    database: str
-    sf_schema: str  # schema shadows a BaseModel attribute
+    account: StrictStr
+    warehouse: StrictStr
+    database: StrictStr
+    sf_schema: StrictStr  # schema shadows a BaseModel attribute
 
 
 class SQLiteDetails(BaseModel):
     """Model for SQLite data source information"""
 
-    filename: str
+    filename: StrictStr
 
 
 DatabaseDetails = Union[SnowflakeDetails, SQLiteDetails]
@@ -49,9 +49,9 @@ class FeatureStoreModel(BaseModel):
 class TableDetails(BaseModel):
     """Model for table"""
 
-    database_name: Optional[str]
-    schema_name: Optional[str]
-    table_name: str
+    database_name: Optional[StrictStr]
+    schema_name: Optional[StrictStr]
+    table_name: StrictStr
 
 
 class DatabaseTableModel(BaseModel):

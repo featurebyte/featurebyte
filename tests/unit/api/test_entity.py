@@ -1,9 +1,11 @@
 """
 Unit test for Entity class
 """
+from datetime import datetime
 from unittest import mock
 
 import pytest
+from freezegun import freeze_time
 
 from featurebyte.api.entity import Entity
 from featurebyte.exception import (
@@ -11,6 +13,7 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordUpdateException,
 )
+from featurebyte.models.entity import EntityNameHistoryEntry
 
 
 @pytest.fixture(name="entity")
@@ -60,6 +63,7 @@ def test_entity_creation(entity):
             Entity(name="Customer", serving_name="cust_id")
 
 
+@freeze_time("2022-07-01")
 def test_entity_update_name(entity):
     """
     Test update entity name
@@ -68,7 +72,9 @@ def test_entity_update_name(entity):
     entity_id = entity.id
     entity.update_name("Customer")
     assert entity.id == entity_id
-    assert entity.name_history == ["customer"]
+    assert entity.name_history == [
+        EntityNameHistoryEntry(created_at=datetime(2022, 7, 1), name="customer")
+    ]
 
     # create another entity
     Entity(name="product", serving_name="product_id")

@@ -9,7 +9,7 @@ import json
 from abc import abstractmethod
 
 import pandas as pd
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictStr
 
 from featurebyte.config import Configurations, Credentials
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
@@ -54,7 +54,7 @@ class QueryObject(BaseModel):
 
     graph: QueryGraph = Field(default_factory=GlobalQueryGraph)
     node: Node
-    row_index_lineage: Tuple[str, ...]
+    row_index_lineage: Tuple[StrictStr, ...]
     tabular_source: Tuple[FeatureStoreModel, TableDetails]
 
     def __repr__(self) -> str:

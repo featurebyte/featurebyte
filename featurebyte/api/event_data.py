@@ -3,11 +3,12 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Tuple
 
 import json
 from http import HTTPStatus
 
+from bson.objectid import ObjectId
 from pydantic import validator
 
 from featurebyte.api.database_table import DatabaseTable
@@ -22,6 +23,7 @@ from featurebyte.exception import (
 from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
+from featurebyte.schema.event_data import EventDataCreate
 
 
 class EventDataColumn:
@@ -68,6 +70,24 @@ class EventData(EventDataModel, DatabaseTable):
     EventData class
     """
 
+    tabular_source: Tuple[FeatureStore, TableDetails]
+
+    class Config:
+        """
+        Pydantic Config class
+        """
+
+        # pylint: disable=too-few-public-methods
+
+        fields = {
+            "credentials": {"exclude": True},
+            "graph": {"exclude": True},
+            "node": {"exclude": True},
+            "row_index_lineage": {"exclude": True},
+            "column_var_type_map": {"exclude": True},
+        }
+        json_encoders = {ObjectId: str}
+
     @classmethod
     def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         return {"timestamp": values["event_timestamp_column"]}
@@ -100,17 +120,30 @@ class EventData(EventDataModel, DatabaseTable):
         Returns
         -------
         EventData
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When record with the same key exists at the persistent layer
+        RecordRetrievalException
+            When unexpected retrieval failure
         """
-        node_parameters = tabular_source.node.parameters.copy()
-        database_source = FeatureStore(**node_parameters["database_source"])
-        table_details = TableDetails(**node_parameters["dbtable"])
-        return EventData(
+        data = EventDataCreate(
             name=name,
-            tabular_source=(database_source, table_details),
+            tabular_source=tabular_source.tabular_source,
             event_timestamp_column=event_timestamp_column,
             record_creation_date_column=record_creation_date_column,
-            credentials=credentials,
         )
+        client = Configurations().get_client()
+        response = client.get(url="/event_data/", params={"name": name})
+        if response.status_code == HTTPStatus.OK:
+            response_dict = response.json()
+            if not response_dict["data"]:
+                return EventData(**data.dict(), credentials=credentials)
+            raise DuplicatedRecordException(
+                response, f'EventData name "{name}" exists in saved record.'
+            )
+        raise RecordRetrievalException(response)
 
     @validator("event_timestamp_column")
     @classmethod
@@ -189,7 +222,7 @@ class EventData(EventDataModel, DatabaseTable):
             When unexpected retrieval failure
         """
         client = Configurations().get_client()
-        response = client.get(url=f"/event_data/{self.name}")
+        response = client.get(url=f"/event_data/{self.id}")
         if response.status_code == HTTPStatus.OK:
             super().__init__(
                 **{**convert_response_to_dict(response), "credentials": self.credentials}

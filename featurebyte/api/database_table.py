@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from pydantic import Field, root_validator
+from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.frame import BaseFrame
@@ -23,7 +23,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
 
     # pylint: disable=too-few-public-methods
 
-    column_var_type_map: Dict[str, DBVarType]
+    column_var_type_map: Dict[StrictStr, DBVarType]
     credentials: Optional[Credentials] = Field(default=None)
 
     class Config:

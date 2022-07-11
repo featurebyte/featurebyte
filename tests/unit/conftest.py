@@ -187,10 +187,11 @@ def snowflake_database_table_fixture(
 
 
 @pytest.fixture(name="snowflake_event_data")
-def snowflake_event_data_fixture(snowflake_database_table, config):
+def snowflake_event_data_fixture(snowflake_database_table, config, mock_get_persistent):
     """
     EventData object fixture
     """
+    _ = mock_get_persistent
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",

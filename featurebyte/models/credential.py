@@ -7,7 +7,7 @@ from typing import Union
 from enum import Enum
 
 import pymongo
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictStr
 
 from featurebyte.models.feature_store import FeatureStoreModel
 
@@ -25,8 +25,8 @@ class UsernamePasswordCredential(BaseModel):
     Username / Password credential
     """
 
-    username: str
-    password: str
+    username: StrictStr
+    password: StrictStr
 
 
 class Credential(BaseModel):
@@ -34,7 +34,7 @@ class Credential(BaseModel):
     Credential model
     """
 
-    name: str
+    name: StrictStr
     feature_store: FeatureStoreModel
     credential_type: CredentialType
     credential: Union[UsernamePasswordCredential]
