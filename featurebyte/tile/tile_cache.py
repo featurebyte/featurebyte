@@ -239,7 +239,7 @@ class SnowflakeTileCache(TileCache):
         """
         session = self.session
         working_schema = getattr(session, "sf_schema")
-        query = f""""
+        query = f"""
             SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
             WHERE TABLE_SCHEMA = '{working_schema}'
             AND TABLE_NAME LIKE '%{InternalName.TILE_ENTITY_TRACKER_SUFFIX}'
