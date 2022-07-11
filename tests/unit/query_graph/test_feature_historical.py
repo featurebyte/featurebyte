@@ -29,15 +29,6 @@ def mocked_session_fixture():
         yield mocked_session
 
 
-@pytest.fixture(name="mocked_tile_cache")
-def mocked_tile_cache_fixture():
-    """Fixture for a mocked SnowflakeTileCache object"""
-    with patch(
-        "featurebyte.query_graph.feature_historical.SnowflakeTileCache", autospec=True
-    ) as mocked_cls:
-        yield mocked_cls.return_value
-
-
 @pytest.fixture(name="mock_sqlite_feature")
 def mock_sqlite_feature_fixture():
     """Fixture for a mocked sqlite feature"""
