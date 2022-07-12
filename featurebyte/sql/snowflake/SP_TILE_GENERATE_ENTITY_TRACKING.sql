@@ -1,7 +1,8 @@
 CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_ENTITY_TRACKING(
     TILE_ID varchar,
     ENTITY_COLUMN_NAMES varchar,
-    ENTITY_TABLE varchar
+    ENTITY_TABLE varchar,
+    TILE_LAST_START_DATE_COLUMN varchar
 )
 returns string
 language javascript
@@ -36,26 +37,23 @@ $$
 
         col_list = ENTITY_COLUMN_NAMES.split(",")
 
-        insert_cols_str = ""
-        filter_cols_str = ""
-
+        insert_cols = []
+        filter_cols = []
         for (const [i, element] of col_list.entries()) {
-            if (i === col_list.length - 1) {
-                insert_cols_str = insert_cols_str + "b." + element
-                filter_cols_str = filter_cols_str + "a." + element + " = b."+ element
-            } else {
-                insert_cols_str = insert_cols_str + "b." + element + ","
-                filter_cols_str = filter_cols_str + "a." + element + " = b."+ element + " AND "
-            }
+
+            insert_cols.push("b."+element)
+            filter_cols.push("a." + element + " = b."+ element)
         }
+        insert_cols_str = insert_cols.join(",")
+        filter_cols_str = filter_cols.join(" AND ")
 
         var insert_sql = `
             merge into ${tile_tracking_table} a using (${ENTITY_TABLE}) b
                 on ${filter_cols_str}
                 when matched then
-                    update set a.LAST_TILE_START_DATE = b.LAST_TILE_START_DATE
+                    update set a.${TILE_LAST_START_DATE_COLUMN} = b.${TILE_LAST_START_DATE_COLUMN}
                 when not matched then
-                    insert (${ENTITY_COLUMN_NAMES}, LAST_TILE_START_DATE) values (${insert_cols_str}, b.LAST_TILE_START_DATE)
+                    insert (${ENTITY_COLUMN_NAMES}, ${TILE_LAST_START_DATE_COLUMN}) values (${insert_cols_str}, b.${TILE_LAST_START_DATE_COLUMN})
         `
         snowflake.execute({sqlText: insert_sql})
         debug = debug + " - insert_sql: " + insert_sql

@@ -4,6 +4,7 @@ This module contains integration tests for FeatureSnowflake
 import json
 
 import pandas as pd
+import pytest
 from pandas.testing import assert_frame_equal
 
 from featurebyte.models.feature import FeatureReadiness
@@ -13,8 +14,7 @@ def test_insert_feature_registry(snowflake_session, snowflake_feature, feature_m
     """
     Test insert_feature_registry
     """
-    flag = feature_manager.insert_feature_registry(snowflake_feature)
-    assert flag is True
+    feature_manager.insert_feature_registry(snowflake_feature)
 
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
     assert len(result) == 1
@@ -39,9 +39,8 @@ def test_insert_feature_registry(snowflake_session, snowflake_feature, feature_m
 
     expected_tile_spec = {
         "blind_spot_second": 3,
-        "column_names": ["col1"],
         "entity_column_names": ["col1"],
-        "value_column_names": ["VALUE"],
+        "value_column_names": ["col2"],
         "frequency_minute": 5,
         "tile_id": "tile_id1",
         "tile_sql": "SELECT * FROM DUMMY",
@@ -55,16 +54,20 @@ def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature,
     """
     Test insert_feature_registry duplicate with exception
     """
-    flag = feature_manager.insert_feature_registry(snowflake_feature)
-    assert flag is True
+    feature_manager.insert_feature_registry(snowflake_feature)
 
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
     assert len(result) == 1
     assert result.iloc[0]["NAME"] == "sum_30m"
     assert result.iloc[0]["VERSION"] == "v1"
 
-    flag = feature_manager.insert_feature_registry(snowflake_feature)
-    assert flag is False
+    with pytest.raises(ValueError) as excinfo:
+        feature_manager.insert_feature_registry(snowflake_feature)
+
+    assert (
+        str(excinfo.value)
+        == f"Feature version already exist for {snowflake_feature.name} with version {snowflake_feature.version}"
+    )
 
 
 def test_update_feature_registry(snowflake_session, snowflake_feature, feature_manager):

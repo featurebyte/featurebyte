@@ -42,7 +42,7 @@ class FeatureManagerSnowflake(BaseModel):
         super().__init__(**kw)
         self._session = session
 
-    def insert_feature_registry(self, feature: FeatureModel) -> bool:
+    def insert_feature_registry(self, feature: FeatureModel) -> None:
         """
         Insert feature registry record. Update the is_default of the existing feature registry records to be False,
         then insert the new registry record with is_default to True
@@ -52,9 +52,10 @@ class FeatureManagerSnowflake(BaseModel):
         feature: FeatureModel
             input feature instance
 
-        Returns
-        -------
-            whether the feature registry record is inserted successfully or not
+        Raises
+        ----------
+        ValueError
+            when the feature registry record already exists
         """
         feature_versions = self.retrieve_feature_registries(
             feature=feature, version=feature.version
@@ -75,12 +76,10 @@ class FeatureManagerSnowflake(BaseModel):
             sql = tm_insert_feature_registry.render(feature=feature, tile_specs_str=tile_specs_str)
             logger.debug(f"generated sql: {sql}")
             self._session.execute_query(sql)
-            return True
-
-        logger.debug(
-            f"Feature version already exist for {feature.name} with version {feature.version}"
-        )
-        return False
+        else:
+            raise ValueError(
+                f"Feature version already exist for {feature.name} with version {feature.version}"
+            )
 
     def retrieve_feature_registries(
         self, feature: FeatureModel, version: Optional[FeatureVersionIdentifier] = None
