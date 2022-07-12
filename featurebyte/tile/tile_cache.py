@@ -3,6 +3,8 @@ Module for TileCache and its implementors
 """
 from __future__ import annotations
 
+from typing import Any
+
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -76,6 +78,10 @@ class SnowflakeOnDemandTileComputeRequest:
 class SnowflakeTileCache(TileCache):
     """Responsible for on-demand tile computation and caching for Snowflake"""
 
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self._materialized_temp_table_names: set[str] = set()
+
     def compute_tiles_on_demand(self, features: list[Feature]) -> None:
         """Compute missing tiles for the given list of Features
 
@@ -96,6 +102,10 @@ class SnowflakeTileCache(TileCache):
             self.invoke_tile_manager(required_requests)
             elapsed = time.time() - tic
             logger.debug(f"Compute tiles on demand took {elapsed:.2f}s")
+        else:
+            logger.debug("All required tiles can be reused")
+
+        self.cleanup_temp_tables()
 
     def get_required_computation(
         self, features: list[Feature]
@@ -151,6 +161,12 @@ class SnowflakeTileCache(TileCache):
             tile_inputs.append(tile_input)
         tile_manager.generate_tiles_on_demand(tile_inputs=tile_inputs)
 
+    def cleanup_temp_tables(self) -> None:
+        """Drops all the temp tables that was created by SnowflakeTileCache"""
+        for temp_table_name in self._materialized_temp_table_names:
+            self.session.execute_query(f"DROP TABLE IF EXISTS {temp_table_name}")
+        self._materialized_temp_table_names = set()
+
     def _materialize_table(self, request: SnowflakeOnDemandTileComputeRequest) -> int:
         """Materialize entity table and return its size
 
@@ -174,6 +190,7 @@ class SnowflakeTileCache(TileCache):
         result = self.session.execute_query(
             f"SELECT COUNT(*) AS COUNT FROM {request.tracker_temp_table_name}"
         )
+        self._materialized_temp_table_names.add(request.tracker_temp_table_name)
         return result.iloc[0]["COUNT"]  # type: ignore
 
     def _check_cache(self, features: list[Feature]) -> list[SnowflakeOnDemandTileComputeRequest]:

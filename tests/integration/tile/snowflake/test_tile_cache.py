@@ -43,6 +43,14 @@ def check_entity_table_sql_and_tile_compute_sql(
     assert df_tiles[entity_column].isin(expected_entities).all()
 
 
+def check_temp_tables_cleaned_up(session, request: SnowflakeOnDemandTileComputeRequest):
+    """Check that temp tables are properly cleaned up"""
+    df_tables = session.execute_query("SHOW TABLES")
+    temp_table_names = df_tables[df_tables["kind"] == "TEMPORARY"]["name"].tolist()
+    temp_table_names = [name.upper() for name in temp_table_names]
+    assert request.tracker_temp_table_name.upper() not in temp_table_names
+
+
 def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests):
     """Test SnowflakeTileCache performs caching properly"""
     feature = feature_for_tile_cache_tests
@@ -67,6 +75,8 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests):
         [1, 2, 3, 4, 5],
     )
     tile_cache.invoke_tile_manager(requests)
+    tile_cache.cleanup_temp_tables()
+    check_temp_tables_cleaned_up(snowflake_session, requests[0])
 
     # Cache now exists. No additional compute required for the same request table
     requests = tile_cache.get_required_computation(feature_objects)
@@ -91,6 +101,8 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests):
         [3, 4, 5],
     )
     tile_cache.invoke_tile_manager(requests)
+    tile_cache.cleanup_temp_tables()
+    check_temp_tables_cleaned_up(snowflake_session, requests[0])
 
     # Check using training events with new entities
     df_training_events = pd.DataFrame(
@@ -109,3 +121,5 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests):
         [6, 7],
     )
     tile_cache.invoke_tile_manager(requests)
+    tile_cache.cleanup_temp_tables()
+    check_temp_tables_cleaned_up(snowflake_session, requests[0])
