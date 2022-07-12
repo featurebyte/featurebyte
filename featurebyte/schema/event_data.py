@@ -27,7 +27,7 @@ class EventDataCreate(BaseModel):
     name: StrictStr
     tabular_source: Tuple[FeatureStoreModel, TableDetails]
     event_timestamp_column: StrictStr
-    column_entity_map: Dict[StrictStr, str] = Field(default_factory=dict)
+    column_entity_map: Optional[Dict[StrictStr, str]] = Field(default=None)
     record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]
 
@@ -45,5 +45,6 @@ class EventDataUpdate(BaseModel):
     Event Data update schema
     """
 
+    column_entity_map: Optional[Dict[StrictStr, str]] = Field(default=None)
     default_feature_job_setting: Optional[FeatureJobSetting]
     status: Optional[EventDataStatus]

@@ -44,7 +44,7 @@ def _get_response(
     raise response_exception_class(response)
 
 
-def get_entity(entity_name: str) -> dict[str, Any] | None:
+def get_entity(entity_name: str) -> dict[str, Any]:
     """
     Get entity dictionary given entity name
 
@@ -59,6 +59,11 @@ def get_entity(entity_name: str) -> dict[str, Any] | None:
         Entity dictionary object if found
     None
         Entity not found
+
+    Raises
+    ------
+    RecordRetrievalException
+        When the given entity name is not found
     """
     client = Configurations().get_client()
     response = client.get(url="/entity", params={"name": entity_name})
@@ -72,7 +77,7 @@ def get_entity(entity_name: str) -> dict[str, Any] | None:
         if len(response_data):
             first_item: dict[str, Any] = response_data[0]
             return first_item
-    return None
+    raise RecordRetrievalException(response, f'Entity name "{entity_name}" not found!')
 
 
 def convert_response_to_dict(response: Response) -> dict[str, Any]:

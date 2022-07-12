@@ -32,7 +32,7 @@ class EventViewGroupBy(OpsMixin):
         for key in keys_value:
             if key not in obj.columns:
                 raise KeyError(f'Column "{key}" not found!')
-            if key not in obj.column_entity_map:
+            if key not in (obj.column_entity_map or {}):
                 raise ValueError(f'Column "{key}" is not an entity!')
 
         self.obj = obj
@@ -49,12 +49,12 @@ class EventViewGroupBy(OpsMixin):
         value_column: str,
         method: str,
         windows: list[str],
-        blind_spot: str,
-        frequency: str,
-        time_modulo_frequency: str,
         feature_names: list[str],
         timestamp_column: str | None = None,
         value_by_column: str | None = None,
+        blind_spot: str | None = None,
+        frequency: str | None = None,
+        time_modulo_frequency: str | None = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys
@@ -67,18 +67,19 @@ class EventViewGroupBy(OpsMixin):
             aggregation method
         windows: list[str]
             list of aggregation window sizes
-        blind_spot: str
-            historical gap introduced to the aggregation
-        frequency: str
-            frequency of the feature job
-        time_modulo_frequency: str
-            offset of when the feature job will be run, should be smaller than frequency
         feature_names: list[str]
             output feature names
         timestamp_column: str | None
             timestamp column used to specify the window (if not specified, event source timestamp is used)
         value_by_column: str | None
             use this column to further split the data within a group
+        blind_spot: str | None
+            historical gap introduced to the aggregation (if not specified, event source blind spot is used)
+        frequency: str | None
+            frequency of the feature job (if not specified, event source frequency is used)
+        time_modulo_frequency: str | None
+            offset of when the feature job will be run, should be smaller than frequency (if not specified,
+            event source time modulo frequency is used)
 
         Returns
         -------
@@ -95,15 +96,26 @@ class EventViewGroupBy(OpsMixin):
         if method not in AggFunc.all():
             raise ValueError(f"Aggregation method not supported: {method}")
 
+        if value_column not in self.obj.columns:
+            raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
+
+        default_setting = self.obj.default_feature_job_setting
+        if default_setting:
+            frequency = frequency or default_setting.frequency
+            time_modulo_frequency = time_modulo_frequency or default_setting.time_modulo_frequency
+            blind_spot = blind_spot or default_setting.blind_spot
+
+        if frequency is None or time_modulo_frequency is None or blind_spot is None:
+            raise ValueError(
+                "frequency, time_module_frequency and blind_spot parameters should not be None!"
+            )
+
         parsed_seconds = validate_job_setting_parameters(
             frequency=frequency,
             time_modulo_frequency=time_modulo_frequency,
             blind_spot=blind_spot,
         )
         frequency_seconds, time_modulo_frequency_seconds, blind_spot_seconds = parsed_seconds
-
-        if value_column not in self.obj.columns:
-            raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
 
         node_params = {
             "keys": self.keys,

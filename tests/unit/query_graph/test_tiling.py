@@ -5,6 +5,7 @@ import copy
 
 import pytest
 
+from featurebyte.api.entity import Entity
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.tiling import AggFunc, TileSpec, get_aggregator
 
@@ -71,7 +72,9 @@ def aggregate_kwargs_fixture():
     return aggregate_kwargs
 
 
-def run_groupby_and_get_tile_table_identifier(event_view, aggregate_kwargs, groupby_kwargs=None):
+def run_groupby_and_get_tile_table_identifier(
+    event_view, aggregate_kwargs, groupby_kwargs=None, create_entity=True
+):
     """Helper function to run groupby().aggregate() on an EventView and retrieve the tile ID
 
     A prune step is included to simulate the actual workflow.
@@ -84,6 +87,8 @@ def run_groupby_and_get_tile_table_identifier(event_view, aggregate_kwargs, grou
         else groupby_kwargs["by_keys"]
     )
     for by_key in by_keys:
+        if create_entity:
+            Entity.create(name=by_key, serving_name=by_key)
         event_view[by_key].as_entity(by_key)
     feature_names = set(aggregate_kwargs["feature_names"])
     features = event_view.groupby(**groupby_kwargs).aggregate(**aggregate_kwargs)
@@ -116,9 +121,10 @@ def run_groupby_and_get_tile_table_identifier(event_view, aggregate_kwargs, grou
     ],
 )
 def test_tile_table_id__agg_parameters(
-    snowflake_event_view, aggregate_kwargs, overrides, expected_tile_id
+    snowflake_event_view, aggregate_kwargs, overrides, expected_tile_id, mock_get_persistent
 ):
     """Test tile table IDs are expected given different aggregate() parameters"""
+    _ = mock_get_persistent
     aggregate_kwargs.update(overrides)
     _, tile_id = run_groupby_and_get_tile_table_identifier(snowflake_event_view, aggregate_kwargs)
     assert tile_id == expected_tile_id
@@ -144,9 +150,12 @@ def test_tile_table_id__groupby_parameters(
     assert tile_id == expected_tile_id
 
 
-def test_tile_table_id__transformations(snowflake_event_view, aggregate_kwargs):
+def test_tile_table_id__transformations(
+    snowflake_event_view, aggregate_kwargs, mock_get_persistent
+):
     """Test different transformations produce different tile table IDs"""
 
+    _ = mock_get_persistent
     snowflake_event_view["value_10"] = snowflake_event_view["col_float"] * 10
     snowflake_event_view["value_100"] = snowflake_event_view["col_float"] * 100
 
@@ -163,7 +172,7 @@ def test_tile_table_id__transformations(snowflake_event_view, aggregate_kwargs):
     kwargs = copy.deepcopy(aggregate_kwargs)
     kwargs["value_column"] = "value_100"
     tile_id, tile_id_pruned = run_groupby_and_get_tile_table_identifier(
-        snowflake_event_view, kwargs
+        snowflake_event_view, kwargs, create_entity=False
     )
     assert tile_id == "sum_f1800_m300_b600_c667f57df4712495696e65a37abca65c1806b4c4"
     assert tile_id_pruned == "sum_f1800_m300_b600_b5038376279f00109bc42e18aeb6087a712f17d7"

@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 import yaml
 
+from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureGroup
@@ -250,10 +251,12 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
 
 
 @pytest.fixture(name="grouped_event_view")
-def grouped_event_view_fixture(snowflake_event_view):
+def grouped_event_view_fixture(snowflake_event_view, mock_get_persistent):
     """
     EventViewGroupBy fixture
     """
+    _ = mock_get_persistent
+    Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     grouped = snowflake_event_view.groupby("cust_id")
     assert isinstance(grouped, EventViewGroupBy)
@@ -433,13 +436,16 @@ def tile_manager(mock_execute_query, session_manager, snowflake_feature_store):
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_event_view):
+def mock_snowflake_feature(
+    mock_execute_query, snowflake_connector, snowflake_event_view, mock_get_persistent
+):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
     mock_execute_query.size_effect = None
-    _ = snowflake_connector
+    _ = snowflake_connector, mock_get_persistent
 
+    Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
         value_column="col_float",
@@ -480,13 +486,16 @@ def feature_manager(mock_execute_query, session_manager, snowflake_feature_store
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature_list(mock_execute_query, snowflake_connector, snowflake_event_view):
+def mock_snowflake_feature_list(
+    mock_execute_query, snowflake_connector, snowflake_event_view, mock_get_persistent
+):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
     mock_execute_query.size_effect = None
-    _ = snowflake_connector
+    _ = snowflake_connector, mock_get_persistent
 
+    Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
         value_column="col_float",
