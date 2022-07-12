@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict, Optional
 
-from pydantic import Field, PrivateAttr
+from pydantic import Field, PrivateAttr, StrictStr
 
 from featurebyte.api.event_data import EventData
 from featurebyte.core.frame import Frame
@@ -117,8 +117,8 @@ class EventView(ProtectedColumnsQueryObject, Frame):
 
     _series_class = EventViewColumn
 
-    column_entity_map: Dict[str, str] = Field(default_factory=dict)
-    column_description_map: Dict[str, str] = Field(default_factory=dict)
+    column_entity_map: Dict[StrictStr, StrictStr] = Field(default_factory=dict)
+    column_description_map: Dict[StrictStr, StrictStr] = Field(default_factory=dict)
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name}, timestamp_column={self.timestamp_column})"

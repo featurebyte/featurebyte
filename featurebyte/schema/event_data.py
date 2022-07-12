@@ -3,11 +3,8 @@ EventData API payload schema
 """
 from typing import Dict, List, Optional, Tuple
 
-import datetime
-
 from beanie import PydanticObjectId
-from bson.objectid import ObjectId
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictStr
 
 from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
@@ -19,19 +16,7 @@ class EventData(EventDataModel):
     Event Data Document Model
     """
 
-    id: Optional[PydanticObjectId] = Field(alias="_id", default_factory=ObjectId)
     user_id: Optional[PydanticObjectId]
-    created_at: datetime.datetime
-    status: EventDataStatus
-
-    class Config:
-        """
-        Configuration for Event Data schema
-        """
-
-        # pylint: disable=too-few-public-methods
-
-        json_encoders = {ObjectId: str}
 
 
 class EventDataCreate(BaseModel):
@@ -39,11 +24,11 @@ class EventDataCreate(BaseModel):
     Event Data Creation schema
     """
 
-    name: str
+    name: StrictStr
     tabular_source: Tuple[FeatureStoreModel, TableDetails]
-    event_timestamp_column: str
-    column_entity_map: Dict[str, str] = Field(default_factory=dict)
-    record_creation_date_column: Optional[str]
+    event_timestamp_column: StrictStr
+    column_entity_map: Dict[StrictStr, str] = Field(default_factory=dict)
+    record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]
 
 

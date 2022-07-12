@@ -45,11 +45,11 @@ def feature_job_setting_history_fixture(feature_job_setting):
     """Fixture for a Feature Job Setting history"""
     history = [
         FeatureJobSettingHistoryEntry(
-            creation_date=datetime.datetime(2022, 4, 1),
+            created_at=datetime.datetime(2022, 4, 1),
             setting=feature_job_setting,
         ),
         FeatureJobSettingHistoryEntry(
-            creation_date=datetime.datetime(2022, 2, 1),
+            created_at=datetime.datetime(2022, 2, 1),
             setting=feature_job_setting,
         ),
     ]
@@ -88,7 +88,7 @@ def event_data_model_dict_fixture():
         "created_at": datetime.datetime(2022, 2, 1),
         "history": [
             {
-                "creation_date": datetime.datetime(2022, 4, 1),
+                "created_at": datetime.datetime(2022, 4, 1),
                 "setting": {
                     "blind_spot": "10m",
                     "frequency": "30m",
@@ -96,7 +96,7 @@ def event_data_model_dict_fixture():
                 },
             },
             {
-                "creation_date": datetime.datetime(2022, 2, 1),
+                "created_at": datetime.datetime(2022, 2, 1),
                 "setting": {
                     "blind_spot": "10m",
                     "frequency": "30m",
@@ -125,8 +125,9 @@ def test_event_data_model(
         history=feature_job_setting_history,
         status=EventDataStatus.PUBLISHED,
     )
+    event_data_model_dict["id"] = event_data.id
     assert event_data.dict() == event_data_model_dict
-    event_data_json = event_data.json()
+    event_data_json = event_data.json(by_alias=True)
     event_data_loaded = event_data.parse_raw(event_data_json)
     assert event_data_loaded == event_data
 
