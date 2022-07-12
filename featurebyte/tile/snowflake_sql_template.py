@@ -80,7 +80,7 @@ tm_schedule_tile = Template(
             {{blind_spot_second}},
             {{frequency_minute}},
             {{offline_minutes}},
-            '{{sql}}',
+            '{{tile_sql}}',
             '{{tile_start_date_column}}',
             '{{tile_last_start_date_column}}',
             '{{tile_start_placeholder}}',

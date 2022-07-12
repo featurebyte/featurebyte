@@ -152,8 +152,8 @@ def test_generate_tiles_on_demand(snowflake_session, snowflake_tile, feature_lis
     )
 
     snowflake_tile.tile_sql = snowflake_tile.tile_sql.replace(
-        InternalName.TILE_START_DATE_SQL_PLACEHOLDER, "\\'2022-06-05 23:33:00\\'"
-    ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, "\\'2022-06-05 23:58:00\\'")
+        InternalName.TILE_START_DATE_SQL_PLACEHOLDER, "'2022-06-05 23:33:00'"
+    ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, "'2022-06-05 23:58:00'")
 
     feature_list_manager.generate_tiles_on_demand([(snowflake_tile, temp_entity_table)])
 

@@ -147,11 +147,12 @@ class TileManagerSnowflake(BaseModel):
         """
         if start_ts_str and end_ts_str:
             tile_sql = tile_spec.tile_sql.replace(
-                InternalName.TILE_START_DATE_SQL_PLACEHOLDER, f"\\'{start_ts_str}\\'"
-            ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, f"\\'{end_ts_str}\\'")
+                InternalName.TILE_START_DATE_SQL_PLACEHOLDER, f"'{start_ts_str}'"
+            ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, f"'{end_ts_str}'")
         else:
             tile_sql = tile_spec.tile_sql
 
+        tile_sql = tile_sql.replace("'", "''")
         logger.info(f"tile_sql: {tile_sql}")
 
         if last_tile_start_ts_str:
@@ -272,7 +273,7 @@ class TileManagerSnowflake(BaseModel):
             temp_task_name=temp_task_name,
             warehouse=self._session.dict()["warehouse"],
             cron=cron_expr,
-            sql=tile_spec.tile_sql,
+            tile_sql=tile_spec.tile_sql.replace("'", "''"),
             tile_start_date_column=InternalName.TILE_START_DATE.value,
             tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
             tile_start_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER.value,
