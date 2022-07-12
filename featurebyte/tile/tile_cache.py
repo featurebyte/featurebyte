@@ -406,12 +406,12 @@ class SnowflakeTileCache(TileCache):
         tracker_sql_filtered = f"""
         SELECT
             L.*,
-            R.{InternalName.LAST_TILE_START_DATE} AS {InternalName.LAST_TILE_START_DATE_PREVIOUS}
+            R.{InternalName.TILE_LAST_START_DATE} AS {InternalName.LAST_TILE_START_DATE_PREVIOUS}
         FROM ({tracker_sql}) L
         LEFT JOIN {tracker_table_name} R
         ON {join_conditions}
         WHERE
-            {InternalName.LAST_TILE_START_DATE_PREVIOUS} < L.{InternalName.LAST_TILE_START_DATE}
+            {InternalName.LAST_TILE_START_DATE_PREVIOUS} < L.{InternalName.TILE_LAST_START_DATE}
             OR {InternalName.LAST_TILE_START_DATE_PREVIOUS} IS NULL
         """
         tracker_sql_filtered = prettify_sql(tracker_sql_filtered)
@@ -459,7 +459,7 @@ class SnowflakeTileCache(TileCache):
             f"""
             SELECT
                 {groupby_columns},
-                {last_tile_start_date_expr} AS {InternalName.LAST_TILE_START_DATE},
+                {last_tile_start_date_expr} AS {InternalName.TILE_LAST_START_DATE},
                 {start_date_expr} AS {InternalName.ENTITY_TABLE_START_DATE},
                 {end_date_expr} AS {InternalName.ENTITY_TABLE_END_DATE}
             FROM {REQUEST_TABLE_NAME}
