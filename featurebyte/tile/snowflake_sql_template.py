@@ -20,17 +20,19 @@ tm_insert_tile_registry = Template(
     INSERT INTO TILE_REGISTRY (
         TILE_ID,
         TILE_SQL,
-        COLUMN_NAMES,
+        ENTITY_COLUMN_NAMES,
+        VALUE_COLUMN_NAMES,
         FREQUENCY_MINUTE,
         TIME_MODULO_FREQUENCY_SECOND,
         BLIND_SPOT_SECOND
     ) VALUES (
         '{{tile_id}}',
         '{{tile_sql}}',
-        '{{column_names}}',
+        '{{entity_column_names}}',
+        '{{value_column_names}}',
         {{frequency_minute}},
-        {{time_modulo_frequency_seconds}},
-        {{blind_spot_seconds}}
+        {{time_modulo_frequency_second}},
+        {{blind_spot_second}}
     )
 """
 )
@@ -40,10 +42,12 @@ tm_generate_tile = Template(
     call SP_TILE_GENERATE(
         '{{tile_sql}}',
         '{{tile_start_date_column}}',
-        {{time_modulo_frequency_seconds}},
-        {{blind_spot_seconds}},
+        '{{tile_last_start_date_column}}',
+        {{time_modulo_frequency_second}},
+        {{blind_spot_second}},
         {{frequency_minute}},
-        '{{column_names}}',
+        '{{entity_column_names}}',
+        '{{value_column_names}}',
         '{{tile_id}}',
         '{{tile_type.value}}',
         {{last_tile_start_ts_str}}
@@ -56,7 +60,8 @@ tm_tile_entity_tracking = Template(
     call SP_TILE_GENERATE_ENTITY_TRACKING(
         '{{tile_id}}',
         '{{entity_column_names}}',
-        '{{entity_table}}'
+        '{{entity_table}}',
+        '{{tile_last_start_date_column}}'
     )
 """
 )
@@ -71,15 +76,17 @@ tm_schedule_tile = Template(
             '{{temp_task_name}}',
             '{{warehouse}}',
             '{{tile_id}}',
-            {{time_modulo_frequency_seconds}},
-            {{blind_spot_seconds}},
+            {{time_modulo_frequency_second}},
+            {{blind_spot_second}},
             {{frequency_minute}},
             {{offline_minutes}},
-            '{{sql}}',
+            '{{tile_sql}}',
             '{{tile_start_date_column}}',
+            '{{tile_last_start_date_column}}',
             '{{tile_start_placeholder}}',
             '{{tile_end_placeholder}}',
-            '{{column_names}}',
+            '{{entity_column_names}}',
+            '{{value_column_names}}',
             '{{tile_type.value}}',
             {{monitor_periods}}
         )

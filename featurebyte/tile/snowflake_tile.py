@@ -61,9 +61,10 @@ class TileManagerSnowflake(BaseModel):
             sql = tm_insert_tile_registry.render(
                 tile_id=tile_spec.tile_id,
                 tile_sql=tile_spec.tile_sql,
-                column_names=",".join(tile_spec.column_names),
-                time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-                blind_spot_seconds=tile_spec.blind_spot_second,
+                entity_column_names=",".join(tile_spec.entity_column_names),
+                value_column_names=",".join(tile_spec.value_column_names),
+                time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+                blind_spot_second=tile_spec.blind_spot_second,
                 frequency_minute=tile_spec.frequency_minute,
             )
             logger.debug(f"generated tile insert sql: {sql}")
@@ -109,6 +110,7 @@ class TileManagerSnowflake(BaseModel):
             tile_id=tile_spec.tile_id,
             entity_column_names=",".join(tile_spec.entity_column_names),
             entity_table=temp_entity_table,
+            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
         )
         logger.info(f"generated sql: {sql}")
         self._session.execute_query(sql)
@@ -145,11 +147,12 @@ class TileManagerSnowflake(BaseModel):
         """
         if start_ts_str and end_ts_str:
             tile_sql = tile_spec.tile_sql.replace(
-                InternalName.TILE_START_DATE_SQL_PLACEHOLDER, f"\\'{start_ts_str}\\'"
-            ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, f"\\'{end_ts_str}\\'")
+                InternalName.TILE_START_DATE_SQL_PLACEHOLDER, f"'{start_ts_str}'"
+            ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, f"'{end_ts_str}'")
         else:
             tile_sql = tile_spec.tile_sql
 
+        tile_sql = tile_sql.replace("'", "''")
         logger.info(f"tile_sql: {tile_sql}")
 
         if last_tile_start_ts_str:
@@ -162,10 +165,12 @@ class TileManagerSnowflake(BaseModel):
         sql = tm_generate_tile.render(
             tile_sql=tile_sql,
             tile_start_date_column=InternalName.TILE_START_DATE.value,
-            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-            blind_spot_seconds=tile_spec.blind_spot_second,
+            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
+            time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+            blind_spot_second=tile_spec.blind_spot_second,
             frequency_minute=tile_spec.frequency_minute,
-            column_names=",".join(tile_spec.column_names),
+            entity_column_names=",".join(tile_spec.entity_column_names),
+            value_column_names=",".join(tile_spec.value_column_names),
             tile_id=tile_spec.tile_id,
             tile_type=tile_type,
             last_tile_start_ts_str=last_tile_start_ts_str,
@@ -268,14 +273,16 @@ class TileManagerSnowflake(BaseModel):
             temp_task_name=temp_task_name,
             warehouse=self._session.dict()["warehouse"],
             cron=cron_expr,
-            sql=tile_spec.tile_sql,
+            tile_sql=tile_spec.tile_sql.replace("'", "''"),
             tile_start_date_column=InternalName.TILE_START_DATE.value,
+            tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
             tile_start_placeholder=InternalName.TILE_START_DATE_SQL_PLACEHOLDER.value,
             tile_end_placeholder=InternalName.TILE_END_DATE_SQL_PLACEHOLDER.value,
-            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
-            blind_spot_seconds=tile_spec.blind_spot_second,
+            time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
+            blind_spot_second=tile_spec.blind_spot_second,
             frequency_minute=tile_spec.frequency_minute,
-            column_names=",".join(tile_spec.column_names),
+            entity_column_names=",".join(tile_spec.entity_column_names),
+            value_column_names=",".join(tile_spec.value_column_names),
             tile_id=tile_spec.tile_id,
             tile_type=tile_type,
             offline_minutes=offline_minutes,

@@ -19,7 +19,7 @@ def test_construct_snowflaketile_time_modulo_error():
             blind_spot_second=3,
             frequency_minute=3,
             tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
-            column_names=["c1"],
+            value_column_names=["col2"],
             entity_column_names=["col1"],
         )
     assert "time_modulo_frequency_second must be less than 180" in str(excinfo.value)
@@ -39,12 +39,14 @@ def test_generate_tiles(mock_snowflake_tile, tile_manager):
     expected_sql = textwrap.dedent(
         """
         call SP_TILE_GENERATE(
-            'select c1 from dummy where tile_start_ts >= \\'2022-06-20 15:00:00\\' and tile_start_ts < \\'2022-06-21 16:00:00\\'',
+            'select c1 from dummy where tile_start_ts >= ''2022-06-20 15:00:00'' and tile_start_ts < ''2022-06-21 16:00:00''',
             '__FB_TILE_START_DATE_COLUMN',
+            'LAST_TILE_START_DATE',
             183,
             3,
             5,
-            'c1',
+            'col1',
+            'col2',
             'tile_id1',
             'ONLINE',
             '2022-06-21 15:55:00'
@@ -75,9 +77,11 @@ def test_schedule_online_tiles(mock_snowflake_tile, tile_manager):
                 1440,
                 'select c1 from dummy where tile_start_ts >= __FB_START_DATE and tile_start_ts < __FB_END_DATE',
                 '__FB_TILE_START_DATE_COLUMN',
+                'LAST_TILE_START_DATE',
                 '__FB_START_DATE',
                 '__FB_END_DATE',
-                'c1',
+                'col1',
+                'col2',
                 'ONLINE',
                 10
             )
@@ -107,9 +111,11 @@ def test_schedule_offline_tiles(mock_snowflake_tile, tile_manager):
                 1440,
                 'select c1 from dummy where tile_start_ts >= __FB_START_DATE and tile_start_ts < __FB_END_DATE',
                 '__FB_TILE_START_DATE_COLUMN',
+                'LAST_TILE_START_DATE',
                 '__FB_START_DATE',
                 '__FB_END_DATE',
-                'c1',
+                'col1',
+                'col2',
                 'OFFLINE',
                 10
             )

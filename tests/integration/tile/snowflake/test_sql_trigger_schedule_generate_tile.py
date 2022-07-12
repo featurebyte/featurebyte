@@ -9,12 +9,13 @@ def test_trigger_tile_schedule(snowflake_session):
     """
     Test creation of scheduled task for tile generation and monitoring
     """
-    col_names = f"{InternalName.TILE_START_DATE},PRODUCT_ACTION,CUST_ID,VALUE"
+    entity_col_names = "PRODUCT_ACTION,CUST_ID"
+    value_col_names = "VALUE"
     table_name = "TEMP_TABLE"
     tile_id = f"{table_name}_TILE"
     tile_monitor = 10
     tile_sql = (
-        f" SELECT {col_names} FROM {table_name} "
+        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} "
         f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
@@ -31,9 +32,11 @@ def test_trigger_tile_schedule(snowflake_session):
           1440,
           '{tile_sql}',
           '{InternalName.TILE_START_DATE}',
+          '{InternalName.TILE_LAST_START_DATE}',
           '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
-          '{col_names}',
+          '{entity_col_names}',
+          '{value_col_names}',
           'ONLINE',
           {tile_monitor}
         )

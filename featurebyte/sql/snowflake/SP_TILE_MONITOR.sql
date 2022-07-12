@@ -4,7 +4,8 @@ CREATE OR REPLACE PROCEDURE SP_TILE_MONITOR(
     TIME_MODULO_FREQUENCY_SECONDS float,
     BLIND_SPOT_SECONDS float,
     FREQUENCY_MINUTE float,
-    COLUMN_NAMES varchar,
+    ENTITY_COLUMN_NAMES varchar,
+    VALUE_COLUMN_NAMES varchar,
     TABLE_NAME varchar,
     TILE_TYPE varchar
 )
@@ -33,24 +34,29 @@ $$
         return debug
     }
 
-    var col_list = COLUMN_NAMES.split(",").filter(item => item.trim().toUpperCase() !== `${TILE_START_DATE_COLUMN}`)
-    col_list_str = col_list.join(',')
-    debug = debug + " - col_list_str: " + col_list_str
-
-    filter_cols_str = ""
-    for (element of col_list) {
-        element = element.trim()
-        if (element.toUpperCase() !== 'VALUE') {
-            filter_cols_str = filter_cols_str + " AND a." + element + " = b."+ element
-        }
+    entity_filter_cols = []
+    for (const [i, element] of ENTITY_COLUMN_NAMES.split(",").entries()) {
+        entity_filter_cols.push("a." + element + " = b."+ element)
     }
+    entity_filter_cols_str = entity_filter_cols.join(" AND ")
+
+    value_filter_cols = []
+    value_select_cols = []
+    for (const [i, element] of VALUE_COLUMN_NAMES.split(",").entries()) {
+        value_filter_cols.push(element + " != OLD_"+ element)
+        value_filter_cols.push("(" + element + " IS NOT NULL AND OLD_" + element + " IS NULL)")
+        value_select_cols.push("b." + element + " as OLD_" + element)
+
+    }
+    value_filter_cols_str = value_filter_cols.join(" OR ")
+    value_select_cols_str = value_select_cols.join(" , ")
 
     //replace SQL template with start and end date strings for tile generation sql
     var new_tile_sql = `
         select
             ${TILE_START_DATE_COLUMN},
             F_TIMESTAMP_TO_INDEX(${TILE_START_DATE_COLUMN}, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX,
-            ${col_list_str}
+            ${ENTITY_COLUMN_NAMES}, ${VALUE_COLUMN_NAMES}
         from (${MONITOR_SQL})
     `
 
@@ -58,15 +64,15 @@ $$
         select * from
             (select
                 a.*,
-                b.VALUE as OLD_VALUE,
+                ${value_select_cols_str},
                 '${TILE_TYPE}'::VARCHAR(8) as TILE_TYPE,
                 DATEADD(SECOND, (${BLIND_SPOT_SECONDS}+${FREQUENCY_MINUTE}*60), a.${TILE_START_DATE_COLUMN}) as EXPECTED_CREATED_AT,
                 SYSDATE() as CREATED_AT
             from
                 (${new_tile_sql}) a left outer join ${TABLE_NAME} b
             on
-                a.INDEX = b.INDEX ${filter_cols_str})
-        where VALUE != OLD_VALUE or OLD_VALUE IS NULL
+                a.INDEX = b.INDEX AND ${entity_filter_cols_str})
+        where ${value_filter_cols_str}
     `
     debug = debug + " - compare_sql: " + compare_sql
 
@@ -78,6 +84,7 @@ $$
         table_exist = false
     }
     debug = debug + " - monitor_table_exist: " + table_exist
+
 
     if (table_exist === false) {
         // monitor table already exists, create table with new records
@@ -104,6 +111,7 @@ $$
         debug = debug + " - inside insert monitor records: " + insert_sql
 
     }
+
 
     return debug
 $$;

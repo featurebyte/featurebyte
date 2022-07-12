@@ -169,6 +169,7 @@ def snowflake_tile(snowflake_session):
         tile_sql=tile_sql,
         column_names=col_names_list,
         entity_column_names=["PRODUCT_ACTION", "CUST_ID"],
+        value_column_names=["VALUE"],
         tile_id="tile_id1",
     )
 
@@ -202,7 +203,7 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
-        column_names=["col1"],
+        value_column_names=["col2"],
         entity_column_names=["col1"],
     )
 

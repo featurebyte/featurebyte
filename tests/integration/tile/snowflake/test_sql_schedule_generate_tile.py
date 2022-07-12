@@ -10,13 +10,14 @@ def test_schedule_generate_tile_online(snowflake_session):
     """
     Test the stored procedure of generating tiles
     """
-    col_names = f"{InternalName.TILE_START_DATE},PRODUCT_ACTION,CUST_ID,VALUE"
+    entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
+    value_col_names = "VALUE"
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     tile_monitor = 10
     tile_end_ts = "2022-06-05T23:58:00Z"
     tile_sql = (
-        f" SELECT {col_names} FROM {table_name} "
+        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} "
         f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
@@ -30,9 +31,11 @@ def test_schedule_generate_tile_online(snowflake_session):
           1440,
           '{tile_sql}',
           '{InternalName.TILE_START_DATE}',
+          '{InternalName.TILE_LAST_START_DATE}',
           '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
-          '{col_names}',
+          '{entity_col_names}',
+          '{value_col_names}',
           'ONLINE',
           {tile_monitor},
           '{tile_end_ts}'
@@ -50,13 +53,14 @@ def test_schedule_monitor_tile_online(snowflake_session):
     """
     Test the stored procedure of monitoring tiles
     """
-    col_names = f"{InternalName.TILE_START_DATE},PRODUCT_ACTION,CUST_ID,VALUE"
+    entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
+    value_col_names = "VALUE"
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     tile_monitor = 10
     tile_end_ts = "2022-06-05T23:53:00Z"
     tile_sql = (
-        f" SELECT {col_names} FROM {table_name} "
+        f" SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} "
         f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
         f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
@@ -70,9 +74,11 @@ def test_schedule_monitor_tile_online(snowflake_session):
           1440,
           '{tile_sql}',
           '{InternalName.TILE_START_DATE}',
+          '{InternalName.TILE_LAST_START_DATE}',
           '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
-          '{col_names}',
+          '{entity_col_names}',
+          '{value_col_names}',
           'ONLINE',
           {tile_monitor},
           '{tile_end_ts}'
@@ -94,9 +100,11 @@ def test_schedule_monitor_tile_online(snowflake_session):
           1440,
           '{tile_sql}',
           '{InternalName.TILE_START_DATE}',
+          '{InternalName.TILE_LAST_START_DATE}',
           '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
-          '{col_names}',
+          '{entity_col_names}',
+          '{value_col_names}',
           'ONLINE',
           {tile_monitor},
           '{tile_end_ts_2}'

@@ -41,7 +41,7 @@ class FeatureListManagerSnowflake(BaseModel):
         super().__init__(**kw)
         self._session = session
 
-    def insert_feature_list_registry(self, feature_list: FeatureListModel) -> bool:
+    def insert_feature_list_registry(self, feature_list: FeatureListModel) -> None:
         """
         Insert featurelist registry record. If the feature list record already exists, return False
 
@@ -50,9 +50,10 @@ class FeatureListManagerSnowflake(BaseModel):
         feature_list: FeatureListModel
             input featurelist instance
 
-        Returns
-        -------
-            whether the featurelist registry record is inserted successfully or not
+        Raises
+        ----------
+        ValueError
+            when the feature list registry record already exists
         """
         feature_list_versions = self.retrieve_feature_list_registries(
             feature_list=feature_list, version=feature_list.version
@@ -75,12 +76,10 @@ class FeatureListManagerSnowflake(BaseModel):
             )
             logger.debug(f"generated sql: {sql}")
             self._session.execute_query(sql)
-            return True
-
-        logger.debug(
-            f"FeatureList version already exist for {feature_list.name} with version {feature_list.version}"
-        )
-        return False
+        else:
+            raise ValueError(
+                f"FeatureList version already exist for {feature_list.name} with version {feature_list.version}"
+            )
 
     def retrieve_feature_list_registries(
         self, feature_list: FeatureListModel, version: Optional[FeatureListVersionIdentifier] = None
