@@ -37,11 +37,12 @@ class SQLOperationGraph:
         Type of SQL to generate
     """
 
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, query_graph: QueryGraph, sql_type: SQLType) -> None:
         self.sql_nodes: dict[str, SQLNode | TableNode] = {}
         self.query_graph = query_graph
         self.sql_type = sql_type
-        self.groupby_keys = None
 
     def build(self, target_node: Node) -> Any:
         """Build the graph from a given query Node, working backwards
@@ -56,16 +57,22 @@ class SQLOperationGraph:
         -------
         SQLNode
         """
-        sql_node = self._construct_sql_nodes(target_node)
+        if target_node.type == NodeType.GROUPBY:
+            groupby_keys = target_node.parameters["keys"]
+        else:
+            groupby_keys = None
+        sql_node = self._construct_sql_nodes(target_node, groupby_keys=groupby_keys)
         return sql_node
 
-    def _construct_sql_nodes(self, cur_node: Node) -> Any:
+    def _construct_sql_nodes(self, cur_node: Node, groupby_keys: list[str] | None) -> Any:
         """Recursively construct the nodes
 
         Parameters
         ----------
         cur_node : Node
             Dictionary representation of Query Graph Node
+        groupby_keys : list[str] | None
+            Groupby keys in the current context. Used when sql_type is BUILD_TILE_ON_DEMAND
 
         Returns
         -------
@@ -79,16 +86,18 @@ class SQLOperationGraph:
         cur_node_id = cur_node.name
         assert cur_node_id not in self.sql_nodes
 
-        if cur_node.type == NodeType.GROUPBY:
-            self.groupby_keys = cur_node.parameters["keys"]
-
         # Recursively build input sql nodes first
         inputs = self.query_graph.backward_edges[cur_node_id]
         input_sql_nodes = []
         for input_node_id in inputs:
             if input_node_id not in self.sql_nodes:
                 input_node = self.query_graph.get_node_by_name(input_node_id)
-                self._construct_sql_nodes(input_node)
+                # Note: In the lineage leading to any features or intermediate outputs, there can be
+                # only one groupby operation (there can be parallel groupby operations, but not
+                # consecutive ones)
+                if groupby_keys is None and input_node.type == NodeType.GROUPBY:
+                    groupby_keys = input_node.parameters["keys"]
+                self._construct_sql_nodes(input_node, groupby_keys=groupby_keys)
             input_sql_node = self.sql_nodes[input_node_id]
             input_sql_nodes.append(input_sql_node)
 
@@ -100,7 +109,7 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
-            sql_node = make_input_node(parameters, self.sql_type, self.groupby_keys)
+            sql_node = make_input_node(parameters, self.sql_type, groupby_keys)
 
         elif node_type == NodeType.ASSIGN:
             assert len(input_sql_nodes) == 2
