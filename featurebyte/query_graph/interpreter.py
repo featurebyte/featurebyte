@@ -59,20 +59,6 @@ class SQLOperationGraph:
         sql_node = self._construct_sql_nodes(target_node)
         return sql_node
 
-    def get_node(self, name: str) -> SQLNode:
-        """Get a node by name
-
-        Parameters
-        ----------
-        name : str
-            Node name
-
-        Returns
-        -------
-        SQLNode
-        """
-        return self.sql_nodes[name]
-
     def _construct_sql_nodes(self, cur_node: Node) -> Any:
         """Recursively construct the nodes
 
@@ -347,9 +333,8 @@ class GraphInterpreter:
             SQL code for preview purpose
         """
         sql_graph = SQLOperationGraph(self.query_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
-        sql_graph.build(self.query_graph.get_node_by_name(node_name))
+        sql_node = sql_graph.build(self.query_graph.get_node_by_name(node_name))
 
-        sql_node = sql_graph.get_node(node_name)
         assert isinstance(sql_node, (TableNode, ExpressionNode))
         if isinstance(sql_node, TableNode):
             sql_tree = sql_node.sql

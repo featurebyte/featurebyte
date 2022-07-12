@@ -65,8 +65,7 @@ def test_graph_interpreter_super_simple(graph, node_input):
         input_nodes=[node_input, proj_a],
     )
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
-    sql_graph.build(assign)
-    sql_tree = sql_graph.get_node(assign.name).sql
+    sql_tree = sql_graph.build(assign).sql
     expected = textwrap.dedent(
         """
         SELECT
@@ -119,10 +118,8 @@ def test_graph_interpreter_multi_assign(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, proj_c],
     )
-    name = assign_node_2.name
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE)
-    sql_graph.build(assign_node_2)
-    sql_tree = sql_graph.get_node(name).sql
+    sql_tree = sql_graph.build(assign_node_2).sql
     expected = textwrap.dedent(
         """
         SELECT
@@ -178,10 +175,8 @@ def test_graph_interpreter_binary_operations(graph, node_input, node_type, expec
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, binary_node],
     )
-    name = assign_node.name
     sql_graph = SQLOperationGraph(graph, SQLType.BUILD_TILE)
-    sql_graph.build(assign_node)
-    sql_tree = sql_graph.get_node(name).sql
+    sql_tree = sql_graph.build(assign_node).sql
     expected = textwrap.dedent(
         f"""
         SELECT
@@ -208,8 +203,7 @@ def test_graph_interpreter_project_multiple_columns(graph, node_input):
         input_nodes=[node_input],
     )
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
-    sql_graph.build(proj)
-    sql_tree = sql_graph.get_node(proj.name).sql
+    sql_tree = sql_graph.build(proj).sql
     expected = textwrap.dedent(
         """
         SELECT
