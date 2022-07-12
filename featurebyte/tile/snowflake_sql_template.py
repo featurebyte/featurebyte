@@ -20,14 +20,16 @@ tm_insert_tile_registry = Template(
     INSERT INTO TILE_REGISTRY (
         TILE_ID,
         TILE_SQL,
-        COLUMN_NAMES,
+        ENTITY_COLUMN_NAMES,
+        VALUE_COLUMN_NAMES,
         FREQUENCY_MINUTE,
         TIME_MODULO_FREQUENCY_SECOND,
         BLIND_SPOT_SECOND
     ) VALUES (
         '{{tile_id}}',
         '{{tile_sql}}',
-        '{{column_names}}',
+        '{{entity_column_names}}',
+        '{{value_column_names}}',
         {{frequency_minute}},
         {{time_modulo_frequency_second}},
         {{blind_spot_second}}
@@ -43,7 +45,8 @@ tm_generate_tile = Template(
         {{time_modulo_frequency_second}},
         {{blind_spot_second}},
         {{frequency_minute}},
-        '{{column_names}}',
+        '{{entity_column_names}}',
+        '{{value_column_names}}',
         '{{tile_id}}',
         '{{tile_type.value}}',
         {{last_tile_start_ts_str}}
@@ -79,7 +82,8 @@ tm_schedule_tile = Template(
             '{{tile_start_date_column}}',
             '{{tile_start_placeholder}}',
             '{{tile_end_placeholder}}',
-            '{{column_names}}',
+            '{{entity_column_names}}',
+            '{{value_column_names}}',
             '{{tile_type.value}}',
             {{monitor_periods}}
         )

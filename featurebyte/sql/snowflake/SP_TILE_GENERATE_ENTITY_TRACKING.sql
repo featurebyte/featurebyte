@@ -36,28 +36,12 @@ $$
 
         col_list = ENTITY_COLUMN_NAMES.split(",")
 
-        /*
-        insert_cols_str = ""
-        filter_cols_str = ""
-
-        for (const [i, element] of col_list.entries()) {
-            if (i === col_list.length - 1) {
-                insert_cols_str = insert_cols_str + "b." + element
-                filter_cols_str = filter_cols_str + "a." + element + " = b."+ element
-            } else {
-                insert_cols_str = insert_cols_str + "b." + element + ","
-                filter_cols_str = filter_cols_str + "a." + element + " = b."+ element + " AND "
-            }
-        }
-        */
         insert_cols = []
         filter_cols = []
         for (const [i, element] of col_list.entries()) {
 
             insert_cols.push("b."+element)
-            if (element.toUpperCase() !== 'VALUE') {
-                filter_cols.push("a." + element + " = b."+ element)
-            }
+            filter_cols.push("a." + element + " = b."+ element)
         }
         insert_cols_str = insert_cols.join(",")
         filter_cols_str = filter_cols.join(" AND ")
