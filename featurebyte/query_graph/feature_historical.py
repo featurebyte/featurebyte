@@ -3,7 +3,7 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 import datetime
 import time
@@ -12,6 +12,7 @@ import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 
 from featurebyte.api.feature import Feature
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Credentials
 from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
@@ -46,9 +47,10 @@ def get_session_from_feature_objects(
     NotImplementedError
         If the list of Features do not all use the same store
     """
-    feature_store: Optional[dict[str, Any]] = None
+    feature_store: Optional[FeatureStore] = None
     for feature in feature_objects:
-        store = feature.tabular_source[0].dict()
+        store = feature.tabular_source[0]
+        assert isinstance(store, FeatureStore)
         if feature_store is None:
             feature_store = store
         elif feature_store != store:
