@@ -57,7 +57,8 @@ def get_session_from_feature_objects(
             raise NotImplementedError(
                 "Historical features request using multiple stores not supported"
             )
-    return feature_objects[0].get_session(credentials=credentials)
+    assert feature_store is not None
+    return feature_store.get_session(credentials=credentials)
 
 
 def validate_historical_requests_point_in_time(training_events: pd.DataFrame) -> pd.DataFrame:
