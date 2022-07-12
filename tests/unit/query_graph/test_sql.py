@@ -21,7 +21,11 @@ def input_node_fixture():
     return sql.GenericInputNode(
         columns_map=columns_map,
         column_names=["col_1", "col_2", "col_3"],
-        dbtable="dbtable",
+        dbtable={
+            "database_name": "my_database",
+            "schema_name": "my_schema",
+            "table_name": "my_table",
+        },
         database_source={
             "type": "snowflake",
             "details": {
@@ -35,18 +39,18 @@ def input_node_fixture():
 @pytest.mark.parametrize(
     "node_type, expected",
     [
-        (NodeType.ADD, "a + b"),
-        (NodeType.SUB, "a - b"),
-        (NodeType.MUL, "a * b"),
-        (NodeType.DIV, "a / b"),
-        (NodeType.EQ, "a = b"),
-        (NodeType.NE, "a <> b"),
-        (NodeType.LT, "a < b"),
-        (NodeType.LE, "a <= b"),
-        (NodeType.GT, "a > b"),
-        (NodeType.GE, "a >= b"),
-        (NodeType.AND, "a AND b"),
-        (NodeType.OR, "a OR b"),
+        (NodeType.ADD, "(a + b)"),
+        (NodeType.SUB, "(a - b)"),
+        (NodeType.MUL, "(a * b)"),
+        (NodeType.DIV, "(a / b)"),
+        (NodeType.EQ, "(a = b)"),
+        (NodeType.NE, "(a <> b)"),
+        (NodeType.LT, "(a < b)"),
+        (NodeType.LE, "(a <= b)"),
+        (NodeType.GT, "(a > b)"),
+        (NodeType.GE, "(a >= b)"),
+        (NodeType.AND, "(a AND b)"),
+        (NodeType.OR, "(a OR b)"),
     ],
 )
 def test_binary_operation_node__series(node_type, expected, input_node):
@@ -59,18 +63,27 @@ def test_binary_operation_node__series(node_type, expected, input_node):
     assert node.sql.sql() == expected
 
 
+def test_binary_operation_node__consecutive_ops(input_node):
+    col_a = sql.StrExpressionNode(table_node=input_node, expr="a")
+    col_b = sql.StrExpressionNode(table_node=input_node, expr="b")
+    col_c = sql.StrExpressionNode(table_node=input_node, expr="c")
+    a_plus_b = sql.make_binary_operation_node(NodeType.ADD, [col_a, col_b], {})
+    a_plus_b_div_c = sql.make_binary_operation_node(NodeType.DIV, [a_plus_b, col_c], {})
+    assert a_plus_b_div_c.sql.sql() == "((a + b) / c)"
+
+
 @pytest.mark.parametrize(
     "node_type, value, right_op, expected",
     [
-        (NodeType.ADD, 1, False, "a + 1"),
-        (NodeType.ADD, 1, True, "1 + a"),
-        (NodeType.SUB, 1, False, "a - 1"),
-        (NodeType.SUB, 1, True, "1 - a"),
-        (NodeType.MUL, 1.0, False, "a * 1.0"),
-        (NodeType.MUL, 1.0, True, "1.0 * a"),
-        (NodeType.DIV, 1.0, False, "a / 1.0"),
-        (NodeType.DIV, 1.0, True, "1.0 / a"),
-        (NodeType.EQ, "apple", False, "a = 'apple'"),
+        (NodeType.ADD, 1, False, "(a + 1)"),
+        (NodeType.ADD, 1, True, "(1 + a)"),
+        (NodeType.SUB, 1, False, "(a - 1)"),
+        (NodeType.SUB, 1, True, "(1 - a)"),
+        (NodeType.MUL, 1.0, False, "(a * 1.0)"),
+        (NodeType.MUL, 1.0, True, "(1.0 * a)"),
+        (NodeType.DIV, 1.0, False, "(a / 1.0)"),
+        (NodeType.DIV, 1.0, True, "(1.0 / a)"),
+        (NodeType.EQ, "apple", False, "(a = 'apple')"),
     ],
 )
 def test_binary_operation_node__scalar(node_type, value, right_op, expected, input_node):
