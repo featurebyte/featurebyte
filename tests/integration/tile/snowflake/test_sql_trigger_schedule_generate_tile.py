@@ -32,6 +32,7 @@ def test_trigger_tile_schedule(snowflake_session):
           1440,
           '{tile_sql}',
           '{InternalName.TILE_START_DATE}',
+          '{InternalName.TILE_LAST_START_DATE}',
           '{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}',
           '{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}',
           '{entity_col_names}',

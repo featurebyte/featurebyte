@@ -203,7 +203,7 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
         blind_spot_second=3,
         frequency_minute=5,
         tile_sql="SELECT * FROM DUMMY",
-        column_names=["col1"],
+        value_column_names=["col2"],
         entity_column_names=["col1"],
     )
 

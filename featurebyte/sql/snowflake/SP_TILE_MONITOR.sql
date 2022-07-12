@@ -76,12 +76,6 @@ $$
     `
     debug = debug + " - compare_sql: " + compare_sql
 
-    debug = debug + " - ENTITY_COLUMN_NAMES: " + ENTITY_COLUMN_NAMES
-    debug = debug + " - VALUE_COLUMN_NAMES: " + VALUE_COLUMN_NAMES
-    debug = debug + " - value_filter_cols_str: " + value_filter_cols_str
-    debug = debug + " - value_select_cols: " + value_select_cols
-
-
     var monitor_table_name = TABLE_NAME + '_MONITOR'
     table_exist = true
     try {

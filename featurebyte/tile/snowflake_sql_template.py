@@ -42,6 +42,7 @@ tm_generate_tile = Template(
     call SP_TILE_GENERATE(
         '{{tile_sql}}',
         '{{tile_start_date_column}}',
+        '{{tile_last_start_date_column}}',
         {{time_modulo_frequency_second}},
         {{blind_spot_second}},
         {{frequency_minute}},
@@ -59,7 +60,8 @@ tm_tile_entity_tracking = Template(
     call SP_TILE_GENERATE_ENTITY_TRACKING(
         '{{tile_id}}',
         '{{entity_column_names}}',
-        '{{entity_table}}'
+        '{{entity_table}}',
+        '{{tile_last_start_date_column}}'
     )
 """
 )
@@ -80,6 +82,7 @@ tm_schedule_tile = Template(
             {{offline_minutes}},
             '{{sql}}',
             '{{tile_start_date_column}}',
+            '{{tile_last_start_date_column}}',
             '{{tile_start_placeholder}}',
             '{{tile_end_placeholder}}',
             '{{entity_column_names}}',

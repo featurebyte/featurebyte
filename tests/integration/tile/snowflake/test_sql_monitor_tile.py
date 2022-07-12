@@ -18,8 +18,8 @@ def test_monitor_tile_missing_tile(snowflake_session):
     monitor_tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 100"
 
     sql = (
-        f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{entity_col_names}', "
-        f"'{value_col_names}', '{tile_id}', 'ONLINE', null)"
+        f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
+        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{tile_id}', 'ONLINE', null)"
     )
     result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
@@ -55,8 +55,8 @@ def test_monitor_tile_updated_tile(snowflake_session):
     monitor_tile_sql = tile_sql
 
     sql = (
-        f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{entity_col_names}', "
-        f"'{value_col_names}', '{tile_id}', 'ONLINE', null)"
+        f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
+        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{tile_id}', 'ONLINE', null)"
     )
     result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]

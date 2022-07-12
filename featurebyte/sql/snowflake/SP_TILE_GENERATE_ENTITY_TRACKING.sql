@@ -1,7 +1,8 @@
 CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_ENTITY_TRACKING(
     TILE_ID varchar,
     ENTITY_COLUMN_NAMES varchar,
-    ENTITY_TABLE varchar
+    ENTITY_TABLE varchar,
+    TILE_LAST_START_DATE_COLUMN varchar
 )
 returns string
 language javascript
@@ -50,9 +51,9 @@ $$
             merge into ${tile_tracking_table} a using (${ENTITY_TABLE}) b
                 on ${filter_cols_str}
                 when matched then
-                    update set a.LAST_TILE_START_DATE = b.LAST_TILE_START_DATE
+                    update set a.${TILE_LAST_START_DATE_COLUMN} = b.${TILE_LAST_START_DATE_COLUMN}
                 when not matched then
-                    insert (${ENTITY_COLUMN_NAMES}, LAST_TILE_START_DATE) values (${insert_cols_str}, b.LAST_TILE_START_DATE)
+                    insert (${ENTITY_COLUMN_NAMES}, ${TILE_LAST_START_DATE_COLUMN}) values (${insert_cols_str}, b.${TILE_LAST_START_DATE_COLUMN})
         `
         snowflake.execute({sqlText: insert_sql})
         debug = debug + " - insert_sql: " + insert_sql

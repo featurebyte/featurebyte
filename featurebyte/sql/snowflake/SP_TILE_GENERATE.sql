@@ -1,6 +1,7 @@
 CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE(
     SQL varchar,
     TILE_START_DATE_COLUMN varchar,
+    TILE_LAST_START_DATE_COLUMN varchar,
     TIME_MODULO_FREQUENCY_SECOND float,
     BLIND_SPOT_SECOND float,
     FREQUENCY_MINUTE float,
@@ -112,7 +113,7 @@ $$
         update_tile_last_ind_sql = `
             UPDATE TILE_REGISTRY
             SET LAST_TILE_INDEX_${TILE_TYPE} = F_TIMESTAMP_TO_INDEX('${LAST_TILE_START_STR}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}),
-                LAST_TILE_START_DATE_${TILE_TYPE} = '${LAST_TILE_START_STR}'
+                ${TILE_LAST_START_DATE_COLUMN}_${TILE_TYPE} = '${LAST_TILE_START_STR}'
             WHERE TILE_ID = '${TILE_ID}'
         `
         snowflake.execute({sqlText: update_tile_last_ind_sql})

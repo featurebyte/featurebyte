@@ -6,6 +6,7 @@ CREATE OR REPLACE PROCEDURE SP_TILE_GENERATE_SCHEDULE(
     OFFLINE_PERIOD_MINUTE float,
     SQL varchar,
     TILE_START_DATE_COLUMN varchar,
+    TILE_LAST_START_DATE_COLUMN varchar,
     TILE_START_DATE_PLACEHOLDER varchar,
     TILE_END_DATE_PLACEHOLDER varchar,
     ENTITY_COLUMN_NAMES varchar,
@@ -79,7 +80,7 @@ $$
     last_tile_start_ts.setMinutes(last_tile_start_ts.getMinutes() - FREQUENCY_MINUTE)
     last_tile_start_ts_str = last_tile_start_ts.toISOString()
 
-    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', '${TILE_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${table_name}', '${tile_type}', '${last_tile_start_ts_str}')`
+    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', '${TILE_START_DATE_COLUMN}', '${TILE_LAST_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${table_name}', '${tile_type}', '${last_tile_start_ts_str}')`
     var result = snowflake.execute(
         {
             sqlText: generate_stored_proc

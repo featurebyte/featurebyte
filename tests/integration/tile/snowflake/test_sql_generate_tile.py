@@ -27,6 +27,7 @@ def test_generate_tile(snowflake_session):
         f"call SP_TILE_GENERATE("
         f"  '{tile_sql}',"
         f"  '{InternalName.TILE_START_DATE}',"
+        f"  '{InternalName.TILE_LAST_START_DATE}',"
         f"  183,"
         f"  3,"
         f"  5,"
@@ -66,8 +67,8 @@ def test_generate_tile_no_data(snowflake_session):
     ).replace("'", "''")
 
     sql = (
-        f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{entity_col_names}', "
-        f"'{value_col_names}', '{tile_id}', 'ONLINE', null)"
+        f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
+        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{tile_id}', 'ONLINE', null)"
     )
     result = snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
@@ -87,8 +88,8 @@ def test_generate_tile_non_exist_table(snowflake_session):
     tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM NON_EXIST_TABLE"
 
     sql = (
-        f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{entity_col_names}', "
-        f"'{value_col_names}', '{table_name}_TILE', 'ONLINE', null)"
+        f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
+        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{table_name}_TILE', 'ONLINE', null)"
     )
 
     with pytest.raises(ProgrammingError) as exc_info:
