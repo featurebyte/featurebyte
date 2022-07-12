@@ -136,8 +136,7 @@ class GitDB(Persistent):
         Clean up local repo
         """
         local_path = getattr(self, "_local_path", None)
-        if local_path:
-            logger.debug("Delete local repo", extra={"local_path": local_path})
+        if local_path and os.path.exists(local_path):
             shutil.rmtree(local_path)
 
     @property

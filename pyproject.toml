@@ -77,6 +77,7 @@ pytest-cov = "^3.0.0"
 pyarrow = "6.0.1"
 mongomock = "^4.0.0"
 freezegun = "^1.2.1"
+pytest-timeout = "^2.1.0"
 
 [tool.black]
 # https://github.com/psf/black
