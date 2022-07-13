@@ -161,10 +161,12 @@ def test_feature_deserialization(float_feature, float_feature_dict, snowflake_ev
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "1d"],
-        blind_spot="10m",
-        frequency="30m",
-        time_modulo_frequency="5m",
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
     )
     same_float_feature_dict = feature_group["sum_1d"].dict()
     tile_id2 = float_feature.graph.nodes["groupby_2"]["parameters"]["tile_id"]

@@ -19,11 +19,12 @@ from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
     RecordRetrievalException,
+    RecordUpdateException,
 )
 from featurebyte.models.credential import Credential
-from featurebyte.models.event_data import EventDataModel
+from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
-from featurebyte.schema.event_data import EventDataCreate
+from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 
 
 class EventDataColumn:
@@ -39,7 +40,7 @@ class EventDataColumn:
 
     def as_entity(self, entity_name: str | None) -> None:
         """
-        Set the column name as entity with tag name
+        Set the column as the specified entity
 
         Parameters
         ----------
@@ -48,21 +49,33 @@ class EventDataColumn:
 
         Raises
         ------
-        ValueError
-            When the entity name is not found
         TypeError
             When the entity name has non-string type
+        RecordUpdateException
+            When unexpected record update failure
         """
+        column_entity_map = self.event_data.column_entity_map or {}
         if entity_name is None:
-            self.event_data.column_entity_map.pop(self.column_name, None)
+            column_entity_map.pop(self.column_name, None)
         elif isinstance(entity_name, str):
             entity_dict = get_entity(entity_name)
-            if entity_dict:
-                self.event_data.column_entity_map[self.column_name] = entity_dict["id"]
-                return
-            raise ValueError(f'Entity name "{entity_name}" not found!')
+            column_entity_map[self.column_name] = entity_dict["id"]
         else:
             raise TypeError(f'Unsupported type "{type(entity_name)}" for tag name "{entity_name}"!')
+
+        data = EventDataUpdate(column_entity_map=column_entity_map)
+        client = Configurations().get_client()
+        response = client.patch(url=f"/event_data/{self.event_data.id}", json=data.dict())
+        if response.status_code == HTTPStatus.OK:
+            EventData.__init__(
+                self.event_data,
+                **convert_response_to_dict(response),
+                credentials=self.event_data.credentials,
+            )
+        elif response.status_code == HTTPStatus.NOT_FOUND:
+            self.event_data.column_entity_map = column_entity_map
+        else:
+            raise RecordUpdateException(response)
 
 
 class EventData(EventDataModel, DatabaseTable):
@@ -196,13 +209,14 @@ class EventData(EventDataModel, DatabaseTable):
             When fail to save the event data (general failure)
         """
         client = Configurations().get_client()
-        payload = json.loads(self.json())
-        response = client.post(url="/event_data", json=payload)
+        response = client.post(url="/event_data", json=json.loads(self.json()))
         if response.status_code != HTTPStatus.CREATED:
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response)
             raise RecordCreationException(response)
-        super().__init__(**{**convert_response_to_dict(response), "credentials": self.credentials})
+        type(self).__init__(
+            self, **{**convert_response_to_dict(response), "credentials": self.credentials}
+        )
 
     def info(self) -> dict[str, Any]:
         """
@@ -224,10 +238,47 @@ class EventData(EventDataModel, DatabaseTable):
         client = Configurations().get_client()
         response = client.get(url=f"/event_data/{self.id}")
         if response.status_code == HTTPStatus.OK:
-            super().__init__(
-                **{**convert_response_to_dict(response), "credentials": self.credentials}
+            type(self).__init__(
+                self, **{**convert_response_to_dict(response), "credentials": self.credentials}
             )
             return self.dict()
         if response.status_code == HTTPStatus.NOT_FOUND:
             return self.dict()
         raise RecordRetrievalException(response)
+
+    def update_default_feature_job_setting(
+        self, blind_spot: str, frequency: str, time_modulo_frequency: str
+    ) -> None:
+        """
+        Update default feature job setting
+
+        Parameters
+        ----------
+        blind_spot: str
+            Blind spot parameter
+        frequency: str
+            Frequency parameter
+        time_modulo_frequency: str
+            Time modulo frequency
+
+        Raises
+        ------
+        RecordUpdateException
+            When unexpected record update failure
+        """
+        feature_job_setting = FeatureJobSetting(
+            blind_spot=blind_spot,
+            frequency=frequency,
+            time_modulo_frequency=time_modulo_frequency,
+        )
+        data = EventDataUpdate(default_feature_job_setting=feature_job_setting)
+        client = Configurations().get_client()
+        response = client.patch(url=f"/event_data/{self.id}", json=data.dict())
+        if response.status_code == HTTPStatus.OK:
+            type(self).__init__(
+                self, **{**convert_response_to_dict(response), "credentials": self.credentials}
+            )
+        elif response.status_code == HTTPStatus.NOT_FOUND:
+            self.default_feature_job_setting = data.default_feature_job_setting
+        else:
+            raise RecordUpdateException(response)

@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 import yaml
 
+from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature, FeatureGroup
@@ -245,15 +246,18 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
     )
     assert event_view.inception_node == expected_inception_node
     assert event_view.protected_columns == {"event_timestamp"}
+    assert event_view.inherited_columns == {"event_timestamp"}
     assert event_view.timestamp_column == "event_timestamp"
     yield event_view
 
 
 @pytest.fixture(name="grouped_event_view")
-def grouped_event_view_fixture(snowflake_event_view):
+def grouped_event_view_fixture(snowflake_event_view, mock_get_persistent):
     """
     EventViewGroupBy fixture
     """
+    _ = mock_get_persistent
+    Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     grouped = snowflake_event_view.groupby("cust_id")
     assert isinstance(grouped, EventViewGroupBy)
@@ -269,9 +273,11 @@ def feature_group_fixture(grouped_event_view):
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "1d"],
-        blind_spot="10m",
-        frequency="30m",
-        time_modulo_frequency="5m",
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
     )
     expected_inception_node = Node(
@@ -294,6 +300,7 @@ def feature_group_fixture(grouped_event_view):
     )
     assert isinstance(feature_group, FeatureGroup)
     assert feature_group.protected_columns == {"cust_id"}
+    assert feature_group.inherited_columns == {"cust_id"}
     assert feature_group.inception_node == expected_inception_node
     assert feature_group.entity_identifiers == ["cust_id"]
     assert feature_group.columns == ["cust_id", "sum_30m", "sum_2h", "sum_1d"]
@@ -314,6 +321,7 @@ def float_feature_fixture(feature_group):
     feature = feature_group["sum_1d"]
     assert isinstance(feature, Feature)
     assert feature.protected_columns == {"cust_id"}
+    assert feature.inherited_columns == {"cust_id"}
     assert feature.inception_node == feature_group.inception_node
     yield feature
 
@@ -326,6 +334,7 @@ def bool_feature_fixture(float_feature):
     bool_feature = float_feature > 100.0
     assert isinstance(bool_feature, Feature)
     assert bool_feature.protected_columns == float_feature.protected_columns
+    assert bool_feature.inherited_columns == float_feature.inherited_columns
     assert bool_feature.inception_node == float_feature.inception_node
     yield bool_feature
 
@@ -433,22 +442,27 @@ def tile_manager(mock_execute_query, session_manager, snowflake_feature_store):
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_event_view):
+def mock_snowflake_feature(
+    mock_execute_query, snowflake_connector, snowflake_event_view, mock_get_persistent
+):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
     mock_execute_query.size_effect = None
-    _ = snowflake_connector
+    _ = snowflake_connector, mock_get_persistent
 
+    Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
         value_column="col_float",
         method="sum",
         windows=["30m"],
-        blind_spot="10m",
-        frequency="30m",
-        time_modulo_frequency="5m",
         feature_names=["sum_30m"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
     )
     feature = feature_group["sum_30m"]
     feature_json = feature.json()
@@ -480,22 +494,27 @@ def feature_manager(mock_execute_query, session_manager, snowflake_feature_store
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature_list(mock_execute_query, snowflake_connector, snowflake_event_view):
+def mock_snowflake_feature_list(
+    mock_execute_query, snowflake_connector, snowflake_event_view, mock_get_persistent
+):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
     mock_execute_query.size_effect = None
-    _ = snowflake_connector
+    _ = snowflake_connector, mock_get_persistent
 
+    Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
         value_column="col_float",
         method="sum",
         windows=["30m"],
-        blind_spot="10m",
-        frequency="30m",
-        time_modulo_frequency="5m",
         feature_names=["sum_30m"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
     )
     feature = feature_group["sum_30m"]
     feature_json = feature.json()

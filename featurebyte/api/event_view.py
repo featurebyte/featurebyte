@@ -8,9 +8,11 @@ from typing import TYPE_CHECKING, Dict, Optional
 from pydantic import Field, PrivateAttr, StrictStr
 
 from featurebyte.api.event_data import EventData
+from featurebyte.api.util import get_entity
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.models.event_data import FeatureJobSetting
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import EventViewGroupBy
@@ -65,14 +67,14 @@ class EventViewColumn(Series):
         if self.parent is None:
             raise ValueError("Series object does not have parent frame object!")
 
-    def as_entity(self, tag_name: str) -> None:
+    def as_entity(self, entity_name: str | None) -> None:
         """
-        Set the series as entity with tag name at parent frame
+        Set the column as the specified entity
 
         Parameters
         ----------
-        tag_name: str
-            Tag name of the entity
+        entity_name: str | None
+            Associate column name to the entity, remove association if entity name is None
 
         Raises
         ------
@@ -81,10 +83,19 @@ class EventViewColumn(Series):
         """
         self._validate_series_to_set_parent_attribute()
         if self.name and self.parent:
-            if isinstance(tag_name, str):
-                self.parent.column_entity_map[self.name] = str(tag_name)
+            if entity_name is None:
+                column_entity_map = self.parent.column_entity_map or {}
+                column_entity_map.pop(self.name)
+                self.parent.column_entity_map = column_entity_map
+            elif isinstance(entity_name, str):
+                entity_dict = get_entity(entity_name)
+                column_entity_map = self.parent.column_entity_map or {}
+                column_entity_map[self.name] = entity_dict["id"]
+                self.parent.column_entity_map = column_entity_map
             else:
-                raise TypeError(f'Unsupported type "{type(tag_name)}" for tag name "{tag_name}"!')
+                raise TypeError(
+                    f'Unsupported type "{type(entity_name)}" for tag name "{entity_name}"!'
+                )
 
     def add_description(self, description: str) -> None:
         """
@@ -117,8 +128,9 @@ class EventView(ProtectedColumnsQueryObject, Frame):
 
     _series_class = EventViewColumn
 
-    column_entity_map: Dict[StrictStr, StrictStr] = Field(default_factory=dict)
+    column_entity_map: Optional[Dict[StrictStr, StrictStr]] = Field(default=None)
     column_description_map: Dict[StrictStr, StrictStr] = Field(default_factory=dict)
+    default_feature_job_setting: Optional[FeatureJobSetting]
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name}, timestamp_column={self.timestamp_column})"
@@ -146,12 +158,13 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         -------
         list[str]
         """
-        return list(self.column_entity_map.keys())
+        column_entity_map = self.column_entity_map or {}
+        return list(column_entity_map.keys())
 
     @property
     def timestamp_column(self) -> str:
         """
-        Timestamp column of the event source
+        Timestamp column of the event data
 
         Returns
         -------
@@ -195,7 +208,8 @@ class EventView(ProtectedColumnsQueryObject, Frame):
                 col: (event_data.node.name,) for col in event_data.column_var_type_map
             },
             row_index_lineage=tuple(event_data.row_index_lineage),
-            column_entity_map=event_data.column_entity_map.copy(),
+            column_entity_map=event_data.column_entity_map,
+            default_feature_job_setting=event_data.default_feature_job_setting,
         )
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
@@ -204,7 +218,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         output = super().__getitem__(item)
         if isinstance(item, str) and isinstance(output, EventViewColumn):
             return output.set_parent(self)  # pylint: disable=no-member
-        if isinstance(output, EventView):
+        if isinstance(output, EventView) and self.column_entity_map:
             output.column_entity_map = {
                 col: name for col, name in self.column_entity_map.items() if col in output.columns
             }

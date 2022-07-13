@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from featurebyte.enum import CollectionName
 from featurebyte.models.event_data import EventDataStatus, FeatureJobSettingHistoryEntry
 from featurebyte.persistent import DuplicateDocumentError, Persistent
-from featurebyte.routes.common.helpers import get_utc_now
+from featurebyte.routes.common.util import get_utc_now
 from featurebyte.schema.event_data import EventData, EventDataCreate, EventDataList, EventDataUpdate
 
 
@@ -160,6 +160,11 @@ class EventDataController:
             ] + event_data["history"]
         else:
             update_payload.pop("default_feature_job_setting")
+
+        if data.column_entity_map is not None:
+            update_payload["column_entity_map"] = data.column_entity_map
+        else:
+            update_payload.pop("column_entity_map")
 
         if data.status:
             # check eligibility of status transition

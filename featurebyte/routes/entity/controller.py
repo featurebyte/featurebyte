@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from featurebyte.enum import CollectionName
 from featurebyte.models.entity import EntityNameHistoryEntry
 from featurebyte.persistent import Persistent
-from featurebyte.routes.common.helpers import get_utc_now
+from featurebyte.routes.common.util import get_utc_now
 from featurebyte.schema.entity import Entity, EntityCreate, EntityList, EntityUpdate
 
 

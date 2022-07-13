@@ -7,6 +7,8 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
+from featurebyte.exception import RecordRetrievalException
+from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
 
@@ -21,13 +23,19 @@ def test_from_event_data(snowflake_event_data, mock_get_persistent):
     assert event_view_first.node == snowflake_event_data.node
     assert event_view_first.column_var_type_map == snowflake_event_data.column_var_type_map
     assert event_view_first.row_index_lineage == snowflake_event_data.row_index_lineage
-    assert event_view_first.column_entity_map == snowflake_event_data.column_entity_map == {}
+    assert event_view_first.column_entity_map is snowflake_event_data.column_entity_map is None
 
-    Entity(name="customer", serving_name="cust_id")
+    entity = Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_data.cust_id.as_entity("customer")
+    snowflake_event_data.update_default_feature_job_setting(
+        blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+    )
     event_view_second = EventView.from_event_data(snowflake_event_data)
     assert event_view_second.column_entity_map == snowflake_event_data.column_entity_map
-    assert "cust_id" in event_view_second.column_entity_map
+    assert event_view_second.column_entity_map == {"cust_id": str(entity.id)}
+    assert event_view_second.default_feature_job_setting == FeatureJobSetting(
+        blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+    )
 
 
 def test_getitem__str(snowflake_event_view):
@@ -49,7 +57,7 @@ def test_getitem__str(snowflake_event_view):
 
 def test_getitem__list_of_str(snowflake_event_view):
     """
-    Test retrieving subset of the event source features
+    Test retrieving subset of the event data features
     """
     # case 1: select a non-protect column without selecting timestamp column and entity identifier column
     event_view_subset1 = snowflake_event_view[["col_float"]]
@@ -65,13 +73,13 @@ def test_getitem__list_of_str(snowflake_event_view):
     assert event_view_subset2.row_index_lineage == snowflake_event_view.row_index_lineage
     assert event_view_subset2.inception_node == snowflake_event_view.inception_node
 
-    # both event source subsets actually point to the same node
+    # both event data subsets actually point to the same node
     assert event_view_subset1.node == event_view_subset2.node
 
 
 def test_getitem__series_key(snowflake_event_view):
     """
-    Test filtering on event source object
+    Test filtering on event data object
     """
     mask_cust_id = snowflake_event_view["cust_id"] < 1000
     assert isinstance(mask_cust_id, Series)
@@ -86,7 +94,7 @@ def test_getitem__series_key(snowflake_event_view):
 @pytest.mark.parametrize("column", ["event_timestamp"])
 def test_setitem__override_protected_column(snowflake_event_view, column):
     """
-    Test attempting to change event source's timestamp value or entity identifier value
+    Test attempting to change event data's timestamp value or entity identifier value
     """
     assert column in snowflake_event_view.protected_columns
     with pytest.raises(ValueError) as exc:
@@ -122,21 +130,25 @@ def test_setitem__str_key_series_value(snowflake_event_view):
     }
 
 
-def test_setting_column_as_entity__on_original_frame(snowflake_event_view):
+def test_setting_column_as_entity__on_original_frame(snowflake_event_view, mock_get_persistent):
     """
     Test setting a specific column as entity
     """
+    _ = mock_get_persistent
+    cust_entity = Entity.create(name="customer", serving_name="cust_id")
+
     # test on original column
     snowflake_event_view.cust_id.as_entity("customer")
     assert id(snowflake_event_view) == id(snowflake_event_view.cust_id.parent)
-    assert snowflake_event_view.column_entity_map == {"cust_id": "customer"}
+    assert snowflake_event_view.column_entity_map == {"cust_id": str(cust_entity.id)}
 
     # test on transformed column
+    entity = Entity.create(name="some_random_entity", serving_name="random_id")
     snowflake_event_view["col_int_entity"] = 1 * snowflake_event_view["col_int"]
-    snowflake_event_view.col_int_entity.as_entity("col_int")
+    snowflake_event_view.col_int_entity.as_entity("some_random_entity")
     assert snowflake_event_view.column_entity_map == {
-        "cust_id": "customer",
-        "col_int_entity": "col_int",
+        "cust_id": str(cust_entity.id),
+        "col_int_entity": str(entity.id),
     }
 
     # test entity column is protected
@@ -145,15 +157,21 @@ def test_setting_column_as_entity__on_original_frame(snowflake_event_view):
     expected_msg = "Timestamp or entity column 'col_int_entity' cannot be modified!"
     assert expected_msg in str(exc.value)
 
+    # test remove entity
+    snowflake_event_view.col_int_entity.as_entity(None)
+    assert snowflake_event_view.column_entity_map == {"cust_id": str(cust_entity.id)}
 
-def test_setting_column_as_entity__on_sub_frame(snowflake_event_view):
+
+def test_setting_column_as_entity__on_sub_frame(snowflake_event_view, mock_get_persistent):
     """
     Test setting a specific column as entity (on sub-frame)
     """
+    _ = mock_get_persistent
+    cust_entity = Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     sub_view_first = snowflake_event_view[["cust_id", "col_int"]]
     assert isinstance(sub_view_first, EventView)
-    assert sub_view_first.column_entity_map == {"cust_id": "customer"}
+    assert sub_view_first.column_entity_map == {"cust_id": str(cust_entity.id)}
     assert set(sub_view_first.columns) == {"event_timestamp", "cust_id", "col_int"}
 
     # test entity column is protected in sub-frame also
@@ -162,16 +180,21 @@ def test_setting_column_as_entity__on_sub_frame(snowflake_event_view):
     expected_msg = "Timestamp or entity column 'cust_id' cannot be modified!"
     assert expected_msg in str(exc.value)
 
+    entity = Entity.create(name="some_random_entity", serving_name="random_id")
     sub_view_second = snowflake_event_view[["col_int", "col_float"]]
     assert sub_view_second.column_entity_map == {}
-    sub_view_second.col_int.as_entity("col_integer")
-    assert sub_view_second.column_entity_map == {"col_int": "col_integer"}
+    sub_view_second.col_int.as_entity("some_random_entity")
+    assert sub_view_second.column_entity_map == {"col_int": str(entity.id)}
 
 
 def test_setting_column_as_entity__invalid_cases(snowflake_event_view):
     """
     Test invalid ways of setting column as entity
     """
+    with pytest.raises(RecordRetrievalException) as exc:
+        snowflake_event_view.cust_id.as_entity("some_random_entity")
+    assert 'Entity name "some_random_entity" not found!' in str(exc.value)
+
     cust_id = snowflake_event_view.cust_id
     new_cust_id = cust_id * 2
     assert new_cust_id.parent is None

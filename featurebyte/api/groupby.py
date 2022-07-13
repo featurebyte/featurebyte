@@ -32,7 +32,7 @@ class EventViewGroupBy(OpsMixin):
         for key in keys_value:
             if key not in obj.columns:
                 raise KeyError(f'Column "{key}" not found!')
-            if key not in obj.column_entity_map:
+            if key not in (obj.column_entity_map or {}):
                 raise ValueError(f'Column "{key}" is not an entity!')
 
         self.obj = obj
@@ -49,12 +49,10 @@ class EventViewGroupBy(OpsMixin):
         value_column: str,
         method: str,
         windows: list[str],
-        blind_spot: str,
-        frequency: str,
-        time_modulo_frequency: str,
         feature_names: list[str],
         timestamp_column: str | None = None,
         value_by_column: str | None = None,
+        feature_job_setting: dict[str, str] | None = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys
@@ -62,23 +60,20 @@ class EventViewGroupBy(OpsMixin):
         Parameters
         ----------
         value_column: str
-            column to be aggregated
+            Column to be aggregated
         method: str
-            aggregation method
+            Aggregation method
         windows: list[str]
-            list of aggregation window sizes
-        blind_spot: str
-            historical gap introduced to the aggregation
-        frequency: str
-            frequency of the feature job
-        time_modulo_frequency: str
-            offset of when the feature job will be run, should be smaller than frequency
+            List of aggregation window sizes
         feature_names: list[str]
-            output feature names
+            Output feature names
         timestamp_column: str | None
-            timestamp column used to specify the window (if not specified, event source timestamp is used)
+            Timestamp column used to specify the window (if not specified, event data timestamp is used)
         value_by_column: str | None
-            use this column to further split the data within a group
+            Use this column to further split the data within a group
+        feature_job_setting: dict[str, str] | None
+            Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
+            feature job setting parameters
 
         Returns
         -------
@@ -95,15 +90,30 @@ class EventViewGroupBy(OpsMixin):
         if method not in AggFunc.all():
             raise ValueError(f"Aggregation method not supported: {method}")
 
+        if value_column not in self.obj.columns:
+            raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
+
+        feature_job_setting = feature_job_setting or {}
+        frequency = feature_job_setting.get("frequency")
+        time_modulo_frequency = feature_job_setting.get("time_modulo_frequency")
+        blind_spot = feature_job_setting.get("blind_spot")
+        default_setting = self.obj.default_feature_job_setting
+        if default_setting:
+            frequency = frequency or default_setting.frequency
+            time_modulo_frequency = time_modulo_frequency or default_setting.time_modulo_frequency
+            blind_spot = blind_spot or default_setting.blind_spot
+
+        if frequency is None or time_modulo_frequency is None or blind_spot is None:
+            raise ValueError(
+                "frequency, time_module_frequency and blind_spot parameters should not be None!"
+            )
+
         parsed_seconds = validate_job_setting_parameters(
             frequency=frequency,
             time_modulo_frequency=time_modulo_frequency,
             blind_spot=blind_spot,
         )
         frequency_seconds, time_modulo_frequency_seconds, blind_spot_seconds = parsed_seconds
-
-        if value_column not in self.obj.columns:
-            raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
 
         node_params = {
             "keys": self.keys,

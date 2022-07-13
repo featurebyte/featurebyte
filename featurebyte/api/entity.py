@@ -21,9 +21,10 @@ class Entity(EntityModel):
     Entity class
     """
 
-    def __init__(self, name: str, serving_name: str):
+    @classmethod
+    def create(cls, name: str, serving_name: str) -> Entity:
         """
-        Entity constructor
+        Create entity at persistent layer
 
         Parameters
         ----------
@@ -31,6 +32,11 @@ class Entity(EntityModel):
             Entity name
         serving_name: str
             Entity serving name
+
+        Returns
+        -------
+        Entity
+            Newly created entity object
 
         Raises
         ------
@@ -46,7 +52,7 @@ class Entity(EntityModel):
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response=response)
             raise RecordCreationException(response=response)
-        super().__init__(**convert_response_to_dict(response))
+        return Entity(**convert_response_to_dict(response))
 
     @property
     def serving_name(self) -> str:
