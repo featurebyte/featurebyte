@@ -64,10 +64,12 @@ def aggregate_kwargs_fixture():
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "1d"],
-        blind_spot="10m",
-        frequency="30m",
-        time_modulo_frequency="5m",
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
     )
     return aggregate_kwargs
 
@@ -125,7 +127,13 @@ def test_tile_table_id__agg_parameters(
 ):
     """Test tile table IDs are expected given different aggregate() parameters"""
     _ = mock_get_persistent
-    aggregate_kwargs.update(overrides)
+    feature_job_setting_params = {"frequency", "blind_spot", "time_modulo_frequency"}
+    for key in overrides:
+        if key in feature_job_setting_params:
+            aggregate_kwargs["feature_job_setting"][key] = overrides[key]
+    aggregate_kwargs.update(
+        {key: val for key, val in overrides.items() if key not in feature_job_setting_params}
+    )
     _, tile_id = run_groupby_and_get_tile_table_identifier(snowflake_event_view, aggregate_kwargs)
     assert tile_id == expected_tile_id
 

@@ -8,6 +8,7 @@ from featurebyte.api.feature import FeatureGroup
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.util import get_tile_table_identifier
 
@@ -52,9 +53,7 @@ class EventViewGroupBy(OpsMixin):
         feature_names: list[str],
         timestamp_column: str | None = None,
         value_by_column: str | None = None,
-        blind_spot: str | None = None,
-        frequency: str | None = None,
-        time_modulo_frequency: str | None = None,
+        feature_job_setting: dict[str, str] | None = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys
@@ -62,24 +61,20 @@ class EventViewGroupBy(OpsMixin):
         Parameters
         ----------
         value_column: str
-            column to be aggregated
+            Column to be aggregated
         method: str
-            aggregation method
+            Aggregation method
         windows: list[str]
-            list of aggregation window sizes
+            List of aggregation window sizes
         feature_names: list[str]
-            output feature names
+            Output feature names
         timestamp_column: str | None
-            timestamp column used to specify the window (if not specified, event data timestamp is used)
+            Timestamp column used to specify the window (if not specified, event data timestamp is used)
         value_by_column: str | None
-            use this column to further split the data within a group
-        blind_spot: str | None
-            historical gap introduced to the aggregation (if not specified, event data blind spot is used)
-        frequency: str | None
-            frequency of the feature job (if not specified, event data frequency is used)
-        time_modulo_frequency: str | None
-            offset of when the feature job will be run, should be smaller than frequency (if not specified,
-            event data time modulo frequency is used)
+            Use this column to further split the data within a group
+        feature_job_setting: dict[str, str] | None
+            Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
+            feature job setting parameters
 
         Returns
         -------
@@ -99,6 +94,10 @@ class EventViewGroupBy(OpsMixin):
         if value_column not in self.obj.columns:
             raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
 
+        feature_job_setting = feature_job_setting or {}
+        frequency = feature_job_setting.get("frequency")
+        time_modulo_frequency = feature_job_setting.get("time_modulo_frequency")
+        blind_spot = feature_job_setting.get("blind_spot")
         default_setting = self.obj.default_feature_job_setting
         if default_setting:
             frequency = frequency or default_setting.frequency

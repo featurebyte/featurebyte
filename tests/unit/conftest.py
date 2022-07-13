@@ -273,9 +273,11 @@ def feature_group_fixture(grouped_event_view):
         value_column="col_float",
         method="sum",
         windows=["30m", "2h", "1d"],
-        blind_spot="10m",
-        frequency="30m",
-        time_modulo_frequency="5m",
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
     )
     expected_inception_node = Node(
@@ -455,10 +457,12 @@ def mock_snowflake_feature(
         value_column="col_float",
         method="sum",
         windows=["30m"],
-        blind_spot="10m",
-        frequency="30m",
-        time_modulo_frequency="5m",
         feature_names=["sum_30m"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
     )
     feature = feature_group["sum_30m"]
     feature_json = feature.json()
@@ -505,10 +509,12 @@ def mock_snowflake_feature_list(
         value_column="col_float",
         method="sum",
         windows=["30m"],
-        blind_spot="10m",
-        frequency="30m",
-        time_modulo_frequency="5m",
         feature_names=["sum_30m"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
     )
     feature = feature_group["sum_30m"]
     feature_json = feature.json()

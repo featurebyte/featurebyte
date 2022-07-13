@@ -53,10 +53,12 @@ def test_feature_model(snowflake_event_view, feature_model_dict, mock_get_persis
         value_column="col_float",
         method="sum",
         windows=["30m"],
-        blind_spot="10m",
-        frequency="30m",
-        time_modulo_frequency="5m",
         feature_names=["sum_30m"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
     )
     feature = feature_group["sum_30m"]
     assert feature.dict() == feature_model_dict
