@@ -110,6 +110,10 @@ def test_getitem__series_key(snowflake_event_view):
     assert isinstance(event_view_row_subset, EventView)
     assert event_view_row_subset.row_index_lineage == ("input_2", "filter_1")
     assert event_view_row_subset.inception_node == snowflake_event_view.inception_node
+    assert (
+        event_view_row_subset.default_feature_job_setting
+        == snowflake_event_view.default_feature_job_setting
+    )
 
 
 @pytest.mark.parametrize("column", ["event_timestamp"])
@@ -171,6 +175,9 @@ def test_setting_column_as_entity__on_original_frame(snowflake_event_view, mock_
         "cust_id": str(cust_entity.id),
         "col_int_entity": str(entity.id),
     }
+    assert snowflake_event_view.default_feature_job_setting == FeatureJobSetting(
+        blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+    )
 
     # test entity column is protected
     with pytest.raises(ValueError) as exc:
@@ -194,6 +201,10 @@ def test_setting_column_as_entity__on_sub_frame(snowflake_event_view, mock_get_p
     assert isinstance(sub_view_first, EventView)
     assert sub_view_first.column_entity_map == {"cust_id": str(cust_entity.id)}
     assert set(sub_view_first.columns) == {"event_timestamp", "cust_id", "col_int"}
+    assert (
+        sub_view_first.default_feature_job_setting
+        == snowflake_event_view.default_feature_job_setting
+    )
 
     # test entity column is protected in sub-frame also
     with pytest.raises(ValueError) as exc:
@@ -206,6 +217,10 @@ def test_setting_column_as_entity__on_sub_frame(snowflake_event_view, mock_get_p
     assert sub_view_second.column_entity_map == {}
     sub_view_second.col_int.as_entity("some_random_entity")
     assert sub_view_second.column_entity_map == {"col_int": str(entity.id)}
+    assert (
+        sub_view_second.default_feature_job_setting
+        == snowflake_event_view.default_feature_job_setting
+    )
 
 
 def test_setting_column_as_entity__invalid_cases(snowflake_event_view):
