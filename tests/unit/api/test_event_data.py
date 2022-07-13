@@ -11,6 +11,7 @@ from pydantic.error_wrappers import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData, EventDataColumn
+from featurebyte.api.feature_store import FeatureStore, TableDetails
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
@@ -73,6 +74,8 @@ def save_event_data_fixture(mock_get_persistent, snowflake_event_data):
     snowflake_event_data.save_as_draft()
     assert snowflake_event_data.status == EventDataStatus.DRAFT
     assert isinstance(snowflake_event_data.created_at, datetime)
+    feature_store, _ = snowflake_event_data.tabular_source
+    assert isinstance(feature_store, FeatureStore)
     yield snowflake_event_data
 
 
@@ -310,6 +313,8 @@ def test_event_data__info__not_saved_event_data(mock_get_persistent, snowflake_e
             },
         ),
     }
+    feature_store, _ = snowflake_event_data.tabular_source
+    assert isinstance(feature_store, FeatureStore)
 
     # check unhandled response status code
     with pytest.raises(RecordRetrievalException):
@@ -368,6 +373,8 @@ def test_event_data__info__saved_event_data(saved_event_data, mock_config_path_e
             ),
         }
     )
+    feature_store, _ = saved_event_data.tabular_source
+    assert isinstance(feature_store, FeatureStore)
 
 
 def test_update_default_job_setting(snowflake_event_data, config):
@@ -389,6 +396,8 @@ def test_update_default_job_setting(snowflake_event_data, config):
     assert snowflake_event_data.default_feature_job_setting == FeatureJobSetting(
         blind_spot="1m30s", frequency="10m", time_modulo_frequency="2m"
     )
+    feature_store, _ = snowflake_event_data.tabular_source
+    assert isinstance(feature_store, FeatureStore)
 
 
 def test_update_default_job_setting__saved_event_data(saved_event_data, config):
