@@ -245,7 +245,7 @@ class ProtectedColumnsQueryObject(QueryObject):
     @property
     def inception_node(self) -> Node:
         """
-        Node where the event source is introduced to the query graph
+        Node where the event data is introduced to the query graph
 
         Returns
         -------

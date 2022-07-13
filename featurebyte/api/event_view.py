@@ -164,7 +164,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
     @property
     def timestamp_column(self) -> str:
         """
-        Timestamp column of the event source
+        Timestamp column of the event data
 
         Returns
         -------

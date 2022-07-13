@@ -57,7 +57,7 @@ def test_getitem__str(snowflake_event_view):
 
 def test_getitem__list_of_str(snowflake_event_view):
     """
-    Test retrieving subset of the event source features
+    Test retrieving subset of the event data features
     """
     # case 1: select a non-protect column without selecting timestamp column and entity identifier column
     event_view_subset1 = snowflake_event_view[["col_float"]]
@@ -73,13 +73,13 @@ def test_getitem__list_of_str(snowflake_event_view):
     assert event_view_subset2.row_index_lineage == snowflake_event_view.row_index_lineage
     assert event_view_subset2.inception_node == snowflake_event_view.inception_node
 
-    # both event source subsets actually point to the same node
+    # both event data subsets actually point to the same node
     assert event_view_subset1.node == event_view_subset2.node
 
 
 def test_getitem__series_key(snowflake_event_view):
     """
-    Test filtering on event source object
+    Test filtering on event data object
     """
     mask_cust_id = snowflake_event_view["cust_id"] < 1000
     assert isinstance(mask_cust_id, Series)
@@ -94,7 +94,7 @@ def test_getitem__series_key(snowflake_event_view):
 @pytest.mark.parametrize("column", ["event_timestamp"])
 def test_setitem__override_protected_column(snowflake_event_view, column):
     """
-    Test attempting to change event source's timestamp value or entity identifier value
+    Test attempting to change event data's timestamp value or entity identifier value
     """
     assert column in snowflake_event_view.protected_columns
     with pytest.raises(ValueError) as exc:

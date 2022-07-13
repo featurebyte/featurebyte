@@ -70,16 +70,16 @@ class EventViewGroupBy(OpsMixin):
         feature_names: list[str]
             output feature names
         timestamp_column: str | None
-            timestamp column used to specify the window (if not specified, event source timestamp is used)
+            timestamp column used to specify the window (if not specified, event data timestamp is used)
         value_by_column: str | None
             use this column to further split the data within a group
         blind_spot: str | None
-            historical gap introduced to the aggregation (if not specified, event source blind spot is used)
+            historical gap introduced to the aggregation (if not specified, event data blind spot is used)
         frequency: str | None
-            frequency of the feature job (if not specified, event source frequency is used)
+            frequency of the feature job (if not specified, event data frequency is used)
         time_modulo_frequency: str | None
             offset of when the feature job will be run, should be smaller than frequency (if not specified,
-            event source time modulo frequency is used)
+            event data time modulo frequency is used)
 
         Returns
         -------
