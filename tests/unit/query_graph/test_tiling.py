@@ -95,12 +95,11 @@ def run_groupby_and_get_tile_table_identifier(
     feature_names = set(aggregate_kwargs["feature_names"])
     features = event_view.groupby(**groupby_kwargs).aggregate(**aggregate_kwargs)
     tile_id = features.node.parameters["tile_id"]
-    pruned_graph, node_name_map = GlobalQueryGraph().prune(
-        features.node, feature_names, to_update_node_params=True
-    )
+    pruned_graph, node_name_map = GlobalQueryGraph().prune(features.node, feature_names)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[features.node.name])
     tile_id_pruned = mapped_node.parameters["tile_id"]
-    return tile_id, tile_id_pruned
+    assert tile_id == tile_id_pruned
+    return tile_id
 
 
 @pytest.mark.parametrize(
@@ -134,7 +133,7 @@ def test_tile_table_id__agg_parameters(
     aggregate_kwargs.update(
         {key: val for key, val in overrides.items() if key not in feature_job_setting_params}
     )
-    _, tile_id = run_groupby_and_get_tile_table_identifier(snowflake_event_view, aggregate_kwargs)
+    tile_id = run_groupby_and_get_tile_table_identifier(snowflake_event_view, aggregate_kwargs)
     assert tile_id == expected_tile_id
 
 
@@ -152,7 +151,7 @@ def test_tile_table_id__groupby_parameters(
     snowflake_event_view, aggregate_kwargs, groupby_kwargs, expected_tile_id
 ):
     """Test tile table IDs are expected given different groupby() parameters"""
-    _, tile_id = run_groupby_and_get_tile_table_identifier(
+    tile_id = run_groupby_and_get_tile_table_identifier(
         snowflake_event_view, aggregate_kwargs, groupby_kwargs
     )
     assert tile_id == expected_tile_id
@@ -170,17 +169,13 @@ def test_tile_table_id__transformations(
     # Tile table id based on value_10
     kwargs = copy.deepcopy(aggregate_kwargs)
     kwargs["value_column"] = "value_10"
-    tile_id, tile_id_pruned = run_groupby_and_get_tile_table_identifier(
-        snowflake_event_view, kwargs
-    )
-    assert tile_id == "sum_f1800_m300_b600_56a9fe1d7aeda26cab2ecba5e008d596b6dbcd0d"
-    assert tile_id_pruned == "sum_f1800_m300_b600_05c80637bc162f85ec822c13cbe794febc74275d"
+    tile_id = run_groupby_and_get_tile_table_identifier(snowflake_event_view, kwargs)
+    assert tile_id == "sum_f1800_m300_b600_05c80637bc162f85ec822c13cbe794febc74275d"
 
     # Note that this is different from above
     kwargs = copy.deepcopy(aggregate_kwargs)
     kwargs["value_column"] = "value_100"
-    tile_id, tile_id_pruned = run_groupby_and_get_tile_table_identifier(
+    tile_id = run_groupby_and_get_tile_table_identifier(
         snowflake_event_view, kwargs, create_entity=False
     )
-    assert tile_id == "sum_f1800_m300_b600_c667f57df4712495696e65a37abca65c1806b4c4"
-    assert tile_id_pruned == "sum_f1800_m300_b600_b5038376279f00109bc42e18aeb6087a712f17d7"
+    assert tile_id == "sum_f1800_m300_b600_b5038376279f00109bc42e18aeb6087a712f17d7"

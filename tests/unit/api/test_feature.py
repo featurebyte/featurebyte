@@ -22,10 +22,11 @@ def float_feature_dict_fixture(float_feature):
         "project_1",
         "project_2",
         "groupby_1",
+        "groupby_2",
     }
     assert float_feature.graph.edges == {
-        "input_2": ["project_1", "groupby_1"],
-        "groupby_1": ["project_2"],
+        "input_2": ["project_1", "groupby_1", "groupby_2"],
+        "groupby_2": ["project_2"],
     }
 
     feat_dict = float_feature.dict()
