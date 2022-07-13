@@ -3,13 +3,15 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
+from typing import Any
+
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import FeatureGroup
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.query_graph.util import get_tile_table_identifier
 
 
@@ -45,7 +47,9 @@ class EventViewGroupBy(OpsMixin):
     def __str__(self) -> str:
         return repr(self)
 
-    def _prepare_node_and_metadata(self, node_params, tile_id):
+    def _prepare_node_and_metadata(
+        self, node_params: dict[str, Any], tile_id: str | None
+    ) -> tuple[Node, dict[str, DBVarType], dict[str, tuple[str, ...]]]:
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,
             node_params={**node_params, "tile_id": tile_id},
