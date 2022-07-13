@@ -8,7 +8,6 @@ from featurebyte.api.feature import FeatureGroup
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
-from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.util import get_tile_table_identifier
 
