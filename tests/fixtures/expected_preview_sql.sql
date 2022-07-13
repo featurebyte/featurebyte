@@ -15,7 +15,7 @@ FROM (
           "cust_id" AS "cust_id",
           "a" AS "a",
           "b" AS "b",
-          "a" + "b" AS "c"
+          ("a" + "b") AS "c"
         FROM "db"."public"."event_table"
         WHERE
           "ts" >= CAST('2022-04-18 09:15:00' AS TIMESTAMP)

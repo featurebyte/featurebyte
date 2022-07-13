@@ -22,6 +22,7 @@ def test_get_feature_preview_sql(query_graph_with_groupby):
     if update_fixture:
         with open("tests/fixtures/expected_preview_sql.sql", "w", encoding="utf-8") as f_handle:
             f_handle.write(preview_sql)
+            f_handle.write("\n")  # make pre-commit hook end-of-file-fixer happy
         raise AssertionError("Fixture updated, please set update_fixture to False")
 
     with open("tests/fixtures/expected_preview_sql.sql", encoding="utf-8") as f_handle:

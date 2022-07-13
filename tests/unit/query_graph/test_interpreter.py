@@ -127,8 +127,8 @@ def test_graph_interpreter_multi_assign(graph, node_input):
           "cust_id" AS "cust_id",
           "a" AS "a",
           "b" AS "b",
-          "a" + "b" AS "c",
-          "a" + "b" AS "c2"
+          ("a" + "b") AS "c",
+          ("a" + "b") AS "c2"
         FROM "db"."public"."event_table"
         WHERE
           "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
@@ -184,7 +184,7 @@ def test_graph_interpreter_binary_operations(graph, node_input, node_type, expec
           "cust_id" AS "cust_id",
           "a" AS "a",
           "b" AS "b",
-          {expected_expr} AS "a2"
+          ({expected_expr}) AS "a2"
         FROM "db"."public"."event_table"
         WHERE
           "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
@@ -274,7 +274,7 @@ def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
                       "cust_id" AS "cust_id",
                       "a" AS "a",
                       "b" AS "b",
-                      "a" + "b" AS "c"
+                      ("a" + "b") AS "c"
                     FROM "db"."public"."event_table"
                 ) AS R
                   ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
@@ -346,7 +346,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
                       "cust_id" AS "cust_id",
                       "a" AS "a",
                       "b" AS "b",
-                      "a" + "b" AS "c"
+                      ("a" + "b") AS "c"
                     FROM "db"."public"."event_table"
                 ) AS R
                   ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
@@ -399,7 +399,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
                       "cust_id" AS "cust_id",
                       "a" AS "a",
                       "b" AS "b",
-                      "a" + "b" AS "c"
+                      ("a" + "b") AS "c"
                     FROM "db"."public"."event_table"
                 ) AS R
                   ON R."biz_id" = __FB_ENTITY_TABLE_NAME."biz_id"
@@ -550,8 +550,8 @@ def test_graph_interpreter_preview(graph, node_input):
           "cust_id" AS "cust_id",
           "a" AS "a",
           "b" AS "b",
-          "a" + "b" AS "c",
-          "a" + "b" AS "c2"
+          ("a" + "b") AS "c",
+          ("a" + "b") AS "c2"
         FROM "db"."public"."event_table"
         LIMIT 10
         """
@@ -562,7 +562,7 @@ def test_graph_interpreter_preview(graph, node_input):
     expected = textwrap.dedent(
         """
         SELECT
-          "a" + "b"
+          ("a" + "b")
         FROM (
             SELECT
               "ts" AS "ts",
@@ -620,7 +620,7 @@ def test_filter_node(graph, node_input):
           "b" AS "b"
         FROM "db"."public"."event_table"
         WHERE
-          "b" = 123
+          ("b" = 123)
         LIMIT 10
         """
     ).strip()
@@ -641,7 +641,7 @@ def test_filter_node(graph, node_input):
             FROM "db"."public"."event_table"
         )
         WHERE
-          "b" = 123
+          ("b" = 123)
         LIMIT 10
         """
     ).strip()
@@ -686,10 +686,10 @@ def test_filter_assign_project(graph, node_input):
         """
         SELECT
           "b" AS "b",
-          "b" = 123 AS "new_col"
+          ("b" = 123) AS "new_col"
         FROM "db"."public"."event_table"
         WHERE
-          "b" = 123
+          ("b" = 123)
         LIMIT 10
         """
     ).strip()

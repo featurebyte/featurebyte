@@ -312,7 +312,9 @@ class BinaryOp(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return self.operation(this=self.left_node.sql, expression=self.right_node.sql)
+        return expressions.Paren(
+            this=self.operation(this=self.left_node.sql, expression=self.right_node.sql)
+        )
 
 
 @dataclass
