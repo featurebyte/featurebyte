@@ -324,10 +324,14 @@ def event_data_fixture(config, snowflake_session, mock_get_persistent):
         event_timestamp_column="EVENT_TIMESTAMP",
         credentials=config.credentials,
     )
+    event_data.update_default_feature_job_setting(
+        blind_spot="30m",
+        frequency="1h",
+        time_modulo_frequency="30m",
+    )
 
     # create entity & event data
     Entity.create(name="User", serving_name="uid")
     event_data["USER_ID"].as_entity("User")
     event_data.save_as_draft()
-
     return event_data

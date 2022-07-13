@@ -246,6 +246,7 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
     )
     assert event_view.inception_node == expected_inception_node
     assert event_view.protected_columns == {"event_timestamp"}
+    assert event_view.inherited_columns == {"event_timestamp"}
     assert event_view.timestamp_column == "event_timestamp"
     yield event_view
 
@@ -297,6 +298,7 @@ def feature_group_fixture(grouped_event_view):
     )
     assert isinstance(feature_group, FeatureGroup)
     assert feature_group.protected_columns == {"cust_id"}
+    assert feature_group.inherited_columns == {"cust_id"}
     assert feature_group.inception_node == expected_inception_node
     assert feature_group.entity_identifiers == ["cust_id"]
     assert feature_group.columns == ["cust_id", "sum_30m", "sum_2h", "sum_1d"]
@@ -317,6 +319,7 @@ def float_feature_fixture(feature_group):
     feature = feature_group["sum_1d"]
     assert isinstance(feature, Feature)
     assert feature.protected_columns == {"cust_id"}
+    assert feature.inherited_columns == {"cust_id"}
     assert feature.inception_node == feature_group.inception_node
     yield feature
 
@@ -329,6 +332,7 @@ def bool_feature_fixture(float_feature):
     bool_feature = float_feature > 100.0
     assert isinstance(bool_feature, Feature)
     assert bool_feature.protected_columns == float_feature.protected_columns
+    assert bool_feature.inherited_columns == float_feature.inherited_columns
     assert bool_feature.inception_node == float_feature.inception_node
     yield bool_feature
 

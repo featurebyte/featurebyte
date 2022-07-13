@@ -124,9 +124,6 @@ def test_query_object_operation_on_snowflake_source(
         "USER_ID",
         "count",
         windows=["2h", "24h"],
-        blind_spot="30m",
-        frequency="1h",
-        time_modulo_frequency="30m",
         feature_names=["COUNT_2h", "COUNT_24h"],
     )
 
