@@ -3,12 +3,13 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Tuple
 
 import time
 
 import pandas as pd
 
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Credentials
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
@@ -16,6 +17,7 @@ from featurebyte.core.series import Series
 from featurebyte.enum import SpecialColumnName
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_store import TableDetails
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
 
@@ -115,6 +117,11 @@ class Feature(FeatureQueryObject, Series, FeatureModel):
     """
     Feature class
     """
+
+    # Although tabular_source is already defined in FeatureModel, here it is redefined so that
+    # pydantic knows to deserialize the first element as a FeatureStore instead of a
+    # FeatureStoreModel
+    tabular_source: Tuple[FeatureStore, TableDetails]
 
 
 class FeatureGroup(FeatureQueryObject, Frame):

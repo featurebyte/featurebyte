@@ -65,8 +65,7 @@ def test_graph_interpreter_super_simple(graph, node_input):
         input_nodes=[node_input, proj_a],
     )
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
-    sql_graph.build(assign)
-    sql_tree = sql_graph.get_node(assign.name).sql
+    sql_tree = sql_graph.build(assign).sql
     expected = textwrap.dedent(
         """
         SELECT
@@ -119,10 +118,8 @@ def test_graph_interpreter_multi_assign(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, proj_c],
     )
-    name = assign_node_2.name
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE)
-    sql_graph.build(assign_node_2)
-    sql_tree = sql_graph.get_node(name).sql
+    sql_tree = sql_graph.build(assign_node_2).sql
     expected = textwrap.dedent(
         """
         SELECT
@@ -178,10 +175,8 @@ def test_graph_interpreter_binary_operations(graph, node_input, node_type, expec
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, binary_node],
     )
-    name = assign_node.name
     sql_graph = SQLOperationGraph(graph, SQLType.BUILD_TILE)
-    sql_graph.build(assign_node)
-    sql_tree = sql_graph.get_node(name).sql
+    sql_tree = sql_graph.build(assign_node).sql
     expected = textwrap.dedent(
         f"""
         SELECT
@@ -208,8 +203,7 @@ def test_graph_interpreter_project_multiple_columns(graph, node_input):
         input_nodes=[node_input],
     )
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
-    sql_graph.build(proj)
-    sql_tree = sql_graph.get_node(proj.name).sql
+    sql_tree = sql_graph.build(proj).sql
     expected = textwrap.dedent(
         """
         SELECT
@@ -225,7 +219,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
     """Test tile building SQL"""
     interpreter = GraphInterpreter(query_graph_with_groupby)
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
-    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node)
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
     assert len(tile_gen_sqls) == 1
 
     info = tile_gen_sqls[0]
@@ -235,10 +229,193 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
         "tile_table_id": "avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
         "columns": [InternalName.TILE_START_DATE.value, "cust_id", "sum_value", "count_value"],
         "time_modulo_frequency": 1800,
+        "entity_columns": ["cust_id"],
+        "tile_value_columns": ["sum_value", "count_value"],
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["2h", "48h"],
     }
+
+
+def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
+    """Test tile building SQL with on-demand tile generation
+
+    Note that the input table query contains a left-join with an entity table to filter only data
+    belonging to specific entity IDs and date range
+    """
+    interpreter = GraphInterpreter(query_graph_with_groupby)
+    groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=True)
+    assert len(tile_gen_sqls) == 1
+
+    info = tile_gen_sqls[0]
+    info_dict = asdict(info)
+
+    sql = info_dict.pop("sql")
+    expected_sql = textwrap.dedent(
+        """
+        SELECT
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          "cust_id",
+          SUM("a") AS sum_value,
+          COUNT(*) AS count_value
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+            FROM (
+                SELECT
+                  R.*,
+                  __FB_ENTITY_TABLE_START_DATE
+                FROM __FB_ENTITY_TABLE_NAME
+                LEFT JOIN (
+                    SELECT
+                      "ts" AS "ts",
+                      "cust_id" AS "cust_id",
+                      "a" AS "a",
+                      "b" AS "b",
+                      "a" + "b" AS "c"
+                    FROM "db"."public"."event_table"
+                ) AS R
+                  ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+                  AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+                  AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+            )
+        )
+        GROUP BY
+          tile_index,
+          "cust_id",
+          __FB_ENTITY_TABLE_START_DATE
+        ORDER BY
+          tile_index
+        """
+    ).strip()
+    assert sql == expected_sql
+    assert info_dict == {
+        "tile_table_id": "avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+        "columns": [InternalName.TILE_START_DATE.value, "cust_id", "sum_value", "count_value"],
+        "time_modulo_frequency": 1800,
+        "entity_columns": ["cust_id"],
+        "tile_value_columns": ["sum_value", "count_value"],
+        "frequency": 3600,
+        "blind_spot": 900,
+        "windows": ["2h", "48h"],
+    }
+
+
+def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_graph):
+    """Test case for a complex feature that depends on two groupby nodes"""
+    complex_feature_node, graph = complex_feature_query_graph
+    interpreter = GraphInterpreter(graph)
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(complex_feature_node, is_on_demand=True)
+    assert len(tile_gen_sqls) == 2
+
+    # Check required tile 1 (groupby keys: cust_id)
+    info = tile_gen_sqls[0]
+    info_dict = asdict(info)
+    sql = info_dict.pop("sql")
+    assert info_dict == {
+        "tile_table_id": "avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+        "columns": ["__FB_TILE_START_DATE_COLUMN", "cust_id", "sum_value", "count_value"],
+        "entity_columns": ["cust_id"],
+        "tile_value_columns": ["sum_value", "count_value"],
+        "time_modulo_frequency": 1800,
+        "frequency": 3600,
+        "blind_spot": 900,
+        "windows": ["2h", "48h"],
+    }
+    expected = textwrap.dedent(
+        """
+        SELECT
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          "cust_id",
+          SUM("a") AS sum_value,
+          COUNT(*) AS count_value
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+            FROM (
+                SELECT
+                  R.*,
+                  __FB_ENTITY_TABLE_START_DATE
+                FROM __FB_ENTITY_TABLE_NAME
+                LEFT JOIN (
+                    SELECT
+                      "ts" AS "ts",
+                      "cust_id" AS "cust_id",
+                      "a" AS "a",
+                      "b" AS "b",
+                      "a" + "b" AS "c"
+                    FROM "db"."public"."event_table"
+                ) AS R
+                  ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+                  AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+                  AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+            )
+        )
+        GROUP BY
+          tile_index,
+          "cust_id",
+          __FB_ENTITY_TABLE_START_DATE
+        ORDER BY
+          tile_index
+        """
+    ).strip()
+    assert sql == expected
+
+    # Check required tile 2 (groupby keys: biz_id)
+    info = tile_gen_sqls[1]
+    info_dict = asdict(info)
+    sql = info_dict.pop("sql")
+    assert info_dict == {
+        "tile_table_id": "sum_f3600_m1800_b900_650c6aa57569a2e01436fbf89014df6d17a21be7",
+        "columns": ["__FB_TILE_START_DATE_COLUMN", "biz_id", "value"],
+        "entity_columns": ["biz_id"],
+        "tile_value_columns": ["value"],
+        "time_modulo_frequency": 1800,
+        "frequency": 3600,
+        "blind_spot": 900,
+        "windows": ["a_7d_sum_by_business"],
+    }
+    expected = textwrap.dedent(
+        """
+        SELECT
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          "biz_id",
+          SUM("a") AS value
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+            FROM (
+                SELECT
+                  R.*,
+                  __FB_ENTITY_TABLE_START_DATE
+                FROM __FB_ENTITY_TABLE_NAME
+                LEFT JOIN (
+                    SELECT
+                      "ts" AS "ts",
+                      "cust_id" AS "cust_id",
+                      "a" AS "a",
+                      "b" AS "b",
+                      "a" + "b" AS "c"
+                    FROM "db"."public"."event_table"
+                ) AS R
+                  ON R."biz_id" = __FB_ENTITY_TABLE_NAME."biz_id"
+                  AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+                  AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+            )
+        )
+        GROUP BY
+          tile_index,
+          "biz_id",
+          __FB_ENTITY_TABLE_START_DATE
+        ORDER BY
+          tile_index
+        """
+    ).strip()
+    assert sql == expected
 
 
 def test_graph_interpreter_snowflake(graph):
@@ -286,7 +463,7 @@ def test_graph_interpreter_snowflake(graph):
         input_nodes=[node_input],
     )
     interpreter = GraphInterpreter(graph)
-    tile_gen_sql = interpreter.construct_tile_gen_sql(_groupby_node)
+    tile_gen_sql = interpreter.construct_tile_gen_sql(_groupby_node, is_on_demand=False)
     assert len(tile_gen_sql) == 1
     sql_template = tile_gen_sql[0].sql
     expected = textwrap.dedent(

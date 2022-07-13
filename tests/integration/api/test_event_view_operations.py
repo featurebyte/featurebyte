@@ -4,15 +4,14 @@ This module contains session to EventView integration tests
 from decimal import Decimal
 from unittest import mock
 
+import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
+from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.enum import CollectionName
-from featurebyte.persistent.git import GitDB
 
 
 @pytest.fixture(name="mock_entity_config")
@@ -23,24 +22,6 @@ def mock_entity_conf_fixture(config):
     with mock.patch("featurebyte.config.Configurations") as mock_config:
         mock_config.return_value = config
         yield mock_config
-
-
-@pytest.fixture(name="mock_get_persistent")
-def mock_get_persistent_fixture(config):
-    """
-    Mock get_persistent in featurebyte/app.py
-    """
-    git_db = GitDB(**config.git.dict())
-    git_db.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])
-    with mock.patch("featurebyte.app._get_persistent") as mock_get_persistent:
-        mock_get_persistent.return_value = git_db
-        yield mock_get_persistent
-
-    repo, ssh_cmd, branch = git_db.repo, git_db.ssh_cmd, git_db.branch
-    origin = repo.remotes.origin
-    if origin:
-        with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
-            origin.push(refspec=(f":{branch}"))
 
 
 @pytest.mark.usefixtures("mock_entity_config", "mock_get_persistent")
@@ -104,46 +85,13 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
 
 @pytest.mark.usefixtures("mock_entity_config", "mock_get_persistent")
 def test_query_object_operation_on_snowflake_source(
-    snowflake_session, transaction_data_upper_case, config
+    transaction_data_upper_case,
+    config,
+    event_data,
 ):
     """
     Test loading event view from snowflake source
     """
-    table_name = "TEST_TABLE"
-    snowflake_database_source = FeatureStore(
-        **config.feature_stores["snowflake_featurestore"].dict()
-    )
-    assert table_name in snowflake_database_source.list_tables(credentials=config.credentials)
-
-    snowflake_database_table = snowflake_database_source.get_table(
-        database_name=snowflake_session.database,
-        schema_name=snowflake_session.sf_schema,
-        table_name=table_name,
-        credentials=config.credentials,
-    )
-    expected_dtypes = pd.Series(
-        {
-            "EVENT_TIMESTAMP": "TIMESTAMP",
-            "CREATED_AT": "INT",
-            "CUST_ID": "INT",
-            "USER_ID": "INT",
-            "PRODUCT_ACTION": "VARCHAR",
-            "SESSION_ID": "INT",
-        }
-    )
-    pd.testing.assert_series_equal(expected_dtypes, snowflake_database_table.dtypes)
-
-    # create entity & event data
-    Entity(name="User", serving_name="uid")
-    event_data = EventData.from_tabular_source(
-        tabular_source=snowflake_database_table,
-        name="snowflake_event_data",
-        event_timestamp_column="EVENT_TIMESTAMP",
-        credentials=config.credentials,
-    )
-    event_data["USER_ID"].as_entity("User")
-    event_data.save_as_draft()
-
     # create event view
     event_view = EventView.from_event_data(event_data)
     assert event_view.columns == [
@@ -237,3 +185,31 @@ def test_query_object_operation_on_snowflake_source(
         "COUNT_24h": 9,
         "COUNT_2h DIV COUNT_24h": Decimal("0.111111"),
     }
+
+    run_and_test_get_historical_features(config, feature_group)
+
+
+def run_and_test_get_historical_features(config, feature_group):
+    """Test getting historical features from FeatureList"""
+    df_training_events = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
+            "USER_ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        }
+    )
+    feature_list = FeatureList(
+        [feature_group["COUNT_2h"], feature_group["COUNT_24h"]],
+        name="My FeatureList",
+    )
+    df_historical_features = feature_list.get_historical_features(
+        df_training_events, credentials=config.credentials
+    )
+    df_historical_expected = pd.DataFrame(
+        {
+            "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
+            "USER_ID": df_training_events["USER_ID"],
+            "COUNT_2h": [1.0, 1.0, np.nan, 1.0, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
+            "COUNT_24h": [9.0, 7.0, 2.0, 5.0, 5.0, 4.0, 4.0, 7.0, 5.0, np.nan],
+        }
+    )
+    pd.testing.assert_frame_equal(df_historical_features, df_historical_expected)

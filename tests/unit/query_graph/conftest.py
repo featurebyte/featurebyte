@@ -82,6 +82,55 @@ def query_graph_with_groupby_fixture(graph):
     return graph
 
 
+@pytest.fixture(name="complex_feature_query_graph")
+def complex_feature_query_graph_fixture(query_graph_with_groupby):
+    """Fixture of a query graph with two independent groupby operations"""
+    graph = query_graph_with_groupby
+    node_params = {
+        "keys": ["biz_id"],
+        "parent": "a",
+        "agg_func": "sum",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["a"],
+        "windows": ["a_7d_sum_by_business"],
+    }
+    assign_node = graph.get_node_by_name("assign_1")
+    groupby_1 = graph.get_node_by_name("groupby_1")
+    groupby_2 = graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params={
+            **node_params,
+            "tile_id": get_tile_table_identifier(
+                graph.node_name_to_ref[assign_node.name], node_params
+            ),
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node],
+    )
+    feature_proj_1 = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_2h_average"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[groupby_1],
+    )
+    feature_proj_2 = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_7d_sum_by_business"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[groupby_2],
+    )
+    complex_feature_node = graph.add_operation(
+        node_type=NodeType.DIV,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[feature_proj_1, feature_proj_2],
+    )
+    return complex_feature_node, graph
+
+
 @pytest.fixture(name="graph_single_node")
 def query_graph_single_node(graph):
     """

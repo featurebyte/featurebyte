@@ -5,6 +5,7 @@ import os
 import sqlite3
 import tempfile
 from datetime import datetime
+from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -12,8 +13,11 @@ import pytest
 import yaml
 from bson.objectid import ObjectId
 
+from featurebyte.api.entity import Entity
+from featurebyte.api.event_data import EventData
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
-from featurebyte.enum import InternalName
+from featurebyte.enum import CollectionName, InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.feature import (
@@ -23,6 +27,7 @@ from featurebyte.models.feature import (
     FeatureReadiness,
     TileSpec,
 )
+from featurebyte.persistent.git import GitDB
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
@@ -263,3 +268,66 @@ def feature_list_manager(snowflake_session):
     Feature Manager fixture
     """
     return FeatureListManagerSnowflake(session=snowflake_session)
+
+
+@pytest.fixture(name="mock_get_persistent", scope="session")
+def mock_get_persistent_fixture(config):
+    """
+    Mock get_persistent in featurebyte/app.py
+    """
+    git_db = GitDB(**config.git.dict())
+    git_db.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])
+    with mock.patch("featurebyte.app._get_persistent") as mock_get_persistent:
+        mock_get_persistent.return_value = git_db
+        yield mock_get_persistent
+
+    repo, ssh_cmd, branch = git_db.repo, git_db.ssh_cmd, git_db.branch
+    origin = repo.remotes.origin
+    if origin:
+        with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
+            origin.push(refspec=(f":{branch}"))
+
+
+@pytest.fixture(name="event_data", scope="session")
+def event_data_fixture(config, snowflake_session, mock_get_persistent):
+    """Fixture for an EventData in integration tests"""
+    _ = mock_get_persistent
+
+    table_name = "TEST_TABLE"
+    snowflake_database_source = FeatureStore(
+        **config.feature_stores["snowflake_featurestore"].dict()
+    )
+    assert table_name in snowflake_database_source.list_tables(credentials=config.credentials)
+
+    snowflake_database_table = snowflake_database_source.get_table(
+        database_name=snowflake_session.database,
+        schema_name=snowflake_session.sf_schema,
+        table_name=table_name,
+        credentials=config.credentials,
+    )
+    expected_dtypes = pd.Series(
+        {
+            "EVENT_TIMESTAMP": "TIMESTAMP",
+            "CREATED_AT": "INT",
+            "CUST_ID": "INT",
+            "USER_ID": "INT",
+            "PRODUCT_ACTION": "VARCHAR",
+            "SESSION_ID": "INT",
+        }
+    )
+    pd.testing.assert_series_equal(expected_dtypes, snowflake_database_table.dtypes)
+
+    # create entity & event data
+    event_data = EventData.from_tabular_source(
+        tabular_source=snowflake_database_table,
+        name="snowflake_event_data",
+        event_timestamp_column="EVENT_TIMESTAMP",
+        credentials=config.credentials,
+    )
+
+    # create entity & event data
+    Entity(name="User", serving_name="uid")
+    event_data["USER_ID"].as_entity("User")
+    event_data.save_as_draft()
+
+    return event_data

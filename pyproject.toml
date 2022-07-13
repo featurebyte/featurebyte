@@ -172,5 +172,5 @@ branch = true
 fail_under = 50
 show_missing = true
 
-[bandit]
-tests = "B608"
+[tool.bandit]
+skips = ["B608"]

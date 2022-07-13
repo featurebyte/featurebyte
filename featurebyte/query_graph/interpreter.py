@@ -18,9 +18,8 @@ from featurebyte.query_graph.sql import (
     SQLNode,
     SQLType,
     TableNode,
-    make_aggregated_tiles_node,
+    handle_groupby_node,
     make_binary_operation_node,
-    make_build_tile_node,
     make_filter_node,
     make_input_node,
     make_project_node,
@@ -37,6 +36,8 @@ class SQLOperationGraph:
     sql_type : SQLType
         Type of SQL to generate
     """
+
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, query_graph: QueryGraph, sql_type: SQLType) -> None:
         self.sql_nodes: dict[str, SQLNode | TableNode] = {}
@@ -56,30 +57,22 @@ class SQLOperationGraph:
         -------
         SQLNode
         """
-        sql_node = self._construct_sql_nodes(target_node)
+        if target_node.type == NodeType.GROUPBY:
+            groupby_keys = target_node.parameters["keys"]
+        else:
+            groupby_keys = None
+        sql_node = self._construct_sql_nodes(target_node, groupby_keys=groupby_keys)
         return sql_node
 
-    def get_node(self, name: str) -> SQLNode:
-        """Get a node by name
-
-        Parameters
-        ----------
-        name : str
-            Node name
-
-        Returns
-        -------
-        SQLNode
-        """
-        return self.sql_nodes[name]
-
-    def _construct_sql_nodes(self, cur_node: Node) -> Any:
+    def _construct_sql_nodes(self, cur_node: Node, groupby_keys: list[str] | None) -> Any:
         """Recursively construct the nodes
 
         Parameters
         ----------
         cur_node : Node
             Dictionary representation of Query Graph Node
+        groupby_keys : list[str] | None
+            Groupby keys in the current context. Used when sql_type is BUILD_TILE_ON_DEMAND
 
         Returns
         -------
@@ -99,7 +92,12 @@ class SQLOperationGraph:
         for input_node_id in inputs:
             if input_node_id not in self.sql_nodes:
                 input_node = self.query_graph.get_node_by_name(input_node_id)
-                self._construct_sql_nodes(input_node)
+                # Note: In the lineage leading to any features or intermediate outputs, there can be
+                # only one groupby operation (there can be parallel groupby operations, but not
+                # consecutive ones)
+                if groupby_keys is None and input_node.type == NodeType.GROUPBY:
+                    groupby_keys = input_node.parameters["keys"]
+                self._construct_sql_nodes(input_node, groupby_keys=groupby_keys)
             input_sql_node = self.sql_nodes[input_node_id]
             input_sql_nodes.append(input_sql_node)
 
@@ -111,7 +109,7 @@ class SQLOperationGraph:
 
         sql_node: Any
         if node_type == NodeType.INPUT:
-            sql_node = make_input_node(parameters, self.sql_type)
+            sql_node = make_input_node(parameters, self.sql_type, groupby_keys)
 
         elif node_type == NodeType.ASSIGN:
             assert len(input_sql_nodes) == 2
@@ -130,12 +128,12 @@ class SQLOperationGraph:
             sql_node = make_filter_node(input_sql_nodes, output_type)
 
         elif node_type == NodeType.GROUPBY:
-            if self.sql_type == SQLType.BUILD_TILE:
-                sql_node = make_build_tile_node(input_sql_nodes, parameters)
-            elif self.sql_type == SQLType.GENERATE_FEATURE:
-                sql_node = make_aggregated_tiles_node(cur_node)
-            else:
-                raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
+            sql_node = handle_groupby_node(
+                groupby_node=cur_node,
+                parameters=parameters,
+                input_sql_nodes=input_sql_nodes,
+                sql_type=self.sql_type,
+            )
         else:
             raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
 
@@ -167,9 +165,12 @@ class TileGenSql:
         as determining the reuqired tiles to build on demand during preview.
     """
 
+    # pylint: disable=too-many-instance-attributes
     tile_table_id: str
     sql: str
     columns: list[str]
+    entity_columns: list[str]
+    tile_value_columns: list[str]
     time_modulo_frequency: int
     frequency: int
     blind_spot: int
@@ -204,8 +205,9 @@ class TileSQLGenerator:
     query_graph : QueryGraph
     """
 
-    def __init__(self, query_graph: QueryGraph):
+    def __init__(self, query_graph: QueryGraph, is_on_demand: bool):
         self.query_graph = query_graph
+        self.is_on_demand = is_on_demand
 
     def construct_tile_gen_sql(self, starting_node: Node) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
@@ -247,19 +249,27 @@ class TileSQLGenerator:
         -------
         TileGenSql
         """
-        groupby_sql_node = SQLOperationGraph(
-            query_graph=self.query_graph, sql_type=SQLType.BUILD_TILE
-        ).build(groupby_node)
+        if self.is_on_demand:
+            sql_type = SQLType.BUILD_TILE_ON_DEMAND
+        else:
+            sql_type = SQLType.BUILD_TILE
+        groupby_sql_node = SQLOperationGraph(query_graph=self.query_graph, sql_type=sql_type).build(
+            groupby_node
+        )
         sql = groupby_sql_node.sql
         frequency = groupby_node.parameters["frequency"]
         blind_spot = groupby_node.parameters["blind_spot"]
         time_modulo_frequency = groupby_node.parameters["time_modulo_frequency"]
         windows = groupby_node.parameters["windows"]
         tile_table_id = groupby_node.parameters["tile_id"]
+        entity_columns = groupby_sql_node.keys
+        tile_value_columns = [spec.tile_column_name for spec in groupby_sql_node.tile_specs]
         info = TileGenSql(
             tile_table_id=tile_table_id,
             sql=sql.sql(pretty=True),
             columns=groupby_sql_node.columns,
+            entity_columns=entity_columns,
+            tile_value_columns=tile_value_columns,
             time_modulo_frequency=time_modulo_frequency,
             frequency=frequency,
             blind_spot=blind_spot,
@@ -279,19 +289,21 @@ class GraphInterpreter:
     def __init__(self, query_graph: QueryGraph):
         self.query_graph = query_graph
 
-    def construct_tile_gen_sql(self, starting_node: Node) -> list[TileGenSql]:
+    def construct_tile_gen_sql(self, starting_node: Node, is_on_demand: bool) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
 
         Parameters
         ----------
         starting_node : Node
             Starting node (typically corresponding to selected features) to search from
+        is_on_demand : bool
+            Whether the SQL is for on-demand tile building for historical features
 
         Returns
         -------
         List[TileGenSql]
         """
-        generator = TileSQLGenerator(self.query_graph)
+        generator = TileSQLGenerator(self.query_graph, is_on_demand=is_on_demand)
         return generator.construct_tile_gen_sql(starting_node)
 
     def construct_feature_from_tile_sql(self) -> None:
@@ -330,9 +342,8 @@ class GraphInterpreter:
             SQL code for preview purpose
         """
         sql_graph = SQLOperationGraph(self.query_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
-        sql_graph.build(self.query_graph.get_node_by_name(node_name))
+        sql_node = sql_graph.build(self.query_graph.get_node_by_name(node_name))
 
-        sql_node = sql_graph.get_node(node_name)
         assert isinstance(sql_node, (TableNode, ExpressionNode))
         if isinstance(sql_node, TableNode):
             sql_tree = sql_node.sql

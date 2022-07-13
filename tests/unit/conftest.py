@@ -548,3 +548,12 @@ def git_persistent_fixture():
     persistent.insert_doc_name_func("event_data", lambda doc: doc["name"])
     persistent.insert_doc_name_func("data", lambda doc: doc["name"])
     yield persistent, persistent.repo
+
+
+@pytest.fixture(name="mocked_tile_cache")
+def mocked_tile_cache_fixture():
+    """Fixture for a mocked SnowflakeTileCache object"""
+    with mock.patch(
+        "featurebyte.query_graph.feature_historical.SnowflakeTileCache", autospec=True
+    ) as mocked_cls:
+        yield mocked_cls.return_value

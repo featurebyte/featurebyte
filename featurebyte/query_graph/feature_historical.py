@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Optional
 
 import datetime
+import time
 
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
@@ -20,6 +21,7 @@ from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.session.base import BaseSession
+from featurebyte.tile.tile_cache import SnowflakeTileCache
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
@@ -165,6 +167,8 @@ def get_historical_features(
     -------
     pd.DataFrame
     """
+    tic_ = time.time()
+
     # Validate request
     validate_request_schema(training_events)
     training_events = validate_historical_requests_point_in_time(training_events)
@@ -179,4 +183,12 @@ def get_historical_features(
     session = get_session_from_feature_objects(feature_objects, credentials=credentials)
     session.register_temp_table(REQUEST_TABLE_NAME, training_events)
 
+    # Compute tiles on demand if required
+    tic = time.time()
+    tile_cache = SnowflakeTileCache(session=session)
+    tile_cache.compute_tiles_on_demand(features=feature_objects)
+    elapsed = time.time() - tic
+    logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
+
+    logger.debug(f"get_historical_features took {time.time() - tic_:.2f}s")
     return session.execute_query(sql)

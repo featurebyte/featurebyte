@@ -111,6 +111,7 @@ def test_features_readiness__production_ready(
     )
 
 
+@pytest.mark.usefixtures("mocked_tile_cache")
 @freeze_time("2022-05-01")
 def test_feature_list_creation__success(production_ready_feature, config):
     """Test FeatureList can be created with valid inputs"""
