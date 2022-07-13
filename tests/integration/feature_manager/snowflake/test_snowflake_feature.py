@@ -43,7 +43,7 @@ def test_insert_feature_registry(snowflake_session, snowflake_feature, feature_m
         "value_column_names": ["col2"],
         "frequency_minute": 5,
         "tile_id": "tile_id1",
-        "tile_sql": "SELECT * FROM DUMMY",
+        "tile_sql": 'SELECT\n"col_a" AS "a"\nFROM DUMMY',
         "time_modulo_frequency_second": 183,
     }
     result_tile_spec = json.loads(result["TILE_SPECS"].iloc[0])[0]
@@ -143,7 +143,7 @@ def test_online_enable(snowflake_session, snowflake_feature, feature_manager):
     tile_registry = snowflake_session.execute_query("SELECT * FROM TILE_REGISTRY")
     assert len(tile_registry) == 1
     assert tile_registry.iloc[0]["TILE_ID"] == "tile_id1"
-    assert tile_registry.iloc[0]["TILE_SQL"] == "SELECT * FROM DUMMY"
+    assert tile_registry.iloc[0]["TILE_SQL"] == 'SELECT\n"col_a" AS "a"\nFROM DUMMY'
 
     tasks = snowflake_session.execute_query("SHOW TASKS")
     assert len(tasks) > 1

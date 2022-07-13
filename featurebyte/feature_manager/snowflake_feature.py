@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+import json
+
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
@@ -69,7 +71,10 @@ class FeatureManagerSnowflake(BaseModel):
 
             if feature.tile_specs:
                 tile_specs_lst = [tile_spec.dict() for tile_spec in feature.tile_specs]
-                tile_specs_str = str(tile_specs_lst).replace("'", '"')
+                tile_specs_str = json.dumps(tile_specs_lst)
+                # This JSON encoded string will be embedded in Snowflake SQL, which has its own
+                # escape sequence, so we need to escape one more time
+                tile_specs_str = tile_specs_str.replace("\\", "\\\\")
             else:
                 tile_specs_str = "[]"
 
