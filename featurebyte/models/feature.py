@@ -105,6 +105,7 @@ class FeatureModel(BaseModel):
     version: Optional[FeatureVersionIdentifier]
     tile_specs: Optional[List[TileSpec]]
     is_default: Optional[bool]
+    online_enabled: Optional[bool]
     created_at: Optional[datetime]
 
 

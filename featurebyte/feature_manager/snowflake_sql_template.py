@@ -33,7 +33,8 @@ tm_update_feature_registry = Template(
     SET
         READINESS = '{{feature.readiness.value}}',
         DESCRIPTION = '{{feature.description}}',
-        IS_DEFAULT = {{feature.is_default}}
+        IS_DEFAULT = {{feature.is_default}},
+        ONLINE_ENABLED = {{feature.online_enabled}}
     WHERE NAME = '{{feature.name}}'
     AND VERSION = '{{feature.version}}'
 """
@@ -43,6 +44,9 @@ tm_update_feature_registry = Template(
 tm_select_feature_registry = Template(
     """
     SELECT * FROM FEATURE_REGISTRY WHERE NAME = '{{feature_name}}'
+    {% if version is not none %}
+        AND VERSION = '{{version}}'
+    {% endif %}
 """
 )
 

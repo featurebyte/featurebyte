@@ -107,6 +107,7 @@ def feature_model_dict_feature():
         "readiness": None,
         "version": None,
         "is_default": None,
+        "online_enabled": None,
         "tile_specs": None,
         "created_at": None,
     }
