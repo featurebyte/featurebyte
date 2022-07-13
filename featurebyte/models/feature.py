@@ -103,7 +103,6 @@ class FeatureModel(BaseModel):
     tabular_source: Tuple[FeatureStoreModel, TableDetails]
     readiness: Optional[FeatureReadiness]
     version: Optional[FeatureVersionIdentifier]
-    tile_specs: Optional[List[TileSpec]]
     is_default: Optional[bool]
     online_enabled: Optional[bool]
     created_at: Optional[datetime]
