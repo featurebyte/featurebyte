@@ -36,12 +36,18 @@ $$
     )
     debug = debug + " - cron_residue_seconds: " + cron_residue_seconds
 
+    var task_interval = FREQUENCY_MINUTE
+    if (TYPE.toUpperCase() === "OFFLINE") {
+        // offline schedule
+        task_interval = OFFLINE_PERIOD_MINUTE
+    }
+
     task_name = "TILE_TASK_" + TYPE + "_" + FEATURE_NAME
     // create and start new scheduled Task with Intervaled Schedule
     var sql = `
         CREATE OR REPLACE TASK ${task_name}
         WAREHOUSE = '${WAREHOUSE}'
-        SCHEDULE = '${FREQUENCY_MINUTE} MINUTE'
+        SCHEDULE = '${task_interval} MINUTE'
         AS
             CALL SP_TILE_GENERATE_SCHEDULE('${FEATURE_NAME}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, ${OFFLINE_PERIOD_MINUTE}, '${SQL}', '${TILE_START_DATE_COLUMN}', '${TILE_LAST_START_DATE_COLUMN}', '${TILE_START_DATE_PLACEHOLDER}', '${TILE_END_DATE_PLACEHOLDER}', '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TYPE}', ${MONITOR_PERIODS}, to_varchar(SYSDATE(), 'YYYY-MM-DD"T"HH24:MI:SS.ff3"Z"'))
     `

@@ -11,6 +11,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_update_feature_registry,
     tm_update_feature_registry_default_false,
 )
+from featurebyte.models.feature import FeatureReadiness
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
@@ -60,7 +61,7 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature, feature_m
     f_reg_df = feature_manager.retrieve_feature_registries(mock_snowflake_feature)
     assert mock_execute_query.call_count == 1
 
-    sql = tm_select_feature_registry.render(feature_name=mock_snowflake_feature.name)
+    sql = tm_select_feature_registry.render(feature_name=mock_snowflake_feature.name, version=None)
     calls = [
         mock.call(sql),
     ]
@@ -88,19 +89,30 @@ def test_update_feature_list(mock_execute_query, mock_snowflake_feature, feature
     mock_execute_query.assert_has_calls(calls, any_order=True)
 
 
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.insert_tile_registry")
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_online_tiles")
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_offline_tiles")
 def test_online_enable(
-    mock_insert_tile_registry,
-    mock_schedule_online_tiles,
     mock_schedule_offline_tiles,
+    mock_schedule_online_tiles,
+    mock_insert_tile_registry,
+    mock_execute_query,
     mock_snowflake_feature,
     feature_manager,
 ):
     """
     Test online_enable
     """
+    mock_execute_query.return_value = pd.DataFrame.from_dict(
+        {
+            "NAME": ["sum_30m"],
+            "VERSION": ["v1"],
+            "ONLINE_ENABLED": [False],
+        }
+    )
+
+    mock_snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY
     feature_manager.online_enable(mock_snowflake_feature)
 
     mock_insert_tile_registry.assert_called_once()

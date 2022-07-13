@@ -125,7 +125,7 @@ def test_retrieve_features_multiple(snowflake_feature, feature_manager):
     feature_manager.insert_feature_registry(snowflake_feature)
 
     f_reg_df = feature_manager.retrieve_feature_registries(snowflake_feature)
-    assert len(f_reg_df) > 1
+    assert len(f_reg_df) == 2
     assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
     assert f_reg_df.iloc[0]["VERSION"] == "v1"
     assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
@@ -134,16 +134,73 @@ def test_retrieve_features_multiple(snowflake_feature, feature_manager):
     assert f_reg_df.iloc[1]["READINESS"] == "PRODUCTION_READY"
 
 
+def test_online_enable_no_feature(snowflake_feature, feature_manager):
+    """
+    Test online_enable no feature
+    """
+    snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY
+    with pytest.raises(ValueError) as excinfo:
+        feature_manager.online_enable(snowflake_feature)
+
+    assert (
+        str(excinfo.value)
+        == f"feature {snowflake_feature.name} with version {snowflake_feature.version} does not exist"
+    )
+
+
+def test_online_enable_not_production_ready(snowflake_feature, feature_manager):
+    """
+    Test online_enable not production_ready
+    """
+    feature_manager.insert_feature_registry(snowflake_feature)
+    with pytest.raises(ValueError) as excinfo:
+        feature_manager.online_enable(snowflake_feature)
+
+    assert str(excinfo.value) == "feature readiness has to be PRODUCTION_READY before online_enable"
+
+
+def test_online_enable_already_online_enabled(snowflake_feature, feature_manager):
+    """
+    Test online_enable already online_enabled
+    """
+    snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY
+    feature_manager.insert_feature_registry(snowflake_feature)
+    feature_manager.online_enable(snowflake_feature)
+
+    with pytest.raises(ValueError) as excinfo:
+        feature_manager.online_enable(snowflake_feature)
+
+    assert (
+        str(excinfo.value)
+        == f"feature {snowflake_feature.name} with version {snowflake_feature.version} is already online enabled"
+    )
+
+
 def test_online_enable(snowflake_session, snowflake_feature, feature_manager):
     """
     Test online_enable
     """
+    snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY
+    feature_manager.insert_feature_registry(snowflake_feature)
+    result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
+    assert len(result) == 1
+    assert result.iloc[0]["NAME"] == "sum_30m"
+    assert result.iloc[0]["VERSION"] == "v1"
+    assert bool(result.iloc[0]["ONLINE_ENABLED"]) is False
+
     feature_manager.online_enable(snowflake_feature)
 
     tile_registry = snowflake_session.execute_query("SELECT * FROM TILE_REGISTRY")
     assert len(tile_registry) == 1
     assert tile_registry.iloc[0]["TILE_ID"] == "tile_id1"
     assert tile_registry.iloc[0]["TILE_SQL"] == "SELECT * FROM DUMMY"
+    assert bool(tile_registry.iloc[0]["IS_ENABLED"]) is True
+
+    result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
+    assert len(result) == 1
+    assert result.iloc[0]["NAME"] == "sum_30m"
+    assert result.iloc[0]["VERSION"] == "v1"
+    assert bool(result.iloc[0]["ONLINE_ENABLED"]) is True
 
     tasks = snowflake_session.execute_query("SHOW TASKS")
     assert len(tasks) > 1
