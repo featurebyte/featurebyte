@@ -63,13 +63,24 @@ def test_binary_operation_node__series(node_type, expected, input_node):
     assert node.sql.sql() == expected
 
 
-def test_binary_operation_node__consecutive_ops(input_node):
+def test_binary_operation_node__consecutive_ops_1(input_node):
+    """Test multiple binary operations"""
     col_a = sql.StrExpressionNode(table_node=input_node, expr="a")
     col_b = sql.StrExpressionNode(table_node=input_node, expr="b")
     col_c = sql.StrExpressionNode(table_node=input_node, expr="c")
     a_plus_b = sql.make_binary_operation_node(NodeType.ADD, [col_a, col_b], {})
     a_plus_b_div_c = sql.make_binary_operation_node(NodeType.DIV, [a_plus_b, col_c], {})
     assert a_plus_b_div_c.sql.sql() == "((a + b) / c)"
+
+
+def test_binary_operation_node__consecutive_ops_2(input_node):
+    """Test multiple binary operations"""
+    col_a = sql.StrExpressionNode(table_node=input_node, expr="a")
+    col_b = sql.StrExpressionNode(table_node=input_node, expr="b")
+    col_c = sql.StrExpressionNode(table_node=input_node, expr="c")
+    a_plus_b = sql.make_binary_operation_node(NodeType.ADD, [col_a, col_b], {})
+    c_div_a_plus_b = sql.make_binary_operation_node(NodeType.DIV, [col_c, a_plus_b], {})
+    assert c_div_a_plus_b.sql.sql() == "(c / (a + b))"
 
 
 @pytest.mark.parametrize(
