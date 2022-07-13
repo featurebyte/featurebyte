@@ -281,7 +281,7 @@ def feature_group_fixture(grouped_event_view):
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
     )
     expected_inception_node = Node(
-        name="groupby_1",
+        name="groupby_2",
         type=NodeType.GROUPBY,
         parameters={
             "keys": ["cust_id"],
@@ -305,10 +305,10 @@ def feature_group_fixture(grouped_event_view):
     assert feature_group.entity_identifiers == ["cust_id"]
     assert feature_group.columns == ["cust_id", "sum_30m", "sum_2h", "sum_1d"]
     assert feature_group.column_lineage_map == {
-        "cust_id": ("groupby_1",),
-        "sum_30m": ("groupby_1",),
-        "sum_2h": ("groupby_1",),
-        "sum_1d": ("groupby_1",),
+        "cust_id": ("groupby_2",),
+        "sum_30m": ("groupby_2",),
+        "sum_2h": ("groupby_2",),
+        "sum_1d": ("groupby_2",),
     }
     yield feature_group
 

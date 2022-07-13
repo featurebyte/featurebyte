@@ -360,7 +360,7 @@ class Series(QueryObject, OpsMixin):
             if self.name:
                 target_columns.add(self.name)
             pruned_graph, node_name_map = self.graph.prune(
-                target_node=self.node, target_columns=target_columns, to_update_node_params=True
+                target_node=self.node, target_columns=target_columns
             )
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()

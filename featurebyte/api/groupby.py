@@ -9,6 +9,7 @@ from featurebyte.common.feature_job_setting_validation import validate_job_setti
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.util import get_tile_table_identifier
 
 
@@ -43,6 +44,23 @@ class EventViewGroupBy(OpsMixin):
 
     def __str__(self) -> str:
         return repr(self)
+
+    def _prepare_node_and_metadata(self, node_params, tile_id):
+        node = self.obj.graph.add_operation(
+            node_type=NodeType.GROUPBY,
+            node_params={**node_params, "tile_id": tile_id},
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[self.obj.node],
+        )
+        column_var_type_map = {}
+        column_lineage_map: dict[str, tuple[str, ...]] = {}
+        for key in self.keys:
+            column_var_type_map[key] = self.obj.column_var_type_map[key]
+            column_lineage_map[key] = (node.name,)
+        for column in node_params["names"]:
+            column_var_type_map[column] = DBVarType.FLOAT
+            column_lineage_map[column] = (node.name,)
+        return node, column_var_type_map, column_lineage_map
 
     def aggregate(
         self,
@@ -127,26 +145,24 @@ class EventViewGroupBy(OpsMixin):
             "frequency": frequency_seconds,
             "names": feature_names,
         }
-        node = self.obj.graph.add_operation(
-            node_type=NodeType.GROUPBY,
-            node_params={
-                **node_params,
-                "tile_id": get_tile_table_identifier(
-                    transformations_hash=self.obj.graph.node_name_to_ref[self.obj.node.name],
-                    parameters=node_params,
-                ),
-            },
-            node_output_type=NodeOutputType.FRAME,
-            input_nodes=[self.obj.node],
+        # insert a groupby node to global query graph first,
+        # then used the inserted groupby node to prune the graph & generate updated tile id
+        # finally insert a new groupby node into the graph (actual groupby node to be used)
+        temp_groupby_node, column_var_type_map, _ = self._prepare_node_and_metadata(
+            node_params, None
         )
-        column_var_type_map = {}
-        column_lineage_map: dict[str, tuple[str, ...]] = {}
-        for key in self.keys:
-            column_var_type_map[key] = self.obj.column_var_type_map[key]
-            column_lineage_map[key] = (node.name,)
-        for column in feature_names:
-            column_var_type_map[column] = DBVarType.FLOAT
-            column_lineage_map[column] = (node.name,)
+        pruned_graph, node_name_map = GlobalQueryGraph().prune(
+            target_node=temp_groupby_node,
+            target_columns=set(column_var_type_map.keys()),
+        )
+        input_nodes = pruned_graph.backward_edges[node_name_map[temp_groupby_node.name]]
+        tile_id = get_tile_table_identifier(
+            transformations_hash=pruned_graph.node_name_to_ref[input_nodes[0]],
+            parameters=node_params,
+        )
+        node, column_var_type_map, column_lineage_map = self._prepare_node_and_metadata(
+            node_params, tile_id
+        )
 
         return FeatureGroup(
             tabular_source=self.obj.tabular_source,

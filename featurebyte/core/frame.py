@@ -264,7 +264,6 @@ class Frame(BaseFrame, OpsMixin):
             pruned_graph, node_name_map = self.graph.prune(
                 target_node=self.node,
                 target_columns=set(self.column_var_type_map),
-                to_update_node_params=True,
             )
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
