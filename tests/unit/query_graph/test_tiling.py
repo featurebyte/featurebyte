@@ -175,5 +175,7 @@ def test_tile_table_id__transformations(
     # Note that this is different from above
     kwargs = copy.deepcopy(aggregate_kwargs)
     kwargs["value_column"] = "value_100"
-    tile_id = run_groupby_and_get_tile_table_identifier(snowflake_event_view, kwargs)
+    tile_id = run_groupby_and_get_tile_table_identifier(
+        snowflake_event_view, kwargs, create_entity=False
+    )
     assert tile_id == "sum_f1800_m300_b600_b5038376279f00109bc42e18aeb6087a712f17d7"

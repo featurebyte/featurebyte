@@ -47,9 +47,28 @@ class EventViewGroupBy(OpsMixin):
     def __str__(self) -> str:
         return repr(self)
 
-    def _prepare_node_and_metadata(
+    def _prepare_node_and_column_metadata(
         self, node_params: dict[str, Any], tile_id: str | None
     ) -> tuple[Node, dict[str, DBVarType], dict[str, tuple[str, ...]]]:
+        """
+        Insert a groupby node into global graph & return the node and some column metadata
+
+        Parameters
+        ----------
+        node_params: dict[str, Any]
+            Groupby node parameters
+        tile_id: str | None
+            Tile ID
+
+        Returns
+        -------
+        Node
+            Newly created groupby node
+        dict[str, DBVarType]
+            Column to DBVarType mapping
+        dict[str, tuple[str, ...]]
+            Column to lineage mapping
+        """
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,
             node_params={**node_params, "tile_id": tile_id},
@@ -152,7 +171,7 @@ class EventViewGroupBy(OpsMixin):
         # insert a groupby node to global query graph first,
         # then used the inserted groupby node to prune the graph & generate updated tile id
         # finally insert a new groupby node into the graph (actual groupby node to be used)
-        temp_groupby_node, column_var_type_map, _ = self._prepare_node_and_metadata(
+        temp_groupby_node, column_var_type_map, _ = self._prepare_node_and_column_metadata(
             node_params, None
         )
         pruned_graph, node_name_map = GlobalQueryGraph().prune(
@@ -164,7 +183,7 @@ class EventViewGroupBy(OpsMixin):
             transformations_hash=pruned_graph.node_name_to_ref[input_nodes[0]],
             parameters=node_params,
         )
-        node, column_var_type_map, column_lineage_map = self._prepare_node_and_metadata(
+        node, column_var_type_map, column_lineage_map = self._prepare_node_and_column_metadata(
             node_params, tile_id
         )
 
