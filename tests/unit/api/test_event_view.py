@@ -13,6 +13,19 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
 
 
+@pytest.fixture(name="snowflake_event_view")
+def snowflake_event_view_fixture(snowflake_event_data, config):
+    """
+    EventData object fixture
+    """
+    _ = config
+    snowflake_event_data.update_default_feature_job_setting(
+        blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+    )
+    event_view = EventView.from_event_data(event_data=snowflake_event_data)
+    yield event_view
+
+
 def test_from_event_data(snowflake_event_data, mock_get_persistent):
     """
     Test from_event_data
@@ -65,6 +78,10 @@ def test_getitem__list_of_str(snowflake_event_view):
     assert set(event_view_subset1.column_var_type_map) == {"event_timestamp", "col_float"}
     assert event_view_subset1.row_index_lineage == snowflake_event_view.row_index_lineage
     assert event_view_subset1.inception_node == snowflake_event_view.inception_node
+    assert (
+        event_view_subset1.default_feature_job_setting
+        == snowflake_event_view.default_feature_job_setting
+    )
 
     # case 2: select a non-protected column with a timestamp column
     event_view_subset2 = snowflake_event_view[["col_float", "event_timestamp"]]
@@ -72,6 +89,10 @@ def test_getitem__list_of_str(snowflake_event_view):
     assert set(event_view_subset2.column_var_type_map) == {"event_timestamp", "col_float"}
     assert event_view_subset2.row_index_lineage == snowflake_event_view.row_index_lineage
     assert event_view_subset2.inception_node == snowflake_event_view.inception_node
+    assert (
+        event_view_subset2.default_feature_job_setting
+        == snowflake_event_view.default_feature_job_setting
+    )
 
     # both event data subsets actually point to the same node
     assert event_view_subset1.node == event_view_subset2.node

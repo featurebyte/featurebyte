@@ -218,10 +218,14 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         output = super().__getitem__(item)
         if isinstance(item, str) and isinstance(output, EventViewColumn):
             return output.set_parent(self)  # pylint: disable=no-member
-        if isinstance(output, EventView) and self.column_entity_map:
-            output.column_entity_map = {
-                col: name for col, name in self.column_entity_map.items() if col in output.columns
-            }
+        if isinstance(output, EventView):
+            output.default_feature_job_setting = self.default_feature_job_setting.copy()
+            if self.column_entity_map:
+                output.column_entity_map = {
+                    col: name
+                    for col, name in self.column_entity_map.items()
+                    if col in output.columns
+                }
         return output
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
