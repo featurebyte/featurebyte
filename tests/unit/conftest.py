@@ -478,6 +478,7 @@ def mock_snowflake_feature(
         entity_column_names=["col1"],
     )
     feature_loaded.tile_specs = [tile_spec]
+    feature_loaded.online_enabled = False
 
     return feature_loaded
 

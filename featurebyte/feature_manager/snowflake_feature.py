@@ -18,7 +18,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_update_feature_registry_default_false,
 )
 from featurebyte.logger import logger
-from featurebyte.models.feature import FeatureModel, FeatureVersionIdentifier
+from featurebyte.models.feature import FeatureModel, FeatureReadiness, FeatureVersionIdentifier
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
@@ -104,10 +104,9 @@ class FeatureManagerSnowflake(BaseModel):
             dataframe of the FEATURE_REGISTRY rows with the following columns:
                 NAME, VERSION, READINESS, TILE_SPECS, IS_DEFAULT, ONLINE_ENABLED, CREATED_AT
         """
-        sql = tm_select_feature_registry.render(feature_name=feature.name)
-        if version:
-            sql += f" AND VERSION = '{version}'"
+        sql = tm_select_feature_registry.render(feature_name=feature.name, version=version)
 
+        logger.debug(f"select sql: {sql}")
         return self._session.execute_query(sql)
 
     def update_feature_registry(self, new_feature: FeatureModel) -> None:
@@ -145,8 +144,36 @@ class FeatureManagerSnowflake(BaseModel):
         ----------
         feature: FeatureModel
             input feature instance
+
+        Raises
+        ----------
+        ValueError
+            when the input feature readiness is not PRODUCTION_READY
+            or when the feature registry record does not exist
+            or when the feature registry record is already online enabled
         """
         if feature.tile_specs:
+            if feature.readiness is None or feature.readiness != FeatureReadiness.PRODUCTION_READY:
+                raise ValueError(
+                    "feature readiness has to be PRODUCTION_READY before online_enable"
+                )
+
+            # check whether the feature exists
+            feature_versions = self.retrieve_feature_registries(
+                feature=feature, version=feature.version
+            )
+
+            if len(feature_versions) == 0:
+                raise ValueError(
+                    f"feature {feature.name} with version {feature.version} does not exist"
+                )
+
+            if feature_versions["ONLINE_ENABLED"].iloc[0]:
+                raise ValueError(
+                    f"feature {feature.name} with version {feature.version} is already online enabled"
+                )
+
+            # insert Tile Specs
             for tile_spec in feature.tile_specs:
                 logger.info(f"tile_spec: {tile_spec}")
                 tile_mgr = TileManagerSnowflake(
@@ -163,6 +190,10 @@ class FeatureManagerSnowflake(BaseModel):
                 # enable offline tiles scheduled job
                 tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
+
+            # update ONLINE_ENABLED of the feature registry record to True
+            feature.online_enabled = True
+            self.update_feature_registry(feature)
 
     def get_last_tile_index(self, feature: FeatureModel) -> pd.DataFrame:
         """

@@ -219,6 +219,7 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
     mock_feature.readiness = FeatureReadiness.DRAFT
     mock_feature.is_default = True
     mock_feature.description = "test_description_1"
+    mock_feature.online_enabled = False
 
     yield mock_feature
 
