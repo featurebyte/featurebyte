@@ -214,7 +214,9 @@ class EventData(EventDataModel, DatabaseTable):
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response)
             raise RecordCreationException(response)
-        self.__init__(**{**convert_response_to_dict(response), "credentials": self.credentials})
+        type(self).__init__(
+            self, **{**convert_response_to_dict(response), "credentials": self.credentials}
+        )
 
     def info(self) -> dict[str, Any]:
         """
@@ -236,7 +238,9 @@ class EventData(EventDataModel, DatabaseTable):
         client = Configurations().get_client()
         response = client.get(url=f"/event_data/{self.id}")
         if response.status_code == HTTPStatus.OK:
-            self.__init__(**{**convert_response_to_dict(response), "credentials": self.credentials})
+            type(self).__init__(
+                self, **{**convert_response_to_dict(response), "credentials": self.credentials}
+            )
             return self.dict()
         if response.status_code == HTTPStatus.NOT_FOUND:
             return self.dict()
@@ -271,7 +275,9 @@ class EventData(EventDataModel, DatabaseTable):
         client = Configurations().get_client()
         response = client.patch(url=f"/event_data/{self.id}", json=data.dict())
         if response.status_code == HTTPStatus.OK:
-            self.__init__(**{**convert_response_to_dict(response), "credentials": self.credentials})
+            type(self).__init__(
+                self, **{**convert_response_to_dict(response), "credentials": self.credentials}
+            )
         elif response.status_code == HTTPStatus.NOT_FOUND:
             self.default_feature_job_setting = data.default_feature_job_setting
         else:

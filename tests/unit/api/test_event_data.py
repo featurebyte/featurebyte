@@ -11,7 +11,7 @@ from pydantic.error_wrappers import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData, EventDataColumn
-from featurebyte.api.feature_store import FeatureStore, TableDetails
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
