@@ -21,6 +21,12 @@ tm_insert_feature_registry = Template(
 """
 )
 
+tm_remove_feature_registry = Template(
+    """
+    DELETE FROM FEATURE_REGISTRY WHERE NAME = '{{feature.name}}' AND VERSION = '{{feature.version}}'
+"""
+)
+
 tm_update_feature_registry_default_false = Template(
     """
     UPDATE FEATURE_REGISTRY SET IS_DEFAULT = False WHERE NAME = '{{feature.name}}'

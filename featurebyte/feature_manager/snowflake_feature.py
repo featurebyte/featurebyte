@@ -13,6 +13,7 @@ from pydantic import BaseModel, PrivateAttr
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_insert_feature_registry,
     tm_last_tile_index,
+    tm_remove_feature_registry,
     tm_select_feature_registry,
     tm_update_feature_registry,
     tm_update_feature_registry_default_false,
@@ -79,12 +80,48 @@ class FeatureManagerSnowflake(BaseModel):
                 tile_specs_str = "[]"
 
             sql = tm_insert_feature_registry.render(feature=feature, tile_specs_str=tile_specs_str)
-            logger.debug(f"generated sql: {sql}")
+            logger.debug(f"generated insert sql: {sql}")
             self._session.execute_query(sql)
         else:
             raise ValueError(
                 f"Feature version already exist for {feature.name} with version {feature.version}"
             )
+
+    def remove_feature_registry(self, feature: FeatureModel) -> None:
+        """
+        Remove the feature registry record
+
+        Parameters
+        ----------
+        feature: FeatureModel
+            input feature instance
+
+        Raises
+        ----------
+        ValueError
+            when the feature registry record does not exist
+            or when the readiness of the feature is not DRAFT
+        """
+        feature_versions = self.retrieve_feature_registries(
+            feature=feature, version=feature.version
+        )
+
+        logger.debug(f"feature_versions: {feature_versions}")
+        if len(feature_versions) == 0:
+            raise ValueError(
+                f"Feature version does not exist for {feature.name} with version {feature.version}"
+            )
+
+        feature_readiness = feature_versions["READINESS"].iloc[0]
+        if feature_readiness != "DRAFT":
+            raise ValueError(
+                f"Feature version {feature.name} with version {feature.version} cannot be deleted with readiness {feature_readiness}"
+            )
+
+        sql = tm_remove_feature_registry.render(feature=feature)
+        logger.debug(f"generated remove sql: {sql}")
+        self._session.execute_query(sql)
+        logger.debug(f"Done removing feature version {feature.name} with version {feature.version}")
 
     def retrieve_feature_registries(
         self, feature: FeatureModel, version: Optional[FeatureVersionIdentifier] = None

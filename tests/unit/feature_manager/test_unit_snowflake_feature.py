@@ -4,9 +4,11 @@ This module contains unit tests for FeatureManagerSnowflake
 from unittest import mock
 
 import pandas as pd
+import pytest
 
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_insert_feature_registry,
+    tm_remove_feature_registry,
     tm_select_feature_registry,
     tm_update_feature_registry,
     tm_update_feature_registry_default_false,
@@ -36,6 +38,75 @@ def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature, fea
         mock.call(insert_sql),
     ]
     mock_execute_query.assert_has_calls(calls, any_order=True)
+
+
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def test_remove_feature_registry(mock_execute_query, mock_snowflake_feature, feature_manager):
+    """
+    Test remove_feature_registry
+    """
+    mock_execute_query.size_effect = None
+    mock_execute_query.return_value = pd.DataFrame.from_dict(
+        {
+            "NAME": ["sum_30m"],
+            "VERSION": ["v1"],
+            "READINESS": ["DRAFT"],
+        }
+    )
+    feature_manager.remove_feature_registry(mock_snowflake_feature)
+    assert mock_execute_query.call_count == 2
+
+    remove_sql = tm_remove_feature_registry.render(feature=mock_snowflake_feature)
+
+    calls = [
+        mock.call(remove_sql),
+    ]
+    mock_execute_query.assert_has_calls(calls, any_order=True)
+
+
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def test_remove_feature_registry_no_feature(
+    mock_execute_query, mock_snowflake_feature, feature_manager
+):
+    """
+    Test remove_feature_registry no feature
+    """
+    mock_execute_query.size_effect = None
+    mock_execute_query.return_value = []
+
+    with pytest.raises(ValueError) as excinfo:
+        feature_manager.remove_feature_registry(mock_snowflake_feature)
+
+    assert (
+        str(excinfo.value)
+        == f"Feature version does not exist for {mock_snowflake_feature.name} with version {mock_snowflake_feature.version}"
+    )
+
+
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def test_remove_feature_registry_feature_version_not_draft(
+    mock_execute_query, mock_snowflake_feature, feature_manager
+):
+    """
+    Test remove_feature_registry feature version readiness not DRAFT
+    """
+    mock_execute_query.size_effect = None
+    mock_execute_query.return_value = pd.DataFrame.from_dict(
+        {
+            "NAME": ["sum_30m"],
+            "VERSION": ["v1"],
+            "READINESS": ["PRODUCTION_READY"],
+        }
+    )
+
+    with pytest.raises(ValueError) as excinfo:
+        feature_manager.remove_feature_registry(mock_snowflake_feature)
+
+    assert (
+        str(excinfo.value)
+        == f"Feature version {mock_snowflake_feature.name} with version {mock_snowflake_feature.version} "
+        f"cannot be deleted with readiness PRODUCTION_READY"
+    )
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
