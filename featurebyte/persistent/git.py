@@ -4,13 +4,14 @@ Persistent storage using Git
 # pylint: disable=protected-access
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable, List, Literal, MutableMapping, Optional, Tuple
+from typing import Any, Callable, Iterable, Iterator, List, Literal, MutableMapping, Optional, Tuple
 
 import functools
 import json
 import os
 import shutil
 import tempfile
+from contextlib import contextmanager
 from enum import Enum
 
 from bson import json_util
@@ -818,3 +819,15 @@ class GitDB(Persistent):
             query_filter=query_filter,
             multiple=True,
         )
+
+    @contextmanager
+    def start_transaction(self) -> Iterator[GitDB]:
+        """
+        GitDB transaction session context manager
+
+        Yields
+        ------
+        Iterator[GitDB]
+            GitDB object
+        """
+        yield self

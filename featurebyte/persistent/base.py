@@ -3,9 +3,10 @@ Persistent persistent base class
 """
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Literal, Mapping, MutableMapping, Optional, Tuple
+from typing import Any, Iterable, Iterator, List, Literal, Mapping, MutableMapping, Optional, Tuple
 
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 
 from bson.objectid import ObjectId
 
@@ -207,4 +208,16 @@ class Persistent(ABC):
         -------
         int
             Number of records deleted
+        """
+
+    @abstractmethod
+    @contextmanager
+    def start_transaction(self) -> Iterator[Persistent]:
+        """
+        Context manager for transaction session
+
+        Yields
+        ------
+        Iterator[Persistent]
+            Persistent object
         """

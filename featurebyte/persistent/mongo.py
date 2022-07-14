@@ -3,7 +3,9 @@ Persistent storage using MongoDB
 """
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Literal, Optional, Tuple
+from typing import Any, Iterable, Iterator, List, Literal, Optional, Tuple
+
+from contextlib import contextmanager
 
 import pymongo
 from bson.objectid import ObjectId
@@ -22,9 +24,6 @@ class MongoDB(Persistent):
     Persistent storage using MongoDB
     """
 
-    _client: pymongo.mongo_client.MongoClient[Any]
-    _db: pymongo.database.Database[Any]
-
     def __init__(self, uri: str, database: str = "featurebyte") -> None:
         """
         Constructor for MongoDB
@@ -36,8 +35,8 @@ class MongoDB(Persistent):
         database: str
             Database to use
         """
-        self._client = pymongo.MongoClient(uri)  # type: ignore
-        self._db = self._client[database]
+        self._client: Any = pymongo.MongoClient(uri)
+        self._db: Any = self._client[database]
 
     def insert_one(self, collection_name: str, document: Document) -> ObjectId:
         """
@@ -242,3 +241,17 @@ class MongoDB(Persistent):
             Number of records deleted
         """
         return self._db[collection_name].delete_many(query_filter).deleted_count
+
+    @contextmanager
+    def start_transaction(self) -> Iterator[MongoDB]:
+        """
+        MongoDB transaction session context manager
+
+        Yields
+        ------
+        Iterator[MongoDB]
+            MongoDB object
+        """
+        with self._client.start_session() as session:
+            with session.start_transaction():
+                yield self
