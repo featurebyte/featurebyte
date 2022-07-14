@@ -202,12 +202,13 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
     mock_feature = FeatureModel(**feature_model_dict)
 
     tile_id = "tile_id1"
+    tile_sql = 'SELECT\n"col_a" AS "a"\nFROM DUMMY'
     tile_spec = TileSpec(
         tile_id=tile_id,
         time_modulo_frequency_second=183,
         blind_spot_second=3,
         frequency_minute=5,
-        tile_sql="SELECT * FROM DUMMY",
+        tile_sql=tile_sql,
         value_column_names=["col2"],
         entity_column_names=["col1"],
     )
