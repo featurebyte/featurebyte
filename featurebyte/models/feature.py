@@ -12,7 +12,6 @@ from pydantic import BaseModel, StrictStr
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
-from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 FeatureVersionIdentifier = StrictStr
@@ -103,7 +102,6 @@ class FeatureModel(BaseModel):
     tabular_source: Tuple[FeatureStoreModel, TableDetails]
     readiness: Optional[FeatureReadiness]
     version: Optional[FeatureVersionIdentifier]
-    tile_specs: Optional[List[TileSpec]]
     is_default: Optional[bool]
     online_enabled: Optional[bool]
     created_at: Optional[datetime]

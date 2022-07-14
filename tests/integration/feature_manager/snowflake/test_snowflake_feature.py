@@ -10,7 +10,12 @@ from pandas.testing import assert_frame_equal
 from featurebyte.models.feature import FeatureReadiness
 
 
-def test_insert_feature_registry(snowflake_session, snowflake_feature, feature_manager):
+def test_insert_feature_registry(
+    snowflake_session,
+    snowflake_feature,
+    snowflake_feature_expected_tile_spec_dict,
+    feature_manager,
+):
     """
     Test insert_feature_registry
     """
@@ -37,17 +42,8 @@ def test_insert_feature_registry(snowflake_session, snowflake_feature, feature_m
     ]
     assert_frame_equal(expected_df, result_df)
 
-    expected_tile_spec = {
-        "blind_spot_second": 3,
-        "entity_column_names": ["col1"],
-        "value_column_names": ["col2"],
-        "frequency_minute": 5,
-        "tile_id": "tile_id1",
-        "tile_sql": 'SELECT\n"col_a" AS "a"\nFROM DUMMY',
-        "time_modulo_frequency_second": 183,
-    }
     result_tile_spec = json.loads(result["TILE_SPECS"].iloc[0])[0]
-    assert expected_tile_spec == result_tile_spec
+    assert snowflake_feature_expected_tile_spec_dict == result_tile_spec
 
 
 def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature, feature_manager):
@@ -221,7 +217,12 @@ def test_online_enable_already_online_enabled(snowflake_feature, feature_manager
     )
 
 
-def test_online_enable(snowflake_session, snowflake_feature, feature_manager):
+def test_online_enable(
+    snowflake_session,
+    snowflake_feature,
+    snowflake_feature_expected_tile_spec_dict,
+    feature_manager,
+):
     """
     Test online_enable
     """
@@ -237,8 +238,11 @@ def test_online_enable(snowflake_session, snowflake_feature, feature_manager):
 
     tile_registry = snowflake_session.execute_query("SELECT * FROM TILE_REGISTRY")
     assert len(tile_registry) == 1
-    assert tile_registry.iloc[0]["TILE_ID"] == "tile_id1"
-    assert tile_registry.iloc[0]["TILE_SQL"] == 'SELECT\n"col_a" AS "a"\nFROM DUMMY'
+    expected_tile_id = snowflake_feature_expected_tile_spec_dict["tile_id"]
+    assert tile_registry.iloc[0]["TILE_ID"] == expected_tile_id
+    assert (
+        tile_registry.iloc[0]["TILE_SQL"] == snowflake_feature_expected_tile_spec_dict["tile_sql"]
+    )
     assert bool(tile_registry.iloc[0]["IS_ENABLED"]) is True
 
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
@@ -249,21 +253,27 @@ def test_online_enable(snowflake_session, snowflake_feature, feature_manager):
 
     tasks = snowflake_session.execute_query("SHOW TASKS")
     assert len(tasks) > 1
-    assert tasks["name"].iloc[0] == "SHELL_TASK_TILE_ID1_OFFLINE"
-    assert tasks["schedule"].iloc[0] == "USING CRON 3 0 * * * UTC"
+    assert tasks["name"].iloc[0] == f"SHELL_TASK_{expected_tile_id.upper()}_OFFLINE"
+    assert tasks["schedule"].iloc[0] == "USING CRON 5 0 * * * UTC"
     assert tasks["state"].iloc[0] == "started"
-    assert tasks["name"].iloc[1] == "SHELL_TASK_TILE_ID1_ONLINE"
-    assert tasks["schedule"].iloc[1] == "USING CRON 3-59/5 * * * * UTC"
+    assert tasks["name"].iloc[1] == f"SHELL_TASK_{expected_tile_id.upper()}_ONLINE"
+    assert tasks["schedule"].iloc[1] == "USING CRON 5-59/30 * * * * UTC"
     assert tasks["state"].iloc[1] == "started"
 
 
-def test_get_last_tile_index(snowflake_feature, snowflake_tile, feature_manager, tile_manager):
+def test_get_last_tile_index(
+    snowflake_feature,
+    snowflake_feature_expected_tile_spec_dict,
+    feature_manager,
+    tile_manager,
+):
     """
     Test get_last_tile_index
     """
     feature_manager.insert_feature_registry(snowflake_feature)
-    tile_manager.insert_tile_registry(tile_spec=snowflake_tile)
+    tile_manager.insert_tile_registry(tile_spec=snowflake_feature.tile_specs[0])
     last_index_df = feature_manager.get_last_tile_index(snowflake_feature)
+    expected_tile_id = snowflake_feature_expected_tile_spec_dict["tile_id"]
     assert len(last_index_df) == 1
-    assert last_index_df.iloc[0]["TILE_ID"] == snowflake_tile.tile_id
+    assert last_index_df.iloc[0]["TILE_ID"] == expected_tile_id
     assert last_index_df.iloc[0]["LAST_TILE_INDEX_ONLINE"] == -1

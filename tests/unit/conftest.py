@@ -20,12 +20,7 @@ from featurebyte.core.frame import Frame
 from featurebyte.enum import CollectionName, DBVarType, InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
-from featurebyte.models.feature import (
-    FeatureListModel,
-    FeatureListStatus,
-    FeatureModel,
-    FeatureReadiness,
-)
+from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -445,9 +440,7 @@ def tile_manager(mock_execute_query, session_manager, snowflake_feature_store):
 def mock_snowflake_feature(
     mock_execute_query, snowflake_connector, snowflake_event_view, mock_get_persistent
 ):
-    """
-    Pytest Fixture for FeatureSnowflake instance
-    """
+    """Fixture for a Feature object"""
     mock_execute_query.size_effect = None
     _ = snowflake_connector, mock_get_persistent
 
@@ -465,22 +458,8 @@ def mock_snowflake_feature(
         },
     )
     feature = feature_group["sum_30m"]
-    feature_json = feature.json()
-    feature_loaded = FeatureModel.parse_raw(feature_json)
-
-    tile_spec = TileSpec(
-        tile_id="tile_id1",
-        time_modulo_frequency_second=183,
-        blind_spot_second=3,
-        frequency_minute=5,
-        tile_sql="SELECT * FROM DUMMY",
-        value_column_names=["col2"],
-        entity_column_names=["col1"],
-    )
-    feature_loaded.tile_specs = [tile_spec]
-    feature_loaded.online_enabled = False
-
-    return feature_loaded
+    feature.online_enabled = False
+    return feature
 
 
 @pytest.fixture
@@ -495,12 +474,10 @@ def feature_manager(mock_execute_query, session_manager, snowflake_feature_store
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature_list(
+def mock_snowflake_feature_list_model(
     mock_execute_query, snowflake_connector, snowflake_event_view, mock_get_persistent
 ):
-    """
-    Pytest Fixture for FeatureSnowflake instance
-    """
+    """Fixture for a FeatureListModel"""
     mock_execute_query.size_effect = None
     _ = snowflake_connector, mock_get_persistent
 
@@ -518,25 +495,11 @@ def mock_snowflake_feature_list(
         },
     )
     feature = feature_group["sum_30m"]
-    feature_json = feature.json()
-    feature_loaded = FeatureModel.parse_raw(feature_json)
-
-    tile_spec = TileSpec(
-        tile_id="tile_id1",
-        time_modulo_frequency_second=183,
-        blind_spot_second=3,
-        frequency_minute=5,
-        tile_sql="SELECT * FROM DUMMY",
-        value_column_names=["col2"],
-        entity_column_names=["col1"],
-    )
-    feature_loaded.tile_specs = [tile_spec]
-    feature_loaded.version = "v1"
 
     mock_feature_list = FeatureListModel(
         name="feature_list1",
         description="test_description1",
-        features=[(feature_loaded.name, feature_loaded.version)],
+        features=[(feature.name, feature.version)],
         readiness=FeatureReadiness.DRAFT,
         status=FeatureListStatus.DRAFT,
         version="v1",

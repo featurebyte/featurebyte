@@ -4,6 +4,7 @@ Common test fixtures used across files in integration directory
 import os
 import sqlite3
 import tempfile
+import textwrap
 from datetime import datetime
 from unittest import mock
 
@@ -15,6 +16,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
+from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.enum import CollectionName, InternalName
@@ -25,12 +27,11 @@ from featurebyte.models.feature import (
     FeatureListStatus,
     FeatureModel,
     FeatureReadiness,
-    TileSpec,
 )
 from featurebyte.persistent.git import GitDB
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.tile.snowflake_tile import TileManagerSnowflake
+from featurebyte.tile.snowflake_tile import TileManagerSnowflake, TileSpec
 
 
 @pytest.fixture(name="transaction_data", scope="session")
@@ -195,31 +196,17 @@ def tile_manager(snowflake_session):
 
 
 @pytest.fixture
-def snowflake_feature(feature_model_dict, snowflake_session, config):
+def snowflake_feature(feature_model_dict, snowflake_session):
     """
-    Pytest Fixture for FeatureSnowflake instance
+    Fixture for a Feature object
     """
-    mock_feature = FeatureModel(**feature_model_dict)
-
-    tile_id = "tile_id1"
-    tile_sql = 'SELECT\n"col_a" AS "a"\nFROM DUMMY'
-    tile_spec = TileSpec(
-        tile_id=tile_id,
-        time_modulo_frequency_second=183,
-        blind_spot_second=3,
-        frequency_minute=5,
-        tile_sql=tile_sql,
-        value_column_names=["col2"],
-        entity_column_names=["col1"],
-    )
-
-    mock_feature.tabular_source = (config.feature_stores["snowflake_featurestore"],)
-    mock_feature.tile_specs = [tile_spec]
+    mock_feature = Feature(**feature_model_dict)
     mock_feature.version = "v1"
     mock_feature.readiness = FeatureReadiness.DRAFT
     mock_feature.is_default = True
     mock_feature.description = "test_description_1"
     mock_feature.online_enabled = False
+    tile_id = mock_feature.tile_specs[0].tile_id
 
     yield mock_feature
 
@@ -227,6 +214,57 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
     snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
     snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
     snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+
+
+@pytest.fixture(name="snowflake_feature_expected_tile_spec_dict")
+def snowflake_feature_expected_tile_spec_dict_fixture():
+    """
+    Fixture for the expected TileSpec dictionary corresponding to snowflake_feature above
+    """
+    tile_sql = textwrap.dedent(
+        """
+        SELECT
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 1800) AS __FB_TILE_START_DATE_COLUMN,
+          "cust_id",
+          SUM("col_float") AS value
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 1800) AS tile_index
+            FROM (
+                SELECT
+                  "col_int" AS "col_int",
+                  "col_float" AS "col_float",
+                  "col_char" AS "col_char",
+                  "col_text" AS "col_text",
+                  "col_binary" AS "col_binary",
+                  "col_boolean" AS "col_boolean",
+                  "event_timestamp" AS "event_timestamp",
+                  "created_at" AS "created_at",
+                  "cust_id" AS "cust_id"
+                FROM "sf_database"."sf_schema"."sf_table"
+                WHERE
+                  "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
+                  AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
+            )
+        )
+        GROUP BY
+          tile_index,
+          "cust_id"
+        ORDER BY
+          tile_index
+        """
+    ).strip()
+    expected_tile_spec = {
+        "blind_spot_second": 600,
+        "entity_column_names": ["cust_id"],
+        "value_column_names": ["value"],
+        "frequency_minute": 30,
+        "tile_id": "sum_f1800_m300_b600_3cb3b2b28a359956be02abe635c4446cb50710d7",
+        "tile_sql": tile_sql,
+        "time_modulo_frequency_second": 300,
+    }
+    return expected_tile_spec
 
 
 @pytest.fixture

@@ -1,6 +1,7 @@
 """
 This module contains unit tests for FeatureManagerSnowflake
 """
+import json
 from unittest import mock
 
 import pandas as pd
@@ -28,7 +29,7 @@ def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature, fea
     update_sql = tm_update_feature_registry_default_false.render(feature=mock_snowflake_feature)
 
     tile_specs_lst = [tile_spec.dict() for tile_spec in mock_snowflake_feature.tile_specs]
-    tile_specs_str = str(tile_specs_lst).replace("'", '"')
+    tile_specs_str = json.dumps(tile_specs_lst).replace("\\", "\\\\")
     insert_sql = tm_insert_feature_registry.render(
         feature=mock_snowflake_feature, tile_specs_str=tile_specs_str
     )

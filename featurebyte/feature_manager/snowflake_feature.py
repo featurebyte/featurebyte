@@ -3,7 +3,7 @@ Snowflake Feature Manager class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import json
 
@@ -19,9 +19,12 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_update_feature_registry_default_false,
 )
 from featurebyte.logger import logger
-from featurebyte.models.feature import FeatureModel, FeatureReadiness, FeatureVersionIdentifier
+from featurebyte.models.feature import FeatureReadiness, FeatureVersionIdentifier
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
+
+if TYPE_CHECKING:
+    from featurebyte.api.feature import Feature
 
 
 class FeatureManagerSnowflake(BaseModel):
@@ -45,14 +48,14 @@ class FeatureManagerSnowflake(BaseModel):
         super().__init__(**kw)
         self._session = session
 
-    def insert_feature_registry(self, feature: FeatureModel) -> None:
+    def insert_feature_registry(self, feature: Feature) -> None:
         """
         Insert feature registry record. Update the is_default of the existing feature registry records to be False,
         then insert the new registry record with is_default to True
 
         Parameters
         ----------
-        feature: FeatureModel
+        feature: Feature
             input feature instance
 
         Raises
@@ -124,7 +127,7 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"Done removing feature version {feature.name} with version {feature.version}")
 
     def retrieve_feature_registries(
-        self, feature: FeatureModel, version: Optional[FeatureVersionIdentifier] = None
+        self, feature: Feature, version: Optional[FeatureVersionIdentifier] = None
     ) -> pd.DataFrame:
         """
         Retrieve Feature instances. If version parameter is not presented, return all the feature versions.
@@ -132,7 +135,7 @@ class FeatureManagerSnowflake(BaseModel):
 
         Parameters
         ----------
-        feature: FeatureModel
+        feature: Feature
             input feature instance
         version: str
             version of Feature
@@ -146,13 +149,13 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"select sql: {sql}")
         return self._session.execute_query(sql)
 
-    def update_feature_registry(self, new_feature: FeatureModel) -> None:
+    def update_feature_registry(self, new_feature: Feature) -> None:
         """
         Update Feature Registry record. Only readiness, description and is_default might be updated
 
         Parameters
         ----------
-        new_feature: FeatureModel
+        new_feature: Feature
             new input feature instance
 
         Raises
@@ -173,13 +176,13 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"update_sql: {update_sql}")
         self._session.execute_query(update_sql)
 
-    def online_enable(self, feature: FeatureModel) -> None:
+    def online_enable(self, feature: Feature) -> None:
         """
         Schedule both online and offline tile jobs
 
         Parameters
         ----------
-        feature: FeatureModel
+        feature: Feature
             input feature instance
 
         Raises
@@ -232,13 +235,13 @@ class FeatureManagerSnowflake(BaseModel):
             feature.online_enabled = True
             self.update_feature_registry(feature)
 
-    def get_last_tile_index(self, feature: FeatureModel) -> pd.DataFrame:
+    def get_last_tile_index(self, feature: Feature) -> pd.DataFrame:
         """
         Get last_tile_index of all the tile_ids as dataframe
 
         Parameters
         ----------
-        feature: FeatureModel
+        feature: Feature
             input feature instance
 
         Returns
