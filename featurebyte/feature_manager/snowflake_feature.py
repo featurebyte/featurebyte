@@ -90,7 +90,7 @@ class FeatureManagerSnowflake(BaseModel):
                 f"Feature version already exist for {feature.name} with version {feature.version}"
             )
 
-    def remove_feature_registry(self, feature: FeatureModel) -> None:
+    def remove_feature_registry(self, feature: Feature) -> None:
         """
         Remove the feature registry record
 
