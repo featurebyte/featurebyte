@@ -2,6 +2,7 @@
 SHELL := /usr/bin/env bash -o pipefail
 PYTHON := python
 PYTHONPATH := `pwd`
+DOCKER := docker
 
 #* Poetry
 .PHONY: poetry-download
@@ -33,12 +34,19 @@ codestyle:
 .PHONY: formatting
 formatting: codestyle
 
-#* Linting
+#* Testing
+.PHONY: test-local
+	DOCKER compose -f ./tests/mongo-compose.yaml up -d
+	PYTHONPATH=$(PYTHONPATH) poetry run pytest --timeout=120 --junitxml=pytest.xml --cov-report=term-missing --cov=featurebyte tests/ featurebyte/ -v | tee pytest-coverage.txt; true
+	poetry run coverage-badge -o assets/images/coverage.svg -f
+	DOCKER compose -f ./tests/mongo-compose.yaml down
+
 .PHONY: test
 test:
 	PYTHONPATH=$(PYTHONPATH) poetry run pytest --timeout=120 --junitxml=pytest.xml --cov-report=term-missing --cov=featurebyte tests/ featurebyte/ -v | tee pytest-coverage.txt
 	poetry run coverage-badge -o assets/images/coverage.svg -f
 
+#* Linting
 .PHONY: check-codestyle
 check-codestyle:
 	poetry run isort --diff --check-only --settings-path pyproject.toml ./
