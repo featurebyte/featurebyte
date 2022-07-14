@@ -36,9 +36,9 @@ class MongoDB(Persistent):
             Database to use
         """
         self._database = database
-        self._client: Any = pymongo.MongoClient(uri)
-        self._db: Any = self._client[self._database]
-        self._session = None
+        self._client: pymongo.mongo_client.MongoClient[Any] = pymongo.MongoClient(uri)  # type: ignore
+        self._db: pymongo.database.Database[Any] = self._client[self._database]
+        self._session: Any = None
 
     def insert_one(self, collection_name: str, document: Document) -> ObjectId:
         """
