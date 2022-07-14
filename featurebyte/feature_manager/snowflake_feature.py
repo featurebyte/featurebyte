@@ -96,7 +96,7 @@ class FeatureManagerSnowflake(BaseModel):
 
         Parameters
         ----------
-        feature: FeatureModel
+        feature: Feature
             input feature instance
 
         Raises
