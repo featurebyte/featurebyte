@@ -20,12 +20,7 @@ from featurebyte.core.frame import Frame
 from featurebyte.enum import CollectionName, DBVarType, InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
-from featurebyte.models.feature import (
-    FeatureListModel,
-    FeatureListStatus,
-    FeatureModel,
-    FeatureReadiness,
-)
+from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType

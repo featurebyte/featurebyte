@@ -127,6 +127,13 @@ class Feature(FeatureQueryObject, Series, FeatureModel):
 
     @property
     def tile_specs(self) -> list[TileSpec]:
+        """
+        Get a list of TileSpec objects required by this Feature
+
+        Returns
+        -------
+        list[TileSpec]
+        """
         interpreter = GraphInterpreter(self.graph)
         tile_infos = interpreter.construct_tile_gen_sql(self.node, is_on_demand=False)
         out = []

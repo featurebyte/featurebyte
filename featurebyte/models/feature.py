@@ -12,7 +12,6 @@ from pydantic import BaseModel, StrictStr
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
-from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 FeatureVersionIdentifier = StrictStr

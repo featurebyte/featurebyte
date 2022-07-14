@@ -17,14 +17,13 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_update_feature_registry,
     tm_update_feature_registry_default_false,
 )
-
-if TYPE_CHECKING:
-    from featurebyte.api.feature import Feature
-
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureReadiness, FeatureVersionIdentifier
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
+
+if TYPE_CHECKING:
+    from featurebyte.api.feature import Feature
 
 
 class FeatureManagerSnowflake(BaseModel):
@@ -55,7 +54,7 @@ class FeatureManagerSnowflake(BaseModel):
 
         Parameters
         ----------
-        feature: FeatureModel
+        feature: Feature
             input feature instance
 
         Raises
@@ -99,7 +98,7 @@ class FeatureManagerSnowflake(BaseModel):
 
         Parameters
         ----------
-        feature: FeatureModel
+        feature: Feature
             input feature instance
         version: str
             version of Feature
@@ -119,7 +118,7 @@ class FeatureManagerSnowflake(BaseModel):
 
         Parameters
         ----------
-        new_feature: FeatureModel
+        new_feature: Feature
             new input feature instance
 
         Raises
@@ -146,7 +145,7 @@ class FeatureManagerSnowflake(BaseModel):
 
         Parameters
         ----------
-        feature: FeatureModel
+        feature: Feature
             input feature instance
 
         Raises
@@ -205,7 +204,7 @@ class FeatureManagerSnowflake(BaseModel):
 
         Parameters
         ----------
-        feature: FeatureModel
+        feature: Feature
             input feature instance
 
         Returns

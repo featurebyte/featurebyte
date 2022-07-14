@@ -27,12 +27,11 @@ from featurebyte.models.feature import (
     FeatureListStatus,
     FeatureModel,
     FeatureReadiness,
-    TileSpec,
 )
 from featurebyte.persistent.git import GitDB
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
-from featurebyte.tile.snowflake_tile import TileManagerSnowflake
+from featurebyte.tile.snowflake_tile import TileManagerSnowflake, TileSpec
 
 
 @pytest.fixture(name="transaction_data", scope="session")
@@ -197,9 +196,9 @@ def tile_manager(snowflake_session):
 
 
 @pytest.fixture
-def snowflake_feature(feature_model_dict, snowflake_session, config):
+def snowflake_feature(feature_model_dict, snowflake_session):
     """
-    Pytest Fixture for FeatureSnowflake instance
+    Fixture for a Feature object
     """
     mock_feature = Feature(**feature_model_dict)
     mock_feature.version = "v1"
@@ -219,6 +218,9 @@ def snowflake_feature(feature_model_dict, snowflake_session, config):
 
 @pytest.fixture(name="snowflake_feature_expected_tile_spec_dict")
 def snowflake_feature_expected_tile_spec_dict_fixture():
+    """
+    Fixture for the expected TileSpec dictionary corresponding to snowflake_feature above
+    """
     tile_sql = textwrap.dedent(
         """
         SELECT
@@ -250,7 +252,7 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
           tile_index,
           "cust_id"
         ORDER BY
-          tile_index 
+          tile_index
         """
     ).strip()
     expected_tile_spec = {
