@@ -85,7 +85,6 @@ $$
     }
     debug = debug + " - monitor_table_exist: " + table_exist
 
-
     if (table_exist === false) {
         // monitor table already exists, create table with new records
         var create_sql = `create table ${monitor_table_name} as ${compare_sql}`

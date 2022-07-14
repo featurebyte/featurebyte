@@ -70,6 +70,51 @@ def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature,
     )
 
 
+def test_remove_feature_registry(snowflake_session, snowflake_feature, feature_manager):
+    """
+    Test remove_feature_registry
+    """
+    snowflake_feature.readiness = FeatureReadiness.DRAFT
+    feature_manager.insert_feature_registry(snowflake_feature)
+    result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
+    assert len(result) == 1
+    assert result.iloc[0]["NAME"] == "sum_30m"
+    assert result.iloc[0]["VERSION"] == "v1"
+
+    feature_manager.remove_feature_registry(snowflake_feature)
+    result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
+    assert len(result) == 0
+
+
+def test_remove_feature_registry_no_feature(snowflake_feature, feature_manager):
+    """
+    Test remove_feature_registry no feature
+    """
+    with pytest.raises(ValueError) as excinfo:
+        feature_manager.remove_feature_registry(snowflake_feature)
+
+    assert (
+        str(excinfo.value)
+        == f"Feature version does not exist for {snowflake_feature.name} with version {snowflake_feature.version}"
+    )
+
+
+def test_remove_feature_registry_feature_version_not_draft(snowflake_feature, feature_manager):
+    """
+    Test remove_feature_registry feature version readiness not DRAFT
+    """
+    snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY
+    feature_manager.insert_feature_registry(snowflake_feature)
+
+    with pytest.raises(ValueError) as excinfo:
+        feature_manager.remove_feature_registry(snowflake_feature)
+
+    assert (
+        str(excinfo.value)
+        == f"Feature version {snowflake_feature.name} with version {snowflake_feature.version} cannot be deleted with readiness PRODUCTION_READY"
+    )
+
+
 def test_update_feature_registry(snowflake_session, snowflake_feature, feature_manager):
     """
     Test update_feature_registry
