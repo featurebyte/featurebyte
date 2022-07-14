@@ -1,5 +1,5 @@
 """
-Test MongoDB persistent backend
+Test GitDB persistent backend
 """
 # pylint: disable=protected-access
 from __future__ import annotations
