@@ -118,13 +118,22 @@ class BaseSession(BaseModel):
         cursor = self.connection.cursor()
         try:
             cursor.execute(query)
-            if cursor.description:
-                all_rows = cursor.fetchall()
-                columns = [row[0] for row in cursor.description]
-                return pd.DataFrame(all_rows, columns=columns)
-            return None
+            import time
+
+            tic = time.time()
+            result = self.fetch_query_result_impl(cursor)
+            elapsed = time.time() - tic
+            print(f"Fetching query result took {elapsed:.2f}s")
+            return result
         finally:
             cursor.close()
+
+    def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
+        if cursor.description:
+            all_rows = cursor.fetchall()
+            columns = [row[0] for row in cursor.description]
+            return pd.DataFrame(all_rows, columns=columns)
+        return None
 
     @abstractmethod
     def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:

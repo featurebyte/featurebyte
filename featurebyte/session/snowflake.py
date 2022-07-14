@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from pydantic import Field
 from snowflake import connector
+from snowflake.connector.errors import NotSupportedError
 from snowflake.connector.pandas_tools import write_pandas
 
 import featurebyte
@@ -99,6 +100,17 @@ class SnowflakeSession(BaseSession):
         if views is not None:
             output.extend(views["name"])
         return output
+
+    def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
+        if cursor.description:
+            try:
+                return cursor.fetch_pandas_all()
+            except NotSupportedError:
+                logger.debug(
+                    "fetch_pandas_all not supported, falling back to default implementation"
+                )
+                return super().fetch_query_result_impl(cursor)
+        return None
 
     def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         schema = self.get_columns_schema_from_dataframe(dataframe)
