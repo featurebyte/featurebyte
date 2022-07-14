@@ -219,7 +219,6 @@ def test_online_enable(
 def test_get_last_tile_index(
     snowflake_feature,
     snowflake_feature_expected_tile_spec_dict,
-    snowflake_tile,
     feature_manager,
     tile_manager,
 ):
@@ -227,7 +226,7 @@ def test_get_last_tile_index(
     Test get_last_tile_index
     """
     feature_manager.insert_feature_registry(snowflake_feature)
-    tile_manager.insert_tile_registry(tile_spec=snowflake_tile)
+    tile_manager.insert_tile_registry(tile_spec=snowflake_feature.tile_specs[0])
     last_index_df = feature_manager.get_last_tile_index(snowflake_feature)
     expected_tile_id = snowflake_feature_expected_tile_spec_dict["tile_id"]
     assert len(last_index_df) == 1
