@@ -10,14 +10,17 @@ from bson.objectid import ObjectId
 from featurebyte.persistent.mongo import MongoDB
 
 
-@pytest.fixture()
-def mongo_persistent():
+@pytest.fixture(name="mongo_persistent")
+def mongo_persistent_fixture():
+    """
+    Mongo persistent fixture
+    """
     mongo_connection = os.getenv("MONGO_CONNECTION")
     print(mongo_connection)
     database_name = f"test_{ObjectId()}"
     client = pymongo.MongoClient(mongo_connection)
     persistent = MongoDB(uri=mongo_connection, database=database_name)
-    yield persistent, client, client[database_name]
+    yield persistent, client[database_name]
     client.drop_database(database_name)
 
 
@@ -28,7 +31,7 @@ def test_start_transaction__success(mongo_persistent):
     """
     Test start_transaction context manager
     """
-    persistent, client, db = mongo_persistent
+    persistent, database = mongo_persistent
     col = "test_col"
 
     with persistent.start_transaction() as session:
@@ -36,7 +39,7 @@ def test_start_transaction__success(mongo_persistent):
         session.insert_one(collection_name=col, document={"key2": "value2"})
 
     # check both records written to the mongodb
-    output = sorted(db[col].find({}, {"_id": False}), key=lambda d: list(d.keys()))
+    output = sorted(database[col].find({}, {"_id": False}), key=lambda d: list(d.keys()))
     assert output == [{"key1": "value1"}, {"key2": "value2"}]
 
 
@@ -47,7 +50,7 @@ def test_start_transaction__with_exception_within_transaction(mongo_persistent):
     """
     Test start_transaction context manager
     """
-    persistent, client, db = mongo_persistent
+    persistent, database = mongo_persistent
     col = "test_col"
 
     try:
@@ -59,5 +62,5 @@ def test_start_transaction__with_exception_within_transaction(mongo_persistent):
         pass
 
     # check no record written to the mongodb
-    output = list(db[col].find({}, {"_id": False}))
-    assert output == []
+    output = list(database[col].find({}, {"_id": False}))
+    assert not output
