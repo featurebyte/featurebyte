@@ -479,7 +479,7 @@ def feature_manager(mock_execute_query, session_manager, snowflake_feature_store
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature_list(
+def mock_snowflake_feature_list_model(
     mock_execute_query, snowflake_connector, snowflake_event_view, mock_get_persistent
 ):
     """Fixture for a FeatureListModel"""

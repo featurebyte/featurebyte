@@ -195,7 +195,9 @@ def test_online_enable(
     assert len(tile_registry) == 1
     expected_tile_id = snowflake_feature_expected_tile_spec_dict["tile_id"]
     assert tile_registry.iloc[0]["TILE_ID"] == expected_tile_id
-    assert tile_registry.iloc[0]["TILE_SQL"] == snowflake_feature_expected_tile_spec_dict["tile_sql"]
+    assert (
+        tile_registry.iloc[0]["TILE_SQL"] == snowflake_feature_expected_tile_spec_dict["tile_sql"]
+    )
     assert bool(tile_registry.iloc[0]["IS_ENABLED"]) is True
 
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
