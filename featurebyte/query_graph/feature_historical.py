@@ -190,5 +190,11 @@ def get_historical_features(
     elapsed = time.time() - tic
     logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
 
-    logger.debug(f"get_historical_features took {time.time() - tic_:.2f}s")
-    return session.execute_query(sql)
+    # Execute feature query
+    tic = time.time()
+    result = session.execute_query(sql)
+    elapsed = time.time() - tic
+    logger.debug(f"Executing feature query took {elapsed:.2f}s")
+
+    logger.debug(f"get_historical_features in total took {time.time() - tic_:.2f}s")
+    return result
