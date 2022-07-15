@@ -85,12 +85,15 @@ def test_snowflake_session__credential_from_config(snowflake_session_dict):
 
 @pytest.fixture(name="mock_snowflake_cursor")
 def mock_snowflake_cursor_fixture(is_fetch_pandas_all_available):
+    """
+    Fixture for a mocked connection cursor for Snowflake
+    """
     with patch("featurebyte.session.snowflake.connector", autospec=True) as mock_connector:
-        mock_connection = Mock(name="MockConnection")
         mock_cursor = Mock(name="MockCursor", description=[["col_a"], ["col_b"], ["col_c"]])
         if not is_fetch_pandas_all_available:
             mock_cursor.fetch_pandas_all.side_effect = NotSupportedError
             mock_cursor.fetchall.return_value = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        mock_connection = Mock(name="MockConnection")
         mock_connection.cursor.return_value = mock_cursor
         mock_connector.connect.return_value = mock_connection
         yield mock_cursor

@@ -111,6 +111,11 @@ class SnowflakeSession(BaseSession):
         ----------
         cursor : Any
             The connection cursor
+
+        Returns
+        -------
+        pd.DataFrame | None
+            Query result as a pandas DataFrame if the query expects result
         """
         if cursor.description:
             try:
