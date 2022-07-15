@@ -102,6 +102,8 @@ class GitDB(Persistent):
         self._origin: Optional[Remote] = None
         self._working_tree_dir: str = str(repo.working_tree_dir)
         self._collection_to_doc_name_func_map: dict[str, DocNameFuncType] = {}
+        self._transaction_lock = False
+        self._transaction_messages: list[str] = []
 
         if remote_url:
             # create remote origin if does not exist
@@ -176,6 +178,20 @@ class GitDB(Persistent):
         """
         return self._ssh_cmd
 
+    def _handle_commit_message(self, message: str) -> None:
+        """
+        Handle commit message
+
+        Parameters
+        ----------
+        message: str
+            Commit message
+        """
+        if self._transaction_lock:
+            self._transaction_messages.append(message)
+        else:
+            self.repo.git.commit("-m", message)
+
     def _fetch(self) -> None:
         """
         Fetch latest changes from remote
@@ -188,8 +204,8 @@ class GitDB(Persistent):
         """
         Reset with latest changes from remote
         """
-        # skip if no remote
-        if not self._origin:
+        # skip if no remote or within transaction
+        if not self._origin or self._transaction_lock:
             return
 
         logger.debug("Reset branch to remote", extra={"branch": self._branch})
@@ -201,7 +217,7 @@ class GitDB(Persistent):
         Push latest changes to remote
         """
         # skip if no remote
-        if not self._origin:
+        if not self._origin or self._transaction_lock:
             return
 
         logger.debug("Push changes to remote branch", extra={"branch": self._branch})
@@ -304,10 +320,11 @@ class GitDB(Persistent):
             old_doc_path = self._get_doc_path(collection_path, doc_name)
             if os.path.exists(old_doc_path):
                 self.repo.git.mv(old_doc_path, new_doc_path)
-                self.repo.git.commit(
-                    "-m",
-                    f"{GitDocumentAction.RENAME} document: {collection_name}/{doc_name} -> {collection_name}/{new_doc_name}",
+                commit_message = (
+                    f"{GitDocumentAction.RENAME} document: {collection_name}/{doc_name} -> "
+                    f"{collection_name}/{new_doc_name}"
                 )
+                self._handle_commit_message(commit_message)
                 doc_exists = True
 
         action = GitDocumentAction.UPDATE if doc_exists else GitDocumentAction.CREATE
@@ -318,7 +335,8 @@ class GitDB(Persistent):
         # commit changes
         self.repo.git.add([new_doc_path])
         # put name in commit
-        self.repo.git.commit("-m", f"{action} document: {collection_name}/{new_doc_name}")
+        commit_message = f"{action} document: {collection_name}/{new_doc_name}"
+        self._handle_commit_message(commit_message)
 
         return doc_id
 
@@ -349,9 +367,8 @@ class GitDB(Persistent):
         # commit changes
         self.repo.git.rm([doc_path])
         # put name in commit
-        self.repo.git.commit(
-            "-m", f"{GitDocumentAction.DELETE} document: {collection_name}/{doc_name}"
-        )
+        commit_message = f"{GitDocumentAction.DELETE} document: {collection_name}/{doc_name}"
+        self._handle_commit_message(commit_message)
 
     def _find_files(
         self, collection_name: str, query_filter: QueryFilter, multiple: bool
@@ -820,6 +837,13 @@ class GitDB(Persistent):
             multiple=True,
         )
 
+    def _clean_stage_local(self) -> None:
+        """
+        Cleanup staged & local files
+        """
+        self.repo.git.restore("--staged", ".")
+        self.repo.git.clean("-fd")
+
     @contextmanager
     def start_transaction(self) -> Iterator[GitDB]:
         """
@@ -830,4 +854,25 @@ class GitDB(Persistent):
         Iterator[GitDB]
             GitDB object
         """
-        yield self
+        self._reset_branch()
+        self._transaction_lock = True
+        self._transaction_messages = []
+        try:
+            yield self
+        except Exception:
+            self._transaction_messages = []
+            self._reset_branch()
+            self._clean_stage_local()
+        finally:
+            self._transaction_lock = False
+            if self._transaction_messages:
+                try:
+                    commit_message = "\n".join(self._transaction_messages)
+                    self.repo.git.commit("-m", commit_message)
+                    print("prepare to push:", self._push)
+                    self._push()
+                except Exception:
+                    self._clean_stage_local()
+                    self._reset_branch()
+
+            self._transaction_messages = []

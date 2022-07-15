@@ -8,6 +8,13 @@ import pytest
 from featurebyte.persistent import DuplicateDocumentError
 
 
+def _get_commit_messages(repo, max_count=5):
+    """
+    Extract commit messages
+    """
+    return [commit.message for commit in repo.iter_commits("test", max_count=max_count)][::-1]
+
+
 def test_insert_one(git_persistent, test_document):
     """
     Test inserting one document
@@ -20,8 +27,7 @@ def test_insert_one(git_persistent, test_document):
     assert os.path.exists(expected_doc_path)
 
     # check commit messages
-    messages = [commit.message for commit in repo.iter_commits("test", max_count=5)][-1::-1]
-    assert messages == [
+    assert _get_commit_messages(repo) == [
         "Initial commit\n",
         "Create document: data/Generic Document\n",
     ]
@@ -40,8 +46,7 @@ def test_insert_one__no_id(git_persistent, test_document):
     assert os.path.exists(expected_doc_path)
 
     # check commit messages
-    messages = [commit.message for commit in repo.iter_commits("test", max_count=5)][-1::-1]
-    assert messages == [
+    assert _get_commit_messages(repo) == [
         "Initial commit\n",
         "Create document: data/Generic Document\n",
     ]
@@ -62,8 +67,7 @@ def test_insert_many(git_persistent, test_documents):
         assert os.path.exists(expected_doc_path)
 
     # check commit messages
-    messages = [commit.message for commit in repo.iter_commits("test", max_count=5)][-1::-1]
-    assert messages == [
+    assert _get_commit_messages(repo) == [
         "Initial commit\n",
         "Create document: data/Object 0\n",
         "Create document: data/Object 1\n",
@@ -177,8 +181,7 @@ def test_update_one(git_persistent, test_documents):
     assert results[2]["name"] == test_documents[2]["name"]
 
     # check commit messages
-    messages = [commit.message for commit in repo.iter_commits("test", max_count=10)][-1::-1]
-    assert messages == [
+    assert _get_commit_messages(repo, max_count=10) == [
         "Initial commit\n",
         "Create document: data/Object 0\n",
         "Create document: data/Object 1\n",
@@ -204,8 +207,7 @@ def test_update_many(git_persistent, test_documents):
         assert result["value"] == 1
 
     # check commit messages
-    messages = [commit.message for commit in repo.iter_commits("test", max_count=10)][-1::-1]
-    assert messages == [
+    assert _get_commit_messages(repo, max_count=10) == [
         "Initial commit\n",
         "Create document: data/Object 0\n",
         "Create document: data/Object 1\n",
@@ -273,8 +275,7 @@ def test_delete_one(git_persistent, test_documents):
     assert len(results) == 2
 
     # check commit messages
-    messages = [commit.message for commit in repo.iter_commits("test", max_count=10)][-1::-1]
-    assert messages == [
+    assert _get_commit_messages(repo, max_count=10) == [
         "Initial commit\n",
         "Create document: data/Object 0\n",
         "Create document: data/Object 1\n",
@@ -296,8 +297,7 @@ def test_delete_many(git_persistent, test_documents):
     assert len(results) == 0
 
     # check commit messages
-    messages = [commit.message for commit in repo.iter_commits("test", max_count=10)][-1::-1]
-    assert messages == [
+    assert _get_commit_messages(repo, max_count=10) == [
         "Initial commit\n",
         "Create document: data/Object 0\n",
         "Create document: data/Object 1\n",
@@ -317,7 +317,52 @@ def test_delete_one__collection_not_exist(git_persistent):
     assert result == 0
 
     # check commit messages, expect no message after initial commit
-    messages = [commit.message for commit in repo.iter_commits("test", max_count=10)][-1::-1]
-    assert messages == [
+    assert _get_commit_messages(repo) == ["Initial commit\n"]
+
+
+def test_start_transaction__success(git_persistent):
+    """
+    Test start_transaction context manager
+    """
+    persistent, repo = git_persistent
+    col = "test_col"
+
+    with persistent.start_transaction() as session:
+        session.insert_one(collection_name=col, document={"_id": "1234", "key1": "value1"})
+        session.update_one(
+            collection_name=col,
+            query_filter={"_id": "1234"},
+            update={"$set": {"key1": "value2"}},
+        )
+
+    # check commit messages
+    assert _get_commit_messages(repo) == [
         "Initial commit\n",
+        "Create document: test_col/1234\nUpdate document: test_col/1234\n",
     ]
+    assert repo.git.status() == "On branch test\nnothing to commit, working tree clean"
+
+
+def test_start_transaction__exception_within_transaction(git_persistent):
+    """
+    Test start_transaction context manager (exception happens within context)
+    """
+    persistent, repo = git_persistent
+    col = "test_col"
+
+    try:
+        # set up an exception happens within the context
+        with persistent.start_transaction() as session:
+            session.insert_one(collection_name=col, document={"_id": "1234", "key1": "value1"})
+            session.update_one(
+                collection_name=col,
+                query_filter={"_id": "1234"},
+                update={"$set": {"key1": "value2"}},
+            )
+            assert False
+    except AssertionError:
+        pass
+
+    # check commit messages & status
+    assert _get_commit_messages(repo) == ["Initial commit\n"]
+    assert repo.git.status() == "On branch test\nnothing to commit, working tree clean"

@@ -46,7 +46,7 @@ def test_start_transaction__success(mongo_persistent):
 @pytest.mark.skipif(
     os.getenv("MONGO_CONNECTION") is None, reason="MongoDB connection is not available."
 )
-def test_start_transaction__with_exception_within_transaction(mongo_persistent):
+def test_start_transaction__exception_within_transaction(mongo_persistent):
     """
     Test start_transaction context manager
     """
