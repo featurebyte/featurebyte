@@ -73,6 +73,8 @@ class GitDB(Persistent):
     Persistent storage using Git
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(
         self, branch: str = "main", remote_url: Optional[str] = None, key_path: Optional[str] = None
     ) -> None:
@@ -89,7 +91,6 @@ class GitDB(Persistent):
             Path to private key
         """
 
-        # pylint: disable=too-many-instance-attributes)
         self._local_path = tempfile.mkdtemp()
 
         if not remote_url:
