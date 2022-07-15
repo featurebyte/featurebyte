@@ -2,11 +2,12 @@
 Unit test for snowflake session
 """
 import os
-from unittest.mock import call, patch
+from unittest.mock import Mock, call, patch
 
 import numpy as np
 import pandas as pd
 import pytest
+from snowflake.connector.errors import NotSupportedError
 
 from featurebyte.enum import DBVarType
 from featurebyte.session.snowflake import SchemaInitializer, SnowflakeSession
@@ -80,6 +81,56 @@ def test_snowflake_session__credential_from_config(snowflake_session_dict):
         "col_timestamp_ntz": DBVarType.TIMESTAMP,
         "col_timestamp_tz": DBVarType.TIMESTAMP,
     }
+
+
+@pytest.fixture(name="mock_snowflake_cursor")
+def mock_snowflake_cursor_fixture(is_fetch_pandas_all_available):
+    """
+    Fixture for a mocked connection cursor for Snowflake
+    """
+    with patch("featurebyte.session.snowflake.connector", autospec=True) as mock_connector:
+        mock_cursor = Mock(name="MockCursor", description=[["col_a"], ["col_b"], ["col_c"]])
+        if not is_fetch_pandas_all_available:
+            mock_cursor.fetch_pandas_all.side_effect = NotSupportedError
+            mock_cursor.fetchall.return_value = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        mock_connection = Mock(name="MockConnection")
+        mock_connection.cursor.return_value = mock_cursor
+        mock_connector.connect.return_value = mock_connection
+        yield mock_cursor
+
+
+@pytest.fixture(name="mock_schema_initializer")
+def mock_schema_initializer_fixture():
+    """Fixture to mock SchemaInitializer as no-op"""
+    with patch("featurebyte.session.snowflake.SchemaInitializer") as mocked:
+        yield mocked
+
+
+@pytest.mark.usefixtures("mock_schema_initializer")
+@pytest.mark.parametrize("is_fetch_pandas_all_available", [False, True])
+def test_snowflake_session__fetch_pandas_all(
+    snowflake_session_dict,
+    mock_snowflake_cursor,
+    is_fetch_pandas_all_available,
+):
+    """
+    Test snowflake session fetch query result
+    """
+    session = SnowflakeSession(**snowflake_session_dict)
+    result = session.execute_query("SELECT * FROM T")
+    assert mock_snowflake_cursor.fetch_pandas_all.call_count == 1
+    if is_fetch_pandas_all_available:
+        assert mock_snowflake_cursor.fetchall.call_count == 0
+    else:
+        assert mock_snowflake_cursor.fetchall.call_count == 1
+        expected_result = pd.DataFrame(
+            {
+                "col_a": [1, 4, 7],
+                "col_b": [2, 5, 8],
+                "col_c": [3, 6, 9],
+            }
+        )
+        pd.testing.assert_frame_equal(result, expected_result)
 
 
 EXPECTED_FUNCTIONS = ["F_COMPUTE_TILE_INDICES", "F_INDEX_TO_TIMESTAMP", "F_TIMESTAMP_TO_INDEX"]

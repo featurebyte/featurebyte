@@ -3,6 +3,8 @@ This module contains integration tests for tile monitoring stored procedure
 """
 from datetime import datetime
 
+import pandas as pd
+
 from featurebyte.enum import InternalName
 
 
@@ -35,11 +37,11 @@ def test_monitor_tile_missing_tile(snowflake_session):
     assert len(result) == 5
 
     assert result.iloc[-1]["VALUE"] == 4
-    assert result.iloc[-1]["OLD_VALUE"] is None
+    assert pd.isna(result.iloc[-1]["OLD_VALUE"])
     assert result.iloc[-2]["VALUE"] == 11
-    assert result.iloc[-2]["OLD_VALUE"] is None
+    assert pd.isna(result.iloc[-2]["OLD_VALUE"])
     assert result.iloc[-3]["VALUE"] == 19
-    assert result.iloc[-3]["OLD_VALUE"] is None
+    assert pd.isna(result.iloc[-3]["OLD_VALUE"])
     assert result.iloc[-3]["客户"] == 1
 
 

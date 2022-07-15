@@ -112,19 +112,36 @@ class BaseSession(BaseModel):
 
         Returns
         -------
-        pd.DataFrame
-            return pandas DataFrame if the query expect output
+        pd.DataFrame | None
+            Query result as a pandas DataFrame if the query expects result
         """
         cursor = self.connection.cursor()
         try:
             cursor.execute(query)
-            if cursor.description:
-                all_rows = cursor.fetchall()
-                columns = [row[0] for row in cursor.description]
-                return pd.DataFrame(all_rows, columns=columns)
-            return None
+            result = self.fetch_query_result_impl(cursor)
+            return result
         finally:
             cursor.close()
+
+    def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
+        """
+        Fetch the result of executed SQL query from connection cursor
+
+        Parameters
+        ----------
+        cursor : Any
+            The connection cursor
+
+        Returns
+        -------
+        pd.DataFrame | None
+            Query result as a pandas DataFrame if the query expects result
+        """
+        if cursor.description:
+            all_rows = cursor.fetchall()
+            columns = [row[0] for row in cursor.description]
+            return pd.DataFrame(all_rows, columns=columns)
+        return None
 
     @abstractmethod
     def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
