@@ -77,6 +77,8 @@ def test_persistence(test_document, persistent_data):
     """
     Test inserting one document
     """
+
+    # pylint: disable=too-many-locals
     persistent, branch, remote_url, ssh_key_path = persistent_data
 
     # use a dynamic name for the document

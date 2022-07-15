@@ -88,6 +88,8 @@ class GitDB(Persistent):
         key_path: Optional[str]
             Path to private key
         """
+
+        # pylint: disable=too-many-instance-attributes)
         self._local_path = tempfile.mkdtemp()
 
         if not remote_url:
@@ -289,6 +291,7 @@ class GitDB(Persistent):
         DuplicateDocumentError
             Document exists
         """
+        # pylint: disable=too-many-locals
         # ensure collection dir exists
         collection_path = self._get_collection_path(collection_name)
         if not os.path.exists(collection_path):
@@ -859,7 +862,7 @@ class GitDB(Persistent):
         self._transaction_messages = []
         try:
             yield self
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             self._transaction_messages = []
             self._reset_branch()
             self._clean_stage_local()
@@ -869,9 +872,8 @@ class GitDB(Persistent):
                 try:
                     commit_message = "\n".join(self._transaction_messages)
                     self.repo.git.commit("-m", commit_message)
-                    print("prepare to push:", self._push)
                     self._push()
-                except Exception:
+                except Exception:  # pylint: disable=broad-except
                     self._clean_stage_local()
                     self._reset_branch()
 
