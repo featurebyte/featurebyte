@@ -857,25 +857,32 @@ class GitDB(Persistent):
         ------
         Iterator[GitDB]
             GitDB object
+
+        Raises
+        ------
+        Exception
+            When exception happens within context or during git commint/push
         """
         self._reset_branch()
         self._transaction_lock = True
         self._transaction_messages = []
         try:
             yield self
-        except Exception:  # pylint: disable=broad-except
+        except Exception as exc:
             self._transaction_messages = []
             self._clean_stage_local()
             self._reset_branch()
+            raise exc
         finally:
             self._transaction_lock = False
             if self._transaction_messages:
                 try:
                     commit_message = "\n".join(self._transaction_messages)
-                    self.repo.git.commit("-m", commit_message)
+                    self._handle_commit_message(commit_message)
                     self._push()
-                except Exception:  # pylint: disable=broad-except
+                except Exception as exc:
                     self._clean_stage_local()
                     self._reset_branch()
+                    raise exc
 
             self._transaction_messages = []

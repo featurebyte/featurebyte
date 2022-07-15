@@ -16,7 +16,6 @@ def mongo_persistent_fixture():
     Mongo persistent fixture
     """
     mongo_connection = os.getenv("MONGO_CONNECTION")
-    print(mongo_connection)
     database_name = f"test_{ObjectId()}"
     client = pymongo.MongoClient(mongo_connection)
     persistent = MongoDB(uri=mongo_connection, database=database_name)

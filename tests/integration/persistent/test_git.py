@@ -111,20 +111,18 @@ def test_persistence(test_document, persistent_data):
     )
 
     # test transaction failure within the context
-    try:
+    with pytest.raises(AssertionError):
         with persistent.start_transaction() as session:
             session.insert_one(collection_name="data3", document=doc)
             session.insert_one(collection_name="data4", document=doc)
             assert False
-    except AssertionError:
-        pass
 
     # check no commit is written
     assert _get_commit_messages(persistent.repo, branch) == messages_second[-1:]
     assert persistent.repo.git.status() == expected_clean_status
 
     # test push failure
-    try:
+    with pytest.raises(AssertionError):
         with patch("featurebyte.persistent.git.GitDB._push") as mock_push:
             # each insert calls a _sync_push, only the third time raises an exception
             # to simulate the push failure after context
@@ -132,9 +130,6 @@ def test_persistence(test_document, persistent_data):
             with persistent.start_transaction() as session:
                 session.insert_one(collection_name="data3", document=doc)
                 session.insert_one(collection_name="data4", document=doc)
-
-    except AssertionError:
-        pass
 
     # check no commit is written
     assert _get_commit_messages(persistent.repo, branch) == messages_second[-1:]
