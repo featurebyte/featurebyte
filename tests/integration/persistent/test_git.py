@@ -1,5 +1,5 @@
 """
-Test MongoDB persistent backend
+Test GitDB persistent backend
 """
 # pylint: disable=protected-access
 from __future__ import annotations
@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any, Dict
 
 import os
+from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
@@ -36,9 +37,10 @@ def test_document_fixture() -> Dict[str, Any]:
     }
 
 
-def test_persistence(test_document):
+@pytest.fixture(name="persistent_data")
+def persistent_data_fixture():
     """
-    Test inserting one document
+    GitDB persistent fixture
     """
     # create a GitDB instance and save a document
     branch = f"integration-test-{str(ObjectId())}"
@@ -50,28 +52,85 @@ def test_persistence(test_document):
         key_path=ssh_key_path,
     )
     persistent.insert_doc_name_func("data", lambda doc: doc["name"])
-    try:
-        # use a dynamic name for the document
-        doc_name = test_document["name"] = str(ObjectId())
-        persistent.insert_one(collection_name="data", document=test_document)
+    yield persistent, branch, remote_url, ssh_key_path
 
-        # create another GitDB instance and try to read the saved document
-        persistent2 = GitDB(
-            branch=branch,
-            remote_url=remote_url,
-            key_path=ssh_key_path,
-        )
-        persistent2.insert_doc_name_func("data", lambda doc: doc["name"])
-        doc = persistent2.find_one(collection_name="data", query_filter={"name": doc_name})
-        assert doc == test_document
-    finally:
-        # cleanup local and remote repo
-        repo, ssh_cmd, branch = (
-            persistent.repo,
-            persistent.ssh_cmd,
-            persistent.branch,
-        )
-        origin = repo.remotes.origin
-        if origin:
-            with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
-                origin.push(refspec=(f":{branch}"))
+    # cleanup local and remote repo
+    repo, ssh_cmd, branch = (
+        persistent.repo,
+        persistent.ssh_cmd,
+        persistent.branch,
+    )
+    origin = repo.remotes.origin
+    if origin:
+        with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
+            origin.push(refspec=(f":{branch}"))
+
+
+def _get_commit_messages(repo, branch, max_count=5):
+    """
+    Extract commit messages
+    """
+    return [commit.message for commit in repo.iter_commits(branch, max_count=max_count)][::-1]
+
+
+def test_persistence(test_document, persistent_data):
+    """
+    Test inserting one document
+    """
+
+    # pylint: disable=too-many-locals
+    persistent, branch, remote_url, ssh_key_path = persistent_data
+
+    # use a dynamic name for the document
+    doc_name = test_document["name"] = str(ObjectId())
+    persistent.insert_one(collection_name="data", document=test_document)
+
+    # create another GitDB instance and try to read the saved document
+    persistent2 = GitDB(
+        branch=branch,
+        remote_url=remote_url,
+        key_path=ssh_key_path,
+    )
+    persistent2.insert_doc_name_func("data", lambda doc: doc["name"])
+    doc = persistent2.find_one(collection_name="data", query_filter={"name": doc_name})
+    assert doc == test_document
+
+    # test transaction (normal case)
+    messages_first = _get_commit_messages(persistent.repo, branch)
+    expected_clean_status = f"On branch {branch}\nnothing to commit, working tree clean"
+    with persistent.start_transaction() as session:
+        doc1_id = session.insert_one(collection_name="data1", document=doc)
+        doc2_id = session.insert_one(collection_name="data2", document=doc)
+
+    # When start a transaction, it did a shallow fetch first. Therefore, not all commits are kept.
+    messages_second = _get_commit_messages(persistent.repo, branch)
+    assert persistent.repo.git.status() == expected_clean_status
+    assert messages_second == (
+        messages_first[-1:]
+        + [f"Create document: data1/{doc1_id}\nCreate document: data2/{doc2_id}\n"]
+    )
+
+    # test transaction failure within the context
+    with pytest.raises(AssertionError):
+        with persistent.start_transaction() as session:
+            session.insert_one(collection_name="data3", document=doc)
+            session.insert_one(collection_name="data4", document=doc)
+            assert False
+
+    # check no commit is written
+    assert _get_commit_messages(persistent.repo, branch) == messages_second[-1:]
+    assert persistent.repo.git.status() == expected_clean_status
+
+    # test push failure
+    with pytest.raises(AssertionError):
+        with patch("featurebyte.persistent.git.GitDB._push") as mock_push:
+            # each insert calls a _sync_push, only the third time raises an exception
+            # to simulate the push failure after context
+            mock_push.side_effect = [None, None, AssertionError]
+            with persistent.start_transaction() as session:
+                session.insert_one(collection_name="data3", document=doc)
+                session.insert_one(collection_name="data4", document=doc)
+
+    # check no commit is written
+    assert _get_commit_messages(persistent.repo, branch) == messages_second[-1:]
+    assert persistent.repo.git.status() == expected_clean_status

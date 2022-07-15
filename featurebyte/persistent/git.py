@@ -4,13 +4,14 @@ Persistent storage using Git
 # pylint: disable=protected-access
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable, List, Literal, MutableMapping, Optional, Tuple
+from typing import Any, Callable, Iterable, Iterator, List, Literal, MutableMapping, Optional, Tuple
 
 import functools
 import json
 import os
 import shutil
 import tempfile
+from contextlib import contextmanager
 from enum import Enum
 
 from bson import json_util
@@ -72,6 +73,8 @@ class GitDB(Persistent):
     Persistent storage using Git
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(
         self, branch: str = "main", remote_url: Optional[str] = None, key_path: Optional[str] = None
     ) -> None:
@@ -87,6 +90,7 @@ class GitDB(Persistent):
         key_path: Optional[str]
             Path to private key
         """
+
         self._local_path = tempfile.mkdtemp()
 
         if not remote_url:
@@ -101,6 +105,8 @@ class GitDB(Persistent):
         self._origin: Optional[Remote] = None
         self._working_tree_dir: str = str(repo.working_tree_dir)
         self._collection_to_doc_name_func_map: dict[str, DocNameFuncType] = {}
+        self._transaction_lock = False
+        self._transaction_messages: list[str] = []
 
         if remote_url:
             # create remote origin if does not exist
@@ -175,6 +181,20 @@ class GitDB(Persistent):
         """
         return self._ssh_cmd
 
+    def _handle_commit_message(self, message: str) -> None:
+        """
+        Handle commit message
+
+        Parameters
+        ----------
+        message: str
+            Commit message
+        """
+        if self._transaction_lock:
+            self._transaction_messages.append(message)
+        else:
+            self.repo.git.commit("-m", message)
+
     def _fetch(self) -> None:
         """
         Fetch latest changes from remote
@@ -187,8 +207,8 @@ class GitDB(Persistent):
         """
         Reset with latest changes from remote
         """
-        # skip if no remote
-        if not self._origin:
+        # skip if no remote or within transaction
+        if not self._origin or self._transaction_lock:
             return
 
         logger.debug("Reset branch to remote", extra={"branch": self._branch})
@@ -200,7 +220,7 @@ class GitDB(Persistent):
         Push latest changes to remote
         """
         # skip if no remote
-        if not self._origin:
+        if not self._origin or self._transaction_lock:
             return
 
         logger.debug("Push changes to remote branch", extra={"branch": self._branch})
@@ -272,6 +292,7 @@ class GitDB(Persistent):
         DuplicateDocumentError
             Document exists
         """
+        # pylint: disable=too-many-locals
         # ensure collection dir exists
         collection_path = self._get_collection_path(collection_name)
         if not os.path.exists(collection_path):
@@ -303,10 +324,11 @@ class GitDB(Persistent):
             old_doc_path = self._get_doc_path(collection_path, doc_name)
             if os.path.exists(old_doc_path):
                 self.repo.git.mv(old_doc_path, new_doc_path)
-                self.repo.git.commit(
-                    "-m",
-                    f"{GitDocumentAction.RENAME} document: {collection_name}/{doc_name} -> {collection_name}/{new_doc_name}",
+                commit_message = (
+                    f"{GitDocumentAction.RENAME} document: {collection_name}/{doc_name} -> "
+                    f"{collection_name}/{new_doc_name}"
                 )
+                self._handle_commit_message(commit_message)
                 doc_exists = True
 
         action = GitDocumentAction.UPDATE if doc_exists else GitDocumentAction.CREATE
@@ -317,7 +339,8 @@ class GitDB(Persistent):
         # commit changes
         self.repo.git.add([new_doc_path])
         # put name in commit
-        self.repo.git.commit("-m", f"{action} document: {collection_name}/{new_doc_name}")
+        commit_message = f"{action} document: {collection_name}/{new_doc_name}"
+        self._handle_commit_message(commit_message)
 
         return doc_id
 
@@ -348,9 +371,8 @@ class GitDB(Persistent):
         # commit changes
         self.repo.git.rm([doc_path])
         # put name in commit
-        self.repo.git.commit(
-            "-m", f"{GitDocumentAction.DELETE} document: {collection_name}/{doc_name}"
-        )
+        commit_message = f"{GitDocumentAction.DELETE} document: {collection_name}/{doc_name}"
+        self._handle_commit_message(commit_message)
 
     def _find_files(
         self, collection_name: str, query_filter: QueryFilter, multiple: bool
@@ -818,3 +840,49 @@ class GitDB(Persistent):
             query_filter=query_filter,
             multiple=True,
         )
+
+    def _clean_stage_local(self) -> None:
+        """
+        Cleanup staged & local files
+        """
+        self.repo.git.restore("--staged", ".")
+        self.repo.git.clean("-fd")
+
+    @contextmanager
+    def start_transaction(self) -> Iterator[GitDB]:
+        """
+        GitDB transaction session context manager
+
+        Yields
+        ------
+        Iterator[GitDB]
+            GitDB object
+
+        Raises
+        ------
+        Exception
+            When exception happens within context or during git commint/push
+        """
+        self._reset_branch()
+        self._transaction_lock = True
+        self._transaction_messages = []
+        try:
+            yield self
+        except Exception as exc:
+            self._transaction_messages = []
+            self._clean_stage_local()
+            self._reset_branch()
+            raise exc
+        finally:
+            self._transaction_lock = False
+            if self._transaction_messages:
+                try:
+                    commit_message = "\n".join(self._transaction_messages)
+                    self._handle_commit_message(commit_message)
+                    self._push()
+                except Exception as exc:
+                    self._clean_stage_local()
+                    self._reset_branch()
+                    raise exc
+
+            self._transaction_messages = []

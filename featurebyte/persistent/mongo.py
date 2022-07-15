@@ -3,7 +3,9 @@ Persistent storage using MongoDB
 """
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Literal, Optional, Tuple
+from typing import Any, Iterable, Iterator, List, Literal, Optional, Tuple
+
+from contextlib import contextmanager
 
 import pymongo
 from bson.objectid import ObjectId
@@ -22,9 +24,6 @@ class MongoDB(Persistent):
     Persistent storage using MongoDB
     """
 
-    _client: pymongo.mongo_client.MongoClient[Any]
-    _db: pymongo.database.Database[Any]
-
     def __init__(self, uri: str, database: str = "featurebyte") -> None:
         """
         Constructor for MongoDB
@@ -36,8 +35,10 @@ class MongoDB(Persistent):
         database: str
             Database to use
         """
-        self._client = pymongo.MongoClient(uri)  # type: ignore
-        self._db = self._client[database]
+        self._database = database
+        self._client: pymongo.mongo_client.MongoClient[Any] = pymongo.MongoClient(uri)  # type: ignore
+        self._db: pymongo.database.Database[Any] = self._client[self._database]
+        self._session: Any = None
 
     def insert_one(self, collection_name: str, document: Document) -> ObjectId:
         """
@@ -61,7 +62,7 @@ class MongoDB(Persistent):
             Document already exist
         """
         try:
-            result = self._db[collection_name].insert_one(document)
+            result = self._db[collection_name].insert_one(document, session=self._session)
             return ObjectId(result.inserted_id)
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
@@ -88,7 +89,7 @@ class MongoDB(Persistent):
             Document already exist
         """
         try:
-            result = self._db[collection_name].insert_many(documents)
+            result = self._db[collection_name].insert_many(documents, session=self._session)
             return result.inserted_ids
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
@@ -180,7 +181,11 @@ class MongoDB(Persistent):
         int
             Number of records modified
         """
-        return self._db[collection_name].update_one(query_filter, update).modified_count
+        return (
+            self._db[collection_name]
+            .update_one(query_filter, update, session=self._session)
+            .modified_count
+        )
 
     def update_many(
         self,
@@ -205,7 +210,11 @@ class MongoDB(Persistent):
         int
             Number of records modified
         """
-        return self._db[collection_name].update_many(query_filter, update).modified_count
+        return (
+            self._db[collection_name]
+            .update_many(query_filter, update, session=self._session)
+            .modified_count
+        )
 
     def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
@@ -223,7 +232,9 @@ class MongoDB(Persistent):
         int
             Number of records deleted
         """
-        return self._db[collection_name].delete_one(query_filter).deleted_count
+        return (
+            self._db[collection_name].delete_one(query_filter, session=self._session).deleted_count
+        )
 
     def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
@@ -241,4 +252,22 @@ class MongoDB(Persistent):
         int
             Number of records deleted
         """
-        return self._db[collection_name].delete_many(query_filter).deleted_count
+        return (
+            self._db[collection_name].delete_many(query_filter, session=self._session).deleted_count
+        )
+
+    @contextmanager
+    def start_transaction(self) -> Iterator[MongoDB]:
+        """
+        MongoDB transaction session context manager
+
+        Yields
+        ------
+        Iterator[MongoDB]
+            MongoDB object
+        """
+        with self._client.start_session() as session:
+            with session.start_transaction():
+                self._session = session
+                yield self
+                self._session = None
