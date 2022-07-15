@@ -865,8 +865,8 @@ class GitDB(Persistent):
             yield self
         except Exception:  # pylint: disable=broad-except
             self._transaction_messages = []
-            self._reset_branch()
             self._clean_stage_local()
+            self._reset_branch()
         finally:
             self._transaction_lock = False
             if self._transaction_messages:
