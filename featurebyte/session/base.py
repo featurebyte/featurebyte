@@ -118,17 +118,20 @@ class BaseSession(BaseModel):
         cursor = self.connection.cursor()
         try:
             cursor.execute(query)
-            import time
-
-            tic = time.time()
             result = self.fetch_query_result_impl(cursor)
-            elapsed = time.time() - tic
-            print(f"Fetching query result took {elapsed:.2f}s")
             return result
         finally:
             cursor.close()
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
+        """
+        Fetch the result of executed SQL query from connection cursor
+
+        Parameters
+        ----------
+        cursor : Any
+            The connection cursor
+        """
         if cursor.description:
             all_rows = cursor.fetchall()
             columns = [row[0] for row in cursor.description]

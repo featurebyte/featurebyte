@@ -209,4 +209,5 @@ def run_and_test_get_historical_features(config, feature_group):
             "COUNT_24h": [9.0, 7.0, 2.0, 5.0, 5.0, 4.0, 4.0, 7.0, 5.0, np.nan],
         }
     )
-    pd.testing.assert_frame_equal(df_historical_features, df_historical_expected)
+    # When using fetch_pandas_all(), the dtype of "USER_ID" column is int8 (int64 otherwise)
+    pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)

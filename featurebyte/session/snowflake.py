@@ -102,13 +102,24 @@ class SnowflakeSession(BaseSession):
         return output
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
+        """
+        Fetch the result of executed SQL query from connection cursor
+
+        This is an implementation specific to Snowflake that is more efficient when applicable.
+
+        Parameters
+        ----------
+        cursor : Any
+            The connection cursor
+        """
         if cursor.description:
             try:
-                return cursor.fetch_pandas_all()
+                result = cursor.fetch_pandas_all()
+                return result
             except NotSupportedError:
-                logger.debug(
-                    "fetch_pandas_all not supported, falling back to default implementation"
-                )
+                # fetch_pandas_all() raises NotSupportedError when: 1) The executed query does not
+                # support it. Currently, only SELECT statements are supported; 2) pyarrow is not
+                # available as a dependency.
                 return super().fetch_query_result_impl(cursor)
         return None
 
