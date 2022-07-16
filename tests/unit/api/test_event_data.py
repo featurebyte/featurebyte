@@ -80,12 +80,12 @@ def save_event_data_fixture(mock_get_persistent, snowflake_event_data):
 
 
 def test_from_tabular_source(
-    snowflake_database_table, config, event_data_dict, mock_get_persistent
+    snowflake_database_table, config, event_data_dict, mock_config_path_env, mock_get_persistent
 ):
     """
     Test EventData creation using tabular source
     """
-    _ = mock_get_persistent
+    _ = mock_config_path_env, mock_get_persistent
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",

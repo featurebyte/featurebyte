@@ -8,11 +8,11 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.util import get_entity, get_event_data
 
 
-def test_get_entity(mock_get_persistent):
+def test_get_entity(mock_config_path_env, mock_get_persistent):
     """
     Test get_entity function
     """
-    _ = mock_get_persistent
+    _ = mock_config_path_env, mock_get_persistent
 
     # create entities & save to persistent
     cust_entity = Entity.create(name="customer", serving_name="cust_id")

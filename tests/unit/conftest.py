@@ -53,6 +53,10 @@ def config_file_fixture():
                 "filename": "some_filename.sqlite",
             },
         ],
+        "git": {
+            "remote_url": "git@github.com:account repo.git",
+            "branch": "test",
+        },
     }
     with tempfile.NamedTemporaryFile("w") as file_handle:
         file_handle.write(yaml.dump(config_dict))
@@ -183,11 +187,13 @@ def snowflake_database_table_fixture(
 
 
 @pytest.fixture(name="snowflake_event_data")
-def snowflake_event_data_fixture(snowflake_database_table, config, mock_get_persistent):
+def snowflake_event_data_fixture(
+    snowflake_database_table, config, mock_config_path_env, mock_get_persistent
+):
     """
     EventData object fixture
     """
-    _ = mock_get_persistent
+    _ = mock_config_path_env, mock_get_persistent
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",

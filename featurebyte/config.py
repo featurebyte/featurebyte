@@ -1,20 +1,24 @@
 """
 Read configurations from ini file
 """
-# pylint: disable=too-few-public-methods
-from typing import Any, Dict, Optional, Pattern
+from typing import Any, Dict, Optional, Pattern, Union
 
 import os
 import re
 from enum import Enum
+from http import HTTPStatus
 from pathlib import Path
 
+# pylint: disable=too-few-public-methods
+import requests
 import yaml
 from fastapi.testclient import TestClient
-from pydantic import BaseSettings, ConstrainedStr
+from pydantic import BaseSettings, ConstrainedStr, HttpUrl
 from pydantic.error_wrappers import ValidationError
+from requests import Response
 
 from featurebyte.enum import SourceType
+from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import FeatureStoreModel
 
@@ -64,6 +68,146 @@ class GitSettings(BaseSettings):
     branch: str
 
 
+class FeatureByteSettings(BaseSettings):
+    """
+    Settings for FeatureByte Application API access
+    """
+
+    api_url: HttpUrl
+    api_token: str
+
+
+class APIClient:
+    """
+    Http client for accessing the FeatureByte Application API
+    """
+
+    def __init__(self, api_url: str, api_token: str) -> None:
+        """
+        Initialize api settings
+
+        Parameters
+        ----------
+        api_url: str
+            URL of FeatureByte API service
+        api_token: str
+            API token to used for authentication
+
+        Raises
+        ------
+        InvalidSettingsError
+            Invalid settings
+        """
+        self._api_url = api_url
+        self._headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {api_token}",
+        }
+        response = self.get("/user/me")
+        if response.status_code != HTTPStatus.OK:
+            raise InvalidSettingsError("Authentication failed")
+
+    def _request(self, method: str, url: str, *args: Any, **kwargs: Any) -> Response:
+        """
+        Make http request
+        Parameters
+        ----------
+        method: str
+            Request method (GET, POST, PATCH, DELETE)
+        url: str
+            URL to make request to
+        *args: Any
+            Additional positional arguments
+        **kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        Response
+            HTTP Response
+        """
+        custom_headers = kwargs.pop("headers", {})
+        return requests.request(
+            method,
+            f"{self._api_url}{url}",
+            *args,
+            **kwargs,
+            headers={**self._headers, **custom_headers},
+        )
+
+    def get(self, *args: Any, **kwargs: Any) -> Response:
+        """
+        Make GET request
+
+        Parameters
+        ----------
+        *args: Any
+            Additional positional arguments
+        **kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        Response
+            HTTP Response
+        """
+        return self._request("GET", *args, **kwargs)
+
+    def post(self, *args: Any, **kwargs: Any) -> Response:
+        """
+        Make POST request
+
+        Parameters
+        ----------
+        *args: Any
+            Additional positional arguments
+        **kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        Response
+            HTTP Response
+        """
+        return self._request("POST", *args, **kwargs)
+
+    def patch(self, *args: Any, **kwargs: Any) -> Response:
+        """
+        Make PATCH request
+
+        Parameters
+        ----------
+        *args: Any
+            Additional positional arguments
+        **kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        Response
+            HTTP Response
+        """
+        return self._request("PATCH", *args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> Response:
+        """
+        Make DELETE request
+
+        Parameters
+        ----------
+        *args: Any
+            Additional positional arguments
+        **kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        Response
+            HTTP Response
+        """
+        return self._request("DELETE", *args, **kwargs)
+
+
 class Configurations:
     """
     FeatureByte SDK settings. Contains general settings, database sources and credentials.
@@ -84,6 +228,8 @@ class Configurations:
                 "FEATUREBYTE_CONFIG_PATH", os.path.join(os.environ["HOME"], ".featurebyte.yaml")
             )
         )
+        self.git: Optional[GitSettings] = None
+        self.featurebyte: Optional[FeatureByteSettings] = None
         self.settings: Dict[str, Any] = {}
         self.feature_stores: Dict[str, FeatureStoreModel] = {}
         self.credentials: Credentials = {}
@@ -102,8 +248,8 @@ class Configurations:
 
         Raises
         ------
-        ValueError
-            Parsing Error
+        InvalidSettingsError
+            Invalid Settings Error
         """
         if not os.path.exists(path):
             return
@@ -137,7 +283,7 @@ class Configurations:
                         )
                     self.credentials[feature_store] = credentials
             except ValidationError as exc:
-                raise ValueError(f"Invalid settings for datasource: {name}") from exc
+                raise InvalidSettingsError(f"Invalid settings for datasource: {name}") from exc
 
         logging_settings = self.settings.pop("logging", None)
         if logging_settings:
@@ -149,16 +295,40 @@ class Configurations:
             # parse git settings
             self.git = GitSettings(**git_settings)
 
-    def get_client(self) -> TestClient:
+        featurebyte_settings = self.settings.pop("featurebyte", None)
+        if featurebyte_settings:
+            # parse featurebyte settings
+            self.featurebyte = FeatureByteSettings(**featurebyte_settings)
+
+    def get_client(self) -> Union[TestClient, APIClient]:
         """
         Retrieve API client
 
         Returns
         -------
-        TestClient
+        Union[TestClient, APIClient]
+            API client
+
+        Raises
+        ------
+        InvalidSettingsError
+            Invalid settings
         """
         # pylint: disable=import-outside-toplevel,cyclic-import
         from featurebyte.app import app
+        from featurebyte.logger import logger
 
-        client = TestClient(app)
+        client: Union[TestClient, APIClient]
+
+        if self.featurebyte:
+            if self.git:
+                logger.warning("Ignoring Git settings in configurations")
+            client = APIClient(
+                api_url=self.featurebyte.api_url, api_token=self.featurebyte.api_token
+            )
+        elif self.git:
+            client = TestClient(app)
+        else:
+            raise InvalidSettingsError("Git or FeatureByte API settings must be specified")
+
         return client
