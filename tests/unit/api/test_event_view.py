@@ -26,11 +26,10 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
     yield event_view
 
 
-def test_from_event_data(snowflake_event_data, mock_get_persistent):
+def test_from_event_data(snowflake_event_data):
     """
     Test from_event_data
     """
-    _ = mock_get_persistent
     event_view_first = EventView.from_event_data(snowflake_event_data)
     assert event_view_first.tabular_source == snowflake_event_data.tabular_source
     assert event_view_first.node == snowflake_event_data.node
@@ -155,11 +154,10 @@ def test_setitem__str_key_series_value(snowflake_event_view):
     }
 
 
-def test_setting_column_as_entity__on_original_frame(snowflake_event_view, mock_get_persistent):
+def test_setting_column_as_entity__on_original_frame(snowflake_event_view):
     """
     Test setting a specific column as entity
     """
-    _ = mock_get_persistent
     cust_entity = Entity.create(name="customer", serving_name="cust_id")
 
     # test on original column
@@ -190,11 +188,10 @@ def test_setting_column_as_entity__on_original_frame(snowflake_event_view, mock_
     assert snowflake_event_view.column_entity_map == {"cust_id": str(cust_entity.id)}
 
 
-def test_setting_column_as_entity__on_sub_frame(snowflake_event_view, mock_get_persistent):
+def test_setting_column_as_entity__on_sub_frame(snowflake_event_view):
     """
     Test setting a specific column as entity (on sub-frame)
     """
-    _ = mock_get_persistent
     cust_entity = Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     sub_view_first = snowflake_event_view[["cust_id", "col_int"]]

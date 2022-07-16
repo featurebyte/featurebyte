@@ -54,23 +54,11 @@ def event_data_dict_fixture():
     }
 
 
-@pytest.fixture(name="mock_get_persistent")
-def mock_get_persistent_function(git_persistent):
-    """
-    Mock GitDB in featurebyte.app
-    """
-    with patch("featurebyte.app._get_persistent") as mock_persistent:
-        persistent, _ = git_persistent
-        mock_persistent.return_value = persistent
-        yield mock_persistent
-
-
 @pytest.fixture(name="saved_event_data")
-def save_event_data_fixture(mock_get_persistent, snowflake_event_data):
+def save_event_data_fixture(snowflake_event_data):
     """
     Saved event data fixture
     """
-    _ = mock_get_persistent
     snowflake_event_data.save_as_draft()
     assert snowflake_event_data.status == EventDataStatus.DRAFT
     assert isinstance(snowflake_event_data.created_at, datetime)
@@ -79,13 +67,10 @@ def save_event_data_fixture(mock_get_persistent, snowflake_event_data):
     yield snowflake_event_data
 
 
-def test_from_tabular_source(
-    snowflake_database_table, config, event_data_dict, mock_config_path_env, mock_get_persistent
-):
+def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
     """
     Test EventData creation using tabular source
     """
-    _ = mock_config_path_env, mock_get_persistent
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
@@ -196,11 +181,10 @@ def test_event_data_column__not_exists(snowflake_event_data):
     assert expected in str(exc.value)
 
 
-def test_event_data_column__as_entity(snowflake_event_data, mock_get_persistent):
+def test_event_data_column__as_entity(snowflake_event_data):
     """
     Test setting a column in the event data as entity
     """
-    _ = mock_get_persistent
     assert snowflake_event_data.column_entity_map is None
 
     # create entity
@@ -224,13 +208,10 @@ def test_event_data_column__as_entity(snowflake_event_data, mock_get_persistent)
     assert snowflake_event_data.column_entity_map == {}
 
 
-def test_event_data_column__as_entity__saved_event_data(
-    saved_event_data, mock_get_persistent, config
-):
+def test_event_data_column__as_entity__saved_event_data(saved_event_data, config):
     """
     Test setting a column in the event data as entity (saved event data)
     """
-    _ = mock_get_persistent
     assert saved_event_data.column_entity_map is None
 
     # create entity
@@ -247,12 +228,12 @@ def test_event_data_column__as_entity__saved_event_data(
 
 
 def test_event_data_column__as_entity__saved_event_data__record_update_exception(
-    saved_event_data, mock_get_persistent, config
+    saved_event_data, config
 ):
     """
     Test setting a column in the event data as entity (record update exception)
     """
-    _ = mock_get_persistent, config
+    _ = config
 
     Entity.create(name="customer", serving_name="cust_id")
 
@@ -278,11 +259,10 @@ def test_event_data__save_as_draft__exceptions(saved_event_data):
             saved_event_data.save_as_draft()
 
 
-def test_event_data__info__not_saved_event_data(mock_get_persistent, snowflake_event_data):
+def test_event_data__info__not_saved_event_data(snowflake_event_data):
     """
     Test info on not-saved event data
     """
-    _ = mock_get_persistent
     snowflake_event_data.event_timestamp_column = "some_event_timestamp"
     snowflake_event_data.record_creation_date_column = "some_random_date"
     output = snowflake_event_data.info()
@@ -322,11 +302,10 @@ def test_event_data__info__not_saved_event_data(mock_get_persistent, snowflake_e
             snowflake_event_data.info()
 
 
-def test_event_data__info__saved_event_data(saved_event_data, mock_config_path_env):
+def test_event_data__info__saved_event_data(saved_event_data):
     """
     Test info on saved event data
     """
-    _ = mock_config_path_env
     saved_event_data_dict = saved_event_data.dict()
 
     # perform some modifications

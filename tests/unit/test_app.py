@@ -14,7 +14,7 @@ def test_get_credential():
     """
     Test get_credential works as expected
     """
-    config = Configurations("tests/fixtures/sample_config.yaml")
+    config = Configurations("tests/fixtures/config_git_persistent.yaml")
     db_source = list(config.credentials.keys())[0]
 
     with patch("featurebyte.app.Configurations") as mock_config:
@@ -27,7 +27,7 @@ def test_get_persistent():
     """
     Test get_persistent works as expected
     """
-    config = Configurations("tests/fixtures/sample_config.yaml")
+    config = Configurations("tests/fixtures/config_git_persistent.yaml")
 
     with patch("featurebyte.app.Configurations") as mock_config:
         mock_config.return_value = config

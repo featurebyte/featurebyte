@@ -17,11 +17,10 @@ from featurebyte.models.entity import EntityNameHistoryEntry
 
 
 @pytest.fixture(name="entity")
-def entity_fixture(mock_config_path_env, mock_get_persistent):
+def entity_fixture():
     """
     Entity fixture
     """
-    _ = mock_config_path_env, mock_get_persistent
     yield Entity.create(name="customer", serving_name="cust_id")
 
 

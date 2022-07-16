@@ -1,7 +1,17 @@
 """
 Common fixture for both unit and integration tests
 """
+import os
+from unittest.mock import patch
+
 import pytest
+
+
+@pytest.fixture(autouse=True)
+def mock_settings_env_vars():
+    """Mask default config path to avoid unintentionally using a real configuration file"""
+    with patch.dict(os.environ, {"FEATUREBYTE_CONFIG_PATH": ""}):
+        yield
 
 
 @pytest.fixture(name="feature_model_dict")
