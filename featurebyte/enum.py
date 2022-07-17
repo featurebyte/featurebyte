@@ -3,7 +3,36 @@ This module contains all the enums used across different modules
 """
 from __future__ import annotations
 
+import functools
 from enum import Enum
+
+
+@functools.total_ordering
+class OrderedEnum(Enum):
+    """
+    OrderedEnum class
+
+    Reference: https://github.com/woodruffw/ordered_enum/blob/master/src/ordered_enum/ordered_enum.py
+    """
+
+    @classmethod
+    @functools.lru_cache(None)
+    def _member_list(cls) -> list[OrderedEnum]:
+        return list(cls)
+
+    def __lt__(self, other: OrderedEnum) -> bool:
+        if self.__class__ is other.__class__:
+            member_list = self.__class__._member_list()
+            return member_list.index(self) < member_list.index(other)
+        return NotImplemented
+
+    @classmethod
+    def min(cls) -> OrderedEnum:
+        return min(cls._member_list())
+
+    @classmethod
+    def max(cls) -> OrderedEnum:
+        return max(cls._member_list())
 
 
 class CollectionName(str, Enum):

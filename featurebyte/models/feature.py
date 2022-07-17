@@ -10,7 +10,7 @@ from enum import Enum
 
 from pydantic import BaseModel, StrictStr
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, OrderedEnum
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import Node, QueryGraph
 
@@ -18,22 +18,22 @@ FeatureVersionIdentifier = StrictStr
 FeatureListVersionIdentifier = StrictStr
 
 
-class FeatureReadiness(str, Enum):
+class FeatureReadiness(OrderedEnum):
     """Feature readiness"""
 
-    PRODUCTION_READY = "PRODUCTION_READY"
-    DRAFT = "DRAFT"
-    QUARANTINE = "QUARANTINE"
     DEPRECATED = "DEPRECATED"
+    QUARANTINE = "QUARANTINE"
+    DRAFT = "DRAFT"
+    PRODUCTION_READY = "PRODUCTION_READY"
 
 
-class FeatureListStatus(str, Enum):
+class FeatureListStatus(OrderedEnum):
     """FeatureList status"""
 
-    PUBLISHED = "PUBLISHED"
-    DRAFT = "DRAFT"
-    EXPERIMENTAL = "EXPERIMENTAL"
     DEPRECATED = "DEPRECATED"
+    EXPERIMENTAL = "EXPERIMENTAL"
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
 
 
 class DefaultVersionMode(str, Enum):
