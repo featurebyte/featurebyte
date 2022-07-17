@@ -2,11 +2,9 @@
 This module contains session to EventView integration tests
 """
 from decimal import Decimal
-from unittest import mock
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
@@ -14,17 +12,6 @@ from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
 
 
-@pytest.fixture(name="mock_entity_config")
-def mock_entity_conf_fixture(config):
-    """
-    Mock Configurations in api/entity.py
-    """
-    with mock.patch("featurebyte.config.Configurations") as mock_config:
-        mock_config.return_value = config
-        yield mock_config
-
-
-@pytest.mark.usefixtures("mock_entity_config", "mock_get_persistent")
 def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data, config):
     """
     Test loading event view from sqlite source
@@ -83,7 +70,6 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
 
-@pytest.mark.usefixtures("mock_entity_config", "mock_get_persistent")
 def test_query_object_operation_on_snowflake_source(
     transaction_data_upper_case,
     config,

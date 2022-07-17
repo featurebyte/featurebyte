@@ -1,0 +1,19 @@
+featurestore:
+  - name: "Snowflake FeatureStøre"
+    source_type: snowflake
+    account:  sf_account
+    warehouse: COMPUTE_WH
+    database: FEATUREBYTE
+    sf_schema: FEATUREBYTE
+    credential_type: USERNAME_PASSWORD
+    username: user
+    password: password
+
+git:
+  remote_url: git@github.com:featurebyte/playground.git
+  key_path: ~/.ssh/id_rsa
+  branch: test
+
+logging:
+  level: INFO
+  serialize: True

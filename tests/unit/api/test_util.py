@@ -8,12 +8,10 @@ from featurebyte.api.util import get_entity
 from featurebyte.exception import RecordRetrievalException
 
 
-def test_event_data_column__get_entity_id(mock_get_persistent):
+def test_event_data_column__get_entity_id():
     """
     Test get_entity_id given entity name
     """
-    _ = mock_get_persistent
-
     # create a list of entity for testing
     entity_id_map = {}
     for idx in range(10):

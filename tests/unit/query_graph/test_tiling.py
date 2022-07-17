@@ -122,10 +122,9 @@ def run_groupby_and_get_tile_table_identifier(
     ],
 )
 def test_tile_table_id__agg_parameters(
-    snowflake_event_view, aggregate_kwargs, overrides, expected_tile_id, mock_get_persistent
+    snowflake_event_view, aggregate_kwargs, overrides, expected_tile_id
 ):
     """Test tile table IDs are expected given different aggregate() parameters"""
-    _ = mock_get_persistent
     feature_job_setting_params = {"frequency", "blind_spot", "time_modulo_frequency"}
     for key in overrides:
         if key in feature_job_setting_params:
@@ -157,12 +156,8 @@ def test_tile_table_id__groupby_parameters(
     assert tile_id == expected_tile_id
 
 
-def test_tile_table_id__transformations(
-    snowflake_event_view, aggregate_kwargs, mock_get_persistent
-):
+def test_tile_table_id__transformations(snowflake_event_view, aggregate_kwargs):
     """Test different transformations produce different tile table IDs"""
-
-    _ = mock_get_persistent
     snowflake_event_view["value_10"] = snowflake_event_view["col_float"] * 10
     snowflake_event_view["value_100"] = snowflake_event_view["col_float"] * 100
 

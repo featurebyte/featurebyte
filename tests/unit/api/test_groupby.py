@@ -15,12 +15,10 @@ from featurebyte.api.groupby import EventViewGroupBy
         (["cust_id", "col_text"], ["cust_id", "col_text"]),
     ],
 )
-def test_constructor(snowflake_event_view, keys, expected_keys, mock_get_persistent):
+def test_constructor(snowflake_event_view, keys, expected_keys):
     """
     Test constructor
     """
-    _ = mock_get_persistent
-
     # set key columns as entity
     for column in expected_keys:
         # create an entity for each column
@@ -57,12 +55,10 @@ def test_constructor__wrong_input_type(snowflake_event_view):
     assert expected_msg in str(exc.value)
 
 
-def test_constructor__keys_column_not_found(snowflake_event_view, mock_get_persistent):
+def test_constructor__keys_column_not_found(snowflake_event_view):
     """
     Test cases when column of the keys not found in the EventView
     """
-    _ = mock_get_persistent
-
     with pytest.raises(KeyError) as exc:
         EventViewGroupBy(obj=snowflake_event_view, keys="random_column")
     assert 'Column "random_column" not found!' in str(exc.value)
@@ -74,12 +70,10 @@ def test_constructor__keys_column_not_found(snowflake_event_view, mock_get_persi
     assert 'Column "random_column" not found!' in str(exc.value)
 
 
-def test_groupby__value_column_not_found(snowflake_event_view, mock_get_persistent):
+def test_groupby__value_column_not_found(snowflake_event_view):
     """
     Test cases when value column not found in the EventView
     """
-    _ = mock_get_persistent
-
     Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     grouped = EventViewGroupBy(obj=snowflake_event_view, keys="cust_id")
@@ -91,11 +85,10 @@ def test_groupby__value_column_not_found(snowflake_event_view, mock_get_persiste
     assert expected_msg in str(exc.value)
 
 
-def test_groupby__wrong_method(snowflake_event_view, mock_get_persistent):
+def test_groupby__wrong_method(snowflake_event_view):
     """
     Test not valid aggregation method passed to groupby
     """
-    _ = mock_get_persistent
     Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     grouped = EventViewGroupBy(obj=snowflake_event_view, keys="cust_id")
@@ -105,11 +98,10 @@ def test_groupby__wrong_method(snowflake_event_view, mock_get_persistent):
     assert expected_message in str(exc.value)
 
 
-def test_groupby__not_able_to_infer_feature_job_setting(snowflake_event_view, mock_get_persistent):
+def test_groupby__not_able_to_infer_feature_job_setting(snowflake_event_view):
     """
     Test groupby not able to infer feature job setting
     """
-    _ = mock_get_persistent
     Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     with pytest.raises(ValueError) as exc:
@@ -124,11 +116,10 @@ def test_groupby__not_able_to_infer_feature_job_setting(snowflake_event_view, mo
     )
 
 
-def test_groupby__default_feature_job_setting(snowflake_event_data, mock_get_persistent):
+def test_groupby__default_feature_job_setting(snowflake_event_data):
     """
     Test default job setting from event data is used
     """
-    _ = mock_get_persistent
     snowflake_event_data.update_default_feature_job_setting(
         blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
     )

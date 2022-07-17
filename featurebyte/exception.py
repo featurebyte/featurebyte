@@ -68,3 +68,7 @@ class MissingPointInTimeColumnError(Exception):
 
 class TooRecentPointInTimeError(Exception):
     """Raised when the latest point in time value is too recent in historical requests"""
+
+
+class InvalidSettingsError(Exception):
+    """Raised when configuration has invalid settings"""

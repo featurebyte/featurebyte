@@ -96,7 +96,7 @@ def test_session_manager__wrong_configuration_file(snowflake_feature_store):
     """
     Test exception raised when wrong configuration file is used
     """
-    config = Configurations()
+    config = Configurations("non/existent/path")
     session_manager = SessionManager(credentials=config.credentials)
     with pytest.raises(ValueError) as exc:
         _ = session_manager[snowflake_feature_store]

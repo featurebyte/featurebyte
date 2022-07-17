@@ -34,6 +34,80 @@ from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake, TileSpec
 
 
+@pytest.fixture(name="config", scope="session")
+def config_fixture(sqlite_filename):
+    """
+    Config object for integration testing
+    """
+    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
+    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+
+    config_dict = {
+        "featurestore": [
+            {
+                "name": "snowflake_featurestore",
+                "source_type": "snowflake",
+                "account": os.getenv("SNOWFLAKE_ACCOUNT"),
+                "warehouse": os.getenv("SNOWFLAKE_WAREHOUSE"),
+                "database": os.getenv("SNOWFLAKE_DATABASE"),
+                "sf_schema": temp_schema_name,
+                "credential_type": "USERNAME_PASSWORD",
+                "username": os.getenv("SNOWFLAKE_USER"),
+                "password": os.getenv("SNOWFLAKE_PASSWORD"),
+            },
+            {
+                "name": "sqlite_datasource",
+                "source_type": "sqlite",
+                "filename": sqlite_filename,
+            },
+        ],
+        "git": {
+            "remote_url": "git@github.com:featurebyte/playground.git",
+            "key_path": os.getenv("GIT_SSH_KEY_PATH"),
+            "branch": f"integration-test-{str(ObjectId())}",
+        },
+    }
+    with tempfile.NamedTemporaryFile("w") as file_handle:
+        file_handle.write(yaml.dump(config_dict))
+        file_handle.flush()
+        yield Configurations(config_file_path=file_handle.name)
+
+
+@pytest.fixture(name="mock_get_persistent", scope="session")
+def mock_get_persistent_fixture(config):
+    """
+    Mock get_persistent in featurebyte/app.py
+    """
+    git_db = GitDB(**config.git.dict())
+    git_db.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])
+    with mock.patch("featurebyte.app._get_persistent") as mock_get_persistent:
+        mock_get_persistent.return_value = git_db
+        yield mock_get_persistent
+
+    repo, ssh_cmd, branch = git_db.repo, git_db.ssh_cmd, git_db.branch
+    origin = repo.remotes.origin
+    if origin:
+        with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
+            origin.push(refspec=(f":{branch}"))
+
+
+@pytest.fixture(name="mock_config_path_env", scope="session")
+def mock_config_path_env_fixture(config):
+    """Override default config path for all API tests"""
+    with mock.patch.dict(
+        os.environ,
+        {"FEATUREBYTE_CONFIG_PATH": str(config.config_file_path)},
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
+    """Use these fixtures for all tests"""
+    _ = mock_config_path_env, mock_get_persistent
+    yield
+
+
 @pytest.fixture(name="transaction_data", scope="session")
 def transaction_dataframe():
     """
@@ -82,45 +156,6 @@ def sqlite_filename_fixture(transaction_data):
         transaction_data.to_sql(name="test_table", con=connection, index=False)
         connection.commit()
         yield file_handle.name
-
-
-@pytest.fixture(name="config", scope="session")
-def config_fixture(sqlite_filename):
-    """
-    Config object for integration testing
-    """
-    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
-    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-
-    config_dict = {
-        "featurestore": [
-            {
-                "name": "snowflake_featurestore",
-                "source_type": "snowflake",
-                "account": os.getenv("SNOWFLAKE_ACCOUNT"),
-                "warehouse": os.getenv("SNOWFLAKE_WAREHOUSE"),
-                "database": os.getenv("SNOWFLAKE_DATABASE"),
-                "sf_schema": temp_schema_name,
-                "credential_type": "USERNAME_PASSWORD",
-                "username": os.getenv("SNOWFLAKE_USER"),
-                "password": os.getenv("SNOWFLAKE_PASSWORD"),
-            },
-            {
-                "name": "sqlite_datasource",
-                "source_type": "sqlite",
-                "filename": sqlite_filename,
-            },
-        ],
-        "git": {
-            "remote_url": "git@github.com:featurebyte/playground.git",
-            "key_path": os.getenv("GIT_SSH_KEY_PATH"),
-            "branch": f"integration-test-{str(ObjectId())}",
-        },
-    }
-    with tempfile.NamedTemporaryFile("w") as file_handle:
-        file_handle.write(yaml.dump(config_dict))
-        file_handle.flush()
-        yield Configurations(config_file_path=file_handle.name)
 
 
 @pytest.fixture(name="snowflake_session", scope="session")
@@ -310,29 +345,9 @@ def feature_list_manager(snowflake_session):
     return FeatureListManagerSnowflake(session=snowflake_session)
 
 
-@pytest.fixture(name="mock_get_persistent", scope="session")
-def mock_get_persistent_fixture(config):
-    """
-    Mock get_persistent in featurebyte/app.py
-    """
-    git_db = GitDB(**config.git.dict())
-    git_db.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])
-    with mock.patch("featurebyte.app._get_persistent") as mock_get_persistent:
-        mock_get_persistent.return_value = git_db
-        yield mock_get_persistent
-
-    repo, ssh_cmd, branch = git_db.repo, git_db.ssh_cmd, git_db.branch
-    origin = repo.remotes.origin
-    if origin:
-        with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
-            origin.push(refspec=(f":{branch}"))
-
-
 @pytest.fixture(name="event_data", scope="session")
-def event_data_fixture(config, snowflake_session, mock_get_persistent):
+def event_data_fixture(config, snowflake_session):
     """Fixture for an EventData in integration tests"""
-    _ = mock_get_persistent
-
     table_name = "TEST_TABLE"
     snowflake_database_source = FeatureStore(
         **config.feature_stores["snowflake_featurestore"].dict()
