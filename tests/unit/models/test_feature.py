@@ -4,13 +4,14 @@ Tests for Feature related models
 from datetime import datetime
 
 import pytest
+from bson.objectid import ObjectId
 
 from featurebyte.api.entity import Entity
 from featurebyte.models.feature import (
     FeatureListModel,
     FeatureListStatus,
     FeatureModel,
-    FeatureNameSpace,
+    FeatureNameSpaceModel,
     FeatureReadiness,
 )
 
@@ -22,7 +23,7 @@ def feature_list_model_dict_fixture():
         "name": "my_feature_list",
         "description": None,
         "features": [],
-        "readiness": None,
+        "readiness": "DRAFT",
         "status": None,
         "version": "",
         "created_at": None,
@@ -38,7 +39,7 @@ def feature_name_space_dict_fixture():
         "versions": [],
         "readiness": "DRAFT",
         "created_at": datetime.now(),
-        "default_version": "some_version",
+        "default_version_id": ObjectId(),
         "default_version_mode": "MANUAL",
     }
 
@@ -60,28 +61,36 @@ def test_feature_model(snowflake_event_view, feature_model_dict):
         },
     )
     feature = feature_group["sum_30m"]
-    assert feature.dict() == feature_model_dict
-    feature_json = feature.json()
-    feature_loaded = FeatureModel.parse_raw(feature_json)
+    assert feature.dict(exclude={"id": True}) == feature_model_dict
+    feature_json = feature.json(by_alias=True)
+    loaded_feature = FeatureModel.parse_raw(feature_json)
+    assert loaded_feature.id == feature.id
     for key in feature_model_dict.keys():
-        if not key in {"graph", "node", "lineage", "row_index_lineage"}:
+        if key not in {"graph", "node", "lineage", "row_index_lineage"}:
             # feature_json uses pruned graph, feature uses global graph,
             # therefore the graph & node could be different
-            assert getattr(feature, key) == getattr(feature_loaded, key)
+            assert getattr(feature, key) == getattr(loaded_feature, key)
 
 
 def test_feature_list_model(feature_list_model_dict):
     """Test feature list model"""
     feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
-    feature_list_dict = feature_list.dict()
+    feature_list_dict = feature_list.dict(exclude={"id": True})
     assert feature_list_dict == feature_list_model_dict
+    feature_list_json = feature_list.json(by_alias=True)
+    loaded_feature_list = FeatureListModel.parse_raw(feature_list_json)
+    assert loaded_feature_list == feature_list
 
 
 def test_feature_name_space(feature_name_space_dict):
     """Test feature name space model"""
-    feature_name_space = FeatureNameSpace.parse_obj(feature_name_space_dict)
-    feat_name_space_dict = feature_name_space.dict()
+    feature_name_space = FeatureNameSpaceModel.parse_obj(feature_name_space_dict)
+    feat_name_space_dict = feature_name_space.dict(exclude={"id": True})
     assert feat_name_space_dict == feature_name_space_dict
+    loaded_feature_name_space = FeatureNameSpaceModel.parse_raw(
+        feature_name_space.json(by_alias=True)
+    )
+    assert loaded_feature_name_space == feature_name_space
 
 
 def test_feature_readiness_ordering():

@@ -45,6 +45,7 @@ check-codestyle:
 	poetry run black --diff --check --config pyproject.toml ./
 	find featurebyte tests -iname "*.py" | xargs poetry run pylint --rcfile=.pylintrc
 	find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" | xargs poetry run darglint --verbosity 2
+	find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs poetry run darglint --verbosity 2
 
 .PHONY: mypy
 mypy:

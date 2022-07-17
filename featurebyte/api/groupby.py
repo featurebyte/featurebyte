@@ -176,9 +176,10 @@ class EventViewGroupBy(OpsMixin):
             "names": feature_names,
             "serving_names": self.serving_names,
         }
-        # insert a groupby node to global query graph first,
-        # then used the inserted groupby node to prune the graph & generate updated tile id
-        # finally insert a new groupby node into the graph (actual groupby node to be used)
+        # To generate a consistent tile_id before & after pruning, insert a groupby node to
+        # global query graph first, then used the inserted groupby node to prune the graph &
+        # generate updated tile id. Finally, insert a new groupby node into the graph (actual
+        # groupby node to be used).
         temp_groupby_node, column_var_type_map, _ = self._prepare_node_and_column_metadata(
             node_params, None
         )

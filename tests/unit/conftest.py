@@ -205,7 +205,10 @@ def mock_snowflake_execute_query():
 
 @pytest.fixture(name="snowflake_database_table")
 def snowflake_database_table_fixture(
-    snowflake_connector, snowflake_execute_query, snowflake_feature_store, config
+    snowflake_connector,
+    snowflake_execute_query,
+    snowflake_feature_store,
+    config,
 ):
     """
     DatabaseTable object fixture
@@ -224,14 +227,13 @@ def snowflake_event_data_fixture(snowflake_database_table, config):
     """
     EventData object fixture
     """
-    event_data = EventData.from_tabular_source(
+    yield EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
         event_timestamp_column="event_timestamp",
         record_creation_date_column="created_at",
         credentials=config.credentials,
     )
-    return event_data
 
 
 @pytest.fixture(name="snowflake_event_view")

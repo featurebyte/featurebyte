@@ -58,11 +58,11 @@ def persistent_fixture(request):
 
 
 @pytest.fixture()
-def test_api_client(persistent):
+def test_api_client_persistent(persistent):
     """
     Test API client
     """
     with patch("featurebyte.app._get_persistent") as mock_get_persistent:
         mock_get_persistent.return_value = persistent
         with TestClient(app) as client:
-            yield client
+            yield client, persistent

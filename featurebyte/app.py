@@ -11,6 +11,7 @@ from fastapi import Depends, FastAPI, Request
 
 import featurebyte.routes.entity.api as entity_api
 import featurebyte.routes.event_data.api as event_data_api
+import featurebyte.routes.feature.api as feature_api
 from featurebyte.config import Configurations
 from featurebyte.enum import CollectionName
 from featurebyte.models.credential import Credential
@@ -18,6 +19,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import GitDB, Persistent
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_data.controller import EventDataController
+from featurebyte.routes.feature.controller import FeatureController
 
 app = FastAPI()
 PERSISTENT = None
@@ -26,10 +28,12 @@ PERSISTENT = None
 def _get_persistent() -> Persistent:
     """
     Return global Persistent object
+
     Returns
     -------
     Persistent
         Persistent object
+
     Raises
     ------
     ValueError
@@ -109,7 +113,14 @@ def _get_api_deps(controller: type) -> Callable[[Request], None]:
     return _dep_injection_func
 
 
-app.include_router(
-    event_data_api.router, dependencies=[Depends(_get_api_deps(EventDataController))]
-)
-app.include_router(entity_api.router, dependencies=[Depends(_get_api_deps(EntityController))])
+# add routers into the app
+resource_api_controller_pairs = [
+    (event_data_api, EventDataController),
+    (entity_api, EntityController),
+    (feature_api, FeatureController),
+]
+for resource_api, resource_controller in resource_api_controller_pairs:
+    app.include_router(
+        resource_api.router,
+        dependencies=[Depends(_get_api_deps(resource_controller))],
+    )

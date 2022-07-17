@@ -43,6 +43,7 @@ def test_feature_group__getitem__list_of_str(feature_group):
     feature_group_subset = feature_group[["sum_2h", "sum_1d"]]
     assert isinstance(feature_group_subset, FeatureGroup)
     assert feature_group_subset.protected_columns == {"cust_id"}
+    assert feature_group_subset.inherited_columns == {"cust_id"}
     assert feature_group_subset.entity_identifiers == ["cust_id"]
     assert feature_group_subset.inception_node == feature_group.inception_node
 
@@ -143,7 +144,9 @@ def test_feature_deserialization(float_feature, float_feature_dict, snowflake_ev
     Test feature deserialization
     """
     global_graph_dict = float_feature.graph.dict()
+    float_feature_dict["_id"] = float_feature_dict.pop("id")
     deserialized_float_feature = Feature.parse_obj(float_feature_dict)
+    assert deserialized_float_feature.id == float_feature.id
     assert deserialized_float_feature.name == float_feature.name
     assert deserialized_float_feature.var_type == float_feature.var_type
     assert deserialized_float_feature.lineage == float_feature.lineage
@@ -169,9 +172,10 @@ def test_feature_deserialization(float_feature, float_feature_dict, snowflake_ev
             "time_modulo_frequency": "5m",
         },
     )
-    same_float_feature_dict = feature_group["sum_1d"].dict()
+    same_float_feature_dict = feature_group["sum_1d"].dict(exclude={"id": True})
     tile_id2 = float_feature.graph.nodes["groupby_2"]["parameters"]["tile_id"]
     assert tile_id1 != tile_id2
+    float_feature_dict.pop("_id")
     assert float_feature_dict == same_float_feature_dict
 
 

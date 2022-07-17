@@ -119,5 +119,6 @@ def feature_model_dict_feature():
         "version": None,
         "is_default": None,
         "online_enabled": None,
+        "event_data_ids": [],
         "created_at": None,
     }

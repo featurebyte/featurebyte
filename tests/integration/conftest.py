@@ -321,7 +321,7 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config):
     mock_feature.readiness = FeatureReadiness.DRAFT.value
     mock_feature.is_default = True
 
-    mock_feature_list = FeatureListModel(
+    feature_list = FeatureListModel(
         name="feature_list1",
         description="test_description1",
         features=[(mock_feature.name, mock_feature.version)],
@@ -330,7 +330,7 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config):
         version="v1",
     )
 
-    yield mock_feature_list
+    yield feature_list
 
     snowflake_session.execute_query("DELETE FROM FEATURE_LIST_REGISTRY")
     snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")

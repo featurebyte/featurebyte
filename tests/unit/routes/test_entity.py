@@ -18,19 +18,21 @@ def entity_dict_fixture():
 
 
 @pytest.fixture(name="create_success_response")
-def create_success_response_fixture(test_api_client, entity_dict):
+def create_success_response_fixture(test_api_client_persistent, entity_dict):
     """
     Post create success response fixture
     """
+    test_api_client, _ = test_api_client_persistent
     response = test_api_client.post("/entity", json=entity_dict)
     return response
 
 
 @pytest.fixture(name="create_multiple_entries")
-def create_multiple_entries_fixture(test_api_client):
+def create_multiple_entries_fixture(test_api_client_persistent):
     """
     Create multiple entries to the persistent
     """
+    test_api_client, _ = test_api_client_persistent
     res_region = test_api_client.post("/entity", json={"name": "region", "serving_name": "region"})
     res_cust = test_api_client.post("/entity", json={"name": "customer", "serving_name": "cust_id"})
     res_prod = test_api_client.post("/entity", json={"name": "product", "serving_name": "prod_id"})
@@ -54,10 +56,11 @@ def test_create_201(create_success_response):
     assert datetime.fromisoformat(result.pop("created_at")) < utcnow
 
 
-def test_create_409(create_success_response, test_api_client, entity_dict):
+def test_create_409(create_success_response, test_api_client_persistent, entity_dict):
     """
     Test entity creation (conflict)
     """
+    test_api_client, _ = test_api_client_persistent
     _ = create_success_response
     response = test_api_client.post("/entity", json=entity_dict)
     assert response.status_code == HTTPStatus.CONFLICT
@@ -69,10 +72,11 @@ def test_create_409(create_success_response, test_api_client, entity_dict):
     assert response.json() == {"detail": 'Entity serving name "cust_id" already exists.'}
 
 
-def test_create_422(test_api_client, entity_dict):
+def test_create_422(test_api_client_persistent, entity_dict):
     """
     Test entity creation (unprocessable entity)
     """
+    test_api_client, _ = test_api_client_persistent
     entity_dict["serving_name"] = ["cust_id"]
     response = test_api_client.post("/entity", json=entity_dict)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
@@ -87,10 +91,11 @@ def test_create_422(test_api_client, entity_dict):
     }
 
 
-def test_list_200(create_multiple_entries, test_api_client):
+def test_list_200(create_multiple_entries, test_api_client_persistent):
     """
     Test list entities (success)
     """
+    test_api_client, _ = test_api_client_persistent
     _ = create_multiple_entries
     response = test_api_client.get("/entity")
     assert response.status_code == HTTPStatus.OK
@@ -158,10 +163,11 @@ def test_get_404(test_api_client):
 
 
 @freeze_time("2022-07-01")
-def test_update_200(create_success_response, test_api_client):
+def test_update_200(create_success_response, test_api_client_persistent):
     """
     Test entity update (success)
     """
+    test_api_client, _ = test_api_client_persistent
     response_dict = create_success_response.json()
     entity_id = response_dict["id"]
     response = test_api_client.patch(f"/entity/{entity_id}", json={"name": "Customer"})
@@ -180,20 +186,22 @@ def test_update_200(create_success_response, test_api_client):
     assert response.json() == result
 
 
-def test_update_404(test_api_client):
+def test_update_404(test_api_client_persistent):
     """
     Test entity update (not found)
     """
+    test_api_client, _ = test_api_client_persistent
     unknown_entity_id = ObjectId()
     response = test_api_client.patch(f"/entity/{unknown_entity_id}", json={"name": "random_name"})
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {"detail": f'Entity ID "{unknown_entity_id}" not found.'}
 
 
-def test_update_409(create_multiple_entries, test_api_client):
+def test_update_409(create_multiple_entries, test_api_client_persistent):
     """ "
     Test entity update (conflict)
     """
+    test_api_client, _ = test_api_client_persistent
     response = test_api_client.patch(
         f"/entity/{create_multiple_entries[0]}", json={"name": "customer"}
     )
@@ -201,10 +209,11 @@ def test_update_409(create_multiple_entries, test_api_client):
     assert response.json() == {"detail": 'Entity name "customer" already exists.'}
 
 
-def test_update_422(test_api_client):
+def test_update_422(test_api_client_persistent):
     """
     Test entity update (unprocessable entity)
     """
+    test_api_client, _ = test_api_client_persistent
     unknown_entity_id = ObjectId()
     response = test_api_client.patch(f"/entity/{unknown_entity_id}")
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
