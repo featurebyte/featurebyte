@@ -20,10 +20,10 @@ class OrderedEnum(Enum):
     def _member_list(cls) -> list[OrderedEnum]:
         return list(cls)
 
-    def __lt__(self, other: OrderedEnum) -> bool:
+    def __lt__(self, other: object) -> bool:
         if self.__class__ is other.__class__:
             member_list = self.__class__._member_list()
-            return member_list.index(self) < member_list.index(other)
+            return member_list.index(self) < member_list.index(other)  # type: ignore
         return NotImplemented
 
     @classmethod
@@ -55,12 +55,12 @@ class OrderedStrEnum(OrderedEnum):
     Ordered String Enum class
     """
 
-    def __eq__(self, other: OrderedStrEnum | str) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, str):
             return super().__eq__(type(self)(other))
         return super().__eq__(other)
 
-    def __lt__(self, other: OrderedStrEnum | str) -> bool:
+    def __lt__(self, other: object) -> bool:
         if isinstance(other, str):
             return super().__lt__(type(self)(other))
         return super().__lt__(other)

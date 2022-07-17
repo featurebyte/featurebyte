@@ -6,13 +6,7 @@ from datetime import datetime
 import pytest
 
 from featurebyte.api.entity import Entity
-from featurebyte.models.feature import (
-    DefaultVersionMode,
-    FeatureListModel,
-    FeatureModel,
-    FeatureNameSpace,
-    FeatureReadiness,
-)
+from featurebyte.models.feature import FeatureListModel, FeatureModel, FeatureNameSpace
 
 
 @pytest.fixture(name="feature_list_model_dict")
