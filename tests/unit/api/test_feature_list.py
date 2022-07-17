@@ -154,7 +154,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         ],
         "name": "my_feature_list",
         "readiness": None,
-        "status": FeatureListStatus.DRAFT,
+        "status": "DRAFT",
     }
     for obj in flist.feature_objects:
         assert isinstance(obj, Feature)
