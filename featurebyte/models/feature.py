@@ -112,8 +112,6 @@ class FeatureModel(BaseModel):
         Feature readiness
     version: FeatureVersionIdentifier
         Feature version
-    tile_specs: Optional[List[TileSpec]]
-        Tile generation specifications for this feature
     is_default: Optional[bool]
         Whether to this feature version default for the feature namespace
     online_enabled: Optional[bool]

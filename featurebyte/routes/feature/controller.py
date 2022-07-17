@@ -62,10 +62,10 @@ class FeatureController:
         )
 
         with persistent.start_transaction() as session:
-            conflict_entity = session.find_one(
+            conflict_feature = session.find_one(
                 collection_name=cls.collection_name, query_filter={"name": data.name}
             )
-            if conflict_entity:
+            if conflict_feature:
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
                     detail=f'Feature name "{data.name}" already exists.',

@@ -235,15 +235,15 @@ def snowflake_feature(feature_model_dict, snowflake_session):
     """
     Fixture for a Feature object
     """
-    mock_feature = Feature(**feature_model_dict)
-    mock_feature.version = "v1"
-    mock_feature.readiness = FeatureReadiness.DRAFT.value
-    mock_feature.is_default = True
-    mock_feature.description = "test_description_1"
-    mock_feature.online_enabled = False
-    tile_id = mock_feature.tile_specs[0].tile_id
+    feature = Feature(**feature_model_dict)
+    feature.version = "v1"
+    feature.readiness = FeatureReadiness.DRAFT.value
+    feature.is_default = True
+    feature.description = "test_description_1"
+    feature.online_enabled = False
+    tile_id = feature.tile_specs[0].tile_id
 
-    yield mock_feature
+    yield feature
 
     snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
     snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
