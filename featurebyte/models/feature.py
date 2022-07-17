@@ -1,6 +1,7 @@
 """
 This module contains Feature related models
 """
+# pylint: disable=too-few-public-methods
 from __future__ import annotations
 
 from typing import List, Optional, Tuple
@@ -63,6 +64,13 @@ class FeatureNameSpace(BaseModel):
     default_version: FeatureVersionIdentifier
     default_version_mode: DefaultVersionMode
 
+    class Config:
+        """
+        Configuration for FeatureNameSpace
+        """
+
+        use_enum_values = True
+
 
 class FeatureModel(BaseModel):
     """
@@ -106,6 +114,13 @@ class FeatureModel(BaseModel):
     online_enabled: Optional[bool]
     created_at: Optional[datetime]
 
+    class Config:
+        """
+        Configuration for FeatureModel
+        """
+
+        use_enum_values = True
+
 
 class FeatureListModel(BaseModel):
     """
@@ -134,3 +149,10 @@ class FeatureListModel(BaseModel):
     status: Optional[FeatureListStatus]
     version: FeatureListVersionIdentifier
     created_at: Optional[datetime]
+
+    class Config:
+        """
+        Configuration for FeatureListModel
+        """
+
+        use_enum_values = True

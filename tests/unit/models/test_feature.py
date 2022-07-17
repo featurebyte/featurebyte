@@ -36,10 +36,10 @@ def feature_name_space_dict_fixture():
         "name": "some_feature_name",
         "description": None,
         "versions": [],
-        "readiness": FeatureReadiness.DRAFT,
+        "readiness": "DRAFT",
         "created_at": datetime.now(),
         "default_version": "some_version",
-        "default_version_mode": DefaultVersionMode.MANUAL,
+        "default_version_mode": "MANUAL",
     }
 
 
