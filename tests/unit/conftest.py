@@ -82,6 +82,39 @@ def mock_config_path_env_fixture(config_file):
         yield
 
 
+@pytest.fixture(name="git_persistent")
+def git_persistent_fixture():
+    """
+    Patched MongoDB fixture for testing
+    Returns
+    -------
+    Tuple[GitDB, Repo]
+        Local GitDB object and local git repo
+    """
+    persistent = GitDB(branch="test")
+    persistent.insert_doc_name_func("event_data", lambda doc: doc["name"])
+    persistent.insert_doc_name_func("data", lambda doc: doc["name"])
+    yield persistent, persistent.repo
+
+
+@pytest.fixture(name="mock_get_persistent")
+def mock_get_persistent_function(git_persistent):
+    """
+    Mock GitDB in featurebyte.app
+    """
+    with mock.patch("featurebyte.app._get_persistent") as mock_persistent:
+        persistent, _ = git_persistent
+        mock_persistent.return_value = persistent
+        yield mock_persistent
+
+
+@pytest.fixture(autouse=True)
+def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
+    """Use these fixtures for all tests"""
+    _ = mock_config_path_env, mock_get_persistent
+    yield
+
+
 @pytest.fixture(name="graph")
 def query_graph():
     """
@@ -187,13 +220,10 @@ def snowflake_database_table_fixture(
 
 
 @pytest.fixture(name="snowflake_event_data")
-def snowflake_event_data_fixture(
-    snowflake_database_table, config, mock_config_path_env, mock_get_persistent
-):
+def snowflake_event_data_fixture(snowflake_database_table, config):
     """
     EventData object fixture
     """
-    _ = mock_config_path_env, mock_get_persistent
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
@@ -253,11 +283,10 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
 
 
 @pytest.fixture(name="grouped_event_view")
-def grouped_event_view_fixture(snowflake_event_view, mock_get_persistent):
+def grouped_event_view_fixture(snowflake_event_view):
     """
     EventViewGroupBy fixture
     """
-    _ = mock_get_persistent
     Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     grouped = snowflake_event_view.groupby("cust_id")
@@ -443,12 +472,10 @@ def tile_manager(mock_execute_query, session_manager, snowflake_feature_store):
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature(
-    mock_execute_query, snowflake_connector, snowflake_event_view, mock_get_persistent
-):
+def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_event_view):
     """Fixture for a Feature object"""
     mock_execute_query.size_effect = None
-    _ = snowflake_connector, mock_get_persistent
+    _ = snowflake_connector
 
     Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
@@ -481,11 +508,11 @@ def feature_manager(mock_execute_query, session_manager, snowflake_feature_store
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 def mock_snowflake_feature_list_model(
-    mock_execute_query, snowflake_connector, snowflake_event_view, mock_get_persistent
+    mock_execute_query, snowflake_connector, snowflake_event_view
 ):
     """Fixture for a FeatureListModel"""
     mock_execute_query.size_effect = None
-    _ = snowflake_connector, mock_get_persistent
+    _ = snowflake_connector
 
     Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
@@ -522,21 +549,6 @@ def feature_list_manager(mock_execute_query, session_manager, snowflake_feature_
     """
     _ = mock_execute_query
     return FeatureListManagerSnowflake(session=session_manager[snowflake_feature_store])
-
-
-@pytest.fixture(name="git_persistent")
-def git_persistent_fixture():
-    """
-    Patched MongoDB fixture for testing
-    Returns
-    -------
-    Tuple[GitDB, Repo]
-        Local GitDB object and local git repo
-    """
-    persistent = GitDB(branch="test")
-    persistent.insert_doc_name_func("event_data", lambda doc: doc["name"])
-    persistent.insert_doc_name_func("data", lambda doc: doc["name"])
-    yield persistent, persistent.repo
 
 
 @pytest.fixture(name="mocked_tile_cache")

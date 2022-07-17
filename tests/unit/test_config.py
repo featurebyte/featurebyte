@@ -102,17 +102,20 @@ def test_get_client_featurebyte_persistent_settings__success():
     Test getting client with featurebyte persistent
     """
     # expect a local fastapi test client
-    with patch("requests.request") as mock_requests_get:
+    with patch("requests.Session.send") as mock_requests_get:
         mock_requests_get.return_value.status_code = 200
         client = Configurations("tests/fixtures/config_featurebyte_persistent.yaml").get_client()
     assert isinstance(client, APIClient)
 
     # check api token included in header
-    mock_requests_get.assert_called_once_with(
-        "GET",
-        "https://app.featurebyte.com/api/v1/user/me",
-        headers={"accept": "application/json", "Authorization": "Bearer API_TOKEN_VALUE"},
-    )
+    mock_requests_get.assert_called_once()
+    assert mock_requests_get.call_args[0][0].headers == {
+        "user-agent": "Python SDK",
+        "Accept-Encoding": "gzip, deflate",
+        "accept": "application/json",
+        "Connection": "keep-alive",
+        "Authorization": "Bearer API_TOKEN_VALUE",
+    }
 
 
 def test_get_client_featurebyte_persistent_settings__invalid_token():
@@ -121,7 +124,7 @@ def test_get_client_featurebyte_persistent_settings__invalid_token():
     """
     # expect a local fastapi test client
     with pytest.raises(InvalidSettingsError) as exc_info:
-        with patch("requests.request") as mock_requests_get:
+        with patch("requests.Session.send") as mock_requests_get:
             mock_requests_get.return_value.status_code = 401
             Configurations("tests/fixtures/config_featurebyte_persistent.yaml").get_client()
     assert str(exc_info.value) == "Authentication failed"

@@ -77,7 +77,7 @@ class FeatureByteSettings(BaseSettings):
     api_token: str
 
 
-class APIClient:
+class APIClient(requests.Session):
     """
     Http client for accessing the FeatureByte Application API
     """
@@ -98,23 +98,33 @@ class APIClient:
         InvalidSettingsError
             Invalid settings
         """
-        self._api_url = api_url
-        self._headers = {
-            "accept": "application/json",
-            "Authorization": f"Bearer {api_token}",
-        }
+        super().__init__()
+        self.base_url = api_url
+        self.headers.update(
+            {
+                "user-agent": "Python SDK",
+                "accept": "application/json",
+                "Authorization": f"Bearer {api_token}",
+            }
+        )
         response = self.get("/user/me")
         if response.status_code != HTTPStatus.OK:
             raise InvalidSettingsError("Authentication failed")
 
-    def _request(self, method: str, url: str, *args: Any, **kwargs: Any) -> Response:
+    def request(
+        self,
+        method: Union[str, bytes],
+        url: Union[str, bytes],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Response:
         """
         Make http request
         Parameters
         ----------
         method: str
             Request method (GET, POST, PATCH, DELETE)
-        url: str
+        url: Union[str, bytes]
             URL to make request to
         *args: Any
             Additional positional arguments
@@ -126,86 +136,12 @@ class APIClient:
         Response
             HTTP Response
         """
-        custom_headers = kwargs.pop("headers", {})
-        return requests.request(
+        return super().request(
             method,
-            f"{self._api_url}{url}",
+            self.base_url + str(url),
             *args,
             **kwargs,
-            headers={**self._headers, **custom_headers},
         )
-
-    def get(self, *args: Any, **kwargs: Any) -> Response:
-        """
-        Make GET request
-
-        Parameters
-        ----------
-        *args: Any
-            Additional positional arguments
-        **kwargs: Any
-            Additional keyword arguments
-
-        Returns
-        -------
-        Response
-            HTTP Response
-        """
-        return self._request("GET", *args, **kwargs)
-
-    def post(self, *args: Any, **kwargs: Any) -> Response:
-        """
-        Make POST request
-
-        Parameters
-        ----------
-        *args: Any
-            Additional positional arguments
-        **kwargs: Any
-            Additional keyword arguments
-
-        Returns
-        -------
-        Response
-            HTTP Response
-        """
-        return self._request("POST", *args, **kwargs)
-
-    def patch(self, *args: Any, **kwargs: Any) -> Response:
-        """
-        Make PATCH request
-
-        Parameters
-        ----------
-        *args: Any
-            Additional positional arguments
-        **kwargs: Any
-            Additional keyword arguments
-
-        Returns
-        -------
-        Response
-            HTTP Response
-        """
-        return self._request("PATCH", *args, **kwargs)
-
-    def delete(self, *args: Any, **kwargs: Any) -> Response:
-        """
-        Make DELETE request
-
-        Parameters
-        ----------
-        *args: Any
-            Additional positional arguments
-        **kwargs: Any
-            Additional keyword arguments
-
-        Returns
-        -------
-        Response
-            HTTP Response
-        """
-        return self._request("DELETE", *args, **kwargs)
 
 
 class Configurations:
@@ -222,10 +158,12 @@ class Configurations:
         config_file_path: str | None
             Path to read configurations from
         """
-        config_file_path = str(
-            config_file_path
-            or os.environ.get(
-                "FEATUREBYTE_CONFIG_PATH", os.path.join(os.environ["HOME"], ".featurebyte.yaml")
+        self._config_file_path = Path(
+            str(
+                config_file_path
+                or os.environ.get(
+                    "FEATUREBYTE_CONFIG_PATH", os.path.join(os.environ["HOME"], ".featurebyte.yaml")
+                )
             )
         )
         self.git: Optional[GitSettings] = None
@@ -234,16 +172,27 @@ class Configurations:
         self.feature_stores: Dict[str, FeatureStoreModel] = {}
         self.credentials: Credentials = {}
         self.logging: LoggingSettings = LoggingSettings()
-        self._config_file_path = config_file_path
-        self._parse_config(config_file_path)
+        self._parse_config(self._config_file_path)
 
-    def _parse_config(self, path: str) -> None:
+    @property
+    def config_file_path(self) -> Path:
+        """
+        Config file path
+
+        Returns
+        -------
+        Path
+            path to config file
+        """
+        return self._config_file_path
+
+    def _parse_config(self, path: Path) -> None:
         """
         Parse configurations file
 
         Parameters
         ----------
-        path: str
+        path: Path
             Path to read configurations from
 
         Raises

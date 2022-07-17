@@ -10,7 +10,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def mock_settings_env_vars():
     """Mask default config path to avoid unintentionally using a real configuration file"""
-    with patch.dict(os.environ, {"FEATUREBYTE_CONFIG_PATH": ""}):
+    with patch.dict(os.environ, {}):
         yield
 
 
