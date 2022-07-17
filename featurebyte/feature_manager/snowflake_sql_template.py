@@ -16,7 +16,7 @@ tm_insert_feature_registry = Template(
         '{{feature.name}}' as NAME,
         '{{feature.version}}' as VERSION,
         '{{feature.description}}' as DESCRIPTION,
-        '{{feature.readiness.value}}' as READINESS,
+        '{{feature.readiness}}' as READINESS,
         parse_json('{{tile_specs_str}}') as TILE_SPECS
 """
 )
@@ -37,7 +37,7 @@ tm_update_feature_registry = Template(
     """
     UPDATE FEATURE_REGISTRY
     SET
-        READINESS = '{{feature.readiness.value}}',
+        READINESS = '{{feature.readiness}}',
         DESCRIPTION = '{{feature.description}}',
         IS_DEFAULT = {{feature.is_default}},
         ONLINE_ENABLED = {{feature.online_enabled}}
@@ -86,8 +86,8 @@ tm_insert_feature_list_registry = Template(
         '{{feature_list.name}}' as NAME,
         '{{feature_list.version}}' as VERSION,
         '{{feature_list.description}}' as DESCRIPTION,
-        '{{feature_list.readiness.value}}' as READINESS,
-        '{{feature_list.status.value}}' as STATUS,
+        '{{feature_list.readiness}}' as READINESS,
+        '{{feature_list.status}}' as STATUS,
         parse_json('{{feature_lst_str}}') as FEATURE_VERSIONS
 """
 )
@@ -102,8 +102,8 @@ tm_update_feature_list_registry = Template(
     """
     UPDATE FEATURE_LIST_REGISTRY
     SET
-        READINESS = '{{feature_list.readiness.value}}',
-        STATUS = '{{feature_list.status.value}}',
+        READINESS = '{{feature_list.readiness}}',
+        STATUS = '{{feature_list.status}}',
         DESCRIPTION = '{{feature_list.description}}'
     WHERE NAME = '{{feature_list.name}}'
     AND VERSION = '{{feature_list.version}}'

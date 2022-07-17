@@ -6,7 +6,13 @@ from datetime import datetime
 import pytest
 
 from featurebyte.api.entity import Entity
-from featurebyte.models.feature import FeatureListModel, FeatureModel, FeatureNameSpace
+from featurebyte.models.feature import (
+    FeatureListModel,
+    FeatureListStatus,
+    FeatureModel,
+    FeatureNameSpace,
+    FeatureReadiness,
+)
 
 
 @pytest.fixture(name="feature_list_model_dict")
@@ -76,3 +82,27 @@ def test_feature_name_space(feature_name_space_dict):
     feature_name_space = FeatureNameSpace.parse_obj(feature_name_space_dict)
     feat_name_space_dict = feature_name_space.dict()
     assert feat_name_space_dict == feature_name_space_dict
+
+
+def test_feature_readiness_ordering():
+    """Test to cover feature readiness ordering"""
+    assert (
+        FeatureReadiness.PRODUCTION_READY
+        > FeatureReadiness.DRAFT
+        > FeatureReadiness.QUARANTINE
+        > FeatureReadiness.DEPRECATED
+    )
+    assert FeatureReadiness.min() == FeatureReadiness.DEPRECATED
+    assert FeatureReadiness.max() == FeatureReadiness.PRODUCTION_READY
+
+
+def test_feature_list_status_ordering():
+    """Test to cover feature list status ordering"""
+    assert (
+        FeatureListStatus.PUBLISHED
+        > FeatureListStatus.DRAFT
+        > FeatureListStatus.EXPERIMENTAL
+        > FeatureListStatus.DEPRECATED
+    )
+    assert FeatureListStatus.min() == FeatureListStatus.DEPRECATED
+    assert FeatureListStatus.max() == FeatureListStatus.PUBLISHED

@@ -237,7 +237,7 @@ def snowflake_feature(feature_model_dict, snowflake_session):
     """
     mock_feature = Feature(**feature_model_dict)
     mock_feature.version = "v1"
-    mock_feature.readiness = FeatureReadiness.DRAFT
+    mock_feature.readiness = FeatureReadiness.DRAFT.value
     mock_feature.is_default = True
     mock_feature.description = "test_description_1"
     mock_feature.online_enabled = False
@@ -318,7 +318,7 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config):
     mock_feature = FeatureModel(**feature_model_dict)
     mock_feature.tabular_source = (config.feature_stores["snowflake_featurestore"],)
     mock_feature.version = "v1"
-    mock_feature.readiness = FeatureReadiness.DRAFT
+    mock_feature.readiness = FeatureReadiness.DRAFT.value
     mock_feature.is_default = True
 
     mock_feature_list = FeatureListModel(
