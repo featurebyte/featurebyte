@@ -49,6 +49,23 @@ class OrderedEnum(Enum):
         return max(cls._member_list())
 
 
+@functools.total_ordering
+class OrderedStrEnum(OrderedEnum):
+    """
+    Ordered String Enum class
+    """
+
+    def __eq__(self, other: OrderedStrEnum | str) -> bool:
+        if isinstance(other, str):
+            return super().__eq__(type(self)(other))
+        return super().__eq__(other)
+
+    def __lt__(self, other: OrderedStrEnum | str) -> bool:
+        if isinstance(other, str):
+            return super().__lt__(type(self)(other))
+        return super().__lt__(other)
+
+
 class CollectionName(str, Enum):
     """
     Collection name
