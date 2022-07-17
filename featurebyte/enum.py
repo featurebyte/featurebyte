@@ -28,10 +28,24 @@ class OrderedEnum(Enum):
 
     @classmethod
     def min(cls) -> OrderedEnum:
+        """
+        Retrieve minimum member of the class
+
+        Returns
+        -------
+        OrderedEnum
+        """
         return min(cls._member_list())
 
     @classmethod
     def max(cls) -> OrderedEnum:
+        """
+        Retrieve maximum member of the class
+
+        Returns
+        -------
+        OrderedEnum
+        """
         return max(cls._member_list())
 
 

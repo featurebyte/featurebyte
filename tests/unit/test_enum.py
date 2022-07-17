@@ -8,7 +8,15 @@ from featurebyte.enum import OrderedEnum
 
 @pytest.fixture(name="order_number")
 def order_number_fixture():
+    """
+    OrderNumber test fixture
+    """
+
     class OrderNumber(OrderedEnum):
+        """
+        OrderNumber class
+        """
+
         ONE = "one"
         TWO = "two"
         THREE = "three"
