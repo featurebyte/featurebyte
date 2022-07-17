@@ -85,3 +85,9 @@ def test_ordered_str_enum__ordering(order_str_number):
     assert order_str_number.ONE != "two"
     assert order_str_number.ONE != order_str_number("two")
     assert order_str_number.ONE != order_str_number.TWO
+    assert order_str_number.max() == "three"
+    assert order_str_number.max() == order_str_number("three")
+    assert order_str_number.max() == order_str_number.THREE
+    assert order_str_number.min() == "one"
+    assert order_str_number.min() == order_str_number("one")
+    assert order_str_number.min() == order_str_number.ONE
