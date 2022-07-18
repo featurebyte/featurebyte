@@ -60,7 +60,8 @@ class AggregationSpec:
     blind_spot: int
     time_modulo_frequency: int
     tile_table_id: str
-    entity_ids: list[str]
+    keys: list[str]
+    serving_names: list[str]
     merge_expr: str
     feature_name: str
 
@@ -104,7 +105,8 @@ class AggregationSpec:
                 time_modulo_frequency=params["time_modulo_frequency"],
                 blind_spot=params["blind_spot"],
                 tile_table_id=tile_table_id,
-                entity_ids=params["keys"],
+                keys=params["keys"],
+                serving_names=params["serving_names"],
                 merge_expr=get_aggregator(params["agg_func"]).merge(),
                 feature_name=feature_name,
             )

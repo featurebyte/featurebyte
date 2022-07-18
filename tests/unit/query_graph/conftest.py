@@ -59,6 +59,7 @@ def query_graph_with_groupby_fixture(graph):
     )
     node_params = {
         "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
         "parent": "a",
         "agg_func": "avg",
         "time_modulo_frequency": 1800,  # 30m

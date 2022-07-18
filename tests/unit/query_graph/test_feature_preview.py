@@ -8,7 +8,7 @@ def test_get_feature_preview_sql(query_graph_with_groupby):
     """Test generated preview SQL is as expected"""
     point_in_time_and_entity_id = {
         "POINT_IN_TIME": "2022-04-20 10:00:00",
-        "cust_id": "C1",
+        "CUSTOMER_ID": "C1",
     }
     graph = query_graph_with_groupby
     node = graph.get_node_by_name("groupby_1")
