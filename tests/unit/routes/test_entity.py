@@ -129,6 +129,34 @@ def test_list_200(create_multiple_entries, test_api_client):
     assert result_data[0]["name"] == "customer"
 
 
+def test_get_200(create_success_response, test_api_client):
+    """
+    Test get entities (success)
+    """
+    created_entity = create_success_response.json()
+    entity_id = created_entity["id"]
+    response = test_api_client.get(f"/entity/{entity_id}")
+    response_data = response.json()
+    response_data.pop("id")
+    response_data.pop("created_at")
+    assert response_data == {
+        "name": "customer",
+        "serving_names": ["cust_id"],
+        "name_history": [],
+        "user_id": None,
+    }
+
+
+def test_get_404(test_api_client):
+    """
+    Test get entities (not found)
+    """
+    unknown_entity_id = ObjectId()
+    response = test_api_client.get(f"/entity/{unknown_entity_id}")
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"detail": f'Entity ID "{unknown_entity_id}" not found.'}
+
+
 @freeze_time("2022-07-01")
 def test_update_200(create_success_response, test_api_client):
     """
