@@ -57,8 +57,6 @@ def get_entity(entity_name: str) -> dict[str, Any]:
     -------
     dict[str, Any]
         Entity dictionary object if found
-    None
-        Entity not found
 
     Raises
     ------
@@ -93,13 +91,11 @@ def get_entity_by_id(entity_id: str) -> dict[str, Any]:
     -------
     dict[str, Any]
         Entity dictionary object if found
-    None
-        Entity not found
 
     Raises
     ------
     RecordRetrievalException
-        When the given entity name is not found
+        When the given entity ID is not found
     """
     client = Configurations().get_client()
     response = client.get(url=f"/entity/{entity_id}")
