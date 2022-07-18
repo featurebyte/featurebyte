@@ -3,6 +3,9 @@ name: build-publish-dev
 on:
   release:
     types: [created]
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -14,9 +17,9 @@ jobs:
       matrix:
         python-version: ["3.8"]
     env:
-      GCR_REPO_NAME: '${{ secrets.GCR_REPO_NAME }}'
-      GCR_REPO_LOCATION: '${{ secrets.GCR_REPO_LOCATION }}'
-      GC_PROJECT_ID: '${{ secrets.GC_PROJECT_ID }}'
+      GCR_REPO_NAME: featurebyte-pypi
+      GCR_REPO_LOCATION: us-central1
+      GC_PROJECT_ID: vpc-host-nonprod-xa739-xz970
 
     steps:
       - uses: actions/checkout@v3
