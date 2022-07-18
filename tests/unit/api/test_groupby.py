@@ -19,16 +19,19 @@ def test_constructor(snowflake_event_view, keys, expected_keys):
     """
     Test constructor
     """
+    expected_serving_names = ["serving_" + column for column in expected_keys]
+
     # set key columns as entity
-    for column in expected_keys:
+    for column, serving_name in zip(expected_keys, expected_serving_names):
         # create an entity for each column
-        Entity.create(name=column, serving_name=column)
+        Entity.create(name=column, serving_name=serving_name)
 
         # mark the column as entity
         snowflake_event_view[column].as_entity(column)
 
     grouped = EventViewGroupBy(obj=snowflake_event_view, keys=keys)
     assert grouped.keys == expected_keys
+    assert grouped.serving_names == expected_serving_names
 
 
 def test_constructor__non_entity_by_keys(snowflake_event_view):
@@ -147,4 +150,5 @@ def test_groupby__default_feature_job_setting(snowflake_event_data):
         "tile_id": "sum_f360_m180_b90_45058a98f2f07813bc673622af9c945b2ceaa16d",
         "timestamp": "event_timestamp",
         "value_by": None,
+        "serving_names": ["cust_id"],
     }

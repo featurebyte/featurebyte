@@ -325,6 +325,7 @@ def feature_group_fixture(grouped_event_view):
             "frequency": 1800,
             "names": ["sum_30m", "sum_2h", "sum_1d"],
             "tile_id": "sum_f1800_m300_b600_3cb3b2b28a359956be02abe635c4446cb50710d7",
+            "serving_names": ["cust_id"],
         },
         output_type=NodeOutputType.FRAME,
     )
