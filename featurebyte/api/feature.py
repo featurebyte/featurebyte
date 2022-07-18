@@ -55,6 +55,18 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
         return entity_ids
 
     @property
+    def serving_names(self) -> list[str]:
+        """
+        Serving name columns
+
+        Returns
+        -------
+        list[str]
+        """
+        serving_names: list[str] = self.inception_node.parameters["serving_names"]
+        return serving_names
+
+    @property
     def inherited_columns(self) -> set[str]:
         """
         Special columns set which will be automatically added to the object of same class
@@ -109,8 +121,8 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
         if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_entity_id:
             raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
 
-        if self.entity_identifiers is not None:
-            for col in self.entity_identifiers:
+        if self.serving_names is not None:
+            for col in self.serving_names:
                 if col not in point_in_time_and_entity_id:
                     raise KeyError(f"Entity column not provided: {col}")
 

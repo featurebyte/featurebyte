@@ -435,7 +435,13 @@ class SnowflakeTileCache(TileCache):
         str
         """
         blind_spot = tile_info.blind_spot
-        groupby_columns = ", ".join([f'"{col}"' for col in tile_info.entity_columns])
+        serving_names_to_keys = ", ".join(
+            [
+                f'"{serving_name}" AS "{col}"'
+                for serving_name, col in zip(tile_info.serving_names, tile_info.entity_columns)
+            ]
+        )
+        serving_names = ", ".join([f'"{col}"' for col in tile_info.serving_names])
         frequency = tile_info.frequency
         time_modulo_frequency = tile_info.time_modulo_frequency
 
@@ -458,12 +464,12 @@ class SnowflakeTileCache(TileCache):
         tracker_sql = prettify_sql(
             f"""
             SELECT
-                {groupby_columns},
+                {serving_names_to_keys},
                 {last_tile_start_date_expr} AS {InternalName.TILE_LAST_START_DATE},
                 {start_date_expr} AS {InternalName.ENTITY_TABLE_START_DATE},
                 {end_date_expr} AS {InternalName.ENTITY_TABLE_END_DATE}
             FROM {REQUEST_TABLE_NAME}
-            GROUP BY {groupby_columns}
+            GROUP BY {serving_names}
             """
         )
 
