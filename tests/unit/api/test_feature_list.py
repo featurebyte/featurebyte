@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from freezegun import freeze_time
 
-from featurebyte.api.feature_list import Feature, FeatureList, FeatureListStatus
+from featurebyte.api.feature_list import Feature, FeatureList
 from featurebyte.models.feature import FeatureReadiness
 
 
@@ -127,8 +127,8 @@ def test_feature_list_creation__success(production_ready_feature, config):
         "name": "my_feature_list",
         "description": None,
         "features": [("production_ready_feature", "V220401")],
-        "readiness": FeatureReadiness.PRODUCTION_READY,
-        "status": FeatureListStatus.DRAFT,
+        "readiness": "PRODUCTION_READY",
+        "status": "DRAFT",
         "version": "my_feature_list.V220501",
         "created_at": None,
     }

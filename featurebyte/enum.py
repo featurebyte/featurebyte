@@ -3,7 +3,67 @@ This module contains all the enums used across different modules
 """
 from __future__ import annotations
 
+import functools
 from enum import Enum
+
+
+@functools.total_ordering
+class OrderedEnum(Enum):
+    """
+    OrderedEnum class
+
+    Reference: https://github.com/woodruffw/ordered_enum/blob/master/src/ordered_enum/ordered_enum.py
+    """
+
+    @classmethod
+    @functools.lru_cache(None)
+    def _member_list(cls) -> list[OrderedEnum]:
+        return list(cls)
+
+    def __lt__(self, other: object) -> bool:
+        if self.__class__ is other.__class__:
+            member_list = self.__class__._member_list()
+            return member_list.index(self) < member_list.index(other)  # type: ignore
+        return NotImplemented
+
+    @classmethod
+    def min(cls) -> OrderedEnum:
+        """
+        Retrieve minimum member of the class
+
+        Returns
+        -------
+        OrderedEnum
+        """
+        return min(cls._member_list())
+
+    @classmethod
+    def max(cls) -> OrderedEnum:
+        """
+        Retrieve maximum member of the class
+
+        Returns
+        -------
+        OrderedEnum
+        """
+        return max(cls._member_list())
+
+
+@functools.total_ordering
+class OrderedStrEnum(OrderedEnum):
+    """
+    Ordered String Enum class
+    """
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, str):
+            return super().__eq__(type(self)(other))
+        return super().__eq__(other)
+
+    def __lt__(self, other: object) -> bool:
+        if isinstance(other, str):
+            return super().__lt__(type(self)(other))
+        return super().__lt__(other)
 
 
 class CollectionName(str, Enum):

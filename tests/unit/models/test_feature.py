@@ -7,8 +7,8 @@ import pytest
 
 from featurebyte.api.entity import Entity
 from featurebyte.models.feature import (
-    DefaultVersionMode,
     FeatureListModel,
+    FeatureListStatus,
     FeatureModel,
     FeatureNameSpace,
     FeatureReadiness,
@@ -36,10 +36,10 @@ def feature_name_space_dict_fixture():
         "name": "some_feature_name",
         "description": None,
         "versions": [],
-        "readiness": FeatureReadiness.DRAFT,
+        "readiness": "DRAFT",
         "created_at": datetime.now(),
         "default_version": "some_version",
-        "default_version_mode": DefaultVersionMode.MANUAL,
+        "default_version_mode": "MANUAL",
     }
 
 
@@ -82,3 +82,27 @@ def test_feature_name_space(feature_name_space_dict):
     feature_name_space = FeatureNameSpace.parse_obj(feature_name_space_dict)
     feat_name_space_dict = feature_name_space.dict()
     assert feat_name_space_dict == feature_name_space_dict
+
+
+def test_feature_readiness_ordering():
+    """Test to cover feature readiness ordering"""
+    assert (
+        FeatureReadiness.PRODUCTION_READY
+        > FeatureReadiness.DRAFT
+        > FeatureReadiness.QUARANTINE
+        > FeatureReadiness.DEPRECATED
+    )
+    assert FeatureReadiness.min() == FeatureReadiness.DEPRECATED
+    assert FeatureReadiness.max() == FeatureReadiness.PRODUCTION_READY
+
+
+def test_feature_list_status_ordering():
+    """Test to cover feature list status ordering"""
+    assert (
+        FeatureListStatus.PUBLISHED
+        > FeatureListStatus.DRAFT
+        > FeatureListStatus.EXPERIMENTAL
+        > FeatureListStatus.DEPRECATED
+    )
+    assert FeatureListStatus.min() == FeatureListStatus.DEPRECATED
+    assert FeatureListStatus.max() == FeatureListStatus.PUBLISHED

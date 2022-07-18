@@ -62,7 +62,7 @@ class SessionManager(BaseModel):
             When credentials do not contain the specified data source info
         """
         if item in self.credentials:
-            logger.debug(f"Create a new session for {item.type.value}")
+            logger.debug(f"Create a new session for {item.type}")
             credential = self.credentials[item]
             credential_params = credential.credential.dict() if credential else {}
             return SOURCE_TYPE_SESSION_MAP[item.type](**item.details.dict(), **credential_params)

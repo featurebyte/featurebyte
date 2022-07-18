@@ -50,3 +50,10 @@ class Credential(BaseModel):
             pymongo.operations.IndexModel("user_id"),
             pymongo.operations.IndexModel("source"),
         ]
+
+    class Config:
+        """
+        Configuration for Credential
+        """
+
+        use_enum_values = True

@@ -1,6 +1,7 @@
 """
 This module contains Feature related models
 """
+# pylint: disable=too-few-public-methods
 from __future__ import annotations
 
 from typing import List, Optional, Tuple
@@ -10,7 +11,7 @@ from enum import Enum
 
 from pydantic import BaseModel, StrictStr
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, OrderedStrEnum
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import Node, QueryGraph
 
@@ -18,22 +19,22 @@ FeatureVersionIdentifier = StrictStr
 FeatureListVersionIdentifier = StrictStr
 
 
-class FeatureReadiness(str, Enum):
+class FeatureReadiness(OrderedStrEnum):
     """Feature readiness"""
 
-    PRODUCTION_READY = "PRODUCTION_READY"
-    DRAFT = "DRAFT"
-    QUARANTINE = "QUARANTINE"
     DEPRECATED = "DEPRECATED"
+    QUARANTINE = "QUARANTINE"
+    DRAFT = "DRAFT"
+    PRODUCTION_READY = "PRODUCTION_READY"
 
 
-class FeatureListStatus(str, Enum):
+class FeatureListStatus(OrderedStrEnum):
     """FeatureList status"""
 
-    PUBLISHED = "PUBLISHED"
-    DRAFT = "DRAFT"
-    EXPERIMENTAL = "EXPERIMENTAL"
     DEPRECATED = "DEPRECATED"
+    EXPERIMENTAL = "EXPERIMENTAL"
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
 
 
 class DefaultVersionMode(str, Enum):
@@ -62,6 +63,13 @@ class FeatureNameSpace(BaseModel):
     created_at: datetime
     default_version: FeatureVersionIdentifier
     default_version_mode: DefaultVersionMode
+
+    class Config:
+        """
+        Configuration for FeatureNameSpace
+        """
+
+        use_enum_values = True
 
 
 class FeatureModel(BaseModel):
@@ -106,6 +114,13 @@ class FeatureModel(BaseModel):
     online_enabled: Optional[bool]
     created_at: Optional[datetime]
 
+    class Config:
+        """
+        Configuration for FeatureModel
+        """
+
+        use_enum_values = True
+
 
 class FeatureListModel(BaseModel):
     """
@@ -134,3 +149,10 @@ class FeatureListModel(BaseModel):
     status: Optional[FeatureListStatus]
     version: FeatureListVersionIdentifier
     created_at: Optional[datetime]
+
+    class Config:
+        """
+        Configuration for FeatureListModel
+        """
+
+        use_enum_values = True

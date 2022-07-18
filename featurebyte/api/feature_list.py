@@ -94,17 +94,8 @@ class FeatureList(FeatureListModel):
         -------
         FeatureReadiness
         """
-        # Convert readiness to a number. The larger the number the more ready it is
-        readiness_to_order = {
-            FeatureReadiness.PRODUCTION_READY: 3,
-            FeatureReadiness.DRAFT: 2,
-            FeatureReadiness.QUARANTINE: 1,
-            FeatureReadiness.DEPRECATED: 0,
-            None: 0,
-        }
         minimum_feature_readiness = min(
-            features,
-            key=lambda feature: readiness_to_order[feature.readiness],
+            features, key=lambda feature: feature.readiness or FeatureReadiness.min()
         ).readiness
         return minimum_feature_readiness
 

@@ -1,6 +1,7 @@
 """
 This module contains DatabaseSource related models
 """
+# pylint: disable=too-few-public-methods
 from __future__ import annotations
 
 from typing import Optional, Tuple, Union
@@ -33,6 +34,13 @@ class FeatureStoreModel(BaseModel):
 
     type: SourceType
     details: DatabaseDetails
+
+    class Config:
+        """
+        Configuration for FeatureStoreModel
+        """
+
+        use_enum_values = True
 
     def __hash__(self) -> int:
         """
