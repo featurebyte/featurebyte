@@ -12,7 +12,7 @@ from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field, root_validator
 
-from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
+from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.models.feature_store import DatabaseTableModel
 
 

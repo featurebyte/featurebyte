@@ -5,12 +5,11 @@ from __future__ import annotations
 
 from typing import List, Optional, Union
 
-import datetime
-
 import pandas as pd
 from pydantic import Field
 
 from featurebyte.api.feature import Feature, FeatureGroup
+from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.query_graph.feature_historical import get_historical_features
@@ -43,7 +42,6 @@ class FeatureList(FeatureListModel):
         feature_versions = self._flatten_input_items(items)
         readiness = self.derive_features_readiness(feature_versions)
         versions_with_names = [(feature.name, feature.version) for feature in feature_versions]
-        feature_list_version_name = self._get_feature_list_version_name(name)
 
         super().__init__(
             name=name,
@@ -51,7 +49,7 @@ class FeatureList(FeatureListModel):
             features=versions_with_names,
             readiness=readiness,
             status=FeatureListStatus.DRAFT,
-            version=feature_list_version_name,
+            version=get_version(),
             created_at=None,
         )
         self.feature_objects = feature_versions
@@ -114,9 +112,3 @@ class FeatureList(FeatureListModel):
                     assert isinstance(feature, Feature)
                     flattened_items.append(feature)
         return flattened_items
-
-    @staticmethod
-    def _get_feature_list_version_name(feature_list_name: str) -> str:
-        creation_date = datetime.datetime.today().strftime("%y%m%d")
-        version_name = f"{feature_list_name}.V{creation_date}"
-        return version_name

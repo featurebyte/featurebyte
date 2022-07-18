@@ -13,6 +13,7 @@ from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field, StrictStr
 
+from featurebyte.common.model_util import get_version
 from featurebyte.enum import DBVarType, OrderedStrEnum
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import Node, QueryGraph
@@ -56,7 +57,8 @@ class FeatureNameSpaceModel(BaseModel):
         Feature name
     description: str
         Feature namespace descriptions applied to all features with the same family
-    versions: List[PydanticObjectId]
+    feature_ids: List[PydanticObjectId]
+    versions: List[FeatureVersionIdentifier]
         List of available feature version
     readiness: FeatureReadiness
         Aggregated readiness across all feature versions of the same feature namespace
@@ -71,7 +73,8 @@ class FeatureNameSpaceModel(BaseModel):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     description: Optional[StrictStr]
-    versions: List[PydanticObjectId]
+    feature_ids: List[PydanticObjectId]
+    versions: List[FeatureVersionIdentifier]
     readiness: FeatureReadiness
     created_at: datetime
     default_version_id: PydanticObjectId
@@ -134,7 +137,7 @@ class FeatureModel(BaseModel):
     node: Node
     tabular_source: Tuple[FeatureStoreModel, TableDetails]
     readiness: Optional[FeatureReadiness]
-    version: Optional[FeatureVersionIdentifier]
+    version: FeatureVersionIdentifier = Field(default_factory=get_version)
     is_default: Optional[bool]
     online_enabled: Optional[bool]
     event_data_ids: List[PydanticObjectId] = Field(default_factory=list)
@@ -178,7 +181,7 @@ class FeatureListModel(BaseModel):
     features: List[Tuple[StrictStr, Optional[FeatureVersionIdentifier]]]
     readiness: Optional[FeatureReadiness]
     status: Optional[FeatureListStatus]
-    version: FeatureListVersionIdentifier
+    version: Optional[FeatureListVersionIdentifier]
     created_at: Optional[datetime]
 
     class Config:

@@ -192,9 +192,9 @@ def test_feature_to_json(float_feature):
     assert "graph" not in output_exclude
 
     # exclude_none
-    assert float_feature.version is None
+    assert float_feature.is_default is None
     output_exclude_none = float_feature.json(exclude_none=True)
-    assert "version" not in output_exclude_none
+    assert "is_default" not in output_exclude_none
 
     # check encoder
     float_feature.created_at = datetime.now()

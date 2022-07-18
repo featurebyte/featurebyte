@@ -8,7 +8,7 @@ from typing import Any
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import FeatureGroup
 from featurebyte.api.util import get_entity_by_id
-from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
+from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType

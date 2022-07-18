@@ -90,6 +90,46 @@ class FeatureController:
                 )
 
     @classmethod
+    def prepare_feature_namespace_payload(
+        cls, document: Feature, feature_namespace: FeatureNameSpace
+    ) -> dict[str, Any]:
+        """
+        Prepare payload to update feature namespace record
+
+        Parameters
+        ----------
+        document: Feature
+            Feature document
+        feature_namespace: FeatureNameSpace
+            Feature Namespace object
+
+        Returns
+        -------
+        dict
+            Payload used to update feature namespace record
+        """
+        feature_ids = feature_namespace.feature_ids + [document.id]
+        matched_versions = [
+            ver for ver in feature_namespace.versions if ver.startswith(document.version)
+        ]
+        doc_version = document.version
+        if matched_versions:
+            doc_version = f"{doc_version}_{len(matched_versions)}"
+        feature_versions = feature_namespace.versions + [doc_version]
+        namespace_readiness = feature_namespace.readiness
+        default_version_id: ObjectId = feature_namespace.default_version_id
+        if feature_namespace.default_version_mode == DefaultVersionMode.AUTO:
+            namespace_readiness = max(namespace_readiness, FeatureReadiness.DRAFT)
+            if namespace_readiness == FeatureReadiness.DRAFT:
+                default_version_id = document.id
+        return {
+            "versions": feature_versions,
+            "feature_ids": feature_ids,
+            "readiness": namespace_readiness,
+            "default_version_id": default_version_id,
+        }
+
+    @classmethod
     def create_feature(cls, user: Any, persistent: Persistent, data: FeatureCreate) -> Feature:
         """
         Create Feature at persistent (GitDB or MongoDB)
@@ -113,8 +153,6 @@ class FeatureController:
         HTTPException
             If the feature name conflicts with existing feature name
         """
-
-        # pylint: disable=too-many-locals
 
         with persistent.start_transaction() as session:
             if data.id:
@@ -145,7 +183,8 @@ class FeatureController:
                 # create a new feature namespace object
                 doc_feature_namespace = FeatureNameSpace(
                     name=document.name,
-                    versions=[insert_id],
+                    feature_ids=[insert_id],
+                    versions=[document.version],
                     readiness=FeatureReadiness.DRAFT,
                     created_at=utcnow,
                     default_version_id=insert_id,
@@ -162,24 +201,13 @@ class FeatureController:
                     query_filter={"name": document.name},
                 )
                 feature_namespace = FeatureNameSpace(**feature_namespace_dict)  # type: ignore
-                feature_versions = [ObjectId(version) for version in feature_namespace.versions]
-                feature_versions.append(insert_id)
-                namespace_readiness = feature_namespace.readiness
-                default_version_id: ObjectId = feature_namespace.default_version_id
-                if feature_namespace.default_version_mode == DefaultVersionMode.AUTO:
-                    namespace_readiness = max(namespace_readiness, FeatureReadiness.DRAFT)
-                    if namespace_readiness == FeatureReadiness.DRAFT:
-                        default_version_id = insert_id
-
                 session.update_one(
                     collection_name=CollectionName.FEATURE_NAMESPACE,
                     query_filter={"_id": feature_namespace.id},
                     update={
-                        "$set": {
-                            "versions": feature_versions,
-                            "readiness": namespace_readiness,
-                            "default_version_id": default_version_id,
-                        }
+                        "$set": cls.prepare_feature_namespace_payload(
+                            document=document, feature_namespace=feature_namespace
+                        )
                     },
                 )
 

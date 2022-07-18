@@ -3,6 +3,7 @@ Tests for Feature related models
 """
 from datetime import datetime
 
+import freezegun
 import pytest
 from bson.objectid import ObjectId
 
@@ -25,7 +26,7 @@ def feature_list_model_dict_fixture():
         "features": [],
         "readiness": "DRAFT",
         "status": None,
-        "version": "",
+        "version": "V220710",
         "created_at": None,
     }
 
@@ -36,6 +37,7 @@ def feature_name_space_dict_fixture():
     return {
         "name": "some_feature_name",
         "description": None,
+        "feature_ids": [],
         "versions": [],
         "readiness": "DRAFT",
         "created_at": datetime.now(),
@@ -44,6 +46,7 @@ def feature_name_space_dict_fixture():
     }
 
 
+@freezegun.freeze_time("2022-07-10")
 def test_feature_model(snowflake_event_view, feature_model_dict):
     """Test feature model serialize & deserialize"""
     # pylint: disable=duplicate-code

@@ -3,6 +3,8 @@ This module contains the implementation of feature job setting validation
 """
 from __future__ import annotations
 
+from datetime import datetime
+
 import pandas as pd
 
 
@@ -67,3 +69,16 @@ def validate_job_setting_parameters(
             f" ({frequency})"
         )
     return frequency_seconds, time_modulo_frequency_seconds, blind_spot_seconds
+
+
+def get_version() -> str:
+    """
+    Construct version name given feature or featurelist name
+
+    Returns
+    -------
+    str
+        Version name
+    """
+    creation_date = datetime.today().strftime("%y%m%d")
+    return f"V{creation_date}"
