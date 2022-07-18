@@ -35,7 +35,7 @@ class Feature(FeatureModel):
         -------
         bool
         """
-        # TODO: add more validation checks later...
+        # TODO: add more validation checks later...  # pylint: disable=fixme
         return other.name == self.name
 
 
@@ -52,6 +52,7 @@ class FeatureCreate(BaseModel):
     Feature Creation schema
     """
 
+    id: Optional[PydanticObjectId] = Field(default=None)
     name: StrictStr
     description: Optional[StrictStr]
     var_type: DBVarType
@@ -62,6 +63,7 @@ class FeatureCreate(BaseModel):
     tabular_source: Tuple[FeatureStoreModel, TableDetails]
     version: Optional[FeatureVersionIdentifier]
     event_data_ids: List[PydanticObjectId] = Field(min_items=1)
+    parent_id: Optional[PydanticObjectId]
 
 
 class FeatureList(PaginationMixin):

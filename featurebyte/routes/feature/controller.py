@@ -53,15 +53,25 @@ class FeatureController:
 
         # pylint: disable=too-many-locals
 
-        utcnow = get_utc_now()
-        document = Feature(
-            user_id=user.id,
-            created_at=utcnow,
-            readiness=FeatureReadiness.DRAFT,
-            **data.dict(),
-        )
-
         with persistent.start_transaction() as session:
+            if data.id:
+                conflict_feature = session.find_one(
+                    collection_name=cls.collection_name, query_filter={"_id": data.id}
+                )
+                if conflict_feature:
+                    raise HTTPException(
+                        status_code=HTTPStatus.CONFLICT,
+                        detail=f'Feature ID "{data.id}" already exists.',
+                    )
+
+            utcnow = get_utc_now()
+            document = Feature(
+                user_id=user.id,
+                created_at=utcnow,
+                readiness=FeatureReadiness.DRAFT,
+                **data.dict(),
+            )
+
             if document.parent_id is None:
                 # when the parent_id is missing, it implies that the feature is a new feature
                 conflict_feature = session.find_one(
@@ -79,16 +89,16 @@ class FeatureController:
                 )
                 if not parent_feature_dict:
                     raise HTTPException(
-                        status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+                        status_code=HTTPStatus.NOT_FOUND,
                         detail=(
-                            f'Feature "{document.parent_id}" not found! Please save the parent Feature object.'
+                            f'Feature ID "{document.parent_id}" not found! Please save the parent Feature object.'
                         ),
                     )
-                elif not document.is_parent(Feature(**parent_feature_dict)):
+                if not document.is_parent(Feature(**parent_feature_dict)):
                     raise HTTPException(
                         status_code=HTTPStatus.CONFLICT,
                         detail=(
-                            f'Feature ID "{document.parent_id}" is the not parent feature of Feature "{document.id}"!'
+                            f'Feature ID "{document.parent_id}" is not a valid parent feature!'
                         ),
                     )
 

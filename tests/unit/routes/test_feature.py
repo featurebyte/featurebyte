@@ -56,10 +56,11 @@ def test_create_201(test_api_client_persistent, feature_model_dict, create_succe
     """
     Test feature creation
     """
-    _, persistent = test_api_client_persistent
-    result = create_success_response.json()
+    test_api_client, persistent = test_api_client_persistent
 
     # check response
+    assert create_success_response.status_code == HTTPStatus.CREATED
+    result = create_success_response.json()
     feature_id = result.pop("id")
     feature_readiness = result.pop("readiness")
     created_at = datetime.fromisoformat(result.pop("created_at"))
@@ -85,6 +86,30 @@ def test_create_201(test_api_client_persistent, feature_model_dict, create_succe
     assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
     assert feat_namespace_docs[0]["created_at"] == created_at
 
+    # create a new feature version with the same namespace
+    feature_model_dict["parent_id"] = feature_id
+    feature_model_dict["event_data_ids"] = result["event_data_ids"]
+    response = test_api_client.post("/feature", json=feature_model_dict)
+    assert response.status_code == HTTPStatus.CREATED
+    new_version_result = response.json()
+
+    # check feature namespace
+    feat_namespace_docs, match_count = persistent.find(
+        collection_name="feature_namespace",
+        query_filter={"name": feature_model_dict["name"]},
+    )
+    assert match_count == 1
+    assert feat_namespace_docs[0]["name"] == feature_model_dict["name"]
+    assert feat_namespace_docs[0]["description"] is None
+    assert feat_namespace_docs[0]["versions"] == [
+        ObjectId(feature_id),
+        ObjectId(new_version_result["id"]),
+    ]
+    assert feat_namespace_docs[0]["readiness"] == feature_readiness
+    assert feat_namespace_docs[0]["default_version_id"] == ObjectId(new_version_result["id"])
+    assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
+    assert feat_namespace_docs[0]["created_at"] == created_at
+
 
 def test_create_409(
     create_success_response, test_api_client_persistent, feature_model_dict, snowflake_event_data
@@ -92,12 +117,46 @@ def test_create_409(
     """
     Test feature creation (conflict)
     """
-    _ = create_success_response
     test_api_client, _ = test_api_client_persistent
+
+    # simulate the case when the feature id has been saved
+    create_result = create_success_response.json()
+    feature_model_dict["id"] = create_result["id"]
+    response = test_api_client.post("/feature", json=feature_model_dict)
+    feature_id = feature_model_dict.pop("id")
+    assert response.status_code == HTTPStatus.CONFLICT
+    assert response.json() == {"detail": f'Feature ID "{feature_id}" already exists.'}
+
     feature_model_dict["event_data_ids"] = [str(snowflake_event_data.id)]
+    assert feature_model_dict["parent_id"] is None
     response = test_api_client.post("/feature", json=feature_model_dict)
     assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {"detail": 'Feature name "sum_30m" already exists.'}
+
+
+def test_create_422__not_proper_parent(
+    create_success_response, test_api_client_persistent, feature_model_dict, snowflake_event_data
+):
+    """
+    Test feature creation (when the parent id)
+    """
+    test_api_client, _ = test_api_client_persistent
+    parent_id = str(ObjectId())
+    feature_model_dict["event_data_ids"] = [str(snowflake_event_data.id)]
+    feature_model_dict["parent_id"] = parent_id
+    response = test_api_client.post("/feature", json=feature_model_dict)
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {
+        "detail": f'Feature ID "{parent_id}" not found! Please save the parent Feature object.'
+    }
+
+    create_result = create_success_response.json()
+    feature_model_dict["name"] = "other_name"
+    feature_model_dict["parent_id"] = create_result["id"]
+    parent_id = create_result["id"]
+    response = test_api_client.post("/feature", json=feature_model_dict)
+    assert response.status_code == HTTPStatus.CONFLICT
+    assert response.json() == {"detail": f'Feature ID "{parent_id}" is not a valid parent feature!'}
 
 
 def test_create_422(test_api_client_persistent, feature_model_dict):
