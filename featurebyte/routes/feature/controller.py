@@ -37,6 +37,11 @@ class FeatureController:
             Feature document
         session: Persistent
             Persistent session
+
+        Raises
+        ------
+        HTTPException
+            If the document failed validation checks
         """
         if document.parent_id is None:
             # when the parent_id is missing, it implies that the feature is a new feature
@@ -44,16 +49,19 @@ class FeatureController:
                 collection_name=cls.collection_name, query_filter={"name": document.name}
             )
             if conflict_feature:
+                # if it is not a new feature throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
                     detail=f'Feature name "{document.name}" already exists.',
                 )
         else:
+            # if parent_id exists, make sure the parent feature exists at persistent & has consistent name
             parent_feature_dict = session.find_one(
                 collection_name=cls.collection_name,
                 query_filter={"_id": ObjectId(document.parent_id)},
             )
             if not parent_feature_dict:
+                # if parent feature not found at persistent, throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.NOT_FOUND,
                     detail=(
@@ -61,9 +69,10 @@ class FeatureController:
                     ),
                 )
             if not document.is_parent(Feature(**parent_feature_dict)):
+                # if the parent feature is inconsistent with feature to be created, throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
-                    detail=(f'Feature ID "{document.parent_id}" is not a valid parent feature!'),
+                    detail=f'Feature ID "{document.parent_id}" is not a valid parent feature!',
                 )
 
         for event_data_id in document.event_data_ids:
@@ -72,6 +81,7 @@ class FeatureController:
                 query_filter={"_id": ObjectId(event_data_id)},
             )
             if not event_data_dict:
+                # if event data not saved at persistent, throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                     detail=(
@@ -132,6 +142,7 @@ class FeatureController:
             assert insert_id == document.id
 
             if document.parent_id is None:
+                # create a new feature namespace object
                 doc_feature_namespace = FeatureNameSpace(
                     name=document.name,
                     versions=[insert_id],
@@ -145,6 +156,7 @@ class FeatureController:
                     document=doc_feature_namespace.dict(by_alias=True),
                 )
             else:
+                # update feature namespace object
                 feature_namespace_dict = session.find_one(
                     collection_name=CollectionName.FEATURE_NAMESPACE,
                     query_filter={"name": document.name},
