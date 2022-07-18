@@ -124,6 +124,6 @@ def test_create_422(test_api_client_persistent, feature_model_dict):
     feature_model_dict["event_data_ids"] = [unknown_event_id]
     response = test_api_client.post("/feature", json=feature_model_dict)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert response.json()["detail"] == [
-        f'EventData ID "{unknown_event_id}" not found! Please save the EventData object!'
-    ]
+    assert response.json()["detail"] == (
+        f'EventData ID "{unknown_event_id}" not found! Please save the EventData object.'
+    )

@@ -1,6 +1,8 @@
 """
 Feature API payload scheme
 """
+from __future__ import annotations
+
 from typing import List, Optional, Tuple
 
 from beanie import PydanticObjectId
@@ -19,6 +21,22 @@ class Feature(FeatureModel):
     """
 
     user_id: Optional[PydanticObjectId]
+
+    def is_parent(self, other: Feature) -> bool:
+        """
+        Check whether other feature is a valid parent of current feature
+
+        Parameters
+        ----------
+        other: Feature
+            Feature object to be checked
+
+        Returns
+        -------
+        bool
+        """
+        # TODO: add more validation checks later...
+        return other.name == self.name
 
 
 class FeatureNameSpace(FeatureNameSpaceModel):

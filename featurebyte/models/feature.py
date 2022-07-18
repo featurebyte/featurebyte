@@ -120,6 +120,8 @@ class FeatureModel(BaseModel):
         EventData IDs used for the feature version
     created_at: Optional[datetime]
         Datetime when the Feature was first saved or published
+    parent_id: PydanticObjectId
+        Parent feature id of the object
     """
 
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
@@ -137,6 +139,7 @@ class FeatureModel(BaseModel):
     online_enabled: Optional[bool]
     event_data_ids: List[PydanticObjectId] = Field(default_factory=list)
     created_at: Optional[datetime] = Field(default=None)
+    parent_id: Optional[PydanticObjectId]
 
     class Config:
         """
