@@ -39,6 +39,7 @@ class EventViewGroupBy(OpsMixin):
                 raise KeyError(f'Column "{key}" not found!')
             if key not in (obj.column_entity_map or {}):
                 raise ValueError(f'Column "{key}" is not an entity!')
+            assert obj.column_entity_map is not None
             entity_id = obj.column_entity_map[key]
             entity = get_entity_by_id(entity_id)
             serving_names.append(entity["serving_names"][0])
