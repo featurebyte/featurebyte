@@ -27,6 +27,59 @@ class FeatureController:
     collection_name = CollectionName.FEATURE
 
     @classmethod
+    def _validate_feature(cls, document: Feature, session: Persistent) -> None:
+        """
+        Validate feature document to make sure the feature & parent feature are valid
+
+        Parameters
+        ----------
+        document: Feature
+            Feature document
+        session: Persistent
+            Persistent session
+        """
+        if document.parent_id is None:
+            # when the parent_id is missing, it implies that the feature is a new feature
+            conflict_feature = session.find_one(
+                collection_name=cls.collection_name, query_filter={"name": document.name}
+            )
+            if conflict_feature:
+                raise HTTPException(
+                    status_code=HTTPStatus.CONFLICT,
+                    detail=f'Feature name "{document.name}" already exists.',
+                )
+        else:
+            parent_feature_dict = session.find_one(
+                collection_name=cls.collection_name,
+                query_filter={"_id": ObjectId(document.parent_id)},
+            )
+            if not parent_feature_dict:
+                raise HTTPException(
+                    status_code=HTTPStatus.NOT_FOUND,
+                    detail=(
+                        f'Feature ID "{document.parent_id}" not found! Please save the parent Feature object.'
+                    ),
+                )
+            if not document.is_parent(Feature(**parent_feature_dict)):
+                raise HTTPException(
+                    status_code=HTTPStatus.CONFLICT,
+                    detail=(f'Feature ID "{document.parent_id}" is not a valid parent feature!'),
+                )
+
+        for event_data_id in document.event_data_ids:
+            event_data_dict = session.find_one(
+                collection_name=CollectionName.EVENT_DATA,
+                query_filter={"_id": ObjectId(event_data_id)},
+            )
+            if not event_data_dict:
+                raise HTTPException(
+                    status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f'EventData ID "{event_data_id}" not found! Please save the EventData object.'
+                    ),
+                )
+
+    @classmethod
     def create_feature(cls, user: Any, persistent: Persistent, data: FeatureCreate) -> Feature:
         """
         Create Feature at persistent (GitDB or MongoDB)
@@ -71,49 +124,7 @@ class FeatureController:
                 readiness=FeatureReadiness.DRAFT,
                 **data.dict(),
             )
-
-            if document.parent_id is None:
-                # when the parent_id is missing, it implies that the feature is a new feature
-                conflict_feature = session.find_one(
-                    collection_name=cls.collection_name, query_filter={"name": data.name}
-                )
-                if conflict_feature:
-                    raise HTTPException(
-                        status_code=HTTPStatus.CONFLICT,
-                        detail=f'Feature name "{data.name}" already exists.',
-                    )
-            else:
-                parent_feature_dict = session.find_one(
-                    collection_name=cls.collection_name,
-                    query_filter={"_id": ObjectId(document.parent_id)},
-                )
-                if not parent_feature_dict:
-                    raise HTTPException(
-                        status_code=HTTPStatus.NOT_FOUND,
-                        detail=(
-                            f'Feature ID "{document.parent_id}" not found! Please save the parent Feature object.'
-                        ),
-                    )
-                if not document.is_parent(Feature(**parent_feature_dict)):
-                    raise HTTPException(
-                        status_code=HTTPStatus.CONFLICT,
-                        detail=(
-                            f'Feature ID "{document.parent_id}" is not a valid parent feature!'
-                        ),
-                    )
-
-            for event_data_id in document.event_data_ids:
-                event_data_dict = session.find_one(
-                    collection_name=CollectionName.EVENT_DATA,
-                    query_filter={"_id": ObjectId(event_data_id)},
-                )
-                if not event_data_dict:
-                    raise HTTPException(
-                        status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-                        detail=(
-                            f'EventData ID "{event_data_id}" not found! Please save the EventData object.'
-                        ),
-                    )
+            cls._validate_feature(document=document, session=session)
 
             insert_id = session.insert_one(
                 collection_name=cls.collection_name, document=document.dict(by_alias=True)
