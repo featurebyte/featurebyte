@@ -44,6 +44,10 @@ def test_monitor_tile_missing_tile(snowflake_session):
     assert pd.isna(result.iloc[-3]["OLD_VALUE"])
     assert result.iloc[-3]["客户"] == 1
 
+    sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
+    result = snowflake_session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == 5
+
 
 def test_monitor_tile_updated_tile(snowflake_session):
     """
@@ -81,3 +85,7 @@ def test_monitor_tile_updated_tile(snowflake_session):
     assert result.iloc[0]["OLD_VALUE"] == 5
     assert result.iloc[1]["VALUE"] == 3
     assert result.iloc[1]["OLD_VALUE"] == 2
+
+    sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
+    result = snowflake_session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == 10

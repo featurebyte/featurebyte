@@ -6,7 +6,7 @@ CREATE OR REPLACE PROCEDURE SP_TILE_MONITOR(
     FREQUENCY_MINUTE float,
     ENTITY_COLUMN_NAMES varchar,
     VALUE_COLUMN_NAMES varchar,
-    TABLE_NAME varchar,
+    TILE_ID varchar,
     TILE_TYPE varchar
 )
 returns string
@@ -22,7 +22,7 @@ $$
 
     var table_exist = true
     try {
-        snowflake.execute({sqlText: `SELECT * FROM ${TABLE_NAME} LIMIT 1`})
+        snowflake.execute({sqlText: `SELECT * FROM ${TILE_ID} LIMIT 1`})
     } catch (err)  {
         table_exist = false
     }
@@ -69,14 +69,14 @@ $$
                 DATEADD(SECOND, (${BLIND_SPOT_SECONDS}+${FREQUENCY_MINUTE}*60), a.${TILE_START_DATE_COLUMN}) as EXPECTED_CREATED_AT,
                 SYSDATE() as CREATED_AT
             from
-                (${new_tile_sql}) a left outer join ${TABLE_NAME} b
+                (${new_tile_sql}) a left outer join ${TILE_ID} b
             on
                 a.INDEX = b.INDEX AND ${entity_filter_cols_str})
         where ${value_filter_cols_str}
     `
     debug = debug + " - compare_sql: " + compare_sql
 
-    var monitor_table_name = TABLE_NAME + '_MONITOR'
+    var monitor_table_name = TILE_ID + '_MONITOR'
     table_exist = true
     try {
         snowflake.execute({sqlText: `SELECT * FROM ${monitor_table_name} LIMIT 1`})
@@ -108,9 +108,19 @@ $$
             }
         )
         debug = debug + " - inside insert monitor records: " + insert_sql
-
     }
 
+
+    var insert_monitor_summary_sql = `
+        INSERT INTO TILE_MONITOR_SUMMARY(TILE_ID, TILE_START_DATE, TILE_TYPE)
+        SELECT
+            '${TILE_ID}' as TILE_ID,
+            ${TILE_START_DATE_COLUMN} as TILE_START_DATE,
+            TILE_TYPE
+        FROM (${compare_sql})
+    `
+    snowflake.execute({sqlText: insert_monitor_summary_sql})
+    debug = debug + " - insert_monitor_summary_sql: " + insert_monitor_summary_sql
 
     return debug
 $$;
