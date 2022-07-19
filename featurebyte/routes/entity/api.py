@@ -27,6 +27,17 @@ def create_entity(request: Request, data: EntityCreate) -> Entity:
     return entity
 
 
+@router.get("/{entity_id}", response_model=Entity, response_model_by_alias=False)
+def get_entity(request: Request, entity_id: str) -> Entity:
+    """
+    Get Entity
+    """
+    entity: Entity = request.state.controller.get_entity(
+        user=request.state.user, persistent=request.state.persistent, entity_id=entity_id
+    )
+    return entity
+
+
 @router.get("", response_model=EntityList, response_model_by_alias=False)
 def list_entities(
     request: Request,

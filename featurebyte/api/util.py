@@ -57,8 +57,6 @@ def get_entity(entity_name: str) -> dict[str, Any]:
     -------
     dict[str, Any]
         Entity dictionary object if found
-    None
-        Entity not found
 
     Raises
     ------
@@ -78,6 +76,37 @@ def get_entity(entity_name: str) -> dict[str, Any]:
             first_item: dict[str, Any] = response_data[0]
             return first_item
     raise RecordRetrievalException(response, f'Entity name "{entity_name}" not found!')
+
+
+def get_entity_by_id(entity_id: str) -> dict[str, Any]:
+    """
+    Get entity dictionary given entity ID
+
+    Parameters
+    ----------
+    entity_id: str
+        Entity ID
+
+    Returns
+    -------
+    dict[str, Any]
+        Entity dictionary object if found
+
+    Raises
+    ------
+    RecordRetrievalException
+        When the given entity ID is not found
+    """
+    client = Configurations().get_client()
+    response = client.get(url=f"/entity/{entity_id}")
+    if response.status_code == HTTPStatus.OK:
+        response_dict: dict[str, Any] = _get_response(
+            response=response,
+            response_exception_class=RecordRetrievalException,
+            success_status_code=HTTPStatus.OK,
+        )
+        return response_dict
+    raise RecordRetrievalException(response, f'Entity id "{entity_id}" not found!')
 
 
 def convert_response_to_dict(response: Response) -> dict[str, Any]:

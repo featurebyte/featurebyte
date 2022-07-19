@@ -48,6 +48,7 @@ def feature_model_dict_feature():
                         "timestamp": "event_timestamp",
                         "value_by": None,
                         "windows": ["30m"],
+                        "serving_names": ["cust_id"],
                     },
                     "type": "groupby",
                 },
