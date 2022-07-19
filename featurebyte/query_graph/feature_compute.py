@@ -516,9 +516,10 @@ class FeatureExecutionPlanner:
         Query graph
     """
 
-    def __init__(self, graph: QueryGraph):
+    def __init__(self, graph: QueryGraph, serving_names_mapping: dict[str, str] | None = None):
         self.graph = graph
         self.plan = FeatureExecutionPlan()
+        self.serving_names_mapping = serving_names_mapping
 
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
         """Generate FeatureExecutionPlan for given query graph Node
@@ -556,7 +557,9 @@ class FeatureExecutionPlanner:
         groupby_node : Node
             Groupby query node
         """
-        agg_specs = AggregationSpec.from_groupby_query_node(groupby_node)
+        agg_specs = AggregationSpec.from_groupby_query_node(
+            groupby_node, serving_names_mapping=self.serving_names_mapping
+        )
         for agg_spec in agg_specs:
             self.plan.add_aggregation_spec(agg_spec)
 

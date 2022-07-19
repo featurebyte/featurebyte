@@ -51,6 +51,29 @@ def construct_cte_sql(cte_statements: list[tuple[str, str]]) -> str:
     return cte_sql
 
 
+def apply_serving_names_mapping(serving_names: list[str], mapping: dict[str, str]) -> list[str]:
+    """Apply user provided mapping to transform the default serving names
+
+    Applicable to the serving_names attribute in TileGenSql and AggregationSpec
+
+    Parameters
+    ----------
+    serving_names : list[str]
+        List of original serving names
+    mapping : dict[str, str]
+        Mapping from original serving name to new serving name
+
+    Returns
+    -------
+    list[str]
+        Mapped serving names
+    """
+    updated_serving_names = []
+    for serving_name in serving_names:
+        updated_serving_names.append(mapping.get(serving_name, serving_name))
+    return updated_serving_names
+
+
 @dataclass
 class AggregationSpec:
     """Aggregation specification"""
@@ -82,6 +105,7 @@ class AggregationSpec:
     def from_groupby_query_node(
         cls,
         groupby_node: Node,
+        serving_names_mapping: dict[str, str] | None = None,
     ) -> list[AggregationSpec]:
         """Construct an AggregationSpec from a query graph and groupby node
 
@@ -89,6 +113,8 @@ class AggregationSpec:
         ----------
         groupby_node : Node
             Query graph node with groupby type
+        serving_names_mapping : dict[str, str]
+            Mapping from original serving name to new serving name
 
         Returns
         -------
@@ -97,6 +123,11 @@ class AggregationSpec:
         """
         tile_table_id = groupby_node.parameters["tile_id"]
         params = groupby_node.parameters
+
+        serving_names = params["serving_names"]
+        if serving_names_mapping is not None:
+            serving_names = apply_serving_names_mapping(serving_names, serving_names_mapping)
+
         aggregation_specs = []
         for window, feature_name in zip(params["windows"], params["names"]):
             params = groupby_node.parameters
@@ -108,11 +139,12 @@ class AggregationSpec:
                 blind_spot=params["blind_spot"],
                 tile_table_id=tile_table_id,
                 keys=params["keys"],
-                serving_names=params["serving_names"],
+                serving_names=serving_names,
                 merge_expr=get_aggregator(params["agg_func"]).merge(),
                 feature_name=feature_name,
             )
             aggregation_specs.append(agg_spec)
+
         return aggregation_specs
 
 

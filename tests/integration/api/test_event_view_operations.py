@@ -169,6 +169,7 @@ def test_query_object_operation_on_snowflake_source(
         "COUNT_2h DIV COUNT_24h": Decimal("0.111111"),
     }
 
+    run_and_test_get_historical_features_with_serving_names_mapping(config, feature_group)
     run_and_test_get_historical_features(config, feature_group)
 
 
@@ -191,6 +192,33 @@ def run_and_test_get_historical_features(config, feature_group):
         {
             "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
             "UID": df_training_events["UID"],
+            "COUNT_2h": [1.0, 1.0, np.nan, 1.0, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
+            "COUNT_24h": [9.0, 7.0, 2.0, 5.0, 5.0, 4.0, 4.0, 7.0, 5.0, np.nan],
+        }
+    )
+    # When using fetch_pandas_all(), the dtype of "USER_ID" column is int8 (int64 otherwise)
+    pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)
+
+
+def run_and_test_get_historical_features_with_serving_names_mapping(config, feature_group):
+    """Test getting historical features from FeatureList with alternative serving names"""
+    df_training_events = pd.DataFrame(
+        {
+            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
+            "NEW_UID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        }
+    )
+    feature_list = FeatureList(
+        [feature_group["COUNT_2h"], feature_group["COUNT_24h"]],
+        name="My FeatureList",
+    )
+    df_historical_features = feature_list.get_historical_features(
+        df_training_events, credentials=config.credentials, serving_names_mapping={"UID": "NEW_UID"}
+    )
+    df_historical_expected = pd.DataFrame(
+        {
+            "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
+            "NEW_UID": df_training_events["NEW_UID"],
             "COUNT_2h": [1.0, 1.0, np.nan, 1.0, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
             "COUNT_24h": [9.0, 7.0, 2.0, 5.0, 5.0, 4.0, 4.0, 7.0, 5.0, np.nan],
         }
