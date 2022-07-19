@@ -201,9 +201,7 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
     ) -> str:
         # Input request table can have duplicated time points but aggregation should be done only on
         # distinct time points
-        select_distinct_columns = ", ".join(
-            [SpecialColumnName.POINT_IN_TIME.value] + serving_names
-        )
+        select_distinct_columns = ", ".join([SpecialColumnName.POINT_IN_TIME.value] + serving_names)
         select_serving_names = ", ".join([f"REQ.{col}" for col in serving_names])
         sql = f"""
     SELECT
