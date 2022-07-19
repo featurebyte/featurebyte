@@ -16,10 +16,10 @@ from bson.objectid import ObjectId
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
-from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.enum import CollectionName, InternalName
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.feature import (
@@ -233,9 +233,9 @@ def tile_manager(snowflake_session):
 @pytest.fixture
 def snowflake_feature(feature_model_dict, snowflake_session):
     """
-    Fixture for a Feature object
+    Fixture for a ExtendedFeatureModel object
     """
-    feature = Feature(**feature_model_dict)
+    feature = ExtendedFeatureModel(**feature_model_dict)
     feature.version = "v1"
     feature.readiness = FeatureReadiness.DRAFT.value
     feature.is_default = True

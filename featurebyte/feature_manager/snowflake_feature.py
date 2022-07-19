@@ -3,13 +3,14 @@ Snowflake Feature Manager class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
 import json
 
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_feature_tile_monitor,
     tm_insert_feature_registry,
@@ -23,9 +24,6 @@ from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureReadiness, FeatureVersionIdentifier
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
-
-if TYPE_CHECKING:
-    from featurebyte.api.feature import Feature
 
 
 class FeatureManagerSnowflake(BaseModel):
@@ -49,14 +47,14 @@ class FeatureManagerSnowflake(BaseModel):
         super().__init__(**kw)
         self._session = session
 
-    def insert_feature_registry(self, feature: Feature) -> None:
+    def insert_feature_registry(self, feature: ExtendedFeatureModel) -> None:
         """
         Insert feature registry record. Update the is_default of the existing feature registry records to be False,
         then insert the new registry record with is_default to True
 
         Parameters
         ----------
-        feature: Feature
+        feature: ExtendedFeatureModel
             input feature instance
 
         Raises
@@ -91,13 +89,13 @@ class FeatureManagerSnowflake(BaseModel):
                 f"Feature version already exist for {feature.name} with version {feature.version}"
             )
 
-    def remove_feature_registry(self, feature: Feature) -> None:
+    def remove_feature_registry(self, feature: ExtendedFeatureModel) -> None:
         """
         Remove the feature registry record
 
         Parameters
         ----------
-        feature: Feature
+        feature: ExtendedFeatureModel
             input feature instance
 
         Raises
@@ -128,7 +126,7 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"Done removing feature version {feature.name} with version {feature.version}")
 
     def retrieve_feature_registries(
-        self, feature: Feature, version: Optional[FeatureVersionIdentifier] = None
+        self, feature: ExtendedFeatureModel, version: Optional[FeatureVersionIdentifier] = None
     ) -> pd.DataFrame:
         """
         Retrieve Feature instances. If version parameter is not presented, return all the feature versions.
@@ -136,7 +134,7 @@ class FeatureManagerSnowflake(BaseModel):
 
         Parameters
         ----------
-        feature: Feature
+        feature: ExtendedFeatureModel
             input feature instance
         version: str
             version of Feature
@@ -150,13 +148,13 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"select sql: {sql}")
         return self._session.execute_query(sql)
 
-    def update_feature_registry(self, new_feature: Feature) -> None:
+    def update_feature_registry(self, new_feature: ExtendedFeatureModel) -> None:
         """
         Update Feature Registry record. Only readiness, description and is_default might be updated
 
         Parameters
         ----------
-        new_feature: Feature
+        new_feature: ExtendedFeatureModel
             new input feature instance
 
         Raises
@@ -177,13 +175,13 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"update_sql: {update_sql}")
         self._session.execute_query(update_sql)
 
-    def online_enable(self, feature: Feature) -> None:
+    def online_enable(self, feature: ExtendedFeatureModel) -> None:
         """
         Schedule both online and offline tile jobs
 
         Parameters
         ----------
-        feature: Feature
+        feature: ExtendedFeatureModel
             input feature instance
 
         Raises
@@ -236,13 +234,13 @@ class FeatureManagerSnowflake(BaseModel):
             feature.online_enabled = True
             self.update_feature_registry(feature)
 
-    def retrieve_last_tile_index(self, feature: Feature) -> pd.DataFrame:
+    def retrieve_last_tile_index(self, feature: ExtendedFeatureModel) -> pd.DataFrame:
         """
         Get last_tile_index of all the tile_ids as dataframe
 
         Parameters
         ----------
-        feature: Feature
+        feature: ExtendedFeatureModel
             input feature instance
 
         Returns

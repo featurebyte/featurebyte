@@ -7,6 +7,7 @@ from unittest import mock
 import pandas as pd
 import pytest
 
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_feature_tile_monitor,
     tm_insert_feature_registry,
@@ -16,6 +17,14 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_update_feature_registry_default_false,
 )
 from featurebyte.models.feature import FeatureReadiness
+
+
+@pytest.fixture(name="mock_snowflake_feature")
+def mock_snowflake_feature_fixture(mock_snowflake_feature):
+    """
+    ExtendedFeatureModel object fixture
+    """
+    return ExtendedFeatureModel(**mock_snowflake_feature.dict())
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
