@@ -9,9 +9,17 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.api.event_data import EventData
+from featurebyte.exception import DuplicatedFeatureRegistryError
 from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_store import (
+    FeatureStoreModel,
+    SourceType,
+    SQLiteDetails,
+    TableDetails,
+)
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.routes.feature.controller import FeatureController
+from featurebyte.schema.feature import Feature
 
 
 @pytest.fixture(name="snowflake_event_data")
@@ -37,16 +45,6 @@ def mock_insert_feature_registry_fixture():
         "featurebyte.routes.feature.controller.FeatureController.insert_feature_registry"
     ) as mock:
         yield mock
-
-
-@pytest.fixture(name="feature_dict")
-def feature_dict_fixture(feature_model_dict, snowflake_event_data):
-    """
-    Feature dictionary fixture
-    """
-    snowflake_event_data.save_as_draft()
-    feature_model_dict["event_data_ids"] = [str(snowflake_event_data.id)]
-    return feature_model_dict
 
 
 @pytest.fixture(name="create_success_response")
@@ -297,3 +295,93 @@ def test_prepare_feature_namespace_payload(
         )
         == expected
     )
+
+
+@pytest.fixture(name="get_credential")
+def get_credential_fixture(config):
+    """
+    get_credential fixture
+    """
+
+    def get_credential(user_id, db_source):
+        _ = user_id
+        return config.credentials.get(db_source)
+
+    return get_credential
+
+
+@patch("featurebyte.session.base.BaseSession.execute_query")
+def test_insert_feature_register(
+    mock_execute_query, feature_model_dict, snowflake_connector, get_credential
+):
+    """
+    Test insert_feature_registry
+    """
+    _ = snowflake_connector
+    user = Mock()
+    feature = Feature(**feature_model_dict)
+    FeatureController.insert_feature_registry(
+        user=user, document=feature, get_credential=get_credential
+    )
+
+    match_count = 0
+    expected_partial_query = "INSERT INTO FEATURE_REGISTRY"
+    for call_args in mock_execute_query.call_args_list:
+        if expected_partial_query in call_args.args[0]:
+            match_count += 1
+    assert match_count > 0
+
+
+@patch("featurebyte.session.base.BaseSession.execute_query")
+def test_insert_feature_registry__non_snowflake_feature_store(
+    mock_execute_query, feature_model_dict
+):
+    """
+    Test insert_feature_registry function (when feature store is not snowflake)
+    """
+    feature_store = FeatureStoreModel(
+        type=SourceType.SQLITE, details=SQLiteDetails(filename="some_filename")
+    )
+    feature_model_dict["tabular_source"] = (feature_store, TableDetails(table_name="some_table"))
+    feature = Feature(**feature_model_dict)
+    user, get_credential = Mock(), Mock()
+    FeatureController.insert_feature_registry(
+        user=user, document=feature, get_credential=get_credential
+    )
+    assert mock_execute_query.call_count == 0
+
+
+@patch("featurebyte.routes.feature.controller.FeatureManagerSnowflake")
+def test_insert_feature_registry__duplicated_feature_registry_exception(
+    mock_feature_manager, feature_model_dict, get_credential
+):
+    """
+    Test insert_feature_registry with duplicated_feature_registry exception
+    """
+    mock_feature_manager.return_value.insert_feature_registry.side_effect = (
+        DuplicatedFeatureRegistryError
+    )
+    feature = Feature(**feature_model_dict)
+    user = Mock()
+    with pytest.raises(DuplicatedFeatureRegistryError):
+        FeatureController.insert_feature_registry(
+            user=user, document=feature, get_credential=get_credential
+        )
+    assert not mock_feature_manager.return_value.remove_feature_registry.called
+
+
+@patch("featurebyte.routes.feature.controller.FeatureManagerSnowflake")
+def test_insert_feature_registry__other_exception(
+    mock_feature_manager, feature_model_dict, get_credential
+):
+    """
+    Test insert_feature_registry with non duplicated feature registry exception
+    """
+    mock_feature_manager.return_value.insert_feature_registry.side_effect = ValueError
+    feature = Feature(**feature_model_dict)
+    user = Mock()
+    with pytest.raises(ValueError):
+        FeatureController.insert_feature_registry(
+            user=user, document=feature, get_credential=get_credential
+        )
+    assert mock_feature_manager.return_value.remove_feature_registry.called
