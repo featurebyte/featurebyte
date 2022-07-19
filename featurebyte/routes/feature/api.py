@@ -20,6 +20,9 @@ def create_feature(request: Request, data: FeatureCreate) -> Feature:
     Create Feature
     """
     feature: Feature = request.state.controller.create_feature(
-        user=request.state.user, persistent=request.state.persistent, data=data
+        user=request.state.user,
+        persistent=request.state.persistent,
+        get_credential=request.state.get_credential,
+        data=data,
     )
     return feature

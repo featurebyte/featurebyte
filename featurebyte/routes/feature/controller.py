@@ -10,7 +10,10 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.enum import CollectionName
+from featurebyte.enum import CollectionName, SourceType
+from featurebyte.exception import DuplicatedFeatureRegistryError
+from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.util import get_utc_now
@@ -130,7 +133,50 @@ class FeatureController:
         }
 
     @classmethod
-    def create_feature(cls, user: Any, persistent: Persistent, data: FeatureCreate) -> Feature:
+    def insert_feature_registry(cls, user: Any, document: Feature, get_credential: Any) -> None:
+        """
+        Insert feature registry into feature store
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        document: Feature
+            Feature document
+        get_credential: Any
+            Get credential handler function
+
+        Raises
+        ------
+        DuplicatedFeatureRegistryError
+            When the feature registry already exists at the feature store
+        Exception
+            Other errors during registry insertion / removal
+        """
+        extended_feature = ExtendedFeatureModel(**document.dict())
+        if extended_feature.tabular_source[0].type == SourceType.SNOWFLAKE:
+            feature_store = extended_feature.tabular_source[0]
+            db_session = feature_store.get_session(
+                credentials={
+                    feature_store: get_credential(user_id=user.id, db_source=feature_store)
+                }
+            )
+            feature_manager = FeatureManagerSnowflake(session=db_session)
+            try:
+                feature_manager.insert_feature_registry(extended_feature)
+            except DuplicatedFeatureRegistryError as exc:
+                # someone else already registered the feature at snowflake
+                # do not remove the current registry & raise error to remove persistent record
+                raise exc
+            except Exception as exc:
+                # for other exceptions, cleanup feature registry record & persistent record
+                feature_manager.remove_feature_registry(extended_feature)
+                raise exc
+
+    @classmethod
+    def create_feature(
+        cls, user: Any, persistent: Persistent, get_credential: Any, data: FeatureCreate
+    ) -> Feature:
         """
         Create Feature at persistent (GitDB or MongoDB)
 
@@ -140,6 +186,8 @@ class FeatureController:
             User class to provide user identifier
         persistent: Persistent
             Object that entity will be saved to
+        get_credential: Any
+            Get credential handler function
         data: FeatureCreate
             Feature creation payload
 
@@ -172,6 +220,7 @@ class FeatureController:
                 readiness=FeatureReadiness.DRAFT,
                 **data.dict(),
             )
+            # validate feature payload
             cls._validate_feature(document=document, session=session)
 
             insert_id = session.insert_one(
@@ -210,5 +259,8 @@ class FeatureController:
                         )
                     },
                 )
+
+            # insert feature registry into feature store
+            cls.insert_feature_registry(user, document, get_credential)
 
         return document

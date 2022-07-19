@@ -10,6 +10,11 @@ import json
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
+from featurebyte.exception import (
+    DuplicatedFeatureRegistryError,
+    InvalidFeatureRegistryOperationError,
+    MissingFeatureRegistryError,
+)
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_feature_tile_monitor,
@@ -59,7 +64,7 @@ class FeatureManagerSnowflake(BaseModel):
 
         Raises
         ----------
-        ValueError
+        DuplicatedFeatureRegistryError
             when the feature registry record already exists
         """
         feature_versions = self.retrieve_feature_registries(
@@ -85,7 +90,7 @@ class FeatureManagerSnowflake(BaseModel):
             logger.debug(f"generated insert sql: {sql}")
             self._session.execute_query(sql)
         else:
-            raise ValueError(
+            raise DuplicatedFeatureRegistryError(
                 f"Feature version already exist for {feature.name} with version {feature.version}"
             )
 
@@ -100,9 +105,10 @@ class FeatureManagerSnowflake(BaseModel):
 
         Raises
         ----------
-        ValueError
+        MissingFeatureRegistryError
             when the feature registry record does not exist
-            or when the readiness of the feature is not DRAFT
+        InvalidFeatureRegistryOperationError
+            when the readiness of the feature is not DRAFT
         """
         feature_versions = self.retrieve_feature_registries(
             feature=feature, version=feature.version
@@ -110,14 +116,15 @@ class FeatureManagerSnowflake(BaseModel):
 
         logger.debug(f"feature_versions: {feature_versions}")
         if len(feature_versions) == 0:
-            raise ValueError(
+            raise MissingFeatureRegistryError(
                 f"Feature version does not exist for {feature.name} with version {feature.version}"
             )
 
         feature_readiness = feature_versions["READINESS"].iloc[0]
         if feature_readiness != "DRAFT":
-            raise ValueError(
-                f"Feature version {feature.name} with version {feature.version} cannot be deleted with readiness {feature_readiness}"
+            raise InvalidFeatureRegistryOperationError(
+                f"Feature version {feature.name} with version {feature.version} cannot be deleted with readiness "
+                f"{feature_readiness}"
             )
 
         sql = tm_remove_feature_registry.render(feature=feature)
@@ -138,8 +145,10 @@ class FeatureManagerSnowflake(BaseModel):
             input feature instance
         version: str
             version of Feature
+
         Returns
         -------
+        pd.DataFrame
             dataframe of the FEATURE_REGISTRY rows with the following columns:
                 NAME, VERSION, READINESS, TILE_SPECS, IS_DEFAULT, ONLINE_ENABLED, CREATED_AT
         """
@@ -159,14 +168,14 @@ class FeatureManagerSnowflake(BaseModel):
 
         Raises
         ----------
-        ValueError
+        MissingFeatureRegistryError
             when the feature registry record does not exist
         """
         feature_versions = self.retrieve_feature_registries(
             feature=new_feature, version=new_feature.version
         )
         if len(feature_versions) == 0:
-            raise ValueError(
+            raise MissingFeatureRegistryError(
                 f"feature {new_feature.name} with version {new_feature.version} does not exist"
             )
         logger.debug(f"feature_versions: {feature_versions}")
@@ -186,14 +195,15 @@ class FeatureManagerSnowflake(BaseModel):
 
         Raises
         ----------
-        ValueError
+        InvalidFeatureRegistryOperationError
             when the input feature readiness is not PRODUCTION_READY
-            or when the feature registry record does not exist
-            or when the feature registry record is already online enabled
+            when the feature registry record is already online enabled
+        MissingFeatureRegistryError
+            when the feature registry record does not exist
         """
         if feature.tile_specs:
             if feature.readiness is None or feature.readiness != FeatureReadiness.PRODUCTION_READY:
-                raise ValueError(
+                raise InvalidFeatureRegistryOperationError(
                     "feature readiness has to be PRODUCTION_READY before online_enable"
                 )
 
@@ -203,12 +213,12 @@ class FeatureManagerSnowflake(BaseModel):
             )
 
             if len(feature_versions) == 0:
-                raise ValueError(
+                raise MissingFeatureRegistryError(
                     f"feature {feature.name} with version {feature.version} does not exist"
                 )
 
             if feature_versions["ONLINE_ENABLED"].iloc[0]:
-                raise ValueError(
+                raise InvalidFeatureRegistryOperationError(
                     f"feature {feature.name} with version {feature.version} is already online enabled"
                 )
 

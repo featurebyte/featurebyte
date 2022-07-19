@@ -53,13 +53,13 @@ def _get_persistent() -> Persistent:
     return PERSISTENT
 
 
-def _get_credential(user_id: ObjectId, db_source: FeatureStoreModel) -> Credential | None:
+def _get_credential(user_id: ObjectId | None, db_source: FeatureStoreModel) -> Credential | None:
     """
     Retrieve credential from FeatureStoreModel
 
     Parameters
     ----------
-    user_id: ObjectId
+    user_id: ObjectId | None
         User ID
     db_source: FeatureStoreModel
         FeatureStoreModel object
