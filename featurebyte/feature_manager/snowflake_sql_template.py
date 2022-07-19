@@ -121,10 +121,10 @@ tm_feature_tile_monitor = Template(
             f.DESCRIPTION,
             f.READINESS,
             f.EVENT_DATA_IDS,
-            t.value:tile_id as TILE_ID,
-            t.value:time_modulo_frequency_second as TILE_MOD_FREQUENCY,
-            t.value:blind_spot_second as TILE_BLIND_SPOT,
-            t.value:frequency_minute as TILE_FREQUENCY
+            CAST(t.value:tile_id AS VARCHAR) as TILE_ID,
+            CAST(t.value:time_modulo_frequency_second AS INT) as TILE_MOD_FREQUENCY,
+            CAST(t.value:blind_spot_second AS INT) as TILE_BLIND_SPOT,
+            CAST(t.value:frequency_minute AS INT) as TILE_FREQUENCY
         FROM FEATURE_REGISTRY f, LATERAL FLATTEN(INPUT => TILE_SPECS) t
     ) f_t, TILE_MONITOR_SUMMARY t_m
     WHERE f_t.TILE_ID = t_m.TILE_ID

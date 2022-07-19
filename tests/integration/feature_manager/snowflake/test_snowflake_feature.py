@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
+from featurebyte.enum import InternalName
 from featurebyte.models.feature import FeatureReadiness
 
 
@@ -279,3 +280,60 @@ def test_get_last_tile_index(
     assert len(last_index_df) == 1
     assert last_index_df.iloc[0]["TILE_ID"] == expected_tile_id
     assert last_index_df.iloc[0]["LAST_TILE_INDEX_ONLINE"] == -1
+
+
+def test_get_tile_monitor_summary(snowflake_feature, feature_manager, snowflake_session):
+    """
+    Test retrieve_feature_tile_inconsistency_data
+    """
+    feature_manager.insert_feature_registry(snowflake_feature)
+
+    entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
+    value_col_names = "VALUE"
+    table_name = "TEMP_TABLE"
+    tile_id = snowflake_feature.tile_specs[0].tile_id
+    tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 95"
+    monitor_tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 100"
+
+    sql = (
+        f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
+        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{tile_id}', 'ONLINE', null)"
+    )
+    snowflake_session.execute_query(sql)
+
+    sql = (
+        f"call SP_TILE_MONITOR('{monitor_tile_sql}', '{InternalName.TILE_START_DATE}', 183, 3, 5, "
+        f"'{entity_col_names}', '{value_col_names}', '{tile_id}', 'ONLINE')"
+    )
+    snowflake_session.execute_query(sql)
+    sql = f"SELECT * FROM {tile_id}_MONITOR"
+    result = snowflake_session.execute_query(sql)
+    assert len(result) == 5
+
+    sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
+    result = snowflake_session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == 5
+
+    result = feature_manager.retrieve_feature_tile_inconsistency_data(
+        query_start_ts="2022-06-05 15:43:00", query_end_ts="2022-06-05 16:03:00"
+    )
+    assert len(result) == 5
+    expected_df = pd.DataFrame.from_dict(
+        {
+            "NAME": ["sum_30m", "sum_30m"],
+            "VERSION": ["v1", "v1"],
+            "TILE_ID": [tile_id, tile_id],
+            "TILE_START_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
+        }
+    )
+    result_df = result[:2][
+        [
+            "NAME",
+            "VERSION",
+            "TILE_ID",
+            "TILE_START_DATE",
+        ]
+    ]
+    result_df["TILE_START_DATE"] = result_df["TILE_START_DATE"].dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    assert_frame_equal(expected_df, result_df)
