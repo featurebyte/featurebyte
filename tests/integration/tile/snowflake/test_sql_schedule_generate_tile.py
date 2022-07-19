@@ -115,3 +115,7 @@ def test_schedule_monitor_tile_online(snowflake_session):
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}_MONITOR"
     result = snowflake_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 2
+
+    sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
+    result = snowflake_session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == 2

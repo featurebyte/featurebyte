@@ -204,6 +204,6 @@ def test_get_last_tile_index(mock_execute_query, mock_snowflake_feature, feature
             "LAST_TILE_INDEX_OFFLINE": [80],
         }
     )
-    last_index_df = feature_manager.get_last_tile_index(mock_snowflake_feature)
+    last_index_df = feature_manager.retrieve_last_tile_index(mock_snowflake_feature)
     assert last_index_df.iloc[0]["TILE_ID"] == "TILE_ID1"
     assert last_index_df.iloc[0]["LAST_TILE_INDEX_ONLINE"] == 100

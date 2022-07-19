@@ -11,6 +11,7 @@ import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.feature_manager.snowflake_sql_template import (
+    tm_feature_tile_monitor,
     tm_insert_feature_registry,
     tm_last_tile_index,
     tm_remove_feature_registry,
@@ -235,7 +236,7 @@ class FeatureManagerSnowflake(BaseModel):
             feature.online_enabled = True
             self.update_feature_registry(feature)
 
-    def get_last_tile_index(self, feature: Feature) -> pd.DataFrame:
+    def retrieve_last_tile_index(self, feature: Feature) -> pd.DataFrame:
         """
         Get last_tile_index of all the tile_ids as dataframe
 
@@ -249,6 +250,30 @@ class FeatureManagerSnowflake(BaseModel):
             last_tile_index of all the tile_ids as dataframe
         """
         sql = tm_last_tile_index.render(feature=feature)
+        logger.debug(f"generated sql: {sql}")
+        result = self._session.execute_query(sql)
+        return result
+
+    def retrieve_feature_tile_inconsistency_data(
+        self, query_start_ts: str, query_end_ts: str
+    ) -> pd.DataFrame:
+        """
+        Retrieve the raw data of feature tile inconsistency monitoring
+
+        Parameters
+        ----------
+        query_start_ts: str
+            start monitoring timestamp of tile inconsistency
+        query_end_ts: str
+            end monitoring timestamp of tile inconsistency
+
+        Returns
+        -------
+            raw data of feature-tile inconsistency as dataframe
+        """
+        sql = tm_feature_tile_monitor.render(
+            query_start_ts=query_start_ts, query_end_ts=query_end_ts
+        )
         logger.debug(f"generated sql: {sql}")
         result = self._session.execute_query(sql)
         return result

@@ -147,6 +147,7 @@ EXPECTED_TABLES = [
     "FEATURE_LIST_REGISTRY",
     "FEATURE_REGISTRY",
     "TILE_REGISTRY",
+    "TILE_MONITOR_SUMMARY",
 ]
 
 
@@ -266,6 +267,11 @@ def test_schema_initializer__sql_objects():
             "filename": "SP_TILE_GENERATE_ENTITY_TRACKING.sql",
             "identifier": "SP_TILE_GENERATE_ENTITY_TRACKING",
             "type": "procedure",
+        },
+        {
+            "filename": "T_TILE_MONITOR_SUMMARY.sql",
+            "identifier": "TILE_MONITOR_SUMMARY",
+            "type": "table",
         },
     ]
 
