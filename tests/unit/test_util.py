@@ -13,9 +13,12 @@ def test_get_entity():
     Test get_entity function
     """
     # create entities & save to persistent
-    cust_entity = Entity.create(name="customer", serving_name="cust_id")
-    prod_entity = Entity.create(name="product", serving_name="prod_id")
-    region_entity = Entity.create(name="region", serving_name="region")
+    cust_entity = Entity(name="customer", serving_names=["cust_id"])
+    prod_entity = Entity(name="product", serving_names=["prod_id"])
+    region_entity = Entity(name="region", serving_names=["region"])
+    cust_entity.save()
+    prod_entity.save()
+    region_entity.save()
 
     # load the entities from the persistent
     assert get_entity("customer") == cust_entity

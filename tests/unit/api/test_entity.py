@@ -21,21 +21,27 @@ def entity_fixture():
     """
     Entity fixture
     """
-    yield Entity.create(name="customer", serving_name="cust_id")
+    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity.save()
+    yield entity
 
 
 def test_entity_creation__input_validation():
     """
     Test entity creation input validation
     """
+    entity = Entity(name="hello", serving_names=["world"])
     with pytest.raises(ValueError) as exc:
-        Entity.create(name=1234, serving_name="hello")
+        entity.name = 1234
+        entity.save()
     assert exc.value.errors() == [
         {"loc": ("name",), "msg": "str type expected", "type": "type_error.str"}
     ]
 
+    entity = Entity(name="hello", serving_names=["world"])
     with pytest.raises(ValueError) as exc:
-        Entity.create(name="world", serving_name=234)
+        entity.serving_names = [1234]
+        entity.save()
     assert exc.value.errors() == [
         {"loc": ("serving_name",), "msg": "str type expected", "type": "type_error.str"}
     ]
@@ -50,16 +56,16 @@ def test_entity_creation(entity):
     assert entity.name_history == []
 
     with pytest.raises(DuplicatedRecordException) as exc:
-        Entity.create(name="customer", serving_name="customer_id")
+        Entity(name="customer", serving_names=["customer_id"]).save()
     assert 'Entity name (entity.name: "customer") already exists.' in str(exc.value)
 
     with pytest.raises(DuplicatedRecordException) as exc:
-        Entity.create(name="Customer", serving_name="cust_id")
+        Entity(name="Customer", serving_names=["cust_id"]).save()
     assert 'Entity serving name (entity.serving_names: "cust_id") already exists.' in str(exc.value)
 
     with mock.patch("featurebyte.api.entity.Configurations"):
         with pytest.raises(RecordCreationException):
-            Entity.create(name="Customer", serving_name="cust_id")
+            Entity(name="Customer", serving_names=["cust_id"]).save()
 
 
 @freeze_time("2022-07-01")
@@ -76,7 +82,7 @@ def test_entity_update_name(entity):
     ]
 
     # create another entity
-    Entity.create(name="product", serving_name="product_id")
+    Entity(name="product", serving_names=["product_id"]).save()
 
     with pytest.raises(ValueError) as exc:
         entity.update_name(type)

@@ -51,7 +51,7 @@ def feature_name_space_dict_fixture():
 def test_feature_model(snowflake_event_view, feature_model_dict):
     """Test feature model serialize & deserialize"""
     # pylint: disable=duplicate-code
-    Entity.create(name="customer", serving_name="cust_id")
+    Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
     feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
         value_column="col_float",

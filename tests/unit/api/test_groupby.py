@@ -24,7 +24,7 @@ def test_constructor(snowflake_event_view, keys, expected_keys):
     # set key columns as entity
     for column, serving_name in zip(expected_keys, expected_serving_names):
         # create an entity for each column
-        Entity.create(name=column, serving_name=serving_name)
+        Entity(name=column, serving_names=[serving_name]).save()
 
         # mark the column as entity
         snowflake_event_view[column].as_entity(column)
@@ -66,7 +66,7 @@ def test_constructor__keys_column_not_found(snowflake_event_view):
         EventViewGroupBy(obj=snowflake_event_view, keys="random_column")
     assert 'Column "random_column" not found!' in str(exc.value)
 
-    Entity.create(name="customer", serving_name="cust_id")
+    Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
     with pytest.raises(KeyError) as exc:
         EventViewGroupBy(obj=snowflake_event_view, keys=["cust_id", "random_column"])
@@ -77,7 +77,7 @@ def test_groupby__value_column_not_found(snowflake_event_view):
     """
     Test case when value column not found in the EventView
     """
-    Entity.create(name="customer", serving_name="cust_id")
+    Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
     grouped = EventViewGroupBy(obj=snowflake_event_view, keys="cust_id")
     with pytest.raises(KeyError) as exc:
@@ -102,7 +102,7 @@ def test_groupby__wrong_method(snowflake_event_view):
     """
     Test not valid aggregation method passed to groupby
     """
-    Entity.create(name="customer", serving_name="cust_id")
+    Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
     grouped = EventViewGroupBy(obj=snowflake_event_view, keys="cust_id")
     with pytest.raises(ValueError) as exc:
@@ -115,7 +115,7 @@ def test_groupby__not_able_to_infer_feature_job_setting(snowflake_event_view):
     """
     Test groupby not able to infer feature job setting
     """
-    Entity.create(name="customer", serving_name="cust_id")
+    Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
     with pytest.raises(ValueError) as exc:
         snowflake_event_view.groupby("cust_id").aggregate(
@@ -173,7 +173,7 @@ def test_groupby__default_feature_job_setting(snowflake_event_data):
     )
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
 
-    Entity.create(name="customer", serving_name="cust_id")
+    Entity(name="customer", serving_names=["cust_id"]).save()
     event_view.cust_id.as_entity("customer")
     feature_group = event_view.groupby("cust_id").aggregate(
         value_column="col_float",

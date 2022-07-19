@@ -188,7 +188,8 @@ def test_event_data_column__as_entity(snowflake_event_data):
     assert snowflake_event_data.column_entity_map is None
 
     # create entity
-    entity = Entity.create(name="customer", serving_name="cust_id")
+    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity.save()
 
     col_int = snowflake_event_data.col_int
     assert isinstance(col_int, EventDataColumn)
@@ -215,7 +216,8 @@ def test_event_data_column__as_entity__saved_event_data(saved_event_data, config
     assert saved_event_data.column_entity_map is None
 
     # create entity
-    entity = Entity.create(name="customer", serving_name="cust_id")
+    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity.save()
 
     saved_event_data.col_int.as_entity("customer")
     assert saved_event_data.column_entity_map == {"col_int": entity.id}
@@ -235,7 +237,8 @@ def test_event_data_column__as_entity__saved_event_data__record_update_exception
     """
     _ = config
 
-    Entity.create(name="customer", serving_name="cust_id")
+    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity.save()
 
     # test unexpected exception
     with pytest.raises(RecordUpdateException):

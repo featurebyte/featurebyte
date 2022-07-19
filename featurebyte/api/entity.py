@@ -20,22 +20,9 @@ class Entity(EntityModel):
     Entity class
     """
 
-    @classmethod
-    def create(cls, name: str, serving_name: str) -> Entity:
+    def save(self) -> None:
         """
-        Create entity at persistent layer
-
-        Parameters
-        ----------
-        name: str
-            Entity name
-        serving_name: str
-            Entity serving name
-
-        Returns
-        -------
-        Entity
-            Newly created entity object
+        save entity at persistent layer
 
         Raises
         ------
@@ -44,14 +31,14 @@ class Entity(EntityModel):
         RecordCreationException
             When exception happens during record creation at persistent
         """
-        data = EntityCreate(name=name, serving_name=serving_name)
+        data = EntityCreate(name=self.name, serving_name=self.serving_names[0])
         client = Configurations().get_client()
         response = client.post("/entity", json=data.json_dict())
         if response.status_code != HTTPStatus.CREATED:
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response=response)
             raise RecordCreationException(response=response)
-        return Entity(**response.json())
+        type(self).__init__(self, **response.json())
 
     @property
     def serving_name(self) -> str:
