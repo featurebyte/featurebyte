@@ -125,7 +125,7 @@ def test_feature__preview_missing_entity_id(float_feature):
     }
     with pytest.raises(KeyError) as exc_info:
         float_feature.preview(invalid_params)
-    assert "Entity column not provided: cust_id" in str(exc_info.value)
+    assert "Serving name not provided: cust_id" in str(exc_info.value)
 
 
 def test_feature__preview_not_a_dict(float_feature):
@@ -135,7 +135,7 @@ def test_feature__preview_not_a_dict(float_feature):
     invalid_params = tuple(["2022-04-01", "C1"])
     with pytest.raises(ValueError) as exc_info:
         float_feature.preview(invalid_params)
-    assert "point_in_time_and_entity_id should be a dict" in str(exc_info.value)
+    assert "point_in_time_and_serving_name should be a dict" in str(exc_info.value)
 
 
 def test_feature_deserialization(float_feature, float_feature_dict, snowflake_event_view):
