@@ -55,6 +55,8 @@ def construct_cte_sql(cte_statements: list[tuple[str, str]]) -> str:
 class AggregationSpec:
     """Aggregation specification"""
 
+    # pylint: disable=too-many-instance-attributes
+
     window: int
     frequency: int
     blind_spot: int
