@@ -134,10 +134,11 @@ def test_list_200(create_multiple_entries, test_api_client_persistent):
     assert result_data[0]["name"] == "customer"
 
 
-def test_get_200(create_success_response, test_api_client):
+def test_get_200(create_success_response, test_api_client_persistent):
     """
     Test get entities (success)
     """
+    test_api_client, _ = test_api_client_persistent
     created_entity = create_success_response.json()
     entity_id = created_entity["id"]
     response = test_api_client.get(f"/entity/{entity_id}")
@@ -152,10 +153,11 @@ def test_get_200(create_success_response, test_api_client):
     }
 
 
-def test_get_404(test_api_client):
+def test_get_404(test_api_client_persistent):
     """
     Test get entities (not found)
     """
+    test_api_client, _ = test_api_client_persistent
     unknown_entity_id = ObjectId()
     response = test_api_client.get(f"/entity/{unknown_entity_id}")
     assert response.status_code == HTTPStatus.NOT_FOUND

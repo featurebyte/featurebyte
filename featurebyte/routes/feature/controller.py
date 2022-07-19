@@ -25,8 +25,6 @@ class FeatureController:
     Feature controller
     """
 
-    # pylint: disable=too-few-public-methods
-
     collection_name = CollectionName.FEATURE
 
     @classmethod
