@@ -144,7 +144,7 @@ class FeatureController:
 
         Raises
         ------
-        DuplicatedFeatureRegistryError
+        HTTPException
             When the feature registry already exists at the feature store
         Exception
             Other errors during registry insertion / removal
@@ -160,7 +160,7 @@ class FeatureController:
             feature_manager = FeatureManagerSnowflake(session=db_session)
             try:
                 feature_manager.insert_feature_registry(extended_feature)
-            except DuplicatedFeatureRegistryError:
+            except DuplicatedFeatureRegistryError as exc:
                 # someone else already registered the feature at snowflake
                 # do not remove the current registry & raise error to remove persistent record
                 raise HTTPException(
@@ -168,7 +168,7 @@ class FeatureController:
                     detail=(
                         f'Feature "{document.name}" has been registered by other feature at Snowflake feature store.'
                     ),
-                )
+                ) from exc
             except Exception as exc:
                 # for other exceptions, cleanup feature registry record & persistent record
                 feature_manager.remove_feature_registry(extended_feature)
