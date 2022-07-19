@@ -65,9 +65,7 @@ class FeatureController:
                 # if parent feature not found at persistent, throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.NOT_FOUND,
-                    detail=(
-                        f'Feature ID "{document.parent_id}" not found! Please save the parent Feature object.'
-                    ),
+                    detail=f'The original feature (Feature.id: "{document.parent_id}") not found!',
                 )
             if not document.is_parent(Feature(**parent_feature_dict)):
                 # if the parent feature is inconsistent with feature to be created, throws exception
@@ -162,10 +160,15 @@ class FeatureController:
             feature_manager = FeatureManagerSnowflake(session=db_session)
             try:
                 feature_manager.insert_feature_registry(extended_feature)
-            except DuplicatedFeatureRegistryError as exc:
+            except DuplicatedFeatureRegistryError:
                 # someone else already registered the feature at snowflake
                 # do not remove the current registry & raise error to remove persistent record
-                raise exc
+                raise HTTPException(
+                    status_code=HTTPStatus.CONFLICT,
+                    detail=(
+                        f'Feature "{document.name}" has been registered by other feature at Snowflake feature store.'
+                    ),
+                )
             except Exception as exc:
                 # for other exceptions, cleanup feature registry record & persistent record
                 feature_manager.remove_feature_registry(extended_feature)

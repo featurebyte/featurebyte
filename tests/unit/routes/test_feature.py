@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
+from fastapi import HTTPException
 
 from featurebyte.api.event_data import EventData
 from featurebyte.exception import DuplicatedFeatureRegistryError
@@ -171,7 +172,7 @@ def test_create_422__not_proper_parent(
     response = test_api_client.post("/feature", json=feature_model_dict)
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {
-        "detail": f'Feature ID "{parent_id}" not found! Please save the parent Feature object.'
+        "detail": f'The original feature (Feature.id: "{parent_id}") not found!'
     }
 
     create_result = create_success_response.json()
@@ -363,10 +364,14 @@ def test_insert_feature_registry__duplicated_feature_registry_exception(
     )
     feature = Feature(**feature_model_dict)
     user = Mock()
-    with pytest.raises(DuplicatedFeatureRegistryError):
+    with pytest.raises(HTTPException) as exc:
         FeatureController.insert_feature_registry(
             user=user, document=feature, get_credential=get_credential
         )
+    expected_msg = (
+        'Feature "sum_30m" has been registered by other feature at Snowflake feature store.'
+    )
+    assert expected_msg in str(exc.value.detail)
     assert not mock_feature_manager.return_value.remove_feature_registry.called
 
 
