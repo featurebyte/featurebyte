@@ -100,13 +100,11 @@ class EntityController:
         """
         query_filter = {"_id": ObjectId(entity_id), "user_id": user.id}
         entity = persistent.find_one(collection_name=cls.collection_name, query_filter=query_filter)
-
         # check that entity id exists
-        not_found_exception = HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail=f'Entity ID "{entity_id}" not found.'
-        )
         if not entity:
-            raise not_found_exception
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, detail=f'Entity ID "{entity_id}" not found.'
+            )
         return Entity(**entity)
 
     @classmethod
