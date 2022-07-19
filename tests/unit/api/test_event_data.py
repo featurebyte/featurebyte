@@ -421,3 +421,21 @@ def test_update_default_job_setting__record_update_exception(snowflake_event_dat
                 frequency="2m",
                 time_modulo_frequency="1m",
             )
+
+
+def test_get_event_data(snowflake_event_data, mock_config_path_env):
+    """
+    Test EventData.get function
+    """
+    _ = mock_config_path_env
+
+    # create event data & save to persistent
+    snowflake_event_data.save()
+
+    # load the event data from the persistent
+    loaded_event_data = EventData.get(snowflake_event_data.name)
+    assert loaded_event_data == snowflake_event_data
+
+    with pytest.raises(RecordRetrievalException) as exc:
+        EventData.get("unknown_event_data")
+    assert 'Event data name "unknown_event_data" not found!' in str(exc.value)

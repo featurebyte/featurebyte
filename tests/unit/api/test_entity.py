@@ -103,7 +103,7 @@ def test_entity_update_name(entity):
 
 def test_get_entity():
     """
-    Test get_entity function
+    Test Entity.get function
     """
     # create entities & save to persistent
     cust_entity = Entity(name="customer", serving_names=["cust_id"])

@@ -157,6 +157,35 @@ class EventData(EventDataModel, DatabaseTable):
             )
         raise RecordRetrievalException(response)
 
+    @classmethod
+    def get(cls, name: str) -> EventData:
+        """
+        Retrieve event data from the persistent given event data name
+
+        Parameters
+        ----------
+        name: str
+            Event data name
+
+        Returns
+        -------
+        EventData
+            EventData object of the given event data name
+
+        Raises
+        ------
+        RecordRetrievalException
+            When the event data not found
+        """
+        client = Configurations().get_client()
+        response = client.get(url="/event_data/", params={"name": name})
+        if response.status_code == HTTPStatus.OK:
+            response_dict = response.json()
+            if response_dict["data"]:
+                event_data_dict = response_dict["data"][0]
+                return EventData(**event_data_dict)
+        raise RecordRetrievalException(response, f'Event data name "{name}" not found!')
+
     @validator("event_timestamp_column")
     @classmethod
     def _check_event_timestamp_column_exists(cls, value: str, values: dict[str, Any]) -> str:
