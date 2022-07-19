@@ -137,7 +137,26 @@ class EntityController:
     @classmethod
     def get_entity(cls, user: Any, persistent: Persistent, entity_id: ObjectId) -> Entity:
         """
-        Get Entity
+        Get Entity from the persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        entity_id: ObjectId
+            Entity ID
+
+        Returns
+        -------
+        Entity
+            Retrieve entity object
+
+        Raises
+        ------
+        HTTPException
+            If the entity not found
         """
         query_filter = {"_id": ObjectId(entity_id), "user_id": user.id}
         entity = persistent.find_one(collection_name=cls.collection_name, query_filter=query_filter)
