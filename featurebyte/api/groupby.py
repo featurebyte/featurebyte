@@ -7,6 +7,7 @@ from typing import Any
 
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import FeatureGroup
+from featurebyte.api.util import get_entity_by_id
 from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
@@ -32,14 +33,20 @@ class EventViewGroupBy(OpsMixin):
         else:
             raise TypeError(f'Grouping {obj} by "{keys}" is not supported!')
 
+        serving_names = []
         for key in keys_value:
             if key not in obj.columns:
                 raise KeyError(f'Column "{key}" not found!')
             if key not in (obj.column_entity_map or {}):
                 raise ValueError(f'Column "{key}" is not an entity!')
+            assert obj.column_entity_map is not None
+            entity_id = obj.column_entity_map[key]
+            entity = get_entity_by_id(entity_id)
+            serving_names.append(entity["serving_names"][0])
 
         self.obj = obj
         self.keys = keys_value
+        self.serving_names = serving_names
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.obj}, keys={self.keys})"
@@ -167,6 +174,7 @@ class EventViewGroupBy(OpsMixin):
             "time_modulo_frequency": time_modulo_frequency_seconds,
             "frequency": frequency_seconds,
             "names": feature_names,
+            "serving_names": self.serving_names,
         }
         # insert a groupby node to global query graph first,
         # then used the inserted groupby node to prune the graph & generate updated tile id
