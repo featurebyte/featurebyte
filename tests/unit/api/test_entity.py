@@ -99,3 +99,21 @@ def test_entity_update_name(entity):
     with mock.patch("featurebyte.api.entity.Configurations"):
         with pytest.raises(RecordUpdateException):
             entity.update_name("hello")
+
+
+def test_get_entity():
+    """
+    Test get_entity function
+    """
+    # create entities & save to persistent
+    cust_entity = Entity(name="customer", serving_names=["cust_id"])
+    prod_entity = Entity(name="product", serving_names=["prod_id"])
+    region_entity = Entity(name="region", serving_names=["region"])
+    cust_entity.save()
+    prod_entity.save()
+    region_entity.save()
+
+    # load the entities from the persistent
+    assert Entity.get("customer") == cust_entity
+    assert Entity.get("product") == prod_entity
+    assert Entity.get("region") == region_entity

@@ -5,29 +5,9 @@ from __future__ import annotations
 
 from http import HTTPStatus
 
-from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
-from featurebyte.api.util import get_entity as get_entity_dict
 from featurebyte.config import Configurations
 from featurebyte.exception import RecordRetrievalException
-
-
-def get_entity(entity_name: str) -> Entity:
-    """
-    Retrieve entity from the persistent given entity name
-
-    Parameters
-    ----------
-    entity_name: str
-        Entity name
-
-    Returns
-    -------
-    Entity
-        Entity object of the given entity name
-    """
-    entity_dict = get_entity_dict(entity_name)
-    return Entity.parse_obj(entity_dict)
 
 
 def get_event_data(event_data_name: str) -> EventData:

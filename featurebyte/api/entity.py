@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from http import HTTPStatus
 
+from featurebyte.api.util import get_entity
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -39,6 +40,25 @@ class Entity(EntityModel):
                 raise DuplicatedRecordException(response=response)
             raise RecordCreationException(response=response)
         type(self).__init__(self, **response.json())
+
+    @classmethod
+    def get(cls, entity_name) -> Entity:
+        """
+        Retrieve entity from the persistent given entity name
+
+        Parameters
+        ----------
+        entity_name: str
+            Entity name
+
+        Returns
+        -------
+        Entity
+            Entity object of the given entity name
+        """
+        entity_dict = get_entity(entity_name)
+        entity_dict["_id"] = entity_dict.pop("id")
+        return Entity.parse_obj(entity_dict)
 
     @property
     def serving_name(self) -> str:
