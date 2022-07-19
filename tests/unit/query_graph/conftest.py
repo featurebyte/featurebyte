@@ -59,6 +59,7 @@ def query_graph_with_groupby_fixture(graph):
     )
     node_params = {
         "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
         "parent": "a",
         "agg_func": "avg",
         "time_modulo_frequency": 1800,  # 30m
@@ -96,6 +97,7 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby):
         "timestamp": "ts",
         "names": ["a"],
         "windows": ["a_7d_sum_by_business"],
+        "serving_names": ["BUSINESS_ID"],
     }
     assign_node = graph.get_node_by_name("assign_1")
     groupby_1 = graph.get_node_by_name("groupby_1")

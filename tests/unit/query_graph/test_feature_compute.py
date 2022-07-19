@@ -19,7 +19,8 @@ def agg_spec_template_fixture():
         blind_spot=120,
         time_modulo_frequency=1800,
         tile_table_id="some_tile_id",
-        entity_ids=["CUST_ID"],
+        keys=["CUST_ID"],
+        serving_names=["CID"],
         merge_expr="SUM(value)",
         feature_name="Amount (1d sum)",
     )
@@ -68,25 +69,25 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
 
     assert (
         plan.get_expanded_request_table_name(agg_spec_sum_1d)
-        == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CUST_ID"
+        == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
     )
     assert (
         plan.get_expanded_request_table_name(agg_spec_max_1d)
-        == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CUST_ID"
+        == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
     )
 
     ctes = plan.construct_request_tile_indices_ctes()
     assert len(ctes) == 1
 
     cte = ctes[0]
-    assert cte[0] == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CUST_ID"
+    assert cte[0] == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
     expected_sql = """
     SELECT
         REQ.POINT_IN_TIME,
-        REQ.CUST_ID,
+        REQ.CID,
         T.value AS REQ_TILE_INDEX
     FROM (
-        SELECT DISTINCT POINT_IN_TIME, CUST_ID FROM REQUEST_TABLE
+        SELECT DISTINCT POINT_IN_TIME, CID FROM REQUEST_TABLE
     ) REQ,
     Table(
         Flatten(
@@ -111,11 +112,11 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
 
     assert (
         plan.get_expanded_request_table_name(agg_spec_max_2h)
-        == "REQUEST_TABLE_W7200_F3600_BS120_M1800_CUST_ID"
+        == "REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"
     )
     assert (
         plan.get_expanded_request_table_name(agg_spec_max_1d)
-        == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CUST_ID"
+        == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
     )
 
     ctes = plan.construct_request_tile_indices_ctes()
@@ -123,14 +124,14 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
 
     # check expanded table for 2h
     name, sql = ctes[0]
-    assert name == "REQUEST_TABLE_W7200_F3600_BS120_M1800_CUST_ID"
+    assert name == "REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"
     expected_sql = """
     SELECT
         REQ.POINT_IN_TIME,
-        REQ.CUST_ID,
+        REQ.CID,
         T.value AS REQ_TILE_INDEX
     FROM (
-        SELECT DISTINCT POINT_IN_TIME, CUST_ID FROM REQUEST_TABLE
+        SELECT DISTINCT POINT_IN_TIME, CID FROM REQUEST_TABLE
     ) REQ,
     Table(
         Flatten(
@@ -148,14 +149,14 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
 
     # check expanded table for 1d
     name, sql = ctes[1]
-    assert name == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CUST_ID"
+    assert name == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
     expected_sql = """
     SELECT
         REQ.POINT_IN_TIME,
-        REQ.CUST_ID,
+        REQ.CID,
         T.value AS REQ_TILE_INDEX
     FROM (
-        SELECT DISTINCT POINT_IN_TIME, CUST_ID FROM REQUEST_TABLE
+        SELECT DISTINCT POINT_IN_TIME, CID FROM REQUEST_TABLE
     ) REQ,
     Table(
         Flatten(

@@ -57,7 +57,7 @@ def construct_preview_request_table_sql(
 def get_feature_preview_sql(
     graph: QueryGraph,
     node: Node,
-    point_in_time_and_entity_id: dict[str, Any],
+    point_in_time_and_serving_name: dict[str, Any],
 ) -> str:
     """Get SQL code for previewing SQL
 
@@ -67,7 +67,7 @@ def get_feature_preview_sql(
         Query graph
     node : Node
         Query graph node
-    point_in_time_and_entity_id : dict
+    point_in_time_and_serving_name : dict
         Dictionary consisting the point in time and entity ids based on which the feature
         preview will be computed
 
@@ -76,7 +76,7 @@ def get_feature_preview_sql(
     str
     """
 
-    point_in_time = point_in_time_and_entity_id[SpecialColumnName.POINT_IN_TIME]
+    point_in_time = point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME]
 
     cte_statements = []
 
@@ -92,7 +92,7 @@ def get_feature_preview_sql(
 
     # prepare request table
     tic = time.time()
-    df_request = pd.DataFrame([point_in_time_and_entity_id])
+    df_request = pd.DataFrame([point_in_time_and_serving_name])
     request_table_sql = construct_preview_request_table_sql(
         df_request, [SpecialColumnName.POINT_IN_TIME]
     )

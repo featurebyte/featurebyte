@@ -87,7 +87,7 @@ class RequestTablePlan(ABC):
                 f"_F{agg_spec.frequency}"
                 f"_BS{agg_spec.blind_spot}"
                 f"_M{agg_spec.time_modulo_frequency}"
-                f"_{'_'.join(agg_spec.entity_ids)}"
+                f"_{'_'.join(agg_spec.serving_names)}"
             )
             self.expanded_request_table_names[unique_tile_indices_id] = output_table_name
 
@@ -125,7 +125,7 @@ class RequestTablePlan(ABC):
             agg_spec.frequency,
             agg_spec.blind_spot,
             agg_spec.time_modulo_frequency,
-            tuple(agg_spec.entity_ids),
+            tuple(agg_spec.serving_names),
         )
         return unique_tile_indices_id
 
@@ -143,14 +143,14 @@ class RequestTablePlan(ABC):
                 frequency,
                 blind_spot,
                 time_modulo_frequency,
-                entity_columns,
+                serving_names,
             ) = unique_tile_indices_id
             expanded_table_sql = self.construct_expanded_request_table_sql(
                 window_size=window_size,
                 frequency=frequency,
                 blind_spot=blind_spot,
                 time_modulo_frequency=time_modulo_frequency,
-                entity_columns=list(entity_columns),
+                serving_names=list(serving_names),
             )
             expanded_request_ctes.append((table_name, expanded_table_sql))
         return expanded_request_ctes
@@ -162,7 +162,7 @@ class RequestTablePlan(ABC):
         frequency: int,
         blind_spot: int,
         time_modulo_frequency: int,
-        entity_columns: list[str],
+        serving_names: list[str],
     ) -> str:
         """Construct SQL for expanded SQLs
 
@@ -178,8 +178,8 @@ class RequestTablePlan(ABC):
             Time modulo frequency in feature job setting
         blind_spot : int
             Blind spot in feature job setting
-        entity_columns : list[str]
-            List of entity columns
+        serving_names: list[str]
+            List of serving names corresponding to entities
 
         Returns
         -------
@@ -197,18 +197,16 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
         frequency: int,
         blind_spot: int,
         time_modulo_frequency: int,
-        entity_columns: list[str],
+        serving_names: list[str],
     ) -> str:
         # Input request table can have duplicated time points but aggregation should be done only on
         # distinct time points
-        select_distinct_columns = ", ".join(
-            [SpecialColumnName.POINT_IN_TIME.value] + entity_columns
-        )
-        select_entity_columns = ", ".join([f"REQ.{col}" for col in entity_columns])
+        select_distinct_columns = ", ".join([SpecialColumnName.POINT_IN_TIME.value] + serving_names)
+        select_serving_names = ", ".join([f"REQ.{col}" for col in serving_names])
         sql = f"""
     SELECT
         REQ.{SpecialColumnName.POINT_IN_TIME},
-        {select_entity_columns},
+        {select_serving_names},
         T.value AS REQ_TILE_INDEX
     FROM (
         SELECT DISTINCT {select_distinct_columns} FROM {REQUEST_TABLE_NAME}
@@ -297,7 +295,8 @@ class FeatureExecutionPlan:
         expanded_request_table_name: str,
         tile_table_id: str,
         point_in_time_column: str,
-        entity_ids: list[str],
+        keys: list[str],
+        serving_names: list[str],
         merge_expr: str,
         agg_result_name: str,
     ) -> str:
@@ -311,8 +310,10 @@ class FeatureExecutionPlan:
             Tile table name
         point_in_time_column : str
             Point in time column name
-        entity_ids : list[str]
-            List of entity IDs
+        keys : list[str]
+            List of join key columns
+        serving_names : list[str]
+            List of serving name columns
         merge_expr : str
             SQL expression that aggregates intermediate values stored in tile table
         agg_result_name : str
@@ -323,13 +324,13 @@ class FeatureExecutionPlan:
         str
         """
         join_conditions_lst = ["REQ.REQ_TILE_INDEX = TILE.INDEX"]
-        for key in entity_ids:
-            join_conditions_lst.append(f"REQ.{key} = TILE.{key}")
+        for serving_name, key in zip(serving_names, keys):
+            join_conditions_lst.append(f"REQ.{serving_name} = TILE.{key}")
         join_conditions = " AND ".join(join_conditions_lst)
 
         group_by_keys_lst = [f"REQ.{point_in_time_column}"]
-        for key in entity_ids:
-            group_by_keys_lst.append(f"REQ.{key}")
+        for serving_name in serving_names:
+            group_by_keys_lst.append(f"REQ.{serving_name}")
         group_by_keys = ", ".join(group_by_keys_lst)
 
         sql = f"""
@@ -375,8 +376,8 @@ class FeatureExecutionPlan:
         join_conditions_lst = [
             f"REQ.{point_in_time_column} = {agg_table_alias}.{point_in_time_column}",
         ]
-        for k in agg_spec.entity_ids:
-            join_conditions_lst += [f"REQ.{k} = {agg_table_alias}.{k}"]
+        for serving_name in agg_spec.serving_names:
+            join_conditions_lst += [f"REQ.{serving_name} = {agg_table_alias}.{serving_name}"]
         join_conditions = " AND ".join(join_conditions_lst)
         left_join_sql = f"""
             LEFT JOIN (
@@ -410,7 +411,8 @@ class FeatureExecutionPlan:
                 expanded_request_table_name=expanded_request_table_name,
                 tile_table_id=agg_spec.tile_table_id,
                 point_in_time_column=point_in_time_column,
-                entity_ids=agg_spec.entity_ids,
+                keys=agg_spec.keys,
+                serving_names=agg_spec.serving_names,
                 merge_expr=agg_spec.merge_expr,
                 agg_result_name=agg_result_name,
             )

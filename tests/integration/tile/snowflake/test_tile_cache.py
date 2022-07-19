@@ -62,7 +62,7 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests):
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
-            "USER_ID": [1, 2, 3, 4, 5],
+            "UID": [1, 2, 3, 4, 5],
         }
     )
     snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
@@ -90,7 +90,7 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests):
             "POINT_IN_TIME": pd.to_datetime(
                 ["2001-01-02 10:00:00"] * 2 + ["2001-01-03 10:00:00"] * 3
             ),
-            "USER_ID": [1, 2, 3, 4, 5],
+            "UID": [1, 2, 3, 4, 5],
         }
     )
     snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
@@ -110,7 +110,7 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests):
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 2),
-            "USER_ID": [6, 7],
+            "UID": [6, 7],
         }
     )
     snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)

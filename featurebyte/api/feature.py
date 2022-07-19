@@ -55,6 +55,18 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
         return entity_ids
 
     @property
+    def serving_names(self) -> list[str]:
+        """
+        Serving name columns
+
+        Returns
+        -------
+        list[str]
+        """
+        serving_names: list[str] = self.inception_node.parameters["serving_names"]
+        return serving_names
+
+    @property
     def inherited_columns(self) -> set[str]:
         """
         Special columns set which will be automatically added to the object of same class
@@ -68,7 +80,7 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
 
     def preview(  # type: ignore[override]  # pylint: disable=arguments-renamed
         self,
-        point_in_time_and_entity_id: dict[str, Any],
+        point_in_time_and_serving_name: dict[str, Any],
         credentials: Credentials | None = None,
     ) -> pd.DataFrame:
         """
@@ -76,8 +88,8 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
 
         Parameters
         ----------
-        point_in_time_and_entity_id : dict
-            Dictionary consisting the point in time and entity ids based on which the feature
+        point_in_time_and_serving_name : dict
+            Dictionary consisting the point in time and serving names based on which the feature
             preview will be computed
         credentials: Credentials | None
             credentials to create a database session
@@ -87,11 +99,11 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
         pd.DataFrame
         """
         tic = time.time()
-        self._validate_point_in_time_and_entity_id(point_in_time_and_entity_id)
+        self._validate_point_in_time_and_serving_name(point_in_time_and_serving_name)
         preview_sql = get_feature_preview_sql(
             graph=self.graph,
             node=self.node,
-            point_in_time_and_entity_id=point_in_time_and_entity_id,
+            point_in_time_and_serving_name=point_in_time_and_serving_name,
         )
         session = self.get_session(credentials)
         result = session.execute_query(preview_sql)
@@ -99,20 +111,20 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
         logger.debug(f"Preview took {elapsed:.2f}s")
         return result
 
-    def _validate_point_in_time_and_entity_id(
-        self, point_in_time_and_entity_id: dict[str, Any]
+    def _validate_point_in_time_and_serving_name(
+        self, point_in_time_and_serving_name: dict[str, Any]
     ) -> None:
 
-        if not isinstance(point_in_time_and_entity_id, dict):
-            raise ValueError("point_in_time_and_entity_id should be a dict")
+        if not isinstance(point_in_time_and_serving_name, dict):
+            raise ValueError("point_in_time_and_serving_name should be a dict")
 
-        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_entity_id:
+        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
             raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
 
-        if self.entity_identifiers is not None:
-            for col in self.entity_identifiers:
-                if col not in point_in_time_and_entity_id:
-                    raise KeyError(f"Entity column not provided: {col}")
+        if self.serving_names is not None:
+            for col in self.serving_names:
+                if col not in point_in_time_and_serving_name:
+                    raise KeyError(f"Serving name not provided: {col}")
 
 
 class Feature(FeatureQueryObject, Series, FeatureModel):

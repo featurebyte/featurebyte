@@ -6,16 +6,16 @@ from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
 def test_get_feature_preview_sql(query_graph_with_groupby):
     """Test generated preview SQL is as expected"""
-    point_in_time_and_entity_id = {
+    point_in_time_and_serving_name = {
         "POINT_IN_TIME": "2022-04-20 10:00:00",
-        "cust_id": "C1",
+        "CUSTOMER_ID": "C1",
     }
     graph = query_graph_with_groupby
     node = graph.get_node_by_name("groupby_1")
     preview_sql = get_feature_preview_sql(
         graph=graph,
         node=node,
-        point_in_time_and_entity_id=point_in_time_and_entity_id,
+        point_in_time_and_serving_name=point_in_time_and_serving_name,
     )
 
     update_fixture = False

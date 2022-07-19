@@ -116,7 +116,7 @@ def test_query_object_operation_on_snowflake_source(
     # preview the features
     preview_param = {
         "POINT_IN_TIME": "2001-01-02 10:00:00",
-        "USER_ID": 1,
+        "UID": 1,
     }
     df_feature_preview = feature_group.preview(
         preview_param,
@@ -125,7 +125,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "USER_ID": 1,
+        "UID": 1,
         "COUNT_2h": 1,
         "COUNT_24h": 9,
     }
@@ -137,7 +137,7 @@ def test_query_object_operation_on_snowflake_source(
     )
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "USER_ID": 1,
+        "UID": 1,
         "COUNT_2h": 1,
     }
 
@@ -150,7 +150,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "USER_ID": 1,
+        "UID": 1,
         "Unnamed": Decimal("0.111111"),
     }
 
@@ -163,7 +163,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "USER_ID": 1,
+        "UID": 1,
         "COUNT_2h": 1,
         "COUNT_24h": 9,
         "COUNT_2h DIV COUNT_24h": Decimal("0.111111"),
@@ -177,7 +177,7 @@ def run_and_test_get_historical_features(config, feature_group):
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
-            "USER_ID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "UID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         }
     )
     feature_list = FeatureList(
@@ -190,7 +190,7 @@ def run_and_test_get_historical_features(config, feature_group):
     df_historical_expected = pd.DataFrame(
         {
             "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
-            "USER_ID": df_training_events["USER_ID"],
+            "UID": df_training_events["UID"],
             "COUNT_2h": [1.0, 1.0, np.nan, 1.0, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
             "COUNT_24h": [9.0, 7.0, 2.0, 5.0, 5.0, 4.0, 4.0, 7.0, 5.0, np.nan],
         }
