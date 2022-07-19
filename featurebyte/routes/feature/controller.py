@@ -118,6 +118,7 @@ class FeatureController:
         namespace_readiness = feature_namespace.readiness
         default_version_id: ObjectId = feature_namespace.default_version_id
         if feature_namespace.default_version_mode == DefaultVersionMode.AUTO:
+            # this works only for the feature creation only where the readiness is DRAFT
             namespace_readiness = max(namespace_readiness, FeatureReadiness.DRAFT)
             if namespace_readiness == FeatureReadiness.DRAFT:
                 default_version_id = document.id
