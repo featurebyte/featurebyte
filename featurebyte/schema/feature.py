@@ -35,7 +35,7 @@ class Feature(FeatureModel):
         -------
         bool
         """
-        # TODO: add more validation checks later...  # pylint: disable=fixme
+        # TODO: add more validation checks later
         return other.name == self.name
 
 
