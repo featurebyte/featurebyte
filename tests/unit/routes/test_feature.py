@@ -3,7 +3,7 @@ Tests for Feature route
 """
 from datetime import datetime
 from http import HTTPStatus
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -28,6 +28,17 @@ def snowflake_event_data_fixture(snowflake_database_table, config):
     )
 
 
+@pytest.fixture(name="mock_insert_feature_registry")
+def mock_insert_feature_registry_fixture():
+    """
+    Mock insert feature registry at the controller level
+    """
+    with patch(
+        "featurebyte.routes.feature.controller.FeatureController.insert_feature_registry"
+    ) as mock:
+        yield mock
+
+
 @pytest.fixture(name="feature_dict")
 def feature_dict_fixture(feature_model_dict, snowflake_event_data):
     """
@@ -40,11 +51,15 @@ def feature_dict_fixture(feature_model_dict, snowflake_event_data):
 
 @pytest.fixture(name="create_success_response")
 def create_success_response_fixture(
-    test_api_client_persistent, feature_model_dict, snowflake_event_data
+    test_api_client_persistent,
+    feature_model_dict,
+    snowflake_event_data,
+    mock_insert_feature_registry,
 ):
     """
     Post create success response fixture
     """
+    _ = mock_insert_feature_registry
     test_api_client, persistent = test_api_client_persistent
     if isinstance(persistent, MongoDB):
         pytest.skip("Session not supported in Mongomock!")
@@ -55,10 +70,16 @@ def create_success_response_fixture(
     return response
 
 
-def test_create_201(test_api_client_persistent, feature_model_dict, create_success_response):
+def test_create_201(
+    test_api_client_persistent,
+    feature_model_dict,
+    create_success_response,
+    mock_insert_feature_registry,
+):
     """
     Test feature creation
     """
+    _ = mock_insert_feature_registry
     test_api_client, persistent = test_api_client_persistent
 
     # check response
