@@ -234,6 +234,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["2h", "48h"],
+        "serving_names": ["CUSTOMER_ID"],
     }
 
 
@@ -300,6 +301,7 @@ def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["2h", "48h"],
+        "serving_names": ["CUSTOMER_ID"],
     }
 
 
@@ -323,6 +325,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["2h", "48h"],
+        "serving_names": ["CUSTOMER_ID"],
     }
     expected = textwrap.dedent(
         """
@@ -377,6 +380,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["a_7d_sum_by_business"],
+        "serving_names": ["BUSINESS_ID"],
     }
     expected = textwrap.dedent(
         """
@@ -450,6 +454,7 @@ def test_graph_interpreter_snowflake(graph):
         "blind_spot": 1,
         "timestamp": "SERVER_TIMESTAMP",
         "windows": ["1d"],
+        "serving_names": ["CUSTOMER_ID"],
     }
     _groupby_node = graph.add_operation(
         node_type=NodeType.GROUPBY,

@@ -97,6 +97,7 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby):
         "timestamp": "ts",
         "names": ["a"],
         "windows": ["a_7d_sum_by_business"],
+        "serving_names": ["BUSINESS_ID"],
     }
     assign_node = graph.get_node_by_name("assign_1")
     groupby_1 = graph.get_node_by_name("groupby_1")
