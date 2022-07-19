@@ -84,7 +84,7 @@ def test_create_201(test_api_client_persistent, feature_model_dict, create_succe
     assert feat_namespace_docs[0]["name"] == feature_model_dict["name"]
     assert feat_namespace_docs[0]["description"] is None
     assert feat_namespace_docs[0]["versions"] == ["V220710"]
-    assert feat_namespace_docs[0]["feature_ids"] == [ObjectId(feature_id)]
+    assert feat_namespace_docs[0]["version_ids"] == [ObjectId(feature_id)]
     assert feat_namespace_docs[0]["readiness"] == feature_readiness
     assert feat_namespace_docs[0]["default_version_id"] == ObjectId(feature_id)
     assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
@@ -105,7 +105,7 @@ def test_create_201(test_api_client_persistent, feature_model_dict, create_succe
     assert match_count == 1
     assert feat_namespace_docs[0]["name"] == feature_model_dict["name"]
     assert feat_namespace_docs[0]["description"] is None
-    assert feat_namespace_docs[0]["feature_ids"] == [
+    assert feat_namespace_docs[0]["version_ids"] == [
         ObjectId(feature_id),
         ObjectId(new_version_result["id"]),
     ]
@@ -194,9 +194,11 @@ def test_create_422(test_api_client_persistent, feature_model_dict):
 
 
 @pytest.mark.parametrize(
-    "feature_ids,versions,readiness,default_version_mode,default_version,doc_id,doc_version,expected",
+    "version_ids,versions,readiness,default_version_mode,default_version,doc_id,doc_version,expected",
     [
         [
+            # for auto mode, update default version to the best readiness of the most recent version
+            # the best readiness before update is DRAFT, new version will replace the default version
             ["feature_id1"],
             ["V220710"],
             FeatureReadiness.DRAFT,
@@ -206,12 +208,13 @@ def test_create_422(test_api_client_persistent, feature_model_dict):
             "V220711",
             {
                 "versions": ["V220710", "V220711"],
-                "feature_ids": ["feature_id1", "feature_id2"],
+                "version_ids": ["feature_id1", "feature_id2"],
                 "readiness": "DRAFT",
                 "default_version_id": "feature_id2",
             },
         ],
         [
+            # for manual mode, won't update default feature version
             ["feature_id1"],
             ["V220710"],
             FeatureReadiness.DRAFT,
@@ -221,12 +224,14 @@ def test_create_422(test_api_client_persistent, feature_model_dict):
             "V220710",
             {
                 "versions": ["V220710", "V220710_1"],
-                "feature_ids": ["feature_id1", "feature_id2"],
+                "version_ids": ["feature_id1", "feature_id2"],
                 "readiness": "DRAFT",
                 "default_version_id": "feature_id1",
             },
         ],
         [
+            # for auto mode, update default version to the best readiness of the most recent version
+            # the best readiness before update is PRODUCTION_READY, new version will not replace the default version
             ["feature_id1"],
             ["V220710"],
             FeatureReadiness.PRODUCTION_READY,
@@ -236,7 +241,7 @@ def test_create_422(test_api_client_persistent, feature_model_dict):
             "V220710",
             {
                 "versions": ["V220710", "V220710_1"],
-                "feature_ids": ["feature_id1", "feature_id2"],
+                "version_ids": ["feature_id1", "feature_id2"],
                 "readiness": "PRODUCTION_READY",
                 "default_version_id": "feature_id1",
             },
@@ -244,7 +249,7 @@ def test_create_422(test_api_client_persistent, feature_model_dict):
     ],
 )
 def test_prepare_feature_namespace_payload(
-    feature_ids,
+    version_ids,
     versions,
     readiness,
     default_version_mode,
@@ -257,7 +262,7 @@ def test_prepare_feature_namespace_payload(
     Test prepare_feature_namespace_payload function
     """
     feature_namespace = Mock()
-    feature_namespace.feature_ids = feature_ids
+    feature_namespace.version_ids = version_ids
     feature_namespace.versions = versions
     feature_namespace.readiness = readiness
     feature_namespace.default_version_mode = default_version_mode

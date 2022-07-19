@@ -108,7 +108,7 @@ class FeatureController:
         dict
             Payload used to update feature namespace record
         """
-        feature_ids = feature_namespace.feature_ids + [document.id]
+        version_ids = feature_namespace.version_ids + [document.id]
         matched_versions = [
             ver for ver in feature_namespace.versions if ver.startswith(document.version)
         ]
@@ -124,7 +124,7 @@ class FeatureController:
                 default_version_id = document.id
         return {
             "versions": feature_versions,
-            "feature_ids": feature_ids,
+            "version_ids": version_ids,
             "readiness": namespace_readiness,
             "default_version_id": default_version_id,
         }
@@ -183,7 +183,7 @@ class FeatureController:
                 # create a new feature namespace object
                 doc_feature_namespace = FeatureNameSpace(
                     name=document.name,
-                    feature_ids=[insert_id],
+                    version_ids=[insert_id],
                     versions=[document.version],
                     readiness=FeatureReadiness.DRAFT,
                     created_at=utcnow,

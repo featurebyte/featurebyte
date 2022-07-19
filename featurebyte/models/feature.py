@@ -57,7 +57,8 @@ class FeatureNameSpaceModel(BaseModel):
         Feature name
     description: str
         Feature namespace descriptions applied to all features with the same family
-    feature_ids: List[PydanticObjectId]
+    version_ids: List[PydanticObjectId]
+        List of feature version id
     versions: List[FeatureVersionIdentifier]
         List of available feature version
     readiness: FeatureReadiness
@@ -73,7 +74,7 @@ class FeatureNameSpaceModel(BaseModel):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     description: Optional[StrictStr]
-    feature_ids: List[PydanticObjectId]
+    version_ids: List[PydanticObjectId]
     versions: List[FeatureVersionIdentifier]
     readiness: FeatureReadiness
     created_at: datetime
