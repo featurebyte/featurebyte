@@ -8,6 +8,11 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import InternalName
+from featurebyte.exception import (
+    DuplicatedFeatureRegistryError,
+    InvalidFeatureRegistryOperationError,
+    MissingFeatureRegistryError,
+)
 from featurebyte.models.feature import FeatureReadiness
 
 
@@ -58,7 +63,7 @@ def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature,
     assert result.iloc[0]["NAME"] == "sum_30m"
     assert result.iloc[0]["VERSION"] == "v1"
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(DuplicatedFeatureRegistryError) as excinfo:
         feature_manager.insert_feature_registry(snowflake_feature)
 
     assert (
@@ -87,7 +92,7 @@ def test_remove_feature_registry_no_feature(snowflake_feature, feature_manager):
     """
     Test remove_feature_registry no feature
     """
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(MissingFeatureRegistryError) as excinfo:
         feature_manager.remove_feature_registry(snowflake_feature)
 
     assert (
@@ -103,12 +108,12 @@ def test_remove_feature_registry_feature_version_not_draft(snowflake_feature, fe
     snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY.value
     feature_manager.insert_feature_registry(snowflake_feature)
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(InvalidFeatureRegistryOperationError) as excinfo:
         feature_manager.remove_feature_registry(snowflake_feature)
 
-    assert (
-        str(excinfo.value)
-        == f"Feature version {snowflake_feature.name} with version {snowflake_feature.version} cannot be deleted with readiness PRODUCTION_READY"
+    assert str(excinfo.value) == (
+        f"Feature version {snowflake_feature.name} with version {snowflake_feature.version} cannot be deleted with "
+        f"readiness PRODUCTION_READY"
     )
 
 
@@ -181,7 +186,7 @@ def test_online_enable_no_feature(snowflake_feature, feature_manager):
     Test online_enable no feature
     """
     snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY.value
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(MissingFeatureRegistryError) as excinfo:
         feature_manager.online_enable(snowflake_feature)
 
     assert (
@@ -195,7 +200,7 @@ def test_online_enable_not_production_ready(snowflake_feature, feature_manager):
     Test online_enable not production_ready
     """
     feature_manager.insert_feature_registry(snowflake_feature)
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(InvalidFeatureRegistryOperationError) as excinfo:
         feature_manager.online_enable(snowflake_feature)
 
     assert str(excinfo.value) == "feature readiness has to be PRODUCTION_READY before online_enable"
@@ -209,7 +214,7 @@ def test_online_enable_already_online_enabled(snowflake_feature, feature_manager
     feature_manager.insert_feature_registry(snowflake_feature)
     feature_manager.online_enable(snowflake_feature)
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(InvalidFeatureRegistryOperationError) as excinfo:
         feature_manager.online_enable(snowflake_feature)
 
     assert (
