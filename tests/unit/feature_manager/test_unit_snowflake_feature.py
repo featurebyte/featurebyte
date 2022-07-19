@@ -7,6 +7,8 @@ from unittest import mock
 import pandas as pd
 import pytest
 
+from featurebyte.exception import InvalidFeatureRegistryOperationError, MissingFeatureRegistryError
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_feature_tile_monitor,
     tm_insert_feature_registry,
@@ -16,6 +18,14 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_update_feature_registry_default_false,
 )
 from featurebyte.models.feature import FeatureReadiness
+
+
+@pytest.fixture(name="mock_snowflake_feature")
+def mock_snowflake_feature_fixture(mock_snowflake_feature):
+    """
+    ExtendedFeatureModel object fixture
+    """
+    return ExtendedFeatureModel(**mock_snowflake_feature.dict())
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
@@ -76,7 +86,7 @@ def test_remove_feature_registry_no_feature(
     mock_execute_query.size_effect = None
     mock_execute_query.return_value = []
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(MissingFeatureRegistryError) as excinfo:
         feature_manager.remove_feature_registry(mock_snowflake_feature)
 
     assert (
@@ -101,7 +111,7 @@ def test_remove_feature_registry_feature_version_not_draft(
         }
     )
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(InvalidFeatureRegistryOperationError) as excinfo:
         feature_manager.remove_feature_registry(mock_snowflake_feature)
 
     assert (

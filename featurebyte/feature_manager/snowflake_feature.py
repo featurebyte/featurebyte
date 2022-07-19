@@ -3,13 +3,19 @@ Snowflake Feature Manager class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
 import json
 
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
+from featurebyte.exception import (
+    DuplicatedFeatureRegistryError,
+    InvalidFeatureRegistryOperationError,
+    MissingFeatureRegistryError,
+)
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_feature_tile_monitor,
     tm_insert_feature_registry,
@@ -23,9 +29,6 @@ from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureReadiness, FeatureVersionIdentifier
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
-
-if TYPE_CHECKING:
-    from featurebyte.api.feature import Feature
 
 
 class FeatureManagerSnowflake(BaseModel):
@@ -49,19 +52,19 @@ class FeatureManagerSnowflake(BaseModel):
         super().__init__(**kw)
         self._session = session
 
-    def insert_feature_registry(self, feature: Feature) -> None:
+    def insert_feature_registry(self, feature: ExtendedFeatureModel) -> None:
         """
         Insert feature registry record. Update the is_default of the existing feature registry records to be False,
         then insert the new registry record with is_default to True
 
         Parameters
         ----------
-        feature: Feature
+        feature: ExtendedFeatureModel
             input feature instance
 
         Raises
         ----------
-        ValueError
+        DuplicatedFeatureRegistryError
             when the feature registry record already exists
         """
         feature_versions = self.retrieve_feature_registries(
@@ -87,24 +90,25 @@ class FeatureManagerSnowflake(BaseModel):
             logger.debug(f"generated insert sql: {sql}")
             self._session.execute_query(sql)
         else:
-            raise ValueError(
+            raise DuplicatedFeatureRegistryError(
                 f"Feature version already exist for {feature.name} with version {feature.version}"
             )
 
-    def remove_feature_registry(self, feature: Feature) -> None:
+    def remove_feature_registry(self, feature: ExtendedFeatureModel) -> None:
         """
         Remove the feature registry record
 
         Parameters
         ----------
-        feature: Feature
+        feature: ExtendedFeatureModel
             input feature instance
 
         Raises
         ----------
-        ValueError
+        MissingFeatureRegistryError
             when the feature registry record does not exist
-            or when the readiness of the feature is not DRAFT
+        InvalidFeatureRegistryOperationError
+            when the readiness of the feature is not DRAFT
         """
         feature_versions = self.retrieve_feature_registries(
             feature=feature, version=feature.version
@@ -112,14 +116,15 @@ class FeatureManagerSnowflake(BaseModel):
 
         logger.debug(f"feature_versions: {feature_versions}")
         if len(feature_versions) == 0:
-            raise ValueError(
+            raise MissingFeatureRegistryError(
                 f"Feature version does not exist for {feature.name} with version {feature.version}"
             )
 
         feature_readiness = feature_versions["READINESS"].iloc[0]
         if feature_readiness != "DRAFT":
-            raise ValueError(
-                f"Feature version {feature.name} with version {feature.version} cannot be deleted with readiness {feature_readiness}"
+            raise InvalidFeatureRegistryOperationError(
+                f"Feature version {feature.name} with version {feature.version} cannot be deleted with readiness "
+                f"{feature_readiness}"
             )
 
         sql = tm_remove_feature_registry.render(feature=feature)
@@ -128,7 +133,7 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"Done removing feature version {feature.name} with version {feature.version}")
 
     def retrieve_feature_registries(
-        self, feature: Feature, version: Optional[FeatureVersionIdentifier] = None
+        self, feature: ExtendedFeatureModel, version: Optional[FeatureVersionIdentifier] = None
     ) -> pd.DataFrame:
         """
         Retrieve Feature instances. If version parameter is not presented, return all the feature versions.
@@ -136,12 +141,14 @@ class FeatureManagerSnowflake(BaseModel):
 
         Parameters
         ----------
-        feature: Feature
+        feature: ExtendedFeatureModel
             input feature instance
         version: str
             version of Feature
+
         Returns
         -------
+        pd.DataFrame
             dataframe of the FEATURE_REGISTRY rows with the following columns:
                 NAME, VERSION, READINESS, TILE_SPECS, IS_DEFAULT, ONLINE_ENABLED, CREATED_AT
         """
@@ -150,25 +157,25 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"select sql: {sql}")
         return self._session.execute_query(sql)
 
-    def update_feature_registry(self, new_feature: Feature) -> None:
+    def update_feature_registry(self, new_feature: ExtendedFeatureModel) -> None:
         """
         Update Feature Registry record. Only readiness, description and is_default might be updated
 
         Parameters
         ----------
-        new_feature: Feature
+        new_feature: ExtendedFeatureModel
             new input feature instance
 
         Raises
         ----------
-        ValueError
+        MissingFeatureRegistryError
             when the feature registry record does not exist
         """
         feature_versions = self.retrieve_feature_registries(
             feature=new_feature, version=new_feature.version
         )
         if len(feature_versions) == 0:
-            raise ValueError(
+            raise MissingFeatureRegistryError(
                 f"feature {new_feature.name} with version {new_feature.version} does not exist"
             )
         logger.debug(f"feature_versions: {feature_versions}")
@@ -177,25 +184,26 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"update_sql: {update_sql}")
         self._session.execute_query(update_sql)
 
-    def online_enable(self, feature: Feature) -> None:
+    def online_enable(self, feature: ExtendedFeatureModel) -> None:
         """
         Schedule both online and offline tile jobs
 
         Parameters
         ----------
-        feature: Feature
+        feature: ExtendedFeatureModel
             input feature instance
 
         Raises
         ----------
-        ValueError
+        InvalidFeatureRegistryOperationError
             when the input feature readiness is not PRODUCTION_READY
-            or when the feature registry record does not exist
-            or when the feature registry record is already online enabled
+            when the feature registry record is already online enabled
+        MissingFeatureRegistryError
+            when the feature registry record does not exist
         """
         if feature.tile_specs:
             if feature.readiness is None or feature.readiness != FeatureReadiness.PRODUCTION_READY:
-                raise ValueError(
+                raise InvalidFeatureRegistryOperationError(
                     "feature readiness has to be PRODUCTION_READY before online_enable"
                 )
 
@@ -205,12 +213,12 @@ class FeatureManagerSnowflake(BaseModel):
             )
 
             if len(feature_versions) == 0:
-                raise ValueError(
+                raise MissingFeatureRegistryError(
                     f"feature {feature.name} with version {feature.version} does not exist"
                 )
 
             if feature_versions["ONLINE_ENABLED"].iloc[0]:
-                raise ValueError(
+                raise InvalidFeatureRegistryOperationError(
                     f"feature {feature.name} with version {feature.version} is already online enabled"
                 )
 
@@ -236,13 +244,13 @@ class FeatureManagerSnowflake(BaseModel):
             feature.online_enabled = True
             self.update_feature_registry(feature)
 
-    def retrieve_last_tile_index(self, feature: Feature) -> pd.DataFrame:
+    def retrieve_last_tile_index(self, feature: ExtendedFeatureModel) -> pd.DataFrame:
         """
         Get last_tile_index of all the tile_ids as dataframe
 
         Parameters
         ----------
-        feature: Feature
+        feature: ExtendedFeatureModel
             input feature instance
 
         Returns

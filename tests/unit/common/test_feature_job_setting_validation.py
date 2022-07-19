@@ -2,7 +2,7 @@
 """
 import pytest
 
-from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
+from featurebyte.common.model_util import validate_job_setting_parameters
 
 
 def test_time_modulo_frequency_larger_than_frequency():

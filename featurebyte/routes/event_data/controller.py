@@ -1,5 +1,5 @@
 """
-EventData API routes
+EventData API route controller
 """
 from __future__ import annotations
 
@@ -32,7 +32,26 @@ class EventDataController:
         data: EventDataCreate,
     ) -> EventData:
         """
-        Create Event Data
+        Create Event Data at persistent
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        data: EventDataCreate
+            EventData creation payload
+
+        Returns
+        -------
+        EventData
+            Newly created event data object
+
+        Raises
+        ------
+        HTTPException
+            If the event data name conflicts with existing event data name
         """
         # exclude microseconds from timestamp as it's not supported in persistent
         utc_now = get_utc_now()
@@ -81,7 +100,36 @@ class EventDataController:
         name: str | None = None,
     ) -> EventDataList:
         """
-        List Event Datas
+        List EventData objects stored at the persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        page: int
+            Page number
+        page_size: int
+            Number of items per page
+        sort_by: str | None
+            Key used to sort the returning entities
+        sort_dir: "asc" or "desc"
+            Sorting the returning entities in ascending order or descending order
+        search: str | None
+            Search term (not supported)
+        name: str | None
+            EventData name used to filter the entities
+
+        Returns
+        -------
+        EventDataList
+            List of event data fulfilled the filtering condition
+
+        Raises
+        ------
+        HTTPException
+            If the query is not supported
         """
         query_filter = {"user_id": user.id}
 
@@ -112,10 +160,29 @@ class EventDataController:
         cls,
         user: Any,
         persistent: Persistent,
-        event_data_id: str,
+        event_data_id: ObjectId,
     ) -> EventData:
         """
-        Retrieve Event Data
+        Retrieve Event Data given event data identifier (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        event_data_id: ObjectId
+            EventData ID
+
+        Returns
+        -------
+        EventData
+            EventData object which matches given event data id
+
+        Raises
+        ------
+        HTTPException
+            If the event data not found
         """
         query_filter = {"_id": ObjectId(event_data_id), "user_id": user.id}
         event_data = persistent.find_one(
@@ -133,11 +200,34 @@ class EventDataController:
         cls,
         user: Any,
         persistent: Persistent,
-        event_data_id: str,
+        event_data_id: ObjectId,
         data: EventDataUpdate,
     ) -> EventData:
         """
-        Update scheduled task
+        Update EventData (for example, to update scheduled task) at persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        event_data_id: ObjectId
+            EventData ID
+        data: EventDataUpdate
+            Event data update payload
+
+        Returns
+        -------
+        EventData
+            EventData object with updated attribute(s)
+
+        Raises
+        ------
+        not_found_exception
+            If the event data not found
+        HTTPException
+            Invalid event data status transition
         """
         query_filter = {"_id": ObjectId(event_data_id), "user_id": user.id}
         event_data = persistent.find_one(

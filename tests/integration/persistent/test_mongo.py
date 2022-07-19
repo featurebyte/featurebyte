@@ -52,13 +52,11 @@ def test_start_transaction__exception_within_transaction(mongo_persistent):
     persistent, database = mongo_persistent
     col = "test_col"
 
-    try:
+    with pytest.raises(AssertionError):
         with persistent.start_transaction() as session:
             session.insert_one(collection_name=col, document={"key1": "value1"})
             session.insert_one(collection_name=col, document={"key2": "value2"})
             assert False
-    except AssertionError:
-        pass
 
     # check no record written to the mongodb
     output = list(database[col].find({}, {"_id": False}))

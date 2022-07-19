@@ -63,12 +63,36 @@ class RecordRetrievalException(ResponseException):
 
 
 class MissingPointInTimeColumnError(Exception):
-    """Raised when point in time column is not provided in historical requests"""
+    """
+    Raised when point in time column is not provided in historical requests
+    """
 
 
 class TooRecentPointInTimeError(Exception):
-    """Raised when the latest point in time value is too recent in historical requests"""
+    """
+    Raised when the latest point in time value is too recent in historical requests
+    """
 
 
 class InvalidSettingsError(Exception):
-    """Raised when configuration has invalid settings"""
+    """
+    Raised when configuration has invalid settings
+    """
+
+
+class DuplicatedFeatureRegistryError(Exception):
+    """
+    Raised when the feature registry record already exists at the feature store
+    """
+
+
+class MissingFeatureRegistryError(Exception):
+    """
+    Raised when the feature registry record does not exist
+    """
+
+
+class InvalidFeatureRegistryOperationError(Exception):
+    """
+    Raised when the operation on the registry is invalid
+    """

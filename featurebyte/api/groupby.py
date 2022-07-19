@@ -8,7 +8,7 @@ from typing import Any
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import FeatureGroup
 from featurebyte.api.util import get_entity_by_id
-from featurebyte.common.feature_job_setting_validation import validate_job_setting_parameters
+from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -176,9 +176,10 @@ class EventViewGroupBy(OpsMixin):
             "names": feature_names,
             "serving_names": self.serving_names,
         }
-        # insert a groupby node to global query graph first,
-        # then used the inserted groupby node to prune the graph & generate updated tile id
-        # finally insert a new groupby node into the graph (actual groupby node to be used)
+        # To generate a consistent tile_id before & after pruning, insert a groupby node to
+        # global query graph first, then used the inserted groupby node to prune the graph &
+        # generate updated tile id. Finally, insert a new groupby node into the graph (actual
+        # groupby node to be used).
         temp_groupby_node, column_var_type_map, _ = self._prepare_node_and_column_metadata(
             node_params, None
         )

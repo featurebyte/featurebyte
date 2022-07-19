@@ -32,7 +32,26 @@ class EntityController:
         data: EntityCreate,
     ) -> Entity:
         """
-        Create Entity
+        Create Entity at persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        data: EntityCreate
+            Entity creation payload
+
+        Returns
+        -------
+        Entity
+            Newly created entity object
+
+        Raises
+        ------
+        HTTPException
+            If the entity name conflicts with existing entity name
         """
         document = Entity(
             name=data.name,
@@ -78,7 +97,29 @@ class EntityController:
         name: Optional[str] = None,
     ) -> EntityList:
         """
-        List Entities
+        List Entities stored at persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        page: int
+            Page number
+        page_size: int
+            Number of items per page
+        sort_by: str | None
+            Key used to sort the returning entities
+        sort_dir: "asc" or "desc"
+            Sorting the returning entities in ascending order or descending order
+        name: str | None
+            Entity name used to filter the entities
+
+        Returns
+        -------
+        EntityList
+            List of entities fulfilled the filtering condition
         """
         query_filter = {"user_id": user.id}
         if name is not None:
@@ -96,7 +137,26 @@ class EntityController:
     @classmethod
     def get_entity(cls, user: Any, persistent: Persistent, entity_id: ObjectId) -> Entity:
         """
-        Get Entity
+        Get Entity from the persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        entity_id: ObjectId
+            Entity ID
+
+        Returns
+        -------
+        Entity
+            Retrieve entity object
+
+        Raises
+        ------
+        HTTPException
+            If the entity not found
         """
         query_filter = {"_id": ObjectId(entity_id), "user_id": user.id}
         entity = persistent.find_one(collection_name=cls.collection_name, query_filter=query_filter)
@@ -112,7 +172,30 @@ class EntityController:
         cls, user: Any, persistent: Persistent, entity_id: ObjectId, data: EntityUpdate
     ) -> Entity:
         """
-        Update Entity
+        Update Entity stored at persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        entity_id: ObjectId
+            Entity ID
+        data: EntityUpdate
+            Entity update payload
+
+        Returns
+        -------
+        Entity
+            Entity object with updated attribute(s)
+
+        Raises
+        ------
+        not_found_exception
+            If the entity not found
+        HTTPException
+            If the entity name already exists in persistent
         """
         query_filter = {"_id": ObjectId(entity_id), "user_id": user.id}
         entity = persistent.find_one(collection_name=cls.collection_name, query_filter=query_filter)

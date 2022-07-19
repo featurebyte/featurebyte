@@ -350,7 +350,7 @@ def test_start_transaction__exception_within_transaction(git_persistent):
     persistent, repo = git_persistent
     col = "test_col"
 
-    try:
+    with pytest.raises(AssertionError):
         # set up an exception happens within the context
         with persistent.start_transaction() as session:
             session.insert_one(collection_name=col, document={"_id": "1234", "key1": "value1"})
@@ -360,8 +360,6 @@ def test_start_transaction__exception_within_transaction(git_persistent):
                 update={"$set": {"key1": "value2"}},
             )
             assert False
-    except AssertionError:
-        pass
 
     # check commit messages & status
     assert _get_commit_messages(repo) == ["Initial commit\n"]

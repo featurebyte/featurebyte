@@ -16,10 +16,10 @@ from bson.objectid import ObjectId
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
-from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.enum import CollectionName, InternalName
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.feature import (
@@ -233,17 +233,17 @@ def tile_manager(snowflake_session):
 @pytest.fixture
 def snowflake_feature(feature_model_dict, snowflake_session):
     """
-    Fixture for a Feature object
+    Fixture for a ExtendedFeatureModel object
     """
-    mock_feature = Feature(**feature_model_dict)
-    mock_feature.version = "v1"
-    mock_feature.readiness = FeatureReadiness.DRAFT.value
-    mock_feature.is_default = True
-    mock_feature.description = "test_description_1"
-    mock_feature.online_enabled = False
-    tile_id = mock_feature.tile_specs[0].tile_id
+    feature = ExtendedFeatureModel(**feature_model_dict)
+    feature.version = "v1"
+    feature.readiness = FeatureReadiness.DRAFT.value
+    feature.is_default = True
+    feature.description = "test_description_1"
+    feature.online_enabled = False
+    tile_id = feature.tile_specs[0].tile_id
 
-    yield mock_feature
+    yield feature
 
     snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
     snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
@@ -321,7 +321,7 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config):
     mock_feature.readiness = FeatureReadiness.DRAFT.value
     mock_feature.is_default = True
 
-    mock_feature_list = FeatureListModel(
+    feature_list = FeatureListModel(
         name="feature_list1",
         description="test_description1",
         features=[(mock_feature.name, mock_feature.version)],
@@ -330,7 +330,7 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config):
         version="v1",
     )
 
-    yield mock_feature_list
+    yield feature_list
 
     snowflake_session.execute_query("DELETE FROM FEATURE_LIST_REGISTRY")
     snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
