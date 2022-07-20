@@ -31,6 +31,10 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.8"]
+    env:
+      GCR_REPO_NAME: featurebyte-pypi
+      GCR_REPO_LOCATION: us-central1
+      GC_PROJECT_ID: vpc-host-nonprod-xa739-xz970
 
     steps:
     - uses: actions/checkout@v3
@@ -39,13 +43,25 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - uses: abatilo/actions-poetry@v2.1.5
-
     - name: Set up cache
       uses: actions/cache@v3.0.4
       with:
         path: .venv
         key: venv-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('poetry.lock') }}
+
+    - name: Authenticate to Google Cloud
+      id: 'auth'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+
+    - name: Install Poetry
+      run: |
+        pip install keyring keyrings.google-artifactregistry-auth
+        printf "%s\n" "[distutils]" "index-servers =" "    $GCR_REPO_NAME" "" "[$GCR_REPO_NAME]" "repository: https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME/" > ~/.pypirc
+        mkdir -p ~/.config/pip && printf "%s\n" "[global]" "extra-index-url = https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME/simple/" > ~/.config/pip/pip.conf
+        python -m pip install poetry==1.2.0rc99
+        rm ~/.pypirc ~/.config/pip/pip.conf
 
     - name: Install dependencies
       run: |
