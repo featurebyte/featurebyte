@@ -10,6 +10,7 @@ from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.models.feature import FeatureReadiness
 
 
 def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data, config):
@@ -168,6 +169,8 @@ def test_query_object_operation_on_snowflake_source(
         "COUNT_24h": 9,
         "COUNT_2h DIV COUNT_24h": Decimal("0.111111"),
     }
+    special_feature = feature_group["COUNT_2h DIV COUNT_24h"]
+    special_feature.save()
 
     run_and_test_get_historical_features(config, feature_group)
 

@@ -8,6 +8,7 @@ import pytest
 
 from featurebyte.api.feature import Feature, FeatureGroup
 from featurebyte.exception import DuplicatedRecordException, RecordCreationException
+from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
 
@@ -225,8 +226,10 @@ def saved_feature_fixture(snowflake_event_data, float_feature, mock_insert_featu
     snowflake_event_data.save()
     assert snowflake_event_data.id == event_data_id_before
     feature_id_before = float_feature.id
+    assert float_feature.readiness is None
     float_feature.save()
     assert float_feature.id == feature_id_before
+    assert float_feature.readiness == FeatureReadiness.DRAFT
     yield float_feature
 
 
