@@ -72,8 +72,9 @@ class EventDataController:
             created_at=utc_now,
             status=EventDataStatus.DRAFT,
             history=history,
-            **data.dict(),
+            **data.dict(by_alias=True),
         )
+        assert document.id == data.id
         try:
             insert_id = persistent.insert_one(
                 collection_name=cls.collection_name, document=document.dict(by_alias=True)
@@ -82,7 +83,7 @@ class EventDataController:
         except DuplicateDocumentError as exc:
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=f'Event Data "{data.name}" already exists.',
+                detail=f'EventData (event_data.name: "{data.name}") already exists.',
             ) from exc
 
         return document
@@ -191,7 +192,10 @@ class EventDataController:
         if event_data is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
-                detail=f'Event Data ID "{event_data_id}" not found.',
+                detail=(
+                    f'EventData (event_data.id: "{event_data_id}") not found! '
+                    f"Please save the EventData object first."
+                ),
             )
         return EventData(**event_data)
 
@@ -234,7 +238,11 @@ class EventDataController:
             collection_name=cls.collection_name, query_filter=query_filter
         )
         not_found_exception = HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail=f'Event Data ID "{event_data_id}" not found.'
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=(
+                f'EventData (event_data.id: "{event_data_id}") not found! '
+                f"Please save the EventData object first."
+            ),
         )
         if not event_data:
             raise not_found_exception

@@ -3,18 +3,22 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Any, List, Tuple
 
+import json
 import time
+from http import HTTPStatus
 
 import pandas as pd
+from beanie import PydanticObjectId
 
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.config import Credentials
+from featurebyte.config import Configurations, Credentials
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.enum import SpecialColumnName
+from featurebyte.exception import DuplicatedRecordException, RecordCreationException
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import TableDetails
@@ -135,6 +139,44 @@ class Feature(FeatureQueryObject, Series, FeatureModel):
     # FeatureStoreModel
     tabular_source: Tuple[FeatureStore, TableDetails]
 
+    def _binary_op_series_params(self, other: Feature | None = None) -> dict[str, Any]:
+        """
+        Parameters that will be passed to series-like constructor in _binary_op method
+
+
+        Parameters
+        ----------
+        other: Series
+            Other Series object
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        event_data_ids = list(self.event_data_ids)
+        if other is not None:
+            event_data_ids.extend(other.event_data_ids)
+        return {"event_data_ids": list(set(event_data_ids))}
+
+    def save(self) -> None:
+        """
+        Save feature to persistent as draft
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When record with the same key exists at the persistent layer
+        RecordCreationException
+            When fail to save the event data (general failure)
+        """
+        client = Configurations().get_client()
+        response = client.post(url="/feature", json=json.loads(self.json(by_alias=True)))
+        if response.status_code != HTTPStatus.CREATED:
+            if response.status_code == HTTPStatus.CONFLICT:
+                raise DuplicatedRecordException(response)
+            raise RecordCreationException(response)
+        type(self).__init__(self, **response.json())
+
 
 class FeatureGroup(FeatureQueryObject, Frame):
     """
@@ -143,7 +185,36 @@ class FeatureGroup(FeatureQueryObject, Frame):
 
     _series_class = Feature
 
-    def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
+    event_data_ids: List[PydanticObjectId]
+
+    @property
+    def _getitem_frame_params(self) -> dict[str, Any]:
+        """
+        Parameters that will be passed to frame-like class constructor in __getitem__
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {"event_data_ids": self.event_data_ids}
+
+    @property
+    def _getitem_series_params(self) -> dict[str, Any]:
+        """
+        Parameters that will be passed to series-like class constructor in __getitem__
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {"event_data_ids": self.event_data_ids}
+
+    def __getitem__(
+        self,
+        item: str | list[str] | Series,
+        frame_params: dict[str, Any] | None = None,
+        series_params: dict[str, Any] | None = None,
+    ) -> Series | Frame:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.protected_columns.union(item))
         return super().__getitem__(item)

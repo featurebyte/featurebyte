@@ -39,7 +39,7 @@ def create_multiple_entries_fixture(test_api_client_persistent):
     assert res_region.status_code == HTTPStatus.CREATED
     assert res_cust.status_code == HTTPStatus.CREATED
     assert res_prod.status_code == HTTPStatus.CREATED
-    return [res_region.json()["id"], res_cust.json()["id"], res_prod.json()["id"]]
+    return [res_region.json()["_id"], res_cust.json()["_id"], res_prod.json()["_id"]]
 
 
 def test_create_201(create_success_response):
@@ -51,7 +51,7 @@ def test_create_201(create_success_response):
     result = create_success_response.json()
 
     # check response
-    _ = ObjectId(result.pop("id"))  # valid ObjectId
+    _ = ObjectId(result.pop("_id"))  # valid ObjectId
     assert result.pop("user_id") is None
     assert datetime.fromisoformat(result.pop("created_at")) < utcnow
 
@@ -64,12 +64,14 @@ def test_create_409(create_success_response, test_api_client_persistent, entity_
     _ = create_success_response
     response = test_api_client.post("/entity", json=entity_dict)
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'Entity name "customer" already exists.'}
+    assert response.json() == {"detail": 'Entity name (entity.name: "customer") already exists.'}
 
     entity_dict["name"] = "Customer"
     response = test_api_client.post("/entity", json=entity_dict)
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'Entity serving name "cust_id" already exists.'}
+    assert response.json() == {
+        "detail": 'Entity serving name (entity.serving_names: "cust_id") already exists.'
+    }
 
 
 def test_create_422(test_api_client_persistent, entity_dict):
@@ -105,7 +107,7 @@ def test_list_200(create_multiple_entries, test_api_client_persistent):
     result_data = result.pop("data")
     expected_sorted_name_desc = ["product", "customer", "region"]
     expected_sorted_serv_name_desc = [["prod_id"], ["cust_id"], ["region"]]
-    assert all(elem.get("id") is not None for elem in result_data)
+    assert all(elem.get("_id") is not None for elem in result_data)
     assert [elem["name"] for elem in result_data] == expected_sorted_name_desc
     assert [elem["serving_names"] for elem in result_data] == expected_sorted_serv_name_desc
     assert result == expected_paginated_info
@@ -140,12 +142,12 @@ def test_get_200(create_success_response, test_api_client_persistent):
     """
     test_api_client, _ = test_api_client_persistent
     created_entity = create_success_response.json()
-    entity_id = created_entity["id"]
+    entity_id = created_entity["_id"]
     response = test_api_client.get(f"/entity/{entity_id}")
     response_data = response.json()
-    response_data.pop("id")
     response_data.pop("created_at")
     assert response_data == {
+        "_id": entity_id,
         "name": "customer",
         "serving_names": ["cust_id"],
         "name_history": [],
@@ -161,7 +163,11 @@ def test_get_404(test_api_client_persistent):
     unknown_entity_id = ObjectId()
     response = test_api_client.get(f"/entity/{unknown_entity_id}")
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {"detail": f'Entity ID "{unknown_entity_id}" not found.'}
+    assert response.json() == {
+        "detail": (
+            f'Entity (entity.id: "{unknown_entity_id}") not found! Please save the Entity object first.'
+        )
+    }
 
 
 @freeze_time("2022-07-01")
@@ -171,7 +177,7 @@ def test_update_200(create_success_response, test_api_client_persistent):
     """
     test_api_client, _ = test_api_client_persistent
     response_dict = create_success_response.json()
-    entity_id = response_dict["id"]
+    entity_id = response_dict["_id"]
     response = test_api_client.patch(f"/entity/{entity_id}", json={"name": "Customer"})
     assert response.status_code == HTTPStatus.OK
     result = response.json()
@@ -196,7 +202,11 @@ def test_update_404(test_api_client_persistent):
     unknown_entity_id = ObjectId()
     response = test_api_client.patch(f"/entity/{unknown_entity_id}", json={"name": "random_name"})
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {"detail": f'Entity ID "{unknown_entity_id}" not found.'}
+    assert response.json() == {
+        "detail": (
+            f'Entity (entity.id: "{unknown_entity_id}") not found! Please save the Entity object first.'
+        )
+    }
 
 
 def test_update_409(create_multiple_entries, test_api_client_persistent):
@@ -208,7 +218,7 @@ def test_update_409(create_multiple_entries, test_api_client_persistent):
         f"/entity/{create_multiple_entries[0]}", json={"name": "customer"}
     )
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'Entity name "customer" already exists.'}
+    assert response.json() == {"detail": 'Entity name (entity.name: "customer") already exists.'}
 
 
 def test_update_422(test_api_client_persistent):

@@ -12,22 +12,17 @@ from bson import ObjectId
 from featurebyte.models.event_data import EventDataModel, EventDataStatus
 from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.persistent.git import GitDB
-from tests.unit.models.test_event_data import (  # pylint: disable=unused-import
-    event_data_model_dict_fixture,
-)
 
 
-@pytest.fixture(name="event_data_dict")
-def event_data_dict_fixture(event_data_model_dict):
+@pytest.fixture(name="event_data_model_dict")
+def event_data_model_dict_fixture(event_data_model_dict):
     """
-    Table Event dict object
+    EventData dict object
     """
-    event_data_dict = json.loads(EventDataModel(**event_data_model_dict).json())
-    event_data_dict["name"] = "订单表"
-    event_data_dict.pop("id")
-    event_data_dict.pop("created_at")
-    event_data_dict["column_entity_map"] = {"O_CUSTKEY": "Customer"}
-    return event_data_dict
+    event_data_model_dict = json.loads(EventDataModel(**event_data_model_dict).json(by_alias=True))
+    event_data_model_dict["name"] = "订单表"
+    event_data_model_dict.pop("created_at")
+    return event_data_model_dict
 
 
 @pytest.fixture(name="event_data_update_dict")
@@ -45,16 +40,18 @@ def event_data_update_dict_fixture():
 
 
 @pytest.fixture(name="event_data_response")
-def event_data_response_fixture(test_api_client_persistent, event_data_dict):
+def event_data_response_fixture(test_api_client_persistent, event_data_model_dict):
     """
     Event data response fixture
     """
     test_api_client, _ = test_api_client_persistent
-    response = test_api_client.post("/event_data", json=event_data_dict)
+    response = test_api_client.post("/event_data", json=event_data_model_dict)
+    assert response.status_code == HTTPStatus.CREATED
+    assert response.json()["_id"] == event_data_model_dict["_id"]
     yield response
 
 
-def test_create_success(event_data_response, event_data_dict):
+def test_create_success(event_data_response, event_data_model_dict):
     """
     Create Event Data
     """
@@ -62,33 +59,32 @@ def test_create_success(event_data_response, event_data_dict):
     assert event_data_response.status_code == HTTPStatus.CREATED
     result = event_data_response.json()
     assert datetime.datetime.fromisoformat(result.pop("created_at")) < utcnow
-    assert result.pop("id")
     assert result.pop("user_id") is None
     # history should contain the initial entry
-    event_data_dict.pop("history")
+    event_data_model_dict.pop("history")
     history = result.pop("history")
     assert len(history) == 1
-    assert history[0]["setting"] == event_data_dict["default_feature_job_setting"]
+    assert history[0]["setting"] == event_data_model_dict["default_feature_job_setting"]
     # status should be draft
-    event_data_dict.pop("status")
+    event_data_model_dict.pop("status")
     assert result.pop("status") == EventDataStatus.DRAFT
-    assert result == event_data_dict
+    assert result == event_data_model_dict
 
 
 def test_create_fails_table_exists(
-    test_api_client_persistent, event_data_dict, event_data_response
+    test_api_client_persistent, event_data_model_dict, event_data_response
 ):
     """
     Create Event Data fails if table with same name already exists
     """
     _ = event_data_response
     test_api_client, _ = test_api_client_persistent
-    response = test_api_client.post("/event_data", json=event_data_dict)
+    response = test_api_client.post("/event_data", json=event_data_model_dict)
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'Event Data "订单表" already exists.'}
+    assert response.json() == {"detail": 'EventData (event_data.name: "订单表") already exists.'}
 
 
-def test_create_fails_table_exists_during_insert(test_api_client_persistent, event_data_dict):
+def test_create_fails_table_exists_during_insert(test_api_client_persistent, event_data_model_dict):
     """
     Create Event Data fails if table with same name already exists during persistent insert
     """
@@ -99,18 +95,18 @@ def test_create_fails_table_exists_during_insert(test_api_client_persistent, eve
         func_path = "featurebyte.persistent.MongoDB.insert_one"
     with mock.patch(func_path) as mock_insert:
         mock_insert.side_effect = DuplicateDocumentError
-        response = test_api_client.post("/event_data", json=event_data_dict)
+        response = test_api_client.post("/event_data", json=event_data_model_dict)
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'Event Data "订单表" already exists.'}
+    assert response.json() == {"detail": 'EventData (event_data.name: "订单表") already exists.'}
 
 
-def test_create_fails_wrong_field_type(test_api_client_persistent, event_data_dict):
+def test_create_fails_wrong_field_type(test_api_client_persistent, event_data_model_dict):
     """
     Create Event Data fails if wrong types are provided for fields
     """
     test_api_client, _ = test_api_client_persistent
-    event_data_dict["tabular_source"] = ("Some other source", "other_table")
-    response = test_api_client.post("/event_data", json=event_data_dict)
+    event_data_model_dict["tabular_source"] = ("Some other source", "other_table")
+    response = test_api_client.post("/event_data", json=event_data_model_dict)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert response.json() == {
         "detail": [
@@ -129,7 +125,7 @@ def test_create_fails_wrong_field_type(test_api_client_persistent, event_data_di
 
 
 @pytest.fixture(name="inserted_event_data_ids")
-def inserted_event_data_ids_fixture(test_api_client_persistent, event_data_dict):
+def inserted_event_data_ids_fixture(test_api_client_persistent, event_data_model_dict):
     """
     Inserted multiple event data results & return its ids as fixture
     """
@@ -137,16 +133,17 @@ def inserted_event_data_ids_fixture(test_api_client_persistent, event_data_dict)
     # insert a few records
     insert_ids = []
     for i in range(3):
-        event_data_dict["name"] = f"Table {i}"
-        response = test_api_client.post("/event_data", json=event_data_dict)
+        insert_id = str(ObjectId())
+        event_data_model_dict["_id"] = insert_id
+        event_data_model_dict["name"] = f"Table {i}"
+        response = test_api_client.post("/event_data", json=event_data_model_dict)
         assert response.status_code == HTTPStatus.CREATED
-        insert_id = response.json()["id"]
-        assert insert_id
+        assert response.json()["_id"] == insert_id
         insert_ids.append(insert_id)
     yield insert_ids
 
 
-def test_list(inserted_event_data_ids, test_api_client_persistent, event_data_dict):
+def test_list(inserted_event_data_ids, test_api_client_persistent, event_data_model_dict):
     """
     List Event Datas
     """
@@ -157,15 +154,15 @@ def test_list(inserted_event_data_ids, test_api_client_persistent, event_data_di
     assert results["page"] == 1
     assert results["total"] == 3
     data = results["data"][0]
-    assert data.pop("id") == inserted_event_data_ids[-1]
+    assert data["_id"] == inserted_event_data_ids[-1]
     data.pop("created_at")
 
     # should include the static user id
     assert data.pop("user_id") is None
-    assert data.pop("history")[0]["setting"] == event_data_dict["default_feature_job_setting"]
-    event_data_dict.pop("history")
-    event_data_dict["status"] = EventDataStatus.DRAFT
-    assert data == event_data_dict
+    assert data.pop("history")[0]["setting"] == event_data_model_dict["default_feature_job_setting"]
+    event_data_model_dict.pop("history")
+    event_data_model_dict["status"] = EventDataStatus.DRAFT
+    assert data == event_data_model_dict
 
 
 def test_list__not_supported(inserted_event_data_ids, test_api_client_persistent):
@@ -180,28 +177,24 @@ def test_list__not_supported(inserted_event_data_ids, test_api_client_persistent
     assert results == {"detail": "Query not supported."}
 
 
-def test_retrieve_success(test_api_client_persistent, event_data_dict, event_data_response):
+def test_retrieve_success(test_api_client_persistent, event_data_model_dict, event_data_response):
     """
     Retrieve Event Data
     """
     test_api_client, _ = test_api_client_persistent
-    # insert a record
-    assert event_data_response.status_code == HTTPStatus.CREATED
-    insert_id = event_data_response.json()["id"]
-    assert insert_id
+    insert_id = event_data_response.json()["_id"]
 
-    # retrieve by table name
+    # retrieve by event data id
     response = test_api_client.get(f"/event_data/{insert_id}")
     assert response.status_code == HTTPStatus.OK
     data = response.json()
-    assert data.pop("id") == insert_id
     data.pop("created_at")
     # should include the static user id
     assert data.pop("user_id") is None
-    assert data.pop("history")[0]["setting"] == event_data_dict["default_feature_job_setting"]
-    event_data_dict.pop("history")
-    event_data_dict["status"] = EventDataStatus.DRAFT
-    assert data == event_data_dict
+    assert data.pop("history")[0]["setting"] == event_data_model_dict["default_feature_job_setting"]
+    event_data_model_dict.pop("history")
+    event_data_model_dict["status"] = EventDataStatus.DRAFT
+    assert data == event_data_model_dict
 
 
 def test_retrieve_fails_table_not_found(test_api_client_persistent):
@@ -213,41 +206,41 @@ def test_retrieve_fails_table_not_found(test_api_client_persistent):
     random_id = ObjectId()
     response = test_api_client.get(f"/event_data/{random_id}")
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {"detail": f'Event Data ID "{random_id}" not found.'}
+    assert response.json() == {
+        "detail": f'EventData (event_data.id: "{random_id}") not found! Please save the EventData object first.'
+    }
 
 
-def test_update_success(test_api_client_persistent, event_data_dict, event_data_update_dict):
+def test_update_success(
+    test_api_client_persistent, event_data_response, event_data_update_dict, event_data_model_dict
+):
     """
     Update Event Data
     """
-    # insert a record
     test_api_client, _ = test_api_client_persistent
-    response = test_api_client.post("/event_data", json=event_data_dict)
-    assert response.status_code == HTTPStatus.CREATED
-    data = response.json()
-    insert_id = data["id"]
-    assert insert_id
-    previous_history = data["history"]
+    response_dict = event_data_response.json()
+    insert_id = response_dict["_id"]
+    previous_history = response_dict["history"]
 
     response = test_api_client.patch(f"/event_data/{insert_id}", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.OK
-    data = response.json()
-    assert data.pop("id") == insert_id
-    data.pop("created_at")
-    assert data.pop("user_id") is None
+    update_response_dict = response.json()
+    assert update_response_dict["_id"] == insert_id
+    update_response_dict.pop("created_at")
+    assert update_response_dict.pop("user_id") is None
 
     # default_feature_job_setting should be updated
     assert (
-        data.pop("default_feature_job_setting")
+        update_response_dict.pop("default_feature_job_setting")
         == event_data_update_dict["default_feature_job_setting"]
     )
 
     # the other fields should be unchanged
-    event_data_dict.pop("default_feature_job_setting")
-    new_history = data.pop("history")
-    event_data_dict.pop("history")
-    event_data_dict["status"] = EventDataStatus.DRAFT
-    assert data == event_data_dict
+    event_data_model_dict.pop("default_feature_job_setting")
+    new_history = update_response_dict.pop("history")
+    event_data_model_dict.pop("history")
+    event_data_model_dict["status"] = EventDataStatus.DRAFT
+    assert update_response_dict == event_data_model_dict
 
     # history should be appended with new default job settings update
     assert len(new_history) == len(previous_history) + 1
@@ -263,26 +256,25 @@ def test_update_fails_table_not_found(test_api_client_persistent, event_data_upd
     random_id = ObjectId()
     response = test_api_client.patch(f"/event_data/{random_id}", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {"detail": f'Event Data ID "{random_id}" not found.'}
+    assert response.json() == {
+        "detail": f'EventData (event_data.id: "{random_id}") not found! Please save the EventData object first.'
+    }
 
 
 def test_update_excludes_unsupported_fields(
-    test_api_client_persistent, event_data_dict, event_data_update_dict
+    test_api_client_persistent, event_data_response, event_data_update_dict, event_data_model_dict
 ):
     """
     Update Event Data only updates job settings even if other fields are provided
     """
-    # insert a record
     test_api_client, _ = test_api_client_persistent
-    response = test_api_client.post("/event_data", json=event_data_dict)
-    assert response.status_code == HTTPStatus.CREATED
-    data = response.json()
-    insert_id = data["id"]
+    response_dict = event_data_response.json()
+    insert_id = response_dict["_id"]
     assert insert_id
-    previous_history = data["history"]
+    previous_history = response_dict["history"]
 
     # expect status to be draft
-    assert data["status"] == EventDataStatus.DRAFT
+    assert response_dict["status"] == EventDataStatus.DRAFT
 
     event_data_update_dict["name"] = "Some other name"
     event_data_update_dict["source"] = "Some other source"
@@ -290,7 +282,7 @@ def test_update_excludes_unsupported_fields(
     response = test_api_client.patch(f"/event_data/{insert_id}", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.OK
     data = response.json()
-    assert data.pop("id") == insert_id
+    assert data["_id"] == insert_id
     data.pop("created_at")
     assert data.pop("user_id") is None
 
@@ -301,11 +293,11 @@ def test_update_excludes_unsupported_fields(
     )
 
     # the other fields should be unchanged
-    event_data_dict.pop("default_feature_job_setting")
-    event_data_dict["history"] = []
+    event_data_model_dict.pop("default_feature_job_setting")
+    event_data_model_dict["history"] = []
     new_history = data.pop("history")
-    event_data_dict.pop("history")
-    assert data == event_data_dict
+    event_data_model_dict.pop("history")
+    assert data == event_data_model_dict
 
     # history should be appended with new default job settings update
     assert len(new_history) == len(previous_history) + 1
@@ -317,41 +309,32 @@ def test_update_excludes_unsupported_fields(
 
 
 def test_update_fails_invalid_transition(
-    test_api_client_persistent, event_data_dict, event_data_update_dict
+    test_api_client_persistent, event_data_response, event_data_model_dict, event_data_update_dict
 ):
     """
     Update Event Data fails if status transition is no valid
     """
-    # insert a record
     test_api_client, _ = test_api_client_persistent
-    response = test_api_client.post("/event_data", json=event_data_dict)
-    assert response.status_code == HTTPStatus.CREATED
-    data = response.json()
-
-    # expect status to be draft
-    assert data["status"] == EventDataStatus.DRAFT
-
+    response_dict = event_data_response.json()
     event_data_update_dict["status"] = EventDataStatus.DRAFT
-    response = test_api_client.patch(f"/event_data/{data['id']}", json=event_data_update_dict)
+    response = test_api_client.patch(
+        f"/event_data/{response_dict['_id']}", json=event_data_update_dict
+    )
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert response.json() == {"detail": "Invalid status transition from DRAFT to DRAFT."}
 
 
-def test_update_status_only(test_api_client_persistent, event_data_dict):
+def test_update_status_only(test_api_client_persistent, event_data_response, event_data_model_dict):
     """
     Update Event Data status only
     """
     # insert a record
     test_api_client, _ = test_api_client_persistent
-    response = test_api_client.post("/event_data", json=event_data_dict)
-    assert response.status_code == HTTPStatus.CREATED
-    current_data = response.json()
-
-    # expect status to be draft
+    current_data = event_data_response.json()
     assert current_data.pop("status") == EventDataStatus.DRAFT
 
     response = test_api_client.patch(
-        f"/event_data/{current_data['id']}", json={"status": EventDataStatus.PUBLISHED}
+        f"/event_data/{current_data['_id']}", json={"status": EventDataStatus.PUBLISHED}
     )
     assert response.status_code == HTTPStatus.OK
     updated_data = response.json()

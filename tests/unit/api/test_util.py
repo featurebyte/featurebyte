@@ -27,7 +27,7 @@ def test_event_data_column__get_entity_id(entity_id_map):
     # test retrieval
     for idx, expected_entity_id in entity_id_map.items():
         entity = get_entity(entity_name=f"entity_{idx}")
-        assert entity["id"] == str(expected_entity_id)
+        assert entity["_id"] == str(expected_entity_id)
 
     # test unknown entity
     with pytest.raises(RecordRetrievalException) as exc:
@@ -42,7 +42,7 @@ def test_get_entity_by_id(entity_id_map):
     # test retrieval
     for expected_entity_id in entity_id_map.values():
         entity = get_entity_by_id(str(expected_entity_id))
-        assert entity["id"] == str(expected_entity_id)
+        assert entity["_id"] == str(expected_entity_id)
 
     # test unknown entity
     with pytest.raises(RecordRetrievalException) as exc:

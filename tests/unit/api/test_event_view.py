@@ -95,6 +95,11 @@ def test_getitem__list_of_str(snowflake_event_view):
 
     # both event data subsets actually point to the same node
     assert event_view_subset1.node == event_view_subset2.node
+    assert (
+        snowflake_event_view.event_data_id
+        == event_view_subset1.event_data_id
+        == event_view_subset2.event_data_id
+    )
 
 
 def test_getitem__series_key(snowflake_event_view):

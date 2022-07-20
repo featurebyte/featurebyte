@@ -107,21 +107,3 @@ def get_entity_by_id(entity_id: str) -> dict[str, Any]:
         )
         return response_dict
     raise RecordRetrievalException(response, f'Entity id "{entity_id}" not found!')
-
-
-def convert_response_to_dict(response: Response) -> dict[str, Any]:
-    """
-    Convert API response to dictionary format
-
-    Parameters
-    ----------
-    response: Response
-        API response object
-
-    Returns
-    -------
-    dict[str, Any]
-    """
-    response_dict: dict[str, Any] = response.json()
-    response_dict["_id"] = response_dict.pop("id")
-    return response_dict

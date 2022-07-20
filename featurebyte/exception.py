@@ -14,8 +14,11 @@ class ResponseException(Exception):
     """
 
     def __init__(self, response: Response, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
         self.response = response
+        response_dict = response.json()
+        if "detail" in response_dict:
+            return super().__init__(response_dict["detail"], *args, **kwargs)
+        return super().__init__(*args, **kwargs)
 
     @property
     def text(self) -> str:

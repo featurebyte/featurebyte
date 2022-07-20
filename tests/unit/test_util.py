@@ -30,7 +30,7 @@ def test_get_event_data(snowflake_event_data, mock_config_path_env):
     _ = mock_config_path_env
 
     # create event data & save to persistent
-    snowflake_event_data.save_as_draft()
+    snowflake_event_data.save()
 
     # load the event data from the persistent
     loaded_event_data = get_event_data(snowflake_event_data.name)

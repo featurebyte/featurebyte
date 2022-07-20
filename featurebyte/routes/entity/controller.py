@@ -66,7 +66,7 @@ class EntityController:
         if conflict_entity:
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=f'Entity name "{data.name}" already exists.',
+                detail=f'Entity name (entity.name: "{data.name}") already exists.',
             )
 
         conflict_entity = persistent.find_one(
@@ -76,7 +76,7 @@ class EntityController:
         if conflict_entity:
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=f'Entity serving name "{data.serving_name}" already exists.',
+                detail=f'Entity serving name (entity.serving_names: "{data.serving_name}") already exists.',
             )
 
         insert_id = persistent.insert_one(
@@ -163,7 +163,8 @@ class EntityController:
         # check that entity id exists
         if not entity:
             raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND, detail=f'Entity ID "{entity_id}" not found.'
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=f'Entity (entity.id: "{entity_id}") not found! Please save the Entity object first.',
             )
         return Entity(**entity)
 
@@ -202,7 +203,8 @@ class EntityController:
 
         # check that entity id exists
         not_found_exception = HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail=f'Entity ID "{entity_id}" not found.'
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=f'Entity (entity.id: "{entity_id}") not found! Please save the Entity object first.',
         )
         if not entity:
             raise not_found_exception
@@ -224,7 +226,7 @@ class EntityController:
                     return Entity(**entity)
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
-                    detail=f'Entity name "{data.name}" already exists.',
+                    detail=f'Entity name (entity.name: "{data.name}") already exists.',
                 )
 
         name_history.append(EntityNameHistoryEntry(created_at=get_utc_now(), name=cur_name).dict())

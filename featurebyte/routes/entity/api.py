@@ -14,9 +14,7 @@ from featurebyte.schema.entity import Entity, EntityCreate, EntityList, EntityUp
 router = APIRouter(prefix="/entity")
 
 
-@router.post(
-    "", response_model=Entity, response_model_by_alias=False, status_code=HTTPStatus.CREATED
-)
+@router.post("", response_model=Entity, status_code=HTTPStatus.CREATED)
 def create_entity(request: Request, data: EntityCreate) -> Entity:
     """
     Create Entity
@@ -27,7 +25,7 @@ def create_entity(request: Request, data: EntityCreate) -> Entity:
     return entity
 
 
-@router.get("/{entity_id}", response_model=Entity, response_model_by_alias=False)
+@router.get("/{entity_id}", response_model=Entity)
 def get_entity(request: Request, entity_id: str) -> Entity:
     """
     Get Entity
@@ -38,7 +36,7 @@ def get_entity(request: Request, entity_id: str) -> Entity:
     return entity
 
 
-@router.get("", response_model=EntityList, response_model_by_alias=False)
+@router.get("", response_model=EntityList)
 def list_entities(
     request: Request,
     page: int = 1,
@@ -62,7 +60,7 @@ def list_entities(
     return entity_list
 
 
-@router.patch("/{entity_id}", response_model=Entity, response_model_by_alias=False)
+@router.patch("/{entity_id}", response_model=Entity)
 def update_entity(request: Request, entity_id: str, data: EntityUpdate) -> Entity:
     """
     Update Entity

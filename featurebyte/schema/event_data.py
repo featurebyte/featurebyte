@@ -24,6 +24,7 @@ class EventDataCreate(BaseModel):
     Event Data Creation schema
     """
 
+    id: PydanticObjectId = Field(alias="_id")
     name: StrictStr
     tabular_source: Tuple[FeatureStoreModel, TableDetails]
     event_timestamp_column: StrictStr

@@ -12,9 +12,7 @@ from featurebyte.schema.feature import Feature, FeatureCreate
 router = APIRouter(prefix="/feature")
 
 
-@router.post(
-    "", response_model=Feature, response_model_by_alias=False, status_code=HTTPStatus.CREATED
-)
+@router.post("", response_model=Feature, status_code=HTTPStatus.CREATED)
 def create_feature(request: Request, data: FeatureCreate) -> Feature:
     """
     Create Feature

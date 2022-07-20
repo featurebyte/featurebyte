@@ -388,5 +388,5 @@ def event_data_fixture(config, snowflake_session):
     # create entity & event data
     Entity.create(name="User", serving_name="UID")
     event_data["USER_ID"].as_entity("User")
-    event_data.save_as_draft()
+    event_data.save()
     return event_data

@@ -1,6 +1,7 @@
 """
 Common test fixtures used across unit test directories
 """
+import datetime
 import json
 import tempfile
 from unittest import mock
@@ -236,6 +237,58 @@ def snowflake_event_data_fixture(snowflake_database_table, config):
     )
 
 
+@pytest.fixture(name="event_data_model_dict")
+def event_data_model_dict_fixture():
+    """Fixture for a Event Data dict"""
+    return {
+        "name": "my_event_data",
+        "tabular_source": (
+            {
+                "type": "snowflake",
+                "details": {
+                    "account": "account",
+                    "warehouse": "warehouse",
+                    "database": "database",
+                    "sf_schema": "schema",
+                },
+            },
+            {
+                "database_name": "database",
+                "schema_name": "schema",
+                "table_name": "table",
+            },
+        ),
+        "event_timestamp_column": "event_date",
+        "record_creation_date_column": "created_at",
+        "column_entity_map": None,
+        "default_feature_job_setting": {
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
+        "created_at": datetime.datetime(2022, 2, 1),
+        "history": [
+            {
+                "created_at": datetime.datetime(2022, 4, 1),
+                "setting": {
+                    "blind_spot": "10m",
+                    "frequency": "30m",
+                    "time_modulo_frequency": "5m",
+                },
+            },
+            {
+                "created_at": datetime.datetime(2022, 2, 1),
+                "setting": {
+                    "blind_spot": "10m",
+                    "frequency": "30m",
+                    "time_modulo_frequency": "5m",
+                },
+            },
+        ],
+        "status": "PUBLISHED",
+    }
+
+
 @pytest.fixture(name="snowflake_event_view")
 def snowflake_event_view_fixture(snowflake_event_data, config):
     """
@@ -281,6 +334,7 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
     assert event_view.protected_columns == {"event_timestamp"}
     assert event_view.inherited_columns == {"event_timestamp"}
     assert event_view.timestamp_column == "event_timestamp"
+    assert event_view.event_data_id == snowflake_event_data.id
     yield event_view
 
 
@@ -293,6 +347,7 @@ def grouped_event_view_fixture(snowflake_event_view):
     snowflake_event_view.cust_id.as_entity("customer")
     grouped = snowflake_event_view.groupby("cust_id")
     assert isinstance(grouped, EventViewGroupBy)
+    assert snowflake_event_view.event_data_id == grouped.obj.event_data_id
     yield grouped
 
 
@@ -343,6 +398,7 @@ def feature_group_fixture(grouped_event_view):
         "sum_2h": ("groupby_2",),
         "sum_1d": ("groupby_2",),
     }
+    assert grouped_event_view.obj.event_data_id in feature_group.event_data_ids
     yield feature_group
 
 
@@ -356,6 +412,7 @@ def float_feature_fixture(feature_group):
     assert feature.protected_columns == {"cust_id"}
     assert feature.inherited_columns == {"cust_id"}
     assert feature.inception_node == feature_group.inception_node
+    assert feature_group.event_data_ids == feature.event_data_ids
     yield feature
 
 
@@ -369,6 +426,7 @@ def bool_feature_fixture(float_feature):
     assert bool_feature.protected_columns == float_feature.protected_columns
     assert bool_feature.inherited_columns == float_feature.inherited_columns
     assert bool_feature.inception_node == float_feature.inception_node
+    assert bool_feature.event_data_ids == float_feature.event_data_ids
     yield bool_feature
 
 
