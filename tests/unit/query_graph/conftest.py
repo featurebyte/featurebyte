@@ -4,6 +4,7 @@ Common test fixtures used across unit test directories related to query_graph
 import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.feature_common import AggregationSpec
 from featurebyte.query_graph.graph import Node
 from featurebyte.query_graph.util import get_tile_table_identifier
 

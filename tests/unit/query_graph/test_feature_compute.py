@@ -6,8 +6,11 @@ import textwrap
 
 import pytest
 
-from featurebyte.query_graph.feature_common import AggregationSpec
-from featurebyte.query_graph.feature_compute import SnowflakeRequestTablePlan
+from featurebyte.query_graph.feature_common import AggregationSpec, FeatureSpec
+from featurebyte.query_graph.feature_compute import (
+    FeatureExecutionPlanner,
+    SnowflakeRequestTablePlan,
+)
 
 
 @pytest.fixture(name="agg_spec_template")
@@ -171,3 +174,86 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     ) T
     """
     assert_sql_equal(sql, expected_sql)
+
+
+def test_feature_execution_planner(query_graph_with_groupby):
+    """Test FeatureExecutionPlanner generates the correct plan from groupby node"""
+    groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
+    planner = FeatureExecutionPlanner(query_graph_with_groupby)
+    plan = planner.generate_plan([groupby_node])
+    assert plan.aggregation_specs == {
+        ("avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89", 7200): AggregationSpec(
+            window=7200,
+            frequency=3600,
+            blind_spot=900,
+            time_modulo_frequency=1800,
+            tile_table_id="avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+            keys=["cust_id"],
+            serving_names=["CUSTOMER_ID"],
+            merge_expr="SUM(sum_value) / SUM(count_value)",
+            feature_name="a_2h_average",
+        ),
+        ("avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89", 172800): AggregationSpec(
+            window=172800,
+            frequency=3600,
+            blind_spot=900,
+            time_modulo_frequency=1800,
+            tile_table_id="avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+            keys=["cust_id"],
+            serving_names=["CUSTOMER_ID"],
+            merge_expr="SUM(sum_value) / SUM(count_value)",
+            feature_name="a_48h_average",
+        ),
+    }
+    assert plan.feature_specs == {
+        "a_2h_average": FeatureSpec(
+            feature_name="a_2h_average",
+            feature_expr='"agg_w7200_avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89"',
+        ),
+        "a_48h_average": FeatureSpec(
+            feature_name="a_48h_average",
+            feature_expr='"agg_w172800_avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89"',
+        ),
+    }
+
+
+def test_feature_execution_planner__serving_names_mapping(query_graph_with_groupby):
+    """Test FeatureExecutionPlanner with serving names mapping provided"""
+    groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
+    mapping = {"CUSTOMER_ID": "NEW_CUST_ID"}
+    planner = FeatureExecutionPlanner(query_graph_with_groupby, serving_names_mapping=mapping)
+    plan = planner.generate_plan([groupby_node])
+    assert plan.aggregation_specs == {
+        ("avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89", 7200): AggregationSpec(
+            window=7200,
+            frequency=3600,
+            blind_spot=900,
+            time_modulo_frequency=1800,
+            tile_table_id="avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+            keys=["cust_id"],
+            serving_names=["NEW_CUST_ID"],
+            merge_expr="SUM(sum_value) / SUM(count_value)",
+            feature_name="a_2h_average",
+        ),
+        ("avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89", 172800): AggregationSpec(
+            window=172800,
+            frequency=3600,
+            blind_spot=900,
+            time_modulo_frequency=1800,
+            tile_table_id="avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+            keys=["cust_id"],
+            serving_names=["NEW_CUST_ID"],
+            merge_expr="SUM(sum_value) / SUM(count_value)",
+            feature_name="a_48h_average",
+        ),
+    }
+    assert plan.feature_specs == {
+        "a_2h_average": FeatureSpec(
+            feature_name="a_2h_average",
+            feature_expr='"agg_w7200_avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89"',
+        ),
+        "a_48h_average": FeatureSpec(
+            feature_name="a_48h_average",
+            feature_expr='"agg_w172800_avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89"',
+        ),
+    }
