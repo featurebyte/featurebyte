@@ -247,6 +247,7 @@ def test_feature_save__exception_due_to_feature_saved_before(float_feature, save
     """
     Test feature save failure due to event data not saved
     """
+    _ = saved_feature
     with pytest.raises(DuplicatedRecordException) as exc:
         float_feature.save()
     expected_msg = f'Feature (feature.id: "{float_feature.id}") has been saved before.'

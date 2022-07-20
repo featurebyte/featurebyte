@@ -17,8 +17,9 @@ class ResponseException(Exception):
         self.response = response
         response_dict = response.json()
         if "detail" in response_dict:
-            return super().__init__(response_dict["detail"], *args, **kwargs)
-        return super().__init__(*args, **kwargs)
+            super().__init__(response_dict["detail"], *args, **kwargs)
+        else:
+            super().__init__(*args, **kwargs)
 
     @property
     def text(self) -> str:

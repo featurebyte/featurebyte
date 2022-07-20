@@ -309,7 +309,7 @@ def test_update_excludes_unsupported_fields(
 
 
 def test_update_fails_invalid_transition(
-    test_api_client_persistent, event_data_response, event_data_model_dict, event_data_update_dict
+    test_api_client_persistent, event_data_response, event_data_update_dict
 ):
     """
     Update Event Data fails if status transition is no valid
@@ -324,7 +324,7 @@ def test_update_fails_invalid_transition(
     assert response.json() == {"detail": "Invalid status transition from DRAFT to DRAFT."}
 
 
-def test_update_status_only(test_api_client_persistent, event_data_response, event_data_model_dict):
+def test_update_status_only(test_api_client_persistent, event_data_response):
     """
     Update Event Data status only
     """

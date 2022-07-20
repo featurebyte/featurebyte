@@ -185,7 +185,7 @@ class Series(QueryObject, OpsMixin):
             var_type=output_var_type,
             lineage=self._append_to_lineage(self.lineage, node.name),
             row_index_lineage=self.row_index_lineage,
-            **self._binary_op_series_params(other),
+            **self._binary_op_series_params(other),  # type: ignore
         )
 
     def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:

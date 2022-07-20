@@ -139,7 +139,7 @@ class Feature(FeatureQueryObject, Series, FeatureModel):
     # FeatureStoreModel
     tabular_source: Tuple[FeatureStore, TableDetails]
 
-    def _binary_op_series_params(self, other: Feature | None = None) -> dict[str, Any]:
+    def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
@@ -155,7 +155,7 @@ class Feature(FeatureQueryObject, Series, FeatureModel):
         """
         event_data_ids = list(self.event_data_ids)
         if other is not None:
-            event_data_ids.extend(other.event_data_ids)
+            event_data_ids.extend(getattr(other, "event_data_ids", []))
         return {"event_data_ids": list(set(event_data_ids))}
 
     def save(self) -> None:

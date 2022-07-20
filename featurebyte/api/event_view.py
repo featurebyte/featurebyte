@@ -55,7 +55,7 @@ class EventViewColumn(Series):
         self._parent = event_view
         return self
 
-    def _binary_op_series_params(self, other: EventViewColumn | None = None) -> dict[str, Any]:
+    def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
