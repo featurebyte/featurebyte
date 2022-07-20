@@ -184,9 +184,6 @@ def run_and_test_get_historical_features(config, feature_group):
         [feature_group["COUNT_2h"], feature_group["COUNT_24h"]],
         name="My FeatureList",
     )
-    df_historical_features = feature_list.get_historical_features(
-        df_training_events, credentials=config.credentials
-    )
     df_historical_expected = pd.DataFrame(
         {
             "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
@@ -195,5 +192,34 @@ def run_and_test_get_historical_features(config, feature_group):
             "COUNT_24h": [9.0, 7.0, 2.0, 5.0, 5.0, 4.0, 4.0, 7.0, 5.0, np.nan],
         }
     )
+    df_historical_features = feature_list.get_historical_features(
+        df_training_events, credentials=config.credentials
+    )
     # When using fetch_pandas_all(), the dtype of "USER_ID" column is int8 (int64 otherwise)
+    pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)
+
+    # Test again using the same feature list and data but with serving names mapping
+    _test_get_historical_features_with_serving_names(
+        config, feature_list, df_training_events, df_historical_expected
+    )
+
+
+def _test_get_historical_features_with_serving_names(
+    config, feature_list, df_training_events, df_historical_expected
+):
+    """Test getting historical features from FeatureList with alternative serving names"""
+
+    mapping = {"UID": "NEW_UID"}
+
+    # Instead of providing the default serving name "UID", provide "NEW_UID" in data
+    df_training_events = df_training_events.rename(mapping, axis=1)
+    df_historical_expected = df_historical_expected.rename(mapping, axis=1)
+    assert "NEW_UID" in df_training_events
+    assert "NEW_UID" in df_historical_expected
+
+    df_historical_features = feature_list.get_historical_features(
+        df_training_events,
+        credentials=config.credentials,
+        serving_names_mapping=mapping,
+    )
     pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)

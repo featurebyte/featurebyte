@@ -123,6 +123,7 @@ def validate_request_schema(training_events: pd.DataFrame) -> None:
 def get_historical_features_sql(
     feature_objects: list[Feature],
     request_table_columns: list[str],
+    serving_names_mapping: dict[str, str] | None = None,
 ) -> str:
     """Construct the SQL code that extracts historical features
 
@@ -132,13 +133,17 @@ def get_historical_features_sql(
         List of Feature objects
     request_table_columns : list[str]
         List of column names in the training events
+    serving_names_mapping : dict[str, str] | None
+        Optional mapping from original serving name to new serving name
 
     Returns
     -------
     str
     """
     feature_nodes = [feature.node for feature in feature_objects]
-    planner = FeatureExecutionPlanner(GlobalQueryGraph())
+    planner = FeatureExecutionPlanner(
+        GlobalQueryGraph(), serving_names_mapping=serving_names_mapping
+    )
     plan = planner.generate_plan(feature_nodes)
     sql = plan.construct_combined_sql(
         point_in_time_column=SpecialColumnName.POINT_IN_TIME,
@@ -151,6 +156,7 @@ def get_historical_features(
     feature_objects: list[Feature],
     training_events: pd.DataFrame,
     credentials: Credentials | None = None,
+    serving_names_mapping: dict[str, str] | None = None,
 ) -> pd.DataFrame:
     """Get historical features
 
@@ -162,6 +168,9 @@ def get_historical_features(
         Training events DataFrame
     credentials : Credentials | None
         Optional feature store to credential mapping
+    serving_names_mapping : dict[str, str] | None
+        Optional serving names mapping if the training events data has different serving name
+        columns than those defined in Entities
 
     Returns
     -------
@@ -175,7 +184,9 @@ def get_historical_features(
 
     # Generate SQL code that computes the features
     sql = get_historical_features_sql(
-        feature_objects=feature_objects, request_table_columns=training_events.columns.tolist()
+        feature_objects=feature_objects,
+        request_table_columns=training_events.columns.tolist(),
+        serving_names_mapping=serving_names_mapping,
     )
     logger.debug(f"Historical features SQL:\n{sql}")
 
@@ -186,7 +197,9 @@ def get_historical_features(
     # Compute tiles on demand if required
     tic = time.time()
     tile_cache = SnowflakeTileCache(session=session)
-    tile_cache.compute_tiles_on_demand(features=feature_objects)
+    tile_cache.compute_tiles_on_demand(
+        features=feature_objects, serving_names_mapping=serving_names_mapping
+    )
     elapsed = time.time() - tic
     logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
 

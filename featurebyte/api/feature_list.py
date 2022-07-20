@@ -58,6 +58,7 @@ class FeatureList(FeatureListModel):
         self,
         training_events: pd.DataFrame,
         credentials: Credentials | None = None,
+        serving_names_mapping: dict[str, str] | None = None,
     ) -> pd.DataFrame:
         """Get historical features
 
@@ -67,6 +68,10 @@ class FeatureList(FeatureListModel):
             Training events DataFrame
         credentials : Credentials | None
             Optional feature store to credential mapping
+        serving_names_mapping : dict[str, str] | None
+            Optional serving names mapping if the training events data has different serving name
+            columns than those defined in Entities. Mapping from original serving name to new
+            serving name.
 
         Returns
         -------
@@ -76,7 +81,10 @@ class FeatureList(FeatureListModel):
         if credentials is None:
             credentials = Configurations().credentials
         return get_historical_features(
-            self.feature_objects, training_events, credentials=credentials
+            self.feature_objects,
+            training_events,
+            credentials=credentials,
+            serving_names_mapping=serving_names_mapping,
         )
 
     @staticmethod

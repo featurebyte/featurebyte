@@ -14,7 +14,11 @@ from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec
-from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME, prettify_sql
+from featurebyte.query_graph.feature_common import (
+    REQUEST_TABLE_NAME,
+    apply_serving_names_mapping,
+    prettify_sql,
+)
 from featurebyte.query_graph.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.session.base import BaseSession
 
@@ -82,16 +86,22 @@ class SnowflakeTileCache(TileCache):
         super().__init__(*args, **kwargs)
         self._materialized_temp_table_names: set[str] = set()
 
-    def compute_tiles_on_demand(self, features: list[Feature]) -> None:
+    def compute_tiles_on_demand(
+        self, features: list[Feature], serving_names_mapping: dict[str, str] | None = None
+    ) -> None:
         """Compute missing tiles for the given list of Features
 
         Parameters
         ----------
         features : list[Feature]
             Feature objects
+        serving_names_mapping : dict[str, str] | None
+            Optional mapping from original serving name to new serving name
         """
         tic = time.time()
-        required_requests = self.get_required_computation(features)
+        required_requests = self.get_required_computation(
+            features, serving_names_mapping=serving_names_mapping
+        )
         elapsed = time.time() - tic
         logger.debug(
             f"Getting required tiles computation took {elapsed:.2f}s ({len(required_requests)})"
@@ -108,7 +118,7 @@ class SnowflakeTileCache(TileCache):
         self.cleanup_temp_tables()
 
     def get_required_computation(
-        self, features: list[Feature]
+        self, features: list[Feature], serving_names_mapping: dict[str, str] | None = None
     ) -> list[SnowflakeOnDemandTileComputeRequest]:
         """Check for missing or outdated tiles and construct a list of required computations
 
@@ -116,13 +126,15 @@ class SnowflakeTileCache(TileCache):
         ----------
         features : list[Feature]
             Feature objects
+        serving_names_mapping : dict[str, str] | None
+            Optional mapping from original serving name to new serving name
 
         Returns
         -------
         list[SnowflakeOnDemandTileComputeRequest]
         """
         tic = time.time()
-        requests = self._check_cache(features=features)
+        requests = self._check_cache(features=features, serving_names_mapping=serving_names_mapping)
         elapsed = time.time() - tic
         logger.debug(f"Checking existence of tracking tables took {elapsed:.2f}s")
 
@@ -193,7 +205,9 @@ class SnowflakeTileCache(TileCache):
         self._materialized_temp_table_names.add(request.tracker_temp_table_name)
         return result.iloc[0]["COUNT"]  # type: ignore
 
-    def _check_cache(self, features: list[Feature]) -> list[SnowflakeOnDemandTileComputeRequest]:
+    def _check_cache(
+        self, features: list[Feature], serving_names_mapping: dict[str, str] | None
+    ) -> list[SnowflakeOnDemandTileComputeRequest]:
         """Query the entity tracker tables on Snowflake and construct a list computation potentially
         required. To know whether each computation is required, each corresponding entity table has
         to be materialised.
@@ -202,12 +216,16 @@ class SnowflakeTileCache(TileCache):
         ----------
         features : list[Feature]
             Feature objects
+        serving_names_mapping : dict[str, str] | None
+            Optional mapping from original serving name to new serving name
 
         Returns
         -------
         list[SnowflakeOnDemandTileComputeRequest]
         """
-        unique_tile_infos = SnowflakeTileCache._get_unique_tile_infos(features)
+        unique_tile_infos = SnowflakeTileCache._get_unique_tile_infos(
+            features, serving_names_mapping=serving_names_mapping
+        )
         tile_ids_with_tracker = self._filter_tile_ids_with_tracker(list(unique_tile_infos.keys()))
         tile_ids_without_tracker = list(set(unique_tile_infos.keys()) - set(tile_ids_with_tracker))
         requests_new = SnowflakeTileCache._construct_requests_no_tracker(
@@ -220,13 +238,17 @@ class SnowflakeTileCache(TileCache):
         return requests
 
     @staticmethod
-    def _get_unique_tile_infos(features: list[Feature]) -> dict[str, TileGenSql]:
+    def _get_unique_tile_infos(
+        features: list[Feature], serving_names_mapping: dict[str, str] | None
+    ) -> dict[str, TileGenSql]:
         """Construct mapping from tile_table_id to TileGenSql for easier manipulation
 
         Parameters
         ----------
         features : list[Feature]
             List of Feature objects
+        serving_names_mapping : dict[str, str] | None
+            Optional mapping from original serving name to new serving name
 
         Returns
         -------
@@ -238,6 +260,10 @@ class SnowflakeTileCache(TileCache):
             infos = interpreter.construct_tile_gen_sql(feature.node, is_on_demand=True)
             for info in infos:
                 if info.tile_table_id not in out:
+                    if serving_names_mapping is not None:
+                        info.serving_names = apply_serving_names_mapping(
+                            info.serving_names, serving_names_mapping
+                        )
                     out[info.tile_table_id] = info
         return out
 
