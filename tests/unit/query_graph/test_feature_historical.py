@@ -120,6 +120,21 @@ def test_get_historical_features__point_in_time_dtype_conversion(
     mocked_tile_cache.compute_tiles_on_demand.assert_called_once()
 
 
+def assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures=False):
+    """Utility to check that actual is the same as the pre-generated fixture"""
+    if update_fixtures:
+        with open(fixture_filename, "w", encoding="utf-8") as f_handle:
+            f_handle.write(actual)
+            raise AssertionError(
+                f"Fixture {fixture_filename} updated, please set update_fixture to False"
+            )
+
+    with open(fixture_filename, encoding="utf-8") as f_handle:
+        expected = f_handle.read()
+
+    assert actual.strip() == expected.strip()
+
+
 def test_get_historical_feature_sql(float_feature):
     """Test SQL code generated for historical features is expected"""
     feature_objects = [float_feature]
@@ -127,18 +142,9 @@ def test_get_historical_feature_sql(float_feature):
     sql = get_historical_features_sql(
         feature_objects=feature_objects, request_table_columns=request_table_columns
     )
-
-    update_fixtures = False
-    if update_fixtures:
-        with open(
-            "tests/fixtures/expected_historical_requests.sql", "w", encoding="utf-8"
-        ) as f_handle:
-            f_handle.write(sql)
-            raise AssertionError("Fixture updated, please set update_fixture to False")
-    with open("tests/fixtures/expected_historical_requests.sql", encoding="utf-8") as f_handle:
-        expected_feature_sql = f_handle.read()
-
-    assert sql.strip() == expected_feature_sql.strip()
+    assert_equal_with_expected_fixture(
+        sql, "tests/fixtures/expected_historical_requests.sql", update_fixtures=False
+    )
 
 
 def test_get_historical_feature_sql__serving_names_mapping(float_feature):
@@ -151,17 +157,6 @@ def test_get_historical_feature_sql__serving_names_mapping(float_feature):
         request_table_columns=request_table_columns,
         serving_names_mapping=serving_names_mapping,
     )
-
-    update_fixtures = False
-    if update_fixtures:
-        with open(
-            "tests/fixtures/expected_historical_requests_with_mapping.sql", "w", encoding="utf-8"
-        ) as f_handle:
-            f_handle.write(sql)
-            raise AssertionError("Fixture updated, please set update_fixture to False")
-    with open(
-        "tests/fixtures/expected_historical_requests_with_mapping.sql", encoding="utf-8"
-    ) as f_handle:
-        expected_feature_sql = f_handle.read()
-
-    assert sql.strip() == expected_feature_sql.strip()
+    assert_equal_with_expected_fixture(
+        sql, "tests/fixtures/expected_historical_requests_with_mapping.sql", update_fixtures=False
+    )
