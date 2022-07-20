@@ -209,12 +209,7 @@ class FeatureGroup(FeatureQueryObject, Frame):
         """
         return {"event_data_ids": self.event_data_ids}
 
-    def __getitem__(
-        self,
-        item: str | list[str] | Series,
-        frame_params: dict[str, Any] | None = None,
-        series_params: dict[str, Any] | None = None,
-    ) -> Series | Frame:
+    def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.protected_columns.union(item))
         return super().__getitem__(item)
