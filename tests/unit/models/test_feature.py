@@ -65,6 +65,7 @@ def test_feature_model(snowflake_event_view, feature_model_dict):
         },
     )
     feature = feature_group["sum_30m"]
+    feature_model_dict.pop("event_data_ids")
     assert feature.dict(exclude={"id": True, "event_data_ids": True}) == feature_model_dict
     feature_json = feature.json(by_alias=True)
     loaded_feature = FeatureModel.parse_raw(feature_json)
