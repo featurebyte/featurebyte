@@ -10,6 +10,8 @@ from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.models.feature import FeatureReadiness
 
 
 def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data, config):
@@ -70,10 +72,25 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
 
+def check_feature_and_remove_registry(feature, feature_manager):
+    """
+    Check feature properties & registry values
+    """
+    assert feature.readiness == FeatureReadiness.DRAFT
+    extended_feature_model = ExtendedFeatureModel(**feature.dict(by_alias=True))
+    feat_reg_df = feature_manager.retrieve_feature_registries(extended_feature_model)
+    assert len(feat_reg_df) == 1
+    assert feat_reg_df.iloc[0]["NAME"] == feature.name
+    assert feat_reg_df.iloc[0]["VERSION"] == feature.version
+    assert feat_reg_df.iloc[0]["READINESS"] == "DRAFT"
+    feature_manager.remove_feature_registry(extended_feature_model)
+
+
 def test_query_object_operation_on_snowflake_source(
     transaction_data_upper_case,
     config,
     event_data,
+    feature_manager,
 ):
     """
     Test loading event view from snowflake source
@@ -170,6 +187,7 @@ def test_query_object_operation_on_snowflake_source(
     }
     special_feature = feature_group["COUNT_2h DIV COUNT_24h"]
     special_feature.save()  # pylint: disable=no-member
+    check_feature_and_remove_registry(special_feature, feature_manager)
 
     run_and_test_get_historical_features(config, feature_group)
 
