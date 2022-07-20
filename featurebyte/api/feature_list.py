@@ -70,7 +70,8 @@ class FeatureList(FeatureListModel):
             Optional feature store to credential mapping
         serving_names_mapping : dict[str, str] | None
             Optional serving names mapping if the training events data has different serving name
-            columns than those defined in Entities
+            columns than those defined in Entities. Mapping from original serving name to new
+            serving name.
 
         Returns
         -------

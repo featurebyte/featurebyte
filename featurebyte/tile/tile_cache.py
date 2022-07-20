@@ -95,6 +95,8 @@ class SnowflakeTileCache(TileCache):
         ----------
         features : list[Feature]
             Feature objects
+        serving_names_mapping : dict[str, str] | None
+            Optional mapping from original serving name to new serving name
         """
         tic = time.time()
         required_requests = self.get_required_computation(
@@ -124,6 +126,8 @@ class SnowflakeTileCache(TileCache):
         ----------
         features : list[Feature]
             Feature objects
+        serving_names_mapping : dict[str, str] | None
+            Optional mapping from original serving name to new serving name
 
         Returns
         -------

@@ -133,6 +133,8 @@ def get_historical_features_sql(
         List of Feature objects
     request_table_columns : list[str]
         List of column names in the training events
+    serving_names_mapping : dict[str, str] | None
+        Optional mapping from original serving name to new serving name
 
     Returns
     -------
