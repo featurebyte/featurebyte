@@ -139,3 +139,29 @@ def test_get_historical_feature_sql(float_feature):
         expected_feature_sql = f_handle.read()
 
     assert sql.strip() == expected_feature_sql.strip()
+
+
+def test_get_historical_feature_sql__serving_names_mapping(float_feature):
+    """Test SQL code generated for historical features with serving names mapping"""
+    feature_objects = [float_feature]
+    request_table_columns = ["POINT_IN_TIME", "NEW_CUST_ID", "A", "B", "C"]
+    serving_names_mapping = {"cust_id": "NEW_CUST_ID"}
+    sql = get_historical_features_sql(
+        feature_objects=feature_objects,
+        request_table_columns=request_table_columns,
+        serving_names_mapping=serving_names_mapping,
+    )
+
+    update_fixtures = False
+    if update_fixtures:
+        with open(
+            "tests/fixtures/expected_historical_requests_with_mapping.sql", "w", encoding="utf-8"
+        ) as f_handle:
+            f_handle.write(sql)
+            raise AssertionError("Fixture updated, please set update_fixture to False")
+    with open(
+        "tests/fixtures/expected_historical_requests_with_mapping.sql", encoding="utf-8"
+    ) as f_handle:
+        expected_feature_sql = f_handle.read()
+
+    assert sql.strip() == expected_feature_sql.strip()
