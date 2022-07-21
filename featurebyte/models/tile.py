@@ -5,7 +5,9 @@ from typing import Any, Dict, List
 
 from enum import Enum
 
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import Field, root_validator, validator
+
+from featurebyte.models.base import FeatureByteBaseModel
 
 
 class TileType(str, Enum):
@@ -15,7 +17,7 @@ class TileType(str, Enum):
     OFFLINE = "OFFLINE"
 
 
-class TileSpec(BaseModel):
+class TileSpec(FeatureByteBaseModel):
     """
     Model for TileSpec
 

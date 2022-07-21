@@ -6,12 +6,13 @@ from __future__ import annotations
 
 from typing import Optional, Tuple, Union
 
-from pydantic import BaseModel, StrictStr
+from pydantic import StrictStr
 
 from featurebyte.enum import SourceType
+from featurebyte.models.base import FeatureByteBaseModel
 
 
-class SnowflakeDetails(BaseModel):
+class SnowflakeDetails(FeatureByteBaseModel):
     """Model for Snowflake data source information"""
 
     account: StrictStr
@@ -20,7 +21,7 @@ class SnowflakeDetails(BaseModel):
     sf_schema: StrictStr  # schema shadows a BaseModel attribute
 
 
-class SQLiteDetails(BaseModel):
+class SQLiteDetails(FeatureByteBaseModel):
     """Model for SQLite data source information"""
 
     filename: StrictStr
@@ -29,7 +30,7 @@ class SQLiteDetails(BaseModel):
 DatabaseDetails = Union[SnowflakeDetails, SQLiteDetails]
 
 
-class FeatureStoreModel(BaseModel):
+class FeatureStoreModel(FeatureByteBaseModel):
     """Model for a feature store"""
 
     type: SourceType
@@ -54,7 +55,7 @@ class FeatureStoreModel(BaseModel):
         return hash(str(self.type) + str(self.details))
 
 
-class TableDetails(BaseModel):
+class TableDetails(FeatureByteBaseModel):
     """Model for table"""
 
     database_name: Optional[StrictStr]
@@ -62,7 +63,7 @@ class TableDetails(BaseModel):
     table_name: StrictStr
 
 
-class DatabaseTableModel(BaseModel):
+class DatabaseTableModel(FeatureByteBaseModel):
     """Model for a database table used in a feature store"""
 
     tabular_source: Tuple[FeatureStoreModel, TableDetails]

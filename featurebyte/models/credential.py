@@ -7,8 +7,9 @@ from typing import Union
 from enum import Enum
 
 import pymongo
-from pydantic import BaseModel, StrictStr
+from pydantic import StrictStr
 
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel
 
 
@@ -20,7 +21,7 @@ class CredentialType(str, Enum):
     USERNAME_PASSWORD = "USERNAME_PASSWORD"
 
 
-class UsernamePasswordCredential(BaseModel):
+class UsernamePasswordCredential(FeatureByteBaseModel):
     """
     Username / Password credential
     """
@@ -29,7 +30,7 @@ class UsernamePasswordCredential(BaseModel):
     password: StrictStr
 
 
-class Credential(BaseModel):
+class Credential(FeatureByteBaseModel):
     """
     Credential model
     """
@@ -50,10 +51,3 @@ class Credential(BaseModel):
             pymongo.operations.IndexModel("user_id"),
             pymongo.operations.IndexModel("source"),
         ]
-
-    class Config:
-        """
-        Configuration for Credential
-        """
-
-        use_enum_values = True

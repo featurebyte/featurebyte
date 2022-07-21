@@ -11,10 +11,11 @@ from enum import Enum
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import Field, StrictStr
 
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import DBVarType, OrderedStrEnum
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import Node, QueryGraph
 
@@ -47,7 +48,7 @@ class DefaultVersionMode(str, Enum):
     MANUAL = "MANUAL"
 
 
-class FeatureNameSpaceModel(BaseModel):
+class FeatureNameSpaceModel(FeatureByteBaseModel):
     """
     Feature set with the same feature name
 
@@ -90,7 +91,7 @@ class FeatureNameSpaceModel(BaseModel):
         json_encoders = {ObjectId: str}
 
 
-class FeatureModel(BaseModel):
+class FeatureModel(FeatureByteBaseModel):
     """
     Model for Feature entity
 
@@ -154,7 +155,7 @@ class FeatureModel(BaseModel):
         json_encoders = {ObjectId: str}
 
 
-class FeatureListModel(BaseModel):
+class FeatureListModel(FeatureByteBaseModel):
     """
     Model for feature list entity
 
