@@ -11,6 +11,7 @@ import json
 import os
 import shutil
 import tempfile
+import uuid
 from contextlib import contextmanager
 from enum import Enum
 
@@ -99,9 +100,19 @@ class GitDB(Persistent):
         logger.debug("Initializing local repo", extra={"local_path": self._local_path})
         Repo.init(self._local_path)
 
+        # Specify ControlMaster option to allow reuse of SSH connection. ControlPath file must be
+        # created by SSH manually since it is a socket and not a regular file. We can ensure clean
+        # up by removing the temp directory that stores the control file in GitDB.__del__()
+        self._control_path_dir = tempfile.mkdtemp()
+        control_path_file = os.path.join(self._control_path_dir, str(uuid.uuid4())[:8])
+        ssh_cmd = f"ssh -i {key_path}" if key_path else "ssh"
+        ssh_cmd += (
+            f" -o ControlMaster=auto -o ControlPath={control_path_file} -o ControlPersist=600"
+        )
+
         self._repo = repo = Repo(path=self._local_path)
         self._branch = branch
-        self._ssh_cmd = f"ssh -i {key_path}" if key_path else "ssh"
+        self._ssh_cmd = ssh_cmd
         self._origin: Optional[Remote] = None
         self._working_tree_dir: str = str(repo.working_tree_dir)
         self._collection_to_doc_name_func_map: dict[str, DocNameFuncType] = {}
@@ -137,13 +148,22 @@ class GitDB(Persistent):
             repo.git.commit("-m", "Initial commit")
             self._push()
 
-    def __del__(self) -> None:
+    def cleanup(self) -> None:
         """
-        Clean up local repo
+        Clean up local repo and temp file
         """
         local_path = getattr(self, "_local_path", None)
         if local_path and os.path.exists(local_path):
             shutil.rmtree(local_path)
+        control_path_dir = getattr(self, "_control_path_dir", None)
+        if control_path_dir and os.path.exists(control_path_dir):
+            shutil.rmtree(control_path_dir)
+
+    def __del__(self) -> None:
+        """
+        Clean up local repo
+        """
+        self.cleanup()
 
     @property
     def repo(self) -> Repo:
