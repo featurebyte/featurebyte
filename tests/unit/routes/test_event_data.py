@@ -111,13 +111,13 @@ def test_create_fails_wrong_field_type(test_api_client_persistent, event_data_mo
     assert response.json() == {
         "detail": [
             {
-                "ctx": {"type": "FeatureStoreModel"},
+                "ctx": {"object_type": "FeatureStoreModel"},
                 "loc": ["body", "tabular_source", 0],
                 "msg": "value is not a valid FeatureStoreModel type",
                 "type": "type_error.featurebytetype",
             },
             {
-                "ctx": {"type": "TableDetails"},
+                "ctx": {"object_type": "TableDetails"},
                 "loc": ["body", "tabular_source", 1],
                 "msg": "value is not a valid TableDetails type",
                 "type": "type_error.featurebytetype",
