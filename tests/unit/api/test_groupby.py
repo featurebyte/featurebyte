@@ -138,7 +138,11 @@ def test_groupby__default_feature_job_setting(snowflake_event_data):
     )
 
     # check node params
-    assert feature_group.node.parameters == {
+    feature = feature_group["feat_30m"]
+    feature_node_name = feature.node.name
+    groupby_node_name = feature.graph.backward_edges[feature_node_name][0]
+    groupby_node = feature.graph.get_node_by_name(groupby_node_name)
+    assert groupby_node.parameters == {
         "keys": ["cust_id"],
         "parent": "col_float",
         "agg_func": "sum",

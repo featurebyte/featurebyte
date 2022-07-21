@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Type, TypeVar
 
+import json
+
 from bson.objectid import ObjectId
 from pydantic import BaseModel
 from pydantic.errors import DictError, PydanticTypeError
@@ -33,12 +35,20 @@ class FeatureByteBaseModel(BaseModel):
         except DictError as exc:
             raise FeatureByteTypeError(object_type=cls.__name__) from exc
 
+    def json_dict(self) -> dict[str, Any]:
+        """
+        Convert model into json dictionary that can be used as request payload
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return json.loads(self.json(by_alias=True))
+
     class Config:
         """
         Configurations for FeatureByteBaseModel
         """
-
-        # pylint: disable=too-few-public-methods
 
         # With `validate_assignment` flag enabled, pydantic model runs validation check during attribute assignment.
         # This also enables the feature to make attribute immutable by using Field(allow_mutation=False).

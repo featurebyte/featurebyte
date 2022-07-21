@@ -65,7 +65,7 @@ class EventDataColumn:
 
         data = EventDataUpdate(column_entity_map=column_entity_map)
         client = Configurations().get_client()
-        response = client.patch(url=f"/event_data/{self.event_data.id}", json=data.dict())
+        response = client.patch(url=f"/event_data/{self.event_data.id}", json=data.json_dict())
         if response.status_code == HTTPStatus.OK:
             EventData.__init__(
                 self.event_data,
@@ -209,7 +209,7 @@ class EventData(EventDataModel, DatabaseTable):
             When fail to save the event data (general failure)
         """
         client = Configurations().get_client()
-        response = client.post(url="/event_data", json=json.loads(self.json(by_alias=True)))
+        response = client.post(url="/event_data", json=self.json_dict())
         if response.status_code != HTTPStatus.CREATED:
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response)

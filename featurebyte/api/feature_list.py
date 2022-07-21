@@ -3,56 +3,120 @@ FeatureListVersion class
 """
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import Any, List, OrderedDict, Union
+
+import collections
 
 import pandas as pd
-from pydantic import Field
+from pydantic import BaseModel, Field, root_validator, parse_obj_as
 
-from featurebyte.api.feature import Feature, FeatureGroup
+from featurebyte.api.feature import Feature
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.query_graph.feature_historical import get_historical_features
 
 
-class FeatureList(FeatureListModel):
-    """FeatureList class
+class BaseFeatureGroup(BaseModel):
+    """
+    BaseFeatureGroup class
 
-    Parameters
-    ----------
-    items : list[Union[Feature, FeatureGroup]]
+    items : list[Union[Feature, BaseFeatureGroup]]
+        List of feature like objects to be used to create the FeatureList
+    feature_objects: OrderedDict[str, Feature]
+        Dictionary of feature name to feature object
+    """
+
+    items: List[Union[Feature, BaseFeatureGroup]] = Field(exclude=True)
+    feature_objects: OrderedDict[str, Feature] = Field(
+        exclude=True, default_factory=collections.OrderedDict
+    )
+
+    @property
+    def feature_names(self) -> list[str]:
+        return list(self.feature_objects)
+
+    @root_validator()
+    @classmethod
+    def _set_feature_objects(cls, values: dict[str, Any]) -> dict[str, Any]:
+        feature_objects = collections.OrderedDict()
+        feature_ids = set()
+        items = values.get("items", [])
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, Feature):
+                    if item.name is None:
+                        raise ValueError(
+                            f'Feature (feature.id: "{item.id}") name must not be None!'
+                        )
+                    if item.name in feature_objects:
+                        raise ValueError(f'Duplicated feature name (feature.name: "{item.name}")!')
+                    if item.id in feature_ids:
+                        raise ValueError(f'Duplicated feature id (feature.id: "{item.id}")!')
+                    feature_objects[item.name] = item
+                    feature_ids.add(item.id)
+                else:
+                    for name, feature in item.feature_objects.items():
+                        if feature.name in feature_objects:
+                            raise ValueError(
+                                f'Duplicated feature name (feature.name: "{feature.name}")!'
+                            )
+                        if feature.id in feature_ids:
+                            raise ValueError(f'Duplicated feature id (feature.id: "{feature.id}")!')
+                        feature_objects[name] = feature
+        values["feature_objects"] = feature_objects
+        return values
+
+    def __init__(self, items: list[Union[Feature, BaseFeatureGroup]], **kwargs: Any):
+        super().__init__(items=items, **kwargs)
+
+    def __getitem__(self, item: str | list[str]) -> Feature | FeatureGroup:
+        if isinstance(item, str):
+            return self.feature_objects[item]
+        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
+            return FeatureGroup([self.feature_objects[elem] for elem in item])
+        raise TypeError
+
+    def drop(self, items: list[str]) -> FeatureGroup:
+        selected_feat_names = [
+            feat_name for feat_name in self.feature_objects if feat_name not in items
+        ]
+        return self.__getitem__(selected_feat_names)
+
+
+class FeatureGroup(BaseFeatureGroup):
+    """
+    FeatureGroup class
+    """
+
+    def __setitem__(self, key: str, value: Feature):
+        self.feature_objects[key] = parse_obj_as(Feature, value)
+
+
+class FeatureList(BaseFeatureGroup, FeatureListModel):
+    """
+    FeatureList class
+
+    items : list[Union[Feature, BaseFeatureGroup]]
         List of feature like objects to be used to create the FeatureList
     name : str
         Name of the FeatureList
     """
 
-    feature_objects: Optional[List[Feature]] = Field(exclude=True)
-
-    def __init__(self, items: list[Union[Feature, FeatureGroup]], name: str):
-
-        if not isinstance(items, list):
-            raise ValueError(f"Cannot create feature list using {type(items)}; expected a list")
-
-        for item in items:
-            if not isinstance(item, (Feature, FeatureGroup)):
-                raise ValueError(
-                    f"Unexpected item type {type(item)}; expected Feature or FeatureGroup"
-                )
-
-        feature_versions = self._flatten_input_items(items)
-        readiness = self.derive_features_readiness(feature_versions)
-        versions_with_names = [(feature.name, feature.version) for feature in feature_versions]
-
-        super().__init__(
-            name=name,
-            description=None,
-            features=versions_with_names,
-            readiness=readiness,
-            status=FeatureListStatus.DRAFT,
-            version=get_version(),
-            created_at=None,
-        )
-        self.feature_objects = feature_versions
+    @root_validator(pre=True)
+    @classmethod
+    def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
+        feature_group = BaseFeatureGroup(values.get("items"))
+        values["readiness"] = min(
+            feature_group.feature_objects.values(),
+            key=lambda feature: feature.readiness or FeatureReadiness.min(),
+        ).readiness
+        values["features"] = [
+            (feature.name, feature.version) for feature in feature_group.feature_objects.values()
+        ]
+        values["status"] = FeatureListStatus.DRAFT
+        values["version"] = get_version()
+        return values
 
     def get_historical_features(
         self,
@@ -77,47 +141,11 @@ class FeatureList(FeatureListModel):
         -------
         pd.DataFrame
         """
-        assert self.feature_objects is not None
         if credentials is None:
             credentials = Configurations().credentials
         return get_historical_features(
-            self.feature_objects,
+            [feat for feat in self.feature_objects.values()],
             training_events,
             credentials=credentials,
             serving_names_mapping=serving_names_mapping,
         )
-
-    @staticmethod
-    def derive_features_readiness(features: list[Feature]) -> Optional[FeatureReadiness]:
-        """Derive the features readiness based on the readiness of provided Features
-
-        Parameters
-        ----------
-        features : list[Feature]
-            List of Features to consider
-
-        Returns
-        -------
-        FeatureReadiness
-        """
-        minimum_feature_readiness = min(
-            features,
-            key=lambda feature: FeatureReadiness(feature.readiness or FeatureReadiness.min()),
-        ).readiness
-        return minimum_feature_readiness
-
-    @staticmethod
-    def _flatten_input_items(items: list[Union[Feature, FeatureGroup]]) -> list[Feature]:
-        flattened_items = []
-        for item in items:
-            if isinstance(item, Feature):
-                flattened_items.append(item)
-            else:
-                feature_group = item
-                for column_name in feature_group.columns:
-                    if column_name in feature_group.entity_identifiers:
-                        continue
-                    feature = feature_group[column_name]
-                    assert isinstance(feature, Feature)
-                    flattened_items.append(feature)
-        return flattened_items

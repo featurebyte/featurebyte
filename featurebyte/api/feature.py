@@ -170,51 +170,9 @@ class Feature(FeatureQueryObject, Series, FeatureModel):
             When fail to save the event data (general failure)
         """
         client = Configurations().get_client()
-        response = client.post(url="/feature", json=json.loads(self.json(by_alias=True)))
+        response = client.post(url="/feature", json=self.json_dict())
         if response.status_code != HTTPStatus.CREATED:
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response)
             raise RecordCreationException(response)
         type(self).__init__(self, **response.json())
-
-
-class FeatureGroup(FeatureQueryObject, Frame):
-    """
-    FeatureList class
-    """
-
-    _series_class = Feature
-
-    event_data_ids: List[PydanticObjectId]
-
-    @property
-    def _getitem_frame_params(self) -> dict[str, Any]:
-        """
-        Parameters that will be passed to frame-like class constructor in __getitem__
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        return {"event_data_ids": self.event_data_ids}
-
-    @property
-    def _getitem_series_params(self) -> dict[str, Any]:
-        """
-        Parameters that will be passed to series-like class constructor in __getitem__
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        return {"event_data_ids": self.event_data_ids}
-
-    def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
-        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
-            item = sorted(self.protected_columns.union(item))
-        return super().__getitem__(item)
-
-    def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
-        if key in self.protected_columns:
-            raise ValueError(f"Entity identifier column '{key}' cannot be modified!")
-        super().__setitem__(key, value)
