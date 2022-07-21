@@ -155,7 +155,7 @@ def get_historical_features_sql(
     )
     plan = planner.generate_plan(feature_nodes)
 
-    missing_serving_names = set(plan.required_serving_names).difference(request_table_columns)
+    missing_serving_names = plan.required_serving_names.difference(request_table_columns)
     if missing_serving_names:
         missing_serving_names_str = ", ".join(sorted(missing_serving_names))
         raise MissingServingNameError(
