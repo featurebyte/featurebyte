@@ -6,9 +6,10 @@ from __future__ import annotations
 from typing import List, Optional, Tuple
 
 from beanie import PydanticObjectId
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel, FeatureNameSpaceModel, FeatureVersionIdentifier
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import Node, QueryGraph
@@ -47,7 +48,7 @@ class FeatureNameSpace(FeatureNameSpaceModel):
     user_id: Optional[PydanticObjectId]
 
 
-class FeatureCreate(BaseModel):
+class FeatureCreate(FeatureByteBaseModel):
     """
     Feature Creation schema
     """
@@ -74,7 +75,7 @@ class FeatureList(PaginationMixin):
     data: List[Feature]
 
 
-class FeatureUpdate(BaseModel):
+class FeatureUpdate(FeatureByteBaseModel):
     """
     Feature update schema
     """

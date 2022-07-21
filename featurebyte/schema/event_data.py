@@ -4,8 +4,9 @@ EventData API payload schema
 from typing import Dict, List, Optional, Tuple
 
 from beanie import PydanticObjectId
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import Field, StrictStr
 
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.routes.common.schema import PaginationMixin
@@ -19,7 +20,7 @@ class EventData(EventDataModel):
     user_id: Optional[PydanticObjectId]
 
 
-class EventDataCreate(BaseModel):
+class EventDataCreate(FeatureByteBaseModel):
     """
     Event Data Creation schema
     """
@@ -41,7 +42,7 @@ class EventDataList(PaginationMixin):
     data: List[EventData]
 
 
-class EventDataUpdate(BaseModel):
+class EventDataUpdate(FeatureByteBaseModel):
     """
     Event Data update schema
     """

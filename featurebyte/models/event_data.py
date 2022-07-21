@@ -10,13 +10,14 @@ from enum import Enum
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import BaseModel, Field, root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DatabaseTableModel
 
 
-class FeatureJobSetting(BaseModel):
+class FeatureJobSetting(FeatureByteBaseModel):
     """Model for Feature Job Setting"""
 
     blind_spot: str
@@ -46,7 +47,7 @@ class FeatureJobSetting(BaseModel):
         return values
 
 
-class FeatureJobSettingHistoryEntry(BaseModel):
+class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
     """Model for an entry in setting history"""
 
     created_at: datetime
@@ -96,12 +97,3 @@ class EventDataModel(DatabaseTableModel):
     created_at: Optional[datetime] = Field(default=None)
     history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list)
     status: Optional[EventDataStatus] = Field(default=None)
-
-    class Config:
-        """
-        Configuration for Event Data schema
-        """
-
-        # pylint: disable=too-few-public-methods
-
-        json_encoders = {ObjectId: str}

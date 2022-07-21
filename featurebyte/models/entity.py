@@ -9,10 +9,12 @@ from datetime import datetime
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import Field, StrictStr
+
+from featurebyte.models.base import FeatureByteBaseModel
 
 
-class EntityNameHistoryEntry(BaseModel):
+class EntityNameHistoryEntry(FeatureByteBaseModel):
     """
     Model for an entry in name history
     """
@@ -21,7 +23,7 @@ class EntityNameHistoryEntry(BaseModel):
     name: StrictStr
 
 
-class EntityModel(BaseModel):
+class EntityModel(FeatureByteBaseModel):
     """
     Model for Entity
 
@@ -38,12 +40,3 @@ class EntityModel(BaseModel):
     serving_names: List[StrictStr]
     name_history: List[EntityNameHistoryEntry] = Field(default_factory=list)
     created_at: Optional[datetime] = Field(default=None)
-
-    class Config:
-        """
-        Configuration for Entity Model schema
-        """
-
-        # pylint: disable=too-few-public-methods
-
-        json_encoders = {ObjectId: str}

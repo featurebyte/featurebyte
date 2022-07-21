@@ -4,8 +4,9 @@ Entity API payload schema
 from typing import List, Optional
 
 from beanie import PydanticObjectId
-from pydantic import BaseModel, StrictStr
+from pydantic import StrictStr
 
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.entity import EntityModel
 from featurebyte.routes.common.schema import PaginationMixin
 
@@ -18,7 +19,7 @@ class Entity(EntityModel):
     user_id: Optional[PydanticObjectId]
 
 
-class EntityCreate(BaseModel):
+class EntityCreate(FeatureByteBaseModel):
     """
     Entity Creation schema
     """
@@ -35,7 +36,7 @@ class EntityList(PaginationMixin):
     data: List[Entity]
 
 
-class EntityUpdate(BaseModel):
+class EntityUpdate(FeatureByteBaseModel):
     """
     Entity update schema
     """

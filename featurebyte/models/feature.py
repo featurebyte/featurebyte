@@ -11,10 +11,11 @@ from enum import Enum
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import Field, StrictStr
 
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import DBVarType, OrderedStrEnum
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import Node, QueryGraph
 
@@ -47,7 +48,7 @@ class DefaultVersionMode(str, Enum):
     MANUAL = "MANUAL"
 
 
-class FeatureNameSpaceModel(BaseModel):
+class FeatureNameSpaceModel(FeatureByteBaseModel):
     """
     Feature set with the same feature name
 
@@ -81,16 +82,8 @@ class FeatureNameSpaceModel(BaseModel):
     default_version_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
 
-    class Config:
-        """
-        Configuration for FeatureNameSpace
-        """
 
-        use_enum_values = True
-        json_encoders = {ObjectId: str}
-
-
-class FeatureModel(BaseModel):
+class FeatureModel(FeatureByteBaseModel):
     """
     Model for Feature entity
 
@@ -145,16 +138,8 @@ class FeatureModel(BaseModel):
     created_at: Optional[datetime] = Field(default=None)
     parent_id: Optional[PydanticObjectId]
 
-    class Config:
-        """
-        Configuration for Feature Data schema
-        """
 
-        use_enum_values = True
-        json_encoders = {ObjectId: str}
-
-
-class FeatureListModel(BaseModel):
+class FeatureListModel(FeatureByteBaseModel):
     """
     Model for feature list entity
 
@@ -184,11 +169,3 @@ class FeatureListModel(BaseModel):
     status: Optional[FeatureListStatus]
     version: Optional[FeatureListVersionIdentifier]
     created_at: Optional[datetime]
-
-    class Config:
-        """
-        Configuration for FeatureListModel
-        """
-
-        use_enum_values = True
-        json_encoders = {ObjectId: str}
