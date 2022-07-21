@@ -1,10 +1,12 @@
 """
 Common classes mixin for API payload schema
 """
-from pydantic import BaseModel, validator
+from pydantic import validator
+
+from featurebyte.models.base import FeatureByteBaseModel
 
 
-class PaginationMixin(BaseModel):
+class PaginationMixin(FeatureByteBaseModel):
     """
     Add page and page_size
     """

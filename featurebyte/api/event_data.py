@@ -99,7 +99,6 @@ class EventData(EventDataModel, DatabaseTable):
             "row_index_lineage": {"exclude": True},
             "column_var_type_map": {"exclude": True},
         }
-        json_encoders = {ObjectId: str}
 
     @classmethod
     def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:

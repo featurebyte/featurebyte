@@ -9,9 +9,10 @@ import json
 from abc import abstractmethod
 
 import pandas as pd
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import Field, StrictStr
 
 from featurebyte.config import Configurations, Credentials
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
@@ -47,7 +48,7 @@ class ExtendedFeatureStoreModel(FeatureStoreModel):
         return session_manager[self]
 
 
-class QueryObject(BaseModel):
+class QueryObject(FeatureByteBaseModel):
     """
     QueryObject class contains query graph, node, row index lineage & session.
     """

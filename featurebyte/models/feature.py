@@ -82,14 +82,6 @@ class FeatureNameSpaceModel(FeatureByteBaseModel):
     default_version_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
 
-    class Config:
-        """
-        Configuration for FeatureNameSpace
-        """
-
-        use_enum_values = True
-        json_encoders = {ObjectId: str}
-
 
 class FeatureModel(FeatureByteBaseModel):
     """
@@ -146,14 +138,6 @@ class FeatureModel(FeatureByteBaseModel):
     created_at: Optional[datetime] = Field(default=None)
     parent_id: Optional[PydanticObjectId]
 
-    class Config:
-        """
-        Configuration for Feature Data schema
-        """
-
-        use_enum_values = True
-        json_encoders = {ObjectId: str}
-
 
 class FeatureListModel(FeatureByteBaseModel):
     """
@@ -185,11 +169,3 @@ class FeatureListModel(FeatureByteBaseModel):
     status: Optional[FeatureListStatus]
     version: Optional[FeatureListVersionIdentifier]
     created_at: Optional[datetime]
-
-    class Config:
-        """
-        Configuration for FeatureListModel
-        """
-
-        use_enum_values = True
-        json_encoders = {ObjectId: str}

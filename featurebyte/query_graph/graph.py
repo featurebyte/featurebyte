@@ -8,8 +8,9 @@ from typing import Any, Dict, List, TypedDict
 import json
 from collections import defaultdict
 
-from pydantic import BaseModel, Field, validator
+from pydantic import Field, validator
 
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.util import hash_node
@@ -29,7 +30,7 @@ class SingletonMeta(type):
         return cls._instances[cls]
 
 
-class Node(BaseModel):
+class Node(FeatureByteBaseModel):
     """
     Graph Node
     """
@@ -40,7 +41,7 @@ class Node(BaseModel):
     output_type: NodeOutputType
 
 
-class Graph(BaseModel):
+class Graph(FeatureByteBaseModel):
     """
     Graph data structure
     """

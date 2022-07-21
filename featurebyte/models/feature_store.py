@@ -36,13 +36,6 @@ class FeatureStoreModel(FeatureByteBaseModel):
     type: SourceType
     details: DatabaseDetails
 
-    class Config:
-        """
-        Configuration for FeatureStoreModel
-        """
-
-        use_enum_values = True
-
     def __hash__(self) -> int:
         """
         Hash function to support use as a dict key
