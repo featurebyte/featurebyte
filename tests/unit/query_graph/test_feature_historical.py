@@ -42,7 +42,7 @@ def test_get_historical_features__missing_point_in_time(mock_snowflake_feature):
     """Test validation of missing point in time for historical features"""
     training_events = pd.DataFrame(
         {
-            "CUST_ID": ["C1", "C2", "C3"],
+            "cust_id": ["C1", "C2", "C3"],
         }
     )
     with pytest.raises(exception.MissingPointInTimeColumnError) as exc_info:
@@ -50,6 +50,21 @@ def test_get_historical_features__missing_point_in_time(mock_snowflake_feature):
             feature_objects=[mock_snowflake_feature], training_events=training_events
         )
     assert str(exc_info.value) == "POINT_IN_TIME column is required"
+
+
+def test_get_historical_features__missing_required_serving_name(mock_snowflake_feature):
+    """Test validation of missing point in time for historical features"""
+    training_events = pd.DataFrame(
+        {
+            "POINT_IN_TIME": ["2022-01-01", "2022-02-01", "2022-03-01"],
+            "CUST_IDz": ["C1", "C2", "C3"],
+        }
+    )
+    with pytest.raises(exception.MissingServingNameError) as exc_info:
+        get_historical_features(
+            feature_objects=[mock_snowflake_feature], training_events=training_events
+        )
+    assert str(exc_info.value) == "Required serving names not provided: cust_id"
 
 
 @freeze_time("2022-05-01")
@@ -64,7 +79,7 @@ def test_get_historical_features__too_recent_point_in_time(
     training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": point_in_time_vals,
-            "CUST_ID": ["C1", "C2"],
+            "cust_id": ["C1", "C2"],
         }
     )
     with pytest.raises(exception.TooRecentPointInTimeError) as exc_info:
@@ -100,7 +115,7 @@ def test_get_historical_features__point_in_time_dtype_conversion(
     df_request = pd.DataFrame(
         {
             "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
-            "CUST_ID": ["C1", "C2"],
+            "cust_id": ["C1", "C2"],
         }
     )
     assert df_request.dtypes["POINT_IN_TIME"] == "object"
@@ -138,7 +153,7 @@ def assert_equal_with_expected_fixture(actual, fixture_filename, update_fixtures
 def test_get_historical_feature_sql(float_feature):
     """Test SQL code generated for historical features is expected"""
     feature_objects = [float_feature]
-    request_table_columns = ["POINT_IN_TIME", "CUST_ID", "A", "B", "C"]
+    request_table_columns = ["POINT_IN_TIME", "cust_id", "A", "B", "C"]
     sql = get_historical_features_sql(
         feature_objects=feature_objects, request_table_columns=request_table_columns
     )

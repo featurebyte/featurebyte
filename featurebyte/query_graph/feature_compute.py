@@ -236,6 +236,19 @@ class FeatureExecutionPlan:
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.request_table_plan: RequestTablePlan = SnowflakeRequestTablePlan()
 
+    @property
+    def required_serving_names(self) -> list[str]:
+        """Returns the list of required serving names
+
+        Returns
+        -------
+        list[str]
+        """
+        out = set()
+        for agg_spec in self.aggregation_specs.values():
+            out.update(agg_spec.serving_names)
+        return list(out)
+
     def add_aggregation_spec(self, aggregation_spec: AggregationSpec) -> None:
         """Add AggregationSpec to be incorporated when generating SQL
 

@@ -15,7 +15,11 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Credentials
 from featurebyte.enum import SpecialColumnName
-from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
+from featurebyte.exception import (
+    MissingPointInTimeColumnError,
+    MissingServingNameError,
+    TooRecentPointInTimeError,
+)
 from featurebyte.logger import logger
 from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
@@ -139,12 +143,25 @@ def get_historical_features_sql(
     Returns
     -------
     str
+
+    Raises
+    ------
+    MissingServingNameError
+        If any required serving name is not provided
     """
     feature_nodes = [feature.node for feature in feature_objects]
     planner = FeatureExecutionPlanner(
         GlobalQueryGraph(), serving_names_mapping=serving_names_mapping
     )
     plan = planner.generate_plan(feature_nodes)
+
+    missing_serving_names = set(plan.required_serving_names).difference(request_table_columns)
+    if missing_serving_names:
+        missing_serving_names_str = ", ".join(sorted(missing_serving_names))
+        raise MissingServingNameError(
+            f"Required serving names not provided: {missing_serving_names_str}"
+        )
+
     sql = plan.construct_combined_sql(
         point_in_time_column=SpecialColumnName.POINT_IN_TIME,
         request_table_columns=request_table_columns,
