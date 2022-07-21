@@ -17,8 +17,8 @@ class FeatureByteTypeError(PydanticTypeError):
     FeatureByte specific type error
     """
 
-    type: str
-    msg_template = "value is not a valid {type} type"
+    object_type: str
+    msg_template = "value is not a valid {object_type} type"
 
 
 class FeatureByteBaseModel(BaseModel):
@@ -31,7 +31,7 @@ class FeatureByteBaseModel(BaseModel):
         try:
             return super().validate(value)
         except DictError as exc:
-            raise FeatureByteTypeError(type=cls.__name__) from exc
+            raise FeatureByteTypeError(object_type=cls.__name__) from exc
 
     class Config:
         """
