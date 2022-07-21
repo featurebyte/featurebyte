@@ -46,6 +46,23 @@ class Series(QueryObject, OpsMixin):
             )
         raise KeyError(f"Series indexing with value '{item}' not supported!")
 
+    def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
+        """
+        Parameters that will be passed to series-like constructor in _binary_op method
+
+
+        Parameters
+        ----------
+        other: Series
+            Other Series object
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        _ = other
+        return {}
+
     @staticmethod
     def _is_assignment_valid(left_dbtype: DBVarType, right_value: Any) -> bool:
         """
@@ -152,6 +169,7 @@ class Series(QueryObject, OpsMixin):
                 var_type=output_var_type,
                 lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self.row_index_lineage,
+                **self._binary_op_series_params(),
             )
 
         node = self.graph.add_operation(
@@ -167,6 +185,7 @@ class Series(QueryObject, OpsMixin):
             var_type=output_var_type,
             lineage=self._append_to_lineage(self.lineage, node.name),
             row_index_lineage=self.row_index_lineage,
+            **self._binary_op_series_params(other),  # type: ignore
         )
 
     def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:

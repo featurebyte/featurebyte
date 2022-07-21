@@ -27,7 +27,6 @@ def get_entity(entity_name: str) -> Entity:
         Entity object of the given entity name
     """
     entity_dict = get_entity_dict(entity_name)
-    entity_dict["_id"] = entity_dict.pop("id")
     return Entity.parse_obj(entity_dict)
 
 
@@ -56,6 +55,7 @@ def get_event_data(event_data_name: str) -> EventData:
         response_dict = response.json()
         if response_dict["data"]:
             event_data_dict = response_dict["data"][0]
-            event_data_dict["_id"] = event_data_dict.pop("id")
             return EventData(**event_data_dict)
-    raise RecordRetrievalException(response, f'Event data name "{event_data_name}" not found!')
+    raise RecordRetrievalException(
+        response, f'EventData name (event_data.name: "{event_data_name}") not found!'
+    )

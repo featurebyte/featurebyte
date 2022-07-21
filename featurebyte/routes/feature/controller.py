@@ -53,7 +53,7 @@ class FeatureController:
                 # if it is not a new feature throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
-                    detail=f'Feature name "{document.name}" already exists.',
+                    detail=f'Feature name (feature.name: "{document.name}") already exists.',
                 )
         else:
             # if parent_id exists, make sure the parent feature exists at persistent & has consistent name
@@ -65,13 +65,19 @@ class FeatureController:
                 # if parent feature not found at persistent, throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.NOT_FOUND,
-                    detail=f'The original feature (Feature.id: "{document.parent_id}") not found!',
+                    detail=(
+                        f'The original feature (feature.id: "{document.parent_id}") not found! '
+                        f"Please save the Feature object first."
+                    ),
                 )
             if not document.is_parent(Feature(**parent_feature_dict)):
                 # if the parent feature is inconsistent with feature to be created, throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
-                    detail=f'Feature ID "{document.parent_id}" is not a valid parent feature!',
+                    detail=(
+                        f'Feature (feature.id: "{document.id}", feature.parent_id: "{document.parent_id}") '
+                        f"has invalid parent feature!"
+                    ),
                 )
 
         for event_data_id in document.event_data_ids:
@@ -84,7 +90,8 @@ class FeatureController:
                 raise HTTPException(
                     status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                     detail=(
-                        f'EventData ID "{event_data_id}" not found! Please save the EventData object.'
+                        f'EventData (event_data.id: "{event_data_id}") not found! '
+                        f"Please save the EventData object first."
                     ),
                 )
 
@@ -167,7 +174,8 @@ class FeatureController:
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
                     detail=(
-                        f'Feature "{document.name}" has been registered by other feature at Snowflake feature store.'
+                        f'Feature (feature.name: "{document.name}") has been registered by '
+                        f"other feature at Snowflake feature store."
                     ),
                 ) from exc
             except Exception as exc:
@@ -212,7 +220,7 @@ class FeatureController:
                 if conflict_feature:
                     raise HTTPException(
                         status_code=HTTPStatus.CONFLICT,
-                        detail=f'Feature ID "{data.id}" already exists.',
+                        detail=f'Feature (feature.id: "{data.id}") has been saved before.',
                     )
 
             utcnow = get_utc_now()
@@ -220,8 +228,9 @@ class FeatureController:
                 user_id=user.id,
                 created_at=utcnow,
                 readiness=FeatureReadiness.DRAFT,
-                **data.dict(),
+                **data.dict(by_alias=True),
             )
+            assert document.id == data.id
             # validate feature payload
             cls._validate_feature(document=document, session=session)
 

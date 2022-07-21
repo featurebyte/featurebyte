@@ -13,7 +13,7 @@ from pydantic import validator
 
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.api.util import convert_response_to_dict, get_entity
+from featurebyte.api.util import get_entity
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -59,7 +59,7 @@ class EventDataColumn:
             column_entity_map.pop(self.column_name, None)
         elif isinstance(entity_name, str):
             entity_dict = get_entity(entity_name)
-            column_entity_map[self.column_name] = entity_dict["id"]
+            column_entity_map[self.column_name] = entity_dict["_id"]
         else:
             raise TypeError(f'Unsupported type "{type(entity_name)}" for tag name "{entity_name}"!')
 
@@ -69,7 +69,7 @@ class EventDataColumn:
         if response.status_code == HTTPStatus.OK:
             EventData.__init__(
                 self.event_data,
-                **convert_response_to_dict(response),
+                **response.json(),
                 credentials=self.event_data.credentials,
             )
         elif response.status_code == HTTPStatus.NOT_FOUND:
@@ -142,6 +142,7 @@ class EventData(EventDataModel, DatabaseTable):
             When unexpected retrieval failure
         """
         data = EventDataCreate(
+            _id=ObjectId(),
             name=name,
             tabular_source=tabular_source.tabular_source,
             event_timestamp_column=event_timestamp_column,
@@ -197,7 +198,7 @@ class EventData(EventDataModel, DatabaseTable):
     def __getattr__(self, item: str) -> EventDataColumn:
         return self.__getitem__(item)
 
-    def save_as_draft(self) -> None:
+    def save(self) -> None:
         """
         Save event data to persistent as draft
 
@@ -209,14 +210,12 @@ class EventData(EventDataModel, DatabaseTable):
             When fail to save the event data (general failure)
         """
         client = Configurations().get_client()
-        response = client.post(url="/event_data", json=json.loads(self.json()))
+        response = client.post(url="/event_data", json=json.loads(self.json(by_alias=True)))
         if response.status_code != HTTPStatus.CREATED:
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response)
             raise RecordCreationException(response)
-        type(self).__init__(
-            self, **{**convert_response_to_dict(response), "credentials": self.credentials}
-        )
+        type(self).__init__(self, **{**response.json(), "credentials": self.credentials})
 
     def info(self) -> dict[str, Any]:
         """
@@ -238,9 +237,7 @@ class EventData(EventDataModel, DatabaseTable):
         client = Configurations().get_client()
         response = client.get(url=f"/event_data/{self.id}")
         if response.status_code == HTTPStatus.OK:
-            type(self).__init__(
-                self, **{**convert_response_to_dict(response), "credentials": self.credentials}
-            )
+            type(self).__init__(self, **{**response.json(), "credentials": self.credentials})
             return self.dict()
         if response.status_code == HTTPStatus.NOT_FOUND:
             return self.dict()
@@ -275,9 +272,7 @@ class EventData(EventDataModel, DatabaseTable):
         client = Configurations().get_client()
         response = client.patch(url=f"/event_data/{self.id}", json=data.dict())
         if response.status_code == HTTPStatus.OK:
-            type(self).__init__(
-                self, **{**convert_response_to_dict(response), "credentials": self.credentials}
-            )
+            type(self).__init__(self, **{**response.json(), "credentials": self.credentials})
         elif response.status_code == HTTPStatus.NOT_FOUND:
             self.default_feature_job_setting = data.default_feature_job_setting
         else:

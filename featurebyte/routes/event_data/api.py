@@ -15,9 +15,7 @@ from featurebyte.schema.event_data import EventData, EventDataCreate, EventDataL
 router = APIRouter(prefix="/event_data")
 
 
-@router.post(
-    "", response_model=EventData, response_model_by_alias=False, status_code=HTTPStatus.CREATED
-)
+@router.post("", response_model=EventData, status_code=HTTPStatus.CREATED)
 def create_event_data(
     request: Request,
     data: EventDataCreate,
@@ -31,7 +29,7 @@ def create_event_data(
     return event_data
 
 
-@router.get("", response_model=EventDataList, response_model_by_alias=False)
+@router.get("", response_model=EventDataList)
 def list_event_datas(
     request: Request,
     page: int = 1,
@@ -57,7 +55,7 @@ def list_event_datas(
     return event_data_list
 
 
-@router.get("/{event_data_id}", response_model=EventData, response_model_by_alias=False)
+@router.get("/{event_data_id}", response_model=EventData)
 def retrieve_event_data(
     request: Request,
     event_data_id: str,
@@ -73,7 +71,7 @@ def retrieve_event_data(
     return event_data
 
 
-@router.patch("/{event_data_id}", response_model=EventData, response_model_by_alias=False)
+@router.patch("/{event_data_id}", response_model=EventData)
 def update_event_data(
     request: Request,
     event_data_id: str,

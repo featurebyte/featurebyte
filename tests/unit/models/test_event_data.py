@@ -56,58 +56,6 @@ def feature_job_setting_history_fixture(feature_job_setting):
     return history
 
 
-@pytest.fixture(name="event_data_model_dict")
-def event_data_model_dict_fixture():
-    """Fixture for a Event Data dict"""
-    return {
-        "name": "my_event_data",
-        "tabular_source": (
-            {
-                "type": "snowflake",
-                "details": {
-                    "account": "account",
-                    "warehouse": "warehouse",
-                    "database": "database",
-                    "sf_schema": "schema",
-                },
-            },
-            {
-                "database_name": "database",
-                "schema_name": "schema",
-                "table_name": "table",
-            },
-        ),
-        "event_timestamp_column": "event_date",
-        "record_creation_date_column": "created_at",
-        "column_entity_map": None,
-        "default_feature_job_setting": {
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
-        "created_at": datetime.datetime(2022, 2, 1),
-        "history": [
-            {
-                "created_at": datetime.datetime(2022, 4, 1),
-                "setting": {
-                    "blind_spot": "10m",
-                    "frequency": "30m",
-                    "time_modulo_frequency": "5m",
-                },
-            },
-            {
-                "created_at": datetime.datetime(2022, 2, 1),
-                "setting": {
-                    "blind_spot": "10m",
-                    "frequency": "30m",
-                    "time_modulo_frequency": "5m",
-                },
-            },
-        ],
-        "status": "PUBLISHED",
-    }
-
-
 def test_event_data_model(
     snowflake_source, feature_job_setting, feature_job_setting_history, event_data_model_dict
 ):

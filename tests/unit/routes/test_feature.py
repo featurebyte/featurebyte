@@ -23,6 +23,15 @@ from featurebyte.routes.feature.controller import FeatureController
 from featurebyte.schema.feature import Feature
 
 
+@pytest.fixture(name="feature_model_dict")
+def feature_model_dict_fixture(feature_model_dict):
+    """
+    Feature model dict fixture
+    """
+    feature_model_dict["_id"] = str(ObjectId())
+    return feature_model_dict
+
+
 @pytest.fixture(name="snowflake_event_data")
 def snowflake_event_data_fixture(snowflake_database_table, config):
     """
@@ -63,7 +72,7 @@ def create_success_response_fixture(
     if isinstance(persistent, MongoDB):
         pytest.skip("Session not supported in Mongomock!")
 
-    snowflake_event_data.save_as_draft()
+    snowflake_event_data.save()
     feature_model_dict["event_data_ids"] = [str(snowflake_event_data.id)]
     response = test_api_client.post("/feature", json=feature_model_dict)
     return response
@@ -84,7 +93,7 @@ def test_create_201(
     # check response
     assert create_success_response.status_code == HTTPStatus.CREATED
     result = create_success_response.json()
-    feature_id = result.pop("id")
+    feature_id = result.pop("_id")
     feature_readiness = result.pop("readiness")
     created_at = datetime.fromisoformat(result.pop("created_at"))
     assert result.pop("user_id") is None
@@ -111,6 +120,7 @@ def test_create_201(
     assert feat_namespace_docs[0]["created_at"] == created_at
 
     # create a new feature version with the same namespace
+    feature_model_dict["_id"] = str(ObjectId())
     feature_model_dict["parent_id"] = feature_id
     feature_model_dict["event_data_ids"] = result["event_data_ids"]
     response = test_api_client.post("/feature", json=feature_model_dict)
@@ -127,11 +137,11 @@ def test_create_201(
     assert feat_namespace_docs[0]["description"] is None
     assert feat_namespace_docs[0]["version_ids"] == [
         ObjectId(feature_id),
-        ObjectId(new_version_result["id"]),
+        ObjectId(new_version_result["_id"]),
     ]
     assert feat_namespace_docs[0]["versions"] == ["V220710", "V220710_1"]
     assert feat_namespace_docs[0]["readiness"] == feature_readiness
-    assert feat_namespace_docs[0]["default_version_id"] == ObjectId(new_version_result["id"])
+    assert feat_namespace_docs[0]["default_version_id"] == ObjectId(new_version_result["_id"])
     assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
     assert feat_namespace_docs[0]["created_at"] == created_at
 
@@ -146,17 +156,20 @@ def test_create_409(
 
     # simulate the case when the feature id has been saved
     create_result = create_success_response.json()
-    feature_model_dict["id"] = create_result["id"]
+    feature_model_dict["_id"] = create_result["_id"]
     response = test_api_client.post("/feature", json=feature_model_dict)
-    feature_id = feature_model_dict.pop("id")
+    feature_id = feature_model_dict.pop("_id")
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": f'Feature ID "{feature_id}" already exists.'}
+    assert response.json() == {
+        "detail": f'Feature (feature.id: "{feature_id}") has been saved before.'
+    }
 
+    feature_model_dict["_id"] = str(ObjectId())
     feature_model_dict["event_data_ids"] = [str(snowflake_event_data.id)]
     assert feature_model_dict["parent_id"] is None
     response = test_api_client.post("/feature", json=feature_model_dict)
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'Feature name "sum_30m" already exists.'}
+    assert response.json() == {"detail": 'Feature name (feature.name: "sum_30m") already exists.'}
 
 
 def test_create_422__not_proper_parent(
@@ -166,22 +179,32 @@ def test_create_422__not_proper_parent(
     Test feature creation (when the parent id)
     """
     test_api_client, _ = test_api_client_persistent
+    feature_id = str(ObjectId())
     parent_id = str(ObjectId())
+    feature_model_dict["_id"] = feature_id
     feature_model_dict["event_data_ids"] = [str(snowflake_event_data.id)]
     feature_model_dict["parent_id"] = parent_id
     response = test_api_client.post("/feature", json=feature_model_dict)
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {
-        "detail": f'The original feature (Feature.id: "{parent_id}") not found!'
+        "detail": (
+            f'The original feature (feature.id: "{parent_id}") not found! '
+            f"Please save the Feature object first."
+        )
     }
 
     create_result = create_success_response.json()
+    parent_id = create_result["_id"]
     feature_model_dict["name"] = "other_name"
-    feature_model_dict["parent_id"] = create_result["id"]
-    parent_id = create_result["id"]
+    feature_model_dict["parent_id"] = parent_id
     response = test_api_client.post("/feature", json=feature_model_dict)
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": f'Feature ID "{parent_id}" is not a valid parent feature!'}
+    assert response.json() == {
+        "detail": (
+            f'Feature (feature.id: "{feature_id}", feature.parent_id: "{parent_id}") '
+            f"has invalid parent feature!"
+        )
+    }
 
 
 def test_create_422(test_api_client_persistent, feature_model_dict):
@@ -209,7 +232,8 @@ def test_create_422(test_api_client_persistent, feature_model_dict):
     response = test_api_client.post("/feature", json=feature_model_dict)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert response.json()["detail"] == (
-        f'EventData ID "{unknown_event_id}" not found! Please save the EventData object.'
+        f'EventData (event_data.id: "{unknown_event_id}") not found! '
+        f"Please save the EventData object first."
     )
 
 
@@ -369,7 +393,8 @@ def test_insert_feature_registry__duplicated_feature_registry_exception(
             user=user, document=feature, get_credential=get_credential
         )
     expected_msg = (
-        'Feature "sum_30m" has been registered by other feature at Snowflake feature store.'
+        'Feature (feature.name: "sum_30m") has been registered by other feature '
+        "at Snowflake feature store."
     )
     assert expected_msg in str(exc.value.detail)
     assert not mock_feature_manager.return_value.remove_feature_registry.called

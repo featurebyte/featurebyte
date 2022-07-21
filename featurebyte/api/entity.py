@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from http import HTTPStatus
 
-from featurebyte.api.util import convert_response_to_dict
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -52,7 +51,7 @@ class Entity(EntityModel):
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response=response)
             raise RecordCreationException(response=response)
-        return Entity(**convert_response_to_dict(response))
+        return Entity(**response.json())
 
     @property
     def serving_name(self) -> str:
@@ -88,4 +87,4 @@ class Entity(EntityModel):
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response=response)
             raise RecordUpdateException(response=response)
-        super().__init__(**convert_response_to_dict(response))
+        super().__init__(**response.json())

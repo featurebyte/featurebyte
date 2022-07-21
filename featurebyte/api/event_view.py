@@ -3,8 +3,9 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from beanie import PydanticObjectId
 from pydantic import Field, PrivateAttr, StrictStr
 
 from featurebyte.api.event_data import EventData
@@ -24,6 +25,7 @@ class EventViewColumn(Series):
     """
 
     _parent: Optional[EventView] = PrivateAttr(default=None)
+    event_data_id: PydanticObjectId
 
     @property
     def parent(self) -> Optional[EventView]:
@@ -52,6 +54,23 @@ class EventViewColumn(Series):
         """
         self._parent = event_view
         return self
+
+    def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
+        """
+        Parameters that will be passed to series-like constructor in _binary_op method
+
+
+        Parameters
+        ----------
+        other: Series
+            Other Series object
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        _ = other
+        return {"event_data_id": self.event_data_id}
 
     def _validate_series_to_set_parent_attribute(self) -> None:
         """
@@ -90,7 +109,7 @@ class EventViewColumn(Series):
             elif isinstance(entity_name, str):
                 entity_dict = get_entity(entity_name)
                 column_entity_map = self.parent.column_entity_map or {}
-                column_entity_map[self.name] = entity_dict["id"]
+                column_entity_map[self.name] = entity_dict["_id"]
                 self.parent.column_entity_map = column_entity_map
             else:
                 raise TypeError(
@@ -131,6 +150,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
     column_entity_map: Optional[Dict[StrictStr, StrictStr]] = Field(default=None)
     column_description_map: Dict[StrictStr, StrictStr] = Field(default_factory=dict)
     default_feature_job_setting: Optional[FeatureJobSetting]
+    event_data_id: PydanticObjectId
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name}, timestamp_column={self.timestamp_column})"
@@ -210,7 +230,33 @@ class EventView(ProtectedColumnsQueryObject, Frame):
             row_index_lineage=tuple(event_data.row_index_lineage),
             column_entity_map=event_data.column_entity_map,
             default_feature_job_setting=event_data.default_feature_job_setting,
+            event_data_id=event_data.id,
         )
+
+    @property
+    def _getitem_frame_params(self) -> dict[str, Any]:
+        """
+        Parameters that will be passed to frame-like class constructor in __getitem__ method
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {
+            "default_feature_job_setting": self.default_feature_job_setting,
+            "event_data_id": self.event_data_id,
+        }
+
+    @property
+    def _getitem_series_params(self) -> dict[str, Any]:
+        """
+        Parameters that will be passed to series-like class constructor in __getitem__ method
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {"event_data_id": self.event_data_id}
 
     def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
@@ -225,8 +271,6 @@ class EventView(ProtectedColumnsQueryObject, Frame):
                     for col, name in self.column_entity_map.items()
                     if col in output.columns
                 }
-            if self.default_feature_job_setting:
-                output.default_feature_job_setting = self.default_feature_job_setting.copy()
         return output
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:

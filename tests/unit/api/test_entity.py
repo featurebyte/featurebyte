@@ -51,11 +51,11 @@ def test_entity_creation(entity):
 
     with pytest.raises(DuplicatedRecordException) as exc:
         Entity.create(name="customer", serving_name="customer_id")
-    assert exc.value.response.json() == {"detail": 'Entity name "customer" already exists.'}
+    assert 'Entity name (entity.name: "customer") already exists.' in str(exc.value)
 
     with pytest.raises(DuplicatedRecordException) as exc:
         Entity.create(name="Customer", serving_name="cust_id")
-    assert exc.value.response.json() == {"detail": 'Entity serving name "cust_id" already exists.'}
+    assert 'Entity serving name (entity.serving_names: "cust_id") already exists.' in str(exc.value)
 
     with mock.patch("featurebyte.api.entity.Configurations"):
         with pytest.raises(RecordCreationException):
@@ -86,7 +86,9 @@ def test_entity_update_name(entity):
 
     with pytest.raises(DuplicatedRecordException) as exc:
         entity.update_name("product")
-    assert exc.value.response.json() == {"detail": 'Entity name "product" already exists.'}
+    assert exc.value.response.json() == {
+        "detail": 'Entity name (entity.name: "product") already exists.'
+    }
 
     with mock.patch("featurebyte.api.entity.Configurations"):
         with pytest.raises(RecordUpdateException):

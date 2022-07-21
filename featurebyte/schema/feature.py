@@ -52,7 +52,7 @@ class FeatureCreate(BaseModel):
     Feature Creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default=None)
+    id: PydanticObjectId = Field(alias="_id")
     name: StrictStr
     description: Optional[StrictStr]
     var_type: DBVarType

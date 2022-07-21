@@ -72,6 +72,28 @@ class Frame(BaseFrame, OpsMixin):
 
     column_lineage_map: Dict[str, Tuple[str, ...]]
 
+    @property
+    def _getitem_frame_params(self) -> dict[str, Any]:
+        """
+        Parameters that will be passed to frame-like class constructor in __getitem__ method
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {}
+
+    @property
+    def _getitem_series_params(self) -> dict[str, Any]:
+        """
+        Parameters that will be passed to series-like class constructor in __getitem__ method
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {}
+
     def _check_any_missing_column(self, item: str | list[str] | Series) -> None:
         """
         Check whether there is any unknown column from the specified item (single column or list of columns)
@@ -156,6 +178,7 @@ class Frame(BaseFrame, OpsMixin):
                 var_type=self.column_var_type_map[item],
                 lineage=self._append_to_lineage(self.column_lineage_map[item], node.name),
                 row_index_lineage=self.row_index_lineage,
+                **self._getitem_series_params,
             )
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             node = self.graph.add_operation(
@@ -178,6 +201,7 @@ class Frame(BaseFrame, OpsMixin):
                 column_var_type_map=column_var_type_map,
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self.row_index_lineage,
+                **self._getitem_frame_params,
             )
         if isinstance(item, Series):
             node = self._add_filter_operation(
@@ -192,6 +216,7 @@ class Frame(BaseFrame, OpsMixin):
                 column_var_type_map=copy.deepcopy(self.column_var_type_map),
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+                **self._getitem_frame_params,
             )
         raise TypeError(f"Frame indexing with value '{item}' not supported!")
 

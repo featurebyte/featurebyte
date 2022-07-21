@@ -55,11 +55,11 @@ def event_data_dict_fixture():
 
 
 @pytest.fixture(name="saved_event_data")
-def save_event_data_fixture(snowflake_event_data):
+def saved_event_data_fixture(snowflake_event_data):
     """
     Saved event data fixture
     """
-    snowflake_event_data.save_as_draft()
+    snowflake_event_data.save()
     assert snowflake_event_data.status == EventDataStatus.DRAFT
     assert isinstance(snowflake_event_data.created_at, datetime)
     feature_store, _ = snowflake_event_data.tabular_source
@@ -243,20 +243,23 @@ def test_event_data_column__as_entity__saved_event_data__record_update_exception
             saved_event_data.col_int.as_entity("customer")
 
 
-def test_event_data__save_as_draft__exceptions(saved_event_data):
+def test_event_data__save__exceptions(saved_event_data):
     """
     Test save event data object to persistent layer
     """
     # test duplicated record exception when record exists
     with pytest.raises(DuplicatedRecordException) as exc:
-        saved_event_data.save_as_draft()
+        saved_event_data.save()
     assert exc.value.status_code == 409
-    assert exc.value.response.json()["detail"] == 'Event Data "sf_event_data" already exists.'
+    assert (
+        exc.value.response.json()["detail"]
+        == 'EventData (event_data.name: "sf_event_data") already exists.'
+    )
 
     # check unhandled response status code
     with pytest.raises(RecordCreationException):
         with patch("featurebyte.api.event_data.Configurations"):
-            saved_event_data.save_as_draft()
+            saved_event_data.save()
 
 
 def test_event_data__info__not_saved_event_data(snowflake_event_data):

@@ -2,10 +2,13 @@
 Unit test for Feature & FeatureList classes
 """
 from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 
 from featurebyte.api.feature import Feature, FeatureGroup
+from featurebyte.exception import DuplicatedRecordException, RecordCreationException
+from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import Node
 
@@ -200,3 +203,55 @@ def test_feature_to_json(float_feature):
     float_feature.created_at = datetime.now()
     output_encoder = float_feature.json(encoder=lambda v: "__default__")
     assert '"created_at": "__default__"' in output_encoder
+
+
+@pytest.fixture(name="mock_insert_feature_registry")
+def mock_insert_feature_registry_fixture():
+    """
+    Mock insert feature registry at the controller level
+    """
+    with patch(
+        "featurebyte.routes.feature.controller.FeatureController.insert_feature_registry"
+    ) as mock:
+        yield mock
+
+
+@pytest.fixture(name="saved_feature")
+def saved_feature_fixture(snowflake_event_data, float_feature, mock_insert_feature_registry):
+    """
+    Saved feature fixture
+    """
+    _ = mock_insert_feature_registry
+    event_data_id_before = snowflake_event_data.id
+    snowflake_event_data.save()
+    assert snowflake_event_data.id == event_data_id_before
+    feature_id_before = float_feature.id
+    assert float_feature.readiness is None
+    float_feature.save()
+    assert float_feature.id == feature_id_before
+    assert float_feature.readiness == FeatureReadiness.DRAFT
+    yield float_feature
+
+
+def test_feature_save__exception_due_to_event_data_not_saved(float_feature, snowflake_event_data):
+    """
+    Test feature save failure due to event data not saved
+    """
+    with pytest.raises(RecordCreationException) as exc:
+        float_feature.save()
+    expected_msg = (
+        f'EventData (event_data.id: "{snowflake_event_data.id}") not found! '
+        f"Please save the EventData object first."
+    )
+    assert expected_msg in str(exc.value)
+
+
+def test_feature_save__exception_due_to_feature_saved_before(float_feature, saved_feature):
+    """
+    Test feature save failure due to event data not saved
+    """
+    _ = saved_feature
+    with pytest.raises(DuplicatedRecordException) as exc:
+        float_feature.save()
+    expected_msg = f'Feature (feature.id: "{float_feature.id}") has been saved before.'
+    assert expected_msg in str(exc.value)

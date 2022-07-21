@@ -202,4 +202,5 @@ class EventViewGroupBy(OpsMixin):
             column_var_type_map=column_var_type_map,
             column_lineage_map=column_lineage_map,
             row_index_lineage=(node.name,),
+            event_data_ids=[self.obj.event_data_id],
         )
