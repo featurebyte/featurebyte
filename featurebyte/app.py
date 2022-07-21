@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Callable
 
+import signal
+
 from bson.objectid import ObjectId
 from fastapi import Depends, FastAPI, Request
 
@@ -124,3 +126,22 @@ for resource_api, resource_controller in resource_api_controller_pairs:
         resource_api.router,
         dependencies=[Depends(_get_api_deps(resource_controller))],
     )
+
+
+def _cleanup_persistent(signum, frame):  # type: ignore
+    """
+    Clean up GitDB persistent
+
+    Parameters
+    ----------
+    signum : int
+        Signal number
+    frame : frame
+        Frame object
+    """
+    _ = signum, frame
+    if PERSISTENT is not None and isinstance(PERSISTENT, GitDB):
+        PERSISTENT.cleanup()
+
+
+signal.signal(signal.SIGTERM, _cleanup_persistent)

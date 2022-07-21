@@ -148,9 +148,9 @@ class GitDB(Persistent):
             repo.git.commit("-m", "Initial commit")
             self._push()
 
-    def __del__(self) -> None:
+    def cleanup(self) -> None:
         """
-        Clean up local repo
+        Clean up local repo and temp file
         """
         local_path = getattr(self, "_local_path", None)
         if local_path and os.path.exists(local_path):
@@ -158,6 +158,12 @@ class GitDB(Persistent):
         control_path_dir = getattr(self, "_control_path_dir", None)
         if control_path_dir and os.path.exists(control_path_dir):
             shutil.rmtree(control_path_dir)
+
+    def __del__(self) -> None:
+        """
+        Clean up local repo
+        """
+        self.cleanup()
 
     @property
     def repo(self) -> Repo:
