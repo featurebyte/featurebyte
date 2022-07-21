@@ -15,6 +15,8 @@ def test_featurebyte_base_model__error_message():
     """
 
     class Basket(FeatureByteBaseModel):
+        """Basket class"""
+
         items: List[StrictStr]
 
     with pytest.raises(ValidationError) as exc:
@@ -32,9 +34,13 @@ def test_featurebyte_base_model__pydantic_model_type_error_message():
     """
 
     class Items(FeatureByteBaseModel):
+        """Items class"""
+
         data: List[StrictStr]
 
     class Basket(FeatureByteBaseModel):
+        """Basket class"""
+
         items: Items
 
     with pytest.raises(ValidationError) as exc:
