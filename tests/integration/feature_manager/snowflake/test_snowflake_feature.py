@@ -37,6 +37,7 @@ def test_insert_feature_registry(
             "NAME": ["sum_30m"],
             "VERSION": ["v1"],
             "READINESS": ["DRAFT"],
+            "EVENT_DATA_IDS": ["626bccb9697a12204fb22ea3,726bccb9697a12204fb22ea3"],
         }
     )
     result_df = result[
@@ -44,6 +45,7 @@ def test_insert_feature_registry(
             "NAME",
             "VERSION",
             "READINESS",
+            "EVENT_DATA_IDS",
         ]
     ]
     assert_frame_equal(expected_df, result_df)

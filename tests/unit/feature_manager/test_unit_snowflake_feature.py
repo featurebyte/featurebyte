@@ -6,6 +6,7 @@ from unittest import mock
 
 import pandas as pd
 import pytest
+from beanie import PydanticObjectId
 
 from featurebyte.exception import InvalidFeatureRegistryOperationError, MissingFeatureRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -34,6 +35,7 @@ def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature, fea
     Test insert_feature_registry
     """
     mock_execute_query.size_effect = None
+    mock_snowflake_feature.event_data_ids = [PydanticObjectId("62d8d944d01041a098785131")]
     feature_manager.insert_feature_registry(mock_snowflake_feature)
     assert mock_execute_query.call_count == 3
 
@@ -41,8 +43,11 @@ def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature, fea
 
     tile_specs_lst = [tile_spec.dict() for tile_spec in mock_snowflake_feature.tile_specs]
     tile_specs_str = json.dumps(tile_specs_lst).replace("\\", "\\\\")
+
     insert_sql = tm_insert_feature_registry.render(
-        feature=mock_snowflake_feature, tile_specs_str=tile_specs_str
+        feature=mock_snowflake_feature,
+        tile_specs_str=tile_specs_str,
+        event_ids_str="62d8d944d01041a098785131",
     )
 
     calls = [
@@ -139,6 +144,7 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature, feature_m
             "TILE_SPECS": [[]],
             "COLUMN_NAMES": ["c1"],
             "ONLINE_ENABLED": [True],
+            "EVENT_DATA_IDS": ["626bccb9697a12204fb22ea3,726bccb9697a12204fb22ea3"],
         }
     )
     f_reg_df = feature_manager.retrieve_feature_registries(mock_snowflake_feature)
@@ -154,6 +160,7 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature, feature_m
     assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
     assert f_reg_df.iloc[0]["VERSION"] == "v1"
     assert f_reg_df.iloc[0]["TILE_SPECS"] == []
+    assert f_reg_df.iloc[0]["EVENT_DATA_IDS"] == "626bccb9697a12204fb22ea3,726bccb9697a12204fb22ea3"
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")

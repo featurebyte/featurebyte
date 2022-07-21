@@ -10,14 +10,16 @@ tm_insert_feature_registry = Template(
         VERSION,
         DESCRIPTION,
         READINESS,
-        TILE_SPECS
+        TILE_SPECS,
+        EVENT_DATA_IDS
     )
     SELECT
         '{{feature.name}}' as NAME,
         '{{feature.version}}' as VERSION,
         '{{feature.description}}' as DESCRIPTION,
         '{{feature.readiness}}' as READINESS,
-        parse_json('{{tile_specs_str}}') as TILE_SPECS
+        parse_json('{{tile_specs_str}}') as TILE_SPECS,
+        '{{event_ids_str}}' as EVENT_DATA_IDS
 """
 )
 

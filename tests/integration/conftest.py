@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import yaml
+from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 
 from featurebyte.api.entity import Entity
@@ -242,6 +243,10 @@ def snowflake_feature(feature_model_dict, snowflake_session):
     feature.description = "test_description_1"
     feature.online_enabled = False
     tile_id = feature.tile_specs[0].tile_id
+    feature.event_data_ids = [
+        PydanticObjectId("626bccb9697a12204fb22ea3"),
+        PydanticObjectId("726bccb9697a12204fb22ea3"),
+    ]
 
     yield feature
 

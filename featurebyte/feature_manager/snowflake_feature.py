@@ -86,7 +86,12 @@ class FeatureManagerSnowflake(BaseModel):
             else:
                 tile_specs_str = "[]"
 
-            sql = tm_insert_feature_registry.render(feature=feature, tile_specs_str=tile_specs_str)
+            event_ids = [str(e_id) for e_id in feature.event_data_ids]
+            sql = tm_insert_feature_registry.render(
+                feature=feature,
+                tile_specs_str=tile_specs_str,
+                event_ids_str=",".join(event_ids),
+            )
             logger.debug(f"generated insert sql: {sql}")
             self._session.execute_query(sql)
         else:
