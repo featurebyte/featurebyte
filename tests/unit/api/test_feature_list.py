@@ -119,7 +119,7 @@ def test_feature_list_creation__success(production_ready_feature, config):
     dataframe = pd.DataFrame(
         {
             "POINT_IN_TIME": ["2022-04-01", "2022-04-01"],
-            "CUST_ID": ["C1", "C2"],
+            "cust_id": ["C1", "C2"],
         }
     )
     flist.get_historical_features(dataframe, credentials=config.credentials)

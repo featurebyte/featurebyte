@@ -111,7 +111,7 @@ LEFT JOIN (
   AND REQ.cust_id = T2.cust_id)
 SELECT
   AGG."POINT_IN_TIME",
-  AGG."CUST_ID",
+  AGG."cust_id",
   AGG."A",
   AGG."B",
   AGG."C",

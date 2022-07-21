@@ -78,6 +78,12 @@ class TooRecentPointInTimeError(Exception):
     """
 
 
+class MissingServingNameError(Exception):
+    """
+    Raised when one or more required serving names are not provided
+    """
+
+
 class InvalidSettingsError(Exception):
     """
     Raised when configuration has invalid settings
