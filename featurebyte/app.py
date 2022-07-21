@@ -145,3 +145,4 @@ def _cleanup_persistent(signum, frame):  # type: ignore
 
 
 signal.signal(signal.SIGTERM, _cleanup_persistent)
+signal.signal(signal.SIGINT, _cleanup_persistent)
