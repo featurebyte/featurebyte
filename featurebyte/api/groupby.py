@@ -65,6 +65,7 @@ class EventViewGroupBy(OpsMixin):
         value_by_column: str | None = None,
         feature_job_setting: dict[str, str] | None = None,
     ) -> dict[str, Any]:
+        # pylint: disable=too-many-locals
         if method not in AggFunc.all():
             raise ValueError(f"Aggregation method not supported: {method}")
 
@@ -186,14 +187,8 @@ class EventViewGroupBy(OpsMixin):
         Returns
         -------
         FeatureGroup
-
-        Raises
-        ------
-        ValueError
-            If provided aggregation method is not supported
-        KeyError
-            If column to be aggregated does not exist
         """
+        # pylint: disable=too-many-locals
         node_params = self._prepare_node_parameters(
             value_column,
             method,

@@ -38,7 +38,11 @@ class BaseFeatureGroup(BaseModel):
     @property
     def feature_names(self) -> list[str]:
         """
-        Return list of feature names
+        List of feature names
+
+        Returns
+        -------
+        list[str]
         """
         return list(self.feature_objects)
 
@@ -144,6 +148,11 @@ class FeatureGroup(BaseFeatureGroup):
         Returns
         -------
         pd.DataFrame
+
+        Raises
+        ------
+        ValueError
+            When the FeatureGroup object is empty
         """
 
         tic = time.time()
@@ -160,7 +169,7 @@ class FeatureGroup(BaseFeatureGroup):
             elapsed = time.time() - tic
             logger.debug(f"Preview took {elapsed:.2f}s")
             return result
-        raise Exception("There is no feature in the FeatureGroup object.")
+        raise ValueError("There is no feature in the FeatureGroup object.")
 
 
 class FeatureList(BaseFeatureGroup, FeatureListModel):
