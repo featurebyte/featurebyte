@@ -91,7 +91,7 @@ class QueryObject(FeatureByteBaseModel):
             node_name=self.node.name, num_rows=limit
         )
 
-    def preview_sql(self, limit: int = 10) -> str:
+    def preview_sql(self, *args, limit: int = 10, **kwargs) -> str:
         """
         Generate SQL query to preview the transformation output
 
@@ -106,21 +106,20 @@ class QueryObject(FeatureByteBaseModel):
         """
         return self._preview_sql(columns=[], limit=limit)
 
-    def preview(self, limit: int = 10, credentials: Credentials | None = None) -> pd.DataFrame:
+    def preview(self, **kwargs: Any) -> pd.DataFrame:
         """
         Preview transformed table/column partial output
 
         Parameters
         ----------
-        limit: int
-            maximum number of return rows
-        credentials: Credentials | None
-            credentials to create a database session
+        kwargs: Any
+            Keywords arguments like `limit` (default=10) and `credentials` (default=None)
 
         Returns
         -------
         pd.DataFrame
         """
+        limit, credentials = kwargs.get("limit", 10), kwargs.get("credentials")
         session = self.get_session(credentials)
         return session.execute_query(self.preview_sql(limit=limit))
 

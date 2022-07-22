@@ -118,29 +118,3 @@ class OpsMixin:
         output = list(lineage)
         output.append(node_name)
         return tuple(output)
-
-
-class PreviewMixin:
-    """
-    PreviewMixin contains method to QueryObject's underlying table
-    """
-
-    def preview(
-        self: QueryObject, limit: int = 10, credentials: Credentials | None = None
-    ) -> pd.DataFrame:
-        """
-        Preview transformed table/column partial output
-
-        Parameters
-        ----------
-        limit: int
-            maximum number of return rows
-        credentials: Credentials | None
-            credentials to create a database session
-
-        Returns
-        -------
-        pd.DataFrame
-        """
-        session = self.get_session(credentials)
-        return session.execute_query(self.preview_sql(limit=limit))

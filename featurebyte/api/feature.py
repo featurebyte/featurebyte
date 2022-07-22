@@ -22,13 +22,15 @@ from featurebyte.models.feature_store import TableDetails
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
 
-class FeatureQueryObject(ProtectedColumnsQueryObject):
+class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
     """
-    FeatureMixin contains common properties & operations shared between FeatureList & Feature
+    Feature class
     """
 
-    def __repr__(self) -> str:
-        return f"{type(self).__name__}(node.name={self.node.name}, entity_identifiers={self.entity_identifiers})"
+    # Although tabular_source is already defined in FeatureModel, here it is redefined so that
+    # pydantic knows to deserialize the first element as a FeatureStore instead of a
+    # FeatureStoreModel
+    tabular_source: Tuple[FeatureStore, TableDetails]
 
     @property
     def protected_attributes(self) -> list[str]:
@@ -77,7 +79,41 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
         """
         return set(self.entity_identifiers)
 
-    def preview(  # type: ignore[override]  # pylint: disable=arguments-renamed
+    def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
+        """
+        Parameters that will be passed to series-like constructor in _binary_op method
+
+
+        Parameters
+        ----------
+        other: Series
+            Other Series object
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        event_data_ids = list(self.event_data_ids)
+        if other is not None:
+            event_data_ids.extend(getattr(other, "event_data_ids", []))
+        return {"event_data_ids": list(set(event_data_ids))}
+
+    def _validate_point_in_time_and_serving_name(
+        self, point_in_time_and_serving_name: dict[str, Any]
+    ) -> None:
+
+        if not isinstance(point_in_time_and_serving_name, dict):
+            raise ValueError("point_in_time_and_serving_name should be a dict")
+
+        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
+            raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
+
+        if self.serving_names is not None:
+            for col in self.serving_names:
+                if col not in point_in_time_and_serving_name:
+                    raise KeyError(f"Serving name not provided: {col}")
+
+    def preview(
         self,
         point_in_time_and_serving_name: dict[str, Any],
         credentials: Credentials | None = None,
@@ -109,51 +145,6 @@ class FeatureQueryObject(ProtectedColumnsQueryObject):
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
         return result
-
-    def _validate_point_in_time_and_serving_name(
-        self, point_in_time_and_serving_name: dict[str, Any]
-    ) -> None:
-
-        if not isinstance(point_in_time_and_serving_name, dict):
-            raise ValueError("point_in_time_and_serving_name should be a dict")
-
-        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
-            raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
-
-        if self.serving_names is not None:
-            for col in self.serving_names:
-                if col not in point_in_time_and_serving_name:
-                    raise KeyError(f"Serving name not provided: {col}")
-
-
-class Feature(FeatureQueryObject, Series, FeatureModel):
-    """
-    Feature class
-    """
-
-    # Although tabular_source is already defined in FeatureModel, here it is redefined so that
-    # pydantic knows to deserialize the first element as a FeatureStore instead of a
-    # FeatureStoreModel
-    tabular_source: Tuple[FeatureStore, TableDetails]
-
-    def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
-        """
-        Parameters that will be passed to series-like constructor in _binary_op method
-
-
-        Parameters
-        ----------
-        other: Series
-            Other Series object
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        event_data_ids = list(self.event_data_ids)
-        if other is not None:
-            event_data_ids.extend(getattr(other, "event_data_ids", []))
-        return {"event_data_ids": list(set(event_data_ids))}
 
     def save(self) -> None:
         """
