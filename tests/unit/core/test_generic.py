@@ -33,7 +33,7 @@ def tabular_source_fixture(snowflake_feature_store):
 
 
 @pytest.fixture(name="query_object1")
-def query_object1_fixture(snowflake_feature_store, tabular_source):
+def query_object1_fixture(tabular_source):
     """
     Query Object 1 fixture
     """

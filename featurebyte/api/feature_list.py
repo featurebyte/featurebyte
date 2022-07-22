@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, List, OrderedDict, Union
 
 import collections
+import time
 
 import pandas as pd
 from pydantic import BaseModel, Field, parse_obj_as, root_validator
@@ -13,8 +14,10 @@ from pydantic import BaseModel, Field, parse_obj_as, root_validator
 from featurebyte.api.feature import Feature
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
+from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.query_graph.feature_historical import get_historical_features
+from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
 
 class BaseFeatureGroup(BaseModel):
@@ -116,9 +119,48 @@ class FeatureGroup(BaseFeatureGroup):
     """
 
     def __setitem__(self, key: str, value: Feature) -> None:
+        # TODO: handle the case when feature is saved & the name is different from key
         self.feature_objects[key] = parse_obj_as(Feature, value)
+        self.feature_objects[key].name = key
         # sanity check: make sure we don't copy global query graph
         assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
+
+    def preview(
+        self,
+        point_in_time_and_serving_name: dict[str, Any],
+        credentials: Credentials | None = None,
+    ) -> pd.DataFrame:
+        """
+        Preview a FeatureGroup
+
+        Parameters
+        ----------
+        point_in_time_and_serving_name : dict
+            Dictionary consisting the point in time and serving names based on which the feature
+            preview will be computed
+        credentials: Credentials | None
+            credentials to create a database session
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+
+        tic = time.time()
+        nodes = [feature.node for feature in self.feature_objects.values()]
+        if nodes:
+            first_feature = next(iter(self.feature_objects.values()))
+            preview_sql = get_feature_preview_sql(
+                graph=first_feature.graph,
+                nodes=nodes,
+                point_in_time_and_serving_name=point_in_time_and_serving_name,
+            )
+            session = first_feature.get_session(credentials)
+            result = session.execute_query(preview_sql)
+            elapsed = time.time() - tic
+            logger.debug(f"Preview took {elapsed:.2f}s")
+            return result
+        raise Exception("There is no feature in the FeatureGroup object.")
 
 
 class FeatureList(BaseFeatureGroup, FeatureListModel):

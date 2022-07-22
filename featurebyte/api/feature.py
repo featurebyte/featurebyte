@@ -119,7 +119,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
         credentials: Credentials | None = None,
     ) -> pd.DataFrame:
         """
-        Preview a FeatureGroup
+        Preview a Feature
 
         Parameters
         ----------
@@ -137,7 +137,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
         self._validate_point_in_time_and_serving_name(point_in_time_and_serving_name)
         preview_sql = get_feature_preview_sql(
             graph=self.graph,
-            node=self.node,
+            nodes=[self.node],
             point_in_time_and_serving_name=point_in_time_and_serving_name,
         )
         session = self.get_session(credentials)

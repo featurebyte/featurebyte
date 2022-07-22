@@ -5,16 +5,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import pandas as pd
-
-from featurebyte.config import Credentials
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 
 if TYPE_CHECKING:
     from featurebyte.core.frame import Frame
-    from featurebyte.core.generic import QueryObject
     from featurebyte.core.series import Series
 
 

@@ -183,7 +183,8 @@ def test_query_object_operation_on_snowflake_source(
         "UID": 1,
         "COUNT_2h": 1,
         "COUNT_24h": 9,
-        "COUNT_2h DIV COUNT_24h": Decimal("0.111111"),
+        # "COUNT_2h DIV COUNT_24h": Decimal("0.111111"),  # comment this out as alias node is not supported atm
+        "Unnamed": Decimal("0.111111"),
     }
     special_feature = feature_group["COUNT_2h DIV COUNT_24h"]
     special_feature.save()  # pylint: disable=no-member
