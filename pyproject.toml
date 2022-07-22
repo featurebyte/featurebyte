@@ -1,22 +1,69 @@
 # Poetry pyproject.toml: https://python-poetry.org/docs/pyproject/
+
 [build-system]
-requires = ["poetry_core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+requires = ["poetry_core>=1.0.0"]
+
+[tool.bandit]
+skips = ["B608"]
+
+[tool.black]  # https://github.com/psf/black
+color = true
+exclude = '/(\.direnv|\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.svn|_build|buck-out|build|dist|__pypackages__)/'
+line-length = 100
+target-version = ["py38"]
+
+[tool.coverage.paths]  # https://coverage.readthedocs.io/en/6.4.1/config.html#run
+source = ["featurebyte"]
+
+[tool.coverage.report]
+fail_under = 50
+show_missing = true
+
+[tool.coverage.run]
+branch = true
+command_line = "-m pytest -c pyproject.toml --timeout=120 --junitxml=pytest.xml tests featurebyte"
+source = ["tests"]
+
+[tool.isort]  # https://github.com/PyCQA/isort
+color_output = true
+include_trailing_comma = true
+indent = 4
+known_typing = ["typing", "types", "typing_extensions", "mypy", "mypy_extensions"]
+line_length = 100
+multi_line_output = 3
+profile = "black"
+sections = ["FUTURE", "TYPING", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+
+[tool.mypy]  # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
+allow_redefinition = false
+check_untyped_defs = true
+color_output = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = false
+disallow_untyped_defs = true
+exclude = ['tests']
+ignore_missing_imports = true
+implicit_reexport = false
+no_implicit_optional = true
+pretty = true
+python_version = 3.8
+show_column_numbers = true
+show_error_codes = true
+show_error_context = true
+show_traceback = true
+strict_equality = true
+strict_optional = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
 
 [tool.poetry]
-name = "featurebyte"
-version = "0.1.0"
-description = "Python Library for FeatureOps"
-readme = "README.md"
 authors = ["FeatureByte <it-admin@featurebyte.com>"]
-license = "Apache Software License 2.0"
-repository = "https://github.com/featurebyte/featurebyte"
-homepage = "https://github.com/featurebyte/featurebyte"
-
-# Keywords description https://python-poetry.org/docs/pyproject/#keywords
-keywords = []  #! Update me
-
-# Pypi classifiers: https://pypi.org/classifiers/
 classifiers = [  #! Update me
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -27,147 +74,108 @@ classifiers = [  #! Update me
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
 ]
-
-[tool.poetry.scripts]
-# Entry points for the package https://python-poetry.org/docs/pyproject/#scripts
-"featurebyte" = "featurebyte.__main__:app"
+description = "Python Library for FeatureOps"
+homepage = "https://github.com/featurebyte/featurebyte"
+keywords = []  #! Update me
+license = "Apache Software License 2.0"
+name = "featurebyte"
+readme = "README.md"
+repository = "https://github.com/featurebyte/featurebyte"
+version = "0.1.0"
 
 [tool.poetry.dependencies]
-python = "^3.8"
-importlib_metadata = {version = "^4.5.0", python = "^3.8"}
-typer = {extras = ["all"], version = "^0.4.0"}
-rich = "^12.3.0"
-Sphinx = {version = "^4.5.0", optional = true}
-sphinx-rtd-theme = {version = "^1.0.0", optional = true}
-sphinx-github-changelog = {version = "^1.2.0", optional = true}
-snowflake-connector-python = "2.7.7"
-pandas = "1.4.2"
-sqlglot = "^2.3.2"
-pydantic = "^1.9.1"
-fastapi = "^0.78.0"
-pymongo = "^4.1.1"
-beanie = "^1.11.4"
-loguru = "^0.6.0"
-PyYAML = "^6.0"
-jinja2 = "^3.1.2"
-cachetools = "^5.2.0"
 GitPython = "^3.1.27"
+PyYAML = "^6.0"
+beanie = "^1.11.4"
+cachetools = "^5.2.0"
+click = "8.1.3"
+fastapi = "^0.79.0"
+importlib_metadata = {version = "^4.5.0", python = "^3.8"}
+jinja2 = "^3.1.2"
+loguru = "^0.6.0"
+logzero = "^1.7.0"
+pandas = "1.4.2"
+pydantic = "^1.9.1"
+pymongo = "^4.1.1"
+python = "^3.8"
+rich = "^12.3.0"
+snowflake-connector-python = "2.7.7"
+sqlglot = "^2.3.2"
+typer = {extras = ["all"], version = "^0.4.0"}
+
+
+[tool.poetry.group.dev.dependencies]
+coverage = {extras = ["toml"], version = "^6.4.2"}
+coverage-badge = "^1.1.0"
+freezegun = "^1.2.1"
+mongomock = "^4.0.0"
+pre-commit = "^2.20.0"
 pyarrow = "6.0.1"
+pytest = "^7.1.2"
+pytest-html = "^3.1.1"
+pytest-timeout = "^2.1.0"
+pyupgrade = "^2.37.2"
+requests = "^2.27.1"
+toml-sort = "^0.20.0"
 
-[tool.poetry.extras]
-docs = ["Sphinx", "sphinx-rtd-theme", "sphinx-github-changelog"]
+[tool.poetry.group.docs.dependencies]
+Sphinx = "^4.5.0"
+sphinx-github-changelog = "^1.2.0"
+sphinx-rtd-theme = "^1.0.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.lint.dependencies]
 bandit = "^1.7.4"
-black = {version = "^22.3.0", allow-prereleases = true}
+black = { version = "^22.3.0", allow-prereleases = true }
 darglint = "^1.8.1"
 isort = {extras = ["colors"], version = "^5.10.1"}
-mypy = "^0.961"
+mypy = "^0.971"
 mypy-extensions = "^0.4.3"
-pre-commit = "^2.19.0"
-pylint = "^2.14.3"
-pytest = "^7.1.2"
-pyupgrade = "^2.34.0"
-safety = "^1.10.3"
-coverage = "^6.4.1"
-pytest-html = "^3.1.1"
-pytest-cov = "^3.0.0"
-mongomock = "^4.0.0"
-freezegun = "^1.2.1"
-pytest-timeout = "^2.1.0"
+pylint = "^2.14.5"
+safety = "^2.1.1"
+types-backports = "^0.1.3"
+types-chardet = "^5.0.2"
+types-cryptography = "^3.3.21"
+types-pyOpenSSL = "^22.0.4"
+types-pytz = "^2022.1.2"
+types-redis = "^4.3.7"
+types-requests = "^2.28.2"
+types-setuptools = "^63.2.1"
+types-simplejson = "^3.17.7"
+types-toml = "^0.10.0"
+types-tzlocal = "^4.2.2"
+types-ujson = "^5.4.0"
+types-urllib3 = "^1.26.16"
 
-[tool.black]
-# https://github.com/psf/black
-target-version = ["py37"]
-line-length = 100
-color = true
+[tool.poetry.scripts]
+featurebyte = "featurebyte.__main__:app"
 
-exclude = '''
-/(
-    \.git
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | buck-out
-    | build
-    | dist
-    | env
-    | venv
-)/
-'''
+[tool.pylint.classes]  # https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml
+max-args = 10
 
-[tool.isort]
-# https://github.com/timothycrosley/isort/
-py_version = 37
-line_length = 100
+[tool.pylint.design]
+max-attributes = 8
+max-parents = 9
 
-known_typing = ["typing", "types", "typing_extensions", "mypy", "mypy_extensions"]
-sections = ["FUTURE", "TYPING", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
-include_trailing_comma = true
-profile = "black"
-multi_line_output = 3
-indent = 4
-color_output = true
+[tool.pylint.format]
+max-line-length = 150
 
-[tool.mypy]
-# https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
-python_version = 3.8
-pretty = true
-show_traceback = true
-color_output = true
-exclude = ['tests']
+[tool.pylint.main]
+exit-zero = false
+extension-pkg-whitelist = ["pydantic"]
+jobs = 0
+output-format = "text"
+recursive = false
 
-# Needed because of bug in MyPy
-disallow_subclassing_any = false
-
-allow_redefinition = false
-check_untyped_defs = true
-disallow_untyped_defs = true
-disallow_any_generics = true
-disallow_incomplete_defs = true
-ignore_missing_imports = true
-implicit_reexport = false
-no_implicit_optional = true
-show_column_numbers = true
-show_error_codes = true
-show_error_context = true
-strict_equality = true
-strict_optional = true
-warn_no_return = true
-warn_redundant_casts = true
-warn_return_any = true
-warn_unreachable = true
-warn_unused_configs = true
-warn_unused_ignores = true
+[tool.pylint.similarities]
+ignore-signatures = true
+min-similarity-lines = 10
 
 [tool.pytest.ini_options]
-# https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml
-# Directories that are not visited by pytest collector:
-norecursedirs =["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]
-doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
-
-# Extra options:
 addopts = [
   "--strict-markers",
   "--tb=short",
   "--doctest-modules",
   "--doctest-continue-on-failure",
 ]
-
-[tool.coverage.run]
-source = ["tests"]
-
-[coverage.paths]
-source = "featurebyte"
-
-[coverage.run]
-branch = true
-
-[coverage.report]
-fail_under = 50
-show_missing = true
-
-[tool.bandit]
-skips = ["B608"]
+doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
+norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]
