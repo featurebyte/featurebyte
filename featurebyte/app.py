@@ -144,5 +144,25 @@ def _cleanup_persistent(signum, frame):  # type: ignore
         PERSISTENT.cleanup()
 
 
+def _sigint_handler(signum, frame):  # type: ignore
+    """
+    Clean up GitDB persistent and raise KeyboardInterrupt as the default SIGINT handler
+
+    Parameters
+    ----------
+    signum : int
+        Signal number
+    frame : frame
+        Frame object
+
+    Raises
+    ------
+    KeyboardInterrupt
+        After performing persistent clean up
+    """
+    _cleanup_persistent(signum, frame)
+    raise KeyboardInterrupt
+
+
 signal.signal(signal.SIGTERM, _cleanup_persistent)
-signal.signal(signal.SIGINT, _cleanup_persistent)
+signal.signal(signal.SIGINT, _sigint_handler)
