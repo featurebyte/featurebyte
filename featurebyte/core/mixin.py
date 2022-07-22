@@ -5,12 +5,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import pandas as pd
+
+from featurebyte.config import Credentials
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 
 if TYPE_CHECKING:
     from featurebyte.core.frame import Frame
+    from featurebyte.core.generic import QueryObject
     from featurebyte.core.series import Series
 
 
@@ -114,3 +118,29 @@ class OpsMixin:
         output = list(lineage)
         output.append(node_name)
         return tuple(output)
+
+
+class PreviewMixin:
+    """
+    PreviewMixin contains method to QueryObject's underlying table
+    """
+
+    def preview(
+        self: QueryObject, limit: int = 10, credentials: Credentials | None = None
+    ) -> pd.DataFrame:
+        """
+        Preview transformed table/column partial output
+
+        Parameters
+        ----------
+        limit: int
+            maximum number of return rows
+        credentials: Credentials | None
+            credentials to create a database session
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+        session = self.get_session(credentials)
+        return session.execute_query(self.preview_sql(limit=limit))

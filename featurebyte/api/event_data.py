@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Any, Tuple
 
-import json
 from http import HTTPStatus
 
 from bson.objectid import ObjectId

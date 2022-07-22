@@ -1,6 +1,8 @@
 """
 Tests QueryObject
 """
+import copy
+
 import pytest
 
 from featurebyte.core.generic import QueryObject
@@ -72,3 +74,18 @@ def query_object2_fixture(query_object1, tabular_source):
     check_graph_state(global_graph, query_object1.graph)
     check_graph_state(query_object1.graph, query_obj2.graph)
     return query_obj2
+
+
+def test_copy_global_query_graph(query_object1, query_object2):
+    """
+    Test copy on global query graph
+    """
+    global_graph = GlobalQueryGraph()
+    query_object3 = query_object1.copy()
+    query_object4 = query_object2.copy(deep=True)
+    query_object5 = copy.copy(query_object3)
+    query_object6 = copy.deepcopy(query_object4)
+    check_graph_state(query_object3.graph, global_graph)
+    check_graph_state(query_object4.graph, global_graph)
+    check_graph_state(query_object5.graph, global_graph)
+    check_graph_state(query_object6.graph, global_graph)

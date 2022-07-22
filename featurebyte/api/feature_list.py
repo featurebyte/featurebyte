@@ -3,22 +3,17 @@ FeatureListVersion class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, OrderedDict, Tuple, Union
+from typing import Any, List, OrderedDict, Union
 
 import collections
 
 import pandas as pd
-from pydantic import BaseModel, Field, StrictStr, parse_obj_as, root_validator
+from pydantic import BaseModel, Field, parse_obj_as, root_validator
 
 from featurebyte.api.feature import Feature
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
-from featurebyte.models.feature import (
-    FeatureListModel,
-    FeatureListStatus,
-    FeatureReadiness,
-    FeatureVersionIdentifier,
-)
+from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.query_graph.feature_historical import get_historical_features
 
 
@@ -39,6 +34,9 @@ class BaseFeatureGroup(BaseModel):
 
     @property
     def feature_names(self) -> list[str]:
+        """
+        Return list of feature names
+        """
         return list(self.feature_objects)
 
     @root_validator()
@@ -93,6 +91,19 @@ class BaseFeatureGroup(BaseModel):
         raise TypeError
 
     def drop(self, items: list[str]) -> FeatureGroup:
+        """
+        Drop feature(s) from the FeatureGroup/FeatureList
+
+        Parameters
+        ----------
+        items: list[str]
+            List of feature names to be dropped
+
+        Returns
+        -------
+        FeatureGroup
+            FeatureGroup object contains remaining feature(s)
+        """
         selected_feat_names = [
             feat_name for feat_name in self.feature_objects if feat_name not in items
         ]
@@ -159,8 +170,9 @@ class FeatureList(BaseFeatureGroup, FeatureListModel):
         """
         if credentials is None:
             credentials = Configurations().credentials
+        features: list[Feature] = list(self.feature_objects.values())
         return get_historical_features(
-            [feat for feat in self.feature_objects.values()],
+            features,
             training_events,
             credentials=credentials,
             serving_names_mapping=serving_names_mapping,

@@ -9,7 +9,6 @@ import time
 from http import HTTPStatus
 
 import pandas as pd
-from pydantic import Field
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations, Credentials
