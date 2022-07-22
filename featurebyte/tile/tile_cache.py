@@ -55,7 +55,9 @@ class SnowflakeOnDemandTileComputeRequest:
     tile_table_id: str
     tracker_sql: str
     tile_compute_sql: str
+    """
     tracker_temp_table_name: str
+    """
     tile_gen_info: TileGenSql
 
     def to_tile_manager_input(self) -> tuple[TileSpec, str]:
@@ -76,7 +78,7 @@ class SnowflakeOnDemandTileComputeRequest:
             value_column_names=self.tile_gen_info.tile_value_columns,
             tile_id=self.tile_table_id,
         )
-        return tile_spec, self.tracker_temp_table_name
+        return tile_spec, self.tracker_sql
 
 
 class SnowflakeTileCache(TileCache):
@@ -138,6 +140,7 @@ class SnowflakeTileCache(TileCache):
         elapsed = time.time() - tic
         logger.debug(f"Checking existence of tracking tables took {elapsed:.2f}s")
 
+        """
         required_requests = []
 
         tic = time.time()
@@ -153,8 +156,9 @@ class SnowflakeTileCache(TileCache):
                 logger.debug(f"Using cached tiles for {request.tile_table_id}")
         elapsed = time.time() - tic
         logger.debug(f"Materializing entity tables took {elapsed:.2f}s")
+        """
 
-        return required_requests
+        return requests
 
     def invoke_tile_manager(
         self, required_requests: list[SnowflakeOnDemandTileComputeRequest]
@@ -246,12 +250,19 @@ class SnowflakeTileCache(TileCache):
             tile_cache_validity.update(existing_validity)
         elapsed = time.time() - tic
         logger.debug(f"Registering working table and validity check took {elapsed:.2f}s")
+
+        requests = []
         for tile_id, is_cache_valid in tile_cache_validity.items():
             if is_cache_valid:
                 logger.debug(f"Cache for {tile_id} can be resued")
             else:
                 logger.debug(f"Need to recompute cache for {tile_id}")
+                request = self._construct_request_from_working_table(
+                    tile_info=unique_tile_infos[tile_id]
+                )
+                requests.append(request)
 
+        """
         requests_new = SnowflakeTileCache._construct_requests_no_tracker(
             tile_ids_without_tracker, unique_tile_infos
         )
@@ -259,6 +270,8 @@ class SnowflakeTileCache(TileCache):
             tile_ids_with_tracker, unique_tile_infos
         )
         requests = requests_new + requests_existing
+        return requests
+        """
         return requests
 
     @staticmethod
@@ -525,6 +538,46 @@ class SnowflakeTileCache(TileCache):
 
         return tracker_sql
 
+    def _construct_request_from_working_table(
+        self, tile_info: TileGenSql
+    ) -> SnowflakeOnDemandTileComputeRequest:
+        tile_id = tile_info.tile_table_id
+        working_table_filter = f"{tile_id} IS NULL"
+        point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=True)
+        last_tile_start_date_expr = self._get_last_tile_start_date_expr(
+            point_in_time_epoch_expr, tile_info
+        )
+        start_date_expr, end_date_expr = self._get_tile_start_end_date_expr(
+            point_in_time_epoch_expr, tile_info
+        )
+        serving_names_to_keys = ", ".join(
+            [
+                f'"{serving_name}" AS "{col}"'
+                for serving_name, col in zip(tile_info.serving_names, tile_info.entity_columns)
+            ]
+        )
+        serving_names = ", ".join([f'"{col}"' for col in tile_info.serving_names])
+        entity_table_sql = f"""
+            SELECT
+                {serving_names_to_keys},
+                {last_tile_start_date_expr} AS {InternalName.TILE_LAST_START_DATE},
+                {start_date_expr} AS {InternalName.ENTITY_TABLE_START_DATE},
+                {end_date_expr} AS {InternalName.ENTITY_TABLE_END_DATE}
+            FROM {InternalName.TILE_CACHE_WORKING_TABLE}
+            WHERE {working_table_filter}
+            GROUP BY {serving_names}
+            """
+        tile_compute_sql = tile_info.sql.replace(
+            InternalName.ENTITY_TABLE_SQL_PLACEHOLDER, f"({entity_table_sql})"
+        )
+        request = SnowflakeOnDemandTileComputeRequest(
+            tile_table_id=tile_id,
+            tracker_sql=entity_table_sql,
+            tile_compute_sql=tile_compute_sql,
+            tile_gen_info=tile_info,
+        )
+        return request
+
     def _register_working_table(
         self,
         unique_tile_infos: dict[str, TileGenSql],
@@ -536,7 +589,10 @@ class SnowflakeTileCache(TileCache):
 
         for table_index, tile_id in enumerate(tile_ids_with_tracker):
             tile_info = unique_tile_infos[tile_id]
-            last_tile_start_date_expr = self._get_last_tile_start_date_expr(tile_info)
+            point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=False)
+            last_tile_start_date_expr = self._get_last_tile_start_date_expr(
+                point_in_time_epoch_expr, tile_info
+            )
             tracker_table_name = self._get_tracker_name_from_tile_id(tile_id)
             table_alias = f"T{table_index}"
             join_conditions = []
@@ -582,25 +638,59 @@ class SnowflakeTileCache(TileCache):
             """
         df_validity = self.session.execute_query(tile_cache_validity_sql)
         out = df_validity.iloc[0].to_dict()
+        out = {k.lower(): v for (k, v) in out.items()}
         return out
 
     @staticmethod
-    def _get_last_tile_start_date_expr(tile_info: TileGenSql):
+    def _get_point_in_time_epoch_expr(in_groupby_context: bool):
+        if in_groupby_context:
+            point_in_time_epoch_expr = f"DATE_PART(epoch, MAX({SpecialColumnName.POINT_IN_TIME}))"
+        else:
+            point_in_time_epoch_expr = f"DATE_PART(epoch, {SpecialColumnName.POINT_IN_TIME})"
+        return point_in_time_epoch_expr
 
-        blind_spot = tile_info.blind_spot
+    @staticmethod
+    def _get_previous_job_epoch_expr(point_in_time_epoch_expr: str, tile_info: TileGenSql):
+
         frequency = tile_info.frequency
         time_modulo_frequency = tile_info.time_modulo_frequency
 
-        # Convert point in time to feature job time, then last tile start date
-        point_in_time_epoch_expr = f"DATE_PART(epoch, {SpecialColumnName.POINT_IN_TIME})"
         previous_job_index_expr = (
             f"FLOOR(({point_in_time_epoch_expr} - {time_modulo_frequency}) / {frequency})"
         )
         previous_job_epoch_expr = (
             f"({previous_job_index_expr}) * {frequency} + {time_modulo_frequency}"
         )
+
+        return previous_job_epoch_expr
+
+    @staticmethod
+    def _get_last_tile_start_date_expr(point_in_time_epoch_expr: str, tile_info: TileGenSql):
+
+        blind_spot = tile_info.blind_spot
+        frequency = tile_info.frequency
+
+        # Convert point in time to feature job time, then last tile start date
+        previous_job_epoch_expr = SnowflakeTileCache._get_previous_job_epoch_expr(
+            point_in_time_epoch_expr, tile_info
+        )
         last_tile_start_date_expr = (
             f"TO_TIMESTAMP({previous_job_epoch_expr} - {blind_spot} - {frequency})"
         )
 
         return last_tile_start_date_expr
+
+    @staticmethod
+    def _get_tile_start_end_date_expr(point_in_time_epoch_expr: str, tile_info: TileGenSql):
+
+        blind_spot = tile_info.blind_spot
+        time_modulo_frequency = tile_info.time_modulo_frequency
+
+        previous_job_epoch_expr = SnowflakeTileCache._get_previous_job_epoch_expr(
+            point_in_time_epoch_expr, tile_info
+        )
+        end_date_expr = f"TO_TIMESTAMP({previous_job_epoch_expr} - {blind_spot})"
+        start_date_expr = (
+            f"DATEADD(s, {time_modulo_frequency} - {blind_spot}, CAST('1970-01-01' AS TIMESTAMP))"
+        )
+        return start_date_expr, end_date_expr

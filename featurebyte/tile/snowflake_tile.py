@@ -109,7 +109,7 @@ class TileManagerSnowflake(BaseModel):
         sql = tm_tile_entity_tracking.render(
             tile_id=tile_spec.tile_id,
             entity_column_names=",".join(tile_spec.entity_column_names),
-            entity_table=temp_entity_table,
+            entity_table=temp_entity_table.replace("'", "''"),
             tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
         )
         logger.info(f"generated sql: {sql}")

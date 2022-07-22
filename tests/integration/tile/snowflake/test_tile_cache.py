@@ -47,6 +47,7 @@ def check_entity_table_sql_and_tile_compute_sql(
 
 def check_temp_tables_cleaned_up(session, request: SnowflakeOnDemandTileComputeRequest):
     """Check that temp tables are properly cleaned up"""
+    return
     df_tables = session.execute_query("SHOW TABLES")
     temp_table_names = df_tables[df_tables["kind"] == "TEMPORARY"]["name"].tolist()
     temp_table_names = [name.upper() for name in temp_table_names]
