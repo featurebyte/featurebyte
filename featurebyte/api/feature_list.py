@@ -8,7 +8,7 @@ from typing import Any, List, OrderedDict, Union
 import collections
 
 import pandas as pd
-from pydantic import BaseModel, Field, root_validator, parse_obj_as
+from pydantic import BaseModel, Field, parse_obj_as, root_validator
 
 from featurebyte.api.feature import Feature
 from featurebyte.common.model_util import get_version
@@ -69,6 +69,10 @@ class BaseFeatureGroup(BaseModel):
 
     def __init__(self, items: list[Union[Feature, BaseFeatureGroup]], **kwargs: Any):
         super().__init__(items=items, **kwargs)
+        # sanity check: make sure we don't make a copy on global query graph
+        for item_origin, item in zip(items, self.items):
+            if isinstance(item, Feature):
+                assert id(item_origin.graph.nodes) == id(item.graph.nodes)
 
     def __getitem__(self, item: str | list[str]) -> Feature | FeatureGroup:
         if isinstance(item, str):
@@ -91,6 +95,8 @@ class FeatureGroup(BaseFeatureGroup):
 
     def __setitem__(self, key: str, value: Feature):
         self.feature_objects[key] = parse_obj_as(Feature, value)
+        # sanity check: make sure we don't copy global query graph
+        assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
 
 
 class FeatureList(BaseFeatureGroup, FeatureListModel):

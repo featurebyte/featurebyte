@@ -3,18 +3,16 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any, Tuple
 
-import json
 import time
 from http import HTTPStatus
 
 import pandas as pd
-from beanie import PydanticObjectId
+from pydantic import Field
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations, Credentials
-from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.enum import SpecialColumnName

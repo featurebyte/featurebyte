@@ -11,7 +11,7 @@ from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.exception import DuplicatedRecordException, RecordCreationException
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import Node
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 
 
 @pytest.fixture(name="float_feature_dict")
@@ -113,7 +113,8 @@ def test_feature_deserialization(float_feature, float_feature_dict, snowflake_ev
     """
     Test feature deserialization
     """
-    global_graph_dict = float_feature.graph.dict()
+    global_graph = GlobalQueryGraph()
+    global_graph_dict = global_graph.dict()
     float_feature_dict["_id"] = float_feature_dict.pop("id")
     deserialized_float_feature = Feature.parse_obj(float_feature_dict)
     assert deserialized_float_feature.id == float_feature.id
@@ -124,6 +125,8 @@ def test_feature_deserialization(float_feature, float_feature_dict, snowflake_ev
     assert deserialized_float_feature.graph.dict() == global_graph_dict
     assert deserialized_float_feature.row_index_lineage == float_feature.row_index_lineage
     assert deserialized_float_feature.tabular_source == float_feature.tabular_source
+    assert deserialized_float_feature.graph == global_graph
+    assert id(deserialized_float_feature.graph.nodes) == id(global_graph.nodes)
     tile_id1 = float_feature.graph.nodes["groupby_1"]["parameters"]["tile_id"]
 
     # construct another identical float feature with an additional unused column,

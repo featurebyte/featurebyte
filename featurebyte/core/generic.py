@@ -58,6 +58,13 @@ class QueryObject(FeatureByteBaseModel):
     row_index_lineage: Tuple[StrictStr, ...]
     tabular_source: Tuple[FeatureStoreModel, TableDetails]
 
+    class Config:
+        """
+        QueryObject configuration
+        """
+
+        copy_on_model_validation = False
+
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
 

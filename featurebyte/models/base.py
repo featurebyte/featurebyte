@@ -43,7 +43,8 @@ class FeatureByteBaseModel(BaseModel):
         -------
         dict[str, Any]
         """
-        return json.loads(self.json(by_alias=True))
+        output: dict[str, Any] = json.loads(self.json(by_alias=True))
+        return output
 
     class Config:
         """

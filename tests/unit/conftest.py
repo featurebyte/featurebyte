@@ -357,6 +357,8 @@ def feature_group_fixture(grouped_event_view):
     """
     FeatureList fixture
     """
+    global_graph = GlobalQueryGraph()
+    assert id(global_graph.nodes) == id(grouped_event_view.obj.graph.nodes)
     feature_group = grouped_event_view.aggregate(
         value_column="col_float",
         method="sum",
@@ -371,6 +373,7 @@ def feature_group_fixture(grouped_event_view):
     assert isinstance(feature_group, FeatureGroup)
     for feature in feature_group.feature_objects.values():
         assert grouped_event_view.obj.event_data_id in feature.event_data_ids
+        assert id(feature.graph.nodes) == id(global_graph.nodes)
     yield feature_group
 
 
@@ -384,6 +387,8 @@ def float_feature_fixture(feature_group):
     assert feature.protected_columns == {"cust_id"}
     assert feature.inherited_columns == {"cust_id"}
     assert feature_group["sum_1d"].event_data_ids == feature.event_data_ids
+    global_graph = GlobalQueryGraph()
+    assert id(feature.graph.nodes) == id(global_graph.nodes)
     yield feature
 
 

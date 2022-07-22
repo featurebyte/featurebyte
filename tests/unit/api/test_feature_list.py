@@ -10,69 +10,47 @@ from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, Feature
 from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
 
 
-@pytest.fixture(name="feature_group")
-def feature_group_fixture(grouped_event_view):
-    """
-    FeatureList fixture
-    """
-    feature_group = grouped_event_view.aggregate(
-        value_column="col_float",
-        method="sum",
-        windows=["30m", "1d", "15m", "45m", "1h", "2h"],
-        feature_job_setting={
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
-        feature_names=[
-            "sum_30m",
-            "sum_1d",
-            "production_ready_feature",
-            "draft_feature",
-            "quarantine_feature",
-            "deprecated_feature",
-        ],
-    )
-    assert isinstance(feature_group, FeatureGroup)
-    for feature in feature_group.feature_objects.values():
-        feature.version = "V220501"
-        assert grouped_event_view.obj.event_data_id in feature.event_data_ids
-    yield feature_group
-
-
 @pytest.fixture(name="production_ready_feature")
 def production_ready_feature_fixture(feature_group):
     """Fixture for a production ready feature"""
-    feature = feature_group["production_ready_feature"]
+    feature = feature_group["sum_30m"] + 123
+    feature.name = "production_ready_feature"
     feature.readiness = FeatureReadiness.PRODUCTION_READY
     feature.version = "V220401"
+    feature_group["production_ready_feature"] = feature
     return feature
 
 
 @pytest.fixture(name="draft_feature")
 def draft_feature_fixture(feature_group):
     """Fixture for a draft feature"""
-    feature = feature_group["draft_feature"]
+    feature = feature_group["production_ready_feature"] + 123
+    feature.name = "draft_feature"
     feature.readiness = FeatureReadiness.DRAFT
     feature.version = "V220402"
+    feature_group["draft_feature"] = feature
     return feature
 
 
 @pytest.fixture(name="quarantine_feature")
 def quarantine_feature_fixture(feature_group):
     """Fixture for a quarantined feature"""
-    feature = feature_group["quarantine_feature"]
+    feature = feature_group["draft_feature"] + 123
+    feature.name = "quarantine_feature"
     feature.readiness = FeatureReadiness.QUARANTINE
     feature.version = "V220403"
+    feature_group["quarantine_feature"] = feature
     return feature
 
 
 @pytest.fixture(name="deprecated_feature")
 def deprecated_feature_fixture(feature_group):
     """Fixture for a deprecated feature"""
-    feature = feature_group["deprecated_feature"]
+    feature = feature_group["quarantine_feature"] + 123
+    feature.name = "deprecated_feature"
     feature.readiness = FeatureReadiness.DEPRECATED
     feature.version = "V220404"
+    feature_group["deprecated_feature"] = feature
     return feature
 
 
@@ -176,8 +154,8 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         "version": "V220501",
         "features": [
             ("production_ready_feature", "V220401"),
-            ("sum_30m", "V220501"),
-            ("sum_1d", "V220501"),
+            ("sum_30m", feature_group["sum_30m"].version),
+            ("sum_1d", feature_group["sum_1d"].version),
         ],
         "name": "my_feature_list",
         "readiness": None,
