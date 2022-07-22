@@ -251,6 +251,28 @@ def test_base_feature_group__getitem__(production_ready_feature, draft_feature):
     assert feat_group1.feature_objects["production_ready_feature"] == production_ready_feature
 
 
+def test_feature_group__getitem__type_not_supported(production_ready_feature):
+    """
+    Test FeatureGroup.__getitem__ with not supported key type
+    """
+    feature_group = FeatureGroup([production_ready_feature])
+    with pytest.raises(TypeError) as exc:
+        _ = feature_group[True]
+    expected_msg = "Feature retrieval with value 'True' is not supported!"
+    assert expected_msg in str(exc.value)
+
+
+def test_feature_group__preview_zero_feature():
+    """
+    Test FeatureGroup preview with zero feature
+    """
+    feature_group = FeatureGroup([])
+    with pytest.raises(ValueError) as exc:
+        feature_group.preview(point_in_time_and_serving_name={})
+    expected_msg = "There is no feature in the FeatureGroup object."
+    assert expected_msg in str(exc.value)
+
+
 def test_base_feature_group__drop(production_ready_feature, draft_feature, quarantine_feature):
     """
     Test BaseFeatureGroup dropping columns

@@ -119,6 +119,41 @@ def test_groupby__not_able_to_infer_feature_job_setting(snowflake_event_view):
     )
 
 
+def test_groupby__window_sizes_issue(snowflake_event_view):
+    """
+    Test groupby not able to infer feature job setting
+    """
+    Entity.create(name="customer", serving_name="cust_id")
+    snowflake_event_view.cust_id.as_entity("customer")
+    with pytest.raises(ValueError) as exc:
+        snowflake_event_view.groupby("cust_id").aggregate(
+            value_column="col_float",
+            method="sum",
+            windows=["30m", "1h", "2h"],
+            feature_names=["feat_30m", "feat_1h"],
+        )
+    assert "Window length must be the same as the number of output feature names." in str(exc.value)
+
+    with pytest.raises(ValueError) as exc:
+        snowflake_event_view.groupby("cust_id").aggregate(
+            value_column="col_float",
+            method="sum",
+            windows=["30m", "1h", "2h"],
+            feature_names=["feat_30m", "feat_1h", "feat_1h"],
+        )
+    expected_msg = "Window sizes or feature names contains duplicated value(s)."
+    assert expected_msg in str(exc.value)
+
+    with pytest.raises(ValueError) as exc:
+        snowflake_event_view.groupby("cust_id").aggregate(
+            value_column="col_float",
+            method="sum",
+            windows=["30m", "1h", "1h"],
+            feature_names=["feat_30m", "feat_1h", "feat_2h"],
+        )
+    assert expected_msg in str(exc.value)
+
+
 def test_groupby__default_feature_job_setting(snowflake_event_data):
     """
     Test default job setting from event data is used

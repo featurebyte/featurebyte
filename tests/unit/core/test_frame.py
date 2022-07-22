@@ -131,7 +131,7 @@ def test__getitem__type_not_supported(dataframe):
     """
     with pytest.raises(TypeError) as exc:
         _ = dataframe[True]
-    assert "Frame indexing with value 'True' not supported!" in str(exc.value)
+    assert "Frame indexing with value 'True' is not supported!" in str(exc.value)
 
 
 @pytest.mark.parametrize(

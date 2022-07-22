@@ -95,7 +95,7 @@ class BaseFeatureGroup(BaseModel):
             return self._subset_single_column(item)
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             return self._subset_list_of_columns(item)
-        raise TypeError
+        raise TypeError(f"Feature retrieval with value '{item}' is not supported!")
 
     def drop(self, items: list[str]) -> FeatureGroup:
         """
