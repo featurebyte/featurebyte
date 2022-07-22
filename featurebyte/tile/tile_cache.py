@@ -228,6 +228,30 @@ class SnowflakeTileCache(TileCache):
         )
         tile_ids_with_tracker = self._filter_tile_ids_with_tracker(list(unique_tile_infos.keys()))
         tile_ids_without_tracker = list(set(unique_tile_infos.keys()) - set(tile_ids_with_tracker))
+
+        # New: working table (WIP)
+        tic = time.time()
+        self._register_working_table(
+            unique_tile_infos=unique_tile_infos,
+            tile_ids_with_tracker=tile_ids_with_tracker,
+            tile_ids_no_tracker=tile_ids_without_tracker,
+        )
+        tile_cache_validity = {}
+        for tile_id in tile_ids_without_tracker:
+            tile_cache_validity[tile_id] = False
+        if tile_ids_with_tracker:
+            existing_validity = self._get_tile_cache_validity_from_working_table(
+                tile_ids=tile_ids_with_tracker
+            )
+            tile_cache_validity.update(existing_validity)
+        elapsed = time.time() - tic
+        logger.debug(f"Registering working table and validity check took {elapsed:.2f}s")
+        for tile_id, is_cache_valid in tile_cache_validity.items():
+            if is_cache_valid:
+                logger.debug(f"Cache for {tile_id} can be resued")
+            else:
+                logger.debug(f"Need to recompute cache for {tile_id}")
+
         requests_new = SnowflakeTileCache._construct_requests_no_tracker(
             tile_ids_without_tracker, unique_tile_infos
         )
@@ -500,3 +524,83 @@ class SnowflakeTileCache(TileCache):
         )
 
         return tracker_sql
+
+    def _register_working_table(
+        self,
+        unique_tile_infos: dict[str, TileGenSql],
+        tile_ids_with_tracker: list[str],
+        tile_ids_no_tracker: list[str],
+    ):
+        columns = []
+        left_join_sqls = []
+
+        for table_index, tile_id in enumerate(tile_ids_with_tracker):
+            tile_info = unique_tile_infos[tile_id]
+            last_tile_start_date_expr = self._get_last_tile_start_date_expr(tile_info)
+            tracker_table_name = self._get_tracker_name_from_tile_id(tile_id)
+            table_alias = f"T{table_index}"
+            join_conditions = []
+            for serving_name, key in zip(tile_info.serving_names, tile_info.entity_columns):
+                join_conditions.append(f"REQ.{serving_name} = {table_alias}.{key}")
+            join_conditions.append(
+                f"{last_tile_start_date_expr} <= {table_alias}.{InternalName.TILE_LAST_START_DATE}"
+            )
+            join_conditions_str = " AND ".join(join_conditions)
+            left_join_sql = f"""
+                LEFT JOIN {tracker_table_name} {table_alias}
+                ON {join_conditions_str}
+                """
+            columns.append(f"{table_alias}.{InternalName.TILE_LAST_START_DATE} AS {tile_id}")
+            left_join_sqls.append(left_join_sql)
+
+        for tile_id in tile_ids_no_tracker:
+            columns.append(f"null AS {tile_id}")
+
+        columns_str = ", ".join(columns)
+        left_join_sqls_str = "\n".join(left_join_sqls)
+        valid_last_tile_start_date_sql = f"""
+            SELECT
+                REQ.*,
+                {columns_str}
+            FROM {REQUEST_TABLE_NAME} REQ
+            {left_join_sqls_str}
+            """
+
+        self.session.execute_query(
+            f"CREATE OR REPLACE TEMP TABLE {InternalName.TILE_CACHE_WORKING_TABLE} AS "
+            f"{valid_last_tile_start_date_sql}"
+        )
+
+    def _get_tile_cache_validity_from_working_table(self, tile_ids: list[str]) -> dict[str, bool]:
+        validity_exprs = []
+        for tile_id in tile_ids:
+            expr = f"(COUNT({tile_id}) = COUNT(*)) AS {tile_id}"
+            validity_exprs.append(expr)
+        validity_exprs_str = ", ".join(validity_exprs)
+        tile_cache_validity_sql = f"""
+            SELECT {validity_exprs_str} FROM {InternalName.TILE_CACHE_WORKING_TABLE}
+            """
+        df_validity = self.session.execute_query(tile_cache_validity_sql)
+        out = df_validity.iloc[0].to_dict()
+        return out
+
+    @staticmethod
+    def _get_last_tile_start_date_expr(tile_info: TileGenSql):
+
+        blind_spot = tile_info.blind_spot
+        frequency = tile_info.frequency
+        time_modulo_frequency = tile_info.time_modulo_frequency
+
+        # Convert point in time to feature job time, then last tile start date
+        point_in_time_epoch_expr = f"DATE_PART(epoch, {SpecialColumnName.POINT_IN_TIME})"
+        previous_job_index_expr = (
+            f"FLOOR(({point_in_time_epoch_expr} - {time_modulo_frequency}) / {frequency})"
+        )
+        previous_job_epoch_expr = (
+            f"({previous_job_index_expr}) * {frequency} + {time_modulo_frequency}"
+        )
+        last_tile_start_date_expr = (
+            f"TO_TIMESTAMP({previous_job_epoch_expr} - {blind_spot} - {frequency})"
+        )
+
+        return last_tile_start_date_expr
