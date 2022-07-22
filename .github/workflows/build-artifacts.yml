@@ -22,35 +22,46 @@ jobs:
       GC_PROJECT_ID: vpc-host-nonprod-xa739-xz970
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4.0.0
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: 'Authenticate to Google Cloud'
-        id: 'auth'
-        uses: 'google-github-actions/auth@v0'
-        with:
-          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
-      - name: 'Install dependencies'
-        run: |
-          pip install keyring keyrings.google-artifactregistry-auth
-          printf "%s\n" "[distutils]" "index-servers =" "    $GCR_REPO_NAME" "" "[$GCR_REPO_NAME]" "repository: https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME/" > ~/.pypirc
-          mkdir -p ~/.config/pip && printf "%s\n" "[global]" "extra-index-url = https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME/simple/" > ~/.config/pip/pip.conf
-          python -m pip install poetry==1.2.0rc99
-      - name: 'Build and Publish with .dev[.N]'
-        run: |
-          export PACKAGE=$(poetry version --no-ansi | cut -d ' ' -f1)
-          export VERSION=$(poetry version --no-ansi --short | grep -oP '\d+[.]\d+[.]\d+')
-          export DEV_VERSION=$(gcloud artifacts versions list --project ${GC_PROJECT_ID} --repository=${GCR_REPO_NAME} --location=${GCR_REPO_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' | \
-              sort --version-sort -r | \
-              grep -P "${VERSION}.dev" | \
-              head -n 1 | \
-              grep -oP "\d+$"
-          )
-          export DEV_VERSION=${DEV_VERSION:-0}  # Set .dev to 0 if not exist
-          export PUBLISH_VERSION="${VERSION}.dev$((DEV_VERSION+=1))"
-          sed -i -E "s|^version = \"[^\"]+\"|version = \"${PUBLISH_VERSION}\"|g" pyproject.toml
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4.0.0
+      with:
+        python-version: ${{ matrix.python-version }}
 
-          poetry config repositories.featurebyte_np https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME
-          poetry publish --build -r featurebyte_np
+    - name: Set up cache
+      uses: actions/cache@v3.0.4
+      with:
+        path: .venv
+        key: venv-${{ matrix.python-version }}-featurebyte
+
+
+    - name: Authenticate to Google Cloud
+      id: 'auth'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+
+    - name: Install Poetry
+      run: |
+        pip install keyring keyrings.google-artifactregistry-auth
+        printf "%s\n" "[distutils]" "index-servers =" "    $GCR_REPO_NAME" "" "[$GCR_REPO_NAME]" "repository: https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME/" > ~/.pypirc
+        mkdir -p ~/.config/pip && printf "%s\n" "[global]" "extra-index-url = https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME/simple/" > ~/.config/pip/pip.conf
+        python -m pip install poetry==1.2.0rc99
+        rm ~/.pypirc ~/.config/pip/pip.conf
+
+    - name: 'Build and Publish with .dev[.N]'
+      run: |
+        export PACKAGE=$(poetry version --no-ansi | cut -d ' ' -f1)
+        export VERSION=$(poetry version --no-ansi --short | grep -oP '\d+[.]\d+[.]\d+')
+        export DEV_VERSION=$(gcloud artifacts versions list --project ${GC_PROJECT_ID} --repository=${GCR_REPO_NAME} --location=${GCR_REPO_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' | \
+            sort --version-sort -r | \
+            grep -P "${VERSION}.dev" | \
+            head -n 1 | \
+            grep -oP "\d+$"
+        )
+        export DEV_VERSION=${DEV_VERSION:-0}  # Set .dev to 0 if not exist
+        export PUBLISH_VERSION="${VERSION}.dev$((DEV_VERSION+=1))"
+        sed -i -E "s|^version = \"[^\"]+\"|version = \"${PUBLISH_VERSION}\"|g" pyproject.toml
+
+        poetry config repositories.featurebyte_np https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME
+        poetry publish --build -r featurebyte_np
