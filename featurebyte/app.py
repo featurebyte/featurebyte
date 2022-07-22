@@ -158,6 +158,7 @@ def _sigint_handler(signum, frame):  # type: ignore
     Raises
     ------
     KeyboardInterrupt
+        After performing persistent clean up
     """
     _cleanup_persistent(signum, frame)
     raise KeyboardInterrupt
