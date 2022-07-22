@@ -7,7 +7,7 @@ from typing import Any
 
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.util import get_entity_by_id
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
@@ -64,7 +64,7 @@ class EventViewGroupBy(OpsMixin):
         timestamp_column: str | None = None,
         value_by_column: str | None = None,
         feature_job_setting: dict[str, str] | None = None,
-    ):
+    ) -> dict[str, Any]:
         if method not in AggFunc.all():
             raise ValueError(f"Aggregation method not supported: {method}")
 
@@ -225,7 +225,7 @@ class EventViewGroupBy(OpsMixin):
             column_lineage_map,
         ) = self._prepare_node_and_column_metadata(node_params, tile_id)
 
-        items = []
+        items: list[Feature | BaseFeatureGroup] = []
         for feature_name in feature_names:
             feature_node = self.obj.graph.add_operation(
                 node_type=NodeType.PROJECT,

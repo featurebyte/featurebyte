@@ -3,17 +3,22 @@ FeatureListVersion class
 """
 from __future__ import annotations
 
-from typing import Any, List, OrderedDict, Union
+from typing import Any, List, Optional, OrderedDict, Tuple, Union
 
 import collections
 
 import pandas as pd
-from pydantic import BaseModel, Field, parse_obj_as, root_validator
+from pydantic import BaseModel, Field, StrictStr, parse_obj_as, root_validator
 
 from featurebyte.api.feature import Feature
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
-from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature import (
+    FeatureListModel,
+    FeatureListStatus,
+    FeatureReadiness,
+    FeatureVersionIdentifier,
+)
 from featurebyte.query_graph.feature_historical import get_historical_features
 
 
@@ -71,21 +76,27 @@ class BaseFeatureGroup(BaseModel):
         super().__init__(items=items, **kwargs)
         # sanity check: make sure we don't make a copy on global query graph
         for item_origin, item in zip(items, self.items):
-            if isinstance(item, Feature):
+            if isinstance(item_origin, Feature) and isinstance(item, Feature):
                 assert id(item_origin.graph.nodes) == id(item.graph.nodes)
+
+    def _subset_single_column(self, column: str) -> Feature:
+        return self.feature_objects[column]
+
+    def _subset_list_of_columns(self, columns: list[str]) -> FeatureGroup:
+        return FeatureGroup([self.feature_objects[elem] for elem in columns])
 
     def __getitem__(self, item: str | list[str]) -> Feature | FeatureGroup:
         if isinstance(item, str):
-            return self.feature_objects[item]
+            return self._subset_single_column(item)
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
-            return FeatureGroup([self.feature_objects[elem] for elem in item])
+            return self._subset_list_of_columns(item)
         raise TypeError
 
     def drop(self, items: list[str]) -> FeatureGroup:
         selected_feat_names = [
             feat_name for feat_name in self.feature_objects if feat_name not in items
         ]
-        return self.__getitem__(selected_feat_names)
+        return self._subset_list_of_columns(selected_feat_names)
 
 
 class FeatureGroup(BaseFeatureGroup):
@@ -93,7 +104,7 @@ class FeatureGroup(BaseFeatureGroup):
     FeatureGroup class
     """
 
-    def __setitem__(self, key: str, value: Feature):
+    def __setitem__(self, key: str, value: Feature) -> None:
         self.feature_objects[key] = parse_obj_as(Feature, value)
         # sanity check: make sure we don't copy global query graph
         assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
@@ -109,16 +120,15 @@ class FeatureList(BaseFeatureGroup, FeatureListModel):
         Name of the FeatureList
     """
 
-    @root_validator(pre=True)
+    @root_validator()
     @classmethod
     def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
-        feature_group = BaseFeatureGroup(values.get("items"))
         values["readiness"] = min(
-            feature_group.feature_objects.values(),
+            values["feature_objects"].values(),
             key=lambda feature: feature.readiness or FeatureReadiness.min(),
         ).readiness
         values["features"] = [
-            (feature.name, feature.version) for feature in feature_group.feature_objects.values()
+            (feature.name, feature.version) for feature in values["feature_objects"].values()
         ]
         values["status"] = FeatureListStatus.DRAFT
         values["version"] = get_version()

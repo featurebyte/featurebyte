@@ -63,6 +63,8 @@ class QueryObject(FeatureByteBaseModel):
         QueryObject configuration
         """
 
+        # pylint: disable=too-few-public-methods
+
         copy_on_model_validation = False
 
     def __repr__(self) -> str:
