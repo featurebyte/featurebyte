@@ -113,7 +113,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
                 if col not in point_in_time_and_serving_name:
                     raise KeyError(f"Serving name not provided: {col}")
 
-    def preview(
+    def preview(  # type: ignore[override]  # pylint: disable=arguments-renamed
         self,
         point_in_time_and_serving_name: dict[str, Any],
         credentials: Credentials | None = None,
