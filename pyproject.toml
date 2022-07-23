@@ -13,17 +13,14 @@ exclude = '/(\.direnv|\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|venv|\.s
 line-length = 100
 target-version = ["py38"]
 
-[tool.coverage.paths]  # https://coverage.readthedocs.io/en/6.4.1/config.html#run
-source = ["featurebyte"]
-
-[tool.coverage.report]
+[tool.coverage.report] # https://coverage.readthedocs.io/en/6.4.1/config.html#run
 fail_under = 50
 show_missing = true
 
 [tool.coverage.run]
 branch = true
 command_line = "-m pytest -c pyproject.toml --timeout=120 --junitxml=pytest.xml tests featurebyte"
-source = ["tests"]
+source = ["featurebyte"]
 
 [tool.isort]  # https://github.com/PyCQA/isort
 color_output = true
