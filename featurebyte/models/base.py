@@ -40,5 +40,6 @@ class FeatureByteBaseModel(BaseModel):
 
         # pylint: disable=too-few-public-methods
 
+        validate_assignment = True
         use_enum_values = True
         json_encoders = {ObjectId: str}

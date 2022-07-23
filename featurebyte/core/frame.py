@@ -291,15 +291,16 @@ class Frame(BaseFrame, OpsMixin):
                 target_columns=set(self.column_var_type_map),
             )
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
+            # use the __dict__ assignment method to skip pydantic validation check
             new_object = self.copy()
-            new_object.graph = pruned_graph
-            new_object.node = mapped_node
+            new_object.__dict__["node"] = mapped_node
             column_lineage_map = {}
             for col, lineage in new_object.column_lineage_map.items():
                 column_lineage_map[col] = tuple(node_name_map[node_name] for node_name in lineage)
-            new_object.column_lineage_map = column_lineage_map
-            new_object.row_index_lineage = tuple(
+            new_object.__dict__["column_lineage_map"] = column_lineage_map
+            new_object.__dict__["row_index_lineage"] = tuple(
                 node_name_map[node_name] for node_name in new_object.row_index_lineage
             )
+            new_object.__dict__["graph"] = pruned_graph
             return new_object.dict(*args, **kwargs)
         return super().dict(*args, **kwargs)
