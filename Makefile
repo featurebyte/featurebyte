@@ -2,7 +2,7 @@
 MAKE := make
 
 .PHONY: init
-.PHONY: install install-lock install-deps
+.PHONY: install install-lock install-main install-dev install-lint install-docs
 .PHONY: update update-main update-dev update-lint update-docs
 .PHONY: format
 .PHONY: lint lint-style lint-type lint-safety
@@ -15,15 +15,26 @@ init:
 	poetry run pre-commit install
 
 #* Installation
-install:
-	${MAKE} install-lock
-	${MAKE} install-deps
+install: install-lock
+	${MAKE} install-main
+	${MAKE} install-dev
+	${MAKE} install-lint
+	${MAKE} install-docs
 
 install-lock:
 	poetry lock -n
 
-install-deps:
-	poetry install -n --sync
+install-main:
+	poetry install -n --only=main
+
+install-dev:
+	poetry install -n --only=dev
+
+install-lint:
+	poetry install -n --only=lint
+
+install-docs:
+	poetry install -n --only=docs
 
 #* Update
 update:
@@ -63,7 +74,6 @@ lint-type:
 	@poetry run mypy --install-types --non-interactive --config-file pyproject.toml .
 
 lint-safety:
-	@poetry check
 	@poetry run safety check --short-report
 	@poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 

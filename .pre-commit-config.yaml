@@ -16,11 +16,3 @@ repos:
         entry: make format
         types: []
         language: system
-
-  - repo: local
-    hooks:
-      - id: lint
-        name: Linting Check
-        entry: make lint
-        types: []
-        language: system
