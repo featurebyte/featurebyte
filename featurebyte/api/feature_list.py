@@ -187,7 +187,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel):
     def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         values["readiness"] = min(
             values["feature_objects"].values(),
-            key=lambda feature: feature.readiness or FeatureReadiness.min(),
+            key=lambda feature: FeatureReadiness(feature.readiness or FeatureReadiness.min()),
         ).readiness
         values["features"] = [
             (feature.name, feature.version) for feature in values["feature_objects"].values()

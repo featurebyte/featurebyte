@@ -1,6 +1,7 @@
 """
 FeatureByte specific BaseModel
 """
+# pylint: disable=too-few-public-methods
 from __future__ import annotations
 
 from typing import Any, Type, TypeVar
