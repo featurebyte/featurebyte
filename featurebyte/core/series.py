@@ -382,15 +382,13 @@ class Series(QueryObject, OpsMixin):
                 target_node=self.node, target_columns=target_columns
             )
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
-            # use the __dict__ assignment method to skip pydantic validation check
             new_object = self.copy()
-            new_object.__dict__["node"] = mapped_node
-            new_object.__dict__["lineage"] = tuple(
-                node_name_map[node_name] for node_name in new_object.lineage
-            )
-            new_object.__dict__["row_index_lineage"] = tuple(
+            new_object.node = mapped_node
+            new_object.lineage = tuple(node_name_map[node_name] for node_name in new_object.lineage)
+            new_object.row_index_lineage = tuple(
                 node_name_map[node_name] for node_name in new_object.row_index_lineage
             )
+            # use the __dict__ assignment method to skip pydantic validation check
             new_object.__dict__["graph"] = pruned_graph
             return new_object.dict(*args, **kwargs)
         return super().dict(*args, **kwargs)

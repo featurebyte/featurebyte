@@ -321,7 +321,7 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config):
     Pytest Fixture for FeatureSnowflake instance
     """
     mock_feature = FeatureModel(**feature_model_dict)
-    mock_feature.tabular_source = (config.feature_stores["snowflake_featurestore"],)
+    mock_feature.__dict__["tabular_source"] = (config.feature_stores["snowflake_featurestore"],)
     mock_feature.version = "v1"
     mock_feature.readiness = FeatureReadiness.DRAFT.value
     mock_feature.is_default = True
