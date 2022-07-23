@@ -13,6 +13,7 @@ MAKE := make
 #* Initialize
 init:
 	poetry run pre-commit install
+	# TODO: Add kubectl, helm, poetry checks here
 
 #* Installation
 install: install-lock
