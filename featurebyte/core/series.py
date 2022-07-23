@@ -388,7 +388,9 @@ class Series(QueryObject, OpsMixin):
             new_object.row_index_lineage = tuple(
                 node_name_map[node_name] for node_name in new_object.row_index_lineage
             )
-            # use the __dict__ assignment method to skip pydantic validation check
+            # Use the __dict__ assignment method to skip pydantic validation check. Otherwise, it will trigger
+            # `_convert_query_graph_to_global_query_graph` validation check and convert the pruned graph into
+            # global one.
             new_object.__dict__["graph"] = pruned_graph
             return new_object.dict(*args, **kwargs)
         return super().dict(*args, **kwargs)
