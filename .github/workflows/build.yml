@@ -1,6 +1,7 @@
 name: build
 
 on:
+  workflow_dispatch:
   pull_request:
     types:
       [opened, synchronize, reopened]
@@ -97,3 +98,21 @@ jobs:
         label: coverage
         message: ${{ steps.coverageComment.outputs.coverage }}
         color: ${{ steps.coverageComment.outputs.color }}
+
+    - name: 'Build and Publish with .dev[.N]'
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      run: |
+        export PACKAGE=$(poetry version --no-ansi | cut -d ' ' -f1)
+        export VERSION=$(poetry version --no-ansi --short | grep -oP '\d+[.]\d+[.]\d+')
+        export DEV_VERSION=$(gcloud artifacts versions list --project ${GC_PROJECT_ID} --repository=${GCR_REPO_NAME} --location=${GCR_REPO_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' | \
+            sort --version-sort -r | \
+            grep -P "${VERSION}.dev" | \
+            head -n 1 | \
+            grep -oP "\d+$"
+        )
+        export DEV_VERSION=${DEV_VERSION:-0}  # Set .dev to 0 if not exist
+        export PUBLISH_VERSION="${VERSION}.dev$((DEV_VERSION+=1))"
+        sed -i -E "s|^version = \"[^\"]+\"|version = \"${PUBLISH_VERSION}\"|g" pyproject.toml
+
+        poetry config repositories.featurebyte_np https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME
+        poetry publish --build -r featurebyte_np
