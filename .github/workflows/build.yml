@@ -62,19 +62,15 @@ jobs:
         mkdir -p ~/.config/pip && printf "%s\n" "[global]" "extra-index-url = https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME/simple/" > ~/.config/pip/pip.conf
         python -m pip install poetry==1.2.0rc99
         rm ~/.pypirc ~/.config/pip/pip.conf
+        poetry config virtualenvs.in-project true
 
     - name: Install dependencies
       run: |
-        poetry config virtualenvs.in-project true
         make install
 
-    - name: Run style checks
+    - name: Link Checks
       run: |
-        make check-codestyle
-
-    - name: Run static typing checks
-      run: |
-        make mypy
+        make lint
 
     - name: Run tests
       run: |
@@ -88,7 +84,6 @@ jobs:
       id: coverageComment
       uses: MishaKav/pytest-coverage-comment@main
       with:
-        default-branch:
         pytest-coverage-path: ./pytest-coverage.txt
         junitxml-path: ./pytest.xml
 
@@ -102,7 +97,3 @@ jobs:
         label: coverage
         message: ${{ steps.coverageComment.outputs.coverage }}
         color: ${{ steps.coverageComment.outputs.color }}
-
-    - name: Run safety checks
-      run: |
-        make check-safety
