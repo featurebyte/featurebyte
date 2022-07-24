@@ -259,67 +259,6 @@ class SnowflakeTileCache(TileCache):
     def _get_tracker_name_from_tile_id(tile_id: str) -> str:
         return f"{tile_id}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
 
-    def _construct_request_from_working_table(
-        self, tile_info: TileGenSql
-    ) -> SnowflakeOnDemandTileComputeRequest:
-        """Construct a compute request for a tile table that is known to require computation
-
-        Returns
-        -------
-        tile_info : TileGenSql
-            Tile table information
-
-        Returns
-        -------
-        SnowflakeOnDemandTileComputeRequest
-        """
-        tile_id = tile_info.tile_table_id
-
-        # Filter for rows where tile cache are outdated
-        working_table_filter = f"{tile_id} IS NULL"
-
-        # Expressions to inform the date range for tile building
-        point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=True)
-        last_tile_start_date_expr = self._get_last_tile_start_date_expr(
-            point_in_time_epoch_expr, tile_info
-        )
-        start_date_expr, end_date_expr = self._get_tile_start_end_date_expr(
-            point_in_time_epoch_expr, tile_info
-        )
-
-        # Tile compute sql uses original table columns instead of serving names
-        serving_names_to_keys = [
-            f'"{serving_name}" AS "{col}"'
-            for serving_name, col in zip(tile_info.serving_names, tile_info.entity_columns)
-        ]
-
-        # This is the groupby keys used to construct the entity table
-        serving_names = [f'"{col}"' for col in tile_info.serving_names]
-
-        entity_table_expr = (
-            select(
-                *serving_names_to_keys,
-                f"{last_tile_start_date_expr} AS {InternalName.TILE_LAST_START_DATE}",
-                f"{start_date_expr} AS {InternalName.ENTITY_TABLE_START_DATE}",
-                f"{end_date_expr} AS {InternalName.ENTITY_TABLE_END_DATE}",
-            )
-            .from_(InternalName.TILE_CACHE_WORKING_TABLE.value)
-            .where(working_table_filter)
-            .group_by(*serving_names)
-        )
-
-        entity_table_sql = entity_table_expr.sql(pretty=True)
-        tile_compute_sql = tile_info.sql.replace(
-            InternalName.ENTITY_TABLE_SQL_PLACEHOLDER, f"({entity_table_sql})"
-        )
-        request = SnowflakeOnDemandTileComputeRequest(
-            tile_table_id=tile_id,
-            tracker_sql=entity_table_sql,
-            tile_compute_sql=tile_compute_sql,
-            tile_gen_info=tile_info,
-        )
-        return request
-
     def _register_working_table(
         self,
         unique_tile_infos: dict[str, TileGenSql],
@@ -426,6 +365,67 @@ class SnowflakeTileCache(TileCache):
         out = df_validity.iloc[0].to_dict()
         out = {k.lower(): v for (k, v) in out.items()}
         return out
+
+    def _construct_request_from_working_table(
+        self, tile_info: TileGenSql
+    ) -> SnowflakeOnDemandTileComputeRequest:
+        """Construct a compute request for a tile table that is known to require computation
+
+        Returns
+        -------
+        tile_info : TileGenSql
+            Tile table information
+
+        Returns
+        -------
+        SnowflakeOnDemandTileComputeRequest
+        """
+        tile_id = tile_info.tile_table_id
+
+        # Filter for rows where tile cache are outdated
+        working_table_filter = f"{tile_id} IS NULL"
+
+        # Expressions to inform the date range for tile building
+        point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=True)
+        last_tile_start_date_expr = self._get_last_tile_start_date_expr(
+            point_in_time_epoch_expr, tile_info
+        )
+        start_date_expr, end_date_expr = self._get_tile_start_end_date_expr(
+            point_in_time_epoch_expr, tile_info
+        )
+
+        # Tile compute sql uses original table columns instead of serving names
+        serving_names_to_keys = [
+            f'"{serving_name}" AS "{col}"'
+            for serving_name, col in zip(tile_info.serving_names, tile_info.entity_columns)
+        ]
+
+        # This is the groupby keys used to construct the entity table
+        serving_names = [f'"{col}"' for col in tile_info.serving_names]
+
+        entity_table_expr = (
+            select(
+                *serving_names_to_keys,
+                f"{last_tile_start_date_expr} AS {InternalName.TILE_LAST_START_DATE}",
+                f"{start_date_expr} AS {InternalName.ENTITY_TABLE_START_DATE}",
+                f"{end_date_expr} AS {InternalName.ENTITY_TABLE_END_DATE}",
+            )
+            .from_(InternalName.TILE_CACHE_WORKING_TABLE.value)
+            .where(working_table_filter)
+            .group_by(*serving_names)
+        )
+
+        entity_table_sql = entity_table_expr.sql(pretty=True)
+        tile_compute_sql = tile_info.sql.replace(
+            InternalName.ENTITY_TABLE_SQL_PLACEHOLDER, f"({entity_table_sql})"
+        )
+        request = SnowflakeOnDemandTileComputeRequest(
+            tile_table_id=tile_id,
+            tracker_sql=entity_table_sql,
+            tile_compute_sql=tile_compute_sql,
+            tile_gen_info=tile_info,
+        )
+        return request
 
     @staticmethod
     def _get_point_in_time_epoch_expr(in_groupby_context: bool) -> str:
