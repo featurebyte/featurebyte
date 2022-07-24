@@ -354,6 +354,8 @@ class SnowflakeTileCache(TileCache):
             f"{valid_last_tile_start_date_sql}"
         )
 
+        self._materialized_temp_table_names.add(InternalName.TILE_CACHE_WORKING_TABLE)
+
     def _get_tile_cache_validity_from_working_table(self, tile_ids: list[str]) -> dict[str, bool]:
         validity_exprs = []
         for tile_id in tile_ids:
