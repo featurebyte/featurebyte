@@ -265,6 +265,9 @@ def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
               *,
               FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
+                WITH __FB_ENTITY_TABLE_NAME AS (
+                    __FB_ENTITY_TABLE_SQL_PLACEHOLDER
+                )
                 SELECT
                   R.*,
                   __FB_ENTITY_TABLE_START_DATE
@@ -339,6 +342,9 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
               *,
               FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
+                WITH __FB_ENTITY_TABLE_NAME AS (
+                    __FB_ENTITY_TABLE_SQL_PLACEHOLDER
+                )
                 SELECT
                   R.*,
                   __FB_ENTITY_TABLE_START_DATE
@@ -393,6 +399,9 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
               *,
               FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
+                WITH __FB_ENTITY_TABLE_NAME AS (
+                    __FB_ENTITY_TABLE_SQL_PLACEHOLDER
+                )
                 SELECT
                   R.*,
                   __FB_ENTITY_TABLE_START_DATE
