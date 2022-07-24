@@ -292,7 +292,6 @@ class Frame(BaseFrame, OpsMixin):
             )
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
-            new_object.graph = pruned_graph
             new_object.node = mapped_node
             column_lineage_map = {}
             for col, lineage in new_object.column_lineage_map.items():
@@ -301,5 +300,9 @@ class Frame(BaseFrame, OpsMixin):
             new_object.row_index_lineage = tuple(
                 node_name_map[node_name] for node_name in new_object.row_index_lineage
             )
+            # Use the __dict__ assignment method to skip pydantic validation check. Otherwise, it will trigger
+            # `_convert_query_graph_to_global_query_graph` validation check and convert the pruned graph into
+            # global one.
+            new_object.__dict__["graph"] = pruned_graph
             return new_object.dict(*args, **kwargs)
         return super().dict(*args, **kwargs)

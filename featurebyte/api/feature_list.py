@@ -101,7 +101,8 @@ class FeatureList(FeatureListModel):
         FeatureReadiness
         """
         minimum_feature_readiness = min(
-            features, key=lambda feature: feature.readiness or FeatureReadiness.min()
+            features,
+            key=lambda feature: FeatureReadiness(feature.readiness or FeatureReadiness.min()),
         ).readiness
         return minimum_feature_readiness
 

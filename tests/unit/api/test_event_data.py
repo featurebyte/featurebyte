@@ -266,17 +266,17 @@ def test_event_data__info__not_saved_event_data(snowflake_event_data):
     """
     Test info on not-saved event data
     """
-    snowflake_event_data.event_timestamp_column = "some_event_timestamp"
-    snowflake_event_data.record_creation_date_column = "some_random_date"
+    snowflake_event_data.event_timestamp_column = "col_int"
+    snowflake_event_data.record_creation_date_column = "col_text"
     output = snowflake_event_data.info()
     assert output == {
         "id": snowflake_event_data.id,
         "name": "sf_event_data",
-        "record_creation_date_column": "some_random_date",
+        "record_creation_date_column": "col_text",
         "column_entity_map": None,
         "created_at": None,
         "default_feature_job_setting": None,
-        "event_timestamp_column": "some_event_timestamp",
+        "event_timestamp_column": "col_int",
         "history": [],
         "status": None,
         "tabular_source": (
@@ -312,8 +312,8 @@ def test_event_data__info__saved_event_data(saved_event_data):
     saved_event_data_dict = saved_event_data.dict()
 
     # perform some modifications
-    saved_event_data.event_timestamp_column = "some_event_timestamp"
-    saved_event_data.record_creation_date_column = "some_random_date"
+    saved_event_data.event_timestamp_column = "col_int"
+    saved_event_data.record_creation_date_column = "col_text"
     assert (
         saved_event_data.event_timestamp_column != saved_event_data_dict["event_timestamp_column"]
     )
