@@ -205,7 +205,6 @@ def get_historical_features(
         request_table_columns=training_events.columns.tolist(),
         serving_names_mapping=serving_names_mapping,
     )
-    logger.debug(f"Historical features SQL:\n{sql}")
 
     # Execute feature SQL code
     session = get_session_from_feature_objects(feature_objects, credentials=credentials)
