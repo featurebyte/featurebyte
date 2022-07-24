@@ -9,6 +9,8 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+from sqlglot import expressions, select
+
 from featurebyte.api.feature import Feature
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
@@ -272,7 +274,11 @@ class SnowflakeTileCache(TileCache):
         SnowflakeOnDemandTileComputeRequest
         """
         tile_id = tile_info.tile_table_id
+
+        # Filter for rows where tile cache are outdated
         working_table_filter = f"{tile_id} IS NULL"
+
+        # Expressions to inform the date range for tile building
         point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=True)
         last_tile_start_date_expr = self._get_last_tile_start_date_expr(
             point_in_time_epoch_expr, tile_info
@@ -280,23 +286,29 @@ class SnowflakeTileCache(TileCache):
         start_date_expr, end_date_expr = self._get_tile_start_end_date_expr(
             point_in_time_epoch_expr, tile_info
         )
-        serving_names_to_keys = ", ".join(
-            [
-                f'"{serving_name}" AS "{col}"'
-                for serving_name, col in zip(tile_info.serving_names, tile_info.entity_columns)
-            ]
+
+        # Tile compute sql uses original table columns instead of serving names
+        serving_names_to_keys = [
+            f'"{serving_name}" AS "{col}"'
+            for serving_name, col in zip(tile_info.serving_names, tile_info.entity_columns)
+        ]
+
+        # This is the groupby keys used to construct the entity table
+        serving_names = [f'"{col}"' for col in tile_info.serving_names]
+
+        entity_table_expr = (
+            select(
+                *serving_names_to_keys,
+                f"{last_tile_start_date_expr} AS {InternalName.TILE_LAST_START_DATE}",
+                f"{start_date_expr} AS {InternalName.ENTITY_TABLE_START_DATE}",
+                f"{end_date_expr} AS {InternalName.ENTITY_TABLE_END_DATE}",
+            )
+            .from_(InternalName.TILE_CACHE_WORKING_TABLE.value)
+            .where(working_table_filter)
+            .group_by(*serving_names)
         )
-        serving_names = ", ".join([f'"{col}"' for col in tile_info.serving_names])
-        entity_table_sql = f"""
-            SELECT
-                {serving_names_to_keys},
-                {last_tile_start_date_expr} AS {InternalName.TILE_LAST_START_DATE},
-                {start_date_expr} AS {InternalName.ENTITY_TABLE_START_DATE},
-                {end_date_expr} AS {InternalName.ENTITY_TABLE_END_DATE}
-            FROM {InternalName.TILE_CACHE_WORKING_TABLE}
-            WHERE {working_table_filter}
-            GROUP BY {serving_names}
-            """
+
+        entity_table_sql = entity_table_expr.sql(pretty=True)
         tile_compute_sql = tile_info.sql.replace(
             InternalName.ENTITY_TABLE_SQL_PLACEHOLDER, f"({entity_table_sql})"
         )
@@ -346,9 +358,9 @@ class SnowflakeTileCache(TileCache):
         tile_ids_no_tracker : list[str]
             List of tile ids without existing tracker table on Snowflake
         """
-        columns = []
-        left_join_sqls = []
+        table_expr = select().from_(f"{REQUEST_TABLE_NAME} AS REQ")
 
+        columns = []
         for table_index, tile_id in enumerate(tile_ids_with_tracker):
             tile_info = unique_tile_infos[tile_id]
             point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=False)
@@ -363,30 +375,23 @@ class SnowflakeTileCache(TileCache):
             join_conditions.append(
                 f"{last_tile_start_date_expr} <= {table_alias}.{InternalName.TILE_LAST_START_DATE}"
             )
-            join_conditions_str = " AND ".join(join_conditions)
-            left_join_sql = f"""
-                LEFT JOIN {tracker_table_name} {table_alias}
-                ON {join_conditions_str}
-                """
+            table_expr = table_expr.join(
+                tracker_table_name,
+                join_type="left",
+                join_alias=table_alias,
+                on=expressions.and_(*join_conditions),
+            )
             columns.append(f"{table_alias}.{InternalName.TILE_LAST_START_DATE} AS {tile_id}")
-            left_join_sqls.append(left_join_sql)
 
         for tile_id in tile_ids_no_tracker:
             columns.append(f"null AS {tile_id}")
 
-        columns_str = ", ".join(columns)
-        left_join_sqls_str = "\n".join(left_join_sqls)
-        valid_last_tile_start_date_sql = f"""
-            SELECT
-                REQ.*,
-                {columns_str}
-            FROM {REQUEST_TABLE_NAME} REQ
-            {left_join_sqls_str}
-            """
+        table_expr = table_expr.select("REQ.*", *columns)
+        table_sql = table_expr.sql(pretty=True)
 
         self.session.execute_query(
             f"CREATE OR REPLACE TEMP TABLE {InternalName.TILE_CACHE_WORKING_TABLE} AS "
-            f"{valid_last_tile_start_date_sql}"
+            f"{table_sql}"
         )
 
         self._materialized_temp_table_names.add(InternalName.TILE_CACHE_WORKING_TABLE)
@@ -404,15 +409,20 @@ class SnowflakeTileCache(TileCache):
         dict[str, bool]
             Mapping from tile id to bool (True means the tile id has valid cache)
         """
+        # A tile table has valid cache if there is no null value in corresponding column in the
+        # working table
         validity_exprs = []
         for tile_id in tile_ids:
             expr = f"(COUNT({tile_id}) = COUNT(*)) AS {tile_id}"
             validity_exprs.append(expr)
-        validity_exprs_str = ", ".join(validity_exprs)
-        tile_cache_validity_sql = f"""
-            SELECT {validity_exprs_str} FROM {InternalName.TILE_CACHE_WORKING_TABLE}
-            """
+
+        tile_cache_validity_sql = (
+            select(*validity_exprs).from_(InternalName.TILE_CACHE_WORKING_TABLE.value)
+        ).sql(pretty=True)
         df_validity = self.session.execute_query(tile_cache_validity_sql)
+
+        # Result should only have one row
+        assert df_validity.shape[0] == 1
         out = df_validity.iloc[0].to_dict()
         out = {k.lower(): v for (k, v) in out.items()}
         return out
