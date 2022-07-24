@@ -297,6 +297,7 @@ class SnowflakeTileCache(TileCache):
         tile_ids_no_tracker : list[str]
             List of tile ids without existing tracker table on Snowflake
         """
+        # pylint: disable=too-many-locals
         table_expr = select().from_(f"{REQUEST_TABLE_NAME} AS REQ")
 
         columns = []
@@ -361,8 +362,9 @@ class SnowflakeTileCache(TileCache):
         df_validity = self.session.execute_query(tile_cache_validity_sql)
 
         # Result should only have one row
+        assert df_validity is not None
         assert df_validity.shape[0] == 1
-        out = df_validity.iloc[0].to_dict()
+        out: dict[str, bool] = df_validity.iloc[0].to_dict()
         out = {k.lower(): v for (k, v) in out.items()}
         return out
 
@@ -371,8 +373,8 @@ class SnowflakeTileCache(TileCache):
     ) -> SnowflakeOnDemandTileComputeRequest:
         """Construct a compute request for a tile table that is known to require computation
 
-        Returns
-        -------
+        Parameters
+        ----------
         tile_info : TileGenSql
             Tile table information
 
@@ -435,6 +437,10 @@ class SnowflakeTileCache(TileCache):
         ----------
         in_groupby_context : bool
             Whether the expression is to be used within groupby
+
+        Returns
+        -------
+        str
         """
         if in_groupby_context:
             # When this is True, we are interested in the latest point-in-time for each entity (the
