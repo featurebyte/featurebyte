@@ -105,7 +105,7 @@ class SnowflakeTileCache(TileCache):
             features, serving_names_mapping=serving_names_mapping
         )
         elapsed = time.time() - tic
-        logger.debug(
+        logger.info(
             f"Getting required tiles computation took {elapsed:.2f}s ({len(required_requests)})"
         )
 
@@ -113,9 +113,9 @@ class SnowflakeTileCache(TileCache):
             tic = time.time()
             self.invoke_tile_manager(required_requests)
             elapsed = time.time() - tic
-            logger.debug(f"Compute tiles on demand took {elapsed:.2f}s")
+            logger.info(f"Compute tiles on demand took {elapsed:.2f}s")
         else:
-            logger.debug("All required tiles can be reused")
+            logger.info("All required tiles can be reused")
 
         self.cleanup_temp_tables()
 
