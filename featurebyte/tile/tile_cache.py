@@ -63,13 +63,16 @@ class SnowflakeOnDemandTileComputeRequest:
         tuple[TileSpec, str]
             Tuple of TileSpec and temp table name
         """
+        entity_column_names = self.tile_gen_info.entity_columns[:]
+        if self.tile_gen_info.value_by_column is not None:
+            entity_column_names.append(self.tile_gen_info.value_by_column)
         tile_spec = TileSpec(
             time_modulo_frequency_second=self.tile_gen_info.time_modulo_frequency,
             blind_spot_second=self.tile_gen_info.blind_spot,
             frequency_minute=self.tile_gen_info.frequency // 60,
             tile_sql=self.tile_compute_sql,
             column_names=self.tile_gen_info.columns,
-            entity_column_names=self.tile_gen_info.entity_columns,
+            entity_column_names=entity_column_names,
             value_column_names=self.tile_gen_info.tile_value_columns,
             tile_id=self.tile_table_id,
         )

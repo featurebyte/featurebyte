@@ -235,6 +235,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
         "blind_spot": 900,
         "windows": ["2h", "48h"],
         "serving_names": ["CUSTOMER_ID"],
+        "value_by_column": None,
     }
 
 
@@ -305,6 +306,7 @@ def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
         "blind_spot": 900,
         "windows": ["2h", "48h"],
         "serving_names": ["CUSTOMER_ID"],
+        "value_by_column": None,
     }
 
 
@@ -363,6 +365,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
         "blind_spot": 900,
         "windows": ["2h", "48h"],
         "serving_names": ["CUSTOMER_ID"],
+        "value_by_column": "product_type",
     }
 
 
@@ -387,6 +390,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
         "blind_spot": 900,
         "windows": ["2h", "48h"],
         "serving_names": ["CUSTOMER_ID"],
+        "value_by_column": None,
     }
     expected = textwrap.dedent(
         """
@@ -445,6 +449,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
         "blind_spot": 900,
         "windows": ["a_7d_sum_by_business"],
         "serving_names": ["BUSINESS_ID"],
+        "value_by_column": None,
     }
     expected = textwrap.dedent(
         """

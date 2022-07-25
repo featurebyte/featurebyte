@@ -171,6 +171,7 @@ class TileGenSql:
     columns: list[str]
     entity_columns: list[str]
     serving_names: list[str]
+    value_by_column: str | None
     tile_value_columns: list[str]
     time_modulo_frequency: int
     frequency: int
@@ -265,6 +266,7 @@ class TileSQLGenerator:
         tile_table_id = groupby_node.parameters["tile_id"]
         entity_columns = groupby_sql_node.keys
         serving_names = groupby_node.parameters["serving_names"]
+        value_by_column = groupby_node.parameters["value_by"]
         tile_value_columns = [spec.tile_column_name for spec in groupby_sql_node.tile_specs]
         info = TileGenSql(
             tile_table_id=tile_table_id,
@@ -277,6 +279,7 @@ class TileSQLGenerator:
             blind_spot=blind_spot,
             windows=windows,
             serving_names=serving_names,
+            value_by_column=value_by_column,
         )
         return info
 
