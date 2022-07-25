@@ -78,7 +78,7 @@ def test_remove_feature_registry(snowflake_session, snowflake_feature, feature_m
     """
     Test remove_feature_registry
     """
-    snowflake_feature.readiness = FeatureReadiness.DRAFT.value
+    snowflake_feature.__dict__["readiness"] = FeatureReadiness.DRAFT.value
     feature_manager.insert_feature_registry(snowflake_feature)
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
     assert len(result) == 1
@@ -107,7 +107,7 @@ def test_remove_feature_registry_feature_version_not_draft(snowflake_feature, fe
     """
     Test remove_feature_registry feature version readiness not DRAFT
     """
-    snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY.value
+    snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     feature_manager.insert_feature_registry(snowflake_feature)
 
     with pytest.raises(InvalidFeatureRegistryOperationError) as excinfo:
@@ -132,7 +132,7 @@ def test_update_feature_registry(snowflake_session, snowflake_feature, feature_m
     assert result.iloc[0]["DESCRIPTION"] == "test_description_1"
     assert bool(result.iloc[0]["IS_DEFAULT"]) is True
 
-    snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY.value
+    snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     snowflake_feature.is_default = False
     snowflake_feature.description = "test_description_2"
     feature_manager.update_feature_registry(new_feature=snowflake_feature)
@@ -170,7 +170,7 @@ def test_retrieve_features_multiple(snowflake_feature, feature_manager):
     feature_manager.insert_feature_registry(snowflake_feature)
 
     snowflake_feature.version = "v2"
-    snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY.value
+    snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     feature_manager.insert_feature_registry(snowflake_feature)
 
     f_reg_df = feature_manager.retrieve_feature_registries(snowflake_feature)
@@ -187,7 +187,7 @@ def test_online_enable_no_feature(snowflake_feature, feature_manager):
     """
     Test online_enable no feature
     """
-    snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY.value
+    snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     with pytest.raises(MissingFeatureRegistryError) as excinfo:
         feature_manager.online_enable(snowflake_feature)
 
@@ -212,7 +212,7 @@ def test_online_enable_already_online_enabled(snowflake_feature, feature_manager
     """
     Test online_enable already online_enabled
     """
-    snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY.value
+    snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     feature_manager.insert_feature_registry(snowflake_feature)
     feature_manager.online_enable(snowflake_feature)
 
@@ -234,7 +234,7 @@ def test_online_enable(
     """
     Test online_enable
     """
-    snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY.value
+    snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     feature_manager.insert_feature_registry(snowflake_feature)
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
     assert len(result) == 1

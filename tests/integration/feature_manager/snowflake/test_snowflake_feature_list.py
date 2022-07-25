@@ -96,7 +96,7 @@ def test_retrieve_feature_list_registry_multiple(snowflake_feature_list, feature
     feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
 
     snowflake_feature_list.version = "v2"
-    snowflake_feature_list.readiness = FeatureReadiness.PRODUCTION_READY.value
+    snowflake_feature_list.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
 
     f_reg_df = feature_list_manager.retrieve_feature_list_registries(snowflake_feature_list)
@@ -124,8 +124,8 @@ def test_update_feature_list_registry(
     assert result.iloc[0]["STATUS"] == "DRAFT"
     assert result.iloc[0]["DESCRIPTION"] == "test_description1"
 
-    snowflake_feature_list.readiness = FeatureReadiness.PRODUCTION_READY.value
-    snowflake_feature_list.status = FeatureListStatus.PUBLISHED.value
+    snowflake_feature_list.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
+    snowflake_feature_list.__dict__["status"] = FeatureListStatus.PUBLISHED.value
     snowflake_feature_list.description = "test_description2"
     feature_list_manager.update_feature_list_registry(snowflake_feature_list)
 
