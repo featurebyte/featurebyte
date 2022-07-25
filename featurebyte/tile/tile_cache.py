@@ -162,13 +162,15 @@ class SnowflakeTileCache(TileCache):
         tile_ids_with_tracker = self._filter_tile_ids_with_tracker(list(unique_tile_infos.keys()))
         tile_ids_without_tracker = list(set(unique_tile_infos.keys()) - set(tile_ids_with_tracker))
 
-        # New: working table (WIP)
+        # Construct a temp table and query from it whether each tile has updated cache
         tic = time.time()
         self._register_working_table(
             unique_tile_infos=unique_tile_infos,
             tile_ids_with_tracker=tile_ids_with_tracker,
             tile_ids_no_tracker=tile_ids_without_tracker,
         )
+
+        # Create a validity flag for each tile id
         tile_cache_validity = {}
         for tile_id in tile_ids_without_tracker:
             tile_cache_validity[tile_id] = False
@@ -180,6 +182,7 @@ class SnowflakeTileCache(TileCache):
         elapsed = time.time() - tic
         logger.debug(f"Registering working table and validity check took {elapsed:.2f}s")
 
+        # Construct requests for outdated tile ids
         requests = []
         for tile_id, is_cache_valid in tile_cache_validity.items():
             if is_cache_valid:
