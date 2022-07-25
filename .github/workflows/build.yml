@@ -54,7 +54,7 @@ jobs:
     - name: Setup cache keys (PR)
       if: ${{ github.event_name == 'pull_request' }}
       run: |
-        echo "TAG=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
+        echo "TAG=-${GITHUB_HEAD_REF}" >> $GITHUB_ENV
 
     - name: Setup cache
       uses: actions/cache@v3.0.4
@@ -151,8 +151,15 @@ jobs:
     - name: Slack Message PR
       if: ${{ github.event_name == 'pull_request' }}
       run: |
-        # Pytest and Coverage ./pytest-coverage.txt
-        export OUTPUT=$(cat ./pytest-coverage.txt)
+        export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
+        export COVERAGE_WARNING=${{ steps.coverageComment.outputs.warnings }}
+        export COVERAGE_ERRORS=${{ steps.coverageComment.outputs.errors }}
+        export COVERAGE_FAILURES=${{ steps.coverageComment.outputs.failures }}
+        export COVERAGE_SKIPPED=${{ steps.coverageComment.outputs.skipped }}
+        export COVERAGE_TESTS=${{ steps.coverageComment.outputs.tests }}
+        export COVERAGE_TIME=${{ steps.coverageComment.outputs.time }}
+        export COVERAGE_HTML=${{ steps.coverageComment.outputs.coverageHtml }}
+
 
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
 

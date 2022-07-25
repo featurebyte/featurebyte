@@ -42,7 +42,7 @@ jobs:
     - name: Setup cache keys (PR)
       if: ${{ github.event_name == 'pull_request' }}
       run: |
-        echo "TAG=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
+        echo "TAG=-${GITHUB_HEAD_REF}" >> $GITHUB_ENV
 
     - name: Setup cache
       uses: actions/cache@v3.0.4
@@ -64,12 +64,13 @@ jobs:
         mkdir -p ~/.config/pip && printf "%s\n" "[global]" "extra-index-url = https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME/simple/" > ~/.config/pip/pip.conf
         python -m pip install poetry==1.2.0rc99
         rm ~/.pypirc ~/.config/pip/pip.conf
+        poetry config virtualenvs.in-project true
 
     - name: Build documentation
       env:
         SPHINX_GITHUB_CHANGELOG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        poetry config virtualenvs.in-project true
+        make install-docs
         mkdir gh-pages
         touch gh-pages/.nojekyll
         make docs

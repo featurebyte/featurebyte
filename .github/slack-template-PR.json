@@ -64,8 +64,45 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "```${OUTPUT}```"
+				"text": "Coverage Report"
 			}
+		},
+		{
+			"type": "section",
+			"fields": [
+				{
+					"type": "mrkdwn",
+					"text": "*Coverage:*\n`${COVERAGE_PERCENTAGE}`"
+				},
+				{
+					"type": "mrkdwn",
+					"text": "*Warning:*\n`${COVERAGE_WARNING}`"
+				},
+				{
+					"type": "mrkdwn",
+					"text": "*Errors:*\n`${COVERAGE_ERRORS}`"
+				},
+				{
+					"type": "mrkdwn",
+					"text": "*Failures:*\n`${COVERAGE_FAILURES}`"
+				},
+        {
+          "type": "mrkdwn",
+          "text": "*Skipped:*\n`${COVERAGE_SKIPPED}"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*No. Tests:*\n`${COVERAGE_TESTS}"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Time:*\n`${COVERAGE_TIME}"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Link:*\n<${COVERAGE_HTML}>"
+        }
+			]
 		}
-	]
+  ]
 }
