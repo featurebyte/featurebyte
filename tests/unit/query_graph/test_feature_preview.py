@@ -14,7 +14,7 @@ def test_get_feature_preview_sql(query_graph_with_groupby):
     node = graph.get_node_by_name("groupby_1")
     preview_sql = get_feature_preview_sql(
         graph=graph,
-        node=node,
+        nodes=[node],
         point_in_time_and_serving_name=point_in_time_and_serving_name,
     )
 

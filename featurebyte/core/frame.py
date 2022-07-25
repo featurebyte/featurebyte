@@ -218,7 +218,7 @@ class Frame(BaseFrame, OpsMixin):
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
                 **self._getitem_frame_params,
             )
-        raise TypeError(f"Frame indexing with value '{item}' not supported!")
+        raise TypeError(f"Frame indexing with value '{item}' is not supported!")
 
     def __getattr__(self, item: str | list[str] | Series) -> Series | Frame:
         return self.__getitem__(item)

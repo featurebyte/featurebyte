@@ -6,7 +6,8 @@ from __future__ import annotations
 from typing import Any
 
 from featurebyte.api.event_view import EventView
-from featurebyte.api.feature import FeatureGroup
+from featurebyte.api.feature import Feature
+from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup
 from featurebyte.api.util import get_entity_by_id
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
@@ -53,6 +54,66 @@ class EventViewGroupBy(OpsMixin):
 
     def __str__(self) -> str:
         return repr(self)
+
+    def _prepare_node_parameters(
+        self,
+        value_column: str,
+        method: str,
+        windows: list[str],
+        feature_names: list[str],
+        timestamp_column: str | None = None,
+        value_by_column: str | None = None,
+        feature_job_setting: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        # pylint: disable=too-many-locals
+        if method not in AggFunc.all():
+            raise ValueError(f"Aggregation method not supported: {method}")
+
+        if value_column not in self.obj.columns:
+            raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
+
+        if len(windows) != len(feature_names):
+            raise ValueError(
+                "Window length must be the same as the number of output feature names."
+            )
+
+        if len(windows) != len(set(feature_names)) or len(set(windows)) != len(feature_names):
+            raise ValueError("Window sizes or feature names contains duplicated value(s).")
+
+        feature_job_setting = feature_job_setting or {}
+        frequency = feature_job_setting.get("frequency")
+        time_modulo_frequency = feature_job_setting.get("time_modulo_frequency")
+        blind_spot = feature_job_setting.get("blind_spot")
+        default_setting = self.obj.default_feature_job_setting
+        if default_setting:
+            frequency = frequency or default_setting.frequency
+            time_modulo_frequency = time_modulo_frequency or default_setting.time_modulo_frequency
+            blind_spot = blind_spot or default_setting.blind_spot
+
+        if frequency is None or time_modulo_frequency is None or blind_spot is None:
+            raise ValueError(
+                "frequency, time_module_frequency and blind_spot parameters should not be None!"
+            )
+
+        parsed_seconds = validate_job_setting_parameters(
+            frequency=frequency,
+            time_modulo_frequency=time_modulo_frequency,
+            blind_spot=blind_spot,
+        )
+        frequency_seconds, time_modulo_frequency_seconds, blind_spot_seconds = parsed_seconds
+        return {
+            "keys": self.keys,
+            "parent": value_column,
+            "agg_func": method,
+            "value_by": value_by_column,
+            "windows": windows,
+            "timestamp": timestamp_column or self.obj.timestamp_column,
+            "blind_spot": blind_spot_seconds,
+            "time_modulo_frequency": time_modulo_frequency_seconds,
+            "frequency": frequency_seconds,
+            "names": feature_names,
+            "serving_names": self.serving_names,
+        }
 
     def _prepare_node_and_column_metadata(
         self, node_params: dict[str, Any], tile_id: str | None
@@ -126,56 +187,17 @@ class EventViewGroupBy(OpsMixin):
         Returns
         -------
         FeatureGroup
-
-        Raises
-        ------
-        ValueError
-            If provided aggregation method is not supported
-        KeyError
-            If column to be aggregated does not exist
         """
         # pylint: disable=too-many-locals
-        if method not in AggFunc.all():
-            raise ValueError(f"Aggregation method not supported: {method}")
-
-        if value_column not in self.obj.columns:
-            raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
-
-        feature_job_setting = feature_job_setting or {}
-        frequency = feature_job_setting.get("frequency")
-        time_modulo_frequency = feature_job_setting.get("time_modulo_frequency")
-        blind_spot = feature_job_setting.get("blind_spot")
-        default_setting = self.obj.default_feature_job_setting
-        if default_setting:
-            frequency = frequency or default_setting.frequency
-            time_modulo_frequency = time_modulo_frequency or default_setting.time_modulo_frequency
-            blind_spot = blind_spot or default_setting.blind_spot
-
-        if frequency is None or time_modulo_frequency is None or blind_spot is None:
-            raise ValueError(
-                "frequency, time_module_frequency and blind_spot parameters should not be None!"
-            )
-
-        parsed_seconds = validate_job_setting_parameters(
-            frequency=frequency,
-            time_modulo_frequency=time_modulo_frequency,
-            blind_spot=blind_spot,
+        node_params = self._prepare_node_parameters(
+            value_column,
+            method,
+            windows,
+            feature_names,
+            timestamp_column,
+            value_by_column,
+            feature_job_setting,
         )
-        frequency_seconds, time_modulo_frequency_seconds, blind_spot_seconds = parsed_seconds
-
-        node_params = {
-            "keys": self.keys,
-            "parent": value_column,
-            "agg_func": method,
-            "value_by": value_by_column,
-            "windows": windows,
-            "timestamp": timestamp_column or self.obj.timestamp_column,
-            "blind_spot": blind_spot_seconds,
-            "time_modulo_frequency": time_modulo_frequency_seconds,
-            "frequency": frequency_seconds,
-            "names": feature_names,
-            "serving_names": self.serving_names,
-        }
         # To generate a consistent tile_id before & after pruning, insert a groupby node to
         # global query graph first, then used the inserted groupby node to prune the graph &
         # generate updated tile id. Finally, insert a new groupby node into the graph (actual
@@ -192,15 +214,31 @@ class EventViewGroupBy(OpsMixin):
             transformations_hash=pruned_graph.node_name_to_ref[input_nodes[0]],
             parameters=node_params,
         )
-        node, column_var_type_map, column_lineage_map = self._prepare_node_and_column_metadata(
-            node_params, tile_id
-        )
+        (
+            groupby_node,
+            column_var_type_map,
+            column_lineage_map,
+        ) = self._prepare_node_and_column_metadata(node_params, tile_id)
 
-        return FeatureGroup(
-            tabular_source=self.obj.tabular_source,
-            node=node,
-            column_var_type_map=column_var_type_map,
-            column_lineage_map=column_lineage_map,
-            row_index_lineage=(node.name,),
-            event_data_ids=[self.obj.event_data_id],
-        )
+        items: list[Feature | BaseFeatureGroup] = []
+        for feature_name in feature_names:
+            feature_node = self.obj.graph.add_operation(
+                node_type=NodeType.PROJECT,
+                node_params={"columns": [feature_name]},
+                node_output_type=NodeOutputType.SERIES,
+                input_nodes=[groupby_node],
+            )
+            items.append(
+                Feature(
+                    name=feature_name,
+                    tabular_source=self.obj.tabular_source,
+                    node=feature_node,
+                    var_type=column_var_type_map[feature_name],
+                    lineage=self._append_to_lineage(
+                        column_lineage_map[feature_name], feature_node.name
+                    ),
+                    row_index_lineage=(groupby_node.name,),
+                    event_data_ids=[self.obj.event_data_id],
+                )
+            )
+        return FeatureGroup(items)
