@@ -178,3 +178,24 @@ jobs:
           -H "Authorization: Bearer ${SLACK_OAUTH}" \
           -H 'Content-type: application/json; charset=utf-8' \
           --data-binary @- https://slack.com/api/chat.postMessage
+    - name: Slack Message failure
+      if: ${{ failure() }}
+      run: |
+        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+        # Get the last committed email address
+        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
+
+        if [ -z ${AUTHOR_EMAIL+x} ]; then
+          # Route message to Chester
+          export AUTHOR_ID=U03P1DE5R8V
+        else
+          # Lookup email address and export to AUTHOR_ID
+          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+        fi
+        echo "AUTHOR_ID=${AUTHOR_ID}"
+
+        cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
+          -H "Authorization: Bearer ${SLACK_OAUTH}" \
+          -H 'Content-type: application/json; charset=utf-8' \
+          --data-binary @- https://slack.com/api/chat.postMessage
