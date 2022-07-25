@@ -88,6 +88,10 @@ lint-safety:
 test:
 	@poetry run coverage run -m pytest -c pyproject.toml --timeout=120 --junitxml=pytest.xml tests featurebyte 2>/dev/null -q | tee pytest-coverage.txt
 	@poetry run coverage-badge -o assets/images/coverage.svg -f -q    # Write coverage badge
+
+	# Hack to support github-coverage action
+	echo "coverage: platform" >> pytest-coverage.txt
+
 	@poetry run coverage report -m | tee -a pytest-coverage.txt
 
 #* Docs Generation
