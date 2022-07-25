@@ -45,11 +45,23 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Set up cache
+    - name: Setup cache keys
+      run: |
+        echo "WEEK0=$(date +%U)" >> $GITHUB_ENV
+        echo "WEEK1=$(date +%U -d "7 day ago")" >> $GITHUB_ENV
+        echo "WEEK2=$(date +%U -d "14 day ago")" >> $GITHUB_ENV
+
+    - name: Setup cache keys (PR)
+      if: ${{ github.event_name == 'pull_request' }}
+      run: |
+        echo "TAG=${GITHUB_}"
+
+    - name: Setup cache
       uses: actions/cache@v3.0.4
       with:
         path: .venv
-        key: venv-${{ matrix.python-version }}-featurebyte
+        key: featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK0 }}${{ env.TAG }}
+        restore-keys: featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK1 }} featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK2 }}
 
     - name: Authenticate to Google Cloud
       id: 'auth'
@@ -100,7 +112,7 @@ jobs:
         message: ${{ steps.coverageComment.outputs.coverage }}
         color: ${{ steps.coverageComment.outputs.color }}
 
-    - name: 'Build and Publish with .dev[.N]'
+    - name: 'Build and Publish with .dev[.N] | Send Push Slack Message'
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       run: |
         export PACKAGE=$(poetry version --no-ansi | cut -d ' ' -f1)
@@ -116,29 +128,48 @@ jobs:
         sed -i -E "s|^version = \"[^\"]+\"|version = \"${PUBLISH_VERSION}\"|g" pyproject.toml
 
         poetry config repositories.featurebyte_np https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME
-        poetry publish --build -r featurebyte_np
+        poetry publish --build -r featurebyte_np | tee output.txt
+
+        export OUTPUT=$(cat output.txt)
+
+        # Sending Slack Message
+        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
+
+        # Lookup email address and export to AUTHOR_ID
+        export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+
+        # Set GITHUB_HEAD_REF this is onyl present when during a PR event
+        export GITHUB_HEAD_REF=${GITHUB_HEAD_REF:-MERGING}
+
+        cat .github/slack-template-PUSH.json | envsubst | curl -X POST \
+          -H "Authorization: Bearer ${SLACK_OAUTH}" \
+          -H 'Content-type: application/json; charset=utf-8' \
+          --data-binary @- https://slack.com/api/chat.postMessage
+
 
     - name: Slack Message PR
       if: ${{ github.event_name == 'pull_request' }}
       run: |
         # Pytest and Coverage ./pytest-coverage.txt
-        export OUTPUT_TEST=`cat ./pytest-coverage.txt`
+        export OUTPUT=$(cat ./pytest-coverage.txt)
+
+        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
 
         # Get the last committed email address
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' HEAD)
+        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
-        # Lookup email address and export to AUTHOR_ID
-        export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+        if [ -z ${AUTHOR_EMAIL+x} ]; then
+          # Route message to Chester
+          export AUTHOR_ID=U03P1DE5R8V
+        else
+          # Lookup email address and export to AUTHOR_ID
+          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+        fi
         echo "AUTHOR_ID=${AUTHOR_ID}"
 
-        # Route Message to Chester if unable to find email
-        export AUTHOR_ID="${AUTHOR_ID:-U03P1DE5R8V}"
-
-        export GITHUB_HEAD_REF=${GITHUB_HEAD_REF:-NOT A PR}
-        export GITHUB_BASE_REF=${GITHUB_BASE_REF:-NOT A PR}
-
-        cat .github/slack_template.json | envsubst | curl -X POST \
+        cat .github/slack-template-PR.json | envsubst | curl -X POST \
           -H "Authorization: Bearer ${SLACK_OAUTH}" \
           -H 'Content-type: application/json; charset=utf-8' \
           --data-binary @- https://slack.com/api/chat.postMessage

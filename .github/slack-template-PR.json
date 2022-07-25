@@ -64,7 +64,7 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "```${OUTPUT_TEST}```"
+				"text": "```${OUTPUT}```"
 			}
 		}
 	]
