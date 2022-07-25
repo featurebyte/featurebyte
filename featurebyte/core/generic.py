@@ -56,7 +56,7 @@ class QueryObject(FeatureByteBaseModel):
     graph: QueryGraph = Field(default_factory=GlobalQueryGraph)
     node: Node
     row_index_lineage: Tuple[StrictStr, ...]
-    tabular_source: Tuple[FeatureStoreModel, TableDetails]
+    tabular_source: Tuple[FeatureStoreModel, TableDetails] = Field(allow_mutation=False)
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"
