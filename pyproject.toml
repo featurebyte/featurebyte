@@ -100,7 +100,6 @@ snowflake-connector-python = "2.7.7"
 sqlglot = "^2.3.2"
 typer = {extras = ["all"], version = "^0.4.0"}
 
-
 [tool.poetry.group.dev.dependencies]
 coverage = {extras = ["toml"], version = "^6.4.2"}
 coverage-badge = "^1.1.0"
