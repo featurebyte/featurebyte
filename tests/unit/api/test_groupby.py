@@ -90,7 +90,7 @@ def test_groupby__category_column_not_found(snowflake_event_view):
     """
     Test case when category column not found in the EventView
     """
-    Entity.create(name="customer", serving_name="cust_id")
+    Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
     with pytest.raises(KeyError) as exc:
         EventViewGroupBy(obj=snowflake_event_view, keys="cust_id", category="non_existing_category")
@@ -133,7 +133,7 @@ def test_groupby__window_sizes_issue(snowflake_event_view):
     """
     Test groupby not able to infer feature job setting
     """
-    Entity.create(name="customer", serving_name="cust_id")
+    Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
     with pytest.raises(ValueError) as exc:
         snowflake_event_view.groupby("cust_id").aggregate(
@@ -207,7 +207,7 @@ def test_groupby__category(snowflake_event_view):
     """
     Test category parameter is captured properly
     """
-    Entity.create(name="customer", serving_name="cust_id")
+    Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
     feature_group = snowflake_event_view.groupby("cust_id", category="col_int").aggregate(
         value_column="col_float",

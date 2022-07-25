@@ -23,8 +23,8 @@ class FeatureJobSetting(FeatureByteBaseModel):
     frequency: str
     time_modulo_frequency: str
 
-    # pylint: disable=no-self-argument
     @root_validator(pre=True)
+    @classmethod
     def validate_setting_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate feature job setting parameters
 
@@ -47,7 +47,14 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
 
 class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
-    """Model for an entry in setting history"""
+    """
+    Model for an entry in setting history
+
+    created_at: datetime
+        Datetime when the history entry is created
+    setting: FeatureJobSetting
+        Feature job setting that just becomes history (no longer used) at the time of the history entry creation
+    """
 
     created_at: datetime
     setting: FeatureJobSetting
@@ -56,9 +63,9 @@ class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
 class EventDataStatus(str, Enum):
     """EventData status"""
 
-    PUBLISHED = "PUBLISHED"
-    DRAFT = "DRAFT"
     DEPRECATED = "DEPRECATED"
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
 
 
 class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):

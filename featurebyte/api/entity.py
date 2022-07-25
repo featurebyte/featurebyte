@@ -69,11 +69,15 @@ class Entity(EntityModel):
         data = EntityUpdate(name=name)
         client = Configurations().get_client()
         response = client.patch(f"/entity/{self.id}", json=data.json_dict())
-        if response.status_code != HTTPStatus.OK:
-            if response.status_code == HTTPStatus.CONFLICT:
-                raise DuplicatedRecordException(response=response)
-            raise RecordUpdateException(response=response)
-        super().__init__(**response.json())
+        if response.status_code == HTTPStatus.NOT_FOUND:
+            # entity not saved, update local object
+            self.name = name
+        else:
+            if response.status_code != HTTPStatus.OK:
+                if response.status_code == HTTPStatus.CONFLICT:
+                    raise DuplicatedRecordException(response=response)
+                raise RecordUpdateException(response=response)
+            super().__init__(**response.json())
 
     def save(self) -> None:
         """

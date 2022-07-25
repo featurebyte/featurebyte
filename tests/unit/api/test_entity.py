@@ -6,11 +6,13 @@ from unittest import mock
 
 import pytest
 from freezegun import freeze_time
+from pydantic import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
+    RecordRetrievalException,
     RecordUpdateException,
 )
 from featurebyte.models.entity import EntityNameHistoryEntry
@@ -31,20 +33,35 @@ def test_entity_creation__input_validation():
     Test entity creation input validation
     """
     entity = Entity(name="hello", serving_names=["world"])
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValidationError) as exc:
         entity.name = 1234
-        entity.save()
-    assert exc.value.errors() == [
-        {"loc": ("name",), "msg": "str type expected", "type": "type_error.str"}
-    ]
+    assert "str type expected (type=type_error.str)" in str(exc.value)
 
     entity = Entity(name="hello", serving_names=["world"])
-    with pytest.raises(ValueError) as exc:
-        entity.serving_names = [1234]
-        entity.save()
-    assert exc.value.errors() == [
-        {"loc": ("serving_name",), "msg": "str type expected", "type": "type_error.str"}
-    ]
+    with pytest.raises(TypeError) as exc:
+        entity.serving_names = ["1234"]
+    assert '"serving_names" has allow_mutation set to False and cannot be assigned' in str(
+        exc.value
+    )
+
+
+def test_entity__update_name(entity):
+    """
+    Test update_name in Entity class
+    """
+    # test update name (saved object)
+    assert entity.name == "customer"
+    entity.update_name("Customer")
+    assert entity.name == "Customer"
+
+    # test update name (non-saved object)
+    another_entity = Entity(name="AnotherCustomer", serving_names=["cust"])
+    with pytest.raises(RecordRetrievalException) as exc:
+        Entity.get("AnotherCustomer")
+    assert 'Entity name "AnotherCustomer" not found!' in str(exc.value)
+    assert another_entity.name == "AnotherCustomer"
+    another_entity.update_name("another_customer")
+    assert another_entity.name == "another_customer"
 
 
 def test_entity_creation(entity):

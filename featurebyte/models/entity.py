@@ -1,6 +1,7 @@
 """
 This module contains Entity related models
 """
+# pylint: disable=too-few-public-methods
 from __future__ import annotations
 
 from typing import List
@@ -15,6 +16,11 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBas
 class EntityNameHistoryEntry(FeatureByteBaseModel):
     """
     Model for an entry in name history
+
+    created_at: datetime
+        Datetime when the history entry is created
+    name: StrictStr
+        Entity name that just becomes history (no longer used) at the time of the history entry creation
     """
 
     created_at: datetime
