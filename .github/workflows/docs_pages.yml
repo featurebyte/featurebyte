@@ -60,7 +60,7 @@ jobs:
         poetry config virtualenvs.in-project true
         mkdir gh-pages
         touch gh-pages/.nojekyll
-        make build-docs
+        make docs
         cp -r docs/build/* gh-pages/
 
     - name: Deploy documentation
