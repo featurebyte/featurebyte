@@ -109,12 +109,14 @@ class QueryObject(FeatureByteBaseModel):
     def preview(self, limit: int = 10, credentials: Credentials | None = None) -> pd.DataFrame:
         """
         Preview transformed table/column partial output
+
         Parameters
         ----------
         limit: int
             maximum number of return rows
         credentials: Credentials | None
             credentials to create a database session
+
         Returns
         -------
         pd.DataFrame

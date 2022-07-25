@@ -52,28 +52,25 @@ class BaseFeatureGroup(BaseModel):
         feature_objects = collections.OrderedDict()
         feature_ids = set()
         items = values.get("items", [])
-        if isinstance(items, list):
-            for item in items:
-                if isinstance(item, Feature):
-                    if item.name is None:
+        for item in items:
+            if isinstance(item, Feature):
+                if item.name is None:
+                    raise ValueError(f'Feature (feature.id: "{item.id}") name must not be None!')
+                if item.name in feature_objects:
+                    raise ValueError(f'Duplicated feature name (feature.name: "{item.name}")!')
+                if item.id in feature_ids:
+                    raise ValueError(f'Duplicated feature id (feature.id: "{item.id}")!')
+                feature_objects[item.name] = item
+                feature_ids.add(item.id)
+            else:
+                for name, feature in item.feature_objects.items():
+                    if feature.name in feature_objects:
                         raise ValueError(
-                            f'Feature (feature.id: "{item.id}") name must not be None!'
+                            f'Duplicated feature name (feature.name: "{feature.name}")!'
                         )
-                    if item.name in feature_objects:
-                        raise ValueError(f'Duplicated feature name (feature.name: "{item.name}")!')
-                    if item.id in feature_ids:
-                        raise ValueError(f'Duplicated feature id (feature.id: "{item.id}")!')
-                    feature_objects[item.name] = item
-                    feature_ids.add(item.id)
-                else:
-                    for name, feature in item.feature_objects.items():
-                        if feature.name in feature_objects:
-                            raise ValueError(
-                                f'Duplicated feature name (feature.name: "{feature.name}")!'
-                            )
-                        if feature.id in feature_ids:
-                            raise ValueError(f'Duplicated feature id (feature.id: "{feature.id}")!')
-                        feature_objects[name] = feature
+                    if feature.id in feature_ids:
+                        raise ValueError(f'Duplicated feature id (feature.id: "{feature.id}")!')
+                    feature_objects[name] = feature
         values["feature_objects"] = feature_objects
         return values
 
