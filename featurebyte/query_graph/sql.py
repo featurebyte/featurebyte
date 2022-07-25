@@ -276,9 +276,9 @@ class SelectedEntityBuildTileInputNode(GenericInputNode):
     @property
     def sql(self) -> Expression:
 
-        entity_table = InternalName.ENTITY_TABLE_SQL_PLACEHOLDER
-        start_date = InternalName.ENTITY_TABLE_START_DATE
-        end_date = InternalName.ENTITY_TABLE_END_DATE
+        entity_table = InternalName.ENTITY_TABLE_NAME.value
+        start_date = InternalName.ENTITY_TABLE_START_DATE.value
+        end_date = InternalName.ENTITY_TABLE_END_DATE.value
 
         join_conditions = []
         for col in self.entity_columns:
@@ -290,8 +290,10 @@ class SelectedEntityBuildTileInputNode(GenericInputNode):
 
         table_sql = super().sql
         result = (
-            select("R.*", InternalName.ENTITY_TABLE_START_DATE.value)
-            .from_(InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.value)
+            select()
+            .with_(entity_table, as_=InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.value)
+            .select("R.*", start_date)
+            .from_(entity_table)
             .join(
                 table_sql,
                 join_alias="R",

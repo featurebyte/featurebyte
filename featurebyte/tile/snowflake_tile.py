@@ -109,10 +109,10 @@ class TileManagerSnowflake(BaseModel):
         sql = tm_tile_entity_tracking.render(
             tile_id=tile_spec.tile_id,
             entity_column_names=",".join(tile_spec.entity_column_names),
-            entity_table=temp_entity_table,
+            entity_table=temp_entity_table.replace("'", "''"),
             tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
         )
-        logger.info(f"generated sql: {sql}")
+        logger.debug(f"generated sql: {sql}")
         self._session.execute_query(sql)
 
         return sql
@@ -153,14 +153,14 @@ class TileManagerSnowflake(BaseModel):
             tile_sql = tile_spec.tile_sql
 
         tile_sql = tile_sql.replace("'", "''")
-        logger.info(f"tile_sql: {tile_sql}")
+        logger.debug(f"tile_sql: {tile_sql}")
 
         if last_tile_start_ts_str:
             last_tile_start_ts_str = f"'{last_tile_start_ts_str}'"
         else:
             last_tile_start_ts_str = "null"
 
-        logger.info(f"last_tile_start_ts_str: {last_tile_start_ts_str}")
+        logger.debug(f"last_tile_start_ts_str: {last_tile_start_ts_str}")
 
         sql = tm_generate_tile.render(
             tile_sql=tile_sql,
@@ -175,7 +175,7 @@ class TileManagerSnowflake(BaseModel):
             tile_type=tile_type,
             last_tile_start_ts_str=last_tile_start_ts_str,
         )
-        logger.info(f"generated sql: {sql}")
+        logger.debug(f"generated sql: {sql}")
         self._session.execute_query(sql)
 
         return sql
@@ -289,7 +289,7 @@ class TileManagerSnowflake(BaseModel):
             monitor_periods=monitor_periods,
         )
 
-        logger.info(f"generated sql: {sql}")
+        logger.debug(f"generated sql: {sql}")
         self._session.execute_query(sql)
 
         self._session.execute_query(f"ALTER TASK IF EXISTS {temp_task_name} RESUME")
