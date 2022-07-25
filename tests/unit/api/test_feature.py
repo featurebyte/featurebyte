@@ -170,7 +170,7 @@ def test_feature_to_json(float_feature):
     assert "is_default" not in output_exclude_none
 
     # check encoder
-    float_feature.created_at = datetime.now()
+    float_feature.__dict__["created_at"] = datetime.now()
     output_encoder = float_feature.json(encoder=lambda v: "__default__")
     assert '"created_at": "__default__"' in output_encoder
 

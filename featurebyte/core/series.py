@@ -20,7 +20,7 @@ class Series(QueryObject, OpsMixin):
     """
 
     name: Optional[StrictStr] = Field(default=None)
-    var_type: DBVarType
+    var_type: DBVarType = Field(allow_mutation=False)
     lineage: Tuple[StrictStr, ...]
 
     def __repr__(self) -> str:

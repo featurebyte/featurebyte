@@ -4,12 +4,14 @@ FeatureByte specific BaseModel
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 import json
+from datetime import datetime
 
+from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, StrictStr
 from pydantic.errors import DictError, PydanticTypeError
 
 Model = TypeVar("Model", bound="FeatureByteBaseModel")
@@ -62,3 +64,20 @@ class FeatureByteBaseModel(BaseModel):
 
         # With this mapping, `ObjectId` type attribute is converted to string during json serialization.
         json_encoders = {ObjectId: str}
+
+
+class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
+    """
+    FeatureByte specific BaseDocumentModel
+
+    id: PydanticObjectId
+        Identity value of the child class document model object
+    name: Optional[StrictStr]
+        Name of the child class document model object (value is None when name has not been set)
+    created_at: Optional[datetime]
+        Record creation datetime when the document get stored at the persistent
+    """
+
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
+    name: Optional[StrictStr]
+    created_at: Optional[datetime] = Field(default=None, allow_mutation=False)

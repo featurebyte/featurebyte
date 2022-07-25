@@ -237,16 +237,16 @@ def snowflake_feature(feature_model_dict, snowflake_session):
     Fixture for a ExtendedFeatureModel object
     """
     feature = ExtendedFeatureModel(**feature_model_dict)
-    feature.version = "v1"
-    feature.readiness = FeatureReadiness.DRAFT.value
-    feature.is_default = True
     feature.description = "test_description_1"
-    feature.online_enabled = False
-    tile_id = feature.tile_specs[0].tile_id
-    feature.event_data_ids = [
+    feature.__dict__["version"] = "v1"
+    feature.__dict__["readiness"] = FeatureReadiness.DRAFT.value
+    feature.__dict__["is_default"] = True
+    feature.__dict__["online_enabled"] = False
+    feature.__dict__["event_data_ids"] = [
         PydanticObjectId("626bccb9697a12204fb22ea3"),
         PydanticObjectId("726bccb9697a12204fb22ea3"),
     ]
+    tile_id = feature.tile_specs[0].tile_id
 
     yield feature
 
@@ -322,9 +322,9 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config):
     """
     mock_feature = FeatureModel(**feature_model_dict)
     mock_feature.__dict__["tabular_source"] = (config.feature_stores["snowflake_featurestore"],)
-    mock_feature.version = "v1"
-    mock_feature.readiness = FeatureReadiness.DRAFT.value
-    mock_feature.is_default = True
+    mock_feature.__dict__["version"] = "v1"
+    mock_feature.__dict__["readiness"] = FeatureReadiness.DRAFT.value
+    mock_feature.__dict__["is_default"] = True
 
     feature_list = FeatureListModel(
         name="feature_list1",

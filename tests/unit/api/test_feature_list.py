@@ -15,8 +15,8 @@ def production_ready_feature_fixture(feature_group):
     """Fixture for a production ready feature"""
     feature = feature_group["sum_30m"] + 123
     feature.name = "production_ready_feature"
-    feature.readiness = FeatureReadiness.PRODUCTION_READY
-    feature.version = "V220401"
+    feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY
+    feature.__dict__["version"] = "V220401"
     feature_group["production_ready_feature"] = feature
     return feature
 
@@ -26,8 +26,8 @@ def draft_feature_fixture(feature_group):
     """Fixture for a draft feature"""
     feature = feature_group["production_ready_feature"] + 123
     feature.name = "draft_feature"
-    feature.readiness = FeatureReadiness.DRAFT
-    feature.version = "V220402"
+    feature.__dict__["readiness"] = FeatureReadiness.DRAFT
+    feature.__dict__["version"] = "V220402"
     feature_group["draft_feature"] = feature
     return feature
 
@@ -37,8 +37,8 @@ def quarantine_feature_fixture(feature_group):
     """Fixture for a quarantined feature"""
     feature = feature_group["draft_feature"] + 123
     feature.name = "quarantine_feature"
-    feature.readiness = FeatureReadiness.QUARANTINE
-    feature.version = "V220403"
+    feature.__dict__["readiness"] = FeatureReadiness.QUARANTINE
+    feature.__dict__["version"] = "V220403"
     feature_group["quarantine_feature"] = feature
     return feature
 
@@ -48,8 +48,8 @@ def deprecated_feature_fixture(feature_group):
     """Fixture for a deprecated feature"""
     feature = feature_group["quarantine_feature"] + 123
     feature.name = "deprecated_feature"
-    feature.readiness = FeatureReadiness.DEPRECATED
-    feature.version = "V220404"
+    feature.__dict__["readiness"] = FeatureReadiness.DEPRECATED
+    feature.__dict__["version"] = "V220404"
     feature_group["deprecated_feature"] = feature
     return feature
 
@@ -216,7 +216,8 @@ def test_base_feature_group__feature_uniqueness_validation(production_ready_feat
     expected_msg = 'Duplicated feature name (feature.name: "production_ready_feature")!'
     assert expected_msg in str(exc.value)
 
-    draft_feature.id = production_ready_feature.id
+    # note: user should not modify the id this way for normal use case
+    draft_feature.__dict__["id"] = production_ready_feature.id
     with pytest.raises(ValueError) as exc:
         BaseFeatureGroup([production_ready_feature, draft_feature])
     expected_msg = f'Duplicated feature id (feature.id: "{production_ready_feature.id}")!'

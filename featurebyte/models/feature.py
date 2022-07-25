@@ -6,16 +6,14 @@ from __future__ import annotations
 
 from typing import List, Optional, Tuple
 
-from datetime import datetime
 from enum import Enum
 
 from beanie import PydanticObjectId
-from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import DBVarType, OrderedStrEnum
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import Node, QueryGraph
 
@@ -48,7 +46,7 @@ class DefaultVersionMode(str, Enum):
     MANUAL = "MANUAL"
 
 
-class FeatureNameSpaceModel(FeatureByteBaseModel):
+class FeatureNameSpaceModel(FeatureByteBaseDocumentModel):
     """
     Feature set with the same feature name
 
@@ -72,18 +70,15 @@ class FeatureNameSpaceModel(FeatureByteBaseModel):
         Default feature version mode
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
     description: Optional[StrictStr]
     version_ids: List[PydanticObjectId]
     versions: List[FeatureVersionIdentifier]
     readiness: FeatureReadiness
-    created_at: datetime
     default_version_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
 
 
-class FeatureModel(FeatureByteBaseModel):
+class FeatureModel(FeatureByteBaseDocumentModel):
     """
     Model for Feature entity
 
@@ -113,7 +108,7 @@ class FeatureModel(FeatureByteBaseModel):
         Whether to this feature version default for the feature namespace
     online_enabled: Optional[bool]
         Whether to make this feature version online enabled
-    event_data_ids: List[PydnaticObjectId]
+    event_data_ids: List[PydanticObjectId]
         EventData IDs used for the feature version
     created_at: Optional[datetime]
         Datetime when the Feature was first saved or published
@@ -121,25 +116,22 @@ class FeatureModel(FeatureByteBaseModel):
         Parent feature id of the object
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    name: Optional[StrictStr]
     description: Optional[StrictStr]
-    var_type: DBVarType
-    lineage: Tuple[StrictStr, ...]
-    row_index_lineage: Tuple[StrictStr, ...]
-    graph: QueryGraph
-    node: Node
-    tabular_source: Tuple[FeatureStoreModel, TableDetails]
-    readiness: Optional[FeatureReadiness]
-    version: FeatureVersionIdentifier = Field(default_factory=get_version)
-    is_default: Optional[bool]
-    online_enabled: Optional[bool]
-    event_data_ids: List[PydanticObjectId] = Field(default_factory=list)
-    created_at: Optional[datetime] = Field(default=None)
-    parent_id: Optional[PydanticObjectId]
+    var_type: DBVarType = Field(allow_mutation=False)
+    lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
+    row_index_lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
+    graph: QueryGraph = Field(allow_mutation=False)
+    node: Node = Field(allow_mutation=False)
+    tabular_source: Tuple[FeatureStoreModel, TableDetails] = Field(allow_mutation=False)
+    readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
+    version: FeatureVersionIdentifier = Field(default_factory=get_version, allow_mutation=False)
+    is_default: Optional[bool] = Field(allow_mutation=False)
+    online_enabled: Optional[bool] = Field(allow_mutation=False)
+    event_data_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
+    parent_id: Optional[PydanticObjectId] = Field(allow_mutation=False)
 
 
-class FeatureListModel(FeatureByteBaseModel):
+class FeatureListModel(FeatureByteBaseDocumentModel):
     """
     Model for feature list entity
 
@@ -161,13 +153,10 @@ class FeatureListModel(FeatureByteBaseModel):
         Datetime when the FeatureList was first saved or published
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
     description: Optional[StrictStr]
     features: List[Tuple[StrictStr, Optional[FeatureVersionIdentifier]]] = Field(
         default_factory=list
     )
-    readiness: Optional[FeatureReadiness]
-    status: Optional[FeatureListStatus]
-    version: Optional[FeatureListVersionIdentifier]
-    created_at: Optional[datetime]
+    readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
+    status: Optional[FeatureListStatus] = Field(allow_mutation=False)
+    version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)

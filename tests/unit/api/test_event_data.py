@@ -193,7 +193,7 @@ def test_event_data_column__as_entity(snowflake_event_data):
     col_int = snowflake_event_data.col_int
     assert isinstance(col_int, EventDataColumn)
     snowflake_event_data.col_int.as_entity("customer")
-    assert snowflake_event_data.column_entity_map == {"col_int": str(entity.id)}
+    assert snowflake_event_data.column_entity_map == {"col_int": entity.id}
 
     with pytest.raises(TypeError) as exc:
         snowflake_event_data.col_int.as_entity(1234)
@@ -218,7 +218,7 @@ def test_event_data_column__as_entity__saved_event_data(saved_event_data, config
     entity = Entity.create(name="customer", serving_name="cust_id")
 
     saved_event_data.col_int.as_entity("customer")
-    assert saved_event_data.column_entity_map == {"col_int": str(entity.id)}
+    assert saved_event_data.column_entity_map == {"col_int": entity.id}
 
     # check that the column entity map is saved to persistent
     client = config.get_client()

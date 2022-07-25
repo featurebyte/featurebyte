@@ -9,6 +9,7 @@ import time
 from http import HTTPStatus
 
 import pandas as pd
+from pydantic import Field
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations, Credentials
@@ -30,7 +31,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
     # Although tabular_source is already defined in FeatureModel, here it is redefined so that
     # pydantic knows to deserialize the first element as a FeatureStore instead of a
     # FeatureStoreModel
-    tabular_source: Tuple[FeatureStore, TableDetails]
+    tabular_source: Tuple[FeatureStore, TableDetails] = Field(allow_mutation=False)
 
     @property
     def protected_attributes(self) -> list[str]:

@@ -25,7 +25,7 @@ class EventViewColumn(Series):
     """
 
     _parent: Optional[EventView] = PrivateAttr(default=None)
-    event_data_id: PydanticObjectId
+    event_data_id: PydanticObjectId = Field(allow_mutation=False)
 
     @property
     def parent(self) -> Optional[EventView]:
@@ -147,10 +147,10 @@ class EventView(ProtectedColumnsQueryObject, Frame):
 
     _series_class = EventViewColumn
 
-    column_entity_map: Optional[Dict[StrictStr, StrictStr]] = Field(default=None)
+    column_entity_map: Optional[Dict[StrictStr, PydanticObjectId]] = Field(default=None)
     column_description_map: Dict[StrictStr, StrictStr] = Field(default_factory=dict)
-    default_feature_job_setting: Optional[FeatureJobSetting]
-    event_data_id: PydanticObjectId
+    default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
+    event_data_id: PydanticObjectId = Field(allow_mutation=False)
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name}, timestamp_column={self.timestamp_column})"
