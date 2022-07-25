@@ -13,7 +13,8 @@ import yaml
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
-from featurebyte.api.feature import Feature, FeatureGroup
+from featurebyte.api.feature import Feature
+from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.config import Configurations
@@ -356,6 +357,8 @@ def feature_group_fixture(grouped_event_view):
     """
     FeatureList fixture
     """
+    global_graph = GlobalQueryGraph()
+    assert id(global_graph.nodes) == id(grouped_event_view.obj.graph.nodes)
     feature_group = grouped_event_view.aggregate(
         value_column="col_float",
         method="sum",
@@ -367,38 +370,10 @@ def feature_group_fixture(grouped_event_view):
         },
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
     )
-    expected_inception_node = Node(
-        name="groupby_2",
-        type=NodeType.GROUPBY,
-        parameters={
-            "keys": ["cust_id"],
-            "parent": "col_float",
-            "agg_func": "sum",
-            "value_by": None,
-            "windows": ["30m", "2h", "1d"],
-            "timestamp": "event_timestamp",
-            "blind_spot": 600,
-            "time_modulo_frequency": 300,
-            "frequency": 1800,
-            "names": ["sum_30m", "sum_2h", "sum_1d"],
-            "tile_id": "sum_f1800_m300_b600_3cb3b2b28a359956be02abe635c4446cb50710d7",
-            "serving_names": ["cust_id"],
-        },
-        output_type=NodeOutputType.FRAME,
-    )
     assert isinstance(feature_group, FeatureGroup)
-    assert feature_group.protected_columns == {"cust_id"}
-    assert feature_group.inherited_columns == {"cust_id"}
-    assert feature_group.inception_node == expected_inception_node
-    assert feature_group.entity_identifiers == ["cust_id"]
-    assert feature_group.columns == ["cust_id", "sum_30m", "sum_2h", "sum_1d"]
-    assert feature_group.column_lineage_map == {
-        "cust_id": ("groupby_2",),
-        "sum_30m": ("groupby_2",),
-        "sum_2h": ("groupby_2",),
-        "sum_1d": ("groupby_2",),
-    }
-    assert grouped_event_view.obj.event_data_id in feature_group.event_data_ids
+    for feature in feature_group.feature_objects.values():
+        assert grouped_event_view.obj.event_data_id in feature.event_data_ids
+        assert id(feature.graph.nodes) == id(global_graph.nodes)
     yield feature_group
 
 
@@ -411,8 +386,9 @@ def float_feature_fixture(feature_group):
     assert isinstance(feature, Feature)
     assert feature.protected_columns == {"cust_id"}
     assert feature.inherited_columns == {"cust_id"}
-    assert feature.inception_node == feature_group.inception_node
-    assert feature_group.event_data_ids == feature.event_data_ids
+    assert feature_group["sum_1d"].event_data_ids == feature.event_data_ids
+    global_graph = GlobalQueryGraph()
+    assert id(feature.graph.nodes) == id(global_graph.nodes)
     yield feature
 
 
@@ -425,7 +401,6 @@ def bool_feature_fixture(float_feature):
     assert isinstance(bool_feature, Feature)
     assert bool_feature.protected_columns == float_feature.protected_columns
     assert bool_feature.inherited_columns == float_feature.inherited_columns
-    assert bool_feature.inception_node == float_feature.inception_node
     assert bool_feature.event_data_ids == float_feature.event_data_ids
     yield bool_feature
 

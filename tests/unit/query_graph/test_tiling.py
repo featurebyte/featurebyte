@@ -74,6 +74,14 @@ def aggregate_kwargs_fixture():
     return aggregate_kwargs
 
 
+def get_parent_nodes(query_graph, node):
+    """
+    Retrieve parent nodes from the graph
+    """
+    parent_node_names = query_graph.backward_edges[node.name]
+    return [query_graph.get_node_by_name(name) for name in parent_node_names]
+
+
 def run_groupby_and_get_tile_table_identifier(
     event_view, aggregate_kwargs, groupby_kwargs=None, create_entity=True
 ):
@@ -94,9 +102,10 @@ def run_groupby_and_get_tile_table_identifier(
         event_view[by_key].as_entity(by_key)
     feature_names = set(aggregate_kwargs["feature_names"])
     features = event_view.groupby(**groupby_kwargs).aggregate(**aggregate_kwargs)
-    tile_id = features.node.parameters["tile_id"]
-    pruned_graph, node_name_map = GlobalQueryGraph().prune(features.node, feature_names)
-    mapped_node = pruned_graph.get_node_by_name(node_name_map[features.node.name])
+    groupby_node = get_parent_nodes(event_view.graph, features[list(feature_names)[0]].node)[0]
+    tile_id = groupby_node.parameters["tile_id"]
+    pruned_graph, node_name_map = GlobalQueryGraph().prune(groupby_node, feature_names)
+    mapped_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
     tile_id_pruned = mapped_node.parameters["tile_id"]
     assert tile_id == tile_id_pruned
     return tile_id
@@ -107,7 +116,10 @@ def run_groupby_and_get_tile_table_identifier(
     [
         ({}, "sum_f1800_m300_b600_3cb3b2b28a359956be02abe635c4446cb50710d7"),
         # Features with different windows can share the same tile table
-        ({"windows": ["2d"]}, "sum_f1800_m300_b600_3cb3b2b28a359956be02abe635c4446cb50710d7"),
+        (
+            {"windows": ["2d"], "feature_names": ["sum_2d"]},
+            "sum_f1800_m300_b600_3cb3b2b28a359956be02abe635c4446cb50710d7",
+        ),
         ({"method": "max"}, "max_f1800_m300_b600_02bc9f67f0c666e84b6a09f6e8084534dc982a80"),
         (
             {"value_column": "col_text"},

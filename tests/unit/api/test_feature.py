@@ -6,11 +6,12 @@ from unittest.mock import patch
 
 import pytest
 
-from featurebyte.api.feature import Feature, FeatureGroup
+from featurebyte.api.feature import Feature
+from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.exception import DuplicatedRecordException, RecordCreationException
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import Node
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 
 
 @pytest.fixture(name="float_feature_dict")
@@ -24,12 +25,14 @@ def float_feature_dict_fixture(float_feature):
         "input_2",
         "project_1",
         "project_2",
+        "project_3",
+        "project_4",
         "groupby_1",
         "groupby_2",
     }
     assert float_feature.graph.edges == {
         "input_2": ["project_1", "groupby_1", "groupby_2"],
-        "groupby_2": ["project_2"],
+        "groupby_2": ["project_2", "project_3", "project_4"],
     }
 
     feat_dict = float_feature.dict()
@@ -45,30 +48,10 @@ def test_feature_group__getitem__list_of_str(feature_group):
     """
     feature_group_subset = feature_group[["sum_2h", "sum_1d"]]
     assert isinstance(feature_group_subset, FeatureGroup)
-    assert feature_group_subset.protected_columns == {"cust_id"}
-    assert feature_group_subset.inherited_columns == {"cust_id"}
-    assert feature_group_subset.entity_identifiers == ["cust_id"]
-    assert feature_group_subset.inception_node == feature_group.inception_node
-
-
-def test_feature_group__getitem__series_key(feature_group, bool_feature):
-    """
-    Test filtering on feature group object
-    """
-    feature_group_subset = feature_group[bool_feature]
-    assert isinstance(feature_group_subset, FeatureGroup)
-    assert feature_group_subset.inception_node == feature_group.inception_node
-
-
-def test_feature_group__override_protected_column(feature_group):
-    """
-    Test attempting to change feature group's protected column value
-    """
-    assert "cust_id" in feature_group.protected_columns
-    with pytest.raises(ValueError) as exc:
-        feature_group["cust_id"] = feature_group["cust_id"] * 2
-    expected_msg = "Entity identifier column 'cust_id' cannot be modified!"
-    assert expected_msg in str(exc.value)
+    assert [feat.name for feat in feature_group_subset.feature_objects.values()] == [
+        "sum_2h",
+        "sum_1d",
+    ]
 
 
 def test_feature__binary_ops_return_feature_type(float_feature):
@@ -77,22 +60,6 @@ def test_feature__binary_ops_return_feature_type(float_feature):
     """
     output = float_feature + float_feature
     assert isinstance(output, Feature)
-    assert output.inception_node == float_feature.inception_node
-    assert output.protected_columns == float_feature.protected_columns
-
-
-def test_feature__getitem__series_key(float_feature, bool_feature):
-    """
-    Test Feature filtering
-    """
-    output = float_feature[bool_feature]
-    assert isinstance(output, Feature)
-    assert output.inception_node == float_feature.inception_node
-    assert output.protected_columns == float_feature.protected_columns
-
-    with pytest.raises(TypeError) as exc:
-        _ = bool_feature[float_feature]
-    assert "Only boolean Series filtering is supported!" in str(exc.value)
 
 
 def test_feature__bool_series_key_scalar_value(float_feature, bool_feature):
@@ -146,7 +113,8 @@ def test_feature_deserialization(float_feature, float_feature_dict, snowflake_ev
     """
     Test feature deserialization
     """
-    global_graph_dict = float_feature.graph.dict()
+    global_graph = GlobalQueryGraph()
+    global_graph_dict = global_graph.dict()
     float_feature_dict["_id"] = float_feature_dict.pop("id")
     deserialized_float_feature = Feature.parse_obj(float_feature_dict)
     assert deserialized_float_feature.id == float_feature.id
@@ -157,6 +125,8 @@ def test_feature_deserialization(float_feature, float_feature_dict, snowflake_ev
     assert deserialized_float_feature.graph.dict() == global_graph_dict
     assert deserialized_float_feature.row_index_lineage == float_feature.row_index_lineage
     assert deserialized_float_feature.tabular_source == float_feature.tabular_source
+    assert deserialized_float_feature.graph == global_graph
+    assert id(deserialized_float_feature.graph.nodes) == id(global_graph.nodes)
     tile_id1 = float_feature.graph.nodes["groupby_1"]["parameters"]["tile_id"]
 
     # construct another identical float feature with an additional unused column,

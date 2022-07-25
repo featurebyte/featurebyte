@@ -56,7 +56,7 @@ def construct_preview_request_table_sql(
 
 def get_feature_preview_sql(
     graph: QueryGraph,
-    node: Node,
+    nodes: list[Node],
     point_in_time_and_serving_name: dict[str, Any],
 ) -> str:
     """Get SQL code for previewing SQL
@@ -65,8 +65,8 @@ def get_feature_preview_sql(
     ----------
     graph : QueryGraph
         Query graph
-    node : Node
-        Query graph node
+    nodes : list[Node]
+        List of query graph node
     point_in_time_and_serving_name : dict
         Dictionary consisting the point in time and entity ids based on which the feature
         preview will be computed
@@ -81,12 +81,14 @@ def get_feature_preview_sql(
     cte_statements = []
 
     planner = FeatureExecutionPlanner(graph)
-    execution_plan = planner.generate_plan([node])
+    execution_plan = planner.generate_plan(nodes)
 
     # build required tiles
     tic = time.time()
-    on_demand_tile_ctes = construct_on_demand_tile_ctes(graph, node, point_in_time)
-    cte_statements.extend(on_demand_tile_ctes)
+    for node in nodes:
+        on_demand_tile_ctes = construct_on_demand_tile_ctes(graph, node, point_in_time)
+        cte_statements.extend(on_demand_tile_ctes)
+    cte_statements = list(set(cte_statements))
     elapsed = time.time() - tic
     logger.debug(f"Constructing required tiles SQL took {elapsed:.2}s")
 

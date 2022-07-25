@@ -164,7 +164,9 @@ class FeatureListModel(FeatureByteBaseModel):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     description: Optional[StrictStr]
-    features: List[Tuple[StrictStr, Optional[FeatureVersionIdentifier]]]
+    features: List[Tuple[StrictStr, Optional[FeatureVersionIdentifier]]] = Field(
+        default_factory=list
+    )
     readiness: Optional[FeatureReadiness]
     status: Optional[FeatureListStatus]
     version: Optional[FeatureListVersionIdentifier]
