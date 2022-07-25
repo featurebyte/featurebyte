@@ -95,7 +95,7 @@ def test_retrieve_feature_list_registry_multiple(snowflake_feature_list, feature
     """
     feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
 
-    snowflake_feature_list.version = "v2"
+    snowflake_feature_list.__dict__["version"] = "v2"
     snowflake_feature_list.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
 

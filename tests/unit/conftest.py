@@ -527,7 +527,7 @@ def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_ev
         },
     )
     feature = feature_group["sum_30m"]
-    feature.online_enabled = False
+    feature.__dict__["online_enabled"] = False
     return feature
 
 

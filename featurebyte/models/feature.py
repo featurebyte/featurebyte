@@ -117,16 +117,16 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     """
 
     description: Optional[StrictStr]
-    var_type: DBVarType
-    lineage: Tuple[StrictStr, ...]
-    row_index_lineage: Tuple[StrictStr, ...]
-    graph: QueryGraph
-    node: Node
+    var_type: DBVarType = Field(allow_mutation=False)
+    lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
+    row_index_lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
+    graph: QueryGraph = Field(allow_mutation=False)
+    node: Node = Field(allow_mutation=False)
     tabular_source: Tuple[FeatureStoreModel, TableDetails] = Field(allow_mutation=False)
     readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
-    version: FeatureVersionIdentifier = Field(default_factory=get_version)
-    is_default: Optional[bool]
-    online_enabled: Optional[bool]
+    version: FeatureVersionIdentifier = Field(default_factory=get_version, allow_mutation=False)
+    is_default: Optional[bool] = Field(allow_mutation=False)
+    online_enabled: Optional[bool] = Field(allow_mutation=False)
     event_data_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
     parent_id: Optional[PydanticObjectId] = Field(allow_mutation=False)
 
@@ -159,4 +159,4 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     )
     readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
     status: Optional[FeatureListStatus] = Field(allow_mutation=False)
-    version: Optional[FeatureListVersionIdentifier]
+    version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)

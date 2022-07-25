@@ -171,10 +171,10 @@ def test_update_feature_list(mock_execute_query, mock_snowflake_feature, feature
     Test retrieve_features
     """
     mock_execute_query.return_value = ["feature_list1"]
-    feature_manager.update_feature_registry(mock_snowflake_feature)
+    feature_manager.update_feature_registry(mock_snowflake_feature, to_online_enable=True)
     assert mock_execute_query.call_count == 2
 
-    sql = tm_update_feature_registry.render(feature=mock_snowflake_feature)
+    sql = tm_update_feature_registry.render(feature=mock_snowflake_feature, online_enabled=True)
     calls = [
         mock.call(sql),
     ]

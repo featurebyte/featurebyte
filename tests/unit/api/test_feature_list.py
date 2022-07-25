@@ -16,7 +16,7 @@ def production_ready_feature_fixture(feature_group):
     feature = feature_group["sum_30m"] + 123
     feature.name = "production_ready_feature"
     feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY
-    feature.version = "V220401"
+    feature.__dict__["version"] = "V220401"
     feature_group["production_ready_feature"] = feature
     return feature
 
@@ -27,7 +27,7 @@ def draft_feature_fixture(feature_group):
     feature = feature_group["production_ready_feature"] + 123
     feature.name = "draft_feature"
     feature.__dict__["readiness"] = FeatureReadiness.DRAFT
-    feature.version = "V220402"
+    feature.__dict__["version"] = "V220402"
     feature_group["draft_feature"] = feature
     return feature
 
@@ -38,7 +38,7 @@ def quarantine_feature_fixture(feature_group):
     feature = feature_group["draft_feature"] + 123
     feature.name = "quarantine_feature"
     feature.__dict__["readiness"] = FeatureReadiness.QUARANTINE
-    feature.version = "V220403"
+    feature.__dict__["version"] = "V220403"
     feature_group["quarantine_feature"] = feature
     return feature
 
@@ -49,7 +49,7 @@ def deprecated_feature_fixture(feature_group):
     feature = feature_group["quarantine_feature"] + 123
     feature.name = "deprecated_feature"
     feature.__dict__["readiness"] = FeatureReadiness.DEPRECATED
-    feature.version = "V220404"
+    feature.__dict__["version"] = "V220404"
     feature_group["deprecated_feature"] = feature
     return feature
 
