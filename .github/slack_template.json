@@ -5,7 +5,7 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "*Github Action* `${GITHUB_JOB}` for `${GITHUB_REPOSITORY}`"
+				"text": "*Github Action* `${GITHUB_WORKFLOW}` for `${GITHUB_REPOSITORY}`"
 			}
 		},
 		{
@@ -21,7 +21,7 @@
 				},
 				{
 					"type": "mrkdwn",
-					"text": "*Workflow:*\n`${GITHUB_WORKFLOW}`"
+					"text": "*Workflow:*\n`${GITHUB_JOB}`"
 				},
 				{
 					"type": "mrkdwn",

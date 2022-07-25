@@ -126,9 +126,17 @@ jobs:
 
         # Get the last committed email address
         export AUTHOR_EMAIL=$(git show -s --format='%ae' HEAD)
+        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
         # Lookup email address and export to AUTHOR_ID
         export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+        echo "AUTHOR_ID=${AUTHOR_ID}"
+
+        # Route Message to Chester if unable to find email
+        export AUTHOR_ID="${AUTHOR_ID:-U03P1DE5R8V}"
+
+        export GITHUB_HEAD_REF=${GITHUB_HEAD_REF:-NOT A PR}
+        export GITHUB_BASE_REF=${GITHUB_BASE_REF:-NOT A PR}
 
         cat .github/slack_template.json | envsubst | curl -X POST \
           -H "Authorization: Bearer ${SLACK_OAUTH}" \
