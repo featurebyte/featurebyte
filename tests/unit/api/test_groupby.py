@@ -60,7 +60,7 @@ def test_constructor__wrong_input_type(snowflake_event_view):
 
 def test_constructor__keys_column_not_found(snowflake_event_view):
     """
-    Test cases when column of the keys not found in the EventView
+    Test case when column of the keys not found in the EventView
     """
     with pytest.raises(KeyError) as exc:
         EventViewGroupBy(obj=snowflake_event_view, keys="random_column")
@@ -75,16 +75,26 @@ def test_constructor__keys_column_not_found(snowflake_event_view):
 
 def test_groupby__value_column_not_found(snowflake_event_view):
     """
-    Test cases when value column not found in the EventView
+    Test case when value column not found in the EventView
     """
     Entity.create(name="customer", serving_name="cust_id")
     snowflake_event_view.cust_id.as_entity("customer")
     grouped = EventViewGroupBy(obj=snowflake_event_view, keys="cust_id")
     with pytest.raises(KeyError) as exc:
-        grouped.aggregate(
-            "non_existing_column", "count", ["1d"], "5m", "1h", "10m", ["feature_name"]
-        )
+        grouped.aggregate("non_existing_column", "count", ["1d"], ["feature_name"])
     expected_msg = 'Column "non_existing_column" not found'
+    assert expected_msg in str(exc.value)
+
+
+def test_groupby__category_column_not_found(snowflake_event_view):
+    """
+    Test case when category column not found in the EventView
+    """
+    Entity.create(name="customer", serving_name="cust_id")
+    snowflake_event_view.cust_id.as_entity("customer")
+    with pytest.raises(KeyError) as exc:
+        EventViewGroupBy(obj=snowflake_event_view, keys="cust_id", category="non_existing_category")
+    expected_msg = 'Column "non_existing_category" not found'
     assert expected_msg in str(exc.value)
 
 
@@ -96,7 +106,7 @@ def test_groupby__wrong_method(snowflake_event_view):
     snowflake_event_view.cust_id.as_entity("customer")
     grouped = EventViewGroupBy(obj=snowflake_event_view, keys="cust_id")
     with pytest.raises(ValueError) as exc:
-        grouped.aggregate("a", "unknown_method", ["1d"], "5m", "1h", "10m", ["feature_name"])
+        grouped.aggregate("a", "unknown_method", ["1d"], ["feature_name"])
     expected_message = "Aggregation method not supported: unknown_method"
     assert expected_message in str(exc.value)
 
@@ -189,5 +199,39 @@ def test_groupby__default_feature_job_setting(snowflake_event_data):
         "tile_id": "sum_f360_m180_b90_45058a98f2f07813bc673622af9c945b2ceaa16d",
         "timestamp": "event_timestamp",
         "value_by": None,
+        "serving_names": ["cust_id"],
+    }
+
+
+def test_groupby__category(snowflake_event_view):
+    """
+    Test category parameter is captured properly
+    """
+    Entity.create(name="customer", serving_name="cust_id")
+    snowflake_event_view.cust_id.as_entity("customer")
+    feature_group = snowflake_event_view.groupby("cust_id", category="col_int").aggregate(
+        value_column="col_float",
+        method="sum",
+        windows=["30m", "1h", "2h"],
+        feature_names=["feat_30m", "feat_1h", "feat_2h"],
+        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+    )
+    # check node params
+    feature = feature_group["feat_30m"]
+    feature_node_name = feature.node.name
+    groupby_node_name = feature.graph.backward_edges[feature_node_name][0]
+    groupby_node = feature.graph.get_node_by_name(groupby_node_name)
+    assert groupby_node.parameters == {
+        "keys": ["cust_id"],
+        "parent": "col_float",
+        "agg_func": "sum",
+        "windows": ["30m", "1h", "2h"],
+        "names": ["feat_30m", "feat_1h", "feat_2h"],
+        "blind_spot": 90,
+        "frequency": 360,
+        "time_modulo_frequency": 180,
+        "tile_id": "sum_f360_m180_b90_45058a98f2f07813bc673622af9c945b2ceaa16d",
+        "timestamp": "event_timestamp",
+        "value_by": "col_int",
         "serving_names": ["cust_id"],
     }

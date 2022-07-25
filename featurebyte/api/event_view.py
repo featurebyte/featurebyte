@@ -278,14 +278,17 @@ class EventView(ProtectedColumnsQueryObject, Frame):
             raise ValueError(f"Timestamp or entity column '{key}' cannot be modified!")
         super().__setitem__(key, value)
 
-    def groupby(self, by_keys: str | list[str]) -> EventViewGroupBy:
+    def groupby(self, by_keys: str | list[str], category: str | None = None) -> EventViewGroupBy:
         """
         Group EventView using a column or list of columns of the EventView object
 
         Parameters
         ----------
         by_keys: str | list[str]
-            used to define the groups for the `groupby` operation
+            Define the key (entity) to for the `groupby` operation
+        category : str | None
+            Optional category parameter to enable aggregation per category. It should be a column
+            name in the EventView.
 
         Returns
         -------
@@ -295,4 +298,4 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.groupby import EventViewGroupBy
 
-        return EventViewGroupBy(obj=self, keys=by_keys)
+        return EventViewGroupBy(obj=self, keys=by_keys, category=category)

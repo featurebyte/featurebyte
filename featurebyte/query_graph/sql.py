@@ -259,8 +259,8 @@ class BuildTileInputNode(GenericInputNode):
 class SelectedEntityBuildTileInputNode(GenericInputNode):
     """Input data node used when building tiles for selected entities only
 
-    The selected entities are expected to be available in an "entity table" (table name used in the
-    SQL query is InternalName.ENTITY_TABLE_SQL_PLACEHOLDER).
+    The selected entities are expected to be available in an "entity table". It can be injected as a
+    subquery by replacing the placeholder InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.
 
     Entity table is expected to have these columns:
     * entity column(s)
