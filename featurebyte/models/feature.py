@@ -6,16 +6,14 @@ from __future__ import annotations
 
 from typing import List, Optional, Tuple
 
-from datetime import datetime
 from enum import Enum
 
 from beanie import PydanticObjectId
-from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import DBVarType, OrderedStrEnum
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import Node, QueryGraph
 
@@ -48,7 +46,7 @@ class DefaultVersionMode(str, Enum):
     MANUAL = "MANUAL"
 
 
-class FeatureNameSpaceModel(FeatureByteBaseModel):
+class FeatureNameSpaceModel(FeatureByteBaseDocumentModel):
     """
     Feature set with the same feature name
 
@@ -72,18 +70,15 @@ class FeatureNameSpaceModel(FeatureByteBaseModel):
         Default feature version mode
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
     description: Optional[StrictStr]
     version_ids: List[PydanticObjectId]
     versions: List[FeatureVersionIdentifier]
     readiness: FeatureReadiness
-    created_at: datetime
     default_version_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
 
 
-class FeatureModel(FeatureByteBaseModel):
+class FeatureModel(FeatureByteBaseDocumentModel):
     """
     Model for Feature entity
 
@@ -121,8 +116,6 @@ class FeatureModel(FeatureByteBaseModel):
         Parent feature id of the object
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    name: Optional[StrictStr]
     description: Optional[StrictStr]
     var_type: DBVarType
     lineage: Tuple[StrictStr, ...]
@@ -135,11 +128,10 @@ class FeatureModel(FeatureByteBaseModel):
     is_default: Optional[bool]
     online_enabled: Optional[bool]
     event_data_ids: List[PydanticObjectId] = Field(default_factory=list)
-    created_at: Optional[datetime] = Field(default=None)
     parent_id: Optional[PydanticObjectId]
 
 
-class FeatureListModel(FeatureByteBaseModel):
+class FeatureListModel(FeatureByteBaseDocumentModel):
     """
     Model for feature list entity
 
@@ -161,8 +153,6 @@ class FeatureListModel(FeatureByteBaseModel):
         Datetime when the FeatureList was first saved or published
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
     description: Optional[StrictStr]
     features: List[Tuple[StrictStr, Optional[FeatureVersionIdentifier]]] = Field(
         default_factory=list
@@ -170,4 +160,3 @@ class FeatureListModel(FeatureByteBaseModel):
     readiness: Optional[FeatureReadiness]
     status: Optional[FeatureListStatus]
     version: Optional[FeatureListVersionIdentifier]
-    created_at: Optional[datetime]

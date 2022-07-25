@@ -147,7 +147,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
 
     _series_class = EventViewColumn
 
-    column_entity_map: Optional[Dict[StrictStr, StrictStr]] = Field(default=None)
+    column_entity_map: Optional[Dict[StrictStr, PydanticObjectId]] = Field(default=None)
     column_description_map: Dict[StrictStr, StrictStr] = Field(default_factory=dict)
     default_feature_job_setting: Optional[FeatureJobSetting]
     event_data_id: PydanticObjectId
