@@ -97,10 +97,6 @@
         {
           "type": "mrkdwn",
           "text": "*Time:*\n`${COVERAGE_TIME}"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Link:*\n<${COVERAGE_HTML}>"
         }
 			]
 		}

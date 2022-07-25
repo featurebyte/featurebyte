@@ -61,7 +61,7 @@ jobs:
       with:
         path: .venv
         key: featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK0 }}${{ env.TAG }}
-        restore-keys: featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK1 }} featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK2 }}
+        restore-keys: featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK0 }} featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK1 }} featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK2 }}
 
     - name: Authenticate to Google Cloud
       id: 'auth'
@@ -151,6 +151,7 @@ jobs:
     - name: Slack Message PR
       if: ${{ github.event_name == 'pull_request' }}
       run: |
+        # Get data
         export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
         export COVERAGE_WARNING=${{ steps.coverageComment.outputs.warnings }}
         export COVERAGE_ERRORS=${{ steps.coverageComment.outputs.errors }}
@@ -158,11 +159,8 @@ jobs:
         export COVERAGE_SKIPPED=${{ steps.coverageComment.outputs.skipped }}
         export COVERAGE_TESTS=${{ steps.coverageComment.outputs.tests }}
         export COVERAGE_TIME=${{ steps.coverageComment.outputs.time }}
-        export COVERAGE_HTML=${{ steps.coverageComment.outputs.coverageHtml }}
-
 
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-
         # Get the last committed email address
         export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
