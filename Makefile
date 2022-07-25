@@ -74,8 +74,8 @@ lint-style:
 	@poetry run black --diff --check .
 	@poetry run pylint --rcfile pyproject.toml featurebyte --exit-zero
 
-	# TODO: Add documentation linter
-	# @find featurebyte -type f -prune -false -o -name "*.py" | xargs poetry run darglint --docstring-style numpy --strictness full -v 2
+	@find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" | xargs poetry run darglint --verbosity 2
+	@find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs poetry run darglint --verbosity 2
 
 lint-type:
 	@poetry run mypy --install-types --non-interactive --config-file pyproject.toml .

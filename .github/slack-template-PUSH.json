@@ -29,7 +29,7 @@
 				},
         {
           "type": "mrkdwn",
-          "text": "*Author:*\n`${AUTHOR_EMAIL}"
+          "text": "*Author:*\n`${AUTHOR_EMAIL}`"
         }
 			]
 		},

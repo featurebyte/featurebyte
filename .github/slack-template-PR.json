@@ -29,7 +29,7 @@
 				},
         {
           "type": "mrkdwn",
-          "text": "*Author:*\n`${AUTHOR_EMAIL}"
+          "text": "*Author:*\n`${AUTHOR_EMAIL}`"
         }
 			]
 		},
@@ -60,11 +60,15 @@
 				}
 			]
 		},
-		{
-			"type": "section",
+    {
+			"type": "divider"
+		},
+    {
+			"type": "header",
 			"text": {
-				"type": "mrkdwn",
-				"text": "Coverage Report"
+				"type": "plain_text",
+				"text": "Coverage Report: [${COVERAGE_PERCENTAGE}]",
+				"emoji": true
 			}
 		},
 		{
@@ -72,31 +76,15 @@
 			"fields": [
 				{
 					"type": "mrkdwn",
-					"text": "*Coverage:*\n`${COVERAGE_PERCENTAGE}`"
-				},
-				{
-					"type": "mrkdwn",
-					"text": "*Warning:*\n`${COVERAGE_WARNING}`"
-				},
-				{
-					"type": "mrkdwn",
-					"text": "*Errors:*\n`${COVERAGE_ERRORS}`"
-				},
-				{
-					"type": "mrkdwn",
-					"text": "*Failures:*\n`${COVERAGE_FAILURES}`"
+					"text": "*[WARN|ERRR|FAIL|SKIP]:*\n`[${COVERAGE_WARNING}|${COVERAGE_ERRORS}|${COVERAGE_FAILURES}|${COVERAGE_SKIPPED}]`"
 				},
         {
           "type": "mrkdwn",
-          "text": "*Skipped:*\n`${COVERAGE_SKIPPED}"
+          "text": "*No. Tests:*\n`${COVERAGE_TESTS}`"
         },
         {
           "type": "mrkdwn",
-          "text": "*No. Tests:*\n`${COVERAGE_TESTS}"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Time:*\n`${COVERAGE_TIME}"
+          "text": "*Time Taken:*\n`${COVERAGE_TIME}`"
         }
 			]
 		}
