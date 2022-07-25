@@ -217,13 +217,13 @@ def get_historical_features(
         features=feature_objects, serving_names_mapping=serving_names_mapping
     )
     elapsed = time.time() - tic
-    logger.info(f"Checking and computing tiles on demand took {elapsed:.2f}s")
+    logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
 
     # Execute feature query
     tic = time.time()
     result = session.execute_query(sql)
     elapsed = time.time() - tic
-    logger.info(f"Executing feature query took {elapsed:.2f}s")
+    logger.debug(f"Executing feature query took {elapsed:.2f}s")
 
-    logger.info(f"get_historical_features in total took {time.time() - tic_:.2f}s")
+    logger.debug(f"get_historical_features in total took {time.time() - tic_:.2f}s")
     return result
