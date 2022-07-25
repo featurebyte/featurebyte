@@ -108,7 +108,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Whether to this feature version default for the feature namespace
     online_enabled: Optional[bool]
         Whether to make this feature version online enabled
-    event_data_ids: List[PydnaticObjectId]
+    event_data_ids: List[PydanticObjectId]
         EventData IDs used for the feature version
     created_at: Optional[datetime]
         Datetime when the Feature was first saved or published
