@@ -22,7 +22,7 @@ class EventViewGroupBy(OpsMixin):
     EventViewGroupBy class
     """
 
-    def __init__(self, obj: EventView, keys: str | list[str]):
+    def __init__(self, obj: EventView, keys: str | list[str], category: str | None = None):
         if not isinstance(obj, EventView):
             raise TypeError(f"Expect {EventView} object type!")
 
@@ -45,8 +45,12 @@ class EventViewGroupBy(OpsMixin):
             entity = get_entity_by_id(entity_id)
             serving_names.append(entity["serving_names"][0])
 
+        if category is not None and category not in obj.columns:
+            raise KeyError(f'Column "{category}" not found!')
+
         self.obj = obj
         self.keys = keys_value
+        self.category = category
         self.serving_names = serving_names
 
     def __repr__(self) -> str:
@@ -160,7 +164,6 @@ class EventViewGroupBy(OpsMixin):
         windows: list[str],
         feature_names: list[str],
         timestamp_column: str | None = None,
-        value_by_column: str | None = None,
         feature_job_setting: dict[str, str] | None = None,
     ) -> FeatureGroup:
         """
@@ -178,8 +181,6 @@ class EventViewGroupBy(OpsMixin):
             Output feature names
         timestamp_column: str | None
             Timestamp column used to specify the window (if not specified, event data timestamp is used)
-        value_by_column: str | None
-            Use this column to further split the data within a group
         feature_job_setting: dict[str, str] | None
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
@@ -195,7 +196,7 @@ class EventViewGroupBy(OpsMixin):
             windows,
             feature_names,
             timestamp_column,
-            value_by_column,
+            self.category,
             feature_job_setting,
         )
         # To generate a consistent tile_id before & after pruning, insert a groupby node to
