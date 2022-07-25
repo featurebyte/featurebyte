@@ -25,7 +25,7 @@ class EventDataController:
     collection_name = CollectionName.EVENT_DATA
 
     @classmethod
-    def create_event_data(
+    async def create_event_data(
         cls,
         user: Any,
         persistent: Persistent,
@@ -76,7 +76,7 @@ class EventDataController:
         )
         assert document.id == data.id
         try:
-            insert_id = persistent.insert_one(
+            insert_id = await persistent.insert_one(
                 collection_name=cls.collection_name, document=document.dict(by_alias=True)
             )
             assert insert_id == document.id
@@ -89,7 +89,7 @@ class EventDataController:
         return document
 
     @classmethod
-    def list_event_datas(
+    async def list_event_datas(
         cls,
         user: Any,
         persistent: Persistent,
@@ -142,7 +142,7 @@ class EventDataController:
             query_filter["$text"] = {"$search": search}
 
         try:
-            docs, total = persistent.find(
+            docs, total = await persistent.find(
                 collection_name=cls.collection_name,
                 query_filter=query_filter,
                 sort_by=sort_by,
@@ -157,7 +157,7 @@ class EventDataController:
             ) from exc
 
     @classmethod
-    def retrieve_event_data(
+    async def retrieve_event_data(
         cls,
         user: Any,
         persistent: Persistent,
@@ -186,7 +186,7 @@ class EventDataController:
             If the event data not found
         """
         query_filter = {"_id": ObjectId(event_data_id), "user_id": user.id}
-        event_data = persistent.find_one(
+        event_data = await persistent.find_one(
             collection_name=cls.collection_name, query_filter=query_filter
         )
         if event_data is None:
@@ -200,7 +200,7 @@ class EventDataController:
         return EventData(**event_data)
 
     @classmethod
-    def update_event_data(
+    async def update_event_data(
         cls,
         user: Any,
         persistent: Persistent,
@@ -234,7 +234,7 @@ class EventDataController:
             Invalid event data status transition
         """
         query_filter = {"_id": ObjectId(event_data_id), "user_id": user.id}
-        event_data = persistent.find_one(
+        event_data = await persistent.find_one(
             collection_name=cls.collection_name, query_filter=query_filter
         )
         not_found_exception = HTTPException(
@@ -280,7 +280,7 @@ class EventDataController:
         else:
             update_payload.pop("status")
 
-        updated_cnt = persistent.update_one(
+        updated_cnt = await persistent.update_one(
             collection_name=cls.collection_name,
             query_filter=query_filter,
             update={"$set": update_payload},
@@ -288,7 +288,7 @@ class EventDataController:
         if not updated_cnt:
             raise not_found_exception
 
-        event_data = persistent.find_one(
+        event_data = await persistent.find_one(
             collection_name=cls.collection_name, query_filter=query_filter
         )
         if event_data is None:

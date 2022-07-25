@@ -15,12 +15,13 @@ def _get_commit_messages(repo, max_count=5):
     return [commit.message for commit in repo.iter_commits("test", max_count=max_count)][::-1]
 
 
-def test_insert_one(git_persistent, test_document):
+@pytest.mark.asyncio
+async def test_insert_one(git_persistent, test_document):
     """
     Test inserting one document
     """
     persistent, repo = git_persistent
-    persistent.insert_one(collection_name="data", document=test_document)
+    await persistent.insert_one(collection_name="data", document=test_document)
 
     # check document is inserted
     expected_doc_path = os.path.join(repo.working_tree_dir, "data", test_document["name"] + ".json")
@@ -33,12 +34,13 @@ def test_insert_one(git_persistent, test_document):
     ]
 
 
-def test_insert_one__no_id(git_persistent, test_document):
+@pytest.mark.asyncio
+async def test_insert_one__no_id(git_persistent, test_document):
     """
     Test inserting one document without id works, and id is added
     """
     persistent, repo = git_persistent
-    persistent.insert_one(collection_name="data", document=test_document)
+    await persistent.insert_one(collection_name="data", document=test_document)
     assert "_id" in test_document
 
     # check document is inserted
@@ -52,12 +54,13 @@ def test_insert_one__no_id(git_persistent, test_document):
     ]
 
 
-def test_insert_many(git_persistent, test_documents):
+@pytest.mark.asyncio
+async def test_insert_many(git_persistent, test_documents):
     """
     Test inserting many documents
     """
     persistent, repo = git_persistent
-    persistent.insert_many(collection_name="data", documents=test_documents)
+    await persistent.insert_many(collection_name="data", documents=test_documents)
 
     # check documents are inserted
     for test_document in test_documents:
@@ -75,41 +78,43 @@ def test_insert_many(git_persistent, test_documents):
     ]
 
 
-def test_find_one(git_persistent, test_documents):
+@pytest.mark.asyncio
+async def test_find_one(git_persistent, test_documents):
     """
     Test finding one document
     """
     persistent, _ = git_persistent
-    persistent.insert_many(collection_name="data", documents=test_documents)
-    doc = persistent.find_one(collection_name="data", query_filter={})
+    await persistent.insert_many(collection_name="data", documents=test_documents)
+    doc = await persistent.find_one(collection_name="data", query_filter={})
     assert doc == test_documents[0]
 
 
-def test_find_many(git_persistent, test_documents):
+@pytest.mark.asyncio
+async def test_find_many(git_persistent, test_documents):
     """
     Test finding many documents
     """
     persistent, _ = git_persistent
-    persistent.insert_many(collection_name="data", documents=test_documents)
-    docs, total = persistent.find(collection_name="data", query_filter={})
+    await persistent.insert_many(collection_name="data", documents=test_documents)
+    docs, total = await persistent.find(collection_name="data", query_filter={})
     assert list(docs) == test_documents
     assert total == 3
 
     # test sort
-    docs, total = persistent.find(
+    docs, total = await persistent.find(
         collection_name="data", query_filter={}, sort_by="_id", sort_dir="desc"
     )
     assert list(docs) == test_documents[-1::-1]
     assert total == 3
 
     # test search
-    docs, total = persistent.find(
+    docs, total = await persistent.find(
         collection_name="data", query_filter={"name": "Object 1"}, sort_by="_id", sort_dir="desc"
     )
     assert list(docs) == [test_documents[1]]
     assert total == 1
 
-    docs, total = persistent.find(
+    docs, total = await persistent.find(
         collection_name="data",
         query_filter={"_id": test_documents[2]["_id"]},
         sort_by="_id",
@@ -119,13 +124,19 @@ def test_find_many(git_persistent, test_documents):
     assert total == 1
 
     # test pagination
-    docs, total = persistent.find(collection_name="data", query_filter={}, page_size=2, page=1)
+    docs, total = await persistent.find(
+        collection_name="data", query_filter={}, page_size=2, page=1
+    )
     assert list(docs) == test_documents[:2]
     assert total == 3
-    docs, total = persistent.find(collection_name="data", query_filter={}, page_size=2, page=2)
+    docs, total = await persistent.find(
+        collection_name="data", query_filter={}, page_size=2, page=2
+    )
     assert list(docs) == test_documents[2:]
     assert total == 3
-    docs, total = persistent.find(collection_name="data", query_filter={}, page_size=0, page=2)
+    docs, total = await persistent.find(
+        collection_name="data", query_filter={}, page_size=0, page=2
+    )
     assert list(docs) == test_documents
     assert total == 3
 
@@ -144,35 +155,37 @@ def test_find_many(git_persistent, test_documents):
         ({"key": {"key": {"key": "Object 1", "key.with.period": None}}}, False),
     ],
 )
-def test_filter_values(git_persistent, test_document, query_filter, valid):
+@pytest.mark.asyncio
+async def test_filter_values(git_persistent, test_document, query_filter, valid):
     """
     Test find filter values validation
     """
     persistent, _ = git_persistent
-    persistent.insert_one(collection_name="data", document=test_document)
+    await persistent.insert_one(collection_name="data", document=test_document)
 
-    def run_find():
-        persistent.find_one(collection_name="data", query_filter=query_filter)
+    async def run_find():
+        await persistent.find_one(collection_name="data", query_filter=query_filter)
 
     if valid:
-        run_find()
+        await run_find()
     else:
         with pytest.raises(NotImplementedError):
-            run_find()
+            await run_find()
 
 
-def test_update_one(git_persistent, test_documents):
+@pytest.mark.asyncio
+async def test_update_one(git_persistent, test_documents):
     """
     Test updating one document
     """
     persistent, repo = git_persistent
-    persistent.insert_many(collection_name="data", documents=test_documents)
-    result = persistent.update_one(
+    await persistent.insert_many(collection_name="data", documents=test_documents)
+    result = await persistent.update_one(
         collection_name="data", query_filter={}, update={"$set": {"name": "apple"}}
     )
 
     assert result == 1
-    results, total = persistent.find(collection_name="data", query_filter={})
+    results, total = await persistent.find(collection_name="data", query_filter={})
 
     # only first document should be updated
     assert total == 3
@@ -191,18 +204,19 @@ def test_update_one(git_persistent, test_documents):
     ]
 
 
-def test_update_many(git_persistent, test_documents):
+@pytest.mark.asyncio
+async def test_update_many(git_persistent, test_documents):
     """
     Test updating one document
     """
     persistent, repo = git_persistent
-    persistent.insert_many(collection_name="data", documents=test_documents)
-    result = persistent.update_many(
+    await persistent.insert_many(collection_name="data", documents=test_documents)
+    result = await persistent.update_many(
         collection_name="data", query_filter={}, update={"$set": {"value": 1}}
     )
     # expect all documents to be updated
     assert result == 3
-    results, _ = persistent.find(collection_name="data", query_filter={})
+    results, _ = await persistent.find(collection_name="data", query_filter={})
     for result in results:
         assert result["value"] == 1
 
@@ -218,14 +232,15 @@ def test_update_many(git_persistent, test_documents):
     ]
 
 
-def test_update_name_to_existing(git_persistent, test_documents):
+@pytest.mark.asyncio
+async def test_update_name_to_existing(git_persistent, test_documents):
     """
     Test updating one document with name that already exists
     """
     persistent, _ = git_persistent
-    persistent.insert_many(collection_name="data", documents=test_documents)
+    await persistent.insert_many(collection_name="data", documents=test_documents)
     with pytest.raises(DuplicateDocumentError) as exc:
-        persistent.update_one(
+        await persistent.update_one(
             collection_name="data", query_filter={}, update={"$set": {"name": "Object 1"}}
         )
     assert str(exc.value) == "Document data/Object 1 already exists"
@@ -245,33 +260,35 @@ def test_update_name_to_existing(git_persistent, test_documents):
         ({"$set": {"name": {"key": "Object 1", "another.key.with.period": None}}}, False),
     ],
 )
-def test_update_values(git_persistent, test_document, update, valid):
+@pytest.mark.asyncio
+async def test_update_values(git_persistent, test_document, update, valid):
     """
     Test update values validation
     """
     persistent, _ = git_persistent
     persistent.insert_one(collection_name="data", document=test_document)
 
-    def run_update():
-        persistent.update_one(collection_name="data", query_filter={}, update=update)
+    async def run_update():
+        await persistent.update_one(collection_name="data", query_filter={}, update=update)
 
     if valid:
-        run_update()
+        await run_update()
     else:
         with pytest.raises(NotImplementedError):
-            run_update()
+            await run_update()
 
 
-def test_delete_one(git_persistent, test_documents):
+@pytest.mark.asyncio
+async def test_delete_one(git_persistent, test_documents):
     """
     Test deleting one document
     """
     persistent, repo = git_persistent
-    persistent.insert_many(collection_name="data", documents=test_documents)
-    result = persistent.delete_one(collection_name="data", query_filter={})
+    await persistent.insert_many(collection_name="data", documents=test_documents)
+    result = await persistent.delete_one(collection_name="data", query_filter={})
     # expect only one document to be deleted
     assert result == 1
-    results, _ = persistent.find(collection_name="data", query_filter={})
+    results, _ = await persistent.find(collection_name="data", query_filter={})
     assert len(results) == 2
 
     # check commit messages
@@ -284,16 +301,17 @@ def test_delete_one(git_persistent, test_documents):
     ]
 
 
-def test_delete_many(git_persistent, test_documents):
+@pytest.mark.asyncio
+async def test_delete_many(git_persistent, test_documents):
     """
     Test deleting many documents
     """
     persistent, repo = git_persistent
-    persistent.insert_many(collection_name="data", documents=test_documents)
-    result = persistent.delete_many(collection_name="data", query_filter={})
+    await persistent.insert_many(collection_name="data", documents=test_documents)
+    result = await persistent.delete_many(collection_name="data", query_filter={})
     # expect all documents to be deleted
     assert result == 3
-    results, _ = persistent.find(collection_name="data", query_filter={})
+    results, _ = await persistent.find(collection_name="data", query_filter={})
     assert len(results) == 0
 
     # check commit messages
@@ -308,28 +326,30 @@ def test_delete_many(git_persistent, test_documents):
     ]
 
 
-def test_delete_one__collection_not_exist(git_persistent):
+@pytest.mark.asyncio
+async def test_delete_one__collection_not_exist(git_persistent):
     """
     Test document from non-existent collection should work with no effect
     """
     persistent, repo = git_persistent
-    result = persistent.delete_one(collection_name="no_such_collection", query_filter={})
+    result = await persistent.delete_one(collection_name="no_such_collection", query_filter={})
     assert result == 0
 
     # check commit messages, expect no message after initial commit
     assert _get_commit_messages(repo) == ["Initial commit\n"]
 
 
-def test_start_transaction__success(git_persistent):
+@pytest.mark.asyncio
+async def test_start_transaction__success(git_persistent):
     """
     Test start_transaction context manager
     """
     persistent, repo = git_persistent
     col = "test_col"
 
-    with persistent.start_transaction() as session:
-        session.insert_one(collection_name=col, document={"_id": "1234", "key1": "value1"})
-        session.update_one(
+    async with persistent.start_transaction() as session:
+        await session.insert_one(collection_name=col, document={"_id": "1234", "key1": "value1"})
+        await session.update_one(
             collection_name=col,
             query_filter={"_id": "1234"},
             update={"$set": {"key1": "value2"}},
@@ -343,7 +363,8 @@ def test_start_transaction__success(git_persistent):
     assert repo.git.status() == "On branch test\nnothing to commit, working tree clean"
 
 
-def test_start_transaction__exception_within_transaction(git_persistent):
+@pytest.mark.asyncio
+async def test_start_transaction__exception_within_transaction(git_persistent):
     """
     Test start_transaction context manager (exception happens within context)
     """
@@ -352,9 +373,11 @@ def test_start_transaction__exception_within_transaction(git_persistent):
 
     with pytest.raises(AssertionError):
         # set up an exception happens within the context
-        with persistent.start_transaction() as session:
-            session.insert_one(collection_name=col, document={"_id": "1234", "key1": "value1"})
-            session.update_one(
+        async with persistent.start_transaction() as session:
+            await session.insert_one(
+                collection_name=col, document={"_id": "1234", "key1": "value1"}
+            )
+            await session.update_one(
                 collection_name=col,
                 query_filter={"_id": "1234"},
                 update={"$set": {"key1": "value2"}},
