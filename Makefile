@@ -1,102 +1,110 @@
 #* Variables
-SHELL := /usr/bin/env bash -o pipefail
-PYTHON := python
-PYTHONPATH := `pwd`
+MAKE := make
 
-#* Poetry
-.PHONY: poetry-download
-poetry-download:
-	curl -sSL https://install.python-poetry.org | $(PYTHON) -
+.PHONY: init
+.PHONY: install install-nolock install-lock install-main install-dev install-lint install-docs
+.PHONY: update update-main update-dev update-lint update-docs
+.PHONY: format
+.PHONY: lint lint-style lint-type lint-safety
+.PHONY: test
+.PHONY: docs
+.PHONY: clean
 
-.PHONY: poetry-remove
-poetry-remove:
-	curl -sSL https://install.python-poetry.org | $(PYTHON) - --uninstall
+#* Initialize
+init:
+	poetry run pre-commit install
+	# TODO: Add kubectl, helm, poetry checks here
 
 #* Installation
-.PHONY: install
-install:
-	poetry lock -n
-	poetry install -n
-	-poetry run mypy --config-file pyproject.toml --install-types --non-interactive ./
+install: install-lock
+	${MAKE} install-nolock
 
-.PHONY: pre-commit-install
-pre-commit-install:
-	poetry run pre-commit install
+install-nolock:
+	${MAKE} install-main
+	${MAKE} install-dev
+	${MAKE} install-lint
+	${MAKE} install-docs
+
+install-lock:
+	poetry lock -n
+
+install-main:
+	poetry install -n --only=main
+
+install-dev:
+	poetry install -n --only=dev
+
+install-lint:
+	poetry install -n --only=lint
+
+install-docs:
+	poetry install -n --only=docs
+
+#* Update
+update:
+	${MAKE} update-main
+	${MAKE} update-dev
+	${MAKE} update-lint
+	${MAKE} update-docs
+
+update-main:
+	poetry update --only=main
+
+update-dev:
+	poetry update --only=dev
+
+update-lint:
+	poetry update --only=lint
+
+update-docs:
+	poetry update --only=docs
 
 #* Formatters
-.PHONY: codestyle
-codestyle:
-	poetry run pyupgrade --exit-zero-even-if-changed --py37-plus **/*.py
-	poetry run isort --settings-path pyproject.toml ./
-	poetry run black --config pyproject.toml ./
-
-.PHONY: formatting
-formatting: codestyle
+format:
+	@poetry run pyupgrade --py38-plus **/*.py
+	@poetry run isort .
+	@poetry run black .
+	@poetry run toml-sort pyproject.toml --all --in-place
 
 #* Linting
-.PHONY: test
+lint: lint-style lint-type lint-safety
+
+lint-style:
+	@poetry run isort --diff --check-only --settings-path pyproject.toml .
+	@poetry run black --diff --check .
+	@poetry run pylint --rcfile pyproject.toml featurebyte --exit-zero
+
+	@find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" | xargs poetry run darglint --verbosity 2
+	@find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs poetry run darglint --verbosity 2
+
+lint-type:
+	@poetry run mypy --install-types --non-interactive --config-file pyproject.toml .
+
+lint-safety:
+	@poetry run safety check --short-report
+	@poetry run bandit -c pyproject.toml -ll --recursive featurebyte
+
+#* Testing
 test:
-	PYTHONPATH=$(PYTHONPATH) poetry run pytest --timeout=120 --junitxml=pytest.xml --cov-report=term-missing --cov=featurebyte tests/ featurebyte/ -v | tee pytest-coverage.txt
+	@poetry run coverage run -m pytest -c pyproject.toml --timeout=120 --junitxml=pytest.xml tests featurebyte 2>/dev/null -q | tee pytest-coverage.txt
 
-.PHONY: check-codestyle
-check-codestyle:
-	poetry run isort --diff --check-only --settings-path pyproject.toml ./
-	poetry run black --diff --check --config pyproject.toml ./
-	find featurebyte tests -iname "*.py" | xargs poetry run pylint --rcfile=.pylintrc
-	find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" | xargs poetry run darglint --verbosity 2
-	find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs poetry run darglint --verbosity 2
+	# Hack to support github-coverage action
+	echo "coverage: platform" >> pytest-coverage.txt
 
-.PHONY: mypy
-mypy:
-	poetry run mypy --config-file pyproject.toml ./
+	@poetry run coverage report -m | tee -a pytest-coverage.txt
 
-.PHONY: check-safety
-check-safety:
-	poetry check
-	poetry run safety check --full-report
-	poetry run bandit -ll --recursive featurebyte -c pyproject.toml
-
-.PHONY: lint
-lint: check-codestyle mypy check-safety
-
-.PHONY: update-dev-deps
-update-dev-deps:
-	poetry add -D bandit@latest darglint@latest "isort[colors]@latest" mypy@latest pre-commit@latest pylint@latest pytest@latest pyupgrade@latest safety@latest coverage@latest coverage-badge@latest pytest-html@latest pytest-cov@latest
-	poetry add -D --allow-prereleases black@latest
+#* Docs Generation
+docs:
+	poetry run sphinx-build -b html docs/source docs/build
 
 #* Cleaning
-.PHONY: pycache-remove
-pycache-remove:
-	find . | grep -E "(__pycache__|\.pyc|\.pyo$$)" | xargs rm -rf
-
-.PHONY: dsstore-remove
-dsstore-remove:
-	find . | grep -E ".DS_Store" | xargs rm -rf
-
-.PHONY: mypycache-remove
-mypycache-remove:
-	find . | grep -E ".mypy_cache" | xargs rm -rf
-
-.PHONY: ipynbcheckpoints-remove
-ipynbcheckpoints-remove:
-	find . | grep -E ".ipynb_checkpoints" | xargs rm -rf
-
-.PHONY: pytestcache-remove
-pytestcache-remove:
-	find . | grep -E ".pytest_cache" | xargs rm -rf
-
-.PHONY: build-remove
-build-remove:
-	rm -rf dist docs/build
-
-.PHONY: cleanup
-cleanup: pycache-remove dsstore-remove mypycache-remove ipynbcheckpoints-remove pytestcache-remove
-
-# Build Artifacts
-build-artifacts:
-	poetry build
-
-# Docs Generation
-build-docs: build-remove
-	poetry install -E docs
-	poetry run sphinx-build -b html docs/source docs/build
+clean:
+	@echo "Running Clean"
+	@find . | grep -E "./.coverage*" | xargs rm -rf					|| true
+	@find . | grep -E "(__pycache__|\.pyc|\.pyo$$)" | xargs rm -rf 	|| true
+	@find . | grep -E ".DS_Store" | xargs rm -rf					|| true
+	@find . | grep -E ".mypy_cache" | xargs rm -rf					|| true
+	@find . | grep -E ".ipynb_checkpoints" | xargs rm -rf			|| true
+	@find . | grep -E ".pytest_cache" | xargs rm -rf				|| true
+	@rm -rf pytest-coverage.txt										|| true
+	@rm -rf dist/ docs/build htmlcov/								|| true

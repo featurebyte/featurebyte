@@ -1,0 +1,64 @@
+{
+  "channel": "${AUTHOR_ID}",
+  "blocks": [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "*FAILED Github Action* `${GITHUB_WORKFLOW}` for `${GITHUB_REPOSITORY}`"
+			}
+		},
+		{
+			"type": "section",
+			"fields": [
+				{
+					"type": "mrkdwn",
+					"text": "*Repository:*\n`${GITHUB_REPOSITORY}`"
+				},
+				{
+					"type": "mrkdwn",
+					"text": "*Branch:*\n`${GITHUB_HEAD_REF}`"
+				},
+				{
+					"type": "mrkdwn",
+					"text": "*Workflow:*\n`${GITHUB_JOB}`"
+				},
+				{
+					"type": "mrkdwn",
+					"text": "*Base Branch:*\n`${GITHUB_BASE_REF}`"
+				},
+        {
+          "type": "mrkdwn",
+          "text": "*Author:*\n`${AUTHOR_EMAIL}`"
+        }
+			]
+		},
+		{
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"emoji": true,
+						"text": "Job Summary"
+					},
+					"style": "primary",
+					"value": "btn-run",
+					"url": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"emoji": true,
+						"text": "Repository"
+					},
+					"style": "danger",
+					"value": "btn_repo",
+					"url": "https://github.com/${GITHUB_REPOSITORY}"
+				}
+			]
+		}
+  ]
+}
