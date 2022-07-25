@@ -28,3 +28,19 @@ def test_get_feature_preview_sql(query_graph_with_groupby):
     with open("tests/fixtures/expected_preview_sql.sql", encoding="utf-8") as f_handle:
         expected = f_handle.read()
     assert preview_sql.strip() == expected.strip()
+
+
+def test_get_feature_preview_sql__category_groupby(query_graph_with_category_groupby):
+    """Test generated preview SQL is as expected"""
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    graph = query_graph_with_category_groupby
+    node = graph.get_node_by_name("groupby_1")
+    preview_sql = get_feature_preview_sql(
+        graph=graph,
+        nodes=[node],
+        point_in_time_and_serving_name=point_in_time_and_serving_name,
+    )
+    raise

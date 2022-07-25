@@ -7,6 +7,8 @@ from typing import Optional, Tuple
 
 from abc import ABC, abstractmethod
 
+from sqlglot import expressions, select
+
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.feature_common import (
     REQUEST_TABLE_NAME,
@@ -310,6 +312,7 @@ class FeatureExecutionPlan:
         point_in_time_column: str,
         keys: list[str],
         serving_names: list[str],
+        value_by: str | None,
         merge_expr: str,
         agg_result_name: str,
     ) -> str:
@@ -327,6 +330,8 @@ class FeatureExecutionPlan:
             List of join key columns
         serving_names : list[str]
             List of serving name columns
+        value_by : str | None
+            Optional category parameter for the groupby operation
         merge_expr : str
             SQL expression that aggregates intermediate values stored in tile table
         agg_result_name : str
@@ -339,24 +344,53 @@ class FeatureExecutionPlan:
         join_conditions_lst = ["REQ.REQ_TILE_INDEX = TILE.INDEX"]
         for serving_name, key in zip(serving_names, keys):
             join_conditions_lst.append(f"REQ.{serving_name} = TILE.{key}")
-        join_conditions = " AND ".join(join_conditions_lst)
+        join_conditions = expressions.and_(*join_conditions_lst)
 
-        group_by_keys_lst = [f"REQ.{point_in_time_column}"]
+        group_by_keys = [f"REQ.{point_in_time_column}"]
         for serving_name in serving_names:
-            group_by_keys_lst.append(f"REQ.{serving_name}")
-        group_by_keys = ", ".join(group_by_keys_lst)
+            group_by_keys.append(f"REQ.{serving_name}")
 
-        sql = f"""
-            SELECT
-                {group_by_keys},
-                {merge_expr} AS "{agg_result_name}"
-            FROM {expanded_request_table_name} REQ
-            INNER JOIN {tile_table_id} TILE
-            ON {join_conditions}
-            GROUP BY {group_by_keys}
-            """
+        if value_by is None:
+            agg_expr = (
+                select(
+                    *group_by_keys,
+                    f'{merge_expr} AS "{agg_result_name}"',
+                )
+                .from_(f"{expanded_request_table_name} AS REQ")
+                .join(
+                    tile_table_id,
+                    join_alias="TILE",
+                    join_type="inner",
+                    on=join_conditions,
+                )
+                .group_by(*group_by_keys)
+            )
+        else:
+            inner_agg_result_name = f"inner_{agg_result_name}"
+            inner_group_by_keys = group_by_keys + [f"TILE.{value_by}"]
+            inner_agg_expr = (
+                select(*inner_group_by_keys, f'{merge_expr} AS "{inner_agg_result_name}"')
+                .from_(f"{expanded_request_table_name} AS REQ")
+                .join(
+                    tile_table_id,
+                    join_alias="TILE",
+                    join_type="inner",
+                    on=join_conditions,
+                )
+                .group_by(*inner_group_by_keys)
+            )
+            # TODO: alias should probably not be REQ anymore
+            agg_expr = (
+                select(
+                    *group_by_keys,
+                    f'OBJECT_AGG(REQ.{value_by}, REQ."{inner_agg_result_name}")'
+                    f' AS "{agg_result_name}"',
+                )
+                .from_(inner_agg_expr.subquery(alias="REQ"))
+                .group_by(*group_by_keys)
+            )
 
-        return prettify_sql(sql)
+        return agg_expr.sql(pretty=True)
 
     @staticmethod
     def construct_left_join_sql(
@@ -426,6 +460,7 @@ class FeatureExecutionPlan:
                 point_in_time_column=point_in_time_column,
                 keys=agg_spec.keys,
                 serving_names=agg_spec.serving_names,
+                value_by=agg_spec.value_by,
                 merge_expr=agg_spec.merge_expr,
                 agg_result_name=agg_result_name,
             )
