@@ -8,9 +8,9 @@ from featurebyte.query_graph.graph import Node
 from featurebyte.query_graph.util import get_tile_table_identifier
 
 
-@pytest.fixture(name="query_graph_with_groupby")
-def query_graph_with_groupby_fixture(graph):
-    """Fixture of a query graph with a groupby operation"""
+@pytest.fixture(name="query_graph_and_assign_node")
+def query_graph_and_assign_node_fixture(graph):
+    """Fixture of a query with some operations ready to run groupby"""
     # pylint: disable=duplicate-code
     node_input = graph.add_operation(
         node_type=NodeType.INPUT,
@@ -57,9 +57,15 @@ def query_graph_with_groupby_fixture(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, sum_node],
     )
+    return graph, assign_node
+
+
+@pytest.fixture(name="groupby_node_params")
+def groupby_node_params_fixture():
     node_params = {
         "keys": ["cust_id"],
         "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
         "parent": "a",
         "agg_func": "avg",
         "time_modulo_frequency": 1800,  # 30m
@@ -69,6 +75,34 @@ def query_graph_with_groupby_fixture(graph):
         "names": ["a_2h_average", "a_48h_average"],
         "windows": ["2h", "48h"],
     }
+    return node_params
+
+
+@pytest.fixture(name="query_graph_with_groupby")
+def query_graph_with_groupby_fixture(query_graph_and_assign_node, groupby_node_params):
+    """Fixture of a query graph with a groupby operation"""
+    graph, assign_node = query_graph_and_assign_node
+    node_params = groupby_node_params
+    graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params={
+            **node_params,
+            "tile_id": get_tile_table_identifier(
+                graph.node_name_to_ref[assign_node.name], node_params
+            ),
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node],
+    )
+    return graph
+
+
+@pytest.fixture(name="query_graph_with_category_groupby")
+def query_graph_with_category_groupby_fixture(query_graph_and_assign_node, groupby_node_params):
+    """Fixture of a query graph with a groupby operation"""
+    graph, assign_node = query_graph_and_assign_node
+    node_params = groupby_node_params
+    node_params["value_by"] = "product_type"
     graph.add_operation(
         node_type=NodeType.GROUPBY,
         node_params={
@@ -89,6 +123,7 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby):
     graph = query_graph_with_groupby
     node_params = {
         "keys": ["biz_id"],
+        "value_by": None,
         "parent": "a",
         "agg_func": "sum",
         "time_modulo_frequency": 1800,  # 30m

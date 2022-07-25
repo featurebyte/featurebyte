@@ -308,6 +308,64 @@ def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
     }
 
 
+def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_groupby):
+    """Test tile building SQL with aggregation per category"""
+    interpreter = GraphInterpreter(query_graph_with_category_groupby)
+    groupby_node = query_graph_with_category_groupby.get_node_by_name("groupby_1")
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
+    assert len(tile_gen_sqls) == 1
+
+    info = tile_gen_sqls[0]
+    info_dict = asdict(info)
+
+    sql = info_dict.pop("sql")
+    expected_sql = textwrap.dedent(
+        """
+        SELECT
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          "cust_id",
+          "product_type",
+          SUM("a") AS sum_value,
+          COUNT(*) AS count_value
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+            FROM (
+                SELECT
+                  "ts" AS "ts",
+                  "cust_id" AS "cust_id",
+                  "a" AS "a",
+                  "b" AS "b",
+                  ("a" + "b") AS "c"
+                FROM "db"."public"."event_table"
+                WHERE
+                  "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+                  AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+            )
+        )
+        GROUP BY
+          tile_index,
+          "cust_id",
+          "product_type"
+        ORDER BY
+          tile_index
+        """
+    ).strip()
+    assert sql == expected_sql
+    assert info_dict == {
+        "tile_table_id": "avg_f3600_m1800_b900_8c9dd5af3427568b4cddd3244d1461b16011b34d",
+        "columns": [InternalName.TILE_START_DATE.value, "cust_id", "sum_value", "count_value"],
+        "time_modulo_frequency": 1800,
+        "entity_columns": ["cust_id"],
+        "tile_value_columns": ["sum_value", "count_value"],
+        "frequency": 3600,
+        "blind_spot": 900,
+        "windows": ["2h", "48h"],
+        "serving_names": ["CUSTOMER_ID"],
+    }
+
+
 def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_graph):
     """Test case for a complex feature that depends on two groupby nodes"""
     complex_feature_node, graph = complex_feature_query_graph
@@ -456,6 +514,7 @@ def test_graph_interpreter_snowflake(graph):
     )
     node_params = {
         "keys": ["CUST_ID"],
+        "value_by": None,
         "parent": "*",
         "agg_func": "count",
         "time_modulo_frequency": 600,

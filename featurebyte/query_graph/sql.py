@@ -388,6 +388,7 @@ class BuildTileNode(TableNode):
 
     input_node: TableNode
     keys: list[str]
+    value_by: str | None
     tile_specs: list[TileSpec]
     timestamp: str
     agg_func: str
@@ -411,10 +412,14 @@ class BuildTileNode(TableNode):
 
         tile_start_date = f"TO_TIMESTAMP({start_date_epoch} + tile_index * {self.frequency})"
         keys = escape_column_names(self.keys)
+        if self.value_by is not None:
+            keys.append(escape_column_name(self.value_by))
+
         if self.is_on_demand:
             groupby_keys = keys + [InternalName.ENTITY_TABLE_START_DATE.value]
         else:
             groupby_keys = keys
+
         groupby_sql = (
             select(
                 f"{tile_start_date} AS {InternalName.TILE_START_DATE}",
@@ -657,6 +662,7 @@ def make_build_tile_node(
         columns_map=columns_map,
         input_node=input_node,
         keys=parameters["keys"],
+        value_by=parameters["value_by"],
         tile_specs=tile_specs,
         timestamp=parameters["timestamp"],
         agg_func=parameters["agg_func"],

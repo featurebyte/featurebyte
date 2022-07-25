@@ -71,11 +71,14 @@ def get_tile_table_identifier(transformations_hash: str, parameters: dict[str, A
     hash_components: list[Any] = []
 
     # Aggregation related parameters
-    aggregation_setting = (
+    aggregation_setting = [
         parameters["keys"],
         parameters["parent"],
         parameters["agg_func"],
-    )
+    ]
+    if parameters["value_by"] is not None:
+        aggregation_setting.append(parameters["value_by"])
+    aggregation_setting = tuple(aggregation_setting)
     hash_components.append(aggregation_setting)
 
     # Feature job settings
