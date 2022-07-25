@@ -68,7 +68,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        make install
+        make install-nolock
 
     - name: Lint Checks
       run: |

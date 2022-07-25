@@ -2,7 +2,7 @@
 MAKE := make
 
 .PHONY: init
-.PHONY: install install-lock install-main install-dev install-lint install-docs
+.PHONY: install install-nolock install-lock install-main install-dev install-lint install-docs
 .PHONY: update update-main update-dev update-lint update-docs
 .PHONY: format
 .PHONY: lint lint-style lint-type lint-safety
@@ -17,6 +17,9 @@ init:
 
 #* Installation
 install: install-lock
+	${MAKE} install-nolock
+
+install-nolock:
 	${MAKE} install-main
 	${MAKE} install-dev
 	${MAKE} install-lint
