@@ -35,7 +35,9 @@ def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature, fea
     Test insert_feature_registry
     """
     mock_execute_query.size_effect = None
-    mock_snowflake_feature.event_data_ids = [PydanticObjectId("62d8d944d01041a098785131")]
+    mock_snowflake_feature.__dict__["event_data_ids"] = [
+        PydanticObjectId("62d8d944d01041a098785131")
+    ]
     feature_manager.insert_feature_registry(mock_snowflake_feature)
     assert mock_execute_query.call_count == 3
 
@@ -202,7 +204,7 @@ def test_online_enable(
         }
     )
 
-    mock_snowflake_feature.readiness = FeatureReadiness.PRODUCTION_READY
+    mock_snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY
     feature_manager.online_enable(mock_snowflake_feature)
 
     mock_insert_tile_registry.assert_called_once()

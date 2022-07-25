@@ -78,6 +78,6 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         Record creation datetime when the document get stored at the persistent
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
     name: Optional[StrictStr]
-    created_at: Optional[datetime] = Field(default=None)
+    created_at: Optional[datetime] = Field(default=None, allow_mutation=False)

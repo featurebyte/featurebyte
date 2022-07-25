@@ -8,7 +8,7 @@ from typing import Any, Tuple
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
-from pydantic import validator
+from pydantic import Field, validator
 
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
@@ -82,7 +82,7 @@ class EventData(EventDataModel, DatabaseTable):
     EventData class
     """
 
-    tabular_source: Tuple[FeatureStore, TableDetails]
+    tabular_source: Tuple[FeatureStore, TableDetails] = Field(allow_mutation=False)
 
     class Config:
         """

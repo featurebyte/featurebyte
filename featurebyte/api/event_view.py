@@ -25,7 +25,7 @@ class EventViewColumn(Series):
     """
 
     _parent: Optional[EventView] = PrivateAttr(default=None)
-    event_data_id: PydanticObjectId
+    event_data_id: PydanticObjectId = Field(allow_mutation=False)
 
     @property
     def parent(self) -> Optional[EventView]:

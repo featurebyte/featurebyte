@@ -122,13 +122,13 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     row_index_lineage: Tuple[StrictStr, ...]
     graph: QueryGraph
     node: Node
-    tabular_source: Tuple[FeatureStoreModel, TableDetails]
-    readiness: Optional[FeatureReadiness]
+    tabular_source: Tuple[FeatureStoreModel, TableDetails] = Field(allow_mutation=False)
+    readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
     version: FeatureVersionIdentifier = Field(default_factory=get_version)
     is_default: Optional[bool]
     online_enabled: Optional[bool]
-    event_data_ids: List[PydanticObjectId] = Field(default_factory=list)
-    parent_id: Optional[PydanticObjectId]
+    event_data_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
+    parent_id: Optional[PydanticObjectId] = Field(allow_mutation=False)
 
 
 class FeatureListModel(FeatureByteBaseDocumentModel):
@@ -157,6 +157,6 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     features: List[Tuple[StrictStr, Optional[FeatureVersionIdentifier]]] = Field(
         default_factory=list
     )
-    readiness: Optional[FeatureReadiness]
-    status: Optional[FeatureListStatus]
+    readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
+    status: Optional[FeatureListStatus] = Field(allow_mutation=False)
     version: Optional[FeatureListVersionIdentifier]

@@ -35,5 +35,5 @@ class EntityModel(FeatureByteBaseDocumentModel):
         Datetime when the Entity object was first saved or published
     """
 
-    serving_names: List[StrictStr]
-    name_history: List[EntityNameHistoryEntry] = Field(default_factory=list)
+    serving_names: List[StrictStr] = Field(allow_mutation=False)
+    name_history: List[EntityNameHistoryEntry] = Field(default_factory=list, allow_mutation=False)

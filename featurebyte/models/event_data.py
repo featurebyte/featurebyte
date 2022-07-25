@@ -91,5 +91,5 @@ class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
     record_creation_date_column: Optional[StrictStr]
     column_entity_map: Optional[Dict[StrictStr, PydanticObjectId]] = Field(default=None)
     default_feature_job_setting: Optional[FeatureJobSetting]
-    history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list)
-    status: Optional[EventDataStatus] = Field(default=None)
+    history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list, allow_mutation=False)
+    status: Optional[EventDataStatus] = Field(default=None, allow_mutation=False)
