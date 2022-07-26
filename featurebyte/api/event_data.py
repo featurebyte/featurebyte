@@ -184,7 +184,9 @@ class EventData(EventDataModel, DatabaseTable):
             if response_dict["data"]:
                 event_data_dict = response_dict["data"][0]
                 return EventData(**event_data_dict)
-        raise RecordRetrievalException(response, f'Event data name "{name}" not found!')
+        raise RecordRetrievalException(
+            response, f'EventData name (event_data.name: "{name}") not found!'
+        )
 
     @validator("event_timestamp_column")
     @classmethod

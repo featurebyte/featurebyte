@@ -438,4 +438,4 @@ def test_get_event_data(snowflake_event_data, mock_config_path_env):
 
     with pytest.raises(RecordRetrievalException) as exc:
         EventData.get("unknown_event_data")
-    assert 'Event data name "unknown_event_data" not found!' in str(exc.value)
+    assert 'EventData name (event_data.name: "unknown_event_data") not found!' in str(exc.value)
