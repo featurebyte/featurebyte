@@ -14,6 +14,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.sql import (
     BINARY_OPERATION_NODE_TYPES,
+    AliasNode,
     ExpressionNode,
     SQLNode,
     SQLType,
@@ -120,6 +121,11 @@ class SQLOperationGraph:
 
         elif node_type == NodeType.PROJECT:
             sql_node = make_project_node(input_sql_nodes, parameters, output_type)
+
+        elif node_type == NodeType.ALIAS:
+            expr_node = input_sql_nodes[0]
+            assert isinstance(expr_node, ExpressionNode)
+            sql_node = AliasNode(name=parameters["name"], expr_node=expr_node)
 
         elif node_type in BINARY_OPERATION_NODE_TYPES:
             sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)
