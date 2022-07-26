@@ -405,6 +405,28 @@ def bool_feature_fixture(float_feature):
     yield bool_feature
 
 
+@pytest.fixture(name="agg_per_category_feature")
+def agg_per_category_feature_fixture(snowflake_event_view):
+    """
+    Aggregation per category feature fixture
+    """
+    Entity(name="customer", serving_names=["cust_id"]).save()
+    snowflake_event_view.cust_id.as_entity("customer")
+    grouped = snowflake_event_view.groupby("cust_id", category="col_int")
+    features = grouped.aggregate(
+        value_column="col_float",
+        method="sum",
+        windows=["30m", "2h", "1d"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
+        feature_names=["sum_30m", "sum_2h", "sum_1d"],
+    )
+    yield features["sum_1d"]
+
+
 @pytest.fixture(name="dataframe")
 def dataframe_fixture(graph, snowflake_feature_store):
     """
