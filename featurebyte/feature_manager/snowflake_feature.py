@@ -162,7 +162,9 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"select sql: {sql}")
         return self._session.execute_query(sql)
 
-    def update_feature_registry(self, new_feature: ExtendedFeatureModel) -> None:
+    def update_feature_registry(
+        self, new_feature: ExtendedFeatureModel, to_online_enable: bool
+    ) -> None:
         """
         Update Feature Registry record. Only readiness, description and is_default might be updated
 
@@ -170,6 +172,8 @@ class FeatureManagerSnowflake(BaseModel):
         ----------
         new_feature: ExtendedFeatureModel
             new input feature instance
+        to_online_enable: bool
+            whether to make the feature online enabled
 
         Raises
         ----------
@@ -185,7 +189,9 @@ class FeatureManagerSnowflake(BaseModel):
             )
         logger.debug(f"feature_versions: {feature_versions}")
 
-        update_sql = tm_update_feature_registry.render(feature=new_feature)
+        update_sql = tm_update_feature_registry.render(
+            feature=new_feature, online_enabled=to_online_enable
+        )
         logger.debug(f"update_sql: {update_sql}")
         self._session.execute_query(update_sql)
 
@@ -246,8 +252,7 @@ class FeatureManagerSnowflake(BaseModel):
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
 
             # update ONLINE_ENABLED of the feature registry record to True
-            feature.online_enabled = True
-            self.update_feature_registry(feature)
+            self.update_feature_registry(feature, to_online_enable=True)
 
     def retrieve_last_tile_index(self, feature: ExtendedFeatureModel) -> pd.DataFrame:
         """

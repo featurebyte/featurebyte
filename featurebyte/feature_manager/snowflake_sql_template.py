@@ -42,7 +42,7 @@ tm_update_feature_registry = Template(
         READINESS = '{{feature.readiness}}',
         DESCRIPTION = '{{feature.description}}',
         IS_DEFAULT = {{feature.is_default}},
-        ONLINE_ENABLED = {{feature.online_enabled}}
+        ONLINE_ENABLED = {{online_enabled}}
     WHERE NAME = '{{feature.name}}'
     AND VERSION = '{{feature.version}}'
 """

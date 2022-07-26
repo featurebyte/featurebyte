@@ -6,11 +6,13 @@ from unittest import mock
 
 import pytest
 from freezegun import freeze_time
+from pydantic import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
+    RecordRetrievalException,
     RecordUpdateException,
 )
 from featurebyte.models.entity import EntityNameHistoryEntry
@@ -21,24 +23,45 @@ def entity_fixture():
     """
     Entity fixture
     """
-    yield Entity.create(name="customer", serving_name="cust_id")
+    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity.save()
+    yield entity
 
 
 def test_entity_creation__input_validation():
     """
     Test entity creation input validation
     """
-    with pytest.raises(ValueError) as exc:
-        Entity.create(name=1234, serving_name="hello")
-    assert exc.value.errors() == [
-        {"loc": ("name",), "msg": "str type expected", "type": "type_error.str"}
-    ]
+    entity = Entity(name="hello", serving_names=["world"])
+    with pytest.raises(ValidationError) as exc:
+        entity.name = 1234
+    assert "str type expected (type=type_error.str)" in str(exc.value)
 
-    with pytest.raises(ValueError) as exc:
-        Entity.create(name="world", serving_name=234)
-    assert exc.value.errors() == [
-        {"loc": ("serving_name",), "msg": "str type expected", "type": "type_error.str"}
-    ]
+    entity = Entity(name="hello", serving_names=["world"])
+    with pytest.raises(TypeError) as exc:
+        entity.serving_names = ["1234"]
+    assert '"serving_names" has allow_mutation set to False and cannot be assigned' in str(
+        exc.value
+    )
+
+
+def test_entity__update_name(entity):
+    """
+    Test update_name in Entity class
+    """
+    # test update name (saved object)
+    assert entity.name == "customer"
+    entity.update_name("Customer")
+    assert entity.name == "Customer"
+
+    # test update name (non-saved object)
+    another_entity = Entity(name="AnotherCustomer", serving_names=["cust"])
+    with pytest.raises(RecordRetrievalException) as exc:
+        Entity.get("AnotherCustomer")
+    assert 'Entity name "AnotherCustomer" not found!' in str(exc.value)
+    assert another_entity.name == "AnotherCustomer"
+    another_entity.update_name("another_customer")
+    assert another_entity.name == "another_customer"
 
 
 def test_entity_creation(entity):
@@ -50,16 +73,16 @@ def test_entity_creation(entity):
     assert entity.name_history == []
 
     with pytest.raises(DuplicatedRecordException) as exc:
-        Entity.create(name="customer", serving_name="customer_id")
+        Entity(name="customer", serving_names=["customer_id"]).save()
     assert 'Entity name (entity.name: "customer") already exists.' in str(exc.value)
 
     with pytest.raises(DuplicatedRecordException) as exc:
-        Entity.create(name="Customer", serving_name="cust_id")
+        Entity(name="Customer", serving_names=["cust_id"]).save()
     assert 'Entity serving name (entity.serving_names: "cust_id") already exists.' in str(exc.value)
 
     with mock.patch("featurebyte.api.entity.Configurations"):
         with pytest.raises(RecordCreationException):
-            Entity.create(name="Customer", serving_name="cust_id")
+            Entity(name="Customer", serving_names=["cust_id"]).save()
 
 
 @freeze_time("2022-07-01")
@@ -76,7 +99,7 @@ def test_entity_update_name(entity):
     ]
 
     # create another entity
-    Entity.create(name="product", serving_name="product_id")
+    Entity(name="product", serving_names=["product_id"]).save()
 
     with pytest.raises(ValueError) as exc:
         entity.update_name(type)
@@ -93,3 +116,21 @@ def test_entity_update_name(entity):
     with mock.patch("featurebyte.api.entity.Configurations"):
         with pytest.raises(RecordUpdateException):
             entity.update_name("hello")
+
+
+def test_get_entity():
+    """
+    Test Entity.get function
+    """
+    # create entities & save to persistent
+    cust_entity = Entity(name="customer", serving_names=["cust_id"])
+    prod_entity = Entity(name="product", serving_names=["prod_id"])
+    region_entity = Entity(name="region", serving_names=["region"])
+    cust_entity.save()
+    prod_entity.save()
+    region_entity.save()
+
+    # load the entities from the persistent
+    assert Entity.get("customer") == cust_entity
+    assert Entity.get("product") == prod_entity
+    assert Entity.get("region") == region_entity

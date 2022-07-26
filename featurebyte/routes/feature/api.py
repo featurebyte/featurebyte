@@ -13,11 +13,11 @@ router = APIRouter(prefix="/feature")
 
 
 @router.post("", response_model=Feature, status_code=HTTPStatus.CREATED)
-def create_feature(request: Request, data: FeatureCreate) -> Feature:
+async def create_feature(request: Request, data: FeatureCreate) -> Feature:
     """
     Create Feature
     """
-    feature: Feature = request.state.controller.create_feature(
+    feature: Feature = await request.state.controller.create_feature(
         user=request.state.user,
         persistent=request.state.persistent,
         get_credential=request.state.get_credential,

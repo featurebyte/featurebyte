@@ -99,7 +99,7 @@ def run_groupby_and_get_tile_table_identifier(
     for by_key in by_keys:
         assert isinstance(by_key, str)
         if create_entity:
-            Entity.create(name=by_key, serving_name=by_key)
+            Entity(name=by_key, serving_names=[by_key]).save()
         event_view[by_key].as_entity(by_key)
     feature_names = set(aggregate_kwargs["feature_names"])
     features = event_view.groupby(**groupby_kwargs).aggregate(**aggregate_kwargs)

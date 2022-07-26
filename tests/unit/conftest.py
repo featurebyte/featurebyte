@@ -344,7 +344,7 @@ def grouped_event_view_fixture(snowflake_event_view):
     """
     EventViewGroupBy fixture
     """
-    Entity.create(name="customer", serving_name="cust_id")
+    Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
     grouped = snowflake_event_view.groupby("cust_id")
     assert isinstance(grouped, EventViewGroupBy)
@@ -513,7 +513,7 @@ def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_ev
     mock_execute_query.size_effect = None
     _ = snowflake_connector
 
-    Entity.create(name="customer", serving_name="cust_id")
+    Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
     feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
         value_column="col_float",
@@ -527,7 +527,7 @@ def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_ev
         },
     )
     feature = feature_group["sum_30m"]
-    feature.online_enabled = False
+    feature.__dict__["online_enabled"] = False
     return feature
 
 
@@ -550,7 +550,7 @@ def mock_snowflake_feature_list_model(
     mock_execute_query.size_effect = None
     _ = snowflake_connector
 
-    Entity.create(name="customer", serving_name="cust_id")
+    Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
     feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
         value_column="col_float",

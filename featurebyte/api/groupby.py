@@ -42,7 +42,7 @@ class EventViewGroupBy(OpsMixin):
                 raise ValueError(f'Column "{key}" is not an entity!')
             assert obj.column_entity_map is not None
             entity_id = obj.column_entity_map[key]
-            entity = get_entity_by_id(entity_id)
+            entity = get_entity_by_id(str(entity_id))
             serving_names.append(entity["serving_names"][0])
 
         if category is not None and category not in obj.columns:

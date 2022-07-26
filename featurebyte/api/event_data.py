@@ -8,7 +8,7 @@ from typing import Any, Tuple
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
-from pydantic import validator
+from pydantic import Field, validator
 
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
@@ -82,7 +82,7 @@ class EventData(EventDataModel, DatabaseTable):
     EventData class
     """
 
-    tabular_source: Tuple[FeatureStore, TableDetails]
+    tabular_source: Tuple[FeatureStore, TableDetails] = Field(allow_mutation=False)
 
     class Config:
         """
@@ -156,6 +156,37 @@ class EventData(EventDataModel, DatabaseTable):
                 response, f'EventData name "{name}" exists in saved record.'
             )
         raise RecordRetrievalException(response)
+
+    @classmethod
+    def get(cls, name: str) -> EventData:
+        """
+        Retrieve event data from the persistent given event data name
+
+        Parameters
+        ----------
+        name: str
+            Event data name
+
+        Returns
+        -------
+        EventData
+            EventData object of the given event data name
+
+        Raises
+        ------
+        RecordRetrievalException
+            When the event data not found
+        """
+        client = Configurations().get_client()
+        response = client.get(url="/event_data/", params={"name": name})
+        if response.status_code == HTTPStatus.OK:
+            response_dict = response.json()
+            if response_dict["data"]:
+                event_data_dict = response_dict["data"][0]
+                return EventData(**event_data_dict)
+        raise RecordRetrievalException(
+            response, f'EventData name (event_data.name: "{name}") not found!'
+        )
 
     @validator("event_timestamp_column")
     @classmethod

@@ -78,7 +78,8 @@ def create_success_response_fixture(
     return response
 
 
-def test_create_201(
+@pytest.mark.asyncio
+async def test_create_201(
     test_api_client_persistent,
     feature_model_dict,
     create_success_response,
@@ -105,7 +106,7 @@ def test_create_201(
         assert result[key] == feature_model_dict[key]
 
     # check feature namespace
-    feat_namespace_docs, match_count = persistent.find(
+    feat_namespace_docs, match_count = await persistent.find(
         collection_name="feature_namespace",
         query_filter={"name": feature_model_dict["name"]},
     )
@@ -128,7 +129,7 @@ def test_create_201(
     new_version_result = response.json()
 
     # check feature namespace
-    feat_namespace_docs, match_count = persistent.find(
+    feat_namespace_docs, match_count = await persistent.find(
         collection_name="feature_namespace",
         query_filter={"name": feature_model_dict["name"]},
     )

@@ -37,14 +37,15 @@ def test_from_event_data(snowflake_event_data):
     assert event_view_first.row_index_lineage == snowflake_event_data.row_index_lineage
     assert event_view_first.column_entity_map is snowflake_event_data.column_entity_map is None
 
-    entity = Entity.create(name="customer", serving_name="cust_id")
+    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity.save()
     snowflake_event_data.cust_id.as_entity("customer")
     snowflake_event_data.update_default_feature_job_setting(
         blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
     )
     event_view_second = EventView.from_event_data(snowflake_event_data)
     assert event_view_second.column_entity_map == snowflake_event_data.column_entity_map
-    assert event_view_second.column_entity_map == {"cust_id": str(entity.id)}
+    assert event_view_second.column_entity_map == {"cust_id": entity.id}
     assert event_view_second.default_feature_job_setting == FeatureJobSetting(
         blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
     )
@@ -163,20 +164,22 @@ def test_setting_column_as_entity__on_original_frame(snowflake_event_view):
     """
     Test setting a specific column as entity
     """
-    cust_entity = Entity.create(name="customer", serving_name="cust_id")
+    cust_entity = Entity(name="customer", serving_names=["cust_id"])
+    cust_entity.save()
 
     # test on original column
     snowflake_event_view.cust_id.as_entity("customer")
     assert id(snowflake_event_view) == id(snowflake_event_view.cust_id.parent)
-    assert snowflake_event_view.column_entity_map == {"cust_id": str(cust_entity.id)}
+    assert snowflake_event_view.column_entity_map == {"cust_id": cust_entity.id}
 
     # test on transformed column
-    entity = Entity.create(name="some_random_entity", serving_name="random_id")
+    entity = Entity(name="some_random_entity", serving_names=["random_id"])
+    entity.save()
     snowflake_event_view["col_int_entity"] = 1 * snowflake_event_view["col_int"]
     snowflake_event_view.col_int_entity.as_entity("some_random_entity")
     assert snowflake_event_view.column_entity_map == {
-        "cust_id": str(cust_entity.id),
-        "col_int_entity": str(entity.id),
+        "cust_id": cust_entity.id,
+        "col_int_entity": entity.id,
     }
     assert snowflake_event_view.default_feature_job_setting == FeatureJobSetting(
         blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
@@ -190,18 +193,19 @@ def test_setting_column_as_entity__on_original_frame(snowflake_event_view):
 
     # test remove entity
     snowflake_event_view.col_int_entity.as_entity(None)
-    assert snowflake_event_view.column_entity_map == {"cust_id": str(cust_entity.id)}
+    assert snowflake_event_view.column_entity_map == {"cust_id": cust_entity.id}
 
 
 def test_setting_column_as_entity__on_sub_frame(snowflake_event_view):
     """
     Test setting a specific column as entity (on sub-frame)
     """
-    cust_entity = Entity.create(name="customer", serving_name="cust_id")
+    cust_entity = Entity(name="customer", serving_names=["cust_id"])
+    cust_entity.save()
     snowflake_event_view.cust_id.as_entity("customer")
     sub_view_first = snowflake_event_view[["cust_id", "col_int"]]
     assert isinstance(sub_view_first, EventView)
-    assert sub_view_first.column_entity_map == {"cust_id": str(cust_entity.id)}
+    assert sub_view_first.column_entity_map == {"cust_id": cust_entity.id}
     assert set(sub_view_first.columns) == {"event_timestamp", "cust_id", "col_int"}
     assert (
         sub_view_first.default_feature_job_setting
@@ -214,11 +218,12 @@ def test_setting_column_as_entity__on_sub_frame(snowflake_event_view):
     expected_msg = "Timestamp or entity column 'cust_id' cannot be modified!"
     assert expected_msg in str(exc.value)
 
-    entity = Entity.create(name="some_random_entity", serving_name="random_id")
+    entity = Entity(name="some_random_entity", serving_names=["random_id"])
+    entity.save()
     sub_view_second = snowflake_event_view[["col_int", "col_float"]]
     assert sub_view_second.column_entity_map == {}
     sub_view_second.col_int.as_entity("some_random_entity")
-    assert sub_view_second.column_entity_map == {"col_int": str(entity.id)}
+    assert sub_view_second.column_entity_map == {"col_int": entity.id}
     assert (
         sub_view_second.default_feature_job_setting
         == snowflake_event_view.default_feature_job_setting

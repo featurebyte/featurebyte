@@ -3,12 +3,14 @@ Persistent storage using MongoDB
 """
 from __future__ import annotations
 
-from typing import Any, Iterable, Iterator, List, Literal, Optional, Tuple
+from typing import Any, AsyncIterator, Iterable, List, Literal, Optional, Tuple
 
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 
 import pymongo
 from bson.objectid import ObjectId
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.results import DeleteResult, InsertManyResult, InsertOneResult, UpdateResult
 
 from featurebyte.persistent.base import (
     Document,
@@ -36,11 +38,11 @@ class MongoDB(Persistent):
             Database to use
         """
         self._database = database
-        self._client: pymongo.mongo_client.MongoClient[Any] = pymongo.MongoClient(uri)
-        self._db: pymongo.database.Database[Any] = self._client[self._database]
+        self._client = AsyncIOMotorClient(uri)
+        self._db = self._client[self._database]
         self._session: Any = None
 
-    def insert_one(self, collection_name: str, document: Document) -> ObjectId:
+    async def insert_one(self, collection_name: str, document: Document) -> ObjectId:
         """
         Insert record into collection
 
@@ -62,12 +64,16 @@ class MongoDB(Persistent):
             Document already exist
         """
         try:
-            result = self._db[collection_name].insert_one(document, session=self._session)
+            result: InsertOneResult = await self._db[collection_name].insert_one(
+                document, session=self._session
+            )
             return ObjectId(result.inserted_id)
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
 
-    def insert_many(self, collection_name: str, documents: Iterable[Document]) -> List[ObjectId]:
+    async def insert_many(
+        self, collection_name: str, documents: Iterable[Document]
+    ) -> List[ObjectId]:
         """
         Insert records into collection
 
@@ -89,12 +95,14 @@ class MongoDB(Persistent):
             Document already exist
         """
         try:
-            result = self._db[collection_name].insert_many(documents, session=self._session)
+            result: InsertManyResult = await self._db[collection_name].insert_many(
+                documents, session=self._session
+            )
             return result.inserted_ids
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
 
-    def find_one(self, collection_name: str, query_filter: QueryFilter) -> Optional[Document]:
+    async def find_one(self, collection_name: str, query_filter: QueryFilter) -> Optional[Document]:
         """
         Find one record from collection
 
@@ -110,9 +118,10 @@ class MongoDB(Persistent):
         Optional[DocumentType]
             Retrieved document
         """
-        return self._db[collection_name].find_one(query_filter)
+        result: Optional[Document] = await self._db[collection_name].find_one(query_filter)
+        return result
 
-    def find(
+    async def find(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -145,7 +154,7 @@ class MongoDB(Persistent):
             Retrieved documents and total count
         """
         cursor = self._db[collection_name].find(query_filter)
-        total = self._db[collection_name].count_documents(query_filter)
+        total = await self._db[collection_name].count_documents(query_filter)
 
         if sort_by:
             cursor = cursor.sort(
@@ -156,9 +165,10 @@ class MongoDB(Persistent):
             skips = page_size * (page - 1)
             cursor = cursor.skip(skips).limit(page_size)
 
-        return cursor, total
+        result: List[Document] = await cursor.to_list()
+        return result, total
 
-    def update_one(
+    async def update_one(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -181,13 +191,12 @@ class MongoDB(Persistent):
         int
             Number of records modified
         """
-        return (
-            self._db[collection_name]
-            .update_one(query_filter, update, session=self._session)
-            .modified_count
+        result: UpdateResult = await self._db[collection_name].update_one(
+            query_filter, update, session=self._session
         )
+        return result.modified_count
 
-    def update_many(
+    async def update_many(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -210,13 +219,40 @@ class MongoDB(Persistent):
         int
             Number of records modified
         """
-        return (
-            self._db[collection_name]
-            .update_many(query_filter, update, session=self._session)
-            .modified_count
+        result: UpdateResult = await self._db[collection_name].update_many(
+            query_filter, update, session=self._session
         )
+        return result.modified_count
 
-    def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
+    async def replace_one(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        replacement: Document,
+    ) -> int:
+        """
+        Replace one record in collection
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        query_filter: QueryFilter
+            Conditions to filter on
+        replacement: Document
+            New document to replace existing one
+
+        Returns
+        -------
+        int
+            Number of records modified
+        """
+        result: UpdateResult = await self._db[collection_name].replace_one(
+            query_filter, replacement, session=self._session
+        )
+        return result.modified_count
+
+    async def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete one record from collection
 
@@ -232,11 +268,12 @@ class MongoDB(Persistent):
         int
             Number of records deleted
         """
-        return (
-            self._db[collection_name].delete_one(query_filter, session=self._session).deleted_count
+        result: DeleteResult = await self._db[collection_name].delete_one(
+            query_filter, session=self._session
         )
+        return result.deleted_count
 
-    def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
+    async def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete many records from collection
 
@@ -252,22 +289,23 @@ class MongoDB(Persistent):
         int
             Number of records deleted
         """
-        return (
-            self._db[collection_name].delete_many(query_filter, session=self._session).deleted_count
+        result: DeleteResult = await self._db[collection_name].delete_many(
+            query_filter, session=self._session
         )
+        return result.deleted_count
 
-    @contextmanager
-    def start_transaction(self) -> Iterator[MongoDB]:
+    @asynccontextmanager
+    async def start_transaction(self) -> AsyncIterator[MongoDB]:
         """
         MongoDB transaction session context manager
 
         Yields
         ------
-        Iterator[MongoDB]
+        AsyncIterator[MongoDB]
             MongoDB object
         """
-        with self._client.start_session() as session:
-            with session.start_transaction():
+        async with await self._client.start_session() as session:
+            async with session.start_transaction():
                 self._session = session
                 yield self
                 self._session = None

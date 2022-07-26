@@ -9,11 +9,10 @@ from datetime import datetime
 from enum import Enum
 
 from beanie import PydanticObjectId
-from bson.objectid import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.feature_store import DatabaseTableModel
 
 
@@ -24,8 +23,8 @@ class FeatureJobSetting(FeatureByteBaseModel):
     frequency: str
     time_modulo_frequency: str
 
-    # pylint: disable=no-self-argument
     @root_validator(pre=True)
+    @classmethod
     def validate_setting_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Validate feature job setting parameters
 
@@ -48,7 +47,14 @@ class FeatureJobSetting(FeatureByteBaseModel):
 
 
 class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
-    """Model for an entry in setting history"""
+    """
+    Model for an entry in setting history
+
+    created_at: datetime
+        Datetime when the history entry is created
+    setting: FeatureJobSetting
+        Feature job setting that just becomes history (no longer used) at the time of the history entry creation
+    """
 
     created_at: datetime
     setting: FeatureJobSetting
@@ -57,12 +63,12 @@ class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
 class EventDataStatus(str, Enum):
     """EventData status"""
 
-    PUBLISHED = "PUBLISHED"
-    DRAFT = "DRAFT"
     DEPRECATED = "DEPRECATED"
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
 
 
-class EventDataModel(DatabaseTableModel):
+class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
     """
     Model for EventData entity
 
@@ -88,12 +94,9 @@ class EventDataModel(DatabaseTableModel):
         Status of the EventData
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    name: str
-    event_timestamp_column: str
-    record_creation_date_column: Optional[str]
-    column_entity_map: Optional[Dict[str, str]] = Field(default=None)
+    event_timestamp_column: StrictStr
+    record_creation_date_column: Optional[StrictStr]
+    column_entity_map: Optional[Dict[StrictStr, PydanticObjectId]] = Field(default=None)
     default_feature_job_setting: Optional[FeatureJobSetting]
-    created_at: Optional[datetime] = Field(default=None)
-    history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list)
-    status: Optional[EventDataStatus] = Field(default=None)
+    history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list, allow_mutation=False)
+    status: Optional[EventDataStatus] = Field(default=None, allow_mutation=False)

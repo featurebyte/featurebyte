@@ -25,7 +25,7 @@ class EntityController:
     collection_name = CollectionName.ENTITY
 
     @classmethod
-    def create_entity(
+    async def create_entity(
         cls,
         user: Any,
         persistent: Persistent,
@@ -60,7 +60,7 @@ class EntityController:
             created_at=get_utc_now(),
         )
 
-        conflict_entity = persistent.find_one(
+        conflict_entity = await persistent.find_one(
             collection_name=cls.collection_name, query_filter={"name": data.name}
         )
         if conflict_entity:
@@ -69,7 +69,7 @@ class EntityController:
                 detail=f'Entity name (entity.name: "{data.name}") already exists.',
             )
 
-        conflict_entity = persistent.find_one(
+        conflict_entity = await persistent.find_one(
             collection_name=cls.collection_name,
             query_filter={"serving_names": document.serving_names},
         )
@@ -79,14 +79,14 @@ class EntityController:
                 detail=f'Entity serving name (entity.serving_names: "{data.serving_name}") already exists.',
             )
 
-        insert_id = persistent.insert_one(
+        insert_id = await persistent.insert_one(
             collection_name=cls.collection_name, document=document.dict(by_alias=True)
         )
         assert insert_id == document.id
         return document
 
     @classmethod
-    def list_entities(
+    async def list_entities(
         cls,
         user: Any,
         persistent: Persistent,
@@ -124,7 +124,7 @@ class EntityController:
         query_filter = {"user_id": user.id}
         if name is not None:
             query_filter["name"] = name
-        docs, total = persistent.find(
+        docs, total = await persistent.find(
             collection_name=cls.collection_name,
             query_filter=query_filter,
             sort_by=sort_by,
@@ -135,7 +135,7 @@ class EntityController:
         return EntityList(page=page, page_size=page_size, total=total, data=list(docs))
 
     @classmethod
-    def get_entity(cls, user: Any, persistent: Persistent, entity_id: ObjectId) -> Entity:
+    async def get_entity(cls, user: Any, persistent: Persistent, entity_id: ObjectId) -> Entity:
         """
         Get Entity from the persistent (GitDB or MongoDB)
 
@@ -159,7 +159,9 @@ class EntityController:
             If the entity not found
         """
         query_filter = {"_id": ObjectId(entity_id), "user_id": user.id}
-        entity = persistent.find_one(collection_name=cls.collection_name, query_filter=query_filter)
+        entity = await persistent.find_one(
+            collection_name=cls.collection_name, query_filter=query_filter
+        )
         # check that entity id exists
         if not entity:
             raise HTTPException(
@@ -169,7 +171,7 @@ class EntityController:
         return Entity(**entity)
 
     @classmethod
-    def update_entity(
+    async def update_entity(
         cls, user: Any, persistent: Persistent, entity_id: ObjectId, data: EntityUpdate
     ) -> Entity:
         """
@@ -199,7 +201,9 @@ class EntityController:
             If the entity name already exists in persistent
         """
         query_filter = {"_id": ObjectId(entity_id), "user_id": user.id}
-        entity = persistent.find_one(collection_name=cls.collection_name, query_filter=query_filter)
+        entity = await persistent.find_one(
+            collection_name=cls.collection_name, query_filter=query_filter
+        )
 
         # check that entity id exists
         not_found_exception = HTTPException(
@@ -214,7 +218,7 @@ class EntityController:
         name_history = entity["name_history"]
 
         # check whether conflict with other entity name
-        entities, total_cnt = persistent.find(
+        entities, total_cnt = await persistent.find(
             collection_name=cls.collection_name,
             query_filter={"user_id": user.id, "name": data.name},
             page_size=2,
@@ -230,7 +234,7 @@ class EntityController:
                 )
 
         name_history.append(EntityNameHistoryEntry(created_at=get_utc_now(), name=cur_name).dict())
-        updated_cnt = persistent.update_one(
+        updated_cnt = await persistent.update_one(
             collection_name=cls.collection_name,
             query_filter=query_filter,
             update={"$set": {"name": data.name, "name_history": name_history}},
@@ -238,7 +242,9 @@ class EntityController:
         if not updated_cnt:
             raise not_found_exception
 
-        entity = persistent.find_one(collection_name=cls.collection_name, query_filter=data.dict())
+        entity = await persistent.find_one(
+            collection_name=cls.collection_name, query_filter=data.dict()
+        )
         if entity is None:
             raise not_found_exception
         return Entity(**entity)

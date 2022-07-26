@@ -3,10 +3,20 @@ Persistent persistent base class
 """
 from __future__ import annotations
 
-from typing import Any, Iterable, Iterator, List, Literal, Mapping, MutableMapping, Optional, Tuple
+from typing import (
+    Any,
+    AsyncIterator,
+    Iterable,
+    List,
+    Literal,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Tuple,
+)
 
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 
 from bson.objectid import ObjectId
 
@@ -27,7 +37,7 @@ class Persistent(ABC):
     """
 
     @abstractmethod
-    def insert_one(self, collection_name: str, document: Document) -> ObjectId:
+    async def insert_one(self, collection_name: str, document: Document) -> ObjectId:
         """
         Insert record into collection
 
@@ -50,7 +60,9 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    def insert_many(self, collection_name: str, documents: Iterable[Document]) -> List[ObjectId]:
+    async def insert_many(
+        self, collection_name: str, documents: Iterable[Document]
+    ) -> List[ObjectId]:
         """
         Insert records into collection
 
@@ -73,7 +85,7 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    def find_one(self, collection_name: str, query_filter: QueryFilter) -> Optional[Document]:
+    async def find_one(self, collection_name: str, query_filter: QueryFilter) -> Optional[Document]:
         """
         Find one record from collection
 
@@ -91,7 +103,7 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    def find(
+    async def find(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -125,7 +137,7 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    def update_one(
+    async def update_one(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -150,7 +162,7 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    def update_many(
+    async def update_many(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -175,7 +187,32 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
+    async def replace_one(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        replacement: Document,
+    ) -> int:
+        """
+        Replace one record in collection
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        query_filter: QueryFilter
+            Conditions to filter on
+        replacement: Document
+            New document to replace existing one
+
+        Returns
+        -------
+        int
+            Number of records modified
+        """
+
+    @abstractmethod
+    async def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete one record from collection
 
@@ -193,7 +230,7 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
+    async def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete many records from collection
 
@@ -211,13 +248,14 @@ class Persistent(ABC):
         """
 
     @abstractmethod
-    @contextmanager
-    def start_transaction(self) -> Iterator[Persistent]:
+    @asynccontextmanager
+    async def start_transaction(self) -> AsyncIterator[Persistent]:
         """
         Context manager for transaction session
 
         Yields
         ------
-        Iterator[Persistent]
+        AsyncIterator[Persistent]
             Persistent object
         """
+        yield self
