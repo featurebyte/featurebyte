@@ -132,15 +132,19 @@ jobs:
 
         export OUTPUT=$(cat output.txt)
 
+        # Set BASE_REF
+        export GITHUB_BASE_REF=${GITHUB_REF_NAME}
+
         # Sending Slack Message
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        git fetch --no-recurse-submodules --prune origin ${GITHUB_BASE_REF}
+        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_BASE_REF}")
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
         # Lookup email address and export to AUTHOR_ID
         export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
 
-        # Set GITHUB_HEAD_REF this is onyl present when during a PR event
-        export GITHUB_HEAD_REF=${GITHUB_HEAD_REF:-MERGING}
+        # For Push events we only have GITHUB_REF_NAME
+        export GITHUB_HEAD_REF=MERGE
 
         cat .github/slack-template-PUSH.json | envsubst | curl -X POST \
           -H "Authorization: Bearer ${SLACK_OAUTH}" \
@@ -178,11 +182,15 @@ jobs:
           -H "Authorization: Bearer ${SLACK_OAUTH}" \
           -H 'Content-type: application/json; charset=utf-8' \
           --data-binary @- https://slack.com/api/chat.postMessage
+
     - name: Slack Message failure
       if: ${{ failure() }}
       run: |
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+        if [[ ${GITHUB_EVENT_NAME} == "push" ]]; then
+          export GITHUB_HEAD_REF=${GITHUB_BASE_REF}
+        fi
         # Get the last committed email address
+        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
         export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
