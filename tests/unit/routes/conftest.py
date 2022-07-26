@@ -5,10 +5,10 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import mongomock
 import pymongo
 import pytest
 from fastapi.testclient import TestClient
+from mongomock_motor import AsyncMongoMockClient
 
 from featurebyte.app import app
 from featurebyte.enum import CollectionName
@@ -30,9 +30,10 @@ def persistent_fixture(request):
     Persistent fixture
     """
     if request.param == "mongodb":
-        with mongomock.patch(servers=(("server.example.com", 27017),)):
+        with patch("motor.motor_asyncio.AsyncIOMotorClient.__new__") as mock_new:
+            mongo_client = AsyncMongoMockClient()
+            mock_new.return_value = mongo_client
             persistent = MongoDB(uri="mongodb://server.example.com:27017", database="test")
-            mongo_client = pymongo.MongoClient("mongodb://server.example.com:27017")
             database = mongo_client["test"]
             collection_index_map = {
                 CollectionName.EVENT_DATA: [

@@ -4,7 +4,17 @@ Persistent storage using Git
 # pylint: disable=protected-access
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable, Iterator, List, Literal, MutableMapping, Optional, Tuple
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Iterable,
+    List,
+    Literal,
+    MutableMapping,
+    Optional,
+    Tuple,
+)
 
 import functools
 import json
@@ -12,7 +22,7 @@ import os
 import shutil
 import tempfile
 import uuid
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 from enum import Enum
 
 from bson import json_util
@@ -60,9 +70,9 @@ def _sync_push(func: Any) -> Any:
     """
 
     @functools.wraps(func)
-    def wrapper_decorator(cls: GitDB, *args: int, **kwargs: str) -> Any:
+    async def wrapper_decorator(cls: GitDB, *args: int, **kwargs: str) -> Any:
         cls._reset_branch()
-        value = func(cls, *args, **kwargs)
+        value = await func(cls, *args, **kwargs)
         cls._push()
         return value
 
@@ -483,6 +493,50 @@ class GitDB(Persistent):
             num_updated += 1
         return num_updated
 
+    def _replace_files(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        replacement: Document,
+        multiple: bool,
+    ) -> int:
+        """
+        Update files in the repo
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to add document to
+        query_filter: QueryFilter
+            Conditions to filter on
+        replacement: Document
+            Values to update
+        multiple: bool
+            Update multiple files
+
+        Returns
+        -------
+        int
+            Number of documents updated
+        """
+        docs = self._find_files(
+            collection_name=collection_name, query_filter=query_filter, multiple=multiple
+        )
+        num_updated = 0
+
+        for doc in docs:
+            # use original id for replacement doc
+            doc_name = self.get_doc_name_func(collection_name)(doc)
+            replacement["_id"] = doc["_id"]
+            self._add_file(
+                collection_name=collection_name,
+                document=replacement,
+                doc_name=doc_name,
+                replace=True,
+            )
+            num_updated += 1
+        return num_updated
+
     def _delete_files(
         self,
         collection_name: str,
@@ -629,7 +683,7 @@ class GitDB(Persistent):
         return self._collection_to_doc_name_func_map.get(collection, self.default_doc_name_func)
 
     @_sync_push
-    def insert_one(self, collection_name: str, document: Document) -> ObjectId:
+    async def insert_one(self, collection_name: str, document: Document) -> ObjectId:
         """
         Insert record into collection
 
@@ -653,7 +707,9 @@ class GitDB(Persistent):
         )
 
     @_sync_push
-    def insert_many(self, collection_name: str, documents: Iterable[Document]) -> List[ObjectId]:
+    async def insert_many(
+        self, collection_name: str, documents: Iterable[Document]
+    ) -> List[ObjectId]:
         """
         Insert records into collection
 
@@ -681,7 +737,7 @@ class GitDB(Persistent):
             )
         return doc_ids
 
-    def find_one(self, collection_name: str, query_filter: QueryFilter) -> Optional[Document]:
+    async def find_one(self, collection_name: str, query_filter: QueryFilter) -> Optional[Document]:
         """
         Find one record from collection
 
@@ -705,7 +761,7 @@ class GitDB(Persistent):
             return None
         return docs[0]
 
-    def find(
+    async def find(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -757,7 +813,7 @@ class GitDB(Persistent):
         return docs, total
 
     @_sync_push
-    def update_one(
+    async def update_one(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -788,7 +844,7 @@ class GitDB(Persistent):
         )
 
     @_sync_push
-    def update_many(
+    async def update_many(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -816,7 +872,38 @@ class GitDB(Persistent):
         )
 
     @_sync_push
-    def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
+    async def replace_one(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        replacement: Document,
+    ) -> int:
+        """
+        Replace one record in collection
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        query_filter: QueryFilter
+            Conditions to filter on
+        replacement: Document
+            New document to replace existing one
+
+        Returns
+        -------
+        int
+            Number of records modified
+        """
+        return self._replace_files(
+            collection_name=collection_name,
+            query_filter=query_filter,
+            replacement=replacement,
+            multiple=False,
+        )
+
+    @_sync_push
+    async def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete one record from collection
 
@@ -839,7 +926,7 @@ class GitDB(Persistent):
         )
 
     @_sync_push
-    def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
+    async def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete many records from collection
 
@@ -868,14 +955,14 @@ class GitDB(Persistent):
         self.repo.git.restore("--staged", ".")
         self.repo.git.clean("-fd")
 
-    @contextmanager
-    def start_transaction(self) -> Iterator[GitDB]:
+    @asynccontextmanager
+    async def start_transaction(self) -> AsyncIterator[GitDB]:
         """
         GitDB transaction session context manager
 
         Yields
         ------
-        Iterator[GitDB]
+        AsyncIterator[GitDB]
             GitDB object
 
         Raises

@@ -28,7 +28,7 @@ class FeatureController:
     collection_name = CollectionName.FEATURE
 
     @classmethod
-    def _validate_feature(cls, document: Feature, session: Persistent) -> None:
+    async def _validate_feature(cls, document: Feature, session: Persistent) -> None:
         """
         Validate feature document to make sure the feature & parent feature are valid
 
@@ -46,7 +46,7 @@ class FeatureController:
         """
         if document.parent_id is None:
             # when the parent_id is missing, it implies that the feature is a new feature
-            conflict_feature = session.find_one(
+            conflict_feature = await session.find_one(
                 collection_name=cls.collection_name, query_filter={"name": document.name}
             )
             if conflict_feature:
@@ -57,7 +57,7 @@ class FeatureController:
                 )
         else:
             # if parent_id exists, make sure the parent feature exists at persistent & has consistent name
-            parent_feature_dict = session.find_one(
+            parent_feature_dict = await session.find_one(
                 collection_name=cls.collection_name,
                 query_filter={"_id": ObjectId(document.parent_id)},
             )
@@ -81,7 +81,7 @@ class FeatureController:
                 )
 
         for event_data_id in document.event_data_ids:
-            event_data_dict = session.find_one(
+            event_data_dict = await session.find_one(
                 collection_name=CollectionName.EVENT_DATA,
                 query_filter={"_id": ObjectId(event_data_id)},
             )
@@ -184,7 +184,7 @@ class FeatureController:
                 raise exc
 
     @classmethod
-    def create_feature(
+    async def create_feature(
         cls, user: Any, persistent: Persistent, get_credential: Any, data: FeatureCreate
     ) -> Feature:
         """
@@ -212,9 +212,9 @@ class FeatureController:
             If the feature name conflicts with existing feature name
         """
 
-        with persistent.start_transaction() as session:
+        async with persistent.start_transaction() as session:
             if data.id:
-                conflict_feature = session.find_one(
+                conflict_feature = await session.find_one(
                     collection_name=cls.collection_name, query_filter={"_id": data.id}
                 )
                 if conflict_feature:
@@ -232,9 +232,9 @@ class FeatureController:
             )
             assert document.id == data.id
             # validate feature payload
-            cls._validate_feature(document=document, session=session)
+            await cls._validate_feature(document=document, session=session)
 
-            insert_id = session.insert_one(
+            insert_id = await session.insert_one(
                 collection_name=cls.collection_name, document=document.dict(by_alias=True)
             )
             assert insert_id == document.id
@@ -250,18 +250,18 @@ class FeatureController:
                     default_version_id=insert_id,
                     default_version_mode=DefaultVersionMode.AUTO,
                 )
-                session.insert_one(
+                await session.insert_one(
                     collection_name=CollectionName.FEATURE_NAMESPACE,
                     document=doc_feature_namespace.dict(by_alias=True),
                 )
             else:
                 # update feature namespace object
-                feature_namespace_dict = session.find_one(
+                feature_namespace_dict = await session.find_one(
                     collection_name=CollectionName.FEATURE_NAMESPACE,
                     query_filter={"name": document.name},
                 )
                 feature_namespace = FeatureNameSpace(**feature_namespace_dict)  # type: ignore
-                session.update_one(
+                await session.update_one(
                     collection_name=CollectionName.FEATURE_NAMESPACE,
                     query_filter={"_id": feature_namespace.id},
                     update={

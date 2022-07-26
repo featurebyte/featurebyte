@@ -26,16 +26,17 @@ def mongo_persistent_fixture():
 @pytest.mark.skipif(
     os.getenv("MONGO_CONNECTION") is None, reason="MongoDB connection is not available."
 )
-def test_start_transaction__success(mongo_persistent):
+@pytest.mark.asyncio
+async def test_start_transaction__success(mongo_persistent):
     """
     Test start_transaction context manager
     """
     persistent, database = mongo_persistent
     col = "test_col"
 
-    with persistent.start_transaction() as session:
-        session.insert_one(collection_name=col, document={"key1": "value1"})
-        session.insert_one(collection_name=col, document={"key2": "value2"})
+    async with persistent.start_transaction() as session:
+        await session.insert_one(collection_name=col, document={"key1": "value1"})
+        await session.insert_one(collection_name=col, document={"key2": "value2"})
 
     # check both records written to the mongodb
     output = sorted(database[col].find({}, {"_id": False}), key=lambda d: list(d.keys()))
@@ -45,7 +46,8 @@ def test_start_transaction__success(mongo_persistent):
 @pytest.mark.skipif(
     os.getenv("MONGO_CONNECTION") is None, reason="MongoDB connection is not available."
 )
-def test_start_transaction__exception_within_transaction(mongo_persistent):
+@pytest.mark.asyncio
+async def test_start_transaction__exception_within_transaction(mongo_persistent):
     """
     Test start_transaction context manager
     """
@@ -53,9 +55,9 @@ def test_start_transaction__exception_within_transaction(mongo_persistent):
     col = "test_col"
 
     with pytest.raises(AssertionError):
-        with persistent.start_transaction() as session:
-            session.insert_one(collection_name=col, document={"key1": "value1"})
-            session.insert_one(collection_name=col, document={"key2": "value2"})
+        async with persistent.start_transaction() as session:
+            await session.insert_one(collection_name=col, document={"key1": "value1"})
+            await session.insert_one(collection_name=col, document={"key2": "value2"})
             assert False
 
     # check no record written to the mongodb
