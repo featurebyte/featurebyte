@@ -97,6 +97,7 @@ def run_groupby_and_get_tile_table_identifier(
         else groupby_kwargs["by_keys"]
     )
     for by_key in by_keys:
+        assert isinstance(by_key, str)
         if create_entity:
             Entity.create(name=by_key, serving_name=by_key)
         event_view[by_key].as_entity(by_key)
@@ -156,6 +157,11 @@ def test_tile_table_id__agg_parameters(
         ({"by_keys": ["cust_id"]}, "sum_f1800_m300_b600_3cb3b2b28a359956be02abe635c4446cb50710d7"),
         # Changing the by_keys changes the tile ID
         ({"by_keys": "col_text"}, "sum_f1800_m300_b600_894737abbc14a7b6ff25e1944cc3cf9ba0e9d82e"),
+        # Changing the category changes the tile ID
+        (
+            {"by_keys": "col_text", "category": "col_int"},
+            "sum_f1800_m300_b600_e0e5ce71025a1158a48afd2cc07d8915d3dad3d2",
+        ),
     ],
 )
 def test_tile_table_id__groupby_parameters(
