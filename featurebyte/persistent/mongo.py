@@ -224,6 +224,34 @@ class MongoDB(Persistent):
         )
         return result.modified_count
 
+    async def replace_one(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        replacement: Document,
+    ) -> int:
+        """
+        Replace one record in collection
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        query_filter: QueryFilter
+            Conditions to filter on
+        replacement: Document
+            New document to replace existing one
+
+        Returns
+        -------
+        int
+            Number of records modified
+        """
+        result: UpdateResult = await self._db[collection_name].replace_one(
+            query_filter, replacement, session=self._session
+        )
+        return result.modified_count
+
     async def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete one record from collection

@@ -146,8 +146,8 @@ async def test_update_one(mongo_persistent, test_document, test_documents):
 
     # only first document should be updated
     assert results[0]["value"] == 1
-    assert results[1]["value"] == test_document["value"]
-    assert results[2]["value"] == test_document["value"]
+    assert results[1] == test_documents[1]
+    assert results[2] == test_documents[2]
 
 
 @pytest.mark.asyncio
@@ -165,6 +165,27 @@ async def test_update_many(mongo_persistent, test_documents):
     results = client["test"]["data"].find({})
     async for result in results:
         assert result["value"] == 1
+
+
+@pytest.mark.asyncio
+async def test_replace_one(mongo_persistent, test_document, test_documents):
+    """
+    Test replacing one document
+    """
+    persistent, client = mongo_persistent
+    test_documents = [{**test_document, **{"_id": ObjectId()}} for _ in range(3)]
+    await client["test"]["data"].insert_many(test_documents)
+    result = await persistent.replace_one(
+        collection_name="data", query_filter={}, replacement={"value": 1}
+    )
+
+    assert result == 1
+    results = await client["test"]["data"].find({}).to_list()
+
+    # only first document should be updated
+    assert results[0] == {"_id": test_documents[0]["_id"], "value": 1}
+    assert results[1] == test_documents[1]
+    assert results[2] == test_documents[2]
 
 
 @pytest.mark.asyncio

@@ -190,8 +190,8 @@ async def test_update_one(git_persistent, test_documents):
     # only first document should be updated
     assert total == 3
     assert results[0]["name"] == "apple"
-    assert results[1]["name"] == test_documents[1]["name"]
-    assert results[2]["name"] == test_documents[2]["name"]
+    assert results[1] == test_documents[1]
+    assert results[2] == test_documents[2]
 
     # check commit messages
     assert _get_commit_messages(repo, max_count=10) == [
@@ -229,6 +229,37 @@ async def test_update_many(git_persistent, test_documents):
         "Update document: data/Object 0\n",
         "Update document: data/Object 1\n",
         "Update document: data/Object 2\n",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_replace_one(git_persistent, test_documents):
+    """
+    Test replacing one document
+    """
+    persistent, repo = git_persistent
+    await persistent.insert_many(collection_name="data", documents=test_documents)
+    result = await persistent.replace_one(
+        collection_name="data", query_filter={}, replacement={"name": "apple"}
+    )
+
+    assert result == 1
+    results, total = await persistent.find(collection_name="data", query_filter={})
+
+    # only first document should be updated
+    assert total == 3
+    assert results[0] == {"_id": test_documents[0]["_id"], "name": "apple"}
+    assert results[1] == test_documents[1]
+    assert results[2] == test_documents[2]
+
+    # check commit messages
+    assert _get_commit_messages(repo, max_count=10) == [
+        "Initial commit\n",
+        "Create document: data/Object 0\n",
+        "Create document: data/Object 1\n",
+        "Create document: data/Object 2\n",
+        "Rename document: data/Object 0 -> data/apple\n",
+        "Update document: data/apple\n",
     ]
 
 

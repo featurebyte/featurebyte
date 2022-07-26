@@ -493,6 +493,50 @@ class GitDB(Persistent):
             num_updated += 1
         return num_updated
 
+    def _replace_files(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        replacement: Document,
+        multiple: bool,
+    ) -> int:
+        """
+        Update files in the repo
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to add document to
+        query_filter: QueryFilter
+            Conditions to filter on
+        replacement: Document
+            Values to update
+        multiple: bool
+            Update multiple files
+
+        Returns
+        -------
+        int
+            Number of documents updated
+        """
+        docs = self._find_files(
+            collection_name=collection_name, query_filter=query_filter, multiple=multiple
+        )
+        num_updated = 0
+
+        for doc in docs:
+            # use original id for replacement doc
+            doc_name = self.get_doc_name_func(collection_name)(doc)
+            replacement["_id"] = doc["_id"]
+            self._add_file(
+                collection_name=collection_name,
+                document=replacement,
+                doc_name=doc_name,
+                replace=True,
+            )
+            num_updated += 1
+        return num_updated
+
     def _delete_files(
         self,
         collection_name: str,
@@ -825,6 +869,37 @@ class GitDB(Persistent):
         """
         return self._update_files(
             collection_name=collection_name, query_filter=query_filter, update=update, multiple=True
+        )
+
+    @_sync_push
+    async def replace_one(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        replacement: Document,
+    ) -> int:
+        """
+        Replace one record in collection
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        query_filter: QueryFilter
+            Conditions to filter on
+        replacement: Document
+            New document to replace existing one
+
+        Returns
+        -------
+        int
+            Number of records modified
+        """
+        return self._replace_files(
+            collection_name=collection_name,
+            query_filter=query_filter,
+            replacement=replacement,
+            multiple=False,
         )
 
     @_sync_push
