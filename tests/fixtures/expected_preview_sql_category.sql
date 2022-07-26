@@ -83,7 +83,10 @@ LEFT JOIN (
     SELECT
       INNER_.POINT_IN_TIME,
       INNER_.CUSTOMER_ID,
-      OBJECT_AGG(INNER_.product_type, INNER_."inner_agg_w7200_avg_f3600_m1800_b900_8c9dd5af3427568b4cddd3244d1461b16011b34d") AS "agg_w7200_avg_f3600_m1800_b900_8c9dd5af3427568b4cddd3244d1461b16011b34d"
+      OBJECT_AGG(CASE
+        WHEN INNER_.product_type IS NULL THEN '__MISSING__'
+        ELSE INNER_.product_type
+      END, INNER_."inner_agg_w7200_avg_f3600_m1800_b900_8c9dd5af3427568b4cddd3244d1461b16011b34d") AS "agg_w7200_avg_f3600_m1800_b900_8c9dd5af3427568b4cddd3244d1461b16011b34d"
     FROM (
         SELECT
           REQ.POINT_IN_TIME,
@@ -109,7 +112,10 @@ LEFT JOIN (
     SELECT
       INNER_.POINT_IN_TIME,
       INNER_.CUSTOMER_ID,
-      OBJECT_AGG(INNER_.product_type, INNER_."inner_agg_w172800_avg_f3600_m1800_b900_8c9dd5af3427568b4cddd3244d1461b16011b34d") AS "agg_w172800_avg_f3600_m1800_b900_8c9dd5af3427568b4cddd3244d1461b16011b34d"
+      OBJECT_AGG(CASE
+        WHEN INNER_.product_type IS NULL THEN '__MISSING__'
+        ELSE INNER_.product_type
+      END, INNER_."inner_agg_w172800_avg_f3600_m1800_b900_8c9dd5af3427568b4cddd3244d1461b16011b34d") AS "agg_w172800_avg_f3600_m1800_b900_8c9dd5af3427568b4cddd3244d1461b16011b34d"
     FROM (
         SELECT
           REQ.POINT_IN_TIME,

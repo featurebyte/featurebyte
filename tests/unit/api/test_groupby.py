@@ -230,7 +230,7 @@ def test_groupby__category(snowflake_event_view):
         "blind_spot": 90,
         "frequency": 360,
         "time_modulo_frequency": 180,
-        "tile_id": "sum_f360_m180_b90_45058a98f2f07813bc673622af9c945b2ceaa16d",
+        "tile_id": "sum_f360_m180_b90_21e8725a145bfdafd220aa126164721a906c92d4",
         "timestamp": "event_timestamp",
         "value_by": "col_int",
         "serving_names": ["cust_id"],
