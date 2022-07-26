@@ -341,6 +341,7 @@ class FeatureExecutionPlan:
         -------
         str
         """
+        # pylint: disable=too-many-locals
         join_conditions_lst = ["REQ.REQ_TILE_INDEX = TILE.INDEX"]
         for serving_name, key in zip(serving_names, keys):
             join_conditions_lst.append(f"REQ.{serving_name} = TILE.{key}")
@@ -389,7 +390,8 @@ class FeatureExecutionPlan:
                 .group_by(*outer_group_by_keys)
             )
 
-        return agg_expr.sql(pretty=True)
+        out: str = agg_expr.sql(pretty=True)
+        return out
 
     @staticmethod
     def construct_left_join_sql(

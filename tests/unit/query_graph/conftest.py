@@ -62,6 +62,7 @@ def query_graph_and_assign_node_fixture(graph):
 
 @pytest.fixture(name="groupby_node_params")
 def groupby_node_params_fixture():
+    """Fixture groupby node parameters"""
     node_params = {
         "keys": ["cust_id"],
         "serving_names": ["CUSTOMER_ID"],

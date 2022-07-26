@@ -128,6 +128,8 @@ def feature_model_dict_feature():
 class Helpers:
     """Helper functions useful in tests"""
 
+    # pylint: disable=too-few-public-methods
+
     @staticmethod
     def assert_equal_with_expected_fixture(actual, fixture_filename, update_fixture=False):
         """Utility to check that actual is the same as the pre-generated fixture"""
