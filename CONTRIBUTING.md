@@ -22,18 +22,22 @@ To activate your `virtualenv` run `poetry shell`.
 
 ## Codestyle
 
-After installation you may execute code formatting.
+### Formatting
 
-```bash
-make codestyle
+Apply automatic code formatting by running this command:
+```commandline
+make format
 ```
 
 ### Checks
 
-Many checks are configured for this project. Command `make check-codestyle` will check black, isort and darglint.
-The `make check-safety` command will look at the security of your code.
+Many checks are configured for this project:
 
-Comand `make lint` applies all checks.
+* Command `make lint-style` will check black, isort and darglint
+* Command `make lint-type` will check typing issues using mypy
+* Command `make lint-safety` command will look at the security of your code
+
+Command `make lint` applies all checks.
 
 ### Before submitting
 
@@ -42,7 +46,7 @@ Before submitting your code please do the following steps:
 1. Add any changes you want
 1. Add tests for the new changes
 1. Edit documentation if you have changed something significant
-1. Run `make codestyle` to format your changes.
+1. Run `make format` to format your changes.
 1. Run `make lint` to ensure that types, security and docstrings are okay.
 
 ## Creating a Pull Request
@@ -72,7 +76,7 @@ To download and install Poetry run:
 ```bash
 make poetry-download
 ```
-Add Poetry binary to `PATH` to make it easily accessible. 
+Add Poetry binary to `PATH` to make it easily accessible.
 
 To uninstall
 
@@ -109,19 +113,16 @@ make pre-commit-install
 Automatic formatting uses `pyupgrade`, `isort` and `black`.
 
 ```bash
-make codestyle
-
-# or use synonym
-make formatting
+make format
 ```
 
 Codestyle checks only, without rewriting files:
 
 ```bash
-make check-codestyle
+make lint-style
 ```
 
-> Note: `check-codestyle` uses `isort`, `black` and `darglint` library
+> Note: `lint-style` uses `isort`, `black` and `darglint` library
 
 Update all dev libraries to the latest version using one comand
 
@@ -135,14 +136,10 @@ make update-dev-deps
 <summary>4. Code security</summary>
 <p>
 
-```bash
-make check-safety
-```
-
 This command launches `Poetry` integrity checks as well as identifies security issues with `Safety` and `Bandit`.
 
 ```bash
-make check-safety
+make lint-safety
 ```
 
 </p>
@@ -182,12 +179,6 @@ Of course there is a command to ~~rule~~ run all linters in one:
 
 ```bash
 make lint
-```
-
-the same as:
-
-```bash
-make test && make check-codestyle && make mypy && make check-safety
 ```
 
 </p>
