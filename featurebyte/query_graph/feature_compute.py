@@ -318,6 +318,34 @@ class FeatureExecutionPlan:
     ) -> str:
         """Construct SQL code for one specific aggregation
 
+        The aggregation consists of inner joining with the tile table on entity id and required tile
+        indices and applying the merge expression.
+
+        When value_by is set, the aggregation above produces an intermediate result that look
+        similar to below since tiles building takes into account the category:
+
+        --------------------------------------
+        POINT_IN_TIME  ENTITY  CATEGORY  VALUE
+        --------------------------------------
+        2022-01-01     C1      K1        1
+        2022-01-01     C1      K2        2
+        2022-01-01     C2      K3        3
+        2022-01-01     C3      K1        4
+        ...
+        --------------------------------------
+
+        We can aggregate the above into key-value pairs by aggregating over point-in-time and entity
+        and applying the OBJECT_AGG aggregation function:
+
+        -----------------------------------------
+        POINT_IN_TIME  ENTITY  VALUE_AGG
+        -----------------------------------------
+        2022-01-01     C1      {"K1": 1, "K2": 2}
+        2022-01-01     C2      {"K2": 3}
+        2022-01-01     C3      {"K1": 4}
+        ...
+        -----------------------------------------
+
         Parameters
         ----------
         expanded_request_table_name : str
@@ -380,10 +408,15 @@ class FeatureExecutionPlan:
             outer_group_by_keys = [f"{inner_alias}.{point_in_time_column}"]
             for serving_name in serving_names:
                 outer_group_by_keys.append(f"{inner_alias}.{serving_name}")
+            # Replace missing category values since OBJECT_AGG ignores keys that are null
+            category_col = f"{inner_alias}.{value_by}"
+            category_filled_null = (
+                f"CASE WHEN {category_col} IS NULL THEN '__MISSING__' ELSE {category_col} END"
+            )
             agg_expr = (
                 select(
                     *outer_group_by_keys,
-                    f'OBJECT_AGG({inner_alias}.{value_by}, {inner_alias}."{inner_agg_result_name}")'
+                    f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'
                     f' AS "{agg_result_name}"',
                 )
                 .from_(inner_agg_expr.subquery(alias=inner_alias))

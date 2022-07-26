@@ -237,16 +237,13 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
             "COUNT_24h": [9.0, 7.0, 2.0, 5.0, 5.0, 4.0, 4.0, 7.0, 5.0, np.nan],
             "COUNT_BY_ACTION_24h": [
                 '{\n  "add": 2,\n  "purchase": 3,\n  "remove": 4\n}',
-                # Note: The 2nd row does not tally with the count of 7.0 from COUNT_24h, because 2
-                # rows have missing PRODUCT_ACTIONS and OBJECT_AGG function automatically removes
-                # missing keys and values. We likely want to fix this for count aggregation type.
-                '{\n  "add": 3,\n  "detail": 1,\n  "purchase": 1\n}',
-                '{\n  "remove": 1\n}',
-                '{\n  "add": 2,\n  "detail": 2\n}',
+                '{\n  "__MISSING__": 2,\n  "add": 3,\n  "detail": 1,\n  "purchase": 1\n}',
+                '{\n  "__MISSING__": 1,\n  "remove": 1\n}',
+                '{\n  "__MISSING__": 1,\n  "add": 2,\n  "detail": 2\n}',
                 '{\n  "add": 1,\n  "detail": 1,\n  "purchase": 2,\n  "remove": 1\n}',
                 '{\n  "add": 1,\n  "detail": 1,\n  "remove": 2\n}',
                 '{\n  "add": 1,\n  "purchase": 2,\n  "remove": 1\n}',
-                '{\n  "add": 1,\n  "purchase": 1,\n  "remove": 2\n}',
+                '{\n  "__MISSING__": 3,\n  "add": 1,\n  "purchase": 1,\n  "remove": 2\n}',
                 '{\n  "add": 3,\n  "detail": 1,\n  "remove": 1\n}',
                 None,
             ],
