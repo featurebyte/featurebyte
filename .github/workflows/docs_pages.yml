@@ -73,7 +73,7 @@ jobs:
       env:
         SPHINX_GITHUB_CHANGELOG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        make install-docs
+        make install-nolock
         mkdir gh-pages
         touch gh-pages/.nojekyll
         make docs
