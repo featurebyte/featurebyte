@@ -351,43 +351,42 @@ class FeatureExecutionPlan:
             group_by_keys.append(f"REQ.{serving_name}")
 
         if value_by is None:
-            agg_expr = (
-                select(
-                    *group_by_keys,
-                    f'{merge_expr} AS "{agg_result_name}"',
-                )
-                .from_(f"{expanded_request_table_name} AS REQ")
-                .join(
-                    tile_table_id,
-                    join_alias="TILE",
-                    join_type="inner",
-                    on=join_conditions,
-                )
-                .group_by(*group_by_keys)
-            )
+            inner_agg_result_name = agg_result_name
+            inner_group_by_keys = group_by_keys
         else:
             inner_agg_result_name = f"inner_{agg_result_name}"
             inner_group_by_keys = group_by_keys + [f"TILE.{value_by}"]
-            inner_agg_expr = (
-                select(*inner_group_by_keys, f'{merge_expr} AS "{inner_agg_result_name}"')
-                .from_(f"{expanded_request_table_name} AS REQ")
-                .join(
-                    tile_table_id,
-                    join_alias="TILE",
-                    join_type="inner",
-                    on=join_conditions,
-                )
-                .group_by(*inner_group_by_keys)
+
+        inner_agg_expr = (
+            select(
+                *inner_group_by_keys,
+                f'{merge_expr} AS "{inner_agg_result_name}"',
             )
-            # TODO: alias should probably not be REQ anymore
+            .from_(f"{expanded_request_table_name} AS REQ")
+            .join(
+                tile_table_id,
+                join_alias="TILE",
+                join_type="inner",
+                on=join_conditions,
+            )
+            .group_by(*inner_group_by_keys)
+        )
+
+        if value_by is None:
+            agg_expr = inner_agg_expr
+        else:
+            inner_alias = "INNER_"
+            outer_group_by_keys = [f"{inner_alias}.{point_in_time_column}"]
+            for serving_name in serving_names:
+                outer_group_by_keys.append(f"{inner_alias}.{serving_name}")
             agg_expr = (
                 select(
-                    *group_by_keys,
-                    f'OBJECT_AGG(REQ.{value_by}, REQ."{inner_agg_result_name}")'
+                    *outer_group_by_keys,
+                    f'OBJECT_AGG({inner_alias}.{value_by}, {inner_alias}."{inner_agg_result_name}")'
                     f' AS "{agg_result_name}"',
                 )
-                .from_(inner_agg_expr.subquery(alias="REQ"))
-                .group_by(*group_by_keys)
+                .from_(inner_agg_expr.subquery(alias=inner_alias))
+                .group_by(*outer_group_by_keys)
             )
 
         return agg_expr.sql(pretty=True)
