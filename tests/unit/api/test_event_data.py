@@ -188,7 +188,8 @@ def test_event_data_column__as_entity(snowflake_event_data):
     assert snowflake_event_data.column_entity_map is None
 
     # create entity
-    entity = Entity.create(name="customer", serving_name="cust_id")
+    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity.save()
 
     col_int = snowflake_event_data.col_int
     assert isinstance(col_int, EventDataColumn)
@@ -215,7 +216,8 @@ def test_event_data_column__as_entity__saved_event_data(saved_event_data, config
     assert saved_event_data.column_entity_map is None
 
     # create entity
-    entity = Entity.create(name="customer", serving_name="cust_id")
+    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity.save()
 
     saved_event_data.col_int.as_entity("customer")
     assert saved_event_data.column_entity_map == {"col_int": entity.id}
@@ -235,7 +237,8 @@ def test_event_data_column__as_entity__saved_event_data__record_update_exception
     """
     _ = config
 
-    Entity.create(name="customer", serving_name="cust_id")
+    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity.save()
 
     # test unexpected exception
     with pytest.raises(RecordUpdateException):
@@ -418,3 +421,21 @@ def test_update_default_job_setting__record_update_exception(snowflake_event_dat
                 frequency="2m",
                 time_modulo_frequency="1m",
             )
+
+
+def test_get_event_data(snowflake_event_data, mock_config_path_env):
+    """
+    Test EventData.get function
+    """
+    _ = mock_config_path_env
+
+    # create event data & save to persistent
+    snowflake_event_data.save()
+
+    # load the event data from the persistent
+    loaded_event_data = EventData.get(snowflake_event_data.name)
+    assert loaded_event_data == snowflake_event_data
+
+    with pytest.raises(RecordRetrievalException) as exc:
+        EventData.get("unknown_event_data")
+    assert 'EventData name (event_data.name: "unknown_event_data") not found!' in str(exc.value)

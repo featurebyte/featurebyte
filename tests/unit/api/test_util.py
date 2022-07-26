@@ -16,7 +16,9 @@ def entity_id_map_fixture():
     """
     entity_id_map = {}
     for idx in range(10):
-        entity_id_map[idx] = Entity.create(name=f"entity_{idx}", serving_name=f"entity_{idx}").id
+        entity = Entity(name=f"entity_{idx}", serving_names=[f"entity_{idx}"])
+        entity.save()
+        entity_id_map[idx] = entity.id
     yield entity_id_map
 
 
