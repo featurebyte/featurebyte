@@ -49,7 +49,10 @@ jobs:
       with:
         path: .venv
         key: featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK0 }}${{ env.TAG }}
-        restore-keys: featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK0 }} featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK1 }} featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK2 }}
+        restore-keys: |
+          featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK0 }}
+          featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK1 }}
+          featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK2 }}
 
     - name: Authenticate to Google Cloud
       id: 'auth'
@@ -70,7 +73,7 @@ jobs:
       env:
         SPHINX_GITHUB_CHANGELOG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        make install-docs
+        make install-nolock
         mkdir gh-pages
         touch gh-pages/.nojekyll
         make docs
