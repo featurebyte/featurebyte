@@ -71,7 +71,10 @@ class AvgAggregator(TilingAggregator):
 
     @staticmethod
     def tile(col: str) -> list[TileSpec]:
-        tile_specs = [TileSpec(f'SUM("{col}")', "sum_value"), TileSpec("COUNT(*)", "count_value")]
+        tile_specs = [
+            TileSpec(f'SUM("{col}")', "sum_value"),
+            TileSpec(f'COUNT("{col}")', "count_value"),
+        ]
         return tile_specs
 
     @staticmethod

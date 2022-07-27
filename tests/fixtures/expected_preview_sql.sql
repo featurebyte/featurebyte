@@ -4,7 +4,7 @@ WITH avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89 AS (
   TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
   "cust_id",
   SUM("a") AS sum_value,
-  COUNT(*) AS count_value
+  COUNT("a") AS count_value
 FROM (
     SELECT
       *,

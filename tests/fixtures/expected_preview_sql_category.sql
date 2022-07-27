@@ -5,7 +5,7 @@ WITH avg_f3600_m1800_b900_8c9dd5af3427568b4cddd3244d1461b16011b34d AS (
   "cust_id",
   "product_type",
   SUM("a") AS sum_value,
-  COUNT(*) AS count_value
+  COUNT("a") AS count_value
 FROM (
     SELECT
       *,
