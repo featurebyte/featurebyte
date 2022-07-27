@@ -7,6 +7,15 @@ from unittest.mock import patch
 import pytest
 
 
+def pytest_addoption(parser):
+    parser.addoption("--update-fixtures", action="store_true", default=False)
+
+
+@pytest.fixture(scope="session")
+def update_fixtures(pytestconfig):
+    return pytestconfig.getoption("update_fixtures")
+
+
 @pytest.fixture(autouse=True)
 def mock_settings_env_vars():
     """Mask default config path to avoid unintentionally using a real configuration file"""

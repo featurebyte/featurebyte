@@ -32,12 +32,15 @@ class ExtendedFeatureModel(FeatureModel):
         tile_infos = interpreter.construct_tile_gen_sql(self.node, is_on_demand=False)
         out = []
         for info in tile_infos:
+            entity_column_names = info.entity_columns[:]
+            if info.value_by_column is not None:
+                entity_column_names.append(info.value_by_column)
             tile_spec = TileSpec(
                 time_modulo_frequency_second=info.time_modulo_frequency,
                 blind_spot_second=info.blind_spot,
                 frequency_minute=info.frequency // 60,
                 tile_sql=info.sql,
-                entity_column_names=info.entity_columns,
+                entity_column_names=entity_column_names,
                 value_column_names=info.tile_value_columns,
                 tile_id=info.tile_table_id,
             )

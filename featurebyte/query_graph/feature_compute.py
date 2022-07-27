@@ -7,6 +7,8 @@ from typing import Optional, Tuple
 
 from abc import ABC, abstractmethod
 
+from sqlglot import Expression, expressions, select
+
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.feature_common import (
     REQUEST_TABLE_NAME,
@@ -226,7 +228,7 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
         return sql
 
 
-class FeatureExecutionPlan:
+class FeatureExecutionPlan(ABC):
     """Responsible for constructing the SQL to compute features by aggregating tiles"""
 
     AGGREGATION_TABLE_NAME = "_FB_AGGREGATED"
@@ -303,17 +305,47 @@ class FeatureExecutionPlan:
         window = aggregation_spec.window
         return tile_table_id, window
 
-    @staticmethod
+    @classmethod
     def construct_aggregation_sql(
+        cls,
         expanded_request_table_name: str,
         tile_table_id: str,
         point_in_time_column: str,
         keys: list[str],
         serving_names: list[str],
+        value_by: str | None,
         merge_expr: str,
         agg_result_name: str,
     ) -> str:
         """Construct SQL code for one specific aggregation
+
+        The aggregation consists of inner joining with the tile table on entity id and required tile
+        indices and applying the merge expression.
+
+        When value_by is set, the aggregation above produces an intermediate result that look
+        similar to below since tiles building takes into account the category:
+
+        --------------------------------------
+        POINT_IN_TIME  ENTITY  CATEGORY  VALUE
+        --------------------------------------
+        2022-01-01     C1      K1        1
+        2022-01-01     C1      K2        2
+        2022-01-01     C2      K3        3
+        2022-01-01     C3      K1        4
+        ...
+        --------------------------------------
+
+        We can aggregate the above into key-value pairs by aggregating over point-in-time and entity
+        and applying functions such as OBJECT_AGG:
+
+        -----------------------------------------
+        POINT_IN_TIME  ENTITY  VALUE_AGG
+        -----------------------------------------
+        2022-01-01     C1      {"K1": 1, "K2": 2}
+        2022-01-01     C2      {"K2": 3}
+        2022-01-01     C3      {"K1": 4}
+        ...
+        -----------------------------------------
 
         Parameters
         ----------
@@ -327,6 +359,8 @@ class FeatureExecutionPlan:
             List of join key columns
         serving_names : list[str]
             List of serving name columns
+        value_by : str | None
+            Optional category parameter for the groupby operation
         merge_expr : str
             SQL expression that aggregates intermediate values stored in tile table
         agg_result_name : str
@@ -336,27 +370,88 @@ class FeatureExecutionPlan:
         -------
         str
         """
+        # pylint: disable=too-many-locals
         join_conditions_lst = ["REQ.REQ_TILE_INDEX = TILE.INDEX"]
         for serving_name, key in zip(serving_names, keys):
             join_conditions_lst.append(f"REQ.{serving_name} = TILE.{key}")
-        join_conditions = " AND ".join(join_conditions_lst)
+        join_conditions = expressions.and_(*join_conditions_lst)
 
-        group_by_keys_lst = [f"REQ.{point_in_time_column}"]
+        group_by_keys = [f"REQ.{point_in_time_column}"]
         for serving_name in serving_names:
-            group_by_keys_lst.append(f"REQ.{serving_name}")
-        group_by_keys = ", ".join(group_by_keys_lst)
+            group_by_keys.append(f"REQ.{serving_name}")
 
-        sql = f"""
-            SELECT
-                {group_by_keys},
-                {merge_expr} AS "{agg_result_name}"
-            FROM {expanded_request_table_name} REQ
-            INNER JOIN {tile_table_id} TILE
-            ON {join_conditions}
-            GROUP BY {group_by_keys}
-            """
+        if value_by is None:
+            inner_agg_result_name = agg_result_name
+            inner_group_by_keys = group_by_keys
+        else:
+            inner_agg_result_name = f"inner_{agg_result_name}"
+            inner_group_by_keys = group_by_keys + [f"TILE.{value_by}"]
 
-        return prettify_sql(sql)
+        inner_agg_expr = (
+            select(
+                *inner_group_by_keys,
+                f'{merge_expr} AS "{inner_agg_result_name}"',
+            )
+            .from_(f"{expanded_request_table_name} AS REQ")
+            .join(
+                tile_table_id,
+                join_alias="TILE",
+                join_type="inner",
+                on=join_conditions,
+            )
+            .group_by(*inner_group_by_keys)
+        )
+
+        if value_by is None:
+            agg_expr = inner_agg_expr
+        else:
+            agg_expr = cls.construct_key_value_aggregation_sql(
+                point_in_time_column=point_in_time_column,
+                serving_names=serving_names,
+                value_by=value_by,
+                agg_result_name=agg_result_name,
+                inner_agg_result_name=inner_agg_result_name,
+                inner_agg_expr=inner_agg_expr,
+            )
+
+        out: str = agg_expr.sql(pretty=True)
+        return out
+
+    @classmethod
+    @abstractmethod
+    def construct_key_value_aggregation_sql(
+        cls,
+        point_in_time_column: str,
+        serving_names: list[str],
+        value_by: str,
+        agg_result_name: str,
+        inner_agg_result_name: str,
+        inner_agg_expr: expressions.Subqueryable,
+    ) -> Expression:
+        """Aggregate per category values into key value pairs
+
+        # noqa: DAR103
+
+        Parameters
+        ----------
+        point_in_time_column : str
+            Point in time column name
+        serving_names : list[str]
+            List of serving name columns
+        value_by : str | None
+            Optional category parameter for the groupby operation
+        agg_result_name : str
+            Column name of the aggregated result
+        inner_agg_result_name : str
+            Column name of the intermediate aggregation result name (one value per category - this
+            is to be used as the values in the aggregated key-value pairs)
+        inner_agg_expr : expressions.Subqueryable:
+            Query that produces the intermediate aggregation result
+
+        Returns
+        -------
+        str
+        """
 
     @staticmethod
     def construct_left_join_sql(
@@ -426,6 +521,7 @@ class FeatureExecutionPlan:
                 point_in_time_column=point_in_time_column,
                 keys=agg_spec.keys,
                 serving_names=agg_spec.serving_names,
+                value_by=agg_spec.value_by,
                 merge_expr=agg_spec.merge_expr,
                 agg_result_name=agg_result_name,
             )
@@ -520,6 +616,44 @@ class FeatureExecutionPlan:
         return sql
 
 
+class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
+    """Snowflake specific implementation of FeatureExecutionPlan"""
+
+    @classmethod
+    def construct_key_value_aggregation_sql(
+        cls,
+        point_in_time_column: str,
+        serving_names: list[str],
+        value_by: str,
+        agg_result_name: str,
+        inner_agg_result_name: str,
+        inner_agg_expr: expressions.Subqueryable,
+    ) -> Expression:
+
+        inner_alias = "INNER_"
+
+        outer_group_by_keys = [f"{inner_alias}.{point_in_time_column}"]
+        for serving_name in serving_names:
+            outer_group_by_keys.append(f"{inner_alias}.{serving_name}")
+
+        # Replace missing category values since OBJECT_AGG ignores keys that are null
+        category_col = f"{inner_alias}.{value_by}"
+        category_filled_null = (
+            f"CASE WHEN {category_col} IS NULL THEN '__MISSING__' ELSE {category_col} END"
+        )
+
+        agg_expr = (
+            select(
+                *outer_group_by_keys,
+                f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'
+                f' AS "{agg_result_name}"',
+            )
+            .from_(inner_agg_expr.subquery(alias=inner_alias))
+            .group_by(*outer_group_by_keys)
+        )
+        return agg_expr
+
+
 class FeatureExecutionPlanner:
     """Responsible for constructing a FeatureExecutionPlan given QueryGraph and Node
 
@@ -531,7 +665,7 @@ class FeatureExecutionPlanner:
 
     def __init__(self, graph: QueryGraph, serving_names_mapping: dict[str, str] | None = None):
         self.graph = graph
-        self.plan = FeatureExecutionPlan()
+        self.plan = SnowflakeFeatureExecutionPlan()
         self.serving_names_mapping = serving_names_mapping
 
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:

@@ -87,6 +87,7 @@ class AggregationSpec:
     tile_table_id: str
     keys: list[str]
     serving_names: list[str]
+    value_by: str | None
     merge_expr: str
     feature_name: str
 
@@ -140,6 +141,7 @@ class AggregationSpec:
                 tile_table_id=tile_table_id,
                 keys=params["keys"],
                 serving_names=serving_names,
+                value_by=params["value_by"],
                 merge_expr=get_aggregator(params["agg_func"]).merge(),
                 feature_name=feature_name,
             )

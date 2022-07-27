@@ -129,12 +129,20 @@ def test_query_object_operation_on_snowflake_source(
         windows=["2h", "24h"],
         feature_names=["COUNT_2h", "COUNT_24h"],
     )
+    feature_group_per_category = event_view.groupby("USER_ID", category="PRODUCT_ACTION").aggregate(
+        "USER_ID",
+        "count",
+        windows=["24h"],
+        feature_names=["COUNT_BY_ACTION_24h"],
+    )
 
     # preview the features
     preview_param = {
         "POINT_IN_TIME": "2001-01-02 10:00:00",
         "UID": 1,
     }
+
+    # preview count features
     df_feature_preview = feature_group.preview(
         preview_param,
         credentials=config.credentials,
@@ -145,6 +153,18 @@ def test_query_object_operation_on_snowflake_source(
         "UID": 1,
         "COUNT_2h": 1,
         "COUNT_24h": 9,
+    }
+
+    # preview count per category features
+    df_feature_preview = feature_group_per_category.preview(
+        preview_param,
+        credentials=config.credentials,
+    )
+    assert df_feature_preview.shape[0] == 1
+    assert df_feature_preview.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "UID": 1,
+        "COUNT_BY_ACTION_24h": '{\n  "add": 2,\n  "purchase": 3,\n  "remove": 4\n}',
     }
 
     # preview one feature only
@@ -190,10 +210,10 @@ def test_query_object_operation_on_snowflake_source(
     special_feature.save()  # pylint: disable=no-member
     check_feature_and_remove_registry(special_feature, feature_manager)
 
-    run_and_test_get_historical_features(config, feature_group)
+    run_and_test_get_historical_features(config, feature_group, feature_group_per_category)
 
 
-def run_and_test_get_historical_features(config, feature_group):
+def run_and_test_get_historical_features(config, feature_group, feature_group_per_category):
     """Test getting historical features from FeatureList"""
     df_training_events = pd.DataFrame(
         {
@@ -202,7 +222,11 @@ def run_and_test_get_historical_features(config, feature_group):
         }
     )
     feature_list = FeatureList(
-        [feature_group["COUNT_2h"], feature_group["COUNT_24h"]],
+        [
+            feature_group["COUNT_2h"],
+            feature_group["COUNT_24h"],
+            feature_group_per_category["COUNT_BY_ACTION_24h"],
+        ],
         name="My FeatureList",
     )
     df_historical_expected = pd.DataFrame(
@@ -211,6 +235,18 @@ def run_and_test_get_historical_features(config, feature_group):
             "UID": df_training_events["UID"],
             "COUNT_2h": [1.0, 1.0, np.nan, 1.0, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
             "COUNT_24h": [9.0, 7.0, 2.0, 5.0, 5.0, 4.0, 4.0, 7.0, 5.0, np.nan],
+            "COUNT_BY_ACTION_24h": [
+                '{\n  "add": 2,\n  "purchase": 3,\n  "remove": 4\n}',
+                '{\n  "__MISSING__": 2,\n  "add": 3,\n  "detail": 1,\n  "purchase": 1\n}',
+                '{\n  "__MISSING__": 1,\n  "remove": 1\n}',
+                '{\n  "__MISSING__": 1,\n  "add": 2,\n  "detail": 2\n}',
+                '{\n  "add": 1,\n  "detail": 1,\n  "purchase": 2,\n  "remove": 1\n}',
+                '{\n  "add": 1,\n  "detail": 1,\n  "remove": 2\n}',
+                '{\n  "add": 1,\n  "purchase": 2,\n  "remove": 1\n}',
+                '{\n  "__MISSING__": 3,\n  "add": 1,\n  "purchase": 1,\n  "remove": 2\n}',
+                '{\n  "add": 3,\n  "detail": 1,\n  "remove": 1\n}',
+                None,
+            ],
         }
     )
     df_historical_features = feature_list.get_historical_features(
