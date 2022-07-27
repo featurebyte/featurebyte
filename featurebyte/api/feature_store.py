@@ -154,6 +154,13 @@ class FeatureStore(ExtendedFeatureStoreModel):
     def save(self) -> None:
         """
         Save feature store to persistent
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When there exists feature store with the same name or id
+        RecordCreationException
+            When exception happens during record creation at persistent
         """
         client = Configurations().get_client()
         response = client.post(url="/feature_store", json=self.json_dict())

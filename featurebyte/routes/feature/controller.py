@@ -248,10 +248,19 @@ class FeatureController:
             assert document.id == data.id
 
             # get feature store
-            feature_store_id, _ = document.tabular_source
             feature_store_dict = await session.find_one(
-                collection_name=CollectionName.FEATURE_STORE, query_filter={"_id": feature_store_id}
+                collection_name=CollectionName.FEATURE_STORE,
+                query_filter={"_id": document.tabular_source[0]},
             )
+            if not feature_store_dict:
+                # if event data not saved at persistent, throws exception
+                raise HTTPException(
+                    status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f'FeatureStore (feature_store.id: "{document.tabular_source[0]}") not found! '
+                        f"Please save the FeatureStore object first."
+                    ),
+                )
             feature_store = ExtendedFeatureStoreModel(**feature_store_dict)
 
             insert_id = await session.insert_one(

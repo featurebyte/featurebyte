@@ -5,13 +5,11 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, TypedDict
 
-import copy
 import json
 from collections import defaultdict
 
 from pydantic import Field, validator
 
-from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType

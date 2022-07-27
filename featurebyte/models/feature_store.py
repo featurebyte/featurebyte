@@ -34,6 +34,7 @@ DatabaseDetails = Union[SnowflakeDetails, SQLiteDetails]
 class FeatureStoreModel(FeatureByteBaseDocumentModel):
     """Model for a feature store"""
 
+    name: StrictStr
     type: SourceType
     details: DatabaseDetails
 

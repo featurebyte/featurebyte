@@ -8,7 +8,7 @@ from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
-from featurebyte.models.feature_store import FeatureStoreIdentifier, FeatureStoreModel, TableDetails
+from featurebyte.models.feature_store import FeatureStoreIdentifier, TableDetails
 from featurebyte.routes.common.schema import PaginationMixin
 
 

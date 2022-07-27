@@ -6,8 +6,9 @@ from typing import List, Optional
 from beanie import PydanticObjectId
 from pydantic import Field, StrictStr
 
+from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel, SourceType
+from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel
 from featurebyte.routes.common.schema import PaginationMixin
 
 

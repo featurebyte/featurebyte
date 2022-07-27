@@ -18,7 +18,6 @@ import featurebyte.routes.feature_store.api as feature_store_api
 from featurebyte.config import Configurations
 from featurebyte.enum import CollectionName
 from featurebyte.models.credential import Credential
-from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import GitDB, Persistent
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_data.controller import EventDataController

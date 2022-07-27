@@ -142,8 +142,7 @@ class QueryObject(FeatureByteBaseModel):
             config = Configurations()
             credentials = config.credentials
 
-        data_source = ExtendedFeatureStoreModel(**self.tabular_source[0].dict())
-        session = data_source.get_session(credentials=credentials)
+        session = self.feature_store.get_session(credentials=credentials)
         return session
 
     def json(
