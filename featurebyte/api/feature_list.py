@@ -122,8 +122,6 @@ class FeatureGroup(BaseFeatureGroup):
     """
 
     def __setitem__(self, key: str, value: Feature) -> None:
-        # TODO: handle the case when feature is saved & the name is different from key
-
         # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original
         # Feature object
         value = parse_obj_as(Feature, value)
