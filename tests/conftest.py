@@ -52,7 +52,7 @@ def feature_model_dict_feature():
                         "keys": ["cust_id"],
                         "names": ["sum_30m"],
                         "parent": "col_float",
-                        "tile_id": "sum_f1800_m300_b600_3cb3b2b28a359956be02abe635c4446cb50710d7",
+                        "tile_id": "sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
                         "time_modulo_frequency": 300,
                         "timestamp": "event_timestamp",
                         "value_by": None,
@@ -76,7 +76,7 @@ def feature_model_dict_feature():
                             "created_at",
                             "cust_id",
                         ],
-                        "database_source": {
+                        "feature_store": {
                             "details": {
                                 "account": "sf_account",
                                 "database": "sf_database",
@@ -108,22 +108,6 @@ def feature_model_dict_feature():
             "type": "project",
             "output_type": "series",
         },
-        "tabular_source": (
-            {
-                "details": {
-                    "account": "sf_account",
-                    "database": "sf_database",
-                    "sf_schema": "sf_schema",
-                    "warehouse": "sf_warehouse",
-                },
-                "type": "snowflake",
-            },
-            {
-                "database_name": "sf_database",
-                "schema_name": "sf_schema",
-                "table_name": "sf_table",
-            },
-        ),
         "readiness": None,
         "version": "V220710",
         "is_default": None,

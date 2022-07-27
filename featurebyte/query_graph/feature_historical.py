@@ -53,7 +53,7 @@ def get_session_from_feature_objects(
     """
     feature_store: Optional[FeatureStore] = None
     for feature in feature_objects:
-        store = feature.tabular_source[0]
+        store = feature.feature_store
         assert isinstance(store, FeatureStore)
         if feature_store is None:
             feature_store = store

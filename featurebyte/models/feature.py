@@ -14,7 +14,7 @@ from pydantic import Field, StrictStr
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import DBVarType, OrderedStrEnum
 from featurebyte.models.base import FeatureByteBaseDocumentModel
-from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
+from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 FeatureVersionIdentifier = StrictStr
@@ -98,7 +98,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Graph contains steps of transformation to generate the feature
     node: Node
         Node of the graph which represent the feature
-    tabular_source: Tuple[FeatureStoreModel, TableDetails]
+    tabular_source: Tuple[FeatureStoreIdentifier, TableDetails]
         Tabular source used to construct this feature
     readiness: Optional[FeatureReadiness]
         Feature readiness
@@ -122,7 +122,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     row_index_lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
     graph: QueryGraph = Field(allow_mutation=False)
     node: Node = Field(allow_mutation=False)
-    tabular_source: Tuple[FeatureStoreModel, TableDetails] = Field(allow_mutation=False)
+    tabular_source: TabularSource = Field(allow_mutation=False)
     readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
     version: FeatureVersionIdentifier = Field(default_factory=get_version, allow_mutation=False)
     is_default: Optional[bool] = Field(allow_mutation=False)

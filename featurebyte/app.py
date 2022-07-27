@@ -14,6 +14,7 @@ from fastapi import Depends, FastAPI, Request
 import featurebyte.routes.entity.api as entity_api
 import featurebyte.routes.event_data.api as event_data_api
 import featurebyte.routes.feature.api as feature_api
+import featurebyte.routes.feature_store.api as feature_store_api
 from featurebyte.config import Configurations
 from featurebyte.enum import CollectionName
 from featurebyte.models.credential import Credential
@@ -22,6 +23,7 @@ from featurebyte.persistent import GitDB, Persistent
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_data.controller import EventDataController
 from featurebyte.routes.feature.controller import FeatureController
+from featurebyte.routes.feature_store.controller import FeatureStoreController
 
 app = FastAPI()
 PERSISTENT = None
@@ -55,7 +57,7 @@ def _get_persistent() -> Persistent:
     return PERSISTENT
 
 
-def _get_credential(user_id: ObjectId | None, db_source: FeatureStoreModel) -> Credential | None:
+def _get_credential(user_id: ObjectId | None, db_source_name: str) -> Credential | None:
     """
     Retrieve credential from FeatureStoreModel
 
@@ -63,8 +65,8 @@ def _get_credential(user_id: ObjectId | None, db_source: FeatureStoreModel) -> C
     ----------
     user_id: ObjectId | None
         User ID
-    db_source: FeatureStoreModel
-        FeatureStoreModel object
+    db_source_name: str
+        FeatureStore name
 
     Returns
     -------
@@ -73,7 +75,7 @@ def _get_credential(user_id: ObjectId | None, db_source: FeatureStoreModel) -> C
     """
     _ = user_id
     config = Configurations()
-    return config.credentials.get(db_source)
+    return config.credentials.get(db_source_name)
 
 
 def _get_api_deps(controller: type) -> Callable[[Request], None]:
@@ -120,6 +122,7 @@ resource_api_controller_pairs = [
     (event_data_api, EventDataController),
     (entity_api, EntityController),
     (feature_api, FeatureController),
+    (feature_store_api, FeatureStoreController),
 ]
 for resource_api, resource_controller in resource_api_controller_pairs:
     app.include_router(

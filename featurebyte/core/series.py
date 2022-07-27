@@ -37,6 +37,7 @@ class Series(QueryObject, OpsMixin):
                 item=self, mask=item, node_output_type=NodeOutputType.SERIES
             )
             return type(self)(
+                feature_store=self.feature_store,
                 tabular_source=self.tabular_source,
                 node=node,
                 name=self.name,
@@ -163,6 +164,7 @@ class Series(QueryObject, OpsMixin):
                 input_nodes=[self.node],
             )
             return type(self)(
+                feature_store=self.feature_store,
                 tabular_source=self.tabular_source,
                 node=node,
                 name=None,
@@ -179,6 +181,7 @@ class Series(QueryObject, OpsMixin):
             input_nodes=[self.node, other.node],  # type: ignore
         )
         return type(self)(
+            feature_store=self.feature_store,
             tabular_source=self.tabular_source,
             node=node,
             name=None,

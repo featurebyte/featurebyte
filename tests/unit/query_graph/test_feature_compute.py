@@ -183,24 +183,24 @@ def test_feature_execution_planner(query_graph_with_groupby):
     planner = FeatureExecutionPlanner(query_graph_with_groupby)
     plan = planner.generate_plan([groupby_node])
     assert plan.aggregation_specs == {
-        ("avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89", 7200): AggregationSpec(
+        ("avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f", 7200): AggregationSpec(
             window=7200,
             frequency=3600,
             blind_spot=900,
             time_modulo_frequency=1800,
-            tile_table_id="avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+            tile_table_id="avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
             keys=["cust_id"],
             serving_names=["CUSTOMER_ID"],
             value_by=None,
             merge_expr="SUM(sum_value) / SUM(count_value)",
             feature_name="a_2h_average",
         ),
-        ("avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89", 172800): AggregationSpec(
+        ("avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f", 172800): AggregationSpec(
             window=172800,
             frequency=3600,
             blind_spot=900,
             time_modulo_frequency=1800,
-            tile_table_id="avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+            tile_table_id="avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
             keys=["cust_id"],
             serving_names=["CUSTOMER_ID"],
             value_by=None,
@@ -211,11 +211,11 @@ def test_feature_execution_planner(query_graph_with_groupby):
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
-            feature_expr='"agg_w7200_avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89"',
+            feature_expr='"agg_w7200_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
-            feature_expr='"agg_w172800_avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89"',
+            feature_expr='"agg_w172800_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
         ),
     }
 
@@ -227,24 +227,24 @@ def test_feature_execution_planner__serving_names_mapping(query_graph_with_group
     planner = FeatureExecutionPlanner(query_graph_with_groupby, serving_names_mapping=mapping)
     plan = planner.generate_plan([groupby_node])
     assert plan.aggregation_specs == {
-        ("avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89", 7200): AggregationSpec(
+        ("avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f", 7200): AggregationSpec(
             window=7200,
             frequency=3600,
             blind_spot=900,
             time_modulo_frequency=1800,
-            tile_table_id="avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+            tile_table_id="avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
             keys=["cust_id"],
             serving_names=["NEW_CUST_ID"],
             value_by=None,
             merge_expr="SUM(sum_value) / SUM(count_value)",
             feature_name="a_2h_average",
         ),
-        ("avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89", 172800): AggregationSpec(
+        ("avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f", 172800): AggregationSpec(
             window=172800,
             frequency=3600,
             blind_spot=900,
             time_modulo_frequency=1800,
-            tile_table_id="avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+            tile_table_id="avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
             keys=["cust_id"],
             serving_names=["NEW_CUST_ID"],
             value_by=None,
@@ -255,10 +255,10 @@ def test_feature_execution_planner__serving_names_mapping(query_graph_with_group
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
-            feature_expr='"agg_w7200_avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89"',
+            feature_expr='"agg_w7200_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
-            feature_expr='"agg_w172800_avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89"',
+            feature_expr='"agg_w172800_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
         ),
     }

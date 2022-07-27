@@ -29,6 +29,14 @@ def feature_model_dict_fixture(feature_model_dict):
     Feature model dict fixture
     """
     feature_model_dict["_id"] = str(ObjectId())
+    feature_model_dict["tabular_source"] = (
+        str(ObjectId()),
+        {
+            "database_name": "sf_database",
+            "schema_name": "sf_schema",
+            "table_name": "sf_table",
+        },
+    )
     return feature_model_dict
 
 
@@ -61,6 +69,7 @@ def mock_insert_feature_registry_fixture():
 def create_success_response_fixture(
     test_api_client_persistent,
     feature_model_dict,
+    snowflake_feature_store,
     snowflake_event_data,
     mock_insert_feature_registry,
 ):
@@ -72,8 +81,17 @@ def create_success_response_fixture(
     if isinstance(persistent, MongoDB):
         pytest.skip("Session not supported in Mongomock!")
 
+    snowflake_feature_store.save()
     snowflake_event_data.save()
     feature_model_dict["event_data_ids"] = [str(snowflake_event_data.id)]
+    feature_model_dict["tabular_source"] = (
+        str(snowflake_feature_store.id),
+        {
+            "database_name": "sf_database",
+            "schema_name": "sf_schema",
+            "table_name": "sf_table",
+        },
+    )
     response = test_api_client.post("/feature", json=feature_model_dict)
     return response
 
@@ -329,16 +347,20 @@ def get_credential_fixture(config):
     get_credential fixture
     """
 
-    def get_credential(user_id, db_source):
+    def get_credential(user_id, db_source_name):
         _ = user_id
-        return config.credentials.get(db_source)
+        return config.credentials.get(db_source_name)
 
     return get_credential
 
 
 @patch("featurebyte.session.base.BaseSession.execute_query")
 def test_insert_feature_register(
-    mock_execute_query, feature_model_dict, snowflake_connector, get_credential
+    mock_execute_query,
+    feature_model_dict,
+    snowflake_connector,
+    snowflake_feature_store,
+    get_credential,
 ):
     """
     Test insert_feature_registry
@@ -347,7 +369,10 @@ def test_insert_feature_register(
     user = Mock()
     feature = Feature(**feature_model_dict)
     FeatureController.insert_feature_registry(
-        user=user, document=feature, get_credential=get_credential
+        user=user,
+        document=feature,
+        feature_store=snowflake_feature_store,
+        get_credential=get_credential,
     )
 
     match_count = 0
@@ -368,22 +393,27 @@ def test_insert_feature_registry__non_snowflake_feature_store(
     feature_store = FeatureStoreModel(
         type=SourceType.SQLITE, details=SQLiteDetails(filename="some_filename")
     )
-    feature_model_dict["tabular_source"] = (feature_store, TableDetails(table_name="some_table"))
+    feature_model_dict["tabular_source"] = (feature_store.id, TableDetails(table_name="some_table"))
     feature = Feature(**feature_model_dict)
     user, get_credential = Mock(), Mock()
     FeatureController.insert_feature_registry(
-        user=user, document=feature, get_credential=get_credential
+        user=user, document=feature, feature_store=feature_store, get_credential=get_credential
     )
     assert mock_execute_query.call_count == 0
 
 
 @patch("featurebyte.routes.feature.controller.FeatureManagerSnowflake")
 def test_insert_feature_registry__duplicated_feature_registry_exception(
-    mock_feature_manager, feature_model_dict, get_credential
+    mock_feature_manager,
+    feature_model_dict,
+    get_credential,
+    snowflake_connector,
+    snowflake_feature_store,
 ):
     """
     Test insert_feature_registry with duplicated_feature_registry exception
     """
+    _ = snowflake_connector
     mock_feature_manager.return_value.insert_feature_registry.side_effect = (
         DuplicatedFeatureRegistryError
     )
@@ -391,7 +421,10 @@ def test_insert_feature_registry__duplicated_feature_registry_exception(
     user = Mock()
     with pytest.raises(HTTPException) as exc:
         FeatureController.insert_feature_registry(
-            user=user, document=feature, get_credential=get_credential
+            user=user,
+            document=feature,
+            feature_store=snowflake_feature_store,
+            get_credential=get_credential,
         )
     expected_msg = (
         'Feature (feature.name: "sum_30m") has been registered by other feature '
@@ -403,16 +436,24 @@ def test_insert_feature_registry__duplicated_feature_registry_exception(
 
 @patch("featurebyte.routes.feature.controller.FeatureManagerSnowflake")
 def test_insert_feature_registry__other_exception(
-    mock_feature_manager, feature_model_dict, get_credential
+    mock_feature_manager,
+    feature_model_dict,
+    get_credential,
+    snowflake_feature_store,
+    snowflake_connector,
 ):
     """
     Test insert_feature_registry with non duplicated feature registry exception
     """
+    _ = snowflake_connector
     mock_feature_manager.return_value.insert_feature_registry.side_effect = ValueError
     feature = Feature(**feature_model_dict)
     user = Mock()
     with pytest.raises(ValueError):
         FeatureController.insert_feature_registry(
-            user=user, document=feature, get_credential=get_credential
+            user=user,
+            document=feature,
+            feature_store=snowflake_feature_store,
+            get_credential=get_credential,
         )
     assert mock_feature_manager.return_value.remove_feature_registry.called

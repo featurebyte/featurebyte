@@ -3,16 +3,14 @@ SessionManager class
 """
 from __future__ import annotations
 
-from typing import Dict, Optional
-
 import json
 
 from cachetools import TTLCache, cached
 from pydantic import BaseModel
 
+from featurebyte.config import Credentials
 from featurebyte.enum import SourceType
 from featurebyte.logger import logger
-from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
@@ -29,7 +27,7 @@ class SessionManager(BaseModel):
     Session manager to manage session of different database sources
     """
 
-    credentials: Dict[FeatureStoreModel, Optional[Credential]]
+    credentials: Credentials
 
     def __hash__(self) -> int:
         return hash(
@@ -61,9 +59,9 @@ class SessionManager(BaseModel):
         ValueError
             When credentials do not contain the specified data source info
         """
-        if item in self.credentials:
+        if item.name in self.credentials:
             logger.debug(f"Create a new session for {item.type}")
-            credential = self.credentials[item]
+            credential = self.credentials[item.name]
             credential_params = credential.credential.dict() if credential else {}
             return SOURCE_TYPE_SESSION_MAP[item.type](**item.details.dict(), **credential_params)
-        raise ValueError(f'Credentials do not contain info for the database source "{item}"!')
+        raise ValueError(f'Credentials do not contain info for the feature store "{item.name}"!')

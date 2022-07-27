@@ -328,12 +328,20 @@ class GlobalQueryGraph(QueryGraph):
         default_factory=GlobalQueryGraphState.get_ref_to_node_name
     )
 
+    def copy(self, *args: Any, **kwargs: Any) -> GlobalQueryGraph:
+        # under no circumstances we should allow making copy of GlobalQueryGraph
+        _ = args, kwargs
+        return GlobalQueryGraph()
+
+    def __copy__(self, *args: Any, **kwargs: Any) -> GlobalQueryGraph:
+        # under no circumstances we should allow making copy of GlobalQueryGraph
+        _ = args, kwargs
+        return GlobalQueryGraph()
+
     def __deepcopy__(self, *args: Any, **kwargs: Any) -> GlobalQueryGraph:
-        # under no circumstances we should allow making deep copy on GlobalQueryGraph object
-        logger.warning(
-            "Attempted to make a deepcopy on GlobalQueryGraph object, shallow copy returned."
-        )
-        return copy.copy(self)
+        # under no circumstances we should allow making copy of GlobalQueryGraph
+        _ = args, kwargs
+        return GlobalQueryGraph()
 
     def _prune(
         self,

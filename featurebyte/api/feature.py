@@ -11,16 +11,15 @@ from http import HTTPStatus
 import pandas as pd
 from pydantic import Field
 
-from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations, Credentials
-from featurebyte.core.generic import ProtectedColumnsQueryObject
+from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import DuplicatedRecordException, RecordCreationException
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_store import TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.models.feature_store import FeatureStoreIdentifier, TableDetails
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
 
@@ -29,10 +28,8 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
     Feature class
     """
 
-    # Although tabular_source is already defined in FeatureModel, here it is redefined so that
-    # pydantic knows to deserialize the first element as a FeatureStore instead of a
-    # FeatureStoreModel
-    tabular_source: Tuple[FeatureStore, TableDetails] = Field(allow_mutation=False)
+    feature_store: ExtendedFeatureStoreModel = Field(exclude=True, allow_mutation=False)
+    tabular_source: Tuple[FeatureStoreIdentifier, TableDetails] = Field(allow_mutation=False)
 
     def __setattr__(self, key: Any, value: Any) -> Any:
         """Custom __setattr__ to handle setting of special attributes such as name
@@ -215,4 +212,4 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response)
             raise RecordCreationException(response)
-        type(self).__init__(self, **response.json())
+        type(self).__init__(self, **response.json(), feature_store=self.feature_store)

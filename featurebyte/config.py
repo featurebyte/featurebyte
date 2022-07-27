@@ -13,17 +13,15 @@ from pathlib import Path
 import requests
 import yaml
 from fastapi.testclient import TestClient
-from pydantic import BaseSettings, ConstrainedStr, HttpUrl
+from pydantic import BaseSettings, ConstrainedStr, HttpUrl, StrictStr
 from pydantic.error_wrappers import ValidationError
 from requests import Response
 
-from featurebyte.enum import SourceType
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.credential import Credential
-from featurebyte.models.feature_store import FeatureStoreModel
 
 # data source to credential mapping
-Credentials = Dict[FeatureStoreModel, Optional[Credential]]
+Credentials = Dict[StrictStr, Optional[Credential]]
 
 
 class LogLevel(str, Enum):
@@ -169,7 +167,6 @@ class Configurations:
         self.git: Optional[GitSettings] = None
         self.featurebyte: Optional[FeatureByteSettings] = None
         self.settings: Dict[str, Any] = {}
-        self.feature_stores: Dict[str, FeatureStoreModel] = {}
         self.credentials: Credentials = {}
         self.logging: LoggingSettings = LoggingSettings()
         self._parse_config(self._config_file_path)
@@ -210,27 +207,17 @@ class Configurations:
         for feature_store_details in feature_stores:
             name = feature_store_details.pop("name", "unnamed")
             try:
-                if "source_type" in feature_store_details:
-                    # parse and store feature store
-                    source_type = SourceType(feature_store_details["source_type"])
-                    feature_store = FeatureStoreModel(
-                        type=source_type,
-                        details=feature_store_details,
+                # parse and store credentials
+                credentials = None
+                if "credential_type" in feature_store_details:
+                    # credentials are stored together with feature store name in the config file,
+                    # Credential pydantic model will use only the relevant fields
+                    credentials = Credential(
+                        name=name,
+                        credential_type=feature_store_details["credential_type"],
+                        credential=feature_store_details,
                     )
-                    self.feature_stores[name] = feature_store
-
-                    # parse and store credentials
-                    credentials = None
-                    if "credential_type" in feature_store_details:
-                        # credentials are stored together with feature store details in the config file,
-                        # Credential pydantic model will use only the relevant fields
-                        credentials = Credential(
-                            name=name,
-                            feature_store=feature_store,
-                            credential_type=feature_store_details["credential_type"],
-                            credential=feature_store_details,
-                        )
-                    self.credentials[feature_store] = credentials
+                self.credentials[name] = credentials
             except ValidationError as exc:
                 raise InvalidSettingsError(f"Invalid settings for datasource: {name}") from exc
 

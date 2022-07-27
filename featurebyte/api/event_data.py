@@ -3,26 +3,24 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Any
 
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
-from pydantic import Field, validator
+from pydantic import validator
 
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.util import get_entity
-from featurebyte.config import Configurations
+from featurebyte.config import Configurations, Credentials
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
-from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 
 
@@ -69,6 +67,7 @@ class EventDataColumn:
             EventData.__init__(
                 self.event_data,
                 **response.json(),
+                feature_store=self.event_data.feature_store,
                 credentials=self.event_data.credentials,
             )
         elif response.status_code == HTTPStatus.NOT_FOUND:
@@ -82,23 +81,6 @@ class EventData(EventDataModel, DatabaseTable):
     EventData class
     """
 
-    tabular_source: Tuple[FeatureStore, TableDetails] = Field(allow_mutation=False)
-
-    class Config:
-        """
-        Pydantic Config class
-        """
-
-        # pylint: disable=too-few-public-methods
-
-        fields = {
-            "credentials": {"exclude": True},
-            "graph": {"exclude": True},
-            "node": {"exclude": True},
-            "row_index_lineage": {"exclude": True},
-            "column_var_type_map": {"exclude": True},
-        }
-
     @classmethod
     def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         return {"timestamp": values["event_timestamp_column"]}
@@ -110,7 +92,7 @@ class EventData(EventDataModel, DatabaseTable):
         name: str,
         event_timestamp_column: str,
         record_creation_date_column: str | None = None,
-        credentials: dict[FeatureStoreModel, Credential | None] | None = None,
+        credentials: Credentials | None = None,
     ) -> EventData:
         """
         Create EventData object from tabular source
@@ -125,7 +107,7 @@ class EventData(EventDataModel, DatabaseTable):
             Event timestamp column from the given tabular source
         record_creation_date_column: str
             Record creation datetime column from the given tabular source
-        credentials: dict[FeatureStoreModel, Credential | None] | None
+        credentials: Credentials | None
             Credentials dictionary mapping from the config file
 
         Returns
@@ -151,9 +133,13 @@ class EventData(EventDataModel, DatabaseTable):
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             if not response_dict["data"]:
-                return EventData(**data.dict(), credentials=credentials)
+                return EventData(
+                    **data.dict(),
+                    feature_store=tabular_source.feature_store,
+                    credentials=credentials,
+                )
             raise DuplicatedRecordException(
-                response, f'EventData name "{name}" exists in saved record.'
+                response, f'EventData (event_data.name: "{name}") exists in saved record.'
             )
         raise RecordRetrievalException(response)
 
@@ -183,9 +169,16 @@ class EventData(EventDataModel, DatabaseTable):
             response_dict = response.json()
             if response_dict["data"]:
                 event_data_dict = response_dict["data"][0]
-                return EventData(**event_data_dict)
+                feature_store_id = event_data_dict["tabular_source"][0]
+                feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
+                if feature_store_response.status_code == HTTPStatus.OK:
+                    feature_store = FeatureStore(**feature_store_response.json())
+                    return EventData(**event_data_dict, feature_store=feature_store)
+                raise RecordRetrievalException(
+                    response, f'FeatureStore (feature_store.id: "{feature_store_id}") not found!'
+                )
         raise RecordRetrievalException(
-            response, f'EventData name (event_data.name: "{name}") not found!'
+            response, f'EventData (event_data.name: "{name}") not found!'
         )
 
     @validator("event_timestamp_column")
@@ -244,7 +237,9 @@ class EventData(EventDataModel, DatabaseTable):
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response)
             raise RecordCreationException(response)
-        type(self).__init__(self, **{**response.json(), "credentials": self.credentials})
+        type(self).__init__(
+            self, **response.json(), feature_store=self.feature_store, credentials=self.credentials
+        )
 
     def info(self) -> dict[str, Any]:
         """
@@ -266,7 +261,12 @@ class EventData(EventDataModel, DatabaseTable):
         client = Configurations().get_client()
         response = client.get(url=f"/event_data/{self.id}")
         if response.status_code == HTTPStatus.OK:
-            type(self).__init__(self, **{**response.json(), "credentials": self.credentials})
+            type(self).__init__(
+                self,
+                **response.json(),
+                feature_store=self.feature_store,
+                credentials=self.credentials,
+            )
             return self.dict()
         if response.status_code == HTTPStatus.NOT_FOUND:
             return self.dict()
@@ -301,7 +301,12 @@ class EventData(EventDataModel, DatabaseTable):
         client = Configurations().get_client()
         response = client.patch(url=f"/event_data/{self.id}", json=data.dict())
         if response.status_code == HTTPStatus.OK:
-            type(self).__init__(self, **{**response.json(), "credentials": self.credentials})
+            type(self).__init__(
+                self,
+                **response.json(),
+                feature_store=self.feature_store,
+                credentials=self.credentials,
+            )
         elif response.status_code == HTTPStatus.NOT_FOUND:
             self.default_feature_job_setting = data.default_feature_job_setting
         else:

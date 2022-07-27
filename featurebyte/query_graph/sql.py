@@ -716,7 +716,7 @@ def make_input_node(
     for colname in parameters["columns"]:
         columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
     sql_node: BuildTileInputNode | SelectedEntityBuildTileInputNode | GenericInputNode
-    database_source = parameters["database_source"]
+    database_source = parameters["feature_store"]
     if sql_type == SQLType.BUILD_TILE:
         sql_node = BuildTileInputNode(
             columns_map=columns_map,

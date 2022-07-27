@@ -4,15 +4,24 @@ Common test fixtures used across unit test directories related to query_graph
 import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import Node
+from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.query_graph.util import get_tile_table_identifier
 
 
+@pytest.fixture(name="global_graph")
+def global_query_graph():
+    """
+    Empty query graph fixture
+    """
+    GlobalQueryGraphState.reset()
+    yield GlobalQueryGraph()
+
+
 @pytest.fixture(name="query_graph_and_assign_node")
-def query_graph_and_assign_node_fixture(graph):
+def query_graph_and_assign_node_fixture(global_graph):
     """Fixture of a query with some operations ready to run groupby"""
     # pylint: disable=duplicate-code
-    node_input = graph.add_operation(
+    node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
@@ -22,7 +31,7 @@ def query_graph_and_assign_node_fixture(graph):
                 "schema_name": "public",
                 "table_name": "event_table",
             },
-            "database_source": {
+            "feature_store": {
                 "type": "snowflake",
                 "details": {
                     "database": "db",
@@ -33,31 +42,31 @@ def query_graph_and_assign_node_fixture(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    proj_a = graph.add_operation(
+    proj_a = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
-    proj_b = graph.add_operation(
+    proj_b = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["b"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
-    sum_node = graph.add_operation(
+    sum_node = global_graph.add_operation(
         node_type=NodeType.ADD,
         node_params={},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a, proj_b],
     )
-    assign_node = graph.add_operation(
+    assign_node = global_graph.add_operation(
         node_type=NodeType.ASSIGN,
         node_params={"name": "c"},
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, sum_node],
     )
-    return graph, assign_node
+    return global_graph, assign_node
 
 
 @pytest.fixture(name="groupby_node_params")
@@ -170,20 +179,20 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby):
 
 
 @pytest.fixture(name="graph_single_node")
-def query_graph_single_node(graph):
+def query_graph_single_node(global_graph):
     """
     Query graph with a single node
     """
-    node_input = graph.add_operation(
+    node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={},
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
-    pruned_graph, node_name_map = graph.prune(target_node=node_input, target_columns=set())
+    pruned_graph, node_name_map = global_graph.prune(target_node=node_input, target_columns=set())
     mapped_node = pruned_graph.get_node_by_name(node_name_map[node_input.name])
     assert mapped_node.name == "input_1"
-    graph_dict = graph.dict()
+    graph_dict = global_graph.dict()
     assert graph_dict == pruned_graph.dict()
     assert graph_dict["nodes"] == {
         "input_1": {
@@ -195,7 +204,7 @@ def query_graph_single_node(graph):
     }
     assert graph_dict["edges"] == {}
     assert node_input == Node(name="input_1", type="input", parameters={}, output_type="frame")
-    yield graph, node_input
+    yield global_graph, node_input
 
 
 @pytest.fixture(name="graph_two_nodes")

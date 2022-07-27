@@ -36,7 +36,6 @@ class Credential(FeatureByteBaseModel):
     """
 
     name: StrictStr
-    feature_store: FeatureStoreModel
     credential_type: CredentialType
     credential: Union[UsernamePasswordCredential]
 

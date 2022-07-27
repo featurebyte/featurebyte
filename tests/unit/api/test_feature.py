@@ -19,22 +19,6 @@ def float_feature_dict_fixture(float_feature):
     """
     Serialize float feature in dictionary format
     """
-    # before serialization, global query graph is used
-    assert set(float_feature.graph.nodes) == {
-        "input_1",
-        "input_2",
-        "project_1",
-        "project_2",
-        "project_3",
-        "project_4",
-        "groupby_1",
-        "groupby_2",
-    }
-    assert float_feature.graph.edges == {
-        "input_2": ["project_1", "groupby_1", "groupby_2"],
-        "groupby_2": ["project_2", "project_3", "project_4"],
-    }
-
     feat_dict = float_feature.dict()
     # after serialization, pruned query graph is used
     assert set(feat_dict["graph"]["nodes"]) == {"input_1", "groupby_1", "project_1"}
@@ -109,13 +93,16 @@ def test_feature__preview_not_a_dict(float_feature):
     assert "point_in_time_and_serving_name should be a dict" in str(exc_info.value)
 
 
-def test_feature_deserialization(float_feature, float_feature_dict, snowflake_event_view):
+def test_feature_deserialization(
+    float_feature, float_feature_dict, snowflake_feature_store, snowflake_event_view
+):
     """
     Test feature deserialization
     """
     global_graph = GlobalQueryGraph()
     global_graph_dict = global_graph.dict()
     float_feature_dict["_id"] = float_feature_dict.pop("id")
+    float_feature_dict["feature_store"] = snowflake_feature_store
     deserialized_float_feature = Feature.parse_obj(float_feature_dict)
     assert deserialized_float_feature.id == float_feature.id
     assert deserialized_float_feature.name == float_feature.name
@@ -149,6 +136,7 @@ def test_feature_deserialization(float_feature, float_feature_dict, snowflake_ev
     tile_id2 = float_feature.graph.nodes["groupby_2"]["parameters"]["tile_id"]
     assert tile_id1 != tile_id2
     float_feature_dict.pop("_id")
+    float_feature_dict.pop("feature_store")
     assert float_feature_dict == same_float_feature_dict
 
 
@@ -187,12 +175,15 @@ def mock_insert_feature_registry_fixture():
 
 
 @pytest.fixture(name="saved_feature")
-def saved_feature_fixture(snowflake_event_data, float_feature, mock_insert_feature_registry):
+def saved_feature_fixture(
+    snowflake_feature_store, snowflake_event_data, float_feature, mock_insert_feature_registry
+):
     """
     Saved feature fixture
     """
     _ = mock_insert_feature_registry
     event_data_id_before = snowflake_event_data.id
+    snowflake_feature_store.save()
     snowflake_event_data.save()
     assert snowflake_event_data.id == event_data_id_before
     feature_id_before = float_feature.id

@@ -8,7 +8,7 @@ from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
-from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
+from featurebyte.models.feature_store import FeatureStoreIdentifier, FeatureStoreModel, TableDetails
 from featurebyte.routes.common.schema import PaginationMixin
 
 
@@ -22,12 +22,12 @@ class EventData(EventDataModel):
 
 class EventDataCreate(FeatureByteBaseModel):
     """
-    Event Data Creation schema
+    Event Data Creation Schema
     """
 
     id: PydanticObjectId = Field(alias="_id")
     name: StrictStr
-    tabular_source: Tuple[FeatureStoreModel, TableDetails]
+    tabular_source: Tuple[FeatureStoreIdentifier, TableDetails]
     event_timestamp_column: StrictStr
     column_entity_map: Optional[Dict[StrictStr, str]] = Field(default=None)
     record_creation_date_column: Optional[StrictStr]
@@ -44,7 +44,7 @@ class EventDataList(PaginationMixin):
 
 class EventDataUpdate(FeatureByteBaseModel):
     """
-    Event Data update schema
+    Event Data Update Schema
     """
 
     column_entity_map: Optional[Dict[StrictStr, str]] = Field(default=None)

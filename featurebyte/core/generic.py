@@ -13,7 +13,7 @@ from pydantic import Field, StrictStr
 
 from featurebyte.config import Configurations, Credentials
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
+from featurebyte.models.feature_store import FeatureStoreIdentifier, FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.session.base import BaseSession
@@ -56,7 +56,8 @@ class QueryObject(FeatureByteBaseModel):
     graph: QueryGraph = Field(default_factory=GlobalQueryGraph)
     node: Node
     row_index_lineage: Tuple[StrictStr, ...]
-    tabular_source: Tuple[FeatureStoreModel, TableDetails] = Field(allow_mutation=False)
+    tabular_source: Tuple[FeatureStoreIdentifier, TableDetails] = Field(allow_mutation=False)
+    feature_store: ExtendedFeatureStoreModel = Field(exclude=True, allow_mutation=False)
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name})"

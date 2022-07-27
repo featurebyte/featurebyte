@@ -75,6 +75,7 @@ class CollectionName(str, Enum):
     EVENT_DATA = "event_data"
     FEATURE = "feature"
     FEATURE_NAMESPACE = "feature_namespace"
+    FEATURE_STORE = "feature_store"
 
 
 class DBVarType(str, Enum):

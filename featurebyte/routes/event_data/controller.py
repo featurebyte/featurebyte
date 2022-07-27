@@ -56,6 +56,19 @@ class EventDataController:
         # exclude microseconds from timestamp as it's not supported in persistent
         utc_now = get_utc_now()
 
+        feature_store_id, _ = data.tabular_source
+        feature_store = await persistent.find_one(
+            collection_name=CollectionName.FEATURE_STORE, query_filter={"_id": feature_store_id}
+        )
+        if feature_store is None:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=(
+                    f'FeatureStore (feature_store.id: "{feature_store_id}") not found! '
+                    f"Please save the FeatureStore object first."
+                ),
+            )
+
         # init history and set status to draft
         if data.default_feature_job_setting:
             history = [
@@ -164,7 +177,7 @@ class EventDataController:
         event_data_id: ObjectId,
     ) -> EventData:
         """
-        Retrieve Event Data given event data identifier (GitDB or MongoDB)
+        Retrieve event Data given event data identifier (GitDB or MongoDB)
 
         Parameters
         ----------

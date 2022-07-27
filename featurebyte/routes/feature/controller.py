@@ -10,6 +10,7 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
+from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import CollectionName, SourceType
 from featurebyte.exception import DuplicatedFeatureRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -28,59 +29,59 @@ class FeatureController:
     collection_name = CollectionName.FEATURE
 
     @classmethod
-    async def _validate_feature(cls, document: Feature, session: Persistent) -> None:
+    async def _validate_feature(cls, data: FeatureCreate, session: Persistent) -> None:
         """
-        Validate feature document to make sure the feature & parent feature are valid
+        Validate feature create data to make sure the feature & parent feature are valid
 
         Parameters
         ----------
-        document: Feature
-            Feature document
+        data: FeatureCreate
+            Feature creation data
         session: Persistent
             Persistent session
 
         Raises
         ------
         HTTPException
-            If the document failed validation checks
+            If the data failed validation checks
         """
-        if document.parent_id is None:
+        if data.parent_id is None:
             # when the parent_id is missing, it implies that the feature is a new feature
             conflict_feature = await session.find_one(
-                collection_name=cls.collection_name, query_filter={"name": document.name}
+                collection_name=cls.collection_name, query_filter={"name": data.name}
             )
             if conflict_feature:
                 # if it is not a new feature throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
-                    detail=f'Feature name (feature.name: "{document.name}") already exists.',
+                    detail=f'Feature name (feature.name: "{data.name}") already exists.',
                 )
         else:
             # if parent_id exists, make sure the parent feature exists at persistent & has consistent name
             parent_feature_dict = await session.find_one(
                 collection_name=cls.collection_name,
-                query_filter={"_id": ObjectId(document.parent_id)},
+                query_filter={"_id": ObjectId(data.parent_id)},
             )
             if not parent_feature_dict:
                 # if parent feature not found at persistent, throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.NOT_FOUND,
                     detail=(
-                        f'The original feature (feature.id: "{document.parent_id}") not found! '
+                        f'The original feature (feature.id: "{data.parent_id}") not found! '
                         f"Please save the Feature object first."
                     ),
                 )
-            if not document.is_parent(Feature(**parent_feature_dict)):
+            if parent_feature_dict["name"] != data.name:
                 # if the parent feature is inconsistent with feature to be created, throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
                     detail=(
-                        f'Feature (feature.id: "{document.id}", feature.parent_id: "{document.parent_id}") '
+                        f'Feature (feature.id: "{data.id}", feature.parent_id: "{data.parent_id}") '
                         f"has invalid parent feature!"
                     ),
                 )
 
-        for event_data_id in document.event_data_ids:
+        for event_data_id in data.event_data_ids:
             event_data_dict = await session.find_one(
                 collection_name=CollectionName.EVENT_DATA,
                 query_filter={"_id": ObjectId(event_data_id)},
@@ -137,7 +138,13 @@ class FeatureController:
         }
 
     @classmethod
-    def insert_feature_registry(cls, user: Any, document: Feature, get_credential: Any) -> None:
+    def insert_feature_registry(
+        cls,
+        user: Any,
+        document: Feature,
+        feature_store: ExtendedFeatureStoreModel,
+        get_credential: Any,
+    ) -> None:
         """
         Insert feature registry into feature store
 
@@ -147,6 +154,8 @@ class FeatureController:
             User class to provide user identifier
         document: Feature
             Feature document
+        feature_store: ExtendedFeatureStoreModel
+            FeatureStore document
         get_credential: Any
             Get credential handler function
 
@@ -157,12 +166,15 @@ class FeatureController:
         Exception
             Other errors during registry insertion / removal
         """
-        extended_feature = ExtendedFeatureModel(**document.dict())
-        if extended_feature.tabular_source[0].type == SourceType.SNOWFLAKE:
-            feature_store = extended_feature.tabular_source[0]
+        extended_feature = ExtendedFeatureModel(
+            **document.dict(by_alias=True), feature_store=feature_store
+        )
+        if extended_feature.feature_store.type == SourceType.SNOWFLAKE:
             db_session = feature_store.get_session(
                 credentials={
-                    feature_store: get_credential(user_id=user.id, db_source=feature_store)
+                    feature_store.name: get_credential(
+                        user_id=user.id, db_source_name=feature_store.name
+                    )
                 }
             )
             feature_manager = FeatureManagerSnowflake(session=db_session)
@@ -223,6 +235,9 @@ class FeatureController:
                         detail=f'Feature (feature.id: "{data.id}") has been saved before.',
                     )
 
+            # validate feature payload
+            await cls._validate_feature(data=data, session=session)
+
             utcnow = get_utc_now()
             document = Feature(
                 user_id=user.id,
@@ -231,8 +246,13 @@ class FeatureController:
                 **data.dict(by_alias=True),
             )
             assert document.id == data.id
-            # validate feature payload
-            await cls._validate_feature(document=document, session=session)
+
+            # get feature store
+            feature_store_id, _ = document.tabular_source
+            feature_store_dict = await session.find_one(
+                collection_name=CollectionName.FEATURE_STORE, query_filter={"_id": feature_store_id}
+            )
+            feature_store = ExtendedFeatureStoreModel(**feature_store_dict)
 
             insert_id = await session.insert_one(
                 collection_name=cls.collection_name, document=document.dict(by_alias=True)
@@ -272,6 +292,6 @@ class FeatureController:
                 )
 
             # insert feature registry into feature store
-            cls.insert_feature_registry(user, document, get_credential)
+            cls.insert_feature_registry(user, document, feature_store, get_credential)
 
         return document
