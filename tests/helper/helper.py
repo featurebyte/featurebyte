@@ -1,5 +1,8 @@
 def assert_equal_with_expected_fixture(actual, fixture_filename, update_fixture=False):
-    """Utility to check that actual is the same as the pre-generated fixture"""
+    """Utility to check that actual is the same as the pre-generated fixture
+
+    To update all fixtures automatically, pass --update-fixtures option when invoking pytest.
+    """
     if update_fixture:
         with open(fixture_filename, "w", encoding="utf-8") as f_handle:
             f_handle.write(actual)

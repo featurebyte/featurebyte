@@ -136,7 +136,7 @@ def test_get_historical_features__point_in_time_dtype_conversion(
     mocked_tile_cache.compute_tiles_on_demand.assert_called_once()
 
 
-def test_get_historical_feature_sql(float_feature):
+def test_get_historical_feature_sql(float_feature, update_fixtures):
     """Test SQL code generated for historical features is expected"""
     feature_objects = [float_feature]
     request_table_columns = ["POINT_IN_TIME", "cust_id", "A", "B", "C"]
@@ -144,11 +144,11 @@ def test_get_historical_feature_sql(float_feature):
         feature_objects=feature_objects, request_table_columns=request_table_columns
     )
     assert_equal_with_expected_fixture(
-        sql, "tests/fixtures/expected_historical_requests.sql", update_fixture=False
+        sql, "tests/fixtures/expected_historical_requests.sql", update_fixture=update_fixtures
     )
 
 
-def test_get_historical_feature_sql__serving_names_mapping(float_feature):
+def test_get_historical_feature_sql__serving_names_mapping(float_feature, update_fixtures):
     """Test SQL code generated for historical features with serving names mapping"""
     feature_objects = [float_feature]
     request_table_columns = ["POINT_IN_TIME", "NEW_CUST_ID", "A", "B", "C"]
@@ -159,5 +159,7 @@ def test_get_historical_feature_sql__serving_names_mapping(float_feature):
         serving_names_mapping=serving_names_mapping,
     )
     assert_equal_with_expected_fixture(
-        sql, "tests/fixtures/expected_historical_requests_with_mapping.sql", update_fixture=False
+        sql,
+        "tests/fixtures/expected_historical_requests_with_mapping.sql",
+        update_fixture=update_fixtures,
     )
