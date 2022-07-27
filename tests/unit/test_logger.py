@@ -32,4 +32,6 @@ def test_logging():
     # 2022-06-20 14:33:41.328 | DEBUG    | Test Message | {'extra': {'a': 1}}
     assert len(mock_handler.records) == 1
     parts = mock_handler.records[0].split("|")
-    assert "|".join(parts[1:]) == " DEBUG    | unit.test_logger:test_logging:29 - Test Message"
+    assert (
+        "|".join(parts[1:]) == " DEBUG    | tests.unit.test_logger:test_logging:29 - Test Message"
+    )

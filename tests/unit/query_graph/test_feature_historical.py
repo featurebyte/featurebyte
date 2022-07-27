@@ -16,6 +16,7 @@ from featurebyte.query_graph.feature_historical import (
     get_historical_features_sql,
     get_session_from_feature_objects,
 )
+from tests.helper.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture(name="mocked_session")
@@ -135,19 +136,19 @@ def test_get_historical_features__point_in_time_dtype_conversion(
     mocked_tile_cache.compute_tiles_on_demand.assert_called_once()
 
 
-def test_get_historical_feature_sql(float_feature, helpers):
+def test_get_historical_feature_sql(float_feature):
     """Test SQL code generated for historical features is expected"""
     feature_objects = [float_feature]
     request_table_columns = ["POINT_IN_TIME", "cust_id", "A", "B", "C"]
     sql = get_historical_features_sql(
         feature_objects=feature_objects, request_table_columns=request_table_columns
     )
-    helpers.assert_equal_with_expected_fixture(
+    assert_equal_with_expected_fixture(
         sql, "tests/fixtures/expected_historical_requests.sql", update_fixture=False
     )
 
 
-def test_get_historical_feature_sql__serving_names_mapping(float_feature, helpers):
+def test_get_historical_feature_sql__serving_names_mapping(float_feature):
     """Test SQL code generated for historical features with serving names mapping"""
     feature_objects = [float_feature]
     request_table_columns = ["POINT_IN_TIME", "NEW_CUST_ID", "A", "B", "C"]
@@ -157,6 +158,6 @@ def test_get_historical_feature_sql__serving_names_mapping(float_feature, helper
         request_table_columns=request_table_columns,
         serving_names_mapping=serving_names_mapping,
     )
-    helpers.assert_equal_with_expected_fixture(
+    assert_equal_with_expected_fixture(
         sql, "tests/fixtures/expected_historical_requests_with_mapping.sql", update_fixture=False
     )
