@@ -282,9 +282,14 @@ def test_feature_group__setitem__unnamed_feature(production_ready_feature, featu
     feature = feature_group["sum_30m"] + 456
     feature_group = FeatureGroup([production_ready_feature])
     feature_group["sum_30m_plus_456"] = feature
-    feature_node = feature_group.feature_objects["sum_30m_plus_456"].node
+
+    feature_object = feature_group.feature_objects["sum_30m_plus_456"]
+    feature_node = feature_object.node
     assert feature_node.type == NodeType.ALIAS
     assert feature_node.parameters == {"name": "sum_30m_plus_456"}
+
+    # check name of the feature in FeatureGroup is updated
+    assert feature_object.name == "sum_30m_plus_456"
     assert feature.name is None
 
 
