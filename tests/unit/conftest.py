@@ -17,8 +17,7 @@ from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.config import Configurations
-from featurebyte.core.frame import Frame
-from featurebyte.enum import CollectionName, DBVarType, InternalName
+from featurebyte.enum import CollectionName, InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
@@ -110,7 +109,7 @@ def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
     yield
 
 
-@pytest.fixture(name="graph")
+@pytest.fixture(name="graph", scope="session")
 def query_graph():
     """
     Empty query graph fixture
@@ -189,7 +188,7 @@ def mock_snowflake_execute_query():
         yield mock_execute_query
 
 
-@pytest.fixture(name="snowflake_feature_store")
+@pytest.fixture(name="snowflake_feature_store", scope="session")
 def snowflake_feature_store_fixture(graph):
     """
     Snowflake database source fixture
@@ -376,51 +375,6 @@ def agg_per_category_feature_fixture(snowflake_event_view):
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
     )
     yield features["sum_1d"]
-
-
-@pytest.fixture(name="dataframe")
-def dataframe_fixture(graph, snowflake_feature_store):
-    """
-    Frame test fixture
-    """
-    column_var_type_map = {
-        "CUST_ID": DBVarType.INT,
-        "PRODUCT_ACTION": DBVarType.VARCHAR,
-        "VALUE": DBVarType.FLOAT,
-        "MASK": DBVarType.BOOL,
-    }
-    node = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "columns": list(column_var_type_map.keys()),
-            "timestamp": "VALUE",
-            "dbtable": {
-                "database_name": "db",
-                "schema_name": "public",
-                "table_name": "transaction",
-            },
-            "feature_store": {
-                "type": "snowflake",
-                "details": {
-                    "database": "db",
-                    "sf_schema": "public",
-                },
-            },
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
-    yield Frame(
-        feature_store=snowflake_feature_store,
-        tabular_source=(
-            snowflake_feature_store.id,
-            {"database_name": "db", "schema_name": "public", "table_name": "some_table_name"},
-        ),
-        node=node,
-        column_var_type_map=column_var_type_map,
-        column_lineage_map={col: (node.name,) for col in column_var_type_map},
-        row_index_lineage=(node.name,),
-    )
 
 
 @pytest.fixture(name="session_manager")

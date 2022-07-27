@@ -3,6 +3,8 @@ Common test fixtures used across unit test directories related to query_graph
 """
 import pytest
 
+from featurebyte.core.frame import Frame
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
 from featurebyte.query_graph.util import get_tile_table_identifier
@@ -312,3 +314,48 @@ def query_graph_four_nodes(graph_three_nodes):
     }
     assert node_filter == Node(name="filter_1", type="filter", parameters={}, output_type="frame")
     yield graph, node_input, node_proj, node_eq, node_filter
+
+
+@pytest.fixture(name="dataframe")
+def dataframe_fixture(global_graph, snowflake_feature_store):
+    """
+    Frame test fixture
+    """
+    column_var_type_map = {
+        "CUST_ID": DBVarType.INT,
+        "PRODUCT_ACTION": DBVarType.VARCHAR,
+        "VALUE": DBVarType.FLOAT,
+        "MASK": DBVarType.BOOL,
+    }
+    node = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "columns": list(column_var_type_map.keys()),
+            "timestamp": "VALUE",
+            "dbtable": {
+                "database_name": "db",
+                "schema_name": "public",
+                "table_name": "transaction",
+            },
+            "feature_store": {
+                "type": "snowflake",
+                "details": {
+                    "database": "db",
+                    "sf_schema": "public",
+                },
+            },
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    yield Frame(
+        feature_store=snowflake_feature_store,
+        tabular_source=(
+            snowflake_feature_store.id,
+            {"database_name": "db", "schema_name": "public", "table_name": "some_table_name"},
+        ),
+        node=node,
+        column_var_type_map=column_var_type_map,
+        column_lineage_map={col: (node.name,) for col in column_var_type_map},
+        row_index_lineage=(node.name,),
+    )
