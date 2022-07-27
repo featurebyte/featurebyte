@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 
 from abc import ABC, abstractmethod
 
-from sqlglot import expressions, select
+from sqlglot import Expression, expressions, select
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.feature_common import (
@@ -228,7 +228,7 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
         return sql
 
 
-class FeatureExecutionPlan:
+class FeatureExecutionPlan(ABC):
     """Responsible for constructing the SQL to compute features by aggregating tiles"""
 
     AGGREGATION_TABLE_NAME = "_FB_AGGREGATED"
@@ -305,8 +305,9 @@ class FeatureExecutionPlan:
         window = aggregation_spec.window
         return tile_table_id, window
 
-    @staticmethod
+    @classmethod
     def construct_aggregation_sql(
+        cls,
         expanded_request_table_name: str,
         tile_table_id: str,
         point_in_time_column: str,
@@ -335,7 +336,7 @@ class FeatureExecutionPlan:
         --------------------------------------
 
         We can aggregate the above into key-value pairs by aggregating over point-in-time and entity
-        and applying the OBJECT_AGG aggregation function:
+        and applying functions such as OBJECT_AGG:
 
         -----------------------------------------
         POINT_IN_TIME  ENTITY  VALUE_AGG
@@ -404,27 +405,53 @@ class FeatureExecutionPlan:
         if value_by is None:
             agg_expr = inner_agg_expr
         else:
-            inner_alias = "INNER_"
-            outer_group_by_keys = [f"{inner_alias}.{point_in_time_column}"]
-            for serving_name in serving_names:
-                outer_group_by_keys.append(f"{inner_alias}.{serving_name}")
-            # Replace missing category values since OBJECT_AGG ignores keys that are null
-            category_col = f"{inner_alias}.{value_by}"
-            category_filled_null = (
-                f"CASE WHEN {category_col} IS NULL THEN '__MISSING__' ELSE {category_col} END"
-            )
-            agg_expr = (
-                select(
-                    *outer_group_by_keys,
-                    f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'
-                    f' AS "{agg_result_name}"',
-                )
-                .from_(inner_agg_expr.subquery(alias=inner_alias))
-                .group_by(*outer_group_by_keys)
+            agg_expr = cls.construct_key_value_aggregation_sql(
+                point_in_time_column=point_in_time_column,
+                serving_names=serving_names,
+                value_by=value_by,
+                agg_result_name=agg_result_name,
+                inner_agg_result_name=inner_agg_result_name,
+                inner_agg_expr=inner_agg_expr,
             )
 
         out: str = agg_expr.sql(pretty=True)
         return out
+
+    @classmethod
+    @abstractmethod
+    def construct_key_value_aggregation_sql(
+        cls,
+        point_in_time_column: str,
+        serving_names: list[str],
+        value_by: str,
+        agg_result_name: str,
+        inner_agg_result_name: str,
+        inner_agg_expr: expressions.Subqueryable,
+    ) -> Expression:
+        """Aggregate per category values into key value pairs
+
+        # noqa: DAR103
+
+        Parameters
+        ----------
+        point_in_time_column : str
+            Point in time column name
+        serving_names : list[str]
+            List of serving name columns
+        value_by : str | None
+            Optional category parameter for the groupby operation
+        agg_result_name : str
+            Column name of the aggregated result
+        inner_agg_result_name : str
+            Column name of the intermediate aggregation result name (one value per category - this
+            is to be used as the values in the aggregated key-value pairs)
+        inner_agg_expr : expressions.Subqueryable:
+            Query that produces the intermediate aggregation result
+
+        Returns
+        -------
+        str
+        """
 
     @staticmethod
     def construct_left_join_sql(
@@ -589,6 +616,44 @@ class FeatureExecutionPlan:
         return sql
 
 
+class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
+    """Snowflake specific implementation of FeatureExecutionPlan"""
+
+    @classmethod
+    def construct_key_value_aggregation_sql(
+        cls,
+        point_in_time_column: str,
+        serving_names: list[str],
+        value_by: str,
+        agg_result_name: str,
+        inner_agg_result_name: str,
+        inner_agg_expr: expressions.Subqueryable,
+    ) -> Expression:
+
+        inner_alias = "INNER_"
+
+        outer_group_by_keys = [f"{inner_alias}.{point_in_time_column}"]
+        for serving_name in serving_names:
+            outer_group_by_keys.append(f"{inner_alias}.{serving_name}")
+
+        # Replace missing category values since OBJECT_AGG ignores keys that are null
+        category_col = f"{inner_alias}.{value_by}"
+        category_filled_null = (
+            f"CASE WHEN {category_col} IS NULL THEN '__MISSING__' ELSE {category_col} END"
+        )
+
+        agg_expr = (
+            select(
+                *outer_group_by_keys,
+                f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'
+                f' AS "{agg_result_name}"',
+            )
+            .from_(inner_agg_expr.subquery(alias=inner_alias))
+            .group_by(*outer_group_by_keys)
+        )
+        return agg_expr
+
+
 class FeatureExecutionPlanner:
     """Responsible for constructing a FeatureExecutionPlan given QueryGraph and Node
 
@@ -600,7 +665,7 @@ class FeatureExecutionPlanner:
 
     def __init__(self, graph: QueryGraph, serving_names_mapping: dict[str, str] | None = None):
         self.graph = graph
-        self.plan = FeatureExecutionPlan()
+        self.plan = SnowflakeFeatureExecutionPlan()
         self.serving_names_mapping = serving_names_mapping
 
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
