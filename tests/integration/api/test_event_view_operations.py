@@ -14,15 +14,16 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureReadiness
 
 
-def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data, config):
+def test_query_object_operation_on_sqlite_source(
+    sqlite_session, transaction_data, config, sqlite_feature_store
+):
     """
     Test loading event view from sqlite source
     """
     _ = sqlite_session
-    sqlite_database_source = FeatureStore(**config.feature_stores["sqlite_datasource"].dict())
-    assert sqlite_database_source.list_tables(credentials=config.credentials) == ["test_table"]
+    assert sqlite_feature_store.list_tables(credentials=config.credentials) == ["test_table"]
 
-    sqlite_database_table = sqlite_database_source.get_table(
+    sqlite_database_table = sqlite_feature_store.get_table(
         database_name=None,
         schema_name=None,
         table_name="test_table",
