@@ -10,14 +10,10 @@ from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.api.event_data import EventData
+from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.exception import DuplicatedFeatureRegistryError
 from featurebyte.models.feature import FeatureReadiness
-from featurebyte.models.feature_store import (
-    FeatureStoreModel,
-    SourceType,
-    SQLiteDetails,
-    TableDetails,
-)
+from featurebyte.models.feature_store import SourceType, SQLiteDetails, TableDetails
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.routes.feature.controller import FeatureController
 from featurebyte.schema.feature import Feature
@@ -390,8 +386,10 @@ def test_insert_feature_registry__non_snowflake_feature_store(
     """
     Test insert_feature_registry function (when feature store is not snowflake)
     """
-    feature_store = FeatureStoreModel(
-        type=SourceType.SQLITE, details=SQLiteDetails(filename="some_filename")
+    feature_store = ExtendedFeatureStoreModel(
+        name="sq_feature_store",
+        type=SourceType.SQLITE,
+        details=SQLiteDetails(filename="some_filename"),
     )
     feature_model_dict["tabular_source"] = (feature_store.id, TableDetails(table_name="some_table"))
     feature = Feature(**feature_model_dict)

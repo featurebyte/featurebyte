@@ -6,27 +6,13 @@ import datetime
 import pytest
 from pydantic.error_wrappers import ValidationError
 
-from featurebyte.enum import SourceType
 from featurebyte.models.event_data import (
     EventDataModel,
     EventDataStatus,
     FeatureJobSetting,
     FeatureJobSettingHistoryEntry,
 )
-from featurebyte.models.feature_store import FeatureStoreModel, SnowflakeDetails, TableDetails
-
-
-@pytest.fixture(name="snowflake_source")
-def snowflake_source_fixture():
-    """Fixture for a Snowflake source"""
-    snowflake_details = SnowflakeDetails(
-        account="account",
-        warehouse="warehouse",
-        database="database",
-        sf_schema="schema",
-    )
-    snowflake_source = FeatureStoreModel(type=SourceType.SNOWFLAKE, details=snowflake_details)
-    return snowflake_source
+from featurebyte.models.feature_store import TableDetails
 
 
 @pytest.fixture(name="feature_job_setting")
@@ -56,13 +42,14 @@ def feature_job_setting_history_fixture(feature_job_setting):
     return history
 
 
-def test_event_data_model(snowflake_source, feature_job_setting, feature_job_setting_history):
+def test_event_data_model(
+    snowflake_feature_store_model, feature_job_setting, feature_job_setting_history
+):
     """Test creation, serialization and deserialization of an EventData"""
     event_data = EventDataModel(
         name="my_event_data",
-        feature_store=snowflake_source,
         tabular_source=(
-            snowflake_source.id,
+            snowflake_feature_store_model.id,
             TableDetails(database_name="database", schema_name="schema", table_name="table"),
         ),
         event_timestamp_column="event_date",
@@ -102,7 +89,7 @@ def test_event_data_model(snowflake_source, feature_job_setting, feature_job_set
     }
     assert event_data.dict() == expected_event_data_dict
     event_data_json = event_data.json(by_alias=True)
-    event_data_loaded = event_data.parse_raw(event_data_json)
+    event_data_loaded = EventDataModel.parse_raw(event_data_json)
     assert event_data_loaded == event_data
 
 

@@ -59,6 +59,7 @@ class FeatureStoreController:
             created_at=get_utc_now(),
         )
 
+        # check id conflict
         conflict_feature_store = await persistent.find_one(
             collection_name=cls.collection_name, query_filter={"_id": data.id}
         )
@@ -68,6 +69,7 @@ class FeatureStoreController:
                 detail=f'FeatureStore name (feature_store.id: "{data.id}") already exists.',
             )
 
+        # check name conflict
         conflict_feature_store = await persistent.find_one(
             collection_name=cls.collection_name, query_filter={"name": data.name}
         )
@@ -119,6 +121,6 @@ class FeatureStoreController:
         if feature_store is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
-                detail=(f'FeatureStore (feature_store.id: "{feature_store_id}") not found! '),
+                detail=f'FeatureStore (feature_store.id: "{feature_store_id}") not found! ',
             )
         return FeatureStore(**feature_store)

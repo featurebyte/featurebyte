@@ -109,15 +109,6 @@ def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
     yield
 
 
-@pytest.fixture(name="graph", scope="session")
-def query_graph():
-    """
-    Empty query graph fixture
-    """
-    GlobalQueryGraphState.reset()
-    yield GlobalQueryGraph()
-
-
 @pytest.fixture(name="snowflake_connector")
 def mock_snowflake_connector():
     """
@@ -189,11 +180,10 @@ def mock_snowflake_execute_query():
 
 
 @pytest.fixture(name="snowflake_feature_store", scope="session")
-def snowflake_feature_store_fixture(graph):
+def snowflake_feature_store_fixture():
     """
     Snowflake database source fixture
     """
-    _ = graph
     return FeatureStore(
         name="sf_featurestore",
         type="snowflake",

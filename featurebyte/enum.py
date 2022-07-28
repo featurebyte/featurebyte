@@ -65,6 +65,9 @@ class OrderedStrEnum(OrderedEnum):
             return super().__lt__(type(self)(other))
         return super().__lt__(other)
 
+    def __hash__(self):
+        return str.__hash__(self.value)
+
 
 class CollectionName(str, Enum):
     """
