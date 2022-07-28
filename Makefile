@@ -86,10 +86,10 @@ lint-safety:
 
 #* Testing
 test:
-	@poetry run coverage run -m pytest -c pyproject.toml --timeout=120 --junitxml=pytest.xml tests featurebyte 2>/dev/null -q | tee pytest-coverage.txt
-
+	@poetry run coverage run -m pytest -c pyproject.toml --timeout=120 --junitxml=pytest.xml tests featurebyte 2>/dev/null -q > pytest-coverage.txt
+	@cat pytest-coverage.txt
 	# Hack to support github-coverage action
-	echo "coverage: platform" >> pytest-coverage.txt
+	@echo "coverage: platform" >> pytest-coverage.txt
 
 	@poetry run coverage report -m | tee -a pytest-coverage.txt
 
@@ -100,11 +100,12 @@ docs:
 #* Cleaning
 clean:
 	@echo "Running Clean"
-	@find . | grep -E "./.coverage*" | xargs rm -rf					|| true
-	@find . | grep -E "(__pycache__|\.pyc|\.pyo$$)" | xargs rm -rf 	|| true
-	@find . | grep -E ".DS_Store" | xargs rm -rf					|| true
-	@find . | grep -E ".mypy_cache" | xargs rm -rf					|| true
-	@find . | grep -E ".ipynb_checkpoints" | xargs rm -rf			|| true
-	@find . | grep -E ".pytest_cache" | xargs rm -rf				|| true
-	@rm -rf pytest-coverage.txt										|| true
-	@rm -rf dist/ docs/build htmlcov/								|| true
+	@find . | grep -E "./.coverage*" | xargs rm -rf || true
+	@find . | grep -E "(__pycache__|\.pyc|\.pyo$$)" | xargs rm -rf || true
+	@find . | grep -E ".DS_Store" | xargs rm -rf || true
+	@find . | grep -E ".mypy_cache" | xargs rm -rf || true
+	@find . | grep -E ".ipynb_checkpoints" | xargs rm -rf || true
+	@find . | grep -E ".pytest_cache" | xargs rm -rf|| true
+	@rm pytest-coverage.txt || true
+	@rm pytest.xml || true
+	@rm -rf dist/ docs/build htmlcov/ || true
