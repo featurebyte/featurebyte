@@ -157,6 +157,7 @@ max-parents = 9
 max-line-length = 150
 
 [tool.pylint.main]
+disable = ["Miscellaneous"]
 exit-zero = false
 extension-pkg-whitelist = ["pydantic"]
 jobs = 0
