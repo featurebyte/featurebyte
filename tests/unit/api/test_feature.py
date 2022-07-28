@@ -11,7 +11,7 @@ from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.exception import DuplicatedRecordException, RecordCreationException
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, Node
+from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
 @pytest.fixture(name="float_feature_dict")
@@ -51,12 +51,11 @@ def test_feature__bool_series_key_scalar_value(float_feature, bool_feature):
     Test Feature conditional assignment
     """
     float_feature[bool_feature] = 10
-    assert float_feature.node == Node(
-        name="cond_assign_1",
-        type=NodeType.COND_ASSIGN,
-        parameters={"value": 10},
-        output_type=NodeOutputType.SERIES,
-    )
+    assert float_feature.node.dict(exclude={"name": True}) == {
+        "type": NodeType.COND_ASSIGN,
+        "parameters": {"value": 10},
+        "output_type": NodeOutputType.SERIES,
+    }
 
 
 def test_feature__preview_missing_point_in_time(float_feature):
@@ -225,15 +224,20 @@ def test_feature_name__set_name_when_unnamed(float_feature):
     new_feature = float_feature + 1234
 
     assert new_feature.name is None
-    assert new_feature.node == Node(
-        name="add_1", type="add", parameters={"value": 1234}, output_type="series"
-    )
+    assert new_feature.node.dict(exclude={"name": True}) == {
+        "type": "add",
+        "parameters": {"value": 1234},
+        "output_type": "series",
+    }
+    old_node_name = new_feature.node.name
 
     new_feature.name = "my_feature_1234"
-    assert new_feature.node == Node(
-        name="alias_1", type="alias", parameters={"name": "my_feature_1234"}, output_type="series"
-    )
-    assert new_feature.graph.backward_edges["alias_1"] == ["add_1"]
+    assert new_feature.node.dict(exclude={"name": True}) == {
+        "type": "alias",
+        "parameters": {"name": "my_feature_1234"},
+        "output_type": "series",
+    }
+    assert new_feature.graph.backward_edges[new_feature.node.name] == [old_node_name]
 
 
 def test_feature_name__set_name_invalid_from_project(float_feature):

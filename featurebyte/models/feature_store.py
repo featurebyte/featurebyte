@@ -38,17 +38,6 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel):
     type: SourceType
     details: DatabaseDetails
 
-    def __hash__(self) -> int:
-        """
-        Hash function to support use as a dict key
-
-        Returns
-        -------
-        int
-            hash_value
-        """
-        return hash(str(self.name) + str(self.type) + str(self.details))
-
 
 class TableDetails(FeatureByteBaseModel):
     """Model for table"""
