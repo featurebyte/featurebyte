@@ -9,7 +9,7 @@ import time
 from http import HTTPStatus
 
 import pandas as pd
-from pydantic import Field, root_validator
+from pydantic import Field
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations, Credentials
@@ -34,35 +34,32 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
     # FeatureStoreModel
     tabular_source: Tuple[FeatureStore, TableDetails] = Field(allow_mutation=False)
 
-    @root_validator
-    @classmethod
-    def validate_name_update(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Validator name parameter is consistent
+    def __setattr__(self, key: Any, value: Any) -> Any:
+        """Custom __setattr__ to handle setting of special attributes such as name
 
         Parameters
         ----------
-        values : dict
-            Parameter values
-
-        Returns
-        -------
-        dict
+        key : Any
+            Key
+        value : Any
+            Value
 
         Raises
         ------
         ValueError
             if the name parameter is invalid
+
+        Returns
+        -------
+        Any
         """
+        if key != "name":
+            return super().__setattr__(key, value)
 
-        name = values.get("name")
-
-        # Nothing to do if name is not set
-        if name is None:
-            return values
-
-        # Otherwise, a name update might have been triggered. For now, only allow updating name if
-        # the feature is unnamed (i.e. created on-the-fly by combining different features)
-        node = values["node"]
+        # For now, only allow updating name if the feature is unnamed (i.e. created on-the-fly by
+        # combining different features)
+        name = value
+        node = self.node
         if node.type in {NodeType.PROJECT, NodeType.ALIAS}:
             if node.type == NodeType.PROJECT:
                 existing_name = node.parameters["columns"][0]
@@ -70,26 +67,19 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
                 existing_name = node.parameters["name"]
             if name != existing_name:
                 raise ValueError(f'Feature "{existing_name}" cannot be renamed to "{name}"')
-            # Since name is the same as existing_name, there is no need to update anything. This
-            # path could be triggered when creating a Feature in the normal way too
-            return values
-
-        # Creation of conditional assign node also triggers this path since it sets self.node
-        # directly, but in that case ALIAS node is irrelevant
-        if node.type == NodeType.COND_ASSIGN:
-            return values
+            # FeatureGroup sets name unconditionally, so we allow this here
+            return super().__setattr__(key, value)
 
         # Here, node could be any node resulting from series operations, e.g. DIV. This
         # validation was triggered by setting the name attribute of a Feature object
-        new_node = values["graph"].add_operation(
+        new_node = self.graph.add_operation(
             node_type=NodeType.ALIAS,
             node_params={"name": name},
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[node],
         )
-        values["node"] = new_node
-
-        return values
+        self.node = new_node
+        return super().__setattr__(key, value)
 
     @property
     def protected_attributes(self) -> list[str]:

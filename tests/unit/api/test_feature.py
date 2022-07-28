@@ -5,7 +5,6 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
-from pydantic import ValidationError
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
@@ -250,11 +249,9 @@ def test_feature_name__set_name_invalid_from_project(float_feature):
     """
     Test changing name for already named feature is not allowed
     """
-    with pytest.raises(ValidationError) as exc_info:
+    with pytest.raises(ValueError) as exc_info:
         float_feature.name = "my_new_feature"
-    assert exc_info.value.errors()[0]["msg"] == (
-        'Feature "sum_1d" cannot be renamed to "my_new_feature"'
-    )
+    assert str(exc_info.value) == 'Feature "sum_1d" cannot be renamed to "my_new_feature"'
 
 
 def test_feature_name__set_name_invalid_from_alias(float_feature):
@@ -263,8 +260,8 @@ def test_feature_name__set_name_invalid_from_alias(float_feature):
     """
     new_feature = float_feature + 1234
     new_feature.name = "my_feature_1234"
-    with pytest.raises(ValidationError) as exc_info:
+    with pytest.raises(ValueError) as exc_info:
         new_feature.name = "my_feature_1234_v2"
-    assert exc_info.value.errors()[0]["msg"] == (
+    assert str(exc_info.value) == (
         'Feature "my_feature_1234" cannot be renamed to "my_feature_1234_v2"'
     )
