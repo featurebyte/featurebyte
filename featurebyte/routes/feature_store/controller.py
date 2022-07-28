@@ -3,7 +3,7 @@ FeatureStore API route controller
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal, Optional
 
 from http import HTTPStatus
 
@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from featurebyte.enum import CollectionName
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.util import get_utc_now
-from featurebyte.schema.feature_store import FeatureStore, FeatureStoreCreate
+from featurebyte.schema.feature_store import FeatureStore, FeatureStoreCreate, FeatureStoreList
 
 
 class FeatureStoreController:
@@ -38,7 +38,7 @@ class FeatureStoreController:
         user: Any
             User class to provide user identifier
         persistent: Persistent
-            Object that entity will be saved to
+            Object that feature store will be saved to
         data: FeatureStoreCreate
             FeatureStore creation payload
 
@@ -86,7 +86,7 @@ class FeatureStoreController:
         return document
 
     @classmethod
-    async def retrieve_feature_store(
+    async def get_feature_store(
         cls,
         user: Any,
         persistent: Persistent,
@@ -100,7 +100,7 @@ class FeatureStoreController:
         user: Any
             User class to provide user identifier
         persistent: Persistent
-            Object that entity will be saved to
+            Object that feature store will be saved to
         feature_store_id: ObjectId
             FeatureStore ID
 
@@ -124,3 +124,52 @@ class FeatureStoreController:
                 detail=f'FeatureStore (feature_store.id: "{feature_store_id}") not found! ',
             )
         return FeatureStore(**feature_store)
+
+    @classmethod
+    async def list_feature_stores(
+        cls,
+        user: Any,
+        persistent: Persistent,
+        page: int = 1,
+        page_size: int = 10,
+        sort_by: str | None = "created_at",
+        sort_dir: Literal["asc", "desc"] = "desc",
+        name: Optional[str] = None,
+    ) -> FeatureStoreList:
+        """
+        List FeatureStores stored at persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that feature store will be saved to
+        page: int
+            Page number
+        page_size: int
+            Number of items per page
+        sort_by: str | None
+            Key used to sort the returning feature stores
+        sort_dir: "asc" or "desc"
+            Sorting the returning feature stores in ascending order or descending order
+        name: str | None
+            FeatureStore name used to filter the feature stores
+
+        Returns
+        -------
+        FeatureStoreList
+            List of feature stores fulfilled the filtering condition
+        """
+        query_filter = {"user_id": user.id}
+        if name is not None:
+            query_filter["name"] = name
+        docs, total = await persistent.find(
+            collection_name=cls.collection_name,
+            query_filter=query_filter,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            page=page,
+            page_size=page_size,
+        )
+        return FeatureStoreList(page=page, page_size=page_size, total=total, data=list(docs))

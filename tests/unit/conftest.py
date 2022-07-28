@@ -179,7 +179,7 @@ def mock_snowflake_execute_query():
         yield mock_execute_query
 
 
-@pytest.fixture(name="snowflake_feature_store", scope="session")
+@pytest.fixture(name="snowflake_feature_store")
 def snowflake_feature_store_fixture():
     """
     Snowflake database source fixture
