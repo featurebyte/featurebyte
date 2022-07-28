@@ -56,6 +56,9 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
         if key != "name":
             return super().__setattr__(key, value)
 
+        if value is None:
+            raise ValueError("None is not a valid feature name")
+
         # For now, only allow updating name if the feature is unnamed (i.e. created on-the-fly by
         # combining different features)
         name = value

@@ -292,6 +292,17 @@ def test_feature_group__setitem__different_name(production_ready_feature, draft_
     assert str(exc_info.value) == 'Feature "draft_feature" cannot be renamed to "new_name"'
 
 
+def test_feature_group__setitem__empty_name(production_ready_feature):
+    """
+    Test FeatureGroup.__setitem__ for a feature with different name is not allowed
+    """
+    feature_group = FeatureGroup([production_ready_feature])
+    new_feature = production_ready_feature + 123
+    with pytest.raises(ValueError) as exc_info:
+        feature_group[None] = new_feature
+    assert str(exc_info.value) == "None is not a valid feature name"
+
+
 def test_feature_group__preview_zero_feature():
     """
     Test FeatureGroup preview with zero feature

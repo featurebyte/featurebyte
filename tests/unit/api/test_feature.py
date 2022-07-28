@@ -265,3 +265,13 @@ def test_feature_name__set_name_invalid_from_alias(float_feature):
     assert str(exc_info.value) == (
         'Feature "my_feature_1234" cannot be renamed to "my_feature_1234_v2"'
     )
+
+
+def test_feature_name__set_name_invalid_none(float_feature):
+    """
+    Test setting name as None is not allowed
+    """
+    new_feature = float_feature + 1234
+    with pytest.raises(ValueError) as exc_info:
+        new_feature.name = None
+    assert str(exc_info.value) == "None is not a valid feature name"
