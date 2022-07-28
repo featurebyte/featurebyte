@@ -90,14 +90,14 @@ importlib_metadata = {version = "^4.5.0", python = "^3.8"}
 jinja2 = "^3.1.2"
 loguru = "^0.6.0"
 pandas = "^1.4.2"
-pyarrow = "^6.0.1"
+pyarrow = "^8.0.0"
 pydantic = "^1.9.1"
 pymongo = "^4.1.1"
 python = "^3.8"
 rich = "^12.3.0"
 snowflake-connector-python = "^2.7.7"
 sqlglot = "^2.3.2"
-typer = {extras = ["all"], version = "^0.4.0"}
+typer = {extras = ["all"], version = "^0.6.0"}
 
 [tool.poetry.group.dev.dependencies]
 coverage = {extras = ["toml"], version = "^6.4.2"}
@@ -127,7 +127,9 @@ mypy = "^0.971"
 mypy-extensions = "^0.4.3"
 pylint = "^2.14.5"
 safety = "^2.1.1"
+types-PyYAML = "^6.0.11"
 types-backports = "^0.1.3"
+types-cachetools = "^5.2.1"
 types-chardet = "^5.0.2"
 types-cryptography = "^3.3.21"
 types-pyOpenSSL = "^22.0.4"

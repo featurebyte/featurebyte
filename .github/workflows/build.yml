@@ -83,7 +83,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        make install
+        make install-nolock
 
     - name: Lint Checks
       run: |
@@ -107,10 +107,12 @@ jobs:
     - name: Check test output
       run: |
         if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
+          cat pytest-coverage.txt
           echo "Errors found in pytest"
           exit 1
         fi
         if [ "${{ steps.coverageComment.outputs.errors }}" == '' ] || [ "${{ steps.coverageComment.outputs.failures }}" == '' ]; then
+          cat pytest-coverage.txt
           echo "Weird Error has occurred"
           exit 1
         fi
