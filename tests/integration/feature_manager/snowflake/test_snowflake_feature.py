@@ -2,6 +2,7 @@
 This module contains integration tests for FeatureSnowflake
 """
 import json
+from datetime import datetime, timedelta
 
 import pandas as pd
 import pytest
@@ -325,7 +326,8 @@ def test_get_tile_monitor_summary(snowflake_feature, feature_manager, snowflake_
     assert result["TILE_COUNT"].iloc[0] == 5
 
     result = feature_manager.retrieve_feature_tile_inconsistency_data(
-        query_start_ts="2022-06-05 15:43:00", query_end_ts="2022-06-05 16:03:00"
+        query_start_ts=(datetime.now() - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S"),
+        query_end_ts=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     )
     assert len(result) == 5
     expected_df = pd.DataFrame.from_dict(
