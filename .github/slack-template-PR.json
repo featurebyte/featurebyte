@@ -1,11 +1,11 @@
 {
   "channel": "${AUTHOR_ID}",
-  "blocks": [
+	"blocks": [
 		{
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "*Github Action* `${GITHUB_WORKFLOW}` for `${GITHUB_REPOSITORY}`"
+				"text": "*Workflow Passed* `${GITHUB_WORKFLOW}` for `${GITHUB_REPOSITORY}`"
 			}
 		},
 		{
@@ -27,10 +27,10 @@
 					"type": "mrkdwn",
 					"text": "*Base Branch:*\n`${GITHUB_BASE_REF}`"
 				},
-        {
-          "type": "mrkdwn",
-          "text": "*Author:*\n`${AUTHOR_EMAIL}`"
-        }
+				{
+					"type": "mrkdwn",
+					"text": "*Author:*\n`${AUTHOR_EMAIL}`"
+				}
 			]
 		},
 		{
@@ -54,16 +54,15 @@
 						"emoji": true,
 						"text": "Repository"
 					},
-					"style": "danger",
 					"value": "btn_repo",
 					"url": "https://github.com/${GITHUB_REPOSITORY}"
 				}
 			]
 		},
-    {
+		{
 			"type": "divider"
 		},
-    {
+		{
 			"type": "header",
 			"text": {
 				"type": "plain_text",
@@ -76,17 +75,21 @@
 			"fields": [
 				{
 					"type": "mrkdwn",
-					"text": "*[WARN|ERRR|FAIL|SKIP]:*\n`[${COVERAGE_WARNING}|${COVERAGE_ERRORS}|${COVERAGE_FAILURES}|${COVERAGE_SKIPPED}]`"
+					"text": "*[WARN|SKIP]:*\n`[${COVERAGE_WARNING}|${COVERAGE_SKIPPED}]`"
 				},
-        {
-          "type": "mrkdwn",
-          "text": "*No. Tests:*\n`${COVERAGE_TESTS}`"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Time Taken:*\n`${COVERAGE_TIME}`"
-        }
+				{
+					"type": "mrkdwn",
+					"text": "*[ERRR|FAIL]:*\n`[${COVERAGE_ERRORS}|${COVERAGE_FAILURES}]`"
+				},
+				{
+					"type": "mrkdwn",
+					"text": "*No. Tests:*\n`${COVERAGE_TESTS}`"
+				},
+				{
+					"type": "mrkdwn",
+					"text": "*Time Taken:*\n`${COVERAGE_TIME}`"
+				}
 			]
 		}
-  ]
+	]
 }
