@@ -16,7 +16,6 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.persistent import Persistent
-from featurebyte.routes.common.util import get_utc_now
 from featurebyte.schema.feature import Feature, FeatureCreate, FeatureNameSpace
 
 
@@ -223,10 +222,8 @@ class FeatureController:
                         detail=f'Feature (feature.id: "{data.id}") has been saved before.',
                     )
 
-            utcnow = get_utc_now()
             document = Feature(
                 user_id=user.id,
-                created_at=utcnow,
                 readiness=FeatureReadiness.DRAFT,
                 **data.dict(by_alias=True),
             )
@@ -246,7 +243,6 @@ class FeatureController:
                     version_ids=[insert_id],
                     versions=[document.version],
                     readiness=FeatureReadiness.DRAFT,
-                    created_at=utcnow,
                     default_version_id=insert_id,
                     default_version_mode=DefaultVersionMode.AUTO,
                 )
@@ -274,4 +270,10 @@ class FeatureController:
             # insert feature registry into feature store
             cls.insert_feature_registry(user, document, get_credential)
 
-        return document
+        # TODO: to fix after get route is implemented
+        feature = await session.find_one(
+            collection_name=cls.collection_name, query_filter={"_id": data.id}
+        )
+        if not feature:
+            return document
+        return Feature(**feature)

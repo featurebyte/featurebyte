@@ -12,14 +12,6 @@ from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.routes.common.schema import PaginationMixin
 
 
-class EventData(EventDataModel):
-    """
-    Event Data Document Model
-    """
-
-    user_id: Optional[PydanticObjectId]
-
-
 class EventDataCreate(FeatureByteBaseModel):
     """
     Event Data Creation schema
@@ -39,7 +31,7 @@ class EventDataList(PaginationMixin):
     Paginated list of Event Data
     """
 
-    data: List[EventData]
+    data: List[EventDataModel]
 
 
 class EventDataUpdate(FeatureByteBaseModel):

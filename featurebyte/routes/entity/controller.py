@@ -11,10 +11,10 @@ from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.enum import CollectionName
-from featurebyte.models.entity import EntityNameHistoryEntry
+from featurebyte.models.entity import EntityModel, EntityNameHistoryEntry
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.util import get_utc_now
-from featurebyte.schema.entity import Entity, EntityCreate, EntityList, EntityUpdate
+from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
 
 
 class EntityController:
@@ -30,7 +30,7 @@ class EntityController:
         user: Any,
         persistent: Persistent,
         data: EntityCreate,
-    ) -> Entity:
+    ) -> EntityModel:
         """
         Create Entity at persistent (GitDB or MongoDB)
 
@@ -45,7 +45,7 @@ class EntityController:
 
         Returns
         -------
-        Entity
+        EntityModel
             Newly created entity object
 
         Raises
@@ -53,11 +53,10 @@ class EntityController:
         HTTPException
             If the entity name conflicts with existing entity name
         """
-        document = Entity(
+        document = EntityModel(
             name=data.name,
             serving_names=[data.serving_name],
             user_id=user.id,
-            created_at=get_utc_now(),
         )
 
         conflict_entity = await persistent.find_one(
@@ -83,7 +82,12 @@ class EntityController:
             collection_name=cls.collection_name, document=document.dict(by_alias=True)
         )
         assert insert_id == document.id
-        return document
+
+        return await cls.get_entity(
+            user=user,
+            persistent=persistent,
+            entity_id=insert_id,
+        )
 
     @classmethod
     async def list_entities(
@@ -135,7 +139,9 @@ class EntityController:
         return EntityList(page=page, page_size=page_size, total=total, data=list(docs))
 
     @classmethod
-    async def get_entity(cls, user: Any, persistent: Persistent, entity_id: ObjectId) -> Entity:
+    async def get_entity(
+        cls, user: Any, persistent: Persistent, entity_id: ObjectId
+    ) -> EntityModel:
         """
         Get Entity from the persistent (GitDB or MongoDB)
 
@@ -150,7 +156,7 @@ class EntityController:
 
         Returns
         -------
-        Entity
+        EntityModel
             Retrieve entity object
 
         Raises
@@ -168,12 +174,12 @@ class EntityController:
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f'Entity (entity.id: "{entity_id}") not found! Please save the Entity object first.',
             )
-        return Entity(**entity)
+        return EntityModel(**entity)
 
     @classmethod
     async def update_entity(
         cls, user: Any, persistent: Persistent, entity_id: ObjectId, data: EntityUpdate
-    ) -> Entity:
+    ) -> EntityModel:
         """
         Update Entity stored at persistent (GitDB or MongoDB)
 
@@ -190,32 +196,24 @@ class EntityController:
 
         Returns
         -------
-        Entity
+        EntityModel
             Entity object with updated attribute(s)
 
         Raises
         ------
-        not_found_exception
-            If the entity not found
         HTTPException
             If the entity name already exists in persistent
         """
         query_filter = {"_id": ObjectId(entity_id), "user_id": user.id}
-        entity = await persistent.find_one(
-            collection_name=cls.collection_name, query_filter=query_filter
+        entity_obj = await cls.get_entity(
+            user=user,
+            persistent=persistent,
+            entity_id=entity_id,
         )
-
-        # check that entity id exists
-        not_found_exception = HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail=f'Entity (entity.id: "{entity_id}") not found! Please save the Entity object first.',
-        )
-        if not entity:
-            raise not_found_exception
 
         # store current name & name_history
-        cur_name = entity["name"]
-        name_history = entity["name_history"]
+        cur_name = entity_obj.name
+        name_history = [record.dict() for record in entity_obj.name_history]
 
         # check whether conflict with other entity name
         entities, total_cnt = await persistent.find(
@@ -227,24 +225,21 @@ class EntityController:
             for entity in entities:
                 if str(entity["_id"]) == entity_id:
                     # update the same entity with the same name
-                    return Entity(**entity)
+                    return EntityModel(**entity)
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
                     detail=f'Entity name (entity.name: "{data.name}") already exists.',
                 )
 
         name_history.append(EntityNameHistoryEntry(created_at=get_utc_now(), name=cur_name).dict())
-        updated_cnt = await persistent.update_one(
+        await persistent.update_one(
             collection_name=cls.collection_name,
             query_filter=query_filter,
             update={"$set": {"name": data.name, "name_history": name_history}},
         )
-        if not updated_cnt:
-            raise not_found_exception
 
-        entity = await persistent.find_one(
-            collection_name=cls.collection_name, query_filter=data.dict()
+        return await cls.get_entity(
+            user=user,
+            persistent=persistent,
+            entity_id=entity_id,
         )
-        if entity is None:
-            raise not_found_exception
-        return Entity(**entity)

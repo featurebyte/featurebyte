@@ -9,28 +9,29 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
-from featurebyte.schema.entity import Entity, EntityCreate, EntityList, EntityUpdate
+from featurebyte.models.entity import EntityModel
+from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
 
 router = APIRouter(prefix="/entity")
 
 
-@router.post("", response_model=Entity, status_code=HTTPStatus.CREATED)
-async def create_entity(request: Request, data: EntityCreate) -> Entity:
+@router.post("", response_model=EntityModel, status_code=HTTPStatus.CREATED)
+async def create_entity(request: Request, data: EntityCreate) -> EntityModel:
     """
     Create Entity
     """
-    entity: Entity = await request.state.controller.create_entity(
+    entity: EntityModel = await request.state.controller.create_entity(
         user=request.state.user, persistent=request.state.persistent, data=data
     )
     return entity
 
 
-@router.get("/{entity_id}", response_model=Entity)
-async def get_entity(request: Request, entity_id: str) -> Entity:
+@router.get("/{entity_id}", response_model=EntityModel)
+async def get_entity(request: Request, entity_id: str) -> EntityModel:
     """
     Get Entity
     """
-    entity: Entity = await request.state.controller.get_entity(
+    entity: EntityModel = await request.state.controller.get_entity(
         user=request.state.user, persistent=request.state.persistent, entity_id=entity_id
     )
     return entity
@@ -60,12 +61,12 @@ async def list_entities(
     return entity_list
 
 
-@router.patch("/{entity_id}", response_model=Entity)
-async def update_entity(request: Request, entity_id: str, data: EntityUpdate) -> Entity:
+@router.patch("/{entity_id}", response_model=EntityModel)
+async def update_entity(request: Request, entity_id: str, data: EntityUpdate) -> EntityModel:
     """
     Update Entity
     """
-    entity: Entity = await request.state.controller.update_entity(
+    entity: EntityModel = await request.state.controller.update_entity(
         user=request.state.user,
         persistent=request.state.persistent,
         entity_id=entity_id,

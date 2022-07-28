@@ -21,8 +21,6 @@ class Feature(FeatureModel):
     Feature Document Model
     """
 
-    user_id: Optional[PydanticObjectId]
-
     def is_parent(self, other: Feature) -> bool:
         """
         Check whether other feature is a valid parent of current feature

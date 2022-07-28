@@ -10,20 +10,21 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
-from featurebyte.schema.event_data import EventData, EventDataCreate, EventDataList, EventDataUpdate
+from featurebyte.models.event_data import EventDataModel
+from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
 
 router = APIRouter(prefix="/event_data")
 
 
-@router.post("", response_model=EventData, status_code=HTTPStatus.CREATED)
+@router.post("", response_model=EventDataModel, status_code=HTTPStatus.CREATED)
 async def create_event_data(
     request: Request,
     data: EventDataCreate,
-) -> EventData:
+) -> EventDataModel:
     """
     Create Event Data
     """
-    event_data: EventData = await request.state.controller.create_event_data(
+    event_data: EventDataModel = await request.state.controller.create_event_data(
         user=request.state.user, persistent=request.state.persistent, data=data
     )
     return event_data
@@ -55,15 +56,15 @@ async def list_event_datas(
     return event_data_list
 
 
-@router.get("/{event_data_id}", response_model=EventData)
+@router.get("/{event_data_id}", response_model=EventDataModel)
 async def retrieve_event_data(
     request: Request,
     event_data_id: str,
-) -> EventData:
+) -> EventDataModel:
     """
     Retrieve Event Data
     """
-    event_data: EventData = await request.state.controller.retrieve_event_data(
+    event_data: EventDataModel = await request.state.controller.retrieve_event_data(
         user=request.state.user,
         persistent=request.state.persistent,
         event_data_id=event_data_id,
@@ -71,16 +72,16 @@ async def retrieve_event_data(
     return event_data
 
 
-@router.patch("/{event_data_id}", response_model=EventData)
+@router.patch("/{event_data_id}", response_model=EventDataModel)
 async def update_event_data(
     request: Request,
     event_data_id: str,
     data: EventDataUpdate,
-) -> EventData:
+) -> EventDataModel:
     """
     Update scheduled task
     """
-    event_data: EventData = await request.state.controller.update_event_data(
+    event_data: EventDataModel = await request.state.controller.update_event_data(
         user=request.state.user,
         persistent=request.state.persistent,
         event_data_id=event_data_id,
