@@ -106,11 +106,14 @@ jobs:
 
     - name: Check test output
       run: |
-        if [ ${{ steps.coverageComment.outputs.errors }} -gt '0' ] || [ ${{ steps.coverageComment.outputs.failures }} -ge '0']; then
+        if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -ge '0' ]; then
           echo "Errors found in pytest"
           exit 1
         fi
-
+        if [ "${{ steps.coverageComment.outputs.errors }}" == '' ] || [ "${{ steps.coverageComment.outputs.failures }}" == '' ]; then
+          echo "Weird Error has occurred"
+          exit 1
+        fi
     - name: Update Coverage Badge
       if: github.event_name == 'push'
       uses: schneegans/dynamic-badges-action@v1.4.0
