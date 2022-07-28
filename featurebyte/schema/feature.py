@@ -13,7 +13,6 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel, FeatureNameSpaceModel, FeatureVersionIdentifier
 from featurebyte.models.feature_store import FeatureStoreIdentifier, TableDetails
 from featurebyte.query_graph.graph import Node, QueryGraph
-from featurebyte.routes.common.schema import PaginationMixin
 
 
 class Feature(FeatureModel):
@@ -49,11 +48,3 @@ class FeatureCreate(FeatureByteBaseModel):
     version: Optional[FeatureVersionIdentifier]
     event_data_ids: List[PydanticObjectId] = Field(min_items=1)
     parent_id: Optional[PydanticObjectId]
-
-
-class FeatureList(PaginationMixin):
-    """
-    Paginated list of Feature
-    """
-
-    data: List[Feature]
