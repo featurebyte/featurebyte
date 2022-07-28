@@ -8,6 +8,7 @@ from freezegun import freeze_time
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, FeatureList
 from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
+from featurebyte.query_graph.enum import NodeType
 
 
 @pytest.fixture(name="production_ready_feature")
@@ -261,6 +262,45 @@ def test_feature_group__getitem__type_not_supported(production_ready_feature):
         _ = feature_group[True]
     expected_msg = "Feature retrieval with value 'True' is not supported!"
     assert expected_msg in str(exc.value)
+
+
+def test_feature_group__setitem__unnamed_feature(production_ready_feature, feature_group):
+    """
+    Test FeatureGroup.__setitem__ works for unnamed feature
+    """
+    feature = feature_group["sum_30m"] + 456
+    feature_group = FeatureGroup([production_ready_feature])
+    feature_group["sum_30m_plus_456"] = feature
+
+    feature_object = feature_group.feature_objects["sum_30m_plus_456"]
+    feature_node = feature_object.node
+    assert feature_node.type == NodeType.ALIAS
+    assert feature_node.parameters == {"name": "sum_30m_plus_456"}
+
+    # check name of the feature in FeatureGroup is updated
+    assert feature_object.name == "sum_30m_plus_456"
+    assert feature.name is None
+
+
+def test_feature_group__setitem__different_name(production_ready_feature, draft_feature):
+    """
+    Test FeatureGroup.__setitem__ for a feature with different name is not allowed
+    """
+    feature_group = FeatureGroup([production_ready_feature])
+    with pytest.raises(ValueError) as exc_info:
+        feature_group["new_name"] = draft_feature
+    assert str(exc_info.value) == 'Feature "draft_feature" cannot be renamed to "new_name"'
+
+
+def test_feature_group__setitem__empty_name(production_ready_feature):
+    """
+    Test FeatureGroup.__setitem__ for a feature with different name is not allowed
+    """
+    feature_group = FeatureGroup([production_ready_feature])
+    new_feature = production_ready_feature + 123
+    with pytest.raises(ValueError) as exc_info:
+        feature_group[None] = new_feature
+    assert str(exc_info.value) == "None is not a valid feature name"
 
 
 def test_feature_group__preview_zero_feature():

@@ -20,6 +20,7 @@ from featurebyte.exception import DuplicatedRecordException, RecordCreationExcep
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import TableDetails
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
 
@@ -32,6 +33,56 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
     # pydantic knows to deserialize the first element as a FeatureStore instead of a
     # FeatureStoreModel
     tabular_source: Tuple[FeatureStore, TableDetails] = Field(allow_mutation=False)
+
+    def __setattr__(self, key: Any, value: Any) -> Any:
+        """Custom __setattr__ to handle setting of special attributes such as name
+
+        Parameters
+        ----------
+        key : Any
+            Key
+        value : Any
+            Value
+
+        Raises
+        ------
+        ValueError
+            if the name parameter is invalid
+
+        Returns
+        -------
+        Any
+        """
+        if key != "name":
+            return super().__setattr__(key, value)
+
+        if value is None:
+            raise ValueError("None is not a valid feature name")
+
+        # For now, only allow updating name if the feature is unnamed (i.e. created on-the-fly by
+        # combining different features)
+        name = value
+        node = self.node
+        if node.type in {NodeType.PROJECT, NodeType.ALIAS}:
+            if node.type == NodeType.PROJECT:
+                existing_name = node.parameters["columns"][0]
+            else:
+                existing_name = node.parameters["name"]
+            if name != existing_name:
+                raise ValueError(f'Feature "{existing_name}" cannot be renamed to "{name}"')
+            # FeatureGroup sets name unconditionally, so we allow this here
+            return super().__setattr__(key, value)
+
+        # Here, node could be any node resulting from series operations, e.g. DIV. This
+        # validation was triggered by setting the name attribute of a Feature object
+        new_node = self.graph.add_operation(
+            node_type=NodeType.ALIAS,
+            node_params={"name": name},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[node],
+        )
+        self.node = new_node
+        return super().__setattr__(key, value)
 
     @property
     def protected_attributes(self) -> list[str]:

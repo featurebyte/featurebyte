@@ -19,7 +19,7 @@ from featurebyte.query_graph.feature_common import (
 )
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.interpreter import SQLOperationGraph, find_parent_groupby_nodes
-from featurebyte.query_graph.sql import Project, SQLType, TableNode
+from featurebyte.query_graph.sql import AliasNode, Project, SQLType, TableNode
 
 Window = int
 Frequency = int
@@ -728,18 +728,16 @@ class FeatureExecutionPlanner:
                     feature_expr=feature_expr.sql(),
                 )
                 self.plan.add_feature_spec(feature_spec)
-
-        elif isinstance(sql_node, Project):
-            feature_name = sql_node.column_name
-            feature_expr = sql_node.sql.sql()
-            feature_spec = FeatureSpec(feature_name=feature_name, feature_expr=feature_expr)
-            self.plan.add_feature_spec(feature_spec)
-
         else:
-            # Otherwise, there is no way to know about the feature name. Technically speaking this
-            # could still be previewed as an "unnamed" feature since the expression is available,
-            # but it cannot be published.
-            feature_name = "Unnamed"
+            if isinstance(sql_node, Project):
+                feature_name = sql_node.column_name
+            elif isinstance(sql_node, AliasNode):
+                feature_name = sql_node.name
+            else:
+                # Otherwise, there is no way to know about the feature name. Technically speaking
+                # this could still be previewed as an "unnamed" feature since the expression is
+                # available, but it cannot be published.
+                feature_name = "Unnamed"
             feature_expr = sql_node.sql.sql()
             feature_spec = FeatureSpec(feature_name=feature_name, feature_expr=feature_expr)
             self.plan.add_feature_spec(feature_spec)

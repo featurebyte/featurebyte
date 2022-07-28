@@ -331,6 +331,23 @@ class Project(ExpressionNode):
 
 
 @dataclass
+class AliasNode(SQLNode):
+    """Alias node that represents assignment to FeatureGroup
+
+    Note that this intentionally does not inherit from ExpressionNode. This node only arises from
+    assignment to FeatureGroup and is not expected to support the sql_standalone property, so
+    table_node is not required.
+    """
+
+    name: str
+    expr_node: ExpressionNode
+
+    @property
+    def sql(self) -> Expression:
+        return self.expr_node.sql
+
+
+@dataclass
 class FilteredFrame(TableNode):
     """Filter node for table"""
 

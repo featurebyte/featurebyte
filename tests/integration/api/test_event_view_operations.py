@@ -203,8 +203,7 @@ def test_query_object_operation_on_snowflake_source(
         "UID": 1,
         "COUNT_2h": 1,
         "COUNT_24h": 9,
-        # "COUNT_2h DIV COUNT_24h": Decimal("0.111111"),  # comment this out as alias node is not supported atm
-        "Unnamed": Decimal("0.111111"),
+        "COUNT_2h DIV COUNT_24h": Decimal("0.111111"),
     }
     special_feature = feature_group["COUNT_2h DIV COUNT_24h"]
     special_feature.save()  # pylint: disable=no-member
@@ -226,6 +225,7 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
             feature_group["COUNT_2h"],
             feature_group["COUNT_24h"],
             feature_group_per_category["COUNT_BY_ACTION_24h"],
+            feature_group["COUNT_2h DIV COUNT_24h"],
         ],
         name="My FeatureList",
     )
@@ -246,6 +246,18 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
                 '{\n  "__MISSING__": 3,\n  "add": 1,\n  "purchase": 1,\n  "remove": 2\n}',
                 '{\n  "add": 3,\n  "detail": 1,\n  "remove": 1\n}',
                 None,
+            ],
+            "COUNT_2h DIV COUNT_24h": [
+                0.111111,
+                0.142857,
+                np.nan,
+                0.2,
+                np.nan,
+                np.nan,
+                np.nan,
+                np.nan,
+                np.nan,
+                np.nan,
             ],
         }
     )

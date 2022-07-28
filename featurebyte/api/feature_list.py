@@ -120,9 +120,12 @@ class FeatureGroup(BaseFeatureGroup):
     """
 
     def __setitem__(self, key: str, value: Feature) -> None:
-        # TODO: handle the case when feature is saved & the name is different from key
-        self.feature_objects[key] = parse_obj_as(Feature, value)
-        self.feature_objects[key].name = key
+        # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original
+        # Feature object
+        value = parse_obj_as(Feature, value)
+        # Name setting performs validation to ensure the specified name is valid
+        value.name = key
+        self.feature_objects[key] = value
         # sanity check: make sure we don't copy global query graph
         assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
 
