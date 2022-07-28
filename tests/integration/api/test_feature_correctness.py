@@ -24,7 +24,7 @@ def calculate_feature_ground_truth(
     blind_spot,
 ):
     """
-    Reference implementation for feature in python that is as simple as possible
+    Reference implementation for feature calculation that is as simple as possible
     """
     last_job_index = (get_epoch_seconds(point_in_time) - time_modulo_frequency) // frequency
     last_job_epoch_seconds = last_job_index * frequency + time_modulo_frequency
@@ -86,8 +86,40 @@ def get_expected_feature_values(training_events, feature_name, **kwargs):
     return df_expected
 
 
-def test_aggregation(transaction_data_upper_case, training_events, event_data, config):
+def sum_func(values):
+    """
+    Sum function that returns nan when there is no valid (non-null) values
 
+    pandas.Series sum method returns 0 in that case.
+    """
+    if len(values) == 0:
+        return np.nan
+    if values.isnull().all():
+        return np.nan
+    return values.sum()
+
+
+@pytest.mark.parametrize(
+    "agg_name, feature_name,agg_func_callable",
+    [
+        ("avg", "avg_24h", lambda x: x.mean()),
+        ("min", "min_24h", lambda x: x.min()),
+        ("max", "max_24h", lambda x: x.max()),
+        ("sum", "sum_24h", sum_func),
+    ],
+)
+def test_aggregation(
+    transaction_data_upper_case,
+    training_events,
+    event_data,
+    config,
+    agg_name,
+    feature_name,
+    agg_func_callable,
+):
+    """
+    Test that aggregation produces correct feature values
+    """
     event_view = EventView.from_event_data(event_data)
     feature_job_setting = event_data.default_feature_job_setting
     frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
@@ -100,15 +132,13 @@ def test_aggregation(transaction_data_upper_case, training_events, event_data, c
     window_size = 3600 * 24
     feature_group = event_view.groupby(entity_column_name).aggregate(
         variable_column_name,
-        "avg",
+        agg_name,
         windows=["24h"],
-        feature_names=["AVG_24h"],
+        feature_names=[feature_name],
     )
     feature_list = FeatureList([feature_group])
 
     event_timestamp_column_name = "EVENT_TIMESTAMP"
-    agg_func = lambda x: x.mean()
-    feature_name = feature_group.feature_names[0]
 
     df_expected = get_expected_feature_values(
         training_events,
@@ -117,7 +147,7 @@ def test_aggregation(transaction_data_upper_case, training_events, event_data, c
         entity_column_name=entity_column_name,
         event_timestamp_column_name=event_timestamp_column_name,
         variable_column_name=variable_column_name,
-        agg_func=agg_func,
+        agg_func=agg_func_callable,
         window_size=window_size,
         frequency=frequency,
         time_modulo_frequency=time_modulo_frequency,
