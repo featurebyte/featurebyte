@@ -5,6 +5,7 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
+from pydantic import ValidationError
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
@@ -225,3 +226,45 @@ def test_feature_save__exception_due_to_feature_saved_before(float_feature, save
         float_feature.save()
     expected_msg = f'Feature (feature.id: "{float_feature.id}") has been saved before.'
     assert expected_msg in str(exc.value)
+
+
+def test_feature_name__set_name_when_unnamed(float_feature):
+    """
+    Test setting name for unnamed features creates alias node
+    """
+    new_feature = float_feature + 1234
+
+    assert new_feature.name is None
+    assert new_feature.node == Node(
+        name="add_1", type="add", parameters={"value": 1234}, output_type="series"
+    )
+
+    new_feature.name = "my_feature_1234"
+    assert new_feature.node == Node(
+        name="alias_1", type="alias", parameters={"name": "my_feature_1234"}, output_type="series"
+    )
+    assert new_feature.graph.backward_edges["alias_1"] == ["add_1"]
+
+
+def test_feature_name__set_name_invalid_from_project(float_feature):
+    """
+    Test changing name for already named feature is not allowed
+    """
+    with pytest.raises(ValidationError) as exc_info:
+        float_feature.name = "my_new_feature"
+    assert exc_info.value.errors()[0]["msg"] == (
+        'Feature "sum_1d" cannot be renamed to "my_new_feature"'
+    )
+
+
+def test_feature_name__set_name_invalid_from_alias(float_feature):
+    """
+    Test changing name for already named feature is not allowed
+    """
+    new_feature = float_feature + 1234
+    new_feature.name = "my_feature_1234"
+    with pytest.raises(ValidationError) as exc_info:
+        new_feature.name = "my_feature_1234_v2"
+    assert exc_info.value.errors()[0]["msg"] == (
+        'Feature "my_feature_1234" cannot be renamed to "my_feature_1234_v2"'
+    )

@@ -68,6 +68,11 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
             # path could be triggered when creating a Feature in the normal way too
             return values
 
+        # Creation of conditional assign node also triggers this path since it sets self.node
+        # directly, but in that case ALIAS node is irrelevant
+        if node.type == NodeType.COND_ASSIGN:
+            return values
+
         # Here, node could be any node resulting from series operations, e.g. DIV. This
         # validation was triggered by setting the name attribute of a Feature object
         new_node = values["graph"].add_operation(
