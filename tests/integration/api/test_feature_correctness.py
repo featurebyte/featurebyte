@@ -67,6 +67,9 @@ def training_events(transaction_data_upper_case):
 
 
 def get_expected_feature_values(training_events, feature_name, **kwargs):
+    """
+    Calculate the expected feature values given training_events and feature parameters
+    """
 
     expected_output = defaultdict(list)
 
@@ -82,7 +85,7 @@ def get_expected_feature_values(training_events, feature_name, **kwargs):
         expected_output[kwargs["entity_column_name"]].append(entity_value)
         expected_output[feature_name].append(val)
 
-    df_expected = pd.DataFrame(expected_output)
+    df_expected = pd.DataFrame(expected_output, index=training_events.index)
     return df_expected
 
 
@@ -99,27 +102,25 @@ def sum_func(values):
     return values.sum()
 
 
-@pytest.mark.parametrize(
-    "agg_name, feature_name,agg_func_callable",
-    [
-        ("avg", "avg_24h", lambda x: x.mean()),
-        ("min", "min_24h", lambda x: x.min()),
-        ("max", "max_24h", lambda x: x.max()),
-        ("sum", "sum_24h", sum_func),
-    ],
-)
 def test_aggregation(
     transaction_data_upper_case,
     training_events,
     event_data,
     config,
-    agg_name,
-    feature_name,
-    agg_func_callable,
 ):
     """
     Test that aggregation produces correct feature values
     """
+
+    # Test cases listed here. This is written this way instead of parametrized test is so that all
+    # features can be retrieved in one historical request
+    feature_parameters = [
+        ("avg", "avg_24h", lambda x: x.mean()),
+        ("min", "min_24h", lambda x: x.min()),
+        ("max", "max_24h", lambda x: x.max()),
+        ("sum", "sum_24h", sum_func),
+    ]
+
     event_view = EventView.from_event_data(event_data)
     feature_job_setting = event_data.default_feature_job_setting
     frequency, time_modulo_frequency, blind_spot = validate_job_setting_parameters(
@@ -127,32 +128,43 @@ def test_aggregation(
         time_modulo_frequency=feature_job_setting.time_modulo_frequency,
         blind_spot=feature_job_setting.blind_spot,
     )
+
+    # Some fixed parameters
     variable_column_name = "AMOUNT"
     entity_column_name = "USER_ID"
     window_size = 3600 * 24
-    feature_group = event_view.groupby(entity_column_name).aggregate(
-        variable_column_name,
-        agg_name,
-        windows=["24h"],
-        feature_names=[feature_name],
-    )
-    feature_list = FeatureList([feature_group])
-
     event_timestamp_column_name = "EVENT_TIMESTAMP"
 
-    df_expected = get_expected_feature_values(
-        training_events,
-        feature_name,
-        df=transaction_data_upper_case,
-        entity_column_name=entity_column_name,
-        event_timestamp_column_name=event_timestamp_column_name,
-        variable_column_name=variable_column_name,
-        agg_func=agg_func_callable,
-        window_size=window_size,
-        frequency=frequency,
-        time_modulo_frequency=time_modulo_frequency,
-        blind_spot=blind_spot,
-    )
+    features = []
+    df_expected_all = [training_events]
+
+    for agg_name, feature_name, agg_func_callable in feature_parameters:
+
+        feature_group = event_view.groupby(entity_column_name).aggregate(
+            variable_column_name,
+            agg_name,
+            windows=["24h"],
+            feature_names=[feature_name],
+        )
+        features.append(feature_group[feature_name])
+
+        df_expected = get_expected_feature_values(
+            training_events,
+            feature_name,
+            df=transaction_data_upper_case,
+            entity_column_name=entity_column_name,
+            event_timestamp_column_name=event_timestamp_column_name,
+            variable_column_name=variable_column_name,
+            agg_func=agg_func_callable,
+            window_size=window_size,
+            frequency=frequency,
+            time_modulo_frequency=time_modulo_frequency,
+            blind_spot=blind_spot,
+        )[[feature_name]]
+        df_expected_all.append(df_expected)
+
+    df_expected = pd.concat(df_expected_all, axis=1)
+    feature_list = FeatureList(features)
     df_historical_features = feature_list.get_historical_features(
         training_events, credentials=config.credentials, serving_names_mapping={"UID": "USER_ID"}
     )
