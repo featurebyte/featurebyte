@@ -16,10 +16,8 @@ from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_historical import get_historical_features
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
-from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
 class BaseFeatureGroup(BaseModel):

@@ -42,10 +42,16 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
         Parameters
         ----------
         values : dict
+            Parameter values
 
         Returns
         -------
         dict
+
+        Raises
+        ------
+        ValueError
+            if the name parameter is invalid
         """
 
         name = values.get("name")
