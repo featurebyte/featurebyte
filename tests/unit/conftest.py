@@ -25,8 +25,8 @@ from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
-from featurebyte.session.manager import SessionManager
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node
+from featurebyte.session.manager import SessionManager, get_session
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
@@ -374,7 +374,7 @@ def session_manager_fixture(config, snowflake_connector):
     """
     # pylint: disable=E1101
     _ = snowflake_connector
-    SessionManager.__getitem__.cache_clear()
+    get_session.cache_clear()
     yield SessionManager(credentials=config.credentials)
 
 

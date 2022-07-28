@@ -78,7 +78,9 @@ def check_feature_and_remove_registry(feature, feature_manager):
     Check feature properties & registry values
     """
     assert feature.readiness == FeatureReadiness.DRAFT
-    extended_feature_model = ExtendedFeatureModel(**feature.dict(by_alias=True))
+    extended_feature_model = ExtendedFeatureModel(
+        **feature.dict(by_alias=True), feature_store=feature.feature_store
+    )
     feat_reg_df = feature_manager.retrieve_feature_registries(extended_feature_model)
     assert len(feat_reg_df) == 1
     assert feat_reg_df.iloc[0]["NAME"] == feature.name

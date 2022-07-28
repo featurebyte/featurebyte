@@ -47,7 +47,7 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel):
         int
             hash_value
         """
-        return hash(str(self.type) + str(self.details))
+        return hash(str(self.name) + str(self.type) + str(self.details))
 
 
 class TableDetails(FeatureByteBaseModel):

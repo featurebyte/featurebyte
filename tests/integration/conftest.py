@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import yaml
-from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 
 from featurebyte.api.entity import Entity
@@ -29,7 +28,7 @@ from featurebyte.models.feature import (
     FeatureModel,
     FeatureReadiness,
 )
-from featurebyte.models.feature_store import SnowflakeDetails, SQLiteDetails
+from featurebyte.models.feature_store import SnowflakeDetails, SQLiteDetails, TableDetails
 from featurebyte.persistent.git import GitDB
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
@@ -252,20 +251,28 @@ def tile_manager(snowflake_session):
 
 
 @pytest.fixture
-def snowflake_feature(feature_model_dict, snowflake_session):
+def snowflake_feature(feature_model_dict, snowflake_session, snowflake_feature_store):
     """
     Fixture for a ExtendedFeatureModel object
     """
-    feature = ExtendedFeatureModel(**feature_model_dict)
-    feature.description = "test_description_1"
-    feature.__dict__["version"] = "v1"
-    feature.__dict__["readiness"] = FeatureReadiness.DRAFT.value
-    feature.__dict__["is_default"] = True
-    feature.__dict__["online_enabled"] = False
-    feature.__dict__["event_data_ids"] = [
-        PydanticObjectId("626bccb9697a12204fb22ea3"),
-        PydanticObjectId("726bccb9697a12204fb22ea3"),
-    ]
+    feature_model_dict.update(
+        {
+            "tabular_source": (
+                snowflake_feature_store.id,
+                TableDetails(table_name="some_random_table"),
+            ),
+            "version": "v1",
+            "readiness": FeatureReadiness.DRAFT,
+            "is_default": True,
+            "online_enabled": False,
+            "event_data_ids": [
+                ObjectId("626bccb9697a12204fb22ea3"),
+                ObjectId("726bccb9697a12204fb22ea3"),
+            ],
+            "description": "test_description_1",
+        }
+    )
+    feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
     tile_id = feature.tile_specs[0].tile_id
 
     yield feature
@@ -320,7 +327,7 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
         "entity_column_names": ["cust_id"],
         "value_column_names": ["value"],
         "frequency_minute": 30,
-        "tile_id": "sum_f1800_m300_b600_3cb3b2b28a359956be02abe635c4446cb50710d7",
+        "tile_id": "sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
         "tile_sql": tile_sql,
         "time_modulo_frequency_second": 300,
     }
@@ -336,15 +343,22 @@ def feature_manager(snowflake_session):
 
 
 @pytest.fixture
-def snowflake_feature_list(feature_model_dict, snowflake_session, config):
+def snowflake_feature_list(feature_model_dict, snowflake_session, config, snowflake_feature_store):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
+    feature_model_dict.update(
+        {
+            "tabular_source": (
+                snowflake_feature_store.id,
+                TableDetails(table_name="some_random_table"),
+            ),
+            "version": "v1",
+            "readiness": FeatureReadiness.DRAFT,
+            "is_default": True,
+        }
+    )
     mock_feature = FeatureModel(**feature_model_dict)
-    mock_feature.__dict__["tabular_source"] = (config.feature_stores["snowflake_featurestore"],)
-    mock_feature.__dict__["version"] = "v1"
-    mock_feature.__dict__["readiness"] = FeatureReadiness.DRAFT.value
-    mock_feature.__dict__["is_default"] = True
 
     feature_list = FeatureListModel(
         name="feature_list1",

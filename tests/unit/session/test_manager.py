@@ -10,7 +10,7 @@ from pytest import LogCaptureFixture
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.models.feature_store import SQLiteDetails
-from featurebyte.session.manager import SessionManager
+from featurebyte.session.manager import SessionManager, get_session
 
 
 @pytest.fixture(autouse=True, name="caplog_handle")
@@ -30,7 +30,7 @@ def session_manager_fixture(config, snowflake_connector):
     """
     # pylint: disable=no-member
     _ = snowflake_connector
-    SessionManager.__getitem__.cache_clear()
+    get_session.cache_clear()
     yield SessionManager(credentials=config.credentials)
 
 
@@ -89,7 +89,7 @@ def test_session_manager__get_cached_properly(
     assert msg == "Create a new session for sqlite"
 
     # clear the cache & call again
-    session_manager.__getitem__.cache_clear()
+    get_session.cache_clear()
     _ = session_manager[snowflake_feature_store]
     count, msg = count_create_session_logs()
     assert count == 3
