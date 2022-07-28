@@ -125,25 +125,8 @@ class FeatureGroup(BaseFeatureGroup):
         # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original
         # Feature object
         value = parse_obj_as(Feature, value)
-
-        # For now, only allow assigning a feature to FeatureGroup if
-        # 1. The feature is unnamed (e.g. created on-the-fly by combining different features); or
-        # 2. The feature already has a name and is assigned with the same name
-        if value.name is not None and value.name != key:
-            raise ValueError(
-                f'Feature "{value.name}" cannot be added to FeatureGroup under a different name '
-                f'"{key}"'
-            )
-
-        new_node = GlobalQueryGraph().add_operation(
-            node_type=NodeType.ALIAS,
-            node_params={"name": key},
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=[value.node],
-        )
-        value.__dict__["node"] = new_node
+        # Name setting performs validation to ensure the specified name is valid
         value.name = key
-
         self.feature_objects[key] = value
         # sanity check: make sure we don't copy global query graph
         assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)

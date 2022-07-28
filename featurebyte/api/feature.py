@@ -9,7 +9,7 @@ import time
 from http import HTTPStatus
 
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, root_validator
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations, Credentials
@@ -20,6 +20,7 @@ from featurebyte.exception import DuplicatedRecordException, RecordCreationExcep
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import TableDetails
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
 
@@ -32,6 +33,52 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
     # pydantic knows to deserialize the first element as a FeatureStore instead of a
     # FeatureStoreModel
     tabular_source: Tuple[FeatureStore, TableDetails] = Field(allow_mutation=False)
+
+    @root_validator
+    @classmethod
+    def validate_name_update(cls, values: dict[str, Any]) -> dict[str, Any]:
+        """Validator name parameter is consistent
+
+        Parameters
+        ----------
+        values : dict
+
+        Returns
+        -------
+        dict
+        """
+
+        name = values.get("name")
+
+        # Nothing to do if name is not set
+        if name is None:
+            return values
+
+        # Otherwise, a name update might have been triggered. For now, only allow updating name if
+        # the feature is unnamed (i.e. created on-the-fly by combining different features)
+        node = values["node"]
+        if node.type in {NodeType.PROJECT, NodeType.ALIAS}:
+            if node.type == NodeType.PROJECT:
+                existing_name = node.parameters["columns"][0]
+            else:
+                existing_name = node.parameters["name"]
+            if name != existing_name:
+                raise ValueError(f'Feature "{existing_name}" cannot be renamed to "{name}"')
+            # Since name is the same as existing_name, there is no need to update anything. This
+            # path could be triggered when creating a Feature in the normal way too
+            return values
+
+        # Here, node could be any node resulting from series operations, e.g. DIV. This
+        # validation was triggered by setting the name attribute of a Feature object
+        new_node = values["graph"].add_operation(
+            node_type=NodeType.ALIAS,
+            node_params={"name": name},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[node],
+        )
+        values["node"] = new_node
+
+        return values
 
     @property
     def protected_attributes(self) -> list[str]:
