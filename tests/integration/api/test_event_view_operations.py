@@ -36,6 +36,7 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
             "user_id": "INT",
             "product_action": "VARCHAR",
             "session_id": "INT",
+            "amount": "FLOAT",
         }
     )
     pd.testing.assert_series_equal(expected_dtypes, sqlite_database_table.dtypes)
@@ -54,6 +55,7 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
         "user_id",
         "product_action",
         "session_id",
+        "amount",
     ]
 
     # need to specify the constant as float, otherwise results will get truncated
@@ -104,6 +106,7 @@ def test_query_object_operation_on_snowflake_source(
         "USER_ID",
         "PRODUCT_ACTION",
         "SESSION_ID",
+        "AMOUNT",
     ]
 
     # need to specify the constant as float, otherwise results will get truncated

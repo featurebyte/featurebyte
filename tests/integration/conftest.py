@@ -119,8 +119,6 @@ def transaction_dataframe():
     rng = np.random.RandomState(1234)
     product_actions = ["detail", "add", "purchase", "remove", None]
     timestamps = pd.date_range("2001-01-01", freq="1h", periods=48)
-    amount = (rng.rand(row_number) * 100).round(2)
-    amount[::5] = np.nan
     data = pd.DataFrame(
         {
             "event_timestamp": rng.choice(timestamps, row_number),
@@ -129,9 +127,11 @@ def transaction_dataframe():
             "user_id": rng.randint(1, 10, row_number),
             "product_action": rng.choice(product_actions, row_number),
             "session_id": rng.randint(100, 1000, row_number),
-            "amount": amount,
         }
     )
+    amount = (rng.rand(row_number) * 100).round(2)
+    amount[::5] = np.nan
+    data["amount"] = amount
     data["created_at"] += rng.randint(1, 100, row_number).cumsum() * pd.Timedelta(seconds=1)
     data["created_at"] = data["created_at"].astype(int)
     data["cust_id"] = data["cust_id"].cumsum()
