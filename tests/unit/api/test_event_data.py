@@ -244,9 +244,24 @@ def test_event_data_column__as_entity__saved_event_data__record_update_exception
             saved_event_data.col_int.as_entity("customer")
 
 
+def test_event_data__save__feature_store_not_saved_exception(snowflake_event_data):
+    """
+    Test save event data failure due to feature store object not saved
+    """
+
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_event_data.save()
+    feature_store_id = snowflake_event_data.feature_store.id
+    expect_msg = (
+        f'FeatureStore (feature_store.id: "{feature_store_id}") not found! '
+        f"Please save the FeatureStore object first."
+    )
+    assert expect_msg in str(exc.value)
+
+
 def test_event_data__save__exceptions(saved_event_data):
     """
-    Test save event data object to persistent layer
+    Test save event data failure due to conflict
     """
     # test duplicated record exception when record exists
     with pytest.raises(DuplicatedRecordException) as exc:
