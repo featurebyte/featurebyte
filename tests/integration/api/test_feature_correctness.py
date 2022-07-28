@@ -58,6 +58,7 @@ def training_events(transaction_data_upper_case):
     df.loc[spike_mask, "POINT_IN_TIME"] = (
         df.loc[spike_mask, "POINT_IN_TIME"] + spike_shift[spike_mask]
     )
+    df = df.reset_index(drop=True)
 
     return df
 
@@ -112,6 +113,7 @@ def test_aggregation(transaction_data_upper_case, training_events, event_data, c
         training_events, credentials=config.credentials, serving_names_mapping={"UID": "USER_ID"}
     )
 
+    # Note: The row output order can be different, so sort before comparing
     df_expected = df_expected.sort_values(["POINT_IN_TIME", entity_column_name]).reset_index(
         drop=True
     )
@@ -119,4 +121,4 @@ def test_aggregation(transaction_data_upper_case, training_events, event_data, c
         ["POINT_IN_TIME", entity_column_name]
     ).reset_index(drop=True)
 
-    pd.testing.assert_frame_equal(df_historical_features, df_expected)
+    pd.testing.assert_frame_equal(df_historical_features, df_expected, check_dtype=False)
