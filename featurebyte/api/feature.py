@@ -18,8 +18,8 @@ from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import DuplicatedRecordException, RecordCreationException
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureModel
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.models.feature_store import FeatureStoreIdentifier, TableDetails
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
 
@@ -31,12 +31,12 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
     feature_store: ExtendedFeatureStoreModel = Field(exclude=True, allow_mutation=False)
     tabular_source: Tuple[FeatureStoreIdentifier, TableDetails] = Field(allow_mutation=False)
 
-    def __setattr__(self, key: Any, value: Any) -> Any:
+    def __setattr__(self, key: str, value: Any) -> Any:
         """Custom __setattr__ to handle setting of special attributes such as name
 
         Parameters
         ----------
-        key : Any
+        key : str
             Key
         value : Any
             Value
