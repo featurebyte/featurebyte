@@ -1,5 +1,6 @@
 #* Variables
 MAKE := make
+EXECUTABLES = poetry git
 
 .PHONY: init
 .PHONY: install install-nolock install-lock install-main install-dev install-lint install-docs
@@ -12,8 +13,9 @@ MAKE := make
 
 #* Initialize
 init:
+	$(foreach exec,$(EXECUTABLES),\
+        $(if $(shell which $(exec)),,$(error "Missing $(exec) in $$PATH, $(exec) is required for development")))
 	poetry run pre-commit install
-	# TODO: Add kubectl, helm, poetry checks here
 
 #* Installation
 install: install-lock
