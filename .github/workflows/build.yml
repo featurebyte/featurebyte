@@ -83,7 +83,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        make install-nolock
+        make install
 
     - name: Lint Checks
       run: |
@@ -106,7 +106,7 @@ jobs:
 
     - name: Check test output
       run: |
-        if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -ge '0' ]; then
+        if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
           echo "Errors found in pytest"
           exit 1
         fi
@@ -114,6 +114,7 @@ jobs:
           echo "Weird Error has occurred"
           exit 1
         fi
+
     - name: Update Coverage Badge
       if: github.event_name == 'push'
       uses: schneegans/dynamic-badges-action@v1.4.0
