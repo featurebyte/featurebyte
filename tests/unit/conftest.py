@@ -268,6 +268,7 @@ def event_data_model_dict_fixture():
             "time_modulo_frequency": "5m",
         },
         "created_at": datetime.datetime(2022, 2, 1),
+        "updated_at": datetime.datetime(2022, 2, 1),
         "history": [
             {
                 "created_at": datetime.datetime(2022, 4, 1),

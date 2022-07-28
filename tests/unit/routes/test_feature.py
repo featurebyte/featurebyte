@@ -97,8 +97,10 @@ async def test_create_201(
     feature_id = result.pop("_id")
     feature_readiness = result.pop("readiness")
     created_at = datetime.fromisoformat(result.pop("created_at"))
+    updated_at = result.pop("updated_at")
     assert result.pop("user_id") is None
     assert created_at < datetime.utcnow()
+    assert updated_at is None
     assert feature_readiness == "DRAFT"
     for key in ["tabular_source", "lineage", "row_index_lineage"]:
         assert tuple(result.pop(key)) == feature_model_dict[key]
@@ -118,7 +120,8 @@ async def test_create_201(
     assert feat_namespace_docs[0]["readiness"] == feature_readiness
     assert feat_namespace_docs[0]["default_version_id"] == ObjectId(feature_id)
     assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
-    assert feat_namespace_docs[0]["created_at"] == created_at
+    assert feat_namespace_docs[0]["created_at"] > created_at
+    assert feat_namespace_docs[0]["updated_at"] == updated_at
 
     # create a new feature version with the same namespace
     feature_model_dict["_id"] = str(ObjectId())
@@ -144,7 +147,8 @@ async def test_create_201(
     assert feat_namespace_docs[0]["readiness"] == feature_readiness
     assert feat_namespace_docs[0]["default_version_id"] == ObjectId(new_version_result["_id"])
     assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
-    assert feat_namespace_docs[0]["created_at"] == created_at
+    assert feat_namespace_docs[0]["created_at"] > created_at
+    assert feat_namespace_docs[0]["updated_at"] > feat_namespace_docs[0]["created_at"]
 
 
 def test_create_409(

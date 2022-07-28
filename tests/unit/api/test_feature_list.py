@@ -137,6 +137,8 @@ def test_feature_list_creation__success(production_ready_feature, config):
         "status": "DRAFT",
         "version": "V220501",
         "created_at": None,
+        "updated_at": None,
+        "user_id": None,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -151,6 +153,8 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
     )
     assert flist.dict(exclude={"id": True}) == {
         "created_at": None,
+        "updated_at": None,
+        "user_id": None,
         "description": None,
         "version": "V220501",
         "features": [

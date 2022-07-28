@@ -130,5 +130,7 @@ def feature_model_dict_feature():
         "online_enabled": None,
         "event_data_ids": [],
         "created_at": None,
+        "updated_at": None,
+        "user_id": None,
         "parent_id": None,
     }

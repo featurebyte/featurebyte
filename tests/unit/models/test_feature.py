@@ -28,6 +28,8 @@ def feature_list_model_dict_fixture():
         "status": None,
         "version": "V220710",
         "created_at": None,
+        "updated_at": None,
+        "user_id": None,
     }
 
 
@@ -42,8 +44,10 @@ def feature_name_space_dict_fixture():
         "versions": ["V220710"],
         "readiness": "DRAFT",
         "created_at": datetime.now(),
+        "updated_at": datetime.now(),
         "default_version_id": version_id,
         "default_version_mode": "MANUAL",
+        "user_id": None,
     }
 
 

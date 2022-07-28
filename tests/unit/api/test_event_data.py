@@ -49,6 +49,8 @@ def event_data_dict_fixture():
         "column_entity_map": None,
         "default_feature_job_setting": None,
         "created_at": None,
+        "updated_at": None,
+        "user_id": None,
         "history": [],
         "status": None,
     }
@@ -274,10 +276,12 @@ def test_event_data__info__not_saved_event_data(snowflake_event_data):
     output = snowflake_event_data.info()
     assert output == {
         "id": snowflake_event_data.id,
+        "user_id": None,
         "name": "sf_event_data",
         "record_creation_date_column": "col_text",
         "column_entity_map": None,
         "created_at": None,
+        "updated_at": None,
         "default_feature_job_setting": None,
         "event_timestamp_column": "col_int",
         "history": [],
@@ -332,10 +336,12 @@ def test_event_data__info__saved_event_data(saved_event_data):
         == saved_event_data_dict
         == {
             "id": saved_event_data.id,
+            "user_id": None,
             "name": "sf_event_data",
             "record_creation_date_column": "created_at",
             "column_entity_map": None,
             "created_at": saved_event_data.created_at,
+            "updated_at": saved_event_data.updated_at,
             "default_feature_job_setting": None,
             "event_timestamp_column": "event_timestamp",
             "history": [],
@@ -434,6 +440,7 @@ def test_get_event_data(snowflake_event_data, mock_config_path_env):
 
     # load the event data from the persistent
     loaded_event_data = EventData.get(snowflake_event_data.name)
+    assert loaded_event_data.dict() == snowflake_event_data.dict()
     assert loaded_event_data == snowflake_event_data
 
     with pytest.raises(RecordRetrievalException) as exc:
