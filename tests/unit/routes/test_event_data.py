@@ -1,8 +1,7 @@
 """
-Tests for Event Datas route
+Tests for EventData routes
 """
 import datetime
-import json
 from http import HTTPStatus
 from unittest import mock
 
@@ -86,7 +85,7 @@ def event_data_response_fixture(
     )
     assert response.status_code == HTTPStatus.CREATED
     assert response.json()["_id"] == event_data_model_dict["_id"]
-    yield response
+    return response
 
 
 def test_create_success(event_data_response, event_data_model_dict):

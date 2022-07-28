@@ -66,7 +66,7 @@ class FeatureStoreController:
         if conflict_feature_store:
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=f'FeatureStore name (feature_store.id: "{data.id}") already exists.',
+                detail=f'FeatureStore (feature_store.id: "{data.id}") already exists.',
             )
 
         # check name conflict
@@ -76,7 +76,7 @@ class FeatureStoreController:
         if conflict_feature_store:
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=f'FeatureStore name (feature_store.name: "{data.name}") already exists.',
+                detail=f'FeatureStore (feature_store.name: "{data.name}") already exists.',
             )
 
         insert_id = await persistent.insert_one(
@@ -121,7 +121,7 @@ class FeatureStoreController:
         if feature_store is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
-                detail=f'FeatureStore (feature_store.id: "{feature_store_id}") not found! ',
+                detail=f'FeatureStore (feature_store.id: "{feature_store_id}") not found!',
             )
         return FeatureStore(**feature_store)
 
