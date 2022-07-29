@@ -3,11 +3,8 @@ This modules contains feature manager specific models
 """
 from __future__ import annotations
 
-from typing import Tuple
-
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.feature_store import TableDetails
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.interpreter import GraphInterpreter
 
@@ -17,7 +14,7 @@ class ExtendedFeatureModel(FeatureModel):
     ExtendedFeatureModel contains tile manager specific methods or properties
     """
 
-    tabular_source: Tuple[ExtendedFeatureStoreModel, TableDetails]
+    feature_store: ExtendedFeatureStoreModel
 
     @property
     def tile_specs(self) -> list[TileSpec]:

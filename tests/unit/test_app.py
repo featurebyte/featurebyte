@@ -15,12 +15,12 @@ def test_get_credential():
     Test get_credential works as expected
     """
     config = Configurations("tests/fixtures/config_git_persistent.yaml")
-    feature_store = list(config.credentials.keys())[0]
+    feature_store_name = list(config.credentials.keys())[0]
 
     with patch("featurebyte.app.Configurations") as mock_config:
         mock_config.return_value = config
-        credential = _get_credential(user_id=ObjectId(), feature_store=feature_store)
-    assert credential == config.credentials[feature_store]
+        credential = _get_credential(user_id=ObjectId(), feature_store_name=feature_store_name)
+    assert credential == config.credentials[feature_store_name]
 
 
 def test_get_persistent():

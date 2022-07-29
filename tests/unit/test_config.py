@@ -24,25 +24,11 @@ def test_configurations():
     """
     config = Configurations("tests/fixtures/config_multiple_persistent.yaml")
 
-    # one database source with section name as key
-    assert len(config.feature_stores) == 1
-    expected_feature_store_dict = {
-        "type": SourceType.SNOWFLAKE,
-        "details": {
-            "account": "sf_account",
-            "warehouse": "COMPUTE_WH",
-            "database": "FEATUREBYTE",
-            "sf_schema": "FEATUREBYTE",
-        },
-    }
-    feature_store = config.feature_stores["Snowflake FeatureStøre"]
-    assert feature_store.dict() == expected_feature_store_dict
-
     # one credential with db source as key
     assert len(config.credentials) == 1
-    assert config.credentials[feature_store].dict() == {
-        "name": "Snowflake FeatureStøre",
-        "feature_store": expected_feature_store_dict,
+    feature_store_name = "Snowflake FeatureStøre"
+    assert config.credentials[feature_store_name].dict() == {
+        "name": feature_store_name,
         "credential_type": CredentialType.USERNAME_PASSWORD,
         "credential": {"username": "user", "password": "password"},
     }
@@ -68,15 +54,6 @@ def test_configurations():
         api_url="https://app.featurebyte.com/api/v1",
         api_token="API_TOKEN_VALUE",
     )
-
-
-def test_configurations_malformed_datasource():
-    """
-    Test creating configuration from malformed config file
-    """
-    with pytest.raises(InvalidSettingsError) as exc_info:
-        Configurations("tests/fixtures/config_malformed.yaml")
-    assert str(exc_info.value) == "Invalid settings for datasource: Snowflake FeatureStøre"
 
 
 def test_get_client_no_persistence_settings():

@@ -232,6 +232,7 @@ class EventViewGroupBy(OpsMixin):
             items.append(
                 Feature(
                     name=feature_name,
+                    feature_store=self.obj.feature_store,
                     tabular_source=self.obj.tabular_source,
                     node=feature_node,
                     var_type=column_var_type_map[feature_name],

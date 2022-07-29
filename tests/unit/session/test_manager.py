@@ -9,6 +9,7 @@ from pytest import LogCaptureFixture
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
+from featurebyte.models.feature_store import SQLiteDetails
 from featurebyte.session.manager import SessionManager, get_session
 
 
@@ -38,7 +39,11 @@ def sqlite_feature_store_fixture(config):
     """
     SQLite database source fixture
     """
-    return FeatureStore(**config.feature_stores["sq_featurestore"].dict())
+    return FeatureStore(
+        name="sq_featurestore",
+        type="sqlite",
+        details=SQLiteDetails(filename="some_filename.sqlite"),
+    )
 
 
 @patch("featurebyte.session.sqlite.os", Mock())
@@ -99,7 +104,6 @@ def test_session_manager__wrong_configuration_file(snowflake_feature_store):
     session_manager = SessionManager(credentials=config.credentials)
     with pytest.raises(ValueError) as exc:
         _ = session_manager[snowflake_feature_store]
-    expected_msg = (
-        'Credentials do not contain info for the feature store (feature_store.type: "snowflake")!'
+    assert 'Credentials do not contain info for the feature store "sf_featurestore"' in str(
+        exc.value
     )
-    assert expected_msg in str(exc.value)

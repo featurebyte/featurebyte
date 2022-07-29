@@ -21,11 +21,12 @@ from featurebyte.enum import CollectionName, InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
-from featurebyte.session.manager import SessionManager
+from featurebyte.session.manager import SessionManager, get_session
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
@@ -38,19 +39,12 @@ def config_file_fixture():
         "featurestore": [
             {
                 "name": "sf_featurestore",
-                "source_type": "snowflake",
-                "account": "sf_account",
-                "warehouse": "sf_warehouse",
-                "sf_schema": "sf_schema",
-                "database": "sf_database",
                 "credential_type": "USERNAME_PASSWORD",
                 "username": "sf_user",
                 "password": "sf_password",
             },
             {
                 "name": "sq_featurestore",
-                "source_type": "sqlite",
-                "filename": "some_filename.sqlite",
             },
         ],
         "git": {
@@ -113,14 +107,6 @@ def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
     """Use these fixtures for all tests"""
     _ = mock_config_path_env, mock_get_persistent
     yield
-
-
-@pytest.fixture(name="snowflake_feature_store")
-def snowflake_feature_store_fixture(config):
-    """
-    Snowflake database source fixture
-    """
-    return FeatureStore(**config.feature_stores["sf_featurestore"].dict())
 
 
 @pytest.fixture(name="snowflake_connector")
@@ -193,6 +179,23 @@ def mock_snowflake_execute_query():
         yield mock_execute_query
 
 
+@pytest.fixture(name="snowflake_feature_store")
+def snowflake_feature_store_fixture():
+    """
+    Snowflake database source fixture
+    """
+    return FeatureStore(
+        name="sf_featurestore",
+        type="snowflake",
+        details=SnowflakeDetails(
+            account="sf_account",
+            warehouse="sf_warehouse",
+            sf_schema="sf_schema",
+            database="sf_database",
+        ),
+    )
+
+
 @pytest.fixture(name="snowflake_database_table")
 def snowflake_database_table_fixture(
     snowflake_connector,
@@ -204,12 +207,14 @@ def snowflake_database_table_fixture(
     DatabaseTable object fixture
     """
     _ = snowflake_connector, snowflake_execute_query
-    yield snowflake_feature_store.get_table(
+    snowflake_table = snowflake_feature_store.get_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="sf_table",
         credentials=config.credentials,
     )
+    assert isinstance(snowflake_table.feature_store, FeatureStore)
+    yield snowflake_table
 
 
 @pytest.fixture(name="snowflake_event_data")
@@ -227,11 +232,10 @@ def snowflake_event_data_fixture(snowflake_database_table, config):
 
 
 @pytest.fixture(name="snowflake_event_view")
-def snowflake_event_view_fixture(snowflake_event_data, config):
+def snowflake_event_view_fixture(snowflake_event_data):
     """
     EventData object fixture
     """
-    _ = config
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
     assert isinstance(event_view, EventView)
     expected_inception_node = Node(
@@ -370,6 +374,7 @@ def session_manager_fixture(config, snowflake_connector):
     """
     # pylint: disable=E1101
     _ = snowflake_connector
+    get_session.cache_clear()
     yield SessionManager(credentials=config.credentials)
 
 

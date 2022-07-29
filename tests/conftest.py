@@ -108,22 +108,6 @@ def feature_model_dict_feature():
             "type": "project",
             "output_type": "series",
         },
-        "tabular_source": (
-            {
-                "details": {
-                    "account": "sf_account",
-                    "database": "sf_database",
-                    "sf_schema": "sf_schema",
-                    "warehouse": "sf_warehouse",
-                },
-                "type": "snowflake",
-            },
-            {
-                "database_name": "sf_database",
-                "schema_name": "sf_schema",
-                "table_name": "sf_table",
-            },
-        ),
         "readiness": None,
         "version": "V220710",
         "is_default": None,

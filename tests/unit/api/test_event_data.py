@@ -7,11 +7,11 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
+from bson.objectid import ObjectId
 from pydantic.error_wrappers import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData, EventDataColumn
-from featurebyte.api.feature_store import FeatureStore
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
@@ -22,22 +22,14 @@ from featurebyte.models.event_data import EventDataStatus, FeatureJobSetting
 
 
 @pytest.fixture(name="event_data_dict")
-def event_data_dict_fixture():
+def event_data_dict_fixture(snowflake_database_table):
     """
     EventData in serialized dictionary format
     """
     return {
         "name": "sf_event_data",
         "tabular_source": (
-            {
-                "type": "snowflake",
-                "details": {
-                    "account": "sf_account",
-                    "database": "sf_database",
-                    "sf_schema": "sf_schema",
-                    "warehouse": "sf_warehouse",
-                },
-            },
+            snowflake_database_table.feature_store.id,
             {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
@@ -57,15 +49,16 @@ def event_data_dict_fixture():
 
 
 @pytest.fixture(name="saved_event_data")
-def saved_event_data_fixture(snowflake_event_data):
+def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
     """
     Saved event data fixture
     """
+    snowflake_feature_store.save()
     snowflake_event_data.save()
     assert snowflake_event_data.status == EventDataStatus.DRAFT
     assert isinstance(snowflake_event_data.created_at, datetime)
     feature_store, _ = snowflake_event_data.tabular_source
-    assert isinstance(feature_store, FeatureStore)
+    assert isinstance(feature_store, ObjectId)
     yield snowflake_event_data
 
 
@@ -117,7 +110,7 @@ def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_data
             record_creation_date_column="created_at",
             credentials=config.credentials,
         )
-    assert 'EventData name "sf_event_data" exists in saved record.' in str(exc.value)
+    assert 'EventData (event_data.name: "sf_event_data") exists in saved record.' in str(exc.value)
 
 
 def test_from_tabular_source__retrieval_exception(snowflake_database_table, config):
@@ -138,6 +131,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table, conf
 def test_deserialization(
     event_data_dict,
     config,
+    snowflake_feature_store,
     snowflake_execute_query,
     expected_snowflake_table_preview_query,
 ):
@@ -147,16 +141,20 @@ def test_deserialization(
     _ = snowflake_execute_query
     # setup proper configuration to deserialize the event data object
     event_data_dict["credentials"] = config.credentials
+    event_data_dict["feature_store"] = snowflake_feature_store
     event_data = EventData.parse_obj(event_data_dict)
     assert event_data.preview_sql() == expected_snowflake_table_preview_query
 
 
-def test_deserialization__column_name_not_found(event_data_dict, config, snowflake_execute_query):
+def test_deserialization__column_name_not_found(
+    event_data_dict, config, snowflake_feature_store, snowflake_execute_query
+):
     """
     Test column not found during deserialize event data
     """
     _ = snowflake_execute_query
     event_data_dict["credentials"] = config.credentials
+    event_data_dict["feature_store"] = snowflake_feature_store
     event_data_dict["record_creation_date_column"] = "some_random_name"
     with pytest.raises(ValueError) as exc:
         EventData.parse_obj(event_data_dict)
@@ -248,9 +246,24 @@ def test_event_data_column__as_entity__saved_event_data__record_update_exception
             saved_event_data.col_int.as_entity("customer")
 
 
+def test_event_data__save__feature_store_not_saved_exception(snowflake_event_data):
+    """
+    Test save event data failure due to feature store object not saved
+    """
+
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_event_data.save()
+    feature_store_id = snowflake_event_data.feature_store.id
+    expect_msg = (
+        f'FeatureStore (feature_store.id: "{feature_store_id}") not found! '
+        f"Please save the FeatureStore object first."
+    )
+    assert expect_msg in str(exc.value)
+
+
 def test_event_data__save__exceptions(saved_event_data):
     """
-    Test save event data object to persistent layer
+    Test save event data failure due to conflict
     """
     # test duplicated record exception when record exists
     with pytest.raises(DuplicatedRecordException) as exc:
@@ -267,7 +280,7 @@ def test_event_data__save__exceptions(saved_event_data):
             saved_event_data.save()
 
 
-def test_event_data__info__not_saved_event_data(snowflake_event_data):
+def test_event_data__info__not_saved_event_data(snowflake_feature_store, snowflake_event_data):
     """
     Test info on not-saved event data
     """
@@ -276,35 +289,27 @@ def test_event_data__info__not_saved_event_data(snowflake_event_data):
     output = snowflake_event_data.info()
     assert output == {
         "id": snowflake_event_data.id,
-        "user_id": None,
         "name": "sf_event_data",
         "record_creation_date_column": "col_text",
         "column_entity_map": None,
         "created_at": None,
-        "updated_at": None,
         "default_feature_job_setting": None,
         "event_timestamp_column": "col_int",
         "history": [],
         "status": None,
         "tabular_source": (
-            {
-                "type": "snowflake",
-                "details": {
-                    "account": "sf_account",
-                    "database": "sf_database",
-                    "sf_schema": "sf_schema",
-                    "warehouse": "sf_warehouse",
-                },
-            },
+            snowflake_feature_store.id,
             {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
                 "table_name": "sf_table",
             },
         ),
+        "updated_at": None,
+        "user_id": None,
     }
-    feature_store, _ = snowflake_event_data.tabular_source
-    assert isinstance(feature_store, FeatureStore)
+    feature_store_id, _ = snowflake_event_data.tabular_source
+    assert isinstance(feature_store_id, ObjectId)
 
     # check unhandled response status code
     with pytest.raises(RecordRetrievalException):
@@ -312,7 +317,7 @@ def test_event_data__info__not_saved_event_data(snowflake_event_data):
             snowflake_event_data.info()
 
 
-def test_event_data__info__saved_event_data(saved_event_data):
+def test_event_data__info__saved_event_data(snowflake_feature_store, saved_event_data):
     """
     Test info on saved event data
     """
@@ -336,36 +341,28 @@ def test_event_data__info__saved_event_data(saved_event_data):
         == saved_event_data_dict
         == {
             "id": saved_event_data.id,
-            "user_id": None,
             "name": "sf_event_data",
             "record_creation_date_column": "created_at",
             "column_entity_map": None,
             "created_at": saved_event_data.created_at,
-            "updated_at": saved_event_data.updated_at,
             "default_feature_job_setting": None,
             "event_timestamp_column": "event_timestamp",
             "history": [],
             "status": "DRAFT",
             "tabular_source": (
-                {
-                    "type": "snowflake",
-                    "details": {
-                        "account": "sf_account",
-                        "database": "sf_database",
-                        "sf_schema": "sf_schema",
-                        "warehouse": "sf_warehouse",
-                    },
-                },
+                snowflake_feature_store.id,
                 {
                     "database_name": "sf_database",
                     "schema_name": "sf_schema",
                     "table_name": "sf_table",
                 },
             ),
+            "updated_at": None,
+            "user_id": None,
         }
     )
-    feature_store, _ = saved_event_data.tabular_source
-    assert isinstance(feature_store, FeatureStore)
+    feature_store_id, _ = saved_event_data.tabular_source
+    assert isinstance(feature_store_id, ObjectId)
 
 
 def test_update_default_job_setting(snowflake_event_data, config):
@@ -387,8 +384,8 @@ def test_update_default_job_setting(snowflake_event_data, config):
     assert snowflake_event_data.default_feature_job_setting == FeatureJobSetting(
         blind_spot="1m30s", frequency="10m", time_modulo_frequency="2m"
     )
-    feature_store, _ = snowflake_event_data.tabular_source
-    assert isinstance(feature_store, FeatureStore)
+    feature_store_id, _ = snowflake_event_data.tabular_source
+    assert isinstance(feature_store_id, ObjectId)
 
 
 def test_update_default_job_setting__saved_event_data(saved_event_data, config):
@@ -429,20 +426,20 @@ def test_update_default_job_setting__record_update_exception(snowflake_event_dat
             )
 
 
-def test_get_event_data(snowflake_event_data, mock_config_path_env):
+def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_config_path_env):
     """
     Test EventData.get function
     """
     _ = mock_config_path_env
 
     # create event data & save to persistent
+    snowflake_feature_store.save()
     snowflake_event_data.save()
 
     # load the event data from the persistent
     loaded_event_data = EventData.get(snowflake_event_data.name)
-    assert loaded_event_data.dict() == snowflake_event_data.dict()
     assert loaded_event_data == snowflake_event_data
 
     with pytest.raises(RecordRetrievalException) as exc:
         EventData.get("unknown_event_data")
-    assert 'EventData name (event_data.name: "unknown_event_data") not found!' in str(exc.value)
+    assert 'EventData (event_data.name: "unknown_event_data") not found!' in str(exc.value)

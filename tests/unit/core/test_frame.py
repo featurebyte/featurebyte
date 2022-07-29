@@ -6,6 +6,7 @@ import pytest
 from featurebyte.core.frame import Frame, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import Node
 
 
 @pytest.mark.parametrize(
@@ -26,13 +27,11 @@ def test__getitem__str_key(dataframe, item, expected_type):
     series_dict = series.dict()
     assert series_dict["name"] == item
     assert series_dict["var_type"] == expected_type
-    assert (
-        series_dict["node"].items()
-        >= {
-            "type": NodeType.PROJECT,
-            "parameters": {"columns": [item]},
-            "output_type": NodeOutputType.SERIES,
-        }.items()
+    assert series_dict["node"] == Node(
+        name="project_1",
+        type=NodeType.PROJECT,
+        parameters={"columns": [item]},
+        output_type=NodeOutputType.SERIES,
     )
     assert series_dict["lineage"] == ("input_1", "project_1")
     assert series_dict["row_index_lineage"] == ("input_1",)
@@ -59,13 +58,11 @@ def test__getitem__list_of_str_key(dataframe):
         "CUST_ID": DBVarType.INT,
         "VALUE": DBVarType.FLOAT,
     }
-    assert (
-        sub_dataframe_dict["node"].items()
-        >= {
-            "type": NodeType.PROJECT,
-            "parameters": {"columns": ["CUST_ID", "VALUE"]},
-            "output_type": NodeOutputType.FRAME,
-        }.items()
+    assert sub_dataframe_dict["node"] == Node(
+        name="project_1",
+        type=NodeType.PROJECT,
+        parameters={"columns": ["CUST_ID", "VALUE"]},
+        output_type=NodeOutputType.FRAME,
     )
     assert sub_dataframe_dict["column_lineage_map"] == {
         "CUST_ID": ("input_1", "project_1"),
@@ -92,13 +89,11 @@ def test__getitem__series_key(dataframe, bool_series):
     assert isinstance(sub_dataframe, Frame)
     sub_dataframe_dict = sub_dataframe.dict()
     assert sub_dataframe_dict["column_var_type_map"] == dataframe.column_var_type_map
-    assert (
-        sub_dataframe_dict["node"].items()
-        >= {
-            "type": NodeType.FILTER,
-            "parameters": {},
-            "output_type": NodeOutputType.FRAME,
-        }.items()
+    assert sub_dataframe_dict["node"] == Node(
+        name="filter_1",
+        type=NodeType.FILTER,
+        parameters={},
+        output_type=NodeOutputType.FRAME,
     )
     assert sub_dataframe_dict["column_lineage_map"] == {
         "CUST_ID": ("input_1", "filter_1"),
@@ -163,13 +158,11 @@ def test__setitem__str_key_scalar_value(
     dataframe[key] = value
     dataframe_dict = dataframe.dict()
     assert dataframe_dict["column_var_type_map"][key] == expected_type
-    assert (
-        dataframe_dict["node"].items()
-        >= {
-            "type": "assign",
-            "parameters": {"value": value, "name": key},
-            "output_type": NodeOutputType.FRAME,
-        }.items()
+    assert dataframe_dict["node"] == Node(
+        name="assign_1",
+        type="assign",
+        parameters={"value": value, "name": key},
+        output_type=NodeOutputType.FRAME,
     )
     assert len(dataframe_dict["column_var_type_map"].keys()) == expected_column_count
     assert dict(dataframe_dict["graph"]["edges"]) == {"input_1": ["assign_1"]}
@@ -195,13 +188,11 @@ def test__setitem__str_key_series_value(
     dataframe[key] = value
     dataframe_dict = dataframe.dict()
     assert dataframe_dict["column_var_type_map"][key] == expected_type
-    assert (
-        dataframe_dict["node"].items()
-        >= {
-            "type": "assign",
-            "parameters": {"name": key},
-            "output_type": NodeOutputType.FRAME,
-        }.items()
+    assert dataframe_dict["node"] == Node(
+        name="assign_1",
+        type="assign",
+        parameters={"name": key},
+        output_type=NodeOutputType.FRAME,
     )
     assert len(dataframe_dict["column_var_type_map"].keys()) == expected_column_count
     assert dict(dataframe_dict["graph"]["edges"]) == {
@@ -249,13 +240,11 @@ def test_multiple_statements(dataframe):
     dataframe_dict = dataframe.dict()
 
     assert cust_id_dict["name"] == "CUST_ID"
-    assert (
-        cust_id_dict["node"].items()
-        >= {
-            "type": NodeType.PROJECT,
-            "parameters": {"columns": ["CUST_ID"]},
-            "output_type": NodeOutputType.SERIES,
-        }.items()
+    assert cust_id_dict["node"] == Node(
+        name="project_2",
+        type=NodeType.PROJECT,
+        parameters={"columns": ["CUST_ID"]},
+        output_type=NodeOutputType.SERIES,
     )
     assert cust_id_dict["lineage"] == ("input_1", "filter_1", "project_2")
     assert cust_id_dict["row_index_lineage"] == ("input_1", "filter_1")
@@ -275,13 +264,11 @@ def test_multiple_statements(dataframe):
         "amount",
         "vip_customer",
     ]
-    assert (
-        dataframe_dict["node"].items()
-        >= {
-            "type": NodeType.ASSIGN,
-            "parameters": {"name": "vip_customer"},
-            "output_type": NodeOutputType.FRAME,
-        }.items()
+    assert dataframe_dict["node"] == Node(
+        name="assign_2",
+        type=NodeType.ASSIGN,
+        parameters={"name": "vip_customer"},
+        output_type=NodeOutputType.FRAME,
     )
     assert dataframe_dict["column_lineage_map"] == {
         "CUST_ID": ("input_1", "filter_1"),
@@ -344,6 +331,7 @@ def test_frame__dict(dataframe):
         "VALUE": ("input_1", "filter_1", "project_2"),
     }
     assert sub_dataframe_dict["row_index_lineage"] == ("input_1", "filter_1")
+    sub_dataframe_dict["feature_store"] = dataframe.feature_store
     loaded_sub_dataframe = Frame.parse_obj(sub_dataframe_dict)
     # note that loaded_sub_dataframe & sub_dataframe are not fully identical (ideally, we should make them identical)
     # loaded_sub_dataframe = input -> filter (input_frame, "MASK") -> project ["VALUE", "CUST_ID"]

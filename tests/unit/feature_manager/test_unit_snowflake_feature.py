@@ -26,7 +26,9 @@ def mock_snowflake_feature_fixture(mock_snowflake_feature):
     """
     ExtendedFeatureModel object fixture
     """
-    return ExtendedFeatureModel(**mock_snowflake_feature.dict())
+    return ExtendedFeatureModel(
+        **mock_snowflake_feature.dict(), feature_store=mock_snowflake_feature.feature_store
+    )
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
@@ -239,7 +241,6 @@ def test_retrieve_feature_tile_inconsistency_data(mock_execute_query, feature_ma
             "NAME": ["sum_30m", "sum_30m"],
             "VERSION": ["v1", "v1"],
             "TILE_START_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
-            "TILE_MONITOR_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
         }
     )
     result = feature_manager.retrieve_feature_tile_inconsistency_data(

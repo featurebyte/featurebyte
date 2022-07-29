@@ -31,6 +31,7 @@ def feature_store_fixture():
         FeatureStoreModel object
     """
     return FeatureStoreModel(
+        name="sf_featurestore",
         type=SourceType.SNOWFLAKE,
         details=SnowflakeDetails(
             account="account",

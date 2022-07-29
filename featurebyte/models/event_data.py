@@ -76,7 +76,7 @@ class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
         EventData id of the object
     name : str
         Name of the EventData
-    tabular_source : Tuple[FeatureStoreModel, TableDetails]
+    tabular_source : TabularSource
         Data warehouse connection information & table name tuple
     event_timestamp_column: str
         Event timestamp column name
