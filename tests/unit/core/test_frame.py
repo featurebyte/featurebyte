@@ -92,11 +92,14 @@ def test__getitem__series_key(dataframe, bool_series):
     assert isinstance(sub_dataframe, Frame)
     sub_dataframe_dict = sub_dataframe.dict()
     assert sub_dataframe_dict["column_var_type_map"] == dataframe.column_var_type_map
-    assert sub_dataframe_dict["node"].items() >= {
-        "type": NodeType.FILTER,
-        "parameters": {},
-        "output_type": NodeOutputType.FRAME,
-    }
+    assert (
+        sub_dataframe_dict["node"].items()
+        >= {
+            "type": NodeType.FILTER,
+            "parameters": {},
+            "output_type": NodeOutputType.FRAME,
+        }.items()
+    )
     assert sub_dataframe_dict["column_lineage_map"] == {
         "CUST_ID": ("input_1", "filter_1"),
         "PRODUCT_ACTION": ("input_1", "filter_1"),
@@ -160,11 +163,14 @@ def test__setitem__str_key_scalar_value(
     dataframe[key] = value
     dataframe_dict = dataframe.dict()
     assert dataframe_dict["column_var_type_map"][key] == expected_type
-    assert dataframe_dict["node"] == {
-        "type": "assign",
-        "parameters": {"value": value, "name": key},
-        "output_type": NodeOutputType.FRAME,
-    }
+    assert (
+        dataframe_dict["node"].items()
+        >= {
+            "type": "assign",
+            "parameters": {"value": value, "name": key},
+            "output_type": NodeOutputType.FRAME,
+        }.items()
+    )
     assert len(dataframe_dict["column_var_type_map"].keys()) == expected_column_count
     assert dict(dataframe_dict["graph"]["edges"]) == {"input_1": ["assign_1"]}
 
@@ -189,11 +195,14 @@ def test__setitem__str_key_series_value(
     dataframe[key] = value
     dataframe_dict = dataframe.dict()
     assert dataframe_dict["column_var_type_map"][key] == expected_type
-    assert dataframe_dict["node"].items() >= {
-        "type": "assign",
-        "parameters": {"name": key},
-        "output_type": NodeOutputType.FRAME,
-    }
+    assert (
+        dataframe_dict["node"].items()
+        >= {
+            "type": "assign",
+            "parameters": {"name": key},
+            "output_type": NodeOutputType.FRAME,
+        }.items()
+    )
     assert len(dataframe_dict["column_var_type_map"].keys()) == expected_column_count
     assert dict(dataframe_dict["graph"]["edges"]) == {
         "input_1": ["project_1", "assign_1"],
@@ -240,11 +249,14 @@ def test_multiple_statements(dataframe):
     dataframe_dict = dataframe.dict()
 
     assert cust_id_dict["name"] == "CUST_ID"
-    assert cust_id_dict["node"].items() >= {
-        "type": NodeType.PROJECT,
-        "parameters": {"columns": ["CUST_ID"]},
-        "output_type": NodeOutputType.SERIES,
-    }
+    assert (
+        cust_id_dict["node"].items()
+        >= {
+            "type": NodeType.PROJECT,
+            "parameters": {"columns": ["CUST_ID"]},
+            "output_type": NodeOutputType.SERIES,
+        }.items()
+    )
     assert cust_id_dict["lineage"] == ("input_1", "filter_1", "project_2")
     assert cust_id_dict["row_index_lineage"] == ("input_1", "filter_1")
     assert dataframe_dict["column_var_type_map"] == {
@@ -263,11 +275,14 @@ def test_multiple_statements(dataframe):
         "amount",
         "vip_customer",
     ]
-    assert dataframe_dict["node"].items() >= {
-        "type": NodeType.ASSIGN,
-        "parameters": {"name": "vip_customer"},
-        "output_type": NodeOutputType.FRAME,
-    }
+    assert (
+        dataframe_dict["node"].items()
+        >= {
+            "type": NodeType.ASSIGN,
+            "parameters": {"name": "vip_customer"},
+            "output_type": NodeOutputType.FRAME,
+        }.items()
+    )
     assert dataframe_dict["column_lineage_map"] == {
         "CUST_ID": ("input_1", "filter_1"),
         "PRODUCT_ACTION": ("input_1", "filter_1"),
