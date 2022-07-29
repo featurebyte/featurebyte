@@ -11,9 +11,10 @@ from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.enum import CollectionName
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.util import get_utc_now
-from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreList, FeatureStoreModel
+from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreList
 
 
 class FeatureStoreController:

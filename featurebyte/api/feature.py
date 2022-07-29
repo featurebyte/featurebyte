@@ -30,7 +30,8 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
     feature_store: ExtendedFeatureStoreModel = Field(exclude=True, allow_mutation=False)
 
     def __setattr__(self, key: str, value: Any) -> Any:
-        """Custom __setattr__ to handle setting of special attributes such as name
+        """
+        Custom __setattr__ to handle setting of special attributes such as name
 
         Parameters
         ----------

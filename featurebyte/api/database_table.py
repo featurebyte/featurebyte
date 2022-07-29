@@ -21,6 +21,8 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
     DatabaseTable class to preview table
     """
 
+    # pylint: disable=too-few-public-methods
+
     column_var_type_map: Dict[StrictStr, DBVarType]
     credentials: Optional[Credentials] = Field(default=None, allow_mutation=False, exclude=True)
     feature_store: ExtendedFeatureStoreModel = Field(allow_mutation=False, exclude=True)
@@ -29,8 +31,6 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         """
         Pydantic Config class
         """
-
-        # pylint: disable=too-few-public-methods
 
         fields = {
             "graph": {"exclude": True},
