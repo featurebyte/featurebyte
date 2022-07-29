@@ -84,21 +84,6 @@ class EventData(EventDataModel, DatabaseTable):
 
     tabular_source: Tuple[FeatureStore, TableDetails] = Field(allow_mutation=False)
 
-    class Config:
-        """
-        Pydantic Config class
-        """
-
-        # pylint: disable=too-few-public-methods
-
-        fields = {
-            "credentials": {"exclude": True},
-            "graph": {"exclude": True},
-            "node": {"exclude": True},
-            "row_index_lineage": {"exclude": True},
-            "column_var_type_map": {"exclude": True},
-        }
-
     @classmethod
     def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         return {"timestamp": values["event_timestamp_column"]}

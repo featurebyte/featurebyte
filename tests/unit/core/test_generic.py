@@ -5,7 +5,9 @@ import copy
 
 import pytest
 
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.core.generic import QueryObject
+from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
@@ -14,6 +16,8 @@ def check_graph_state(graph1, graph2):
     """
     Check the reference id of the graph1 & graph2
     """
+    assert isinstance(graph1, GlobalQueryGraph)
+    assert isinstance(graph2, GlobalQueryGraph)
     assert id(graph1.edges) == id(graph2.edges)
     assert id(graph1.backward_edges) == id(graph2.backward_edges)
     assert id(graph1.nodes) == id(graph2.nodes)
@@ -22,7 +26,7 @@ def check_graph_state(graph1, graph2):
 
 
 @pytest.fixture(name="tabular_source")
-def tabular_source_fixture(snowflake_feature_store):
+def feature_store_tabular_source_fixture(snowflake_feature_store):
     """
     Tabulor source fixture
     """
@@ -54,7 +58,7 @@ def query_object1_fixture(tabular_source):
 
 
 @pytest.fixture(name="query_object2")
-def query_object2_fixture(query_object1, tabular_source):
+def query_object2_fixture(tabular_source, query_object1):
     """
     Query Object 2 fixture
     """
@@ -85,6 +89,8 @@ def test_copy_global_query_graph(query_object1, query_object2):
     query_object4 = query_object2.copy(deep=True)
     query_object5 = copy.copy(query_object3)
     query_object6 = copy.deepcopy(query_object4)
+    check_graph_state(query_object1.graph, global_graph)
+    check_graph_state(query_object2.graph, global_graph)
     check_graph_state(query_object3.graph, global_graph)
     check_graph_state(query_object4.graph, global_graph)
     check_graph_state(query_object5.graph, global_graph)
