@@ -1,5 +1,5 @@
 """
-Tests for Event Datas route
+Tests for EventData routes
 """
 import datetime
 import json
@@ -15,15 +15,58 @@ from featurebyte.persistent.git import GitDB
 
 
 @pytest.fixture(name="event_data_model_dict")
-def event_data_model_dict_fixture(event_data_model_dict):
-    """
-    EventData dict object
-    """
-    event_data_model_dict = json.loads(EventDataModel(**event_data_model_dict).json(by_alias=True))
-    event_data_model_dict["name"] = "订单表"
-    event_data_model_dict.pop("created_at")
-    event_data_model_dict.pop("updated_at")
-    return event_data_model_dict
+def event_data_model_dict_fixture():
+    """Fixture for a Event Data dict"""
+    event_data_dict = {
+        "name": "订单表",
+        "tabular_source": (
+            {
+                "type": "snowflake",
+                "details": {
+                    "account": "account",
+                    "warehouse": "warehouse",
+                    "database": "database",
+                    "sf_schema": "schema",
+                },
+            },
+            {
+                "database_name": "database",
+                "schema_name": "schema",
+                "table_name": "table",
+            },
+        ),
+        "event_timestamp_column": "event_date",
+        "record_creation_date_column": "created_at",
+        "column_entity_map": None,
+        "default_feature_job_setting": {
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
+        "history": [
+            {
+                "created_at": datetime.datetime(2022, 4, 1),
+                "setting": {
+                    "blind_spot": "10m",
+                    "frequency": "30m",
+                    "time_modulo_frequency": "5m",
+                },
+            },
+            {
+                "created_at": datetime.datetime(2022, 2, 1),
+                "setting": {
+                    "blind_spot": "10m",
+                    "frequency": "30m",
+                    "time_modulo_frequency": "5m",
+                },
+            },
+        ],
+        "status": "PUBLISHED",
+    }
+    output = EventDataModel(**event_data_dict).json_dict()
+    assert output.pop("created_at") is None
+    assert output.pop("updated_at") is None
+    return output
 
 
 @pytest.fixture(name="event_data_update_dict")
