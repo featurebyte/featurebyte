@@ -114,7 +114,7 @@ tm_update_feature_list_registry = Template(
 
 tm_feature_tile_monitor = Template(
     """
-    SELECT f_t.*, t_m.TILE_START_DATE, t_m.TILE_TYPE
+    SELECT f_t.*, t_m.TILE_START_DATE, t_m.TILE_TYPE, t_m.CREATED_AT as TILE_MONITOR_DATE
     FROM
     (
         SELECT
@@ -130,7 +130,7 @@ tm_feature_tile_monitor = Template(
         FROM FEATURE_REGISTRY f, LATERAL FLATTEN(INPUT => TILE_SPECS) t
     ) f_t, TILE_MONITOR_SUMMARY t_m
     WHERE f_t.TILE_ID = t_m.TILE_ID
-    AND t_m.TILE_START_DATE >= '{{query_start_ts}}'
-    AND t_m.TILE_START_DATE <= '{{query_end_ts}}'
+    AND t_m.CREATED_AT >= '{{query_start_ts}}'
+    AND t_m.CREATED_AT <= '{{query_end_ts}}'
 """
 )
