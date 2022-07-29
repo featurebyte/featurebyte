@@ -370,7 +370,6 @@ def session_manager_fixture(config, snowflake_connector):
     """
     # pylint: disable=E1101
     _ = snowflake_connector
-    SessionManager.__getitem__.cache_clear()
     yield SessionManager(credentials=config.credentials)
 
 
