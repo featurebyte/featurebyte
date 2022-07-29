@@ -10,9 +10,9 @@ import json
 from cachetools import TTLCache, cached
 from pydantic import BaseModel
 
-from featurebyte.config import Credential
 from featurebyte.enum import SourceType
 from featurebyte.logger import logger
+from featurebyte.models.credential import Credential
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
