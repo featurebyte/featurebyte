@@ -19,7 +19,10 @@ def float_feature_dict_fixture(float_feature):
     """
     Serialize float feature in dictionary format
     """
+    # before serialization, global query graph is used
+    assert isinstance(float_feature.graph, GlobalQueryGraph)
     feat_dict = float_feature.dict()
+
     # after serialization, pruned query graph is used
     assert set(feat_dict["graph"]["nodes"]) == {"input_1", "groupby_1", "project_1"}
     assert feat_dict["graph"]["edges"] == {"input_1": ["groupby_1"], "groupby_1": ["project_1"]}

@@ -289,10 +289,12 @@ def test_event_data__info__not_saved_event_data(snowflake_feature_store, snowfla
     output = snowflake_event_data.info()
     assert output == {
         "id": snowflake_event_data.id,
+        "user_id": None,
         "name": "sf_event_data",
         "record_creation_date_column": "col_text",
         "column_entity_map": None,
         "created_at": None,
+        "updated_at": None,
         "default_feature_job_setting": None,
         "event_timestamp_column": "col_int",
         "history": [],
@@ -305,8 +307,6 @@ def test_event_data__info__not_saved_event_data(snowflake_feature_store, snowfla
                 "table_name": "sf_table",
             },
         ),
-        "updated_at": None,
-        "user_id": None,
     }
     feature_store_id, _ = snowflake_event_data.tabular_source
     assert isinstance(feature_store_id, ObjectId)
@@ -341,10 +341,12 @@ def test_event_data__info__saved_event_data(snowflake_feature_store, saved_event
         == saved_event_data_dict
         == {
             "id": saved_event_data.id,
+            "user_id": None,
             "name": "sf_event_data",
             "record_creation_date_column": "created_at",
             "column_entity_map": None,
             "created_at": saved_event_data.created_at,
+            "updated_at": None,
             "default_feature_job_setting": None,
             "event_timestamp_column": "event_timestamp",
             "history": [],
@@ -357,8 +359,6 @@ def test_event_data__info__saved_event_data(snowflake_feature_store, saved_event
                     "table_name": "sf_table",
                 },
             ),
-            "updated_at": None,
-            "user_id": None,
         }
     )
     feature_store_id, _ = saved_event_data.tabular_source
