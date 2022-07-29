@@ -1,5 +1,6 @@
 {
   "channel": "${AUTHOR_ID}",
+  "text": "Workflow FAIL ${GITHUB_WORKFLOW} for ${GITHUB_REPOSITORY}",
   "blocks": [
     {
       "type": "section",
