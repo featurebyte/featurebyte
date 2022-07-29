@@ -81,5 +81,5 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
     user_id: Optional[PydanticObjectId] = Field(default=None, allow_mutation=False)
     name: Optional[StrictStr]
-    created_at: Optional[datetime] = Field(default=None)
-    updated_at: Optional[datetime] = Field(default=None)
+    created_at: Optional[datetime] = Field(default=None, allow_mutation=False)
+    updated_at: Optional[datetime] = Field(default=None, allow_mutation=False)

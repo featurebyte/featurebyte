@@ -330,7 +330,7 @@ class GlobalQueryGraph(QueryGraph):
 
     def __deepcopy__(self, *args: Any, **kwargs: Any) -> GlobalQueryGraph:
         # under no circumstances we should allow making deep copy on GlobalQueryGraph object
-        logger.warning(
+        logger.debug(
             "Attempted to make a deepcopy on GlobalQueryGraph object, shallow copy returned."
         )
         return copy.copy(self)
