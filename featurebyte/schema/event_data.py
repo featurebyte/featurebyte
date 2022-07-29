@@ -1,14 +1,14 @@
 """
 EventData API payload schema
 """
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from beanie import PydanticObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
-from featurebyte.models.feature_store import FeatureStoreIdentifier, TableDetails
+from featurebyte.models.feature_store import TabularSource
 from featurebyte.routes.common.schema import PaginationMixin
 
 
@@ -19,7 +19,7 @@ class EventDataCreate(FeatureByteBaseModel):
 
     id: PydanticObjectId = Field(alias="_id")
     name: StrictStr
-    tabular_source: Tuple[FeatureStoreIdentifier, TableDetails]
+    tabular_source: TabularSource
     event_timestamp_column: StrictStr
     column_entity_map: Optional[Dict[StrictStr, str]] = Field(default=None)
     record_creation_date_column: Optional[StrictStr]
