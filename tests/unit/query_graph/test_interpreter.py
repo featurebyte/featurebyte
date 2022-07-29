@@ -33,7 +33,7 @@ def node_input_fixture(graph):
             "schema_name": "public",
             "table_name": "event_table",
         },
-        "database_source": {
+        "feature_store": {
             "type": "snowflake",
             "details": {
                 "database": "db",
@@ -226,7 +226,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
     info_dict = asdict(info)
     info_dict.pop("sql")
     assert info_dict == {
-        "tile_table_id": "avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+        "tile_table_id": "avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
         "columns": [InternalName.TILE_START_DATE.value, "cust_id", "sum_value", "count_value"],
         "time_modulo_frequency": 1800,
         "entity_columns": ["cust_id"],
@@ -297,7 +297,7 @@ def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
     ).strip()
     assert sql == expected_sql
     assert info_dict == {
-        "tile_table_id": "avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+        "tile_table_id": "avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
         "columns": [InternalName.TILE_START_DATE.value, "cust_id", "sum_value", "count_value"],
         "time_modulo_frequency": 1800,
         "entity_columns": ["cust_id"],
@@ -356,7 +356,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     ).strip()
     assert sql == expected_sql
     assert info_dict == {
-        "tile_table_id": "avg_f3600_m1800_b900_8c9dd5af3427568b4cddd3244d1461b16011b34d",
+        "tile_table_id": "avg_f3600_m1800_b900_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2",
         "columns": [InternalName.TILE_START_DATE.value, "cust_id", "sum_value", "count_value"],
         "time_modulo_frequency": 1800,
         "entity_columns": ["cust_id"],
@@ -381,7 +381,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
     info_dict = asdict(info)
     sql = info_dict.pop("sql")
     assert info_dict == {
-        "tile_table_id": "avg_f3600_m1800_b900_588d3ccc5cb315d92899138db4670ae954d01b89",
+        "tile_table_id": "avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
         "columns": ["__FB_TILE_START_DATE_COLUMN", "cust_id", "sum_value", "count_value"],
         "entity_columns": ["cust_id"],
         "tile_value_columns": ["sum_value", "count_value"],
@@ -440,7 +440,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
     info_dict = asdict(info)
     sql = info_dict.pop("sql")
     assert info_dict == {
-        "tile_table_id": "sum_f3600_m1800_b900_650c6aa57569a2e01436fbf89014df6d17a21be7",
+        "tile_table_id": "sum_f3600_m1800_b900_1a10fa8ac42309f34d1cf11eb15ed0e65e120de1",
         "columns": ["__FB_TILE_START_DATE_COLUMN", "biz_id", "value"],
         "entity_columns": ["biz_id"],
         "tile_value_columns": ["value"],
@@ -506,7 +506,7 @@ def test_graph_interpreter_snowflake(graph):
                 "schema_name": "PUBLIC",
                 "table_name": "BROWSING_TS",
             },
-            "database_source": {
+            "feature_store": {
                 "type": "snowflake",
                 "details": {
                     "database": "FB_SIMULATE",
