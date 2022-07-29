@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pymongo
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
@@ -24,8 +25,8 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("persistent", ["gitdb", "mongodb"], indirect=True)
 
 
-@pytest.fixture(name="persistent")
-def persistent_fixture(request):
+@pytest_asyncio.fixture(name="persistent")
+async def persistent_fixture(request):
     """
     Persistent fixture
     """
@@ -49,7 +50,7 @@ def persistent_fixture(request):
             }
             for collection_name, create_index_param_list in collection_index_map.items():
                 for param, param_kwargs in create_index_param_list:
-                    database[collection_name].create_index(param, **param_kwargs)
+                    await database[collection_name].create_index(param, **param_kwargs)
             yield persistent
 
     if request.param == "gitdb":

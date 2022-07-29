@@ -683,7 +683,7 @@ class GitDB(Persistent):
         return self._collection_to_doc_name_func_map.get(collection, self.default_doc_name_func)
 
     @_sync_push
-    async def insert_one(self, collection_name: str, document: Document) -> ObjectId:
+    async def _insert_one(self, collection_name: str, document: Document) -> ObjectId:
         """
         Insert record into collection
 
@@ -707,7 +707,7 @@ class GitDB(Persistent):
         )
 
     @_sync_push
-    async def insert_many(
+    async def _insert_many(
         self, collection_name: str, documents: Iterable[Document]
     ) -> List[ObjectId]:
         """
@@ -737,7 +737,9 @@ class GitDB(Persistent):
             )
         return doc_ids
 
-    async def find_one(self, collection_name: str, query_filter: QueryFilter) -> Optional[Document]:
+    async def _find_one(
+        self, collection_name: str, query_filter: QueryFilter
+    ) -> Optional[Document]:
         """
         Find one record from collection
 
@@ -761,7 +763,7 @@ class GitDB(Persistent):
             return None
         return docs[0]
 
-    async def find(
+    async def _find(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -813,7 +815,7 @@ class GitDB(Persistent):
         return docs, total
 
     @_sync_push
-    async def update_one(
+    async def _update_one(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -844,7 +846,7 @@ class GitDB(Persistent):
         )
 
     @_sync_push
-    async def update_many(
+    async def _update_many(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -872,7 +874,7 @@ class GitDB(Persistent):
         )
 
     @_sync_push
-    async def replace_one(
+    async def _replace_one(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -903,7 +905,7 @@ class GitDB(Persistent):
         )
 
     @_sync_push
-    async def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
+    async def _delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete one record from collection
 
@@ -926,7 +928,7 @@ class GitDB(Persistent):
         )
 
     @_sync_push
-    async def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
+    async def _delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete many records from collection
 

@@ -63,3 +63,26 @@ async def test_start_transaction__exception_within_transaction(mongo_persistent)
     # check no record written to the mongodb
     output = list(database[col].find({}, {"_id": False}))
     assert not output
+
+
+@pytest.mark.skipif(
+    os.getenv("MONGO_CONNECTION") is None, reason="MongoDB connection is not available."
+)
+@pytest.mark.asyncio
+async def test_crud(mongo_persistent):
+    """
+    Test start_transaction context manager
+    """
+    persistent, database = mongo_persistent
+    col = "test_col"
+
+    id1 = await persistent.insert_one(collection_name=col, document={"key1": "value1"})
+    id2 = await persistent.insert_one(collection_name=col, document={"key2": "value2"})
+
+    # check both records written to the mongodb
+    records, total = await persistent.find(collection_name=col, query_filter={})
+    assert total == 2
+    records[0].pop("created_at")
+    assert records[0] == {"_id": id1, "key1": "value1"}
+    records[1].pop("created_at")
+    assert records[1] == {"_id": id2, "key2": "value2"}

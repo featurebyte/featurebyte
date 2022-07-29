@@ -131,6 +131,7 @@ def test_get_entity():
     region_entity.save()
 
     # load the entities from the persistent
-    assert Entity.get("customer") == cust_entity
-    assert Entity.get("product") == prod_entity
-    assert Entity.get("region") == region_entity
+    excluded = {"created_at": True, "updated_at": True}
+    assert Entity.get("customer").dict(exclude=excluded) == cust_entity.dict(exclude=excluded)
+    assert Entity.get("product").dict(exclude=excluded) == prod_entity.dict(exclude=excluded)
+    assert Entity.get("region").dict(exclude=excluded) == region_entity.dict(exclude=excluded)

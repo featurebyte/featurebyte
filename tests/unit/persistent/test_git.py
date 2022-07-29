@@ -239,18 +239,20 @@ async def test_replace_one(git_persistent, test_documents):
     """
     persistent, repo = git_persistent
     await persistent.insert_many(collection_name="data", documents=test_documents)
+
+    before, _ = await persistent.find(collection_name="data", query_filter={})
+
     result = await persistent.replace_one(
         collection_name="data", query_filter={}, replacement={"name": "apple"}
     )
-
     assert result == 1
-    results, total = await persistent.find(collection_name="data", query_filter={})
+    after, total = await persistent.find(collection_name="data", query_filter={})
 
     # only first document should be updated
     assert total == 3
-    assert results[0] == {"_id": test_documents[0]["_id"], "name": "apple"}
-    assert results[1] == test_documents[1]
-    assert results[2] == test_documents[2]
+    assert after[0]["name"] == "apple"
+    assert after[1] == before[1]
+    assert after[2] == before[2]
 
     # check commit messages
     assert _get_commit_messages(repo, max_count=10) == [
@@ -280,7 +282,6 @@ async def test_update_name_to_existing(git_persistent, test_documents):
 @pytest.mark.parametrize(
     "update,valid",
     [
-        ({}, False),
         ({"$set": {"name": "Object 1"}}, True),
         ({"$set": "not a dict"}, False),
         ({"key is not $set": {"name": "Object 1"}}, False),
@@ -297,7 +298,7 @@ async def test_update_values(git_persistent, test_document, update, valid):
     Test update values validation
     """
     persistent, _ = git_persistent
-    persistent.insert_one(collection_name="data", document=test_document)
+    await persistent.insert_one(collection_name="data", document=test_document)
 
     async def run_update():
         await persistent.update_one(collection_name="data", query_filter={}, update=update)

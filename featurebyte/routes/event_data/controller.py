@@ -11,10 +11,14 @@ from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.enum import CollectionName
-from featurebyte.models.event_data import EventDataStatus, FeatureJobSettingHistoryEntry
+from featurebyte.models.event_data import (
+    EventDataModel,
+    EventDataStatus,
+    FeatureJobSettingHistoryEntry,
+)
 from featurebyte.persistent import DuplicateDocumentError, Persistent
 from featurebyte.routes.common.util import get_utc_now
-from featurebyte.schema.event_data import EventData, EventDataCreate, EventDataList, EventDataUpdate
+from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
 
 
 class EventDataController:
@@ -30,7 +34,7 @@ class EventDataController:
         user: Any,
         persistent: Persistent,
         data: EventDataCreate,
-    ) -> EventData:
+    ) -> EventDataModel:
         """
         Create Event Data at persistent
 
@@ -45,7 +49,7 @@ class EventDataController:
 
         Returns
         -------
-        EventData
+        EventDataModel
             Newly created event data object
 
         Raises
@@ -67,9 +71,8 @@ class EventDataController:
         else:
             history = []
 
-        document = EventData(
+        document = EventDataModel(
             user_id=user.id,
-            created_at=utc_now,
             status=EventDataStatus.DRAFT,
             history=history,
             **data.dict(by_alias=True),
@@ -86,7 +89,11 @@ class EventDataController:
                 detail=f'EventData (event_data.name: "{data.name}") already exists.',
             ) from exc
 
-        return document
+        return await cls.retrieve_event_data(
+            user=user,
+            persistent=persistent,
+            event_data_id=insert_id,
+        )
 
     @classmethod
     async def list_event_datas(
@@ -162,7 +169,7 @@ class EventDataController:
         user: Any,
         persistent: Persistent,
         event_data_id: ObjectId,
-    ) -> EventData:
+    ) -> EventDataModel:
         """
         Retrieve Event Data given event data identifier (GitDB or MongoDB)
 
@@ -177,7 +184,7 @@ class EventDataController:
 
         Returns
         -------
-        EventData
+        EventDataModel
             EventData object which matches given event data id
 
         Raises
@@ -197,7 +204,7 @@ class EventDataController:
                     f"Please save the EventData object first."
                 ),
             )
-        return EventData(**event_data)
+        return EventDataModel(**event_data)
 
     @classmethod
     async def update_event_data(
@@ -206,7 +213,7 @@ class EventDataController:
         persistent: Persistent,
         event_data_id: ObjectId,
         data: EventDataUpdate,
-    ) -> EventData:
+    ) -> EventDataModel:
         """
         Update EventData (for example, to update scheduled task) at persistent (GitDB or MongoDB)
 
@@ -223,29 +230,22 @@ class EventDataController:
 
         Returns
         -------
-        EventData
+        EventDataModel
             EventData object with updated attribute(s)
 
         Raises
         ------
-        not_found_exception
-            If the event data not found
         HTTPException
             Invalid event data status transition
         """
         query_filter = {"_id": ObjectId(event_data_id), "user_id": user.id}
-        event_data = await persistent.find_one(
-            collection_name=cls.collection_name, query_filter=query_filter
-        )
-        not_found_exception = HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail=(
-                f'EventData (event_data.id: "{event_data_id}") not found! '
-                f"Please save the EventData object first."
-            ),
-        )
-        if not event_data:
-            raise not_found_exception
+        event_data = (
+            await cls.retrieve_event_data(
+                user=user,
+                persistent=persistent,
+                event_data_id=event_data_id,
+            )
+        ).dict(by_alias=True)
 
         # prepare update payload
         update_payload = data.dict()
@@ -280,17 +280,14 @@ class EventDataController:
         else:
             update_payload.pop("status")
 
-        updated_cnt = await persistent.update_one(
+        await persistent.update_one(
             collection_name=cls.collection_name,
             query_filter=query_filter,
             update={"$set": update_payload},
         )
-        if not updated_cnt:
-            raise not_found_exception
 
-        event_data = await persistent.find_one(
-            collection_name=cls.collection_name, query_filter=query_filter
+        return await cls.retrieve_event_data(
+            user=user,
+            persistent=persistent,
+            event_data_id=event_data_id,
         )
-        if event_data is None:
-            raise not_found_exception
-        return EventData(**event_data)

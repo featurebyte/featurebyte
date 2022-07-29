@@ -42,7 +42,7 @@ class MongoDB(Persistent):
         self._db = self._client[self._database]
         self._session: Any = None
 
-    async def insert_one(self, collection_name: str, document: Document) -> ObjectId:
+    async def _insert_one(self, collection_name: str, document: Document) -> ObjectId:
         """
         Insert record into collection
 
@@ -71,7 +71,7 @@ class MongoDB(Persistent):
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
 
-    async def insert_many(
+    async def _insert_many(
         self, collection_name: str, documents: Iterable[Document]
     ) -> List[ObjectId]:
         """
@@ -102,7 +102,9 @@ class MongoDB(Persistent):
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
 
-    async def find_one(self, collection_name: str, query_filter: QueryFilter) -> Optional[Document]:
+    async def _find_one(
+        self, collection_name: str, query_filter: QueryFilter
+    ) -> Optional[Document]:
         """
         Find one record from collection
 
@@ -121,7 +123,7 @@ class MongoDB(Persistent):
         result: Optional[Document] = await self._db[collection_name].find_one(query_filter)
         return result
 
-    async def find(
+    async def _find(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -165,10 +167,10 @@ class MongoDB(Persistent):
             skips = page_size * (page - 1)
             cursor = cursor.skip(skips).limit(page_size)
 
-        result: List[Document] = await cursor.to_list()
+        result: List[Document] = await cursor.to_list(total)
         return result, total
 
-    async def update_one(
+    async def _update_one(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -196,7 +198,7 @@ class MongoDB(Persistent):
         )
         return result.modified_count
 
-    async def update_many(
+    async def _update_many(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -224,7 +226,7 @@ class MongoDB(Persistent):
         )
         return result.modified_count
 
-    async def replace_one(
+    async def _replace_one(
         self,
         collection_name: str,
         query_filter: QueryFilter,
@@ -252,7 +254,7 @@ class MongoDB(Persistent):
         )
         return result.modified_count
 
-    async def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
+    async def _delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete one record from collection
 
@@ -273,7 +275,7 @@ class MongoDB(Persistent):
         )
         return result.deleted_count
 
-    async def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
+    async def _delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
         """
         Delete many records from collection
 

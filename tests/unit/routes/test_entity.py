@@ -146,6 +146,7 @@ def test_get_200(create_success_response, test_api_client_persistent):
     response = test_api_client.get(f"/entity/{entity_id}")
     response_data = response.json()
     response_data.pop("created_at")
+    response_data.pop("updated_at")
     assert response_data == {
         "_id": entity_id,
         "name": "customer",
@@ -185,7 +186,7 @@ def test_update_200(create_success_response, test_api_client_persistent):
     assert result["name"] == "Customer"
     assert result["name_history"] == [{"created_at": "2022-07-01T00:00:00", "name": "customer"}]
     for key in result.keys():
-        if key not in {"name", "name_history"}:
+        if key not in {"name", "name_history", "updated_at"}:
             assert result[key] == response_dict[key]
 
     # test special case when the name is the same, should not update name history

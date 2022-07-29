@@ -22,6 +22,7 @@ def event_data_model_dict_fixture(event_data_model_dict):
     event_data_model_dict = json.loads(EventDataModel(**event_data_model_dict).json(by_alias=True))
     event_data_model_dict["name"] = "订单表"
     event_data_model_dict.pop("created_at")
+    event_data_model_dict.pop("updated_at")
     return event_data_model_dict
 
 
@@ -59,7 +60,7 @@ def test_create_success(event_data_response, event_data_model_dict):
     assert event_data_response.status_code == HTTPStatus.CREATED
     result = event_data_response.json()
     assert datetime.datetime.fromisoformat(result.pop("created_at")) < utcnow
-    assert result.pop("user_id") is None
+    assert result.pop("updated_at") is None
     # history should contain the initial entry
     event_data_model_dict.pop("history")
     history = result.pop("history")
@@ -158,9 +159,9 @@ def test_list(inserted_event_data_ids, test_api_client_persistent, event_data_mo
     data = results["data"][0]
     assert data["_id"] == inserted_event_data_ids[-1]
     data.pop("created_at")
+    data.pop("updated_at")
 
     # should include the static user id
-    assert data.pop("user_id") is None
     assert data.pop("history")[0]["setting"] == event_data_model_dict["default_feature_job_setting"]
     event_data_model_dict.pop("history")
     event_data_model_dict["status"] = EventDataStatus.DRAFT
@@ -191,8 +192,8 @@ def test_retrieve_success(test_api_client_persistent, event_data_model_dict, eve
     assert response.status_code == HTTPStatus.OK
     data = response.json()
     data.pop("created_at")
+    data.pop("updated_at")
     # should include the static user id
-    assert data.pop("user_id") is None
     assert data.pop("history")[0]["setting"] == event_data_model_dict["default_feature_job_setting"]
     event_data_model_dict.pop("history")
     event_data_model_dict["status"] = EventDataStatus.DRAFT
@@ -229,7 +230,7 @@ def test_update_success(
     update_response_dict = response.json()
     assert update_response_dict["_id"] == insert_id
     update_response_dict.pop("created_at")
-    assert update_response_dict.pop("user_id") is None
+    update_response_dict.pop("updated_at")
 
     # default_feature_job_setting should be updated
     assert (
@@ -286,7 +287,7 @@ def test_update_excludes_unsupported_fields(
     data = response.json()
     assert data["_id"] == insert_id
     data.pop("created_at")
-    assert data.pop("user_id") is None
+    data.pop("updated_at")
 
     # default_feature_job_setting should be updated
     assert (
@@ -334,12 +335,15 @@ def test_update_status_only(test_api_client_persistent, event_data_response):
     test_api_client, _ = test_api_client_persistent
     current_data = event_data_response.json()
     assert current_data.pop("status") == EventDataStatus.DRAFT
+    assert current_data.pop("updated_at") is None
 
     response = test_api_client.patch(
         f"/event_data/{current_data['_id']}", json={"status": EventDataStatus.PUBLISHED}
     )
     assert response.status_code == HTTPStatus.OK
     updated_data = response.json()
+    updated_at = datetime.datetime.fromisoformat(updated_data.pop("updated_at"))
+    assert updated_at > datetime.datetime.fromisoformat(updated_data["created_at"])
 
     # expect status to be published
     assert updated_data.pop("status") == EventDataStatus.PUBLISHED

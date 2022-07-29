@@ -70,10 +70,12 @@ def test_event_data_model(
         record_creation_date_column="created_at",
         default_feature_job_setting=feature_job_setting,
         created_at=datetime.datetime(2022, 2, 1),
+        updated_at=datetime.datetime(2022, 2, 1),
         history=feature_job_setting_history,
         status=EventDataStatus.PUBLISHED,
     )
     event_data_model_dict["id"] = event_data.id
+    event_data_model_dict["user_id"] = event_data.user_id
     assert event_data.dict() == event_data_model_dict
     event_data_json = event_data.json(by_alias=True)
     event_data_loaded = event_data.parse_raw(event_data_json)

@@ -175,17 +175,19 @@ async def test_replace_one(mongo_persistent, test_document, test_documents):
     persistent, client = mongo_persistent
     test_documents = [{**test_document, **{"_id": ObjectId()}} for _ in range(3)]
     await client["test"]["data"].insert_many(test_documents)
+
+    before = await client["test"]["data"].find({}).to_list()
     result = await persistent.replace_one(
         collection_name="data", query_filter={}, replacement={"value": 1}
     )
 
     assert result == 1
-    results = await client["test"]["data"].find({}).to_list()
+    after = await client["test"]["data"].find({}).to_list()
 
     # only first document should be updated
-    assert results[0] == {"_id": test_documents[0]["_id"], "value": 1}
-    assert results[1] == test_documents[1]
-    assert results[2] == test_documents[2]
+    assert after[0]["value"] == 1
+    assert after[1] == before[1]
+    assert after[2] == before[2]
 
 
 @pytest.mark.asyncio
