@@ -11,7 +11,7 @@ from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.exception import DuplicatedRecordException, RecordCreationException
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, Node
+from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
 @pytest.fixture(name="float_feature_dict")
@@ -20,22 +20,9 @@ def float_feature_dict_fixture(float_feature):
     Serialize float feature in dictionary format
     """
     # before serialization, global query graph is used
-    assert set(float_feature.graph.nodes) == {
-        "input_1",
-        "input_2",
-        "project_1",
-        "project_2",
-        "project_3",
-        "project_4",
-        "groupby_1",
-        "groupby_2",
-    }
-    assert float_feature.graph.edges == {
-        "input_2": ["project_1", "groupby_1", "groupby_2"],
-        "groupby_2": ["project_2", "project_3", "project_4"],
-    }
-
+    assert isinstance(float_feature.graph, GlobalQueryGraph)
     feat_dict = float_feature.dict()
+
     # after serialization, pruned query graph is used
     assert set(feat_dict["graph"]["nodes"]) == {"input_1", "groupby_1", "project_1"}
     assert feat_dict["graph"]["edges"] == {"input_1": ["groupby_1"], "groupby_1": ["project_1"]}
@@ -67,12 +54,11 @@ def test_feature__bool_series_key_scalar_value(float_feature, bool_feature):
     Test Feature conditional assignment
     """
     float_feature[bool_feature] = 10
-    assert float_feature.node == Node(
-        name="cond_assign_1",
-        type=NodeType.COND_ASSIGN,
-        parameters={"value": 10},
-        output_type=NodeOutputType.SERIES,
-    )
+    assert float_feature.node.dict(exclude={"name": True}) == {
+        "type": NodeType.COND_ASSIGN,
+        "parameters": {"value": 10},
+        "output_type": NodeOutputType.SERIES,
+    }
 
 
 def test_feature__preview_missing_point_in_time(float_feature):
@@ -109,13 +95,16 @@ def test_feature__preview_not_a_dict(float_feature):
     assert "point_in_time_and_serving_name should be a dict" in str(exc_info.value)
 
 
-def test_feature_deserialization(float_feature, float_feature_dict, snowflake_event_view):
+def test_feature_deserialization(
+    float_feature, float_feature_dict, snowflake_feature_store, snowflake_event_view
+):
     """
     Test feature deserialization
     """
     global_graph = GlobalQueryGraph()
     global_graph_dict = global_graph.dict()
     float_feature_dict["_id"] = float_feature_dict.pop("id")
+    float_feature_dict["feature_store"] = snowflake_feature_store
     deserialized_float_feature = Feature.parse_obj(float_feature_dict)
     assert deserialized_float_feature.id == float_feature.id
     assert deserialized_float_feature.name == float_feature.name
@@ -149,6 +138,7 @@ def test_feature_deserialization(float_feature, float_feature_dict, snowflake_ev
     tile_id2 = float_feature.graph.nodes["groupby_2"]["parameters"]["tile_id"]
     assert tile_id1 != tile_id2
     float_feature_dict.pop("_id")
+    float_feature_dict.pop("feature_store")
     assert float_feature_dict == same_float_feature_dict
 
 
@@ -234,15 +224,20 @@ def test_feature_name__set_name_when_unnamed(float_feature):
     new_feature = float_feature + 1234
 
     assert new_feature.name is None
-    assert new_feature.node == Node(
-        name="add_1", type="add", parameters={"value": 1234}, output_type="series"
-    )
+    assert new_feature.node.dict(exclude={"name": True}) == {
+        "type": "add",
+        "parameters": {"value": 1234},
+        "output_type": "series",
+    }
+    old_node_name = new_feature.node.name
 
     new_feature.name = "my_feature_1234"
-    assert new_feature.node == Node(
-        name="alias_1", type="alias", parameters={"name": "my_feature_1234"}, output_type="series"
-    )
-    assert new_feature.graph.backward_edges["alias_1"] == ["add_1"]
+    assert new_feature.node.dict(exclude={"name": True}) == {
+        "type": "alias",
+        "parameters": {"name": "my_feature_1234"},
+        "output_type": "series",
+    }
+    assert new_feature.graph.backward_edges[new_feature.node.name] == [old_node_name]
 
 
 def test_feature_name__set_name_invalid_from_project(float_feature):

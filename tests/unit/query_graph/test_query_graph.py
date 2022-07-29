@@ -82,14 +82,6 @@ def test_prune__redundant_assign_node_with_same_target_column_name(dataframe):
     """
     dataframe["VALUE"] = 1
     dataframe["VALUE"] = dataframe["CUST_ID"] * 10
-    assert dataframe.graph.edges == {
-        "input_1": ["assign_1", "project_1"],
-        "project_1": ["mul_1"],
-        "assign_1": ["assign_2"],
-        "mul_1": ["assign_2"],
-    }
-    assert dataframe.graph.nodes["assign_1"]["parameters"] == {"value": 1, "name": "VALUE"}
-    assert dataframe.graph.nodes["assign_2"]["parameters"] == {"name": "VALUE"}
     pruned_graph, node_name_map = dataframe.graph.prune(
         target_node=dataframe.node, target_columns={"VALUE"}
     )
@@ -110,7 +102,6 @@ def test_prune__redundant_project_nodes(dataframe):
     _ = dataframe["CUST_ID"]
     _ = dataframe["VALUE"]
     mask = dataframe["MASK"]
-    assert dataframe.graph.edges == {"input_1": ["project_1", "project_2", "project_3"]}
     pruned_graph, node_name_map = dataframe.graph.prune(target_node=mask.node, target_columns=set())
     mapped_node = pruned_graph.get_node_by_name(node_name_map[mask.node.name])
     assert pruned_graph.edges == {"input_1": ["project_1"]}
@@ -125,9 +116,6 @@ def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(datafra
     dataframe["requiredA"] = dataframe["CUST_ID"] / 10
     dataframe["requiredB"] = dataframe["VALUE"] + 10
     dataframe["target"] = dataframe["requiredA"] * dataframe["requiredB"]
-    assert dataframe.node == Node(
-        name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
-    )
     pruned_graph, node_name_map = dataframe.graph.prune(
         target_node=dataframe.node, target_columns={"target"}
     )
@@ -160,9 +148,6 @@ def test_prune__multiple_non_redundant_assign_nodes__cascading_pattern(dataframe
     dataframe["requiredA"] = dataframe["CUST_ID"] / 10
     dataframe["requiredB"] = dataframe["requiredA"] + 10
     dataframe["target"] = dataframe["requiredB"] * 10
-    assert dataframe.node == Node(
-        name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
-    )
     pruned_graph, node_name_map = dataframe.graph.prune(
         target_node=dataframe.node, target_columns={"target"}
     )
@@ -219,7 +204,7 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
     )
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     query_before_serialization = GraphInterpreter(pruned_graph).construct_preview_sql(
-        mapped_node.name
+        node_name=mapped_node.name
     )
 
     # further modify the global graph & check the global query graph are updated

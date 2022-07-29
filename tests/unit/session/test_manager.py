@@ -34,11 +34,10 @@ def session_manager_fixture(config, snowflake_connector):
 
 
 @pytest.fixture(name="sqlite_feature_store")
-def sqlite_feature_store_fixture(config, graph):
+def sqlite_feature_store_fixture(config):
     """
     SQLite database source fixture
     """
-    _ = graph
     return FeatureStore(**config.feature_stores["sq_featurestore"].dict())
 
 

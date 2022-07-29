@@ -1,7 +1,6 @@
 """
 Common test fixtures used across unit test directories
 """
-import datetime
 import json
 import tempfile
 from unittest import mock
@@ -18,15 +17,14 @@ from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.config import Configurations
-from featurebyte.core.frame import Frame
-from featurebyte.enum import CollectionName, DBVarType, InternalName
+from featurebyte.enum import CollectionName, InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.session.manager import SessionManager
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
@@ -117,21 +115,11 @@ def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
     yield
 
 
-@pytest.fixture(name="graph")
-def query_graph():
-    """
-    Empty query graph fixture
-    """
-    GlobalQueryGraphState.reset()
-    yield GlobalQueryGraph()
-
-
 @pytest.fixture(name="snowflake_feature_store")
-def snowflake_feature_store_fixture(config, graph):
+def snowflake_feature_store_fixture(config):
     """
     Snowflake database source fixture
     """
-    _ = graph
     return FeatureStore(**config.feature_stores["sf_featurestore"].dict())
 
 
@@ -238,59 +226,6 @@ def snowflake_event_data_fixture(snowflake_database_table, config):
     )
 
 
-@pytest.fixture(name="event_data_model_dict")
-def event_data_model_dict_fixture():
-    """Fixture for a Event Data dict"""
-    return {
-        "name": "my_event_data",
-        "tabular_source": (
-            {
-                "type": "snowflake",
-                "details": {
-                    "account": "account",
-                    "warehouse": "warehouse",
-                    "database": "database",
-                    "sf_schema": "schema",
-                },
-            },
-            {
-                "database_name": "database",
-                "schema_name": "schema",
-                "table_name": "table",
-            },
-        ),
-        "event_timestamp_column": "event_date",
-        "record_creation_date_column": "created_at",
-        "column_entity_map": None,
-        "default_feature_job_setting": {
-            "blind_spot": "10m",
-            "frequency": "30m",
-            "time_modulo_frequency": "5m",
-        },
-        "created_at": datetime.datetime(2022, 2, 1),
-        "updated_at": datetime.datetime(2022, 2, 1),
-        "history": [
-            {
-                "created_at": datetime.datetime(2022, 4, 1),
-                "setting": {
-                    "blind_spot": "10m",
-                    "frequency": "30m",
-                    "time_modulo_frequency": "5m",
-                },
-            },
-            {
-                "created_at": datetime.datetime(2022, 2, 1),
-                "setting": {
-                    "blind_spot": "10m",
-                    "frequency": "30m",
-                    "time_modulo_frequency": "5m",
-                },
-            },
-        ],
-        "status": "PUBLISHED",
-    }
-
-
 @pytest.fixture(name="snowflake_event_view")
 def snowflake_event_view_fixture(snowflake_event_data, config):
     """
@@ -331,8 +266,8 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
             },
         },
         output_type=NodeOutputType.FRAME,
-    )
-    assert event_view.inception_node == expected_inception_node
+    ).dict(exclude={"name": True})
+    assert event_view.inception_node.dict(exclude={"name": True}) == expected_inception_node
     assert event_view.protected_columns == {"event_timestamp"}
     assert event_view.inherited_columns == {"event_timestamp"}
     assert event_view.timestamp_column == "event_timestamp"
@@ -426,50 +361,6 @@ def agg_per_category_feature_fixture(snowflake_event_view):
         feature_names=["sum_30m", "sum_2h", "sum_1d"],
     )
     yield features["sum_1d"]
-
-
-@pytest.fixture(name="dataframe")
-def dataframe_fixture(graph, snowflake_feature_store):
-    """
-    Frame test fixture
-    """
-    column_var_type_map = {
-        "CUST_ID": DBVarType.INT,
-        "PRODUCT_ACTION": DBVarType.VARCHAR,
-        "VALUE": DBVarType.FLOAT,
-        "MASK": DBVarType.BOOL,
-    }
-    node = graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "columns": list(column_var_type_map.keys()),
-            "timestamp": "VALUE",
-            "dbtable": {
-                "database_name": "db",
-                "schema_name": "public",
-                "table_name": "transaction",
-            },
-            "feature_store": {
-                "type": "snowflake",
-                "details": {
-                    "database": "db",
-                    "sf_schema": "public",
-                },
-            },
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[],
-    )
-    yield Frame(
-        tabular_source=(
-            snowflake_feature_store,
-            {"database_name": "db", "schema_name": "public", "table_name": "some_table_name"},
-        ),
-        node=node,
-        column_var_type_map=column_var_type_map,
-        column_lineage_map={col: (node.name,) for col in column_var_type_map},
-        row_index_lineage=(node.name,),
-    )
 
 
 @pytest.fixture(name="session_manager")

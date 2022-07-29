@@ -10,7 +10,6 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import Node
 
 
 @pytest.fixture(name="snowflake_event_view")
@@ -57,15 +56,14 @@ def test_getitem__str(snowflake_event_view):
     """
     cust_id = snowflake_event_view["cust_id"]
     assert isinstance(cust_id, Series)
-    assert cust_id.node == Node(
-        name="project_1",
-        type=NodeType.PROJECT,
-        parameters={"columns": ["cust_id"]},
-        output_type=NodeOutputType.SERIES,
-    )
-    assert cust_id.lineage == ("input_2", "project_1")
-    assert cust_id.row_index_lineage == ("input_2",)
-    assert cust_id.parent.node.name == "input_2"
+    assert cust_id.node.dict(exclude={"name": True}) == {
+        "type": NodeType.PROJECT,
+        "parameters": {"columns": ["cust_id"]},
+        "output_type": NodeOutputType.SERIES,
+    }
+    assert cust_id.lineage == (snowflake_event_view.node.name, cust_id.node.name)
+    assert cust_id.row_index_lineage == (snowflake_event_view.node.name,)
+    assert cust_id.parent.node == snowflake_event_view.node
 
 
 def test_getitem__list_of_str(snowflake_event_view):
@@ -113,7 +111,9 @@ def test_getitem__series_key(snowflake_event_view):
 
     event_view_row_subset = snowflake_event_view[mask_cust_id]
     assert isinstance(event_view_row_subset, EventView)
-    assert event_view_row_subset.row_index_lineage == ("input_2", "filter_1")
+    assert event_view_row_subset.row_index_lineage == (
+        snowflake_event_view.row_index_lineage + (event_view_row_subset.node.name,)
+    )
     assert event_view_row_subset.inception_node == snowflake_event_view.inception_node
     assert (
         event_view_row_subset.default_feature_job_setting
@@ -137,26 +137,26 @@ def test_setitem__str_key_series_value(snowflake_event_view):
     """
     Test assigning Series object to event_view
     """
+    source_node_name = snowflake_event_view.node.name
     double_value = snowflake_event_view["col_float"] * 2
     assert isinstance(double_value, Series)
     snowflake_event_view["double_value"] = double_value
-    assert snowflake_event_view.node == Node(
-        name="assign_1",
-        type=NodeType.ASSIGN,
-        parameters={"name": "double_value"},
-        output_type=NodeOutputType.FRAME,
-    )
+    assert snowflake_event_view.node.dict(exclude={"name": True}) == {
+        "type": NodeType.ASSIGN,
+        "parameters": {"name": "double_value"},
+        "output_type": NodeOutputType.FRAME,
+    }
     assert snowflake_event_view.column_lineage_map == {
-        "col_binary": ("input_2",),
-        "col_boolean": ("input_2",),
-        "col_char": ("input_2",),
-        "col_float": ("input_2",),
-        "col_int": ("input_2",),
-        "col_text": ("input_2",),
-        "event_timestamp": ("input_2",),
-        "created_at": ("input_2",),
-        "cust_id": ("input_2",),
-        "double_value": ("assign_1",),
+        "col_binary": (source_node_name,),
+        "col_boolean": (source_node_name,),
+        "col_char": (source_node_name,),
+        "col_float": (source_node_name,),
+        "col_int": (source_node_name,),
+        "col_text": (source_node_name,),
+        "event_timestamp": (source_node_name,),
+        "created_at": (source_node_name,),
+        "cust_id": (source_node_name,),
+        "double_value": (snowflake_event_view.node.name,),
     }
 
 

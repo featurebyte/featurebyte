@@ -54,7 +54,10 @@ def test_constructor__wrong_input_type(snowflake_event_view):
 
     with pytest.raises(TypeError) as exc:
         EventViewGroupBy(snowflake_event_view, True)
-    expected_msg = 'Grouping EventView(node.name=input_2, timestamp_column=event_timestamp) by "True" is not supported!'
+    expected_msg = (
+        f"Grouping EventView(node.name={snowflake_event_view.node.name}, timestamp_column=event_timestamp) "
+        f'by "True" is not supported!'
+    )
     assert expected_msg in str(exc.value)
 
 
