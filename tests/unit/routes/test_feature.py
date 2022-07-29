@@ -343,9 +343,9 @@ def get_credential_fixture(config):
     get_credential fixture
     """
 
-    def get_credential(user_id, db_source_name):
+    def get_credential(user_id, feature_store_name):
         _ = user_id
-        return config.credentials.get(db_source_name)
+        return config.credentials.get(feature_store_name)
 
     return get_credential
 

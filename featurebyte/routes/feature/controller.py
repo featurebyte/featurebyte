@@ -173,7 +173,7 @@ class FeatureController:
             db_session = feature_store.get_session(
                 credentials={
                     feature_store.name: get_credential(
-                        user_id=user.id, db_source_name=feature_store.name
+                        user_id=user.id, feature_store_name=feature_store.name
                     )
                 }
             )
