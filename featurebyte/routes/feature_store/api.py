@@ -9,34 +9,35 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
-from featurebyte.schema.feature_store import FeatureStore, FeatureStoreCreate, FeatureStoreList
+from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreList
 
 router = APIRouter(prefix="/feature_store")
 
 
-@router.post("", response_model=FeatureStore, status_code=HTTPStatus.CREATED)
+@router.post("", response_model=FeatureStoreModel, status_code=HTTPStatus.CREATED)
 async def create_feature_store(
     request: Request,
     data: FeatureStoreCreate,
-) -> FeatureStore:
+) -> FeatureStoreModel:
     """
     Create Feature Store
     """
-    feature_store: FeatureStore = await request.state.controller.create_feature_store(
+    feature_store: FeatureStoreModel = await request.state.controller.create_feature_store(
         user=request.state.user, persistent=request.state.persistent, data=data
     )
     return feature_store
 
 
-@router.get("/{feature_store_id}", response_model=FeatureStore)
+@router.get("/{feature_store_id}", response_model=FeatureStoreModel)
 async def get_feature_store(
     request: Request,
     feature_store_id: str,
-) -> FeatureStore:
+) -> FeatureStoreModel:
     """
     Retrieve Feature Store
     """
-    feature_store: FeatureStore = await request.state.controller.get_feature_store(
+    feature_store: FeatureStoreModel = await request.state.controller.get_feature_store(
         user=request.state.user,
         persistent=request.state.persistent,
         feature_store_id=feature_store_id,

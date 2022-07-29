@@ -1,7 +1,7 @@
 """
 FeatureStore API payload schema
 """
-from typing import List, Optional
+from typing import List
 
 from beanie import PydanticObjectId
 from pydantic import Field, StrictStr
@@ -10,14 +10,6 @@ from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel
 from featurebyte.routes.common.schema import PaginationMixin
-
-
-class FeatureStore(FeatureStoreModel):
-    """
-    Feature Store Document Model
-    """
-
-    user_id: Optional[PydanticObjectId]
 
 
 class FeatureStoreCreate(FeatureByteBaseModel):
@@ -36,4 +28,4 @@ class FeatureStoreList(PaginationMixin):
     Paginated list of FeatureStore
     """
 
-    data: List[FeatureStore]
+    data: List[FeatureStoreModel]

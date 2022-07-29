@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from featurebyte.enum import CollectionName
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.util import get_utc_now
-from featurebyte.schema.feature_store import FeatureStore, FeatureStoreCreate, FeatureStoreList
+from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreList, FeatureStoreModel
 
 
 class FeatureStoreController:
@@ -29,7 +29,7 @@ class FeatureStoreController:
         user: Any,
         persistent: Persistent,
         data: FeatureStoreCreate,
-    ) -> FeatureStore:
+    ) -> FeatureStoreModel:
         """
         Create Feature Store at persistent
 
@@ -44,7 +44,7 @@ class FeatureStoreController:
 
         Returns
         -------
-        FeatureStore
+        FeatureStoreModel
             Newly created feature store object
 
         Raises
@@ -53,7 +53,7 @@ class FeatureStoreController:
             If the feature store name conflicts with existing feature store name
         """
 
-        document = FeatureStore(
+        document = FeatureStoreModel(
             **data.dict(by_alias=True),
             user_id=user.id,
             created_at=get_utc_now(),
@@ -96,7 +96,7 @@ class FeatureStoreController:
         user: Any,
         persistent: Persistent,
         feature_store_id: ObjectId,
-    ) -> FeatureStore:
+    ) -> FeatureStoreModel:
         """
         Retrieve feature store given feature store identifier (GitDB or MongoDB)
 
@@ -111,7 +111,7 @@ class FeatureStoreController:
 
         Returns
         -------
-        FeatureStore
+        FeatureStoreModel
             FeatureStore object which matches given feature store id
 
         Raises
@@ -128,7 +128,7 @@ class FeatureStoreController:
                 status_code=HTTPStatus.NOT_FOUND,
                 detail=f'FeatureStore (feature_store.id: "{feature_store_id}") not found!',
             )
-        return FeatureStore(**feature_store)
+        return FeatureStoreModel(**feature_store)
 
     @classmethod
     async def list_feature_stores(
