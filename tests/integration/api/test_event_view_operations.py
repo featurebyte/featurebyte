@@ -14,12 +14,13 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureReadiness
 
 
-def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_data, config):
+def test_query_object_operation_on_sqlite_source(
+    sqlite_session, transaction_data, config, sqlite_feature_store
+):
     """
     Test loading event view from sqlite source
     """
     _ = sqlite_session
-    sqlite_feature_store = FeatureStore(**config.feature_stores["sqlite_datasource"].dict())
     assert sqlite_feature_store.list_tables(credentials=config.credentials) == ["test_table"]
 
     sqlite_database_table = sqlite_feature_store.get_table(
@@ -79,7 +80,9 @@ def check_feature_and_remove_registry(feature, feature_manager):
     Check feature properties & registry values
     """
     assert feature.readiness == FeatureReadiness.DRAFT
-    extended_feature_model = ExtendedFeatureModel(**feature.dict(by_alias=True))
+    extended_feature_model = ExtendedFeatureModel(
+        **feature.dict(by_alias=True), feature_store=feature.feature_store
+    )
     feat_reg_df = feature_manager.retrieve_feature_registries(extended_feature_model)
     assert len(feat_reg_df) == 1
     assert feat_reg_df.iloc[0]["NAME"] == feature.name

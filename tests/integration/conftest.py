@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import yaml
-from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 
 from featurebyte.api.entity import Entity
@@ -29,6 +28,7 @@ from featurebyte.models.feature import (
     FeatureModel,
     FeatureReadiness,
 )
+from featurebyte.models.feature_store import SnowflakeDetails, SQLiteDetails, TableDetails
 from featurebyte.persistent.git import GitDB
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
@@ -40,26 +40,16 @@ def config_fixture(sqlite_filename):
     """
     Config object for integration testing
     """
-    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
-    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-
     config_dict = {
         "featurestore": [
             {
                 "name": "snowflake_featurestore",
-                "source_type": "snowflake",
-                "account": os.getenv("SNOWFLAKE_ACCOUNT"),
-                "warehouse": os.getenv("SNOWFLAKE_WAREHOUSE"),
-                "database": os.getenv("SNOWFLAKE_DATABASE"),
-                "sf_schema": temp_schema_name,
                 "credential_type": "USERNAME_PASSWORD",
                 "username": os.getenv("SNOWFLAKE_USER"),
                 "password": os.getenv("SNOWFLAKE_PASSWORD"),
             },
             {
                 "name": "sqlite_datasource",
-                "source_type": "sqlite",
-                "filename": sqlite_filename,
             },
         ],
         "git": {
@@ -90,6 +80,37 @@ def mock_get_persistent_fixture(config):
     if origin:
         with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
             origin.push(refspec=(f":{branch}"))
+
+
+@pytest.fixture(name="snowflake_feature_store", scope="session")
+def snowflake_feature_store_fixture(mock_get_persistent):
+    """
+    Snowflake database source fixture
+    """
+    schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
+    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    return FeatureStore(
+        name="snowflake_featurestore",
+        type="snowflake",
+        details=SnowflakeDetails(
+            account=os.getenv("SNOWFLAKE_ACCOUNT"),
+            warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
+            sf_schema=temp_schema_name,
+            database=os.getenv("SNOWFLAKE_DATABASE"),
+        ),
+    )
+
+
+@pytest.fixture(name="sqlite_feature_store", scope="session")
+def sqlite_feature_store_fixture(mock_get_persistent, sqlite_filename):
+    """
+    Sqlite source fixture
+    """
+    return FeatureStore(
+        name="sqlite_datasource",
+        type="sqlite",
+        details=SQLiteDetails(filename=sqlite_filename),
+    )
 
 
 @pytest.fixture(name="mock_config_path_env", scope="session")
@@ -163,12 +184,11 @@ def sqlite_filename_fixture(transaction_data):
 
 
 @pytest.fixture(name="snowflake_session", scope="session")
-def snowflake_session_fixture(transaction_data_upper_case, config):
+def snowflake_session_fixture(transaction_data_upper_case, config, snowflake_feature_store):
     """
     Snowflake session
     """
     session_manager = SessionManager(credentials=config.credentials)
-    snowflake_feature_store = config.feature_stores["snowflake_featurestore"]
     session = session_manager[snowflake_feature_store]
     assert isinstance(session, SnowflakeSession)
 
@@ -184,12 +204,11 @@ def snowflake_session_fixture(transaction_data_upper_case, config):
 
 
 @pytest.fixture(scope="session")
-def sqlite_session(config):
+def sqlite_session(config, sqlite_feature_store):
     """
     SQLite session
     """
     session_manager = SessionManager(credentials=config.credentials)
-    sqlite_feature_store = config.feature_stores["sqlite_datasource"]
     return session_manager[sqlite_feature_store]
 
 
@@ -235,20 +254,28 @@ def tile_manager(snowflake_session):
 
 
 @pytest.fixture
-def snowflake_feature(feature_model_dict, snowflake_session):
+def snowflake_feature(feature_model_dict, snowflake_session, snowflake_feature_store):
     """
     Fixture for a ExtendedFeatureModel object
     """
-    feature = ExtendedFeatureModel(**feature_model_dict)
-    feature.description = "test_description_1"
-    feature.__dict__["version"] = "v1"
-    feature.__dict__["readiness"] = FeatureReadiness.DRAFT.value
-    feature.__dict__["is_default"] = True
-    feature.__dict__["online_enabled"] = False
-    feature.__dict__["event_data_ids"] = [
-        PydanticObjectId("626bccb9697a12204fb22ea3"),
-        PydanticObjectId("726bccb9697a12204fb22ea3"),
-    ]
+    feature_model_dict.update(
+        {
+            "tabular_source": (
+                snowflake_feature_store.id,
+                TableDetails(table_name="some_random_table"),
+            ),
+            "version": "v1",
+            "readiness": FeatureReadiness.DRAFT,
+            "is_default": True,
+            "online_enabled": False,
+            "event_data_ids": [
+                ObjectId("626bccb9697a12204fb22ea3"),
+                ObjectId("726bccb9697a12204fb22ea3"),
+            ],
+            "description": "test_description_1",
+        }
+    )
+    feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
     tile_id = feature.tile_specs[0].tile_id
 
     yield feature
@@ -319,15 +346,22 @@ def feature_manager(snowflake_session):
 
 
 @pytest.fixture
-def snowflake_feature_list(feature_model_dict, snowflake_session, config):
+def snowflake_feature_list(feature_model_dict, snowflake_session, config, snowflake_feature_store):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
+    feature_model_dict.update(
+        {
+            "tabular_source": (
+                snowflake_feature_store.id,
+                TableDetails(table_name="some_random_table"),
+            ),
+            "version": "v1",
+            "readiness": FeatureReadiness.DRAFT,
+            "is_default": True,
+        }
+    )
     mock_feature = FeatureModel(**feature_model_dict)
-    mock_feature.__dict__["tabular_source"] = (config.feature_stores["snowflake_featurestore"],)
-    mock_feature.__dict__["version"] = "v1"
-    mock_feature.__dict__["readiness"] = FeatureReadiness.DRAFT.value
-    mock_feature.__dict__["is_default"] = True
 
     feature_list = FeatureListModel(
         name="feature_list1",
@@ -354,10 +388,9 @@ def feature_list_manager(snowflake_session):
 
 
 @pytest.fixture(name="event_data", scope="session")
-def event_data_fixture(config, snowflake_session):
+def event_data_fixture(config, snowflake_session, snowflake_feature_store, mock_config_path_env):
     """Fixture for an EventData in integration tests"""
     table_name = "TEST_TABLE"
-    snowflake_feature_store = FeatureStore(**config.feature_stores["snowflake_featurestore"].dict())
     assert table_name in snowflake_feature_store.list_tables(credentials=config.credentials)
 
     snowflake_database_table = snowflake_feature_store.get_table(
@@ -395,5 +428,6 @@ def event_data_fixture(config, snowflake_session):
     # create entity & event data
     Entity(name="User", serving_names=["UID"]).save()
     event_data["USER_ID"].as_entity("User")
+    snowflake_feature_store.save()
     event_data.save()
     return event_data
