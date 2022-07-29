@@ -260,7 +260,7 @@ def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           SUM("a") AS sum_value,
-          COUNT(*) AS count_value
+          COUNT("a") AS count_value
         FROM (
             SELECT
               *,
@@ -328,7 +328,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
           "cust_id",
           "product_type",
           SUM("a") AS sum_value,
-          COUNT(*) AS count_value
+          COUNT("a") AS count_value
         FROM (
             SELECT
               *,
@@ -398,7 +398,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           SUM("a") AS sum_value,
-          COUNT(*) AS count_value
+          COUNT("a") AS count_value
         FROM (
             SELECT
               *,

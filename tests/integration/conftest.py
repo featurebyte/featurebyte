@@ -129,6 +129,9 @@ def transaction_dataframe():
             "session_id": rng.randint(100, 1000, row_number),
         }
     )
+    amount = (rng.rand(row_number) * 100).round(2)
+    amount[::5] = np.nan
+    data["amount"] = amount
     data["created_at"] += rng.randint(1, 100, row_number).cumsum() * pd.Timedelta(seconds=1)
     data["created_at"] = data["created_at"].astype(int)
     data["cust_id"] = data["cust_id"].cumsum()
@@ -371,6 +374,7 @@ def event_data_fixture(config, snowflake_session):
             "USER_ID": "INT",
             "PRODUCT_ACTION": "VARCHAR",
             "SESSION_ID": "INT",
+            "AMOUNT": "FLOAT",
         }
     )
     pd.testing.assert_series_equal(expected_dtypes, snowflake_database_table.dtypes)

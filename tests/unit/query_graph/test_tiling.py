@@ -22,7 +22,7 @@ from featurebyte.query_graph.tiling import AggFunc, TileSpec, get_aggregator
             AggFunc.AVG,
             [
                 TileSpec(tile_expr='SUM("a_column")', tile_column_name="sum_value"),
-                TileSpec(tile_expr="COUNT(*)", tile_column_name="count_value"),
+                TileSpec(tile_expr='COUNT("a_column")', tile_column_name="count_value"),
             ],
             "SUM(sum_value) / SUM(count_value)",
         ),
