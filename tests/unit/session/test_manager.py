@@ -33,8 +33,8 @@ def session_manager_fixture(config, snowflake_connector):
     yield SessionManager(credentials=config.credentials)
 
 
-@pytest.fixture(name="sqlite_database_source")
-def sqlite_database_source_fixture(config, graph):
+@pytest.fixture(name="sqlite_feature_store")
+def sqlite_feature_store_fixture(config, graph):
     """
     SQLite database source fixture
     """
@@ -46,7 +46,7 @@ def sqlite_database_source_fixture(config, graph):
 @patch("featurebyte.session.sqlite.sqlite3", Mock())
 def test_session_manager__get_cached_properly(
     snowflake_feature_store,
-    sqlite_database_source,
+    sqlite_feature_store,
     snowflake_execute_query,
     session_manager,
     caplog_handle,
@@ -79,7 +79,7 @@ def test_session_manager__get_cached_properly(
     assert count == 1
 
     # retrieve different data source
-    _ = session_manager[sqlite_database_source]
+    _ = session_manager[sqlite_feature_store]
     count, msg = count_create_session_logs()
     assert count == 2
     assert msg == "Create a new session for sqlite"

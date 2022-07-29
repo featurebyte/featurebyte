@@ -19,10 +19,10 @@ def test_query_object_operation_on_sqlite_source(sqlite_session, transaction_dat
     Test loading event view from sqlite source
     """
     _ = sqlite_session
-    sqlite_database_source = FeatureStore(**config.feature_stores["sqlite_datasource"].dict())
-    assert sqlite_database_source.list_tables(credentials=config.credentials) == ["test_table"]
+    sqlite_feature_store = FeatureStore(**config.feature_stores["sqlite_datasource"].dict())
+    assert sqlite_feature_store.list_tables(credentials=config.credentials) == ["test_table"]
 
-    sqlite_database_table = sqlite_database_source.get_table(
+    sqlite_database_table = sqlite_feature_store.get_table(
         database_name=None,
         schema_name=None,
         table_name="test_table",

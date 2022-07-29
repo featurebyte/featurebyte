@@ -202,7 +202,7 @@ class GenericInputNode(TableNode):
 
     column_names: list[str]
     dbtable: dict[str, str]
-    database_source: dict[str, Any]
+    feature_store: dict[str, Any]
 
     @property
     def sql(self) -> Expression:
@@ -218,7 +218,7 @@ class GenericInputNode(TableNode):
             col = expressions.Identifier(this=col, quoted=True)
             select_args.append(expressions.alias_(expr, col))
         select_expr = select(*select_args)
-        if self.database_source["type"] == SourceType.SNOWFLAKE:
+        if self.feature_store["type"] == SourceType.SNOWFLAKE:
             database = self.dbtable["database_name"]
             schema = self.dbtable["schema_name"]
             table = self.dbtable["table_name"]
@@ -716,14 +716,14 @@ def make_input_node(
     for colname in parameters["columns"]:
         columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
     sql_node: BuildTileInputNode | SelectedEntityBuildTileInputNode | GenericInputNode
-    database_source = parameters["database_source"]
+    feature_store = parameters["feature_store"]
     if sql_type == SQLType.BUILD_TILE:
         sql_node = BuildTileInputNode(
             columns_map=columns_map,
             column_names=parameters["columns"],
             timestamp=parameters["timestamp"],
             dbtable=parameters["dbtable"],
-            database_source=database_source,
+            feature_store=feature_store,
         )
     elif sql_type == SQLType.BUILD_TILE_ON_DEMAND:
         assert groupby_keys is not None
@@ -732,7 +732,7 @@ def make_input_node(
             column_names=parameters["columns"],
             timestamp=parameters["timestamp"],
             dbtable=parameters["dbtable"],
-            database_source=database_source,
+            feature_store=feature_store,
             entity_columns=groupby_keys,
         )
     else:
@@ -740,7 +740,7 @@ def make_input_node(
             columns_map=columns_map,
             column_names=parameters["columns"],
             dbtable=parameters["dbtable"],
-            database_source=database_source,
+            feature_store=feature_store,
         )
     return sql_node
 
