@@ -74,7 +74,7 @@ lint: lint-style lint-type lint-safety
 lint-style:
 	@poetry run isort --diff --check-only --settings-path pyproject.toml .
 	@poetry run black --diff --check .
-	@poetry run pylint --rcfile pyproject.toml featurebyte --exit-zero
+	@poetry run pylint --rcfile pyproject.toml featurebyte
 
 	@find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" | xargs poetry run darglint --verbosity 2
 	@find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs poetry run darglint --verbosity 2
