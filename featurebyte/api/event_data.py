@@ -13,16 +13,15 @@ from pydantic import Field, validator
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.util import get_entity
-from featurebyte.config import Configurations
+from featurebyte.config import Configurations, Credentials
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
-from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
+from featurebyte.models.feature_store import TableDetails
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 
 
@@ -95,7 +94,7 @@ class EventData(EventDataModel, DatabaseTable):
         name: str,
         event_timestamp_column: str,
         record_creation_date_column: str | None = None,
-        credentials: dict[FeatureStoreModel, Credential | None] | None = None,
+        credentials: Credentials | None = None,
     ) -> EventData:
         """
         Create EventData object from tabular source
@@ -110,7 +109,7 @@ class EventData(EventDataModel, DatabaseTable):
             Event timestamp column from the given tabular source
         record_creation_date_column: str
             Record creation datetime column from the given tabular source
-        credentials: dict[FeatureStoreModel, Credential | None] | None
+        credentials: Credentials | None
             Credentials dictionary mapping from the config file
 
         Returns
