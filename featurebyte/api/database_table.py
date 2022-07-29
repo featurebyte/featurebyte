@@ -76,15 +76,15 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             config = Configurations()
             credentials = config.credentials
 
-        database_source, table_details = values["tabular_source"]
-        if isinstance(database_source, dict):
-            database_source = ExtendedFeatureStoreModel(**database_source)
-        elif isinstance(database_source, FeatureStoreModel):
-            database_source = ExtendedFeatureStoreModel(**database_source.dict())
+        feature_store, table_details = values["tabular_source"]
+        if isinstance(feature_store, dict):
+            feature_store = ExtendedFeatureStoreModel(**feature_store)
+        elif isinstance(feature_store, FeatureStoreModel):
+            feature_store = ExtendedFeatureStoreModel(**feature_store.dict())
         if isinstance(table_details, dict):
             table_details = TableDetails(**table_details)
 
-        session = database_source.get_session(credentials=credentials)
+        session = feature_store.get_session(credentials=credentials)
         table_schema = session.list_table_schema(
             database_name=table_details.database_name,
             schema_name=table_details.schema_name,
@@ -96,7 +96,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             node_params={
                 "columns": list(table_schema.keys()),
                 "dbtable": table_details.dict(),
-                "database_source": database_source.dict(),
+                "feature_store": feature_store.dict(),
                 **cls._get_other_input_node_parameters(values),
             },
             node_output_type=NodeOutputType.FRAME,

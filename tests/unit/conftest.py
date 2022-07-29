@@ -314,7 +314,7 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
                 "cust_id",
             ],
             "timestamp": "event_timestamp",
-            "database_source": {
+            "feature_store": {
                 "type": "snowflake",
                 "details": {
                     "account": "sf_account",
@@ -448,7 +448,7 @@ def dataframe_fixture(graph, snowflake_feature_store):
                 "schema_name": "public",
                 "table_name": "transaction",
             },
-            "database_source": {
+            "feature_store": {
                 "type": "snowflake",
                 "details": {
                     "database": "db",

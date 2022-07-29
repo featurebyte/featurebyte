@@ -26,7 +26,7 @@ def input_node_fixture():
             "schema_name": "my_schema",
             "table_name": "my_table",
         },
-        database_source={
+        feature_store={
             "type": "snowflake",
             "details": {
                 "database": "db",
@@ -111,7 +111,7 @@ def test_make_input_node_escape_special_characters():
     parameters = {
         "columns": ["SUM(a)", "b", "c"],
         "dbtable": {"database_name": "db", "schema_name": "public", "table_name": "my_table"},
-        "database_source": {
+        "feature_store": {
             "type": "snowflake",
             "details": {
                 "database": "db",

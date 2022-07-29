@@ -162,7 +162,7 @@ class FeatureController:
             feature_store = extended_feature.tabular_source[0]
             db_session = feature_store.get_session(
                 credentials={
-                    feature_store: get_credential(user_id=user.id, db_source=feature_store)
+                    feature_store: get_credential(user_id=user.id, feature_store=feature_store)
                 }
             )
             feature_manager = FeatureManagerSnowflake(session=db_session)

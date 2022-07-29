@@ -55,7 +55,9 @@ def _get_persistent() -> Persistent:
     return PERSISTENT
 
 
-def _get_credential(user_id: ObjectId | None, db_source: FeatureStoreModel) -> Credential | None:
+def _get_credential(
+    user_id: ObjectId | None, feature_store: FeatureStoreModel
+) -> Credential | None:
     """
     Retrieve credential from FeatureStoreModel
 
@@ -63,7 +65,7 @@ def _get_credential(user_id: ObjectId | None, db_source: FeatureStoreModel) -> C
     ----------
     user_id: ObjectId | None
         User ID
-    db_source: FeatureStoreModel
+    feature_store: FeatureStoreModel
         FeatureStoreModel object
 
     Returns
@@ -73,7 +75,7 @@ def _get_credential(user_id: ObjectId | None, db_source: FeatureStoreModel) -> C
     """
     _ = user_id
     config = Configurations()
-    return config.credentials.get(db_source)
+    return config.credentials.get(feature_store)
 
 
 def _get_api_deps(controller: type) -> Callable[[Request], None]:

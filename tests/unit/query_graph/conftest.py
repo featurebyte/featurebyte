@@ -22,7 +22,7 @@ def query_graph_and_assign_node_fixture(graph):
                 "schema_name": "public",
                 "table_name": "event_table",
             },
-            "database_source": {
+            "feature_store": {
                 "type": "snowflake",
                 "details": {
                     "database": "db",

@@ -165,8 +165,8 @@ def snowflake_session_fixture(transaction_data_upper_case, config):
     Snowflake session
     """
     session_manager = SessionManager(credentials=config.credentials)
-    snowflake_database_source = config.feature_stores["snowflake_featurestore"]
-    session = session_manager[snowflake_database_source]
+    snowflake_feature_store = config.feature_stores["snowflake_featurestore"]
+    session = session_manager[snowflake_feature_store]
     assert isinstance(session, SnowflakeSession)
 
     session.register_temp_table("TEST_TABLE", transaction_data_upper_case)
@@ -177,7 +177,7 @@ def snowflake_session_fixture(transaction_data_upper_case, config):
 
     yield session
 
-    session.execute_query(f"DROP SCHEMA IF EXISTS {snowflake_database_source.details.sf_schema}")
+    session.execute_query(f"DROP SCHEMA IF EXISTS {snowflake_feature_store.details.sf_schema}")
 
 
 @pytest.fixture(scope="session")
@@ -186,8 +186,8 @@ def sqlite_session(config):
     SQLite session
     """
     session_manager = SessionManager(credentials=config.credentials)
-    sqlite_database_source = config.feature_stores["sqlite_datasource"]
-    return session_manager[sqlite_database_source]
+    sqlite_feature_store = config.feature_stores["sqlite_datasource"]
+    return session_manager[sqlite_feature_store]
 
 
 @pytest.fixture
@@ -300,7 +300,7 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
         "entity_column_names": ["cust_id"],
         "value_column_names": ["value"],
         "frequency_minute": 30,
-        "tile_id": "sum_f1800_m300_b600_3cb3b2b28a359956be02abe635c4446cb50710d7",
+        "tile_id": "sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
         "tile_sql": tile_sql,
         "time_modulo_frequency_second": 300,
     }
@@ -354,12 +354,10 @@ def feature_list_manager(snowflake_session):
 def event_data_fixture(config, snowflake_session):
     """Fixture for an EventData in integration tests"""
     table_name = "TEST_TABLE"
-    snowflake_database_source = FeatureStore(
-        **config.feature_stores["snowflake_featurestore"].dict()
-    )
-    assert table_name in snowflake_database_source.list_tables(credentials=config.credentials)
+    snowflake_feature_store = FeatureStore(**config.feature_stores["snowflake_featurestore"].dict())
+    assert table_name in snowflake_feature_store.list_tables(credentials=config.credentials)
 
-    snowflake_database_table = snowflake_database_source.get_table(
+    snowflake_database_table = snowflake_feature_store.get_table(
         database_name=snowflake_session.database,
         schema_name=snowflake_session.sf_schema,
         table_name=table_name,
