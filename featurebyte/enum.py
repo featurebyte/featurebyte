@@ -65,6 +65,9 @@ class OrderedStrEnum(OrderedEnum):
             return super().__lt__(type(self)(other))
         return super().__lt__(other)
 
+    def __hash__(self) -> int:
+        return str.__hash__(self.value)
+
 
 class CollectionName(str, Enum):
     """
@@ -75,6 +78,7 @@ class CollectionName(str, Enum):
     EVENT_DATA = "event_data"
     FEATURE = "feature"
     FEATURE_NAMESPACE = "feature_namespace"
+    FEATURE_STORE = "feature_store"
 
 
 class DBVarType(str, Enum):

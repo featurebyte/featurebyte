@@ -91,3 +91,12 @@ def test_ordered_str_enum__ordering(order_str_number):
     assert order_str_number.min() == "one"
     assert order_str_number.min() == order_str_number("one")
     assert order_str_number.min() == order_str_number.ONE
+
+
+def test_hashable(order_str_number):
+    """
+    Test the OrderedStrEnum is hashable
+    """
+    order_map = {order_str_number.ONE: 1, order_str_number.TWO: 2}
+    assert order_map[order_str_number.ONE] == 1
+    assert order_map["one"] == 1
