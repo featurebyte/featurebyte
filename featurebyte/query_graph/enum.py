@@ -36,7 +36,7 @@ class NodeType(str, Enum):
 
     # other operations
     ASSIGN = "assign"
-    COND_ASSIGN = "cond_assign"
+    CONDITIONAL = "conditional"
     ALIAS = "alias"
 
     # operations with side effect

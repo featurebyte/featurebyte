@@ -76,18 +76,24 @@ def test__setitem__bool_series_key_scalar_value(dataframe, bool_series, column, 
     series = dataframe[column]
     series[bool_series] = value
     series_dict = series.dict()
-    assert (
-        series_dict["node"].items()
-        >= {
-            "type": NodeType.COND_ASSIGN,
-            "parameters": {"value": value},
-            "output_type": NodeOutputType.SERIES,
-        }.items()
-    )
-    assert dict(series_dict["graph"]["edges"]) == {
-        "input_1": ["project_1", "project_2"],
-        "project_1": ["cond_assign_1"],
-        "project_2": ["cond_assign_1"],
+    assert series_dict["node"] == {
+        "name": "project_3",
+        "type": "project",
+        "parameters": {"columns": [column]},
+        "output_type": "series",
+    }
+    assert series_dict["graph"]["nodes"]["conditional_1"] == {
+        "name": "conditional_1",
+        "type": "conditional",
+        "parameters": {"value": value},
+        "output_type": "series",
+    }
+    assert dict(series.graph.edges) == {
+        "input_1": ["project_1", "project_2", "assign_1"],
+        "project_1": ["conditional_1"],
+        "project_2": ["conditional_1"],
+        "conditional_1": ["assign_1"],
+        "assign_1": ["project_3"],
     }
 
 
@@ -98,12 +104,48 @@ def test__setitem__cond_assign_with_same_input_nodes(bool_series):
     bool_series[bool_series] = True
     bool_series_dict = bool_series.dict()
     assert dict(bool_series_dict["graph"]["edges"]) == {
-        "input_1": ["project_1"],
-        "project_1": ["cond_assign_1", "cond_assign_1"],
+        "assign_1": ["project_2"],
+        "conditional_1": ["assign_1"],
+        "input_1": ["project_1", "assign_1"],
+        "project_1": ["conditional_1", "conditional_1"],
     }
     assert dict(bool_series_dict["graph"]["backward_edges"]) == {
+        "assign_1": ["input_1", "conditional_1"],
+        "conditional_1": ["project_1", "project_1"],
         "project_1": ["input_1"],
-        "cond_assign_1": ["project_1", "project_1"],
+        "project_2": ["assign_1"],
+    }
+
+
+def test__setitem__cond_assign_consecutive(dataframe, bool_series):
+    """
+    Test Series conditional assignment consecutive operations
+    """
+    series = dataframe["VALUE"]
+    series[bool_series] = 100
+    series[bool_series] = 200
+    series_dict = series.dict()
+    assert series_dict["graph"]["nodes"]["conditional_1"] == {
+        "name": "conditional_1",
+        "type": "conditional",
+        "parameters": {"value": 100},
+        "output_type": "series",
+    }
+    assert series_dict["graph"]["nodes"]["conditional_2"] == {
+        "name": "conditional_2",
+        "type": "conditional",
+        "parameters": {"value": 200},
+        "output_type": "series",
+    }
+    assert dict(series_dict["graph"]["backward_edges"]) == {
+        "assign_1": ["input_1", "conditional_1"],
+        "assign_2": ["assign_1", "conditional_2"],
+        "conditional_1": ["project_1", "project_2"],
+        "conditional_2": ["project_3", "project_2"],
+        "project_1": ["input_1"],
+        "project_2": ["input_1"],
+        "project_3": ["assign_1"],
+        "project_4": ["assign_2"],
     }
 
 

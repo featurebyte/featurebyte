@@ -179,6 +179,7 @@ class Frame(BaseFrame, OpsMixin):
                 var_type=self.column_var_type_map[item],
                 lineage=self._append_to_lineage(self.column_lineage_map[item], node.name),
                 row_index_lineage=self.row_index_lineage,
+                frame=self,
                 **self._getitem_series_params,
             )
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
