@@ -149,12 +149,12 @@ jobs:
         export OUTPUT=$(cat output.txt)
 
         # Set BASE_REF and HEAD_REF
-        export GITHUB_BASE_REF=${GITHUB_REF_NAME}
-        export GITHUB_HEAD_REF=MERGE
+        export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
+        export GITHUB_BASE_REF=MERGE
 
         # Sending Slack Message
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_BASE_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_BASE_REF}")
+        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
         # Lookup email address and export to AUTHOR_ID
@@ -179,7 +179,6 @@ jobs:
         export COVERAGE_TIME=${{ steps.coverageComment.outputs.time }}
 
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-        # Get the last committed email address
         export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
@@ -201,12 +200,12 @@ jobs:
       if: ${{ failure() }}
       run: |
         if [[ ${GITHUB_EVENT_NAME} == "push" ]]; then
-        export GITHUB_BASE_REF=${GITHUB_REF_NAME}
-        export GITHUB_HEAD_REF=MERGE
+        export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
+        export GITHUB_BASE_REF=MERGE
         fi
         # Get the last committed email address
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_BASE_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_BASE_REF}")
+        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
         if [ -z ${AUTHOR_EMAIL+x} ]; then
@@ -226,12 +225,12 @@ jobs:
     - name: Slack Message failure (MERGE ERROR)
       if: ${{ failure() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       run: |
-        export GITHUB_BASE_REF=${GITHUB_REF_NAME}
-        export GITHUB_HEAD_REF=MERGE
+        export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
+        export GITHUB_BASE_REF=MERGE
 
         # Get the last committed email address
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_BASE_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_BASE_REF}")
+        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
         # Route message to featurebyte developer channel
