@@ -205,8 +205,8 @@ jobs:
         export GITHUB_HEAD_REF=MERGE
         fi
         # Get the last committed email address
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        git fetch --no-recurse-submodules --prune origin ${GITHUB_BASE_REF}
+        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_BASE_REF}")
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
         if [ -z ${AUTHOR_EMAIL+x} ]; then
@@ -230,8 +230,8 @@ jobs:
         export GITHUB_HEAD_REF=MERGE
 
         # Get the last committed email address
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        git fetch --no-recurse-submodules --prune origin ${GITHUB_BASE_REF}
+        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_BASE_REF}")
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
         # Route message to featurebyte developer channel
