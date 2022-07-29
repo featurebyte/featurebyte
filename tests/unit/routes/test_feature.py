@@ -11,7 +11,7 @@ from fastapi import HTTPException
 
 from featurebyte.api.event_data import EventData
 from featurebyte.exception import DuplicatedFeatureRegistryError
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import (
     FeatureStoreModel,
     SourceType,
@@ -20,7 +20,6 @@ from featurebyte.models.feature_store import (
 )
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.routes.feature.controller import FeatureController
-from featurebyte.schema.feature import Feature
 
 
 @pytest.fixture(name="feature_model_dict")
@@ -349,7 +348,7 @@ def test_insert_feature_register(
     """
     _ = snowflake_connector
     user = Mock()
-    feature = Feature(**feature_model_dict)
+    feature = FeatureModel(**feature_model_dict)
     FeatureController.insert_feature_registry(
         user=user, document=feature, get_credential=get_credential
     )
@@ -373,7 +372,7 @@ def test_insert_feature_registry__non_snowflake_feature_store(
         type=SourceType.SQLITE, details=SQLiteDetails(filename="some_filename")
     )
     feature_model_dict["tabular_source"] = (feature_store, TableDetails(table_name="some_table"))
-    feature = Feature(**feature_model_dict)
+    feature = FeatureModel(**feature_model_dict)
     user, get_credential = Mock(), Mock()
     FeatureController.insert_feature_registry(
         user=user, document=feature, get_credential=get_credential
@@ -391,7 +390,7 @@ def test_insert_feature_registry__duplicated_feature_registry_exception(
     mock_feature_manager.return_value.insert_feature_registry.side_effect = (
         DuplicatedFeatureRegistryError
     )
-    feature = Feature(**feature_model_dict)
+    feature = FeatureModel(**feature_model_dict)
     user = Mock()
     with pytest.raises(HTTPException) as exc:
         FeatureController.insert_feature_registry(
@@ -413,7 +412,7 @@ def test_insert_feature_registry__other_exception(
     Test insert_feature_registry with non duplicated feature registry exception
     """
     mock_feature_manager.return_value.insert_feature_registry.side_effect = ValueError
-    feature = Feature(**feature_model_dict)
+    feature = FeatureModel(**feature_model_dict)
     user = Mock()
     with pytest.raises(ValueError):
         FeatureController.insert_feature_registry(
