@@ -30,6 +30,8 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         Pydantic Config class
         """
 
+        # pylint: disable=too-few-public-methods
+
         fields = {
             "graph": {"exclude": True},
             "node": {"exclude": True},

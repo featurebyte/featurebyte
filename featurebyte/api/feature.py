@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Any
 
 import time
 from http import HTTPStatus
