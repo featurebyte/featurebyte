@@ -205,8 +205,8 @@ def test_create_422__not_proper_parent(
     assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {
         "detail": (
-            f'Feature (feature.id: "{feature_id}", feature.parent_id: "{parent_id}") '
-            f"has invalid parent feature!"
+            f'Feature (feature.id: "{feature_id}", feature.name: "other_name") '
+            f'has invalid parent feature (feature.id: "{parent_id}", feature.name: "sum30m")!'
         )
     }
 

@@ -74,13 +74,14 @@ class FeatureController:
                         f"Please save the Feature object first."
                     ),
                 )
-            if document.name != parent_feature_dict.get("name"):
+            parent_name = parent_feature_dict.get("name")
+            if document.name != parent_name:
                 # if the parent feature is inconsistent with feature to be created, throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
                     detail=(
-                        f'Feature (feature.id: "{document.id}", feature.parent_id: "{document.parent_id}") '
-                        f"has invalid parent feature!"
+                        f'Feature (feature.id: "{document.id}", feature.name: "{document.name}") '
+                        f'has invalid parent feature (feature.id: "{document.parent_id}", feature.name: "sum30m")!'
                     ),
                 )
 
