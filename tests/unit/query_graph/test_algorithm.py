@@ -35,13 +35,13 @@ def test_dfs__3(query_graph_with_groupby):
     ]
 
 
-def test_topological_sort__0(graph):
+def test_topological_sort__0(global_graph):
     """
     Test topological sort on empty graph edge case
     """
-    assert graph.nodes == {}
-    assert graph.edges == {}
-    assert not topological_sort(graph)
+    assert global_graph.nodes == {}
+    assert global_graph.edges == {}
+    assert not topological_sort(global_graph)
 
 
 def test_topological_sort__1(graph_single_node):

@@ -38,7 +38,6 @@ def sqlite_feature_store_fixture(config, graph):
     """
     SQLite database source fixture
     """
-    _ = graph
     return FeatureStore(**config.feature_stores["sq_featurestore"].dict())
 
 
