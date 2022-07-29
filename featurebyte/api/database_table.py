@@ -24,7 +24,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
     # pylint: disable=too-few-public-methods
 
     column_var_type_map: Dict[StrictStr, DBVarType]
-    credentials: Optional[Credentials] = Field(default=None, allow_mutation=False)
+    credentials: Optional[Credentials] = Field(default=None, allow_mutation=False, exclude=True)
 
     class Config:
         """
@@ -32,7 +32,6 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         """
 
         fields = {
-            "credentials": {"exclude": True},
             "graph": {"exclude": True},
             "node": {"exclude": True},
             "row_index_lineage": {"exclude": True},

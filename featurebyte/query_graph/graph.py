@@ -5,13 +5,11 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, TypedDict
 
-import copy
 import json
 from collections import defaultdict
 
 from pydantic import Field, validator
 
-from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -108,7 +106,6 @@ class Graph(FeatureByteBaseModel):
         Returns
         -------
         node: Node
-
         """
         node = Node(
             name=self._generate_node_name(node_type),
@@ -156,7 +153,6 @@ class QueryGraph(Graph):
         Returns
         -------
         Node
-
         """
         return Node(**self.nodes[node_name])
 
@@ -185,7 +181,6 @@ class QueryGraph(Graph):
         -------
         Node
             operation node of the given input
-
         """
         input_node_refs = [self.node_name_to_ref[node.name] for node in input_nodes]
         node_ref = hash_node(node_type, node_params, node_output_type, input_node_refs)
@@ -328,12 +323,20 @@ class GlobalQueryGraph(QueryGraph):
         default_factory=GlobalQueryGraphState.get_ref_to_node_name
     )
 
+    def copy(self, *args: Any, **kwargs: Any) -> GlobalQueryGraph:
+        # under no circumstances we should allow making copy of GlobalQueryGraph
+        _ = args, kwargs
+        return GlobalQueryGraph()
+
+    def __copy__(self, *args: Any, **kwargs: Any) -> GlobalQueryGraph:
+        # under no circumstances we should allow making copy of GlobalQueryGraph
+        _ = args, kwargs
+        return GlobalQueryGraph()
+
     def __deepcopy__(self, *args: Any, **kwargs: Any) -> GlobalQueryGraph:
-        # under no circumstances we should allow making deep copy on GlobalQueryGraph object
-        logger.debug(
-            "Attempted to make a deepcopy on GlobalQueryGraph object, shallow copy returned."
-        )
-        return copy.copy(self)
+        # under no circumstances we should allow making copy of GlobalQueryGraph
+        _ = args, kwargs
+        return GlobalQueryGraph()
 
     def _prune(
         self,

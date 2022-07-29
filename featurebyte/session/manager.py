@@ -24,6 +24,31 @@ SOURCE_TYPE_SESSION_MAP = {
 }
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=1800))
+def get_session(item: str, credential_params: str) -> BaseSession:
+    """
+    Retrieve or create a new session for the given database source key
+
+    Parameters
+    ----------
+    item: str
+        JSON dumps of feature store type & details
+    credential_params: str
+        JSON dumps of credential parameters used to initiate a new session
+
+    Returns
+    -------
+    BaseSession
+        Newly created session
+    """
+    item_dict = json.loads(item)
+    logger.debug(f'Create a new session for {item_dict["type"]}')
+    credential_params_dict = json.loads(credential_params)
+    return SOURCE_TYPE_SESSION_MAP[item_dict["type"]](
+        **item_dict["details"], **credential_params_dict
+    )
+
+
 class SessionManager(BaseModel):
     """
     Session manager to manage session of different database sources
@@ -31,17 +56,6 @@ class SessionManager(BaseModel):
 
     credentials: Dict[FeatureStoreModel, Optional[Credential]]
 
-    def __hash__(self) -> int:
-        return hash(
-            json.dumps(
-                {
-                    hash(key): value.json() if isinstance(value, BaseModel) else value
-                    for key, value in self.credentials.items()
-                }
-            )
-        )
-
-    @cached(cache=TTLCache(maxsize=1024, ttl=1800))
     def __getitem__(self, item: FeatureStoreModel) -> BaseSession:
         """
         Retrieve or create a new session for the given database source key
@@ -62,8 +76,12 @@ class SessionManager(BaseModel):
             When credentials do not contain the specified data source info
         """
         if item in self.credentials:
-            logger.debug(f"Create a new session for {item.type}")
             credential = self.credentials[item]
             credential_params = credential.credential.dict() if credential else {}
-            return SOURCE_TYPE_SESSION_MAP[item.type](**item.details.dict(), **credential_params)
-        raise ValueError(f'Credentials do not contain info for the database source "{item}"!')
+            return get_session(
+                item=json.dumps(item.dict(include={"type": True, "details": True}), sort_keys=True),
+                credential_params=json.dumps(credential_params, sort_keys=True),
+            )
+        raise ValueError(
+            f'Credentials do not contain info for the feature store (feature_store.type: "{item.type}")!'
+        )

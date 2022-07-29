@@ -39,7 +39,9 @@ async def test_start_transaction__success(mongo_persistent):
         await session.insert_one(collection_name=col, document={"key2": "value2"})
 
     # check both records written to the mongodb
-    output = sorted(database[col].find({}, {"_id": False}), key=lambda d: list(d.keys()))
+    output = sorted(
+        database[col].find({}, {"_id": False, "created_at": False}), key=lambda d: list(d.keys())
+    )
     assert output == [{"key1": "value1"}, {"key2": "value2"}]
 
 

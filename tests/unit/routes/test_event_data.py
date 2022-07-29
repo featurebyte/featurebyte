@@ -324,7 +324,7 @@ def test_update_excludes_unsupported_fields(
 
     event_data_update_dict["name"] = "Some other name"
     event_data_update_dict["source"] = "Some other source"
-    event_data_update_dict["status"] = EventDataStatus.PUBLISHED
+    event_data_update_dict["status"] = EventDataStatus.PUBLISHED.value
     response = test_api_client.patch(f"/event_data/{insert_id}", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.OK
     data = response.json()
@@ -362,7 +362,7 @@ def test_update_fails_invalid_transition(
     """
     test_api_client, _ = test_api_client_persistent
     response_dict = event_data_response.json()
-    event_data_update_dict["status"] = EventDataStatus.DRAFT
+    event_data_update_dict["status"] = EventDataStatus.DRAFT.value
     response = test_api_client.patch(
         f"/event_data/{response_dict['_id']}", json=event_data_update_dict
     )
@@ -381,7 +381,7 @@ def test_update_status_only(test_api_client_persistent, event_data_response):
     assert current_data.pop("updated_at") is None
 
     response = test_api_client.patch(
-        f"/event_data/{current_data['_id']}", json={"status": EventDataStatus.PUBLISHED}
+        f"/event_data/{current_data['_id']}", json={"status": EventDataStatus.PUBLISHED.value}
     )
     assert response.status_code == HTTPStatus.OK
     updated_data = response.json()

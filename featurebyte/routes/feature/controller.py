@@ -14,9 +14,14 @@ from featurebyte.enum import CollectionName, SourceType
 from featurebyte.exception import DuplicatedFeatureRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
+from featurebyte.models.feature import (
+    DefaultVersionMode,
+    FeatureModel,
+    FeatureNameSpaceModel,
+    FeatureReadiness,
+)
 from featurebyte.persistent import Persistent
-from featurebyte.schema.feature import Feature, FeatureCreate, FeatureNameSpace
+from featurebyte.schema.feature import FeatureCreate
 
 
 class FeatureController:
@@ -27,13 +32,13 @@ class FeatureController:
     collection_name = CollectionName.FEATURE
 
     @classmethod
-    async def _validate_feature(cls, document: Feature, session: Persistent) -> None:
+    async def _validate_feature(cls, document: FeatureModel, session: Persistent) -> None:
         """
         Validate feature document to make sure the feature & parent feature are valid
 
         Parameters
         ----------
-        document: Feature
+        document: FeatureModel
             Feature document
         session: Persistent
             Persistent session
@@ -69,13 +74,14 @@ class FeatureController:
                         f"Please save the Feature object first."
                     ),
                 )
-            if not document.is_parent(Feature(**parent_feature_dict)):
+            parent_name = parent_feature_dict.get("name")
+            if document.name != parent_name:
                 # if the parent feature is inconsistent with feature to be created, throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
                     detail=(
-                        f'Feature (feature.id: "{document.id}", feature.parent_id: "{document.parent_id}") '
-                        f"has invalid parent feature!"
+                        f'Feature (feature.id: "{document.id}", feature.name: "{document.name}") '
+                        f'has invalid parent feature (feature.id: "{document.parent_id}", feature.name: "sum30m")!'
                     ),
                 )
 
@@ -96,16 +102,16 @@ class FeatureController:
 
     @classmethod
     def prepare_feature_namespace_payload(
-        cls, document: Feature, feature_namespace: FeatureNameSpace
+        cls, document: FeatureModel, feature_namespace: FeatureNameSpaceModel
     ) -> dict[str, Any]:
         """
         Prepare payload to update feature namespace record
 
         Parameters
         ----------
-        document: Feature
+        document: FeatureModel
             Feature document
-        feature_namespace: FeatureNameSpace
+        feature_namespace: FeatureNameSpaceModel
             Feature Namespace object
 
         Returns
@@ -136,7 +142,9 @@ class FeatureController:
         }
 
     @classmethod
-    def insert_feature_registry(cls, user: Any, document: Feature, get_credential: Any) -> None:
+    def insert_feature_registry(
+        cls, user: Any, document: FeatureModel, get_credential: Any
+    ) -> None:
         """
         Insert feature registry into feature store
 
@@ -144,7 +152,7 @@ class FeatureController:
         ----------
         user: Any
             User class to provide user identifier
-        document: Feature
+        document: FeatureModel
             Feature document
         get_credential: Any
             Get credential handler function
@@ -185,7 +193,7 @@ class FeatureController:
     @classmethod
     async def create_feature(
         cls, user: Any, persistent: Persistent, get_credential: Any, data: FeatureCreate
-    ) -> Feature:
+    ) -> FeatureModel:
         """
         Create Feature at persistent (GitDB or MongoDB)
 
@@ -202,7 +210,7 @@ class FeatureController:
 
         Returns
         -------
-        Feature
+        FeatureModel
             Newly created feature object
 
         Raises
@@ -222,7 +230,7 @@ class FeatureController:
                         detail=f'Feature (feature.id: "{data.id}") has been saved before.',
                     )
 
-            document = Feature(
+            document = FeatureModel(
                 user_id=user.id,
                 readiness=FeatureReadiness.DRAFT,
                 **data.dict(by_alias=True),
@@ -238,7 +246,7 @@ class FeatureController:
 
             if document.parent_id is None:
                 # create a new feature namespace object
-                doc_feature_namespace = FeatureNameSpace(
+                doc_feature_namespace = FeatureNameSpaceModel(
                     name=document.name,
                     version_ids=[insert_id],
                     versions=[document.version],
@@ -256,7 +264,7 @@ class FeatureController:
                     collection_name=CollectionName.FEATURE_NAMESPACE,
                     query_filter={"name": document.name},
                 )
-                feature_namespace = FeatureNameSpace(**feature_namespace_dict)  # type: ignore
+                feature_namespace = FeatureNameSpaceModel(**feature_namespace_dict)  # type: ignore
                 await session.update_one(
                     collection_name=CollectionName.FEATURE_NAMESPACE,
                     query_filter={"_id": feature_namespace.id},
@@ -276,4 +284,4 @@ class FeatureController:
         )
         if not feature:
             return document
-        return Feature(**feature)
+        return FeatureModel(**feature)

@@ -10,40 +10,9 @@ from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import FeatureModel, FeatureNameSpaceModel, FeatureVersionIdentifier
+from featurebyte.models.feature import FeatureVersionIdentifier
 from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
 from featurebyte.query_graph.graph import Node, QueryGraph
-from featurebyte.routes.common.schema import PaginationMixin
-
-
-class Feature(FeatureModel):
-    """
-    Feature Document Model
-    """
-
-    def is_parent(self, other: Feature) -> bool:
-        """
-        Check whether other feature is a valid parent of current feature
-
-        Parameters
-        ----------
-        other: Feature
-            Feature object to be checked
-
-        Returns
-        -------
-        bool
-        """
-        # TODO: add more validation checks later
-        return other.name == self.name
-
-
-class FeatureNameSpace(FeatureNameSpaceModel):
-    """
-    FeatureNameSpace Document Model
-    """
-
-    user_id: Optional[PydanticObjectId]
 
 
 class FeatureCreate(FeatureByteBaseModel):
@@ -63,17 +32,3 @@ class FeatureCreate(FeatureByteBaseModel):
     version: Optional[FeatureVersionIdentifier]
     event_data_ids: List[PydanticObjectId] = Field(min_items=1)
     parent_id: Optional[PydanticObjectId]
-
-
-class FeatureList(PaginationMixin):
-    """
-    Paginated list of Feature
-    """
-
-    data: List[Feature]
-
-
-class FeatureUpdate(FeatureByteBaseModel):
-    """
-    Feature update schema
-    """

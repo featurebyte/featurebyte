@@ -34,12 +34,13 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
     # FeatureStoreModel
     tabular_source: Tuple[FeatureStore, TableDetails] = Field(allow_mutation=False)
 
-    def __setattr__(self, key: Any, value: Any) -> Any:
-        """Custom __setattr__ to handle setting of special attributes such as name
+    def __setattr__(self, key: str, value: Any) -> Any:
+        """
+        Custom __setattr__ to handle setting of special attributes such as name
 
         Parameters
         ----------
-        key : Any
+        key : str
             Key
         value : Any
             Value

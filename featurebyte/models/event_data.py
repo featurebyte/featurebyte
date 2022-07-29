@@ -6,12 +6,12 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from datetime import datetime
-from enum import Enum
 
 from beanie import PydanticObjectId
 from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
+from featurebyte.enum import OrderedStrEnum
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.feature_store import DatabaseTableModel
 
@@ -60,7 +60,7 @@ class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
     setting: FeatureJobSetting
 
 
-class EventDataStatus(str, Enum):
+class EventDataStatus(OrderedStrEnum):
     """EventData status"""
 
     DEPRECATED = "DEPRECATED"
