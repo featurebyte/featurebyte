@@ -5,7 +5,7 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "*FAILED Github Action* `${GITHUB_WORKFLOW}` for `${GITHUB_REPOSITORY}`"
+				"text": "*Workflow FAIL* `${GITHUB_WORKFLOW}` for `${GITHUB_REPOSITORY}`"
 			}
 		},
 		{
@@ -41,9 +41,9 @@
 					"text": {
 						"type": "plain_text",
 						"emoji": true,
-						"text": "Job Summary"
+						"text": "FAILED Action"
 					},
-					"style": "primary",
+					"style": "danger",
 					"value": "btn-run",
 					"url": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 				},
@@ -54,7 +54,6 @@
 						"emoji": true,
 						"text": "Repository"
 					},
-					"style": "danger",
 					"value": "btn_repo",
 					"url": "https://github.com/${GITHUB_REPOSITORY}"
 				}

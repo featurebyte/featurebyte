@@ -5,7 +5,7 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "*Github Action* `${GITHUB_WORKFLOW}` for `${GITHUB_REPOSITORY}`"
+				"text": "*Workflow PASSED* `${GITHUB_WORKFLOW}` for `${GITHUB_REPOSITORY}`"
 			}
 		},
 		{
@@ -41,7 +41,7 @@
 					"text": {
 						"type": "plain_text",
 						"emoji": true,
-						"text": "Job Summary"
+						"text": "Passed Action"
 					},
 					"style": "primary",
 					"value": "btn-run",
@@ -54,7 +54,6 @@
 						"emoji": true,
 						"text": "Repository"
 					},
-					"style": "danger",
 					"value": "btn_repo",
 					"url": "https://github.com/${GITHUB_REPOSITORY}"
 				}

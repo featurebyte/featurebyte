@@ -148,8 +148,9 @@ jobs:
 
         export OUTPUT=$(cat output.txt)
 
-        # Set BASE_REF
+        # Set BASE_REF and HEAD_REF
         export GITHUB_BASE_REF=${GITHUB_REF_NAME}
+        export GITHUB_HEAD_REF=MERGE
 
         # Sending Slack Message
         git fetch --no-recurse-submodules --prune origin ${GITHUB_BASE_REF}
@@ -158,9 +159,6 @@ jobs:
 
         # Lookup email address and export to AUTHOR_ID
         export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
-
-        # For Push events we only have GITHUB_REF_NAME
-        export GITHUB_HEAD_REF=MERGE
 
         cat .github/slack-template-PUSH.json | envsubst | curl -X POST \
           -H "Authorization: Bearer ${SLACK_OAUTH}" \
@@ -203,7 +201,8 @@ jobs:
       if: ${{ failure() }}
       run: |
         if [[ ${GITHUB_EVENT_NAME} == "push" ]]; then
-          export GITHUB_HEAD_REF=${GITHUB_BASE_REF}
+        export GITHUB_BASE_REF=${GITHUB_REF_NAME}
+        export GITHUB_HEAD_REF=MERGE
         fi
         # Get the last committed email address
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
@@ -218,6 +217,25 @@ jobs:
           export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
         fi
         echo "AUTHOR_ID=${AUTHOR_ID}"
+
+        cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
+          -H "Authorization: Bearer ${SLACK_OAUTH}" \
+          -H 'Content-type: application/json; charset=utf-8' \
+          --data-binary @- https://slack.com/api/chat.postMessage
+
+    - name: Slack Message failure (MERGE ERROR)
+      if: ${{ failure() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      run: |
+        export GITHUB_BASE_REF=${GITHUB_REF_NAME}
+        export GITHUB_HEAD_REF=MERGE
+
+        # Get the last committed email address
+        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
+
+        # Route message to featurebyte developer channel
+        export AUTHOR_ID=C03D81HC6Q5
 
         cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
           -H "Authorization: Bearer ${SLACK_OAUTH}" \
