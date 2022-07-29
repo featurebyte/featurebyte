@@ -1,7 +1,6 @@
 """
 Common test fixtures used across unit test directories
 """
-import datetime
 import json
 import tempfile
 from unittest import mock
@@ -18,15 +17,14 @@ from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.config import Configurations
-from featurebyte.core.frame import Frame
-from featurebyte.enum import CollectionName, DBVarType, InternalName
+from featurebyte.enum import CollectionName, InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.session.manager import SessionManager
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
