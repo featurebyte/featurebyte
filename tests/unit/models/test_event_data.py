@@ -75,6 +75,7 @@ def test_event_data_model(snowflake_source, feature_job_setting, feature_job_set
     expected_event_data_dict = {
         "column_entity_map": None,
         "created_at": datetime.datetime(2022, 2, 1, 0, 0),
+        "updated_at": datetime.datetime(2022, 2, 1, 0, 0),
         "default_feature_job_setting": {
             "blind_spot": "10m",
             "frequency": "30m",
@@ -97,7 +98,15 @@ def test_event_data_model(snowflake_source, feature_job_setting, feature_job_set
         "record_creation_date_column": "created_at",
         "status": "PUBLISHED",
         "tabular_source": (
-            event_data.tabular_source[0],
+            {
+                "type": "snowflake",
+                "details": {
+                    "account": "account",
+                    "database": "database",
+                    "sf_schema": "schema",
+                    "warehouse": "warehouse",
+                },
+            },
             {"database_name": "database", "schema_name": "schema", "table_name": "table"},
         ),
     }
