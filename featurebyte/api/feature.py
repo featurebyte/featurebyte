@@ -11,6 +11,7 @@ from http import HTTPStatus
 import pandas as pd
 from pydantic import Field
 
+from featurebyte.api.api_object import APIObject
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
@@ -18,7 +19,6 @@ from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
-    RecordRetrievalException,
 )
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureModel
@@ -26,12 +26,15 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
 
-class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
+class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, APIObject):
     """
     Feature class
     """
 
     feature_store: ExtendedFeatureStoreModel = Field(exclude=True, allow_mutation=False)
+
+    # class variables
+    _route = "/feature"
 
     def __setattr__(self, key: str, value: Any) -> Any:
         """
@@ -197,35 +200,6 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
         return result
-
-    @classmethod
-    def get(cls, name: str) -> Feature:
-        """
-        Retrieve feature from the persistent given feature name
-
-        Parameters
-        ----------
-        name: str
-            Feature name
-
-        Returns
-        -------
-        Feature
-            Feature object of the given feature name
-
-        Raises
-        ------
-        RecordRetrievalException
-            When the feature not found
-        """
-        client = Configurations().get_client()
-        response = client.get(url="/feature", params={"name": name})
-        if response.status_code == HTTPStatus.OK:
-            response_dict = response.json()
-            if response_dict["data"]:
-                feature_dict = response_dict["data"][0]
-                return Feature(**feature_dict)
-        raise RecordRetrievalException(response, f'Feature (feature.name: "{name}") not found!')
 
     def save(self) -> None:
         """

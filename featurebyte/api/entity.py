@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from http import HTTPStatus
 
+from featurebyte.api.api_object import APIObject
 from featurebyte.api.util import get_entity
 from featurebyte.config import Configurations
 from featurebyte.exception import (
@@ -16,10 +17,13 @@ from featurebyte.models.entity import EntityModel
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
 
-class Entity(EntityModel):
+class Entity(EntityModel, APIObject):
     """
     Entity class
     """
+
+    # class variables
+    _route = "/entity"
 
     @property
     def serving_name(self) -> str:
@@ -31,24 +35,6 @@ class Entity(EntityModel):
         str
         """
         return self.serving_names[0]
-
-    @classmethod
-    def get(cls, name: str) -> Entity:
-        """
-        Retrieve entity from the persistent given entity name
-
-        Parameters
-        ----------
-        name: str
-            Entity name
-
-        Returns
-        -------
-        Entity
-            Entity object of the given entity name
-        """
-        entity_dict = get_entity(name)
-        return Entity.parse_obj(entity_dict)
 
     def update_name(self, name: str) -> None:
         """

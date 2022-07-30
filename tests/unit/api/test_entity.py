@@ -58,7 +58,7 @@ def test_entity__update_name(entity):
     another_entity = Entity(name="AnotherCustomer", serving_names=["cust"])
     with pytest.raises(RecordRetrievalException) as exc:
         Entity.get("AnotherCustomer")
-    assert 'Entity name "AnotherCustomer" not found!' in str(exc.value)
+    assert 'Entity (entity.name: "AnotherCustomer") not found!' in str(exc.value)
     assert another_entity.name == "AnotherCustomer"
     another_entity.update_name("another_customer")
     assert another_entity.name == "another_customer"
