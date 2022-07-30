@@ -74,6 +74,35 @@ def test_feature__bool_series_key_scalar_value(float_feature, bool_feature):
     }
 
 
+def test_feature__cond_assign_unnamed(float_feature, bool_feature):
+    """
+    Test Feature conditional assignment on unnamed Feature
+    """
+    temp_feature = float_feature + 123.0
+    temp_feature[bool_feature] = 0.0
+    temp_feature_dict = temp_feature.dict()
+    assert temp_feature_dict["node"] == {
+        "name": "conditional_1",
+        "output_type": "series",
+        "parameters": {"value": 0.0},
+        "type": "conditional",
+    }
+    assert temp_feature_dict["graph"]["nodes"]["conditional_1"] == {
+        "name": "conditional_1",
+        "output_type": "series",
+        "parameters": {"value": 0.0},
+        "type": "conditional",
+    }
+    # No assignment occurred
+    assert temp_feature_dict["graph"]["backward_edges"] == {
+        "add_1": ["project_1"],
+        "conditional_1": ["add_1", "gt_1"],
+        "groupby_1": ["input_1"],
+        "gt_1": ["project_1"],
+        "project_1": ["groupby_1"],
+    }
+
+
 def test_feature__preview_missing_point_in_time(float_feature):
     """
     Test feature preview validation missing point in time

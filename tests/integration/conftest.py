@@ -123,7 +123,7 @@ def mock_config_path_env_fixture(config):
         yield
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="session")
 def mock_settings_env_vars(mock_config_path_env, mock_get_persistent):
     """Use these fixtures for all tests"""
     _ = mock_config_path_env, mock_get_persistent
