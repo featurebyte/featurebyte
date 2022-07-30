@@ -628,19 +628,21 @@ async def test_start_transaction__exception_within_transaction(git_persistent):
     persistent, repo = git_persistent
     col = "test_col"
 
-    with pytest.raises(AssertionError):
-        # set up an exception happens within the context
-        async with persistent.start_transaction() as session:
-            await session.insert_one(
-                collection_name=col, document={"_id": "1234", "key1": "value1"}
-            )
-            await session.update_one(
-                collection_name=col,
-                query_filter={"_id": "1234"},
-                update={"$set": {"key1": "value2"}},
-            )
-            assert False
+    # expect consistent behavior in 2 consecutive attempts
+    for _ in range(2):
+        with pytest.raises(AssertionError):
+            # set up an exception happens within the context
+            async with persistent.start_transaction() as session:
+                await session.insert_one(
+                    collection_name=col, document={"_id": "1234", "key1": "value1"}
+                )
+                await session.update_one(
+                    collection_name=col,
+                    query_filter={"_id": "1234"},
+                    update={"$set": {"key1": "value2"}},
+                )
+                assert False
 
-    # check commit messages & status
-    assert _get_commit_messages(repo) == ["Initial commit\n"]
-    assert repo.git.status() == "On branch test\nnothing to commit, working tree clean"
+        # check commit messages & status
+        assert _get_commit_messages(repo) == ["Initial commit\n"]
+        assert repo.git.status() == "On branch test\nnothing to commit, working tree clean"

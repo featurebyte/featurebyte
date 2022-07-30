@@ -541,9 +541,11 @@ class Persistent(ABC):
             # prevent entering nested transaction in the actual db layer
             yield self
         else:
-            async with self._start_transaction():
-                self._in_transaction = True
-                yield self
+            try:
+                async with self._start_transaction():
+                    self._in_transaction = True
+                    yield self
+            finally:
                 self._in_transaction = False
 
     @abstractmethod
