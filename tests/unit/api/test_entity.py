@@ -80,7 +80,7 @@ def test_entity_creation(entity):
         Entity(name="Customer", serving_names=["cust_id"]).save()
     assert 'Entity serving name (entity.serving_names: "cust_id") already exists.' in str(exc.value)
 
-    with mock.patch("featurebyte.api.entity.Configurations"):
+    with mock.patch("featurebyte.api.api_object.Configurations"):
         with pytest.raises(RecordCreationException):
             Entity(name="Customer", serving_names=["cust_id"]).save()
 

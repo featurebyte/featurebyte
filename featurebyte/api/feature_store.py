@@ -3,23 +3,27 @@ FeatureStore class
 """
 from __future__ import annotations
 
-from http import HTTPStatus
+from typing import Any
 
+from featurebyte.api.api_object import APIObject
 from featurebyte.api.database_table import DatabaseTable
-from featurebyte.config import Configurations, Credentials
+from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.exception import (
-    DuplicatedRecordException,
-    RecordCreationException,
-    RecordRetrievalException,
-)
 from featurebyte.models.feature_store import TableDetails
+from featurebyte.schema.feature_store import FeatureStoreCreate
 
 
-class FeatureStore(ExtendedFeatureStoreModel):
+class FeatureStore(ExtendedFeatureStoreModel, APIObject):
     """
     FeatureStore class
     """
+
+    # class variables
+    _route = "/feature_store"
+
+    def _get_create_payload(self) -> dict[str, Any]:
+        data = FeatureStoreCreate(**self.dict(by_alias=True))
+        return data.json_dict()
 
     def list_databases(self, credentials: Credentials | None = None) -> list[str]:
         """
@@ -119,53 +123,3 @@ class FeatureStore(ExtendedFeatureStoreModel):
             ),
             credentials=credentials,
         )
-
-    @classmethod
-    def get(cls, name: str) -> FeatureStore:
-        """
-        Retrieve feature store from the persistent given feature store name
-
-        Parameters
-        ----------
-        name: str
-            Feature store name
-
-        Returns
-        -------
-        FeatureStore
-            FeatureStore object of the given feature store name
-
-        Raises
-        ------
-        RecordRetrievalException
-            When the feature store not found
-        """
-        client = Configurations().get_client()
-        response = client.get(url="/feature_store/", params={"name": name})
-        if response.status_code == HTTPStatus.OK:
-            response_dict = response.json()
-            if response_dict["data"]:
-                feature_store_dict = response_dict["data"][0]
-                return FeatureStore(**feature_store_dict)
-        raise RecordRetrievalException(
-            response, f'FeatureStore (feature_store.name: "{name}") not found!'
-        )
-
-    def save(self) -> None:
-        """
-        Save feature store to persistent
-
-        Raises
-        ------
-        DuplicatedRecordException
-            When there exists feature store with the same name or id
-        RecordCreationException
-            When exception happens during record creation at persistent
-        """
-        client = Configurations().get_client()
-        response = client.post(url="/feature_store", json=self.json_dict())
-        if response.status_code != HTTPStatus.CREATED:
-            if response.status_code == HTTPStatus.CONFLICT:
-                raise DuplicatedRecordException(response)
-            raise RecordCreationException(response)
-        type(self).__init__(self, **response.json())

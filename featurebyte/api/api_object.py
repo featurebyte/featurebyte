@@ -3,11 +3,17 @@ APIObjectMixin class
 """
 from __future__ import annotations
 
+from typing import Any
+
 from http import HTTPStatus
 
 from featurebyte.config import Configurations
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.exception import RecordRetrievalException
+from featurebyte.exception import (
+    DuplicatedRecordException,
+    RecordCreationException,
+    RecordRetrievalException,
+)
 from featurebyte.models.base import FeatureByteBaseModel
 
 
@@ -16,14 +22,46 @@ class APIObject(FeatureByteBaseModel):
     APIObjectMixin contains common methods used to interact with API routes
     """
 
+    # class variables
     _route = ""
 
     @classmethod
     def _get_object_name(cls, class_name: str) -> str:
+        """
+
+        Parameters
+        ----------
+        class_name
+
+        Returns
+        -------
+
+        """
+
         object_name = "".join(
             "_" + char.lower() if char.isupper() else char for char in class_name
         ).lstrip("_")
         return object_name
+
+    def _get_init_params(self) -> dict[str, Any]:
+        """
+        Additional parameters pass to constructor (other than those parameters from response)
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {}
+
+    def _get_create_payload(self) -> dict[str, Any]:
+        """
+        Construct payload used for post route
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return self.json_dict()
 
     @classmethod
     def get(cls, name: str) -> APIObject:
@@ -37,13 +75,13 @@ class APIObject(FeatureByteBaseModel):
 
         Returns
         -------
-        EventData
-            EventData object of the given event data name
+        APIObject
+            APIObject object of the given event data name
 
         Raises
         ------
         RecordRetrievalException
-            When the event data not found
+            When the object not found
         """
         client = Configurations().get_client()
         response = client.get(url=cls._route, params={"name": name})
@@ -59,7 +97,8 @@ class APIObject(FeatureByteBaseModel):
                         feature_store = ExtendedFeatureStoreModel(**feature_store_response.json())
                         return cls(**object_dict, feature_store=feature_store)
                     raise RecordRetrievalException(
-                        response, f'FeatureStore (feature_store.id: "{feature_store_id}") not found!'
+                        response,
+                        f'FeatureStore (feature_store.id: "{feature_store_id}") not found!',
                     )
                 return cls(**object_dict)
 
@@ -68,3 +107,22 @@ class APIObject(FeatureByteBaseModel):
         raise RecordRetrievalException(
             response, f'{class_name} ({object_name}.name: "{name}") not found!'
         )
+
+    def save(self) -> None:
+        """
+        Save object to the persistent
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When record with the same key exists at the persistent layer
+        RecordCreationException
+            When fail to save the event data (general failure)
+        """
+        client = Configurations().get_client()
+        response = client.post(url=self._route, json=self._get_create_payload())
+        if response.status_code != HTTPStatus.CREATED:
+            if response.status_code == HTTPStatus.CONFLICT:
+                raise DuplicatedRecordException(response=response)
+            raise RecordCreationException(response=response)
+        type(self).__init__(self, **response.json(), **self._get_init_params())

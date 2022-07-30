@@ -133,7 +133,7 @@ def test_save__unexpected_creation_exception(snowflake_feature_store):
     """
     # check unexpected creation exception
     with pytest.raises(RecordCreationException):
-        with patch("featurebyte.api.feature_store.Configurations"):
+        with patch("featurebyte.api.api_object.Configurations"):
             snowflake_feature_store.save()
 
 

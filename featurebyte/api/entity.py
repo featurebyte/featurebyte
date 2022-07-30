@@ -3,16 +3,13 @@ Entity class
 """
 from __future__ import annotations
 
+from typing import Any
+
 from http import HTTPStatus
 
 from featurebyte.api.api_object import APIObject
-from featurebyte.api.util import get_entity
 from featurebyte.config import Configurations
-from featurebyte.exception import (
-    DuplicatedRecordException,
-    RecordCreationException,
-    RecordUpdateException,
-)
+from featurebyte.exception import DuplicatedRecordException, RecordUpdateException
 from featurebyte.models.entity import EntityModel
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
@@ -24,6 +21,10 @@ class Entity(EntityModel, APIObject):
 
     # class variables
     _route = "/entity"
+
+    def _get_create_payload(self) -> dict[str, Any]:
+        data = EntityCreate(name=self.name, serving_name=self.serving_names[0])
+        return data.json_dict()
 
     @property
     def serving_name(self) -> str:
@@ -64,23 +65,3 @@ class Entity(EntityModel, APIObject):
                     raise DuplicatedRecordException(response=response)
                 raise RecordUpdateException(response=response)
             super().__init__(**response.json())
-
-    def save(self) -> None:
-        """
-        save entity at persistent layer
-
-        Raises
-        ------
-        DuplicatedRecordException
-            When there exists entity with the same name or serving name
-        RecordCreationException
-            When exception happens during record creation at persistent
-        """
-        data = EntityCreate(name=self.name, serving_name=self.serving_names[0])
-        client = Configurations().get_client()
-        response = client.post("/entity", json=data.json_dict())
-        if response.status_code != HTTPStatus.CREATED:
-            if response.status_code == HTTPStatus.CONFLICT:
-                raise DuplicatedRecordException(response=response)
-            raise RecordCreationException(response=response)
-        type(self).__init__(self, **response.json())

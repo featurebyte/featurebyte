@@ -276,7 +276,7 @@ def test_event_data__save__exceptions(saved_event_data):
 
     # check unhandled response status code
     with pytest.raises(RecordCreationException):
-        with patch("featurebyte.api.event_data.Configurations"):
+        with patch("featurebyte.api.api_object.Configurations"):
             saved_event_data.save()
 
 

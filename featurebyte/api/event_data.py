@@ -16,7 +16,6 @@ from featurebyte.api.util import get_entity
 from featurebyte.config import Configurations, Credentials
 from featurebyte.exception import (
     DuplicatedRecordException,
-    RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
 )
@@ -83,6 +82,13 @@ class EventData(EventDataModel, DatabaseTable, APIObject):
 
     # class variables
     _route = "/event_data"
+
+    def _get_init_params(self) -> dict[str, Any]:
+        return {"feature_store": self.feature_store, "credentials": self.credentials}
+
+    def _get_create_payload(self) -> dict[str, Any]:
+        data = EventDataCreate(**self.dict(by_alias=True))
+        return data.json_dict()
 
     @classmethod
     def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -184,27 +190,6 @@ class EventData(EventDataModel, DatabaseTable, APIObject):
 
     def __getattr__(self, item: str) -> EventDataColumn:
         return self.__getitem__(item)
-
-    def save(self) -> None:
-        """
-        Save event data to persistent as draft
-
-        Raises
-        ------
-        DuplicatedRecordException
-            When record with the same key exists at the persistent layer
-        RecordCreationException
-            When fail to save the event data (general failure)
-        """
-        client = Configurations().get_client()
-        response = client.post(url="/event_data", json=self.json_dict())
-        if response.status_code != HTTPStatus.CREATED:
-            if response.status_code == HTTPStatus.CONFLICT:
-                raise DuplicatedRecordException(response)
-            raise RecordCreationException(response)
-        type(self).__init__(
-            self, **response.json(), feature_store=self.feature_store, credentials=self.credentials
-        )
 
     def info(self) -> dict[str, Any]:
         """
