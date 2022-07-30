@@ -82,7 +82,7 @@ class ApiObject(FeatureByteBaseModel):
         Raises
         ------
         RecordRetrievalException
-            When the object not found
+            When the object not found or unexpected response status code
         """
         client = Configurations().get_client()
         response = client.get(url=cls._route, params={"name": name})
@@ -108,7 +108,7 @@ class ApiObject(FeatureByteBaseModel):
             raise RecordRetrievalException(
                 response, f'{class_name} ({object_name}.name: "{name}") not found!'
             )
-        raise RecordRetrievalException(response, f"Failed to retrieve specified object!")
+        raise RecordRetrievalException(response, "Failed to retrieve specified object!")
 
     @classmethod
     def list(cls) -> list[str]:
@@ -119,6 +119,11 @@ class ApiObject(FeatureByteBaseModel):
         -------
         list[str]
             List of object name
+
+        Raises
+        ------
+        RecordRetrievalException
+            When the response status code is unexpected
         """
         client = Configurations().get_client()
         response = client.get(url=cls._route)
