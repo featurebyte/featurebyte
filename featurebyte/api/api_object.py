@@ -1,5 +1,5 @@
 """
-APIObjectMixin class
+ApiObject class
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 
 class ApiObject(FeatureByteBaseModel):
     """
-    APIObjectMixin contains common methods used to interact with API routes
+    ApiObject contains common methods used to interact with API routes
     """
 
     # class variables
@@ -77,7 +77,7 @@ class ApiObject(FeatureByteBaseModel):
         Returns
         -------
         ApiObject
-            APIObject object of the given event data name
+            ApiObject object of the given event data name
 
         Raises
         ------
