@@ -87,7 +87,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject):
         return {"feature_store": self.feature_store, "credentials": self.credentials}
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = EventDataCreate(**self.dict(by_alias=True))
+        data = EventDataCreate(**self.json_dict())
         return data.json_dict()
 
     @classmethod

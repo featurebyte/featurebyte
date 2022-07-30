@@ -36,7 +36,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
         return {"feature_store": self.feature_store}
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = FeatureCreate(**self.dict(by_alias=True))
+        data = FeatureCreate(**self.json_dict())
         return data.json_dict()
 
     def __setattr__(self, key: str, value: Any) -> Any:

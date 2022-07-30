@@ -22,7 +22,7 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
     _route = "/feature_store"
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = FeatureStoreCreate(**self.dict(by_alias=True))
+        data = FeatureStoreCreate(**self.json_dict())
         return data.json_dict()
 
     def list_databases(self, credentials: Credentials | None = None) -> list[str]:
