@@ -136,5 +136,17 @@ def test_get_entity():
     assert Entity.get("product").dict(exclude=excluded) == prod_entity.dict(exclude=excluded)
     assert Entity.get("region").dict(exclude=excluded) == region_entity.dict(exclude=excluded)
 
+    # test unexpected retrieval exception for Entity.get
+    with mock.patch("featurebyte.api.api_object.Configurations"):
+        with pytest.raises(RecordRetrievalException) as exc:
+            Entity.get("anything")
+    assert "Failed to retrieve specified object!" in str(exc.value)
+
     # test list entity names
     assert Entity.list() == ["region", "product", "customer"]
+
+    # test unexpected retrieval exception for Entity.list
+    with mock.patch("featurebyte.api.api_object.Configurations"):
+        with pytest.raises(RecordRetrievalException) as exc:
+            Entity.list()
+    assert "Failed to list object names!" in str(exc.value)

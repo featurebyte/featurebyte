@@ -108,7 +108,7 @@ class ApiObject(FeatureByteBaseModel):
             raise RecordRetrievalException(
                 response, f'{class_name} ({object_name}.name: "{name}") not found!'
             )
-        raise RecordRetrievalException(response, f"Failed to retrieve object!")
+        raise RecordRetrievalException(response, f"Failed to retrieve specified object!")
 
     @classmethod
     def list(cls) -> list[str]:
@@ -125,7 +125,7 @@ class ApiObject(FeatureByteBaseModel):
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             return [elem["name"] for elem in response_dict["data"]]
-        raise RecordRetrievalException(response, "Failed to list object name!")
+        raise RecordRetrievalException(response, "Failed to list object names!")
 
     def save(self) -> None:
         """
