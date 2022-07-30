@@ -103,11 +103,29 @@ class ApiObject(FeatureByteBaseModel):
                     )
                 return cls(**object_dict)
 
-        class_name = cls.__name__
-        object_name = cls._get_object_name(class_name)
-        raise RecordRetrievalException(
-            response, f'{class_name} ({object_name}.name: "{name}") not found!'
-        )
+            class_name = cls.__name__
+            object_name = cls._get_object_name(class_name)
+            raise RecordRetrievalException(
+                response, f'{class_name} ({object_name}.name: "{name}") not found!'
+            )
+        raise RecordRetrievalException(response, f"Failed to retrieve object!")
+
+    @classmethod
+    def list(cls) -> list[str]:
+        """
+        List the object name store at the persistent
+
+        Returns
+        -------
+        list[str]
+            List of object name
+        """
+        client = Configurations().get_client()
+        response = client.get(url=cls._route)
+        if response.status_code == HTTPStatus.OK:
+            response_dict = response.json()
+            return [elem["name"] for elem in response_dict["data"]]
+        raise RecordRetrievalException(response, "Failed to list object name!")
 
     def save(self) -> None:
         """
@@ -116,7 +134,7 @@ class ApiObject(FeatureByteBaseModel):
         Raises
         ------
         DuplicatedRecordException
-            When record with the same key exists at the persistent layer
+            When record with the same key exists at the persistent
         RecordCreationException
             When fail to save the event data (general failure)
         """

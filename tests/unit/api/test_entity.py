@@ -135,3 +135,6 @@ def test_get_entity():
     assert Entity.get("customer").dict(exclude=excluded) == cust_entity.dict(exclude=excluded)
     assert Entity.get("product").dict(exclude=excluded) == prod_entity.dict(exclude=excluded)
     assert Entity.get("region").dict(exclude=excluded) == region_entity.dict(exclude=excluded)
+
+    # test list entity names
+    assert Entity.list() == ["region", "product", "customer"]

@@ -151,7 +151,7 @@ max-args = 10
 
 [tool.pylint.design]
 max-attributes = 8
-max-parents = 9
+max-parents = 11
 
 [tool.pylint.format]
 max-line-length = 150

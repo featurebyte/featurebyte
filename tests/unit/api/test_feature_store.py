@@ -111,6 +111,9 @@ def saved_snowflake_feature_store_fixture(snowflake_feature_store, mock_get_pers
             "updated_at": None,
         }.items()
     )
+
+    # test list feature store
+    assert FeatureStore.list() == ["sf_featurestore"] == [snowflake_feature_store.name]
     yield snowflake_feature_store
 
 

@@ -197,6 +197,10 @@ def saved_feature_fixture(
     float_feature.save()
     assert float_feature.id == feature_id_before
     assert float_feature.readiness == FeatureReadiness.DRAFT
+
+    # test list features
+    assert float_feature.name == "sum_1d"
+    assert Feature.list() == ["sum_1d"]
     yield float_feature
 
 
