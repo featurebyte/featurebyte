@@ -10,13 +10,12 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from pydantic import validator
 
+from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
-from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.util import get_entity
 from featurebyte.config import Configurations, Credentials
 from featurebyte.exception import (
     DuplicatedRecordException,
-    RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
 )
@@ -76,10 +75,20 @@ class EventDataColumn:
             raise RecordUpdateException(response)
 
 
-class EventData(EventDataModel, DatabaseTable):
+class EventData(EventDataModel, DatabaseTable, ApiObject):
     """
     EventData class
     """
+
+    # class variables
+    _route = "/event_data"
+
+    def _get_init_params(self) -> dict[str, Any]:
+        return {"feature_store": self.feature_store, "credentials": self.credentials}
+
+    def _get_create_payload(self) -> dict[str, Any]:
+        data = EventDataCreate(**self.json_dict())
+        return data.json_dict()
 
     @classmethod
     def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -143,44 +152,6 @@ class EventData(EventDataModel, DatabaseTable):
             )
         raise RecordRetrievalException(response)
 
-    @classmethod
-    def get(cls, name: str) -> EventData:
-        """
-        Retrieve event data from the persistent given event data name
-
-        Parameters
-        ----------
-        name: str
-            Event data name
-
-        Returns
-        -------
-        EventData
-            EventData object of the given event data name
-
-        Raises
-        ------
-        RecordRetrievalException
-            When the event data not found
-        """
-        client = Configurations().get_client()
-        response = client.get(url="/event_data/", params={"name": name})
-        if response.status_code == HTTPStatus.OK:
-            response_dict = response.json()
-            if response_dict["data"]:
-                event_data_dict = response_dict["data"][0]
-                feature_store_id = event_data_dict["tabular_source"][0]
-                feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
-                if feature_store_response.status_code == HTTPStatus.OK:
-                    feature_store = FeatureStore(**feature_store_response.json())
-                    return EventData(**event_data_dict, feature_store=feature_store)
-                raise RecordRetrievalException(
-                    response, f'FeatureStore (feature_store.id: "{feature_store_id}") not found!'
-                )
-        raise RecordRetrievalException(
-            response, f'EventData (event_data.name: "{name}") not found!'
-        )
-
     @validator("event_timestamp_column")
     @classmethod
     def _check_event_timestamp_column_exists(cls, value: str, values: dict[str, Any]) -> str:
@@ -219,27 +190,6 @@ class EventData(EventDataModel, DatabaseTable):
 
     def __getattr__(self, item: str) -> EventDataColumn:
         return self.__getitem__(item)
-
-    def save(self) -> None:
-        """
-        Save event data to persistent as draft
-
-        Raises
-        ------
-        DuplicatedRecordException
-            When record with the same key exists at the persistent layer
-        RecordCreationException
-            When fail to save the event data (general failure)
-        """
-        client = Configurations().get_client()
-        response = client.post(url="/event_data", json=self.json_dict())
-        if response.status_code != HTTPStatus.CREATED:
-            if response.status_code == HTTPStatus.CONFLICT:
-                raise DuplicatedRecordException(response)
-            raise RecordCreationException(response)
-        type(self).__init__(
-            self, **response.json(), feature_store=self.feature_store, credentials=self.credentials
-        )
 
     def info(self) -> dict[str, Any]:
         """
