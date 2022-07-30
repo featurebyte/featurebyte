@@ -1,7 +1,6 @@
 """
 EventData API routes
 """
-# pylint: disable=too-few-public-methods,relative-beyond-top-level
 from __future__ import annotations
 
 from typing import Literal, Optional

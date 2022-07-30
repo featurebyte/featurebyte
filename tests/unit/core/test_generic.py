@@ -25,19 +25,30 @@ def check_graph_state(graph1, graph2):
     assert id(graph1.ref_to_node_name) == id(graph2.ref_to_node_name)
 
 
-@pytest.fixture(name="tabular_source")
-def feature_store_tabular_source_fixture(snowflake_feature_store):
+@pytest.fixture(name="feature_store_tabular_source")
+def feature_store_tabular_source_fixture():
     """
     Tabulor source fixture
     """
-    return (
-        snowflake_feature_store,
+    feature_store = FeatureStore(
+        name="sf_featurestore",
+        type="snowflake",
+        details=SnowflakeDetails(
+            account="sf_account",
+            warehouse="sf_warehouse",
+            sf_schema="sf_schema",
+            database="sf_database",
+        ),
+    )
+    tabular_source = (
+        feature_store.id,
         {"database_name": "db", "schema_name": "public", "table_name": "some_table_name"},
     )
+    return feature_store, tabular_source
 
 
 @pytest.fixture(name="query_object1")
-def query_object1_fixture(tabular_source):
+def query_object1_fixture(feature_store_tabular_source):
     """
     Query Object 1 fixture
     """
@@ -48,7 +59,9 @@ def query_object1_fixture(tabular_source):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[],
     )
+    feature_store, tabular_source = feature_store_tabular_source
     query_obj1 = QueryObject(
+        feature_store=feature_store,
         node=node_proj1,
         row_index_lineage=(node_proj1.name,),
         tabular_source=tabular_source,
@@ -58,7 +71,7 @@ def query_object1_fixture(tabular_source):
 
 
 @pytest.fixture(name="query_object2")
-def query_object2_fixture(tabular_source, query_object1):
+def query_object2_fixture(feature_store_tabular_source, query_object1):
     """
     Query Object 2 fixture
     """
@@ -70,7 +83,9 @@ def query_object2_fixture(tabular_source, query_object1):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_proj1],
     )
+    feature_store, tabular_source = feature_store_tabular_source
     query_obj2 = QueryObject(
+        feature_store=feature_store,
         node=node_proj2,
         row_index_lineage=(node_proj1.name, node_proj2.name),
         tabular_source=tabular_source,

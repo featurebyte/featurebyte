@@ -3,9 +3,9 @@ import textwrap
 from featurebyte.feature_manager.model import ExtendedFeatureModel, TileSpec
 
 
-def test_extended_feature_model__float_feature(float_feature):
+def test_extended_feature_model__float_feature(float_feature, snowflake_feature_store):
     """Test ExtendedFeatureModel has correct tile_specs"""
-    model = ExtendedFeatureModel(**float_feature.dict())
+    model = ExtendedFeatureModel(**float_feature.dict(), feature_store=snowflake_feature_store)
     expected_sql = textwrap.dedent(
         """
         SELECT
@@ -51,13 +51,16 @@ def test_extended_feature_model__float_feature(float_feature):
             tile_id="sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
         )
     ]
-    tile_specs = model.tile_specs
-    assert tile_specs == expected_tile_specs
+    assert model.tile_specs == expected_tile_specs
 
 
-def test_extended_feature_model__agg_per_category_feature(agg_per_category_feature):
+def test_extended_feature_model__agg_per_category_feature(
+    agg_per_category_feature, snowflake_feature_store
+):
     """Test ExtendedFeatureModel has correct tile_specs for category groupby feature"""
-    model = ExtendedFeatureModel(**agg_per_category_feature.dict())
+    model = ExtendedFeatureModel(
+        **agg_per_category_feature.dict(), feature_store=snowflake_feature_store
+    )
     expected_sql = textwrap.dedent(
         """
         SELECT
@@ -105,5 +108,4 @@ def test_extended_feature_model__agg_per_category_feature(agg_per_category_featu
             tile_id="sum_f1800_m300_b600_b2cfe14613c88a50946d1b99fa0ae3ca5d89849d",
         )
     ]
-    tile_specs = model.tile_specs
-    assert tile_specs == expected_tile_specs
+    assert model.tile_specs == expected_tile_specs

@@ -172,6 +172,7 @@ class Frame(BaseFrame, OpsMixin):
                 input_nodes=[self.graph.get_node_by_name(self.column_lineage_map[item][-1])],
             )
             return self._series_class(
+                feature_store=self.feature_store,
                 tabular_source=self.tabular_source,
                 node=node,
                 name=item,
@@ -196,6 +197,7 @@ class Frame(BaseFrame, OpsMixin):
                     self.column_lineage_map[col], node.name
                 )
             return type(self)(
+                feature_store=self.feature_store,
                 tabular_source=self.tabular_source,
                 node=node,
                 column_var_type_map=column_var_type_map,
@@ -211,6 +213,7 @@ class Frame(BaseFrame, OpsMixin):
             for col, lineage in self.column_lineage_map.items():
                 column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
             return type(self)(
+                feature_store=self.feature_store,
                 tabular_source=self.tabular_source,
                 node=node,
                 column_var_type_map=copy.deepcopy(self.column_var_type_map),
@@ -295,7 +298,9 @@ class Frame(BaseFrame, OpsMixin):
             new_object.node = mapped_node
             column_lineage_map = {}
             for col, lineage in new_object.column_lineage_map.items():
-                column_lineage_map[col] = tuple(node_name_map[node_name] for node_name in lineage)
+                column_lineage_map[col] = tuple(
+                    node_name_map[node_name] for node_name in lineage if node_name in node_name_map
+                )
             new_object.column_lineage_map = column_lineage_map
             new_object.row_index_lineage = tuple(
                 node_name_map[node_name] for node_name in new_object.row_index_lineage

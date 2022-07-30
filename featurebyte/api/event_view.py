@@ -221,6 +221,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
             constructed EventView object
         """
         return EventView(
+            feature_store=event_data.feature_store,
             tabular_source=event_data.tabular_source,
             node=event_data.node,
             column_var_type_map=event_data.column_var_type_map.copy(),

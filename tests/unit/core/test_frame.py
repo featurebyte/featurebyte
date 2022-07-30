@@ -344,6 +344,7 @@ def test_frame__dict(dataframe):
         "VALUE": ("input_1", "filter_1", "project_2"),
     }
     assert sub_dataframe_dict["row_index_lineage"] == ("input_1", "filter_1")
+    sub_dataframe_dict["feature_store"] = dataframe.feature_store
     loaded_sub_dataframe = Frame.parse_obj(sub_dataframe_dict)
     # note that loaded_sub_dataframe & sub_dataframe are not fully identical (ideally, we should make them identical)
     # loaded_sub_dataframe = input -> filter (input_frame, "MASK") -> project ["VALUE", "CUST_ID"]

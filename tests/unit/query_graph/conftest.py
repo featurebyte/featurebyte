@@ -349,8 +349,9 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
         input_nodes=[],
     )
     yield Frame(
+        feature_store=snowflake_feature_store,
         tabular_source=(
-            snowflake_feature_store,
+            snowflake_feature_store.id,
             {"database_name": "db", "schema_name": "public", "table_name": "some_table_name"},
         ),
         node=node,

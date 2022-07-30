@@ -11,7 +11,7 @@ from featurebyte.config import Configurations, Credentials
 from featurebyte.core.frame import BaseFrame
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import DBVarType
-from featurebyte.models.feature_store import DatabaseTableModel, FeatureStoreModel, TableDetails
+from featurebyte.models.feature_store import DatabaseTableModel, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
@@ -25,6 +25,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
 
     column_var_type_map: Dict[StrictStr, DBVarType]
     credentials: Optional[Credentials] = Field(default=None, allow_mutation=False, exclude=True)
+    feature_store: ExtendedFeatureStoreModel = Field(allow_mutation=False, exclude=True)
 
     class Config:
         """
@@ -75,11 +76,11 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             config = Configurations()
             credentials = config.credentials
 
-        feature_store, table_details = values["tabular_source"]
+        feature_store = values["feature_store"]
         if isinstance(feature_store, dict):
             feature_store = ExtendedFeatureStoreModel(**feature_store)
-        elif isinstance(feature_store, FeatureStoreModel):
-            feature_store = ExtendedFeatureStoreModel(**feature_store.dict())
+
+        _, table_details = values["tabular_source"]
         if isinstance(table_details, dict):
             table_details = TableDetails(**table_details)
 
@@ -95,7 +96,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             node_params={
                 "columns": list(table_schema.keys()),
                 "dbtable": table_details.dict(),
-                "feature_store": feature_store.dict(),
+                "feature_store": feature_store.dict(include={"type": True, "details": True}),
                 **cls._get_other_input_node_parameters(values),
             },
             node_output_type=NodeOutputType.FRAME,

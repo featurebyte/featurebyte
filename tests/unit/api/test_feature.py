@@ -177,12 +177,15 @@ def mock_insert_feature_registry_fixture():
 
 
 @pytest.fixture(name="saved_feature")
-def saved_feature_fixture(snowflake_event_data, float_feature, mock_insert_feature_registry):
+def saved_feature_fixture(
+    snowflake_feature_store, snowflake_event_data, float_feature, mock_insert_feature_registry
+):
     """
     Saved feature fixture
     """
     _ = mock_insert_feature_registry
     event_data_id_before = snowflake_event_data.id
+    snowflake_feature_store.save()
     snowflake_event_data.save()
     assert snowflake_event_data.id == event_data_id_before
     feature_id_before = float_feature.id

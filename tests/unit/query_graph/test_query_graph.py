@@ -82,15 +82,17 @@ def test_prune__redundant_assign_node_with_same_target_column_name(dataframe):
     """
     dataframe["VALUE"] = 1
     dataframe["VALUE"] = dataframe["CUST_ID"] * 10
-    pruned_graph, node_name_map = dataframe.graph.prune(
-        target_node=dataframe.node, target_columns={"VALUE"}
-    )
-    mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
-    assert pruned_graph.edges == {
+    # convert the dataframe into dictionary & compare some attribute values
+    dataframe_dict = dataframe.dict()
+    assert dataframe_dict["graph"]["edges"] == {
         "input_1": ["project_1", "assign_1"],
         "project_1": ["mul_1"],
         "mul_1": ["assign_1"],
     }
+    pruned_graph, node_name_map = dataframe.graph.prune(
+        target_node=dataframe.node, target_columns={"VALUE"}
+    )
+    mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.nodes["assign_1"]["parameters"] == {"name": "VALUE"}
     assert mapped_node.name == "assign_1"
 

@@ -10,7 +10,6 @@ import pymongo
 from pydantic import StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_store import FeatureStoreModel
 
 
 class CredentialType(str, Enum):
@@ -36,7 +35,6 @@ class Credential(FeatureByteBaseModel):
     """
 
     name: StrictStr
-    feature_store: FeatureStoreModel
     credential_type: CredentialType
     credential: Union[UsernamePasswordCredential]
 

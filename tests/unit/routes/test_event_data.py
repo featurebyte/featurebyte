@@ -2,7 +2,6 @@
 Tests for EventData routes
 """
 import datetime
-import json
 from http import HTTPStatus
 from unittest import mock
 
@@ -15,26 +14,18 @@ from featurebyte.persistent.git import GitDB
 
 
 @pytest.fixture(name="event_data_model_dict")
-def event_data_model_dict_fixture():
+def event_data_model_dict_fixture(snowflake_feature_store):
     """Fixture for a Event Data dict"""
     event_data_dict = {
         "name": "订单表",
-        "tabular_source": (
-            {
-                "type": "snowflake",
-                "details": {
-                    "account": "account",
-                    "warehouse": "warehouse",
-                    "database": "database",
-                    "sf_schema": "schema",
-                },
-            },
+        "tabular_source": [
+            str(snowflake_feature_store.id),
             {
                 "database_name": "database",
                 "schema_name": "schema",
                 "table_name": "table",
             },
-        ),
+        ],
         "event_timestamp_column": "event_date",
         "record_creation_date_column": "created_at",
         "column_entity_map": None,
@@ -84,15 +75,20 @@ def event_data_update_dict_fixture():
 
 
 @pytest.fixture(name="event_data_response")
-def event_data_response_fixture(test_api_client_persistent, event_data_model_dict):
+def event_data_response_fixture(
+    test_api_client_persistent, event_data_model_dict, snowflake_feature_store
+):
     """
     Event data response fixture
     """
-    test_api_client, _ = test_api_client_persistent
-    response = test_api_client.post("/event_data", json=event_data_model_dict)
+    test_api_client, persistent = test_api_client_persistent
+    snowflake_feature_store.save()
+    response = test_api_client.post(
+        "/event_data", json=EventDataModel(**event_data_model_dict).json_dict()
+    )
     assert response.status_code == HTTPStatus.CREATED
     assert response.json()["_id"] == event_data_model_dict["_id"]
-    yield response
+    return response
 
 
 def test_create_success(event_data_response, event_data_model_dict):
@@ -123,23 +119,30 @@ def test_create_fails_table_exists(
     """
     _ = event_data_response
     test_api_client, _ = test_api_client_persistent
-    response = test_api_client.post("/event_data", json=event_data_model_dict)
+    response = test_api_client.post(
+        "/event_data", json=EventDataModel(**event_data_model_dict).json_dict()
+    )
     assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {"detail": 'EventData (event_data.name: "订单表") already exists.'}
 
 
-def test_create_fails_table_exists_during_insert(test_api_client_persistent, event_data_model_dict):
+def test_create_fails_table_exists_during_insert(
+    test_api_client_persistent, event_data_model_dict, snowflake_feature_store
+):
     """
     Create Event Data fails if table with same name already exists during persistent insert
     """
     test_api_client, persistent = test_api_client_persistent
+    snowflake_feature_store.save()
     if isinstance(persistent, GitDB):
         func_path = "featurebyte.persistent.GitDB.insert_one"
     else:
         func_path = "featurebyte.persistent.MongoDB.insert_one"
     with mock.patch(func_path) as mock_insert:
         mock_insert.side_effect = DuplicateDocumentError
-        response = test_api_client.post("/event_data", json=event_data_model_dict)
+        response = test_api_client.post(
+            "/event_data", json=EventDataModel(**event_data_model_dict).json_dict()
+        )
     assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {"detail": 'EventData (event_data.name: "订单表") already exists.'}
 
@@ -149,16 +152,16 @@ def test_create_fails_wrong_field_type(test_api_client_persistent, event_data_mo
     Create Event Data fails if wrong types are provided for fields
     """
     test_api_client, _ = test_api_client_persistent
-    event_data_model_dict["tabular_source"] = ("Some other source", "other_table")
-    response = test_api_client.post("/event_data", json=event_data_model_dict)
+    json_dict = EventDataModel(**event_data_model_dict).json_dict()
+    json_dict["tabular_source"] = ("Some other source", "other_table")
+    response = test_api_client.post("/event_data", json=json_dict)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert response.json() == {
         "detail": [
             {
-                "ctx": {"object_type": "FeatureStoreModel"},
                 "loc": ["body", "tabular_source", 0],
-                "msg": "value is not a valid FeatureStoreModel type",
-                "type": "type_error.featurebytetype",
+                "msg": "Id must be of type PydanticObjectId",
+                "type": "type_error",
             },
             {
                 "ctx": {"object_type": "TableDetails"},
@@ -171,18 +174,23 @@ def test_create_fails_wrong_field_type(test_api_client_persistent, event_data_mo
 
 
 @pytest.fixture(name="inserted_event_data_ids")
-def inserted_event_data_ids_fixture(test_api_client_persistent, event_data_model_dict):
+def inserted_event_data_ids_fixture(
+    test_api_client_persistent, event_data_model_dict, snowflake_feature_store
+):
     """
     Inserted multiple event data results & return its ids as fixture
     """
     test_api_client, _ = test_api_client_persistent
+    snowflake_feature_store.save()
     # insert a few records
     insert_ids = []
     for i in range(3):
         insert_id = str(ObjectId())
         event_data_model_dict["_id"] = insert_id
         event_data_model_dict["name"] = f"Table {i}"
-        response = test_api_client.post("/event_data", json=event_data_model_dict)
+        response = test_api_client.post(
+            "/event_data", json=EventDataModel(**event_data_model_dict).json_dict()
+        )
         assert response.status_code == HTTPStatus.CREATED
         assert response.json()["_id"] == insert_id
         insert_ids.append(insert_id)
