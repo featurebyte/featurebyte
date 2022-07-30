@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from pydantic import Field, StrictStr, root_validator
 

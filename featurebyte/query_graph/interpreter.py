@@ -138,7 +138,7 @@ class SQLOperationGraph:
             sql_node = make_filter_node(input_sql_nodes, output_type)
 
         elif node_type == NodeType.CONDITIONAL:
-            sql_node = make_conditional_node(input_sql_nodes, self.query_graph, cur_node)
+            sql_node = make_conditional_node(input_sql_nodes, cur_node)
 
         elif node_type == NodeType.GROUPBY:
             sql_node = handle_groupby_node(

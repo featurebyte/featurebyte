@@ -16,7 +16,7 @@ from sqlglot import Expression, expressions, parse_one, select
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_common import AggregationSpec
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import Node
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 
 
@@ -398,6 +398,7 @@ class FilteredSeries(ExpressionNode):
 
 @dataclass
 class Conditional(ExpressionNode):
+    """Conditional node"""
 
     series_node: ExpressionNode
     mask: ExpressionNode
@@ -821,25 +822,19 @@ def handle_groupby_node(
     return sql_node
 
 
-def make_conditional_node(
-    input_sql_nodes: list[SQLNode],
-    graph: QueryGraph,
-    node: Node,
-) -> Conditional:
-    """Create a conditionalnode
+def make_conditional_node(input_sql_nodes: list[SQLNode], node: Node) -> Conditional:
+    """Create a Conditional node
 
     Parameters
     ----------
     input_sql_nodes : list[SQLNode]
         Input SQL nodes
-    graph : QueryGraph
-        Query graph
     node : Node
         Query graph node
 
     Returns
     -------
-    ExpressionNode
+    Conditional
     """
     assert len(input_sql_nodes) == 2
     parameters = node.parameters
