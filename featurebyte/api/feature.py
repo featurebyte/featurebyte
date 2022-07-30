@@ -10,7 +10,7 @@ import time
 import pandas as pd
 from pydantic import Field
 
-from featurebyte.api.api_object import APIObject
+from featurebyte.api.api_object import ApiObject
 from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
@@ -22,7 +22,7 @@ from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 from featurebyte.schema.feature import FeatureCreate
 
 
-class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, APIObject):
+class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
     """
     Feature class
     """

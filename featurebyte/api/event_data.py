@@ -10,7 +10,7 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from pydantic import validator
 
-from featurebyte.api.api_object import APIObject
+from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.util import get_entity
 from featurebyte.config import Configurations, Credentials
@@ -75,7 +75,7 @@ class EventDataColumn:
             raise RecordUpdateException(response)
 
 
-class EventData(EventDataModel, DatabaseTable, APIObject):
+class EventData(EventDataModel, DatabaseTable, ApiObject):
     """
     EventData class
     """

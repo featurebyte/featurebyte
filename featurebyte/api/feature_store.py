@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from featurebyte.api.api_object import APIObject
+from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedFeatureStoreModel
@@ -13,7 +13,7 @@ from featurebyte.models.feature_store import TableDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
 
 
-class FeatureStore(ExtendedFeatureStoreModel, APIObject):
+class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
     """
     FeatureStore class
     """

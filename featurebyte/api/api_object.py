@@ -17,7 +17,7 @@ from featurebyte.exception import (
 from featurebyte.models.base import FeatureByteBaseModel
 
 
-class APIObject(FeatureByteBaseModel):
+class ApiObject(FeatureByteBaseModel):
     """
     APIObjectMixin contains common methods used to interact with API routes
     """
@@ -28,16 +28,17 @@ class APIObject(FeatureByteBaseModel):
     @classmethod
     def _get_object_name(cls, class_name: str) -> str:
         """
+        Convert camel case class name to snake case object name
 
         Parameters
         ----------
-        class_name
+        class_name: str
+            Class name
 
         Returns
         -------
-
+        str
         """
-
         object_name = "".join(
             "_" + char.lower() if char.isupper() else char for char in class_name
         ).lstrip("_")
@@ -64,7 +65,7 @@ class APIObject(FeatureByteBaseModel):
         return self.json_dict()
 
     @classmethod
-    def get(cls, name: str) -> APIObject:
+    def get(cls, name: str) -> ApiObject:
         """
         Retrieve object dictionary from the persistent given object name
 
@@ -75,7 +76,7 @@ class APIObject(FeatureByteBaseModel):
 
         Returns
         -------
-        APIObject
+        ApiObject
             APIObject object of the given event data name
 
         Raises

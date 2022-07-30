@@ -7,14 +7,14 @@ from typing import Any
 
 from http import HTTPStatus
 
-from featurebyte.api.api_object import APIObject
+from featurebyte.api.api_object import ApiObject
 from featurebyte.config import Configurations
 from featurebyte.exception import DuplicatedRecordException, RecordUpdateException
 from featurebyte.models.entity import EntityModel
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
 
-class Entity(EntityModel, APIObject):
+class Entity(EntityModel, ApiObject):
     """
     Entity class
     """
