@@ -164,7 +164,7 @@ class EventData(EventDataModel, DatabaseTable):
             When the event data not found
         """
         client = Configurations().get_client()
-        response = client.get(url="/event_data/", params={"name": name})
+        response = client.get(url="/event_data", params={"name": name})
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             if response_dict["data"]:
