@@ -469,9 +469,6 @@ def test_get_200(
     Test feature retrieval
     """
     test_api_client, persistent = test_api_client_persistent
-    if isinstance(persistent, MongoDB):
-        pytest.skip("Session not supported in Mongomock!")
-
     feature_id = create_success_response.json()["_id"]
     response = test_api_client.get(f"/feature/{feature_id}")
     assert response.status_code == HTTPStatus.OK
@@ -489,3 +486,20 @@ def test_get_404(test_api_client_persistent):
     assert response.json() == {
         "detail": f'Feature (feature.id: "{random_id}") not found! Please save the Feature object first.'
     }
+
+
+def test_list_200(test_api_client_persistent, create_success_response):
+    """
+    Test list features (success)
+    """
+    test_api_client, _ = test_api_client_persistent
+    response = test_api_client.get("/feature")
+    assert response.status_code == HTTPStatus.OK
+    result = response.json()
+    assert result.items() >= {"page": 1, "page_size": 10, "total": 1}.items()
+
+    created_feature = create_success_response.json()
+    assert created_feature in result["data"]
+
+    response = test_api_client.get("/feature", params={"name": "random_name"})
+    assert response.json().items() >= {"page": 1, "page_size": 10, "total": 0}.items()

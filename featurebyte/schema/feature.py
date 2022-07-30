@@ -10,9 +10,10 @@ from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import FeatureVersionIdentifier
+from featurebyte.models.feature import FeatureModel, FeatureVersionIdentifier
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.routes.common.schema import PaginationMixin
 
 
 class FeatureCreate(FeatureByteBaseModel):
@@ -32,3 +33,11 @@ class FeatureCreate(FeatureByteBaseModel):
     version: Optional[FeatureVersionIdentifier]
     event_data_ids: List[PydanticObjectId] = Field(min_items=1)
     parent_id: Optional[PydanticObjectId]
+
+
+class FeatureList(PaginationMixin):
+    """
+    Paginated list of Entity
+    """
+
+    data: List[FeatureModel]
