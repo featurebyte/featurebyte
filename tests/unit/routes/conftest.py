@@ -3,6 +3,7 @@ Fixture for API unit tests
 """
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from unittest.mock import patch
 
 import pymongo
@@ -51,7 +52,14 @@ async def persistent_fixture(request):
             for collection_name, create_index_param_list in collection_index_map.items():
                 for param, param_kwargs in create_index_param_list:
                     await database[collection_name].create_index(param, **param_kwargs)
-            yield persistent
+
+            # skip session in unit tests
+            @asynccontextmanager
+            async def start_transaction() -> AsyncIterator[MongoDB]:
+                yield persistent
+
+            with patch.object(persistent, "start_transaction", start_transaction):
+                yield persistent
 
     if request.param == "gitdb":
         gitdb = GitDB()

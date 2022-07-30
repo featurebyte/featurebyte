@@ -261,7 +261,8 @@ class Persistent(ABC):
                 collection_name=collection_name,
                 query_filter=query_filter,
             )
-            assert original_doc
+            if not original_doc:
+                return 0
 
             num_updated = await self._update_one(
                 collection_name=collection_name,
@@ -400,7 +401,8 @@ class Persistent(ABC):
                 collection_name=collection_name,
                 query_filter=query_filter,
             )
-            assert original_doc
+            if not original_doc:
+                return 0
 
             num_updated = await self._replace_one(
                 collection_name=collection_name,
@@ -454,7 +456,8 @@ class Persistent(ABC):
                 collection_name=collection_name,
                 query_filter=query_filter,
             )
-            assert original_doc
+            if not original_doc:
+                return 0
 
             num_deleted = await self._delete_one(
                 collection_name=collection_name, query_filter=query_filter

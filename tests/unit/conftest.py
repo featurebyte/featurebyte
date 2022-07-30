@@ -79,7 +79,7 @@ def mock_config_path_env_fixture(config_file):
 @pytest.fixture(name="git_persistent")
 def git_persistent_fixture():
     """
-    Patched MongoDB fixture for testing
+    Patched GitDB fixture for testing
     Returns
     -------
     Tuple[GitDB, Repo]
