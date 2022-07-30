@@ -458,3 +458,34 @@ def test_insert_feature_registry__other_exception(
             get_credential=get_credential,
         )
     assert mock_feature_manager.return_value.remove_feature_registry.called
+
+
+def test_get_200(
+    test_api_client_persistent,
+    feature_model_dict,
+    create_success_response,
+):
+    """
+    Test feature retrieval
+    """
+    test_api_client, persistent = test_api_client_persistent
+    if isinstance(persistent, MongoDB):
+        pytest.skip("Session not supported in Mongomock!")
+
+    feature_id = create_success_response.json()["_id"]
+    response = test_api_client.get(f"/feature/{feature_id}")
+    assert response.status_code == HTTPStatus.OK
+    assert response.json() == create_success_response.json()
+
+
+def test_get_404(test_api_client_persistent):
+    """
+    Test feature retrieval (not found)
+    """
+    test_api_client, _ = test_api_client_persistent
+    random_id = str(ObjectId())
+    response = test_api_client.get(f"/feature/{random_id}")
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {
+        "detail": f'Feature (feature.id: "{random_id}") not found! Please save the Feature object first.'
+    }

@@ -25,3 +25,14 @@ async def create_feature(request: Request, data: FeatureCreate) -> FeatureModel:
         data=data,
     )
     return feature
+
+
+@router.get("/{feature_id}", response_model=FeatureModel)
+async def get_feature(request: Request, feature_id: str) -> FeatureModel:
+    """
+    Get Feature
+    """
+    feature: FeatureModel = await request.state.controller.get_feature(
+        user=request.state.user, persistent=request.state.persistent, feature_id=feature_id
+    )
+    return feature

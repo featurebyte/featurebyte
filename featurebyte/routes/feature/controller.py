@@ -305,10 +305,46 @@ class FeatureController:
             # insert feature registry into feature store
             cls.insert_feature_registry(user, document, feature_store, get_credential)
 
-        # TODO: to fix after get route is implemented
-        feature = await session.find_one(
-            collection_name=cls.collection_name, query_filter={"_id": data.id}
+        return await cls.get_feature(
+            user=user,
+            persistent=persistent,
+            feature_id=insert_id,
         )
+
+    @classmethod
+    async def get_feature(
+        cls, user: Any, persistent: Persistent, feature_id: ObjectId
+    ) -> FeatureModel:
+        """
+        Get Feature from the persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        feature_id: ObjectId
+            Feature ID
+
+        Returns
+        -------
+        FeatureModel
+            Retrieve feature object
+
+        Raises
+        ------
+        HTTPException
+            If the feature not found
+        """
+        query_filter = {"_id": ObjectId(feature_id), "user_id": user.id}
+        feature = await persistent.find_one(
+            collection_name=cls.collection_name, query_filter=query_filter
+        )
+        # check that entity id exists
         if not feature:
-            return document
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=f'Feature (feature.id: "{feature_id}") not found! Please save the Feature object first.',
+            )
         return FeatureModel(**feature)
