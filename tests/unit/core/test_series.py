@@ -149,6 +149,29 @@ def test__setitem__cond_assign_consecutive(dataframe, bool_series):
     }
 
 
+def test__setitem__conditional_assign_unnamed_series(int_series, bool_series):
+    """
+    Test conditional assign on a temporary series
+    """
+    temp_series = int_series + 1234
+    temp_series[bool_series] = 0
+    temp_series_dict = temp_series.dict()
+    # Unnamed series stays unnamed (not a PROJECT node)
+    assert temp_series_dict["node"] == {
+        "name": "conditional_1",
+        "output_type": "series",
+        "parameters": {"value": 0},
+        "type": "conditional",
+    }
+    # No assignment occurred
+    assert temp_series_dict["graph"]["backward_edges"] == {
+        "add_1": ["project_1"],
+        "conditional_1": ["add_1", "project_2"],
+        "project_1": ["input_1"],
+        "project_2": ["input_1"],
+    }
+
+
 def test__setitem__row_index_not_aligned(int_series, bool_series):
     """
     Test conditional assignment using non-aligned series
