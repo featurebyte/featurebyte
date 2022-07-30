@@ -37,6 +37,7 @@ class MongoDB(Persistent):
         database: str
             Database to use
         """
+        super().__init__()
         self._database = database
         self._client = AsyncIOMotorClient(uri)
         self._db = self._client[self._database]
@@ -297,7 +298,7 @@ class MongoDB(Persistent):
         return result.deleted_count
 
     @asynccontextmanager
-    async def start_transaction(self) -> AsyncIterator[MongoDB]:
+    async def _start_transaction(self) -> AsyncIterator[MongoDB]:
         """
         MongoDB transaction session context manager
 

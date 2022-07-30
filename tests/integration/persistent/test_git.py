@@ -26,7 +26,7 @@ def test_document_fixture() -> Dict[str, Any]:
         Document for testing
     """
     return {
-        "id": ObjectId(),
+        "_id": ObjectId(),
         "name": "Generic Document",
         "value": [
             {

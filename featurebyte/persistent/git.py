@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 Persistent storage using Git
 """
@@ -101,6 +102,7 @@ class GitDB(Persistent):
         key_path: Optional[str]
             Path to private key
         """
+        super().__init__()
 
         self._local_path = tempfile.mkdtemp()
 
@@ -436,11 +438,27 @@ class GitDB(Persistent):
         query_filter.pop("user_id", None)
         filter_items = query_filter.items()
 
+        # check if we are doing search by id in a set
+        id_search_list = None
+        if len(query_filter) == 1:
+            id_filter = query_filter.get("_id")
+            if isinstance(id_filter, dict):
+                id_search_list = id_filter.get("$in")
+            if id_search_list:
+                assert isinstance(id_search_list, list)
+                id_search_set = set(id_search_list)
+
         documents = []
         for path in sorted(os.listdir(collection_dir)):
             with open(os.path.join(collection_dir, path), encoding="utf-8") as file_obj:
                 doc: Document = json_util.loads(file_obj.read())
-            if filter_items <= doc.items():
+
+            if id_search_list:
+                match = doc["_id"] in id_search_set
+            else:
+                match = filter_items <= doc.items()
+
+            if match:
                 if not multiple:
                     return [doc]
                 documents.append(doc)
@@ -585,6 +603,12 @@ class GitDB(Persistent):
         NotImplementedError
             Filter is unsupported
         """
+        # except this special case to support audit tracking for update_many
+        if len(query_filter) == 1:
+            id_filter = query_filter.get("_id")
+            if isinstance(id_filter, dict) and id_filter.get("$in"):
+                return
+
         # no period or $ in query keys
         items = [query_filter]
         while items:
@@ -958,7 +982,7 @@ class GitDB(Persistent):
         self.repo.git.clean("-fd")
 
     @asynccontextmanager
-    async def start_transaction(self) -> AsyncIterator[GitDB]:
+    async def _start_transaction(self) -> AsyncIterator[GitDB]:
         """
         GitDB transaction session context manager
 

@@ -20,6 +20,7 @@ from contextlib import asynccontextmanager
 
 from bson.objectid import ObjectId
 
+from featurebyte.models.persistent import AuditDocument
 from featurebyte.routes.common.util import get_utc_now
 
 Document = MutableMapping[str, Any]
@@ -33,12 +34,36 @@ class DuplicateDocumentError(Exception):
     """
 
 
+def get_old_values(original_doc: Document, updated_doc: Document) -> Document:
+    """
+    Get values in original document that has been changed in updated document
+
+    Parameters
+    ----------
+    original_doc: Document
+        Original document
+    updated_doc: Document
+        Updated document
+
+    Returns
+    -------
+    Document
+        Document with values in original document that has been updated
+    """
+    return {key: value for key, value in original_doc.items() if value != updated_doc.get(key)}
+
+
 class Persistent(ABC):
     """
     Persistent persistent base class
     """
 
-    async def insert_one(self, collection_name: str, document: Document) -> ObjectId:
+    def __init__(self) -> None:
+        self._in_transaction: bool = False
+
+    async def insert_one(
+        self, collection_name: str, document: Document, user_id: Optional[ObjectId] = None
+    ) -> ObjectId:
         """
         Insert record into collection
 
@@ -48,17 +73,38 @@ class Persistent(ABC):
             Name of collection to use
         document: Document
             Document to insert
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
         ObjectId
             Id of the inserted document
         """
-        document["created_at"] = get_utc_now()
-        return await self._insert_one(collection_name=collection_name, document=document)
+        async with self.start_transaction() as self:
+            document["created_at"] = get_utc_now()
+            inserted_id = await self._insert_one(collection_name=collection_name, document=document)
+
+            # create audit doc to track changes
+            if inserted_id:
+                audit_doc = AuditDocument(
+                    user_id=user_id,
+                    name=f"insert: {document.get('name', 'unnamed')}",
+                    document_id=document["_id"],
+                    action_type="insert",
+                    old_values={},
+                ).dict(by_alias=True)
+                await self._insert_one(
+                    collection_name=f"__audit__{collection_name}", document=audit_doc
+                )
+
+            return inserted_id
 
     async def insert_many(
-        self, collection_name: str, documents: Iterable[Document]
+        self,
+        collection_name: str,
+        documents: Iterable[Document],
+        user_id: Optional[ObjectId] = None,
     ) -> List[ObjectId]:
         """
         Insert records into collection
@@ -69,18 +115,44 @@ class Persistent(ABC):
             Name of collection to use
         documents: Iterable[Document]
             Documents to insert
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
         List[ObjectId]
             Ids of the inserted document
         """
-        utc_now = get_utc_now()
-        for document in documents:
-            document["created_at"] = utc_now
-        return await self._insert_many(collection_name=collection_name, documents=documents)
+        async with self.start_transaction() as self:
+            utc_now = get_utc_now()
 
-    async def find_one(self, collection_name: str, query_filter: QueryFilter) -> Optional[Document]:
+            # create audit docs to track changes
+            audit_docs = []
+            for document in documents:
+                document["created_at"] = utc_now
+                audit_docs.append(
+                    AuditDocument(
+                        user_id=user_id,
+                        name=f"insert: {document.get('name', 'unnamed')}",
+                        document_id=document["_id"],
+                        action_type="insert",
+                        old_values={},
+                    ).dict(by_alias=True)
+                )
+
+            inserted_ids = await self._insert_many(
+                collection_name=collection_name, documents=documents
+            )
+            if inserted_ids:
+                await self._insert_many(
+                    collection_name=f"__audit__{collection_name}", documents=audit_docs
+                )
+
+            return inserted_ids
+
+    async def find_one(
+        self, collection_name: str, query_filter: QueryFilter, user_id: Optional[ObjectId] = None
+    ) -> Optional[Document]:
         """
         Find one record from collection
 
@@ -90,12 +162,15 @@ class Persistent(ABC):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
         Optional[Document]
             Retrieved document
         """
+        _ = user_id
         return await self._find_one(collection_name=collection_name, query_filter=query_filter)
 
     async def find(
@@ -106,6 +181,7 @@ class Persistent(ABC):
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
         page_size: int = 0,
+        user_id: Optional[ObjectId] = None,
     ) -> Tuple[Iterable[Document], int]:
         """
         Find all records from collection
@@ -124,12 +200,15 @@ class Persistent(ABC):
             Page number for pagination
         page_size: int
             Page size (0 to return all records)
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
         Tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
+        _ = user_id
         return await self._find(
             collection_name=collection_name,
             query_filter=query_filter,
@@ -144,12 +223,15 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         update: Document,
+        user_id: Optional[ObjectId] = None,
     ) -> int:
         """
         Update one record in collection
 
         Parameters
         ----------
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
         collection_name: str
             Name of collection to use
         query_filter: QueryFilter
@@ -167,22 +249,52 @@ class Persistent(ABC):
         NotImplementedError
             Unsupported update value
         """
-        set_val = update.get("$set", {})
-        if not isinstance(set_val, dict):
-            raise NotImplementedError("Unsupported update value")
-        set_val["updated_at"] = get_utc_now()
-        update["$set"] = set_val
-        return await self._update_one(
-            collection_name=collection_name,
-            query_filter=query_filter,
-            update=update,
-        )
+        async with self.start_transaction() as self:
+            set_val = update.get("$set", {})
+            if not isinstance(set_val, dict):
+                raise NotImplementedError("Unsupported update value")
+            set_val["updated_at"] = get_utc_now()
+            update["$set"] = set_val
+
+            # retrieve original document to track changes
+            original_doc = await self._find_one(
+                collection_name=collection_name,
+                query_filter=query_filter,
+            )
+            assert original_doc
+
+            num_updated = await self._update_one(
+                collection_name=collection_name,
+                query_filter=query_filter,
+                update=update,
+            )
+
+            # create audit docs to track changes
+            if num_updated:
+                updated_doc = await self._find_one(
+                    collection_name=collection_name,
+                    query_filter={"_id": original_doc["_id"]},
+                )
+                assert updated_doc
+                audit_doc = AuditDocument(
+                    user_id=user_id,
+                    name=f"update: {original_doc.get('name', 'unnamed')}",
+                    document_id=updated_doc["_id"],
+                    action_type="update",
+                    old_values=get_old_values(original_doc, updated_doc),
+                ).dict(by_alias=True)
+                await self._insert_one(
+                    collection_name=f"__audit__{collection_name}", document=audit_doc
+                )
+
+            return num_updated
 
     async def update_many(
         self,
         collection_name: str,
         query_filter: QueryFilter,
         update: Document,
+        user_id: Optional[ObjectId] = None,
     ) -> int:
         """
         Update many records in collection
@@ -195,6 +307,8 @@ class Persistent(ABC):
             Conditions to filter on
         update: Document
             Values to update
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
@@ -206,22 +320,58 @@ class Persistent(ABC):
         NotImplementedError
             Unsupported update value
         """
-        set_val = update.get("$set", {})
-        if not isinstance(set_val, dict):
-            raise NotImplementedError("Unsupported update value")
-        set_val["updated_at"] = get_utc_now()
-        update["$set"] = set_val
-        return await self._update_many(
-            collection_name=collection_name,
-            query_filter=query_filter,
-            update=update,
-        )
+        async with self.start_transaction() as self:
+            set_val = update.get("$set", {})
+            if not isinstance(set_val, dict):
+                raise NotImplementedError("Unsupported update value")
+            set_val["updated_at"] = get_utc_now()
+            update["$set"] = set_val
+
+            # retrieve original documents to track changes
+            original_docs, num_original_docs = await self._find(
+                collection_name=collection_name,
+                query_filter=query_filter,
+            )
+
+            num_updated = await self._update_many(
+                collection_name=collection_name,
+                query_filter=query_filter,
+                update=update,
+            )
+
+            # create audit doc to track changes
+            if num_updated:
+                updated_docs, num_updated_docs = await self._find(
+                    collection_name=collection_name,
+                    query_filter={"_id": {"$in": [doc["_id"] for doc in original_docs]}},
+                )
+                assert num_original_docs == num_updated_docs
+                audit_docs = []
+                for original_doc, updated_doc in zip(
+                    sorted(original_docs, key=lambda item: str(item["_id"])),
+                    sorted(updated_docs, key=lambda item: str(item["_id"])),
+                ):
+                    assert updated_doc["_id"] == original_doc["_id"]
+                    audit_docs.append(
+                        AuditDocument(
+                            user_id=user_id,
+                            name=f"update: {original_doc.get('name', 'unnamed')}",
+                            document_id=updated_doc["_id"],
+                            action_type="update",
+                            old_values=get_old_values(original_doc, updated_doc),
+                        ).dict(by_alias=True)
+                    )
+                await self._insert_many(
+                    collection_name=f"__audit__{collection_name}", documents=audit_docs
+                )
+            return num_updated
 
     async def replace_one(
         self,
         collection_name: str,
         query_filter: QueryFilter,
         replacement: Document,
+        user_id: Optional[ObjectId] = None,
     ) -> int:
         """
         Replace one record in collection
@@ -234,20 +384,53 @@ class Persistent(ABC):
             Conditions to filter on
         replacement: Document
             New document to replace existing one
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
         int
             Number of records modified
         """
-        replacement["created_at"] = replacement["updated_at"] = get_utc_now()
-        return await self._replace_one(
-            collection_name=collection_name,
-            query_filter=query_filter,
-            replacement=replacement,
-        )
+        async with self.start_transaction() as self:
+            replacement["created_at"] = replacement["updated_at"] = get_utc_now()
 
-    async def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
+            # retrieve original document to track changes
+            original_doc = await self._find_one(
+                collection_name=collection_name,
+                query_filter=query_filter,
+            )
+            assert original_doc
+
+            num_updated = await self._replace_one(
+                collection_name=collection_name,
+                query_filter=query_filter,
+                replacement=replacement,
+            )
+
+            # create audit doc to track changes
+            if num_updated:
+                updated_doc = await self._find_one(
+                    collection_name=collection_name,
+                    query_filter={"_id": original_doc["_id"]},
+                )
+                assert updated_doc
+                audit_doc = AuditDocument(
+                    user_id=user_id,
+                    name=f"replace: {original_doc.get('name', 'unnamed')}",
+                    document_id=updated_doc["_id"],
+                    action_type="replace",
+                    old_values=get_old_values(original_doc, updated_doc),
+                ).dict(by_alias=True)
+                await self._insert_one(
+                    collection_name=f"__audit__{collection_name}", document=audit_doc
+                )
+
+            return num_updated
+
+    async def delete_one(
+        self, collection_name: str, query_filter: QueryFilter, user_id: Optional[ObjectId] = None
+    ) -> int:
         """
         Delete one record from collection
 
@@ -257,15 +440,44 @@ class Persistent(ABC):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
         int
             Number of records deleted
         """
-        return await self._delete_one(collection_name=collection_name, query_filter=query_filter)
+        async with self.start_transaction() as self:
+            # retrieve original document to track changes
+            original_doc = await self._find_one(
+                collection_name=collection_name,
+                query_filter=query_filter,
+            )
+            assert original_doc
 
-    async def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
+            num_deleted = await self._delete_one(
+                collection_name=collection_name, query_filter=query_filter
+            )
+
+            # create audit doc to track changes
+            if num_deleted:
+                audit_doc = AuditDocument(
+                    user_id=user_id,
+                    name=f"delete: {original_doc.get('name', 'unnamed')}",
+                    document_id=original_doc["_id"],
+                    action_type="delete",
+                    old_values=original_doc,
+                ).dict(by_alias=True)
+                await self._insert_one(
+                    collection_name=f"__audit__{collection_name}", document=audit_doc
+                )
+
+            return num_deleted
+
+    async def delete_many(
+        self, collection_name: str, query_filter: QueryFilter, user_id: Optional[ObjectId] = None
+    ) -> int:
         """
         Delete many records from collection
 
@@ -275,19 +487,67 @@ class Persistent(ABC):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
         int
             Number of records deleted
         """
-        return await self._delete_many(collection_name=collection_name, query_filter=query_filter)
+        async with self.start_transaction() as self:
+            # retrieve original documents to track changes
+            original_docs, _ = await self._find(
+                collection_name=collection_name,
+                query_filter=query_filter,
+            )
 
-    @abstractmethod
+            num_deleted = await self._delete_many(
+                collection_name=collection_name, query_filter=query_filter
+            )
+
+            # create audit doc to track changes
+            if num_deleted:
+                audit_docs = [
+                    AuditDocument(
+                        user_id=user_id,
+                        name=f"delete: {original_doc.get('name', 'unnamed')}",
+                        document_id=original_doc["_id"],
+                        action_type="delete",
+                        old_values=original_doc,
+                    ).dict(by_alias=True)
+                    for original_doc in original_docs
+                ]
+                await self._insert_many(
+                    collection_name=f"__audit__{collection_name}", documents=audit_docs
+                )
+
+            return num_deleted
+
     @asynccontextmanager
     async def start_transaction(self) -> AsyncIterator[Persistent]:
         """
-        Context manager for transaction session
+        Context manager for transaction self
+
+        Yields
+        ------
+        AsyncIterator[Persistent]
+            Persistent object
+        """
+        if self._in_transaction:
+            # prevent entering nested transaction in the actual db layer
+            yield self
+        else:
+            async with self._start_transaction():
+                self._in_transaction = True
+                yield self
+                self._in_transaction = False
+
+    @abstractmethod
+    @asynccontextmanager
+    async def _start_transaction(self) -> AsyncIterator[Persistent]:
+        """
+        Context manager for transaction self
 
         Yields
         ------

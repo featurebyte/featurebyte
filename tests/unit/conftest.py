@@ -88,6 +88,10 @@ def git_persistent_fixture():
     persistent = GitDB(branch="test")
     persistent.insert_doc_name_func("event_data", lambda doc: doc["name"])
     persistent.insert_doc_name_func("data", lambda doc: doc["name"])
+    persistent.insert_doc_name_func("test_col", lambda doc: doc.get("name", doc["_id"]))
+    persistent.insert_doc_name_func("__audit__event_data", lambda doc: doc["name"])
+    persistent.insert_doc_name_func("__audit__data", lambda doc: doc["name"])
+    persistent.insert_doc_name_func("__audit__test_col", lambda doc: doc["name"])
     yield persistent, persistent.repo
 
 
