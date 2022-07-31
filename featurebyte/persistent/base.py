@@ -12,12 +12,12 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.persistent import (
     AuditActionType,
-    AuditDocument,
+    AuditTransactionMode,
     Document,
     DocumentUpdate,
     QueryFilter,
 )
-from featurebyte.persistent.audit import get_doc_name, get_previous_values
+from featurebyte.persistent.audit import audit_transaction
 from featurebyte.routes.common.util import get_utc_now
 
 
@@ -35,8 +35,12 @@ class Persistent(ABC):
     def __init__(self) -> None:
         self._in_transaction: bool = False
 
+    @audit_transaction(mode=AuditTransactionMode.SINGLE, action_type=AuditActionType.INSERT)
     async def insert_one(
-        self, collection_name: str, document: Document, user_id: Optional[ObjectId] = None
+        self,
+        collection_name: str,
+        document: Document,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> ObjectId:
         """
         Insert record into collection
@@ -55,30 +59,15 @@ class Persistent(ABC):
         ObjectId
             Id of the inserted document
         """
-        async with self.start_transaction() as self:
-            document["created_at"] = get_utc_now()
-            inserted_id = await self._insert_one(collection_name=collection_name, document=document)
+        document["created_at"] = get_utc_now()
+        return await self._insert_one(collection_name=collection_name, document=document)
 
-            # create audit doc to track changes
-            if inserted_id:
-                audit_doc = AuditDocument(
-                    user_id=user_id,
-                    name=f"insert: {get_doc_name(document)}",
-                    document_id=document["_id"],
-                    action_type=AuditActionType.INSERT,
-                    previous_values={},
-                ).dict(by_alias=True)
-                await self._insert_one(
-                    collection_name=f"__audit__{collection_name}", document=audit_doc
-                )
-
-            return inserted_id
-
+    @audit_transaction(mode=AuditTransactionMode.MULTI, action_type=AuditActionType.INSERT)
     async def insert_many(
         self,
         collection_name: str,
         documents: Iterable[Document],
-        user_id: Optional[ObjectId] = None,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> List[ObjectId]:
         """
         Insert records into collection
@@ -97,35 +86,17 @@ class Persistent(ABC):
         List[ObjectId]
             Ids of the inserted document
         """
-        async with self.start_transaction() as self:
-            utc_now = get_utc_now()
+        utc_now = get_utc_now()
+        for document in documents:
+            document["created_at"] = utc_now
 
-            # create audit docs to track changes
-            audit_docs = []
-            for document in documents:
-                document["created_at"] = utc_now
-                audit_docs.append(
-                    AuditDocument(
-                        user_id=user_id,
-                        name=f"insert: {get_doc_name(document)}",
-                        document_id=document["_id"],
-                        action_type=AuditActionType.INSERT,
-                        previous_values={},
-                    ).dict(by_alias=True)
-                )
-
-            inserted_ids = await self._insert_many(
-                collection_name=collection_name, documents=documents
-            )
-            if inserted_ids:
-                await self._insert_many(
-                    collection_name=f"__audit__{collection_name}", documents=audit_docs
-                )
-
-            return inserted_ids
+        return await self._insert_many(collection_name=collection_name, documents=documents)
 
     async def find_one(
-        self, collection_name: str, query_filter: QueryFilter, user_id: Optional[ObjectId] = None
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> Optional[Document]:
         """
         Find one record from collection
@@ -144,7 +115,6 @@ class Persistent(ABC):
         Optional[Document]
             Retrieved document
         """
-        _ = user_id
         return await self._find_one(collection_name=collection_name, query_filter=query_filter)
 
     async def find(
@@ -155,7 +125,7 @@ class Persistent(ABC):
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
         page_size: int = 0,
-        user_id: Optional[ObjectId] = None,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> Tuple[Iterable[Document], int]:
         """
         Find all records from collection
@@ -182,7 +152,6 @@ class Persistent(ABC):
         Tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
-        _ = user_id
         return await self._find(
             collection_name=collection_name,
             query_filter=query_filter,
@@ -192,12 +161,13 @@ class Persistent(ABC):
             page_size=page_size,
         )
 
+    @audit_transaction(mode=AuditTransactionMode.SINGLE, action_type=AuditActionType.UPDATE)
     async def update_one(
         self,
         collection_name: str,
         query_filter: QueryFilter,
         update: DocumentUpdate,
-        user_id: Optional[ObjectId] = None,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> int:
         """
         Update one record in collection
@@ -223,53 +193,25 @@ class Persistent(ABC):
         NotImplementedError
             Unsupported update value
         """
-        async with self.start_transaction() as self:
-            set_val = update.get("$set", {})
-            if not isinstance(set_val, dict):
-                raise NotImplementedError("Unsupported update value")
-            set_val["updated_at"] = get_utc_now()
-            update = {key: set_val if key == "$set" else value for key, value in update.items()}
+        set_val = update.get("$set", {})
+        if not isinstance(set_val, dict):
+            raise NotImplementedError("Unsupported update value")
+        set_val["updated_at"] = get_utc_now()
+        update = {key: set_val if key == "$set" else value for key, value in update.items()}
 
-            # retrieve original document to track changes
-            original_doc = await self._find_one(
-                collection_name=collection_name,
-                query_filter=query_filter,
-            )
-            if not original_doc:
-                return 0
+        return await self._update_one(
+            collection_name=collection_name,
+            query_filter=query_filter,
+            update=update,
+        )
 
-            num_updated = await self._update_one(
-                collection_name=collection_name,
-                query_filter=query_filter,
-                update=update,
-            )
-
-            # create audit docs to track changes
-            if num_updated:
-                updated_doc = await self._find_one(
-                    collection_name=collection_name,
-                    query_filter={"_id": original_doc["_id"]},
-                )
-                assert updated_doc
-                audit_doc = AuditDocument(
-                    user_id=user_id,
-                    name=f"update: {get_doc_name(original_doc)}",
-                    document_id=updated_doc["_id"],
-                    action_type=AuditActionType.UPDATE,
-                    previous_values=get_previous_values(original_doc, updated_doc),
-                ).dict(by_alias=True)
-                await self._insert_one(
-                    collection_name=f"__audit__{collection_name}", document=audit_doc
-                )
-
-            return num_updated
-
+    @audit_transaction(mode=AuditTransactionMode.MULTI, action_type=AuditActionType.UPDATE)
     async def update_many(
         self,
         collection_name: str,
         query_filter: QueryFilter,
         update: DocumentUpdate,
-        user_id: Optional[ObjectId] = None,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> int:
         """
         Update many records in collection
@@ -295,58 +237,25 @@ class Persistent(ABC):
         NotImplementedError
             Unsupported update value
         """
-        async with self.start_transaction() as self:
-            set_val = update.get("$set", {})
-            if not isinstance(set_val, dict):
-                raise NotImplementedError("Unsupported update value")
-            set_val["updated_at"] = get_utc_now()
-            update = {key: set_val if key == "$set" else value for key, value in update.items()}
+        set_val = update.get("$set", {})
+        if not isinstance(set_val, dict):
+            raise NotImplementedError("Unsupported update value")
+        set_val["updated_at"] = get_utc_now()
+        update = {key: set_val if key == "$set" else value for key, value in update.items()}
 
-            # retrieve original documents to track changes
-            original_docs, num_original_docs = await self._find(
-                collection_name=collection_name,
-                query_filter=query_filter,
-            )
+        return await self._update_many(
+            collection_name=collection_name,
+            query_filter=query_filter,
+            update=update,
+        )
 
-            num_updated = await self._update_many(
-                collection_name=collection_name,
-                query_filter=query_filter,
-                update=update,
-            )
-
-            # create audit doc to track changes
-            if num_updated:
-                updated_docs, num_updated_docs = await self._find(
-                    collection_name=collection_name,
-                    query_filter={"_id": {"$in": [doc["_id"] for doc in original_docs]}},
-                )
-                assert num_original_docs == num_updated_docs
-                audit_docs = []
-                for original_doc, updated_doc in zip(
-                    sorted(original_docs, key=lambda item: str(item["_id"])),
-                    sorted(updated_docs, key=lambda item: str(item["_id"])),
-                ):
-                    assert updated_doc["_id"] == original_doc["_id"]
-                    audit_docs.append(
-                        AuditDocument(
-                            user_id=user_id,
-                            name=f"update: {get_doc_name(original_doc)}",
-                            document_id=updated_doc["_id"],
-                            action_type=AuditActionType.UPDATE,
-                            previous_values=get_previous_values(original_doc, updated_doc),
-                        ).dict(by_alias=True)
-                    )
-                await self._insert_many(
-                    collection_name=f"__audit__{collection_name}", documents=audit_docs
-                )
-            return num_updated
-
+    @audit_transaction(mode=AuditTransactionMode.SINGLE, action_type=AuditActionType.REPLACE)
     async def replace_one(
         self,
         collection_name: str,
         query_filter: QueryFilter,
         replacement: Document,
-        user_id: Optional[ObjectId] = None,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> int:
         """
         Replace one record in collection
@@ -367,45 +276,19 @@ class Persistent(ABC):
         int
             Number of records modified
         """
-        async with self.start_transaction() as self:
-            replacement["created_at"] = replacement["updated_at"] = get_utc_now()
+        replacement["created_at"] = replacement["updated_at"] = get_utc_now()
+        return await self._replace_one(
+            collection_name=collection_name,
+            query_filter=query_filter,
+            replacement=replacement,
+        )
 
-            # retrieve original document to track changes
-            original_doc = await self._find_one(
-                collection_name=collection_name,
-                query_filter=query_filter,
-            )
-            if not original_doc:
-                return 0
-
-            num_updated = await self._replace_one(
-                collection_name=collection_name,
-                query_filter=query_filter,
-                replacement=replacement,
-            )
-
-            # create audit doc to track changes
-            if num_updated:
-                updated_doc = await self._find_one(
-                    collection_name=collection_name,
-                    query_filter={"_id": original_doc["_id"]},
-                )
-                assert updated_doc
-                audit_doc = AuditDocument(
-                    user_id=user_id,
-                    name=f"replace: {get_doc_name(original_doc)}",
-                    document_id=updated_doc["_id"],
-                    action_type=AuditActionType.REPLACE,
-                    previous_values=get_previous_values(original_doc, updated_doc),
-                ).dict(by_alias=True)
-                await self._insert_one(
-                    collection_name=f"__audit__{collection_name}", document=audit_doc
-                )
-
-            return num_updated
-
+    @audit_transaction(mode=AuditTransactionMode.SINGLE, action_type=AuditActionType.DELETE)
     async def delete_one(
-        self, collection_name: str, query_filter: QueryFilter, user_id: Optional[ObjectId] = None
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> int:
         """
         Delete one record from collection
@@ -424,36 +307,14 @@ class Persistent(ABC):
         int
             Number of records deleted
         """
-        async with self.start_transaction() as self:
-            # retrieve original document to track changes
-            original_doc = await self._find_one(
-                collection_name=collection_name,
-                query_filter=query_filter,
-            )
-            if not original_doc:
-                return 0
+        return await self._delete_one(collection_name=collection_name, query_filter=query_filter)
 
-            num_deleted = await self._delete_one(
-                collection_name=collection_name, query_filter=query_filter
-            )
-
-            # create audit doc to track changes
-            if num_deleted:
-                audit_doc = AuditDocument(
-                    user_id=user_id,
-                    name=f"delete: {get_doc_name(original_doc)}",
-                    document_id=original_doc["_id"],
-                    action_type=AuditActionType.DELETE,
-                    previous_values=original_doc,
-                ).dict(by_alias=True)
-                await self._insert_one(
-                    collection_name=f"__audit__{collection_name}", document=audit_doc
-                )
-
-            return num_deleted
-
+    @audit_transaction(mode=AuditTransactionMode.MULTI, action_type=AuditActionType.DELETE)
     async def delete_many(
-        self, collection_name: str, query_filter: QueryFilter, user_id: Optional[ObjectId] = None
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> int:
         """
         Delete many records from collection
@@ -472,34 +333,7 @@ class Persistent(ABC):
         int
             Number of records deleted
         """
-        async with self.start_transaction() as self:
-            # retrieve original documents to track changes
-            original_docs, _ = await self._find(
-                collection_name=collection_name,
-                query_filter=query_filter,
-            )
-
-            num_deleted = await self._delete_many(
-                collection_name=collection_name, query_filter=query_filter
-            )
-
-            # create audit doc to track changes
-            if num_deleted:
-                audit_docs = [
-                    AuditDocument(
-                        user_id=user_id,
-                        name=f"delete: {get_doc_name(original_doc)}",
-                        document_id=original_doc["_id"],
-                        action_type=AuditActionType.DELETE,
-                        previous_values=original_doc,
-                    ).dict(by_alias=True)
-                    for original_doc in original_docs
-                ]
-                await self._insert_many(
-                    collection_name=f"__audit__{collection_name}", documents=audit_docs
-                )
-
-            return num_deleted
+        return await self._delete_many(collection_name=collection_name, query_filter=query_filter)
 
     @asynccontextmanager
     async def start_transaction(self) -> AsyncIterator[Persistent]:

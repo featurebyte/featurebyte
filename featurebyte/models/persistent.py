@@ -18,6 +18,15 @@ QueryFilter = MutableMapping[str, Any]
 DocumentUpdate = Mapping[str, Any]
 
 
+class AuditTransactionMode(str, Enum):
+    """
+    Audit logging mode
+    """
+
+    SINGLE = "SINGLE"
+    MULTI = "MULTI"
+
+
 class AuditActionType(str, Enum):
     """
     Database or data warehouse source type
