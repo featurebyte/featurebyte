@@ -7,6 +7,7 @@ from datetime import datetime
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.models.persistent import AuditActionType
 from featurebyte.persistent import DuplicateDocumentError
 
 
@@ -35,7 +36,7 @@ async def test_insert_one(git_persistent, test_document):
         "Initial commit\n",
         (
             "Create document: data/Generic Document\n"
-            "Create document: __audit__data/insert: Generic Document\n"
+            'Create document: __audit__data/insert: "Generic Document"\n'
         ),
     ]
 
@@ -45,8 +46,8 @@ async def test_insert_one(git_persistent, test_document):
     )
     assert len(results) == 1
     assert isinstance(results[0]["action_at"], datetime)
-    assert results[0]["action_type"] == "insert"
-    assert results[0]["old_values"] == {}
+    assert results[0]["action_type"] == AuditActionType.INSERT
+    assert results[0]["previous_values"] == {}
 
 
 @pytest.mark.asyncio
@@ -67,7 +68,7 @@ async def test_insert_one__no_id(git_persistent, test_document):
         "Initial commit\n",
         (
             "Create document: data/Generic Document\n"
-            "Create document: __audit__data/insert: Generic Document\n"
+            'Create document: __audit__data/insert: "Generic Document"\n'
         ),
     ]
 
@@ -77,8 +78,8 @@ async def test_insert_one__no_id(git_persistent, test_document):
     )
     assert len(results) == 1
     assert isinstance(results[0]["action_at"], datetime)
-    assert results[0]["action_type"] == "insert"
-    assert results[0]["old_values"] == {}
+    assert results[0]["action_type"] == AuditActionType.INSERT
+    assert results[0]["previous_values"] == {}
 
 
 @pytest.mark.asyncio
@@ -104,9 +105,9 @@ async def test_insert_many(git_persistent, test_documents):
             "Create document: data/Object 0\n"
             "Create document: data/Object 1\n"
             "Create document: data/Object 2\n"
-            "Create document: __audit__data/insert: Object 0\n"
-            "Create document: __audit__data/insert: Object 1\n"
-            "Create document: __audit__data/insert: Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
         ),
     ]
 
@@ -117,8 +118,8 @@ async def test_insert_many(git_persistent, test_documents):
         )
         assert len(results) == 1
         assert isinstance(results[0]["action_at"], datetime)
-        assert results[0]["action_type"] == "insert"
-        assert results[0]["old_values"] == {}
+        assert results[0]["action_type"] == AuditActionType.INSERT
+        assert results[0]["previous_values"] == {}
 
 
 @pytest.mark.asyncio
@@ -138,8 +139,8 @@ async def test_find_one(git_persistent, test_documents):
         )
         assert len(results) == 1
         assert isinstance(results[0]["action_at"], datetime)
-        assert results[0]["action_type"] == "insert"
-        assert results[0]["old_values"] == {}
+        assert results[0]["action_type"] == AuditActionType.INSERT
+        assert results[0]["previous_values"] == {}
 
     assert _get_commit_messages(repo, max_count=10) == [
         "Initial commit\n",
@@ -147,9 +148,9 @@ async def test_find_one(git_persistent, test_documents):
             "Create document: data/Object 0\n"
             "Create document: data/Object 1\n"
             "Create document: data/Object 2\n"
-            "Create document: __audit__data/insert: Object 0\n"
-            "Create document: __audit__data/insert: Object 1\n"
-            "Create document: __audit__data/insert: Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
         ),
     ]
 
@@ -212,8 +213,8 @@ async def test_find_many(git_persistent, test_documents):
         )
         assert len(results) == 1
         assert isinstance(results[0]["action_at"], datetime)
-        assert results[0]["action_type"] == "insert"
-        assert results[0]["old_values"] == {}
+        assert results[0]["action_type"] == AuditActionType.INSERT
+        assert results[0]["previous_values"] == {}
 
 
 @pytest.mark.parametrize(
@@ -275,14 +276,14 @@ async def test_update_one(git_persistent, test_documents):
             "Create document: data/Object 0\n"
             "Create document: data/Object 1\n"
             "Create document: data/Object 2\n"
-            "Create document: __audit__data/insert: Object 0\n"
-            "Create document: __audit__data/insert: Object 1\n"
-            "Create document: __audit__data/insert: Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
         ),
         (
             "Rename document: data/Object 0 -> data/apple\n"
             "Update document: data/apple\n"
-            "Create document: __audit__data/update: Object 0\n"
+            'Create document: __audit__data/update: "Object 0"\n'
         ),
     ]
 
@@ -298,16 +299,16 @@ async def test_update_one(git_persistent, test_documents):
     assert isinstance(results[1].pop("action_at"), datetime)
     assert results == [
         {
-            "name": "insert: Object 0",
+            "name": 'insert: "Object 0"',
             "document_id": updated_doc["_id"],
-            "action_type": "insert",
-            "old_values": {},
+            "action_type": AuditActionType.INSERT,
+            "previous_values": {},
         },
         {
-            "name": "update: Object 0",
+            "name": 'update: "Object 0"',
             "document_id": updated_doc["_id"],
-            "action_type": "update",
-            "old_values": {"name": "Object 0"},
+            "action_type": AuditActionType.UPDATE,
+            "previous_values": {"name": "Object 0"},
         },
     ]
 
@@ -335,17 +336,17 @@ async def test_update_many(git_persistent, test_documents):
             "Create document: data/Object 0\n"
             "Create document: data/Object 1\n"
             "Create document: data/Object 2\n"
-            "Create document: __audit__data/insert: Object 0\n"
-            "Create document: __audit__data/insert: Object 1\n"
-            "Create document: __audit__data/insert: Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
         ),
         (
             "Update document: data/Object 0\n"
             "Update document: data/Object 1\n"
             "Update document: data/Object 2\n"
-            "Create document: __audit__data/update: Object 0\n"
-            "Create document: __audit__data/update: Object 1\n"
-            "Create document: __audit__data/update: Object 2\n"
+            'Create document: __audit__data/update: "Object 0"\n'
+            'Create document: __audit__data/update: "Object 1"\n'
+            'Create document: __audit__data/update: "Object 2"\n'
         ),
     ]
 
@@ -361,16 +362,16 @@ async def test_update_many(git_persistent, test_documents):
         assert isinstance(results[1].pop("action_at"), datetime)
         assert results == [
             {
-                "name": f"insert: Object {i}",
+                "name": f'insert: "Object {i}"',
                 "document_id": updated_doc["_id"],
-                "action_type": "insert",
-                "old_values": {},
+                "action_type": AuditActionType.INSERT,
+                "previous_values": {},
             },
             {
-                "name": f"update: Object {i}",
+                "name": f'update: "Object {i}"',
                 "document_id": updated_doc["_id"],
-                "action_type": "update",
-                "old_values": {"value": [{"key1": "value1", "key2": "value2"}]},
+                "action_type": AuditActionType.UPDATE,
+                "previous_values": {"value": [{"key1": "value1", "key2": "value2"}]},
             },
         ]
 
@@ -404,14 +405,14 @@ async def test_replace_one(git_persistent, test_documents):
             "Create document: data/Object 0\n"
             "Create document: data/Object 1\n"
             "Create document: data/Object 2\n"
-            "Create document: __audit__data/insert: Object 0\n"
-            "Create document: __audit__data/insert: Object 1\n"
-            "Create document: __audit__data/insert: Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
         ),
         (
             "Rename document: data/Object 0 -> data/apple\n"
             "Update document: data/apple\n"
-            "Create document: __audit__data/replace: Object 0\n"
+            'Create document: __audit__data/replace: "Object 0"\n'
         ),
     ]
 
@@ -431,16 +432,16 @@ async def test_replace_one(git_persistent, test_documents):
 
     assert results == [
         {
-            "name": "insert: Object 0",
+            "name": 'insert: "Object 0"',
             "document_id": updated_doc["_id"],
-            "action_type": "insert",
-            "old_values": {},
+            "action_type": AuditActionType.INSERT,
+            "previous_values": {},
         },
         {
-            "name": "replace: Object 0",
+            "name": 'replace: "Object 0"',
             "document_id": updated_doc["_id"],
-            "action_type": "replace",
-            "old_values": before[0],
+            "action_type": AuditActionType.REPLACE,
+            "previous_values": before[0],
         },
     ]
 
@@ -510,11 +511,11 @@ async def test_delete_one(git_persistent, test_documents):
             "Create document: data/Object 0\n"
             "Create document: data/Object 1\n"
             "Create document: data/Object 2\n"
-            "Create document: __audit__data/insert: Object 0\n"
-            "Create document: __audit__data/insert: Object 1\n"
-            "Create document: __audit__data/insert: Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
         ),
-        ("Delete document: data/Object 0\n" "Create document: __audit__data/delete: Object 0\n"),
+        ("Delete document: data/Object 0\n" 'Create document: __audit__data/delete: "Object 0"\n'),
     ]
 
     # check audit record is inserted
@@ -529,16 +530,16 @@ async def test_delete_one(git_persistent, test_documents):
     assert isinstance(results[1].pop("action_at"), datetime)
     assert results == [
         {
-            "name": "insert: Object 0",
+            "name": 'insert: "Object 0"',
             "document_id": deleted_doc["_id"],
-            "action_type": "insert",
-            "old_values": {},
+            "action_type": AuditActionType.INSERT,
+            "previous_values": {},
         },
         {
-            "name": "delete: Object 0",
+            "name": 'delete: "Object 0"',
             "document_id": deleted_doc["_id"],
-            "action_type": "delete",
-            "old_values": test_documents[0],
+            "action_type": AuditActionType.DELETE,
+            "previous_values": test_documents[0],
         },
     ]
 
@@ -563,17 +564,17 @@ async def test_delete_many(git_persistent, test_documents):
             "Create document: data/Object 0\n"
             "Create document: data/Object 1\n"
             "Create document: data/Object 2\n"
-            "Create document: __audit__data/insert: Object 0\n"
-            "Create document: __audit__data/insert: Object 1\n"
-            "Create document: __audit__data/insert: Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
         ),
         (
             "Delete document: data/Object 0\n"
             "Delete document: data/Object 1\n"
             "Delete document: data/Object 2\n"
-            "Create document: __audit__data/delete: Object 0\n"
-            "Create document: __audit__data/delete: Object 1\n"
-            "Create document: __audit__data/delete: Object 2\n"
+            'Create document: __audit__data/delete: "Object 0"\n'
+            'Create document: __audit__data/delete: "Object 1"\n'
+            'Create document: __audit__data/delete: "Object 2"\n'
         ),
     ]
 
@@ -612,9 +613,9 @@ async def test_start_transaction__success(git_persistent):
         "Initial commit\n",
         (
             "Create document: test_col/1234\n"
-            "Create document: __audit__test_col/insert: unnamed\n"
+            "Create document: __audit__test_col/insert: None\n"
             "Update document: test_col/1234\n"
-            "Create document: __audit__test_col/update: unnamed\n"
+            "Create document: __audit__test_col/update: None\n"
         ),
     ]
     assert repo.git.status() == "On branch test\nnothing to commit, working tree clean"

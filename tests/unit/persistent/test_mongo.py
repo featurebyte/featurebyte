@@ -15,6 +15,7 @@ from bson import ObjectId
 from mongomock_motor import AsyncMongoMockClient
 from pymongo.errors import DuplicateKeyError
 
+from featurebyte.models.persistent import AuditActionType
 from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.persistent.mongo import MongoDB
 
@@ -64,8 +65,8 @@ async def test_insert_one(mongo_persistent, test_document):
     assert len(results) == 1
     assert isinstance(results[0]["action_at"], datetime)
     assert results[0]["user_id"] == user_id
-    assert results[0]["action_type"] == "insert"
-    assert results[0]["old_values"] == {}
+    assert results[0]["action_type"] == AuditActionType.INSERT
+    assert results[0]["previous_values"] == {}
 
 
 @pytest.mark.asyncio
@@ -101,8 +102,8 @@ async def test_insert_many(mongo_persistent, test_documents):
         assert len(results) == 1
         assert isinstance(results[0]["action_at"], datetime)
         assert results[0]["user_id"] == user_id
-        assert results[0]["action_type"] == "insert"
-        assert results[0]["old_values"] == {}
+        assert results[0]["action_type"] == AuditActionType.INSERT
+        assert results[0]["previous_values"] == {}
 
 
 @pytest.mark.asyncio
@@ -190,8 +191,8 @@ async def test_update_one(mongo_persistent, test_document, test_documents):
     assert len(audit_docs) == 1
     assert isinstance(audit_docs[0]["action_at"], datetime)
     assert audit_docs[0]["user_id"] == user_id
-    assert audit_docs[0]["action_type"] == "update"
-    assert audit_docs[0]["old_values"] == {"value": [{"key1": "value1", "key2": "value2"}]}
+    assert audit_docs[0]["action_type"] == AuditActionType.UPDATE
+    assert audit_docs[0]["previous_values"] == {"value": [{"key1": "value1", "key2": "value2"}]}
 
 
 @pytest.mark.asyncio
@@ -217,8 +218,8 @@ async def test_update_many(mongo_persistent, test_documents):
         assert result["value"] == 1
         assert isinstance(audit_doc["action_at"], datetime)
         assert audit_doc["user_id"] == user_id
-        assert audit_doc["action_type"] == "update"
-        assert audit_doc["old_values"] == {"value": [{"key1": "value1", "key2": "value2"}]}
+        assert audit_doc["action_type"] == AuditActionType.UPDATE
+        assert audit_doc["previous_values"] == {"value": [{"key1": "value1", "key2": "value2"}]}
 
 
 @pytest.mark.asyncio
@@ -249,8 +250,8 @@ async def test_replace_one(mongo_persistent, test_document, test_documents):
     assert len(audit_docs) == 1
     assert isinstance(audit_docs[0]["action_at"], datetime)
     assert audit_docs[0]["user_id"] == user_id
-    assert audit_docs[0]["action_type"] == "replace"
-    assert audit_docs[0]["old_values"] == {
+    assert audit_docs[0]["action_type"] == AuditActionType.REPLACE
+    assert audit_docs[0]["previous_values"] == {
         "name": "Generic Document",
         "value": [{"key1": "value1", "key2": "value2"}],
     }
@@ -275,8 +276,8 @@ async def test_delete_one(mongo_persistent, test_documents):
     assert len(audit_docs) == 1
     assert isinstance(audit_docs[0]["action_at"], datetime)
     assert audit_docs[0]["user_id"] == user_id
-    assert audit_docs[0]["action_type"] == "delete"
-    assert audit_docs[0]["old_values"] == test_documents[0]
+    assert audit_docs[0]["action_type"] == AuditActionType.DELETE
+    assert audit_docs[0]["previous_values"] == test_documents[0]
 
 
 @pytest.mark.asyncio
@@ -300,5 +301,5 @@ async def test_delete_many(mongo_persistent, test_documents):
     for doc, audit_doc in zip(test_documents, audit_docs):
         assert isinstance(audit_doc["action_at"], datetime)
         assert audit_doc["user_id"] == user_id
-        assert audit_doc["action_type"] == "delete"
-        assert audit_doc["old_values"] == doc
+        assert audit_doc["action_type"] == AuditActionType.DELETE
+        assert audit_doc["previous_values"] == doc

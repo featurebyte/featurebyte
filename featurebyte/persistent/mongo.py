@@ -12,13 +12,8 @@ from bson.objectid import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.results import DeleteResult, InsertManyResult, InsertOneResult, UpdateResult
 
-from featurebyte.persistent.base import (
-    Document,
-    DocumentUpdate,
-    DuplicateDocumentError,
-    Persistent,
-    QueryFilter,
-)
+from featurebyte.models.persistent import Document, DocumentUpdate, QueryFilter
+from featurebyte.persistent.base import DuplicateDocumentError, Persistent
 
 
 class MongoDB(Persistent):

@@ -3,54 +3,28 @@ Persistent persistent base class
 """
 from __future__ import annotations
 
-from typing import (
-    Any,
-    AsyncIterator,
-    Iterable,
-    List,
-    Literal,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Tuple,
-)
+from typing import AsyncIterator, Iterable, List, Literal, Optional, Tuple
 
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 
 from bson.objectid import ObjectId
 
-from featurebyte.models.persistent import AuditDocument
+from featurebyte.models.persistent import (
+    AuditActionType,
+    AuditDocument,
+    Document,
+    DocumentUpdate,
+    QueryFilter,
+)
+from featurebyte.persistent.audit import get_doc_name, get_previous_values
 from featurebyte.routes.common.util import get_utc_now
-
-Document = MutableMapping[str, Any]
-QueryFilter = MutableMapping[str, Any]
-DocumentUpdate = Mapping[str, Any]
 
 
 class DuplicateDocumentError(Exception):
     """
     Duplicate document found during insert / update
     """
-
-
-def get_old_values(original_doc: Document, updated_doc: Document) -> Document:
-    """
-    Get values in original document that has been changed in updated document
-
-    Parameters
-    ----------
-    original_doc: Document
-        Original document
-    updated_doc: Document
-        Updated document
-
-    Returns
-    -------
-    Document
-        Document with values in original document that has been updated
-    """
-    return {key: value for key, value in original_doc.items() if value != updated_doc.get(key)}
 
 
 class Persistent(ABC):
@@ -89,10 +63,10 @@ class Persistent(ABC):
             if inserted_id:
                 audit_doc = AuditDocument(
                     user_id=user_id,
-                    name=f"insert: {document.get('name', 'unnamed')}",
+                    name=f"insert: {get_doc_name(document)}",
                     document_id=document["_id"],
-                    action_type="insert",
-                    old_values={},
+                    action_type=AuditActionType.INSERT,
+                    previous_values={},
                 ).dict(by_alias=True)
                 await self._insert_one(
                     collection_name=f"__audit__{collection_name}", document=audit_doc
@@ -133,10 +107,10 @@ class Persistent(ABC):
                 audit_docs.append(
                     AuditDocument(
                         user_id=user_id,
-                        name=f"insert: {document.get('name', 'unnamed')}",
+                        name=f"insert: {get_doc_name(document)}",
                         document_id=document["_id"],
-                        action_type="insert",
-                        old_values={},
+                        action_type=AuditActionType.INSERT,
+                        previous_values={},
                     ).dict(by_alias=True)
                 )
 
@@ -222,7 +196,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        update: Document,
+        update: DocumentUpdate,
         user_id: Optional[ObjectId] = None,
     ) -> int:
         """
@@ -236,7 +210,7 @@ class Persistent(ABC):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
-        update: Document
+        update: DocumentUpdate
             Values to update
 
         Returns
@@ -254,7 +228,7 @@ class Persistent(ABC):
             if not isinstance(set_val, dict):
                 raise NotImplementedError("Unsupported update value")
             set_val["updated_at"] = get_utc_now()
-            update["$set"] = set_val
+            update = {key: set_val if key == "$set" else value for key, value in update.items()}
 
             # retrieve original document to track changes
             original_doc = await self._find_one(
@@ -279,10 +253,10 @@ class Persistent(ABC):
                 assert updated_doc
                 audit_doc = AuditDocument(
                     user_id=user_id,
-                    name=f"update: {original_doc.get('name', 'unnamed')}",
+                    name=f"update: {get_doc_name(original_doc)}",
                     document_id=updated_doc["_id"],
-                    action_type="update",
-                    old_values=get_old_values(original_doc, updated_doc),
+                    action_type=AuditActionType.UPDATE,
+                    previous_values=get_previous_values(original_doc, updated_doc),
                 ).dict(by_alias=True)
                 await self._insert_one(
                     collection_name=f"__audit__{collection_name}", document=audit_doc
@@ -294,7 +268,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        update: Document,
+        update: DocumentUpdate,
         user_id: Optional[ObjectId] = None,
     ) -> int:
         """
@@ -306,7 +280,7 @@ class Persistent(ABC):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
-        update: Document
+        update: DocumentUpdate
             Values to update
         user_id: Optional[ObjectId]
             ID of user who performed this operation
@@ -326,7 +300,7 @@ class Persistent(ABC):
             if not isinstance(set_val, dict):
                 raise NotImplementedError("Unsupported update value")
             set_val["updated_at"] = get_utc_now()
-            update["$set"] = set_val
+            update = {key: set_val if key == "$set" else value for key, value in update.items()}
 
             # retrieve original documents to track changes
             original_docs, num_original_docs = await self._find(
@@ -356,10 +330,10 @@ class Persistent(ABC):
                     audit_docs.append(
                         AuditDocument(
                             user_id=user_id,
-                            name=f"update: {original_doc.get('name', 'unnamed')}",
+                            name=f"update: {get_doc_name(original_doc)}",
                             document_id=updated_doc["_id"],
-                            action_type="update",
-                            old_values=get_old_values(original_doc, updated_doc),
+                            action_type=AuditActionType.UPDATE,
+                            previous_values=get_previous_values(original_doc, updated_doc),
                         ).dict(by_alias=True)
                     )
                 await self._insert_many(
@@ -419,10 +393,10 @@ class Persistent(ABC):
                 assert updated_doc
                 audit_doc = AuditDocument(
                     user_id=user_id,
-                    name=f"replace: {original_doc.get('name', 'unnamed')}",
+                    name=f"replace: {get_doc_name(original_doc)}",
                     document_id=updated_doc["_id"],
-                    action_type="replace",
-                    old_values=get_old_values(original_doc, updated_doc),
+                    action_type=AuditActionType.REPLACE,
+                    previous_values=get_previous_values(original_doc, updated_doc),
                 ).dict(by_alias=True)
                 await self._insert_one(
                     collection_name=f"__audit__{collection_name}", document=audit_doc
@@ -467,10 +441,10 @@ class Persistent(ABC):
             if num_deleted:
                 audit_doc = AuditDocument(
                     user_id=user_id,
-                    name=f"delete: {original_doc.get('name', 'unnamed')}",
+                    name=f"delete: {get_doc_name(original_doc)}",
                     document_id=original_doc["_id"],
-                    action_type="delete",
-                    old_values=original_doc,
+                    action_type=AuditActionType.DELETE,
+                    previous_values=original_doc,
                 ).dict(by_alias=True)
                 await self._insert_one(
                     collection_name=f"__audit__{collection_name}", document=audit_doc
@@ -514,10 +488,10 @@ class Persistent(ABC):
                 audit_docs = [
                     AuditDocument(
                         user_id=user_id,
-                        name=f"delete: {original_doc.get('name', 'unnamed')}",
+                        name=f"delete: {get_doc_name(original_doc)}",
                         document_id=original_doc["_id"],
-                        action_type="delete",
-                        old_values=original_doc,
+                        action_type=AuditActionType.DELETE,
+                        previous_values=original_doc,
                     ).dict(by_alias=True)
                     for original_doc in original_docs
                 ]
@@ -594,7 +568,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        update: Document,
+        update: DocumentUpdate,
     ) -> int:
         pass
 
@@ -603,7 +577,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        update: Document,
+        update: DocumentUpdate,
     ) -> int:
         pass
 

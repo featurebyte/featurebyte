@@ -33,13 +33,8 @@ from git.remote import Remote
 from git.repo.base import Repo
 
 from featurebyte.logger import logger
-from featurebyte.persistent.base import (
-    Document,
-    DocumentUpdate,
-    DuplicateDocumentError,
-    Persistent,
-    QueryFilter,
-)
+from featurebyte.models.persistent import Document, DocumentUpdate, QueryFilter
+from featurebyte.persistent.base import DuplicateDocumentError, Persistent
 
 DocNameFuncType = Callable[[MutableMapping[str, Any]], str]
 

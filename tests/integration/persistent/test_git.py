@@ -120,9 +120,9 @@ async def test_persistence(test_document, persistent_data):
         + [
             (
                 f"Create document: data1/{doc1_id}\n"
-                f"Create document: __audit__data1/insert: {doc1_id}\n"
+                f'Create document: __audit__data1/insert: "{doc1_id}"\n'
                 f"Create document: data2/{doc2_id}\n"
-                f"Create document: __audit__data2/insert: {doc2_id}\n"
+                f'Create document: __audit__data2/insert: "{doc2_id}"\n'
             )
         ]
     )

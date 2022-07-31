@@ -1,9 +1,10 @@
 """
 Pydantic Model for persistent storage
 """
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Mapping, MutableMapping, Optional
 
 from datetime import datetime
+from enum import Enum
 
 from beanie import PydanticObjectId
 from bson import ObjectId
@@ -11,6 +12,21 @@ from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.routes.common.util import get_utc_now
+
+Document = MutableMapping[str, Any]
+QueryFilter = MutableMapping[str, Any]
+DocumentUpdate = Mapping[str, Any]
+
+
+class AuditActionType(str, Enum):
+    """
+    Database or data warehouse source type
+    """
+
+    INSERT = "INSERT"
+    UPDATE = "UPDATE"
+    REPLACE = "REPLACE"
+    DELETE = "DELETE"
 
 
 class AuditDocument(FeatureByteBaseModel):
@@ -23,5 +39,5 @@ class AuditDocument(FeatureByteBaseModel):
     name: str
     document_id: Any
     action_at: datetime = Field(default_factory=get_utc_now)
-    action_type: str
-    old_values: Dict[str, Any]
+    action_type: AuditActionType
+    previous_values: Dict[str, Any]
