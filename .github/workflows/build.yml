@@ -57,7 +57,7 @@ jobs:
         echo "TAG=-${GITHUB_HEAD_REF}" >> $GITHUB_ENV
 
     - name: Setup cache
-      uses: actions/cache@v3.0.4
+      uses: actions/cache@v3.0.5
       with:
         path: .venv
         key: featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK0 }}${{ env.TAG }}
