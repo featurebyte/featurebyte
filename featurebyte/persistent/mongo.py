@@ -116,7 +116,9 @@ class MongoDB(Persistent):
         Optional[DocumentType]
             Retrieved document
         """
-        result: Optional[Document] = await self._db[collection_name].find_one(query_filter)
+        result: Optional[Document] = await self._db[collection_name].find_one(
+            query_filter, session=self._session
+        )
         return result
 
     async def _find(
@@ -151,8 +153,8 @@ class MongoDB(Persistent):
         Tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
-        cursor = self._db[collection_name].find(query_filter)
-        total = await self._db[collection_name].count_documents(query_filter)
+        cursor = self._db[collection_name].find(query_filter, session=self._session)
+        total = await self._db[collection_name].count_documents(query_filter, session=self._session)
 
         if sort_by:
             cursor = cursor.sort(
