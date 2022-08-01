@@ -835,21 +835,30 @@ def test_conditional_assign__project_named(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, conditional_node],
     )
+    projected_conditional = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[assign_node],
+    )
 
     interpreter = GraphInterpreter(graph)
-    sql_code = interpreter.construct_preview_sql(conditional_node.name)
+    sql_code = interpreter.construct_preview_sql(projected_conditional.name)
     expected = textwrap.dedent(
         """
         SELECT
           CASE
             WHEN ("a" = -999) THEN 0
             ELSE "a"
-          END
+          END AS "a"
         FROM (
             SELECT
               "ts" AS "ts",
               "cust_id" AS "cust_id",
-              "a" AS "a",
+              CASE
+                WHEN ("a" = -999) THEN 0
+                ELSE "a"
+              END AS "a",
               "b" AS "b"
             FROM "db"."public"."event_table"
         )

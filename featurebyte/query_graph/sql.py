@@ -329,14 +329,18 @@ class Project(ExpressionNode):
     def sql(self) -> Expression:
         return self.table_node.get_column_expr(self.column_name)
 
+    @property
+    def sql_standalone(self) -> Expression:
+        column_name = escape_column_name(self.column_name)
+        return select(expressions.alias_(self.sql, column_name)).from_(self.table_node.sql_nested())
+
 
 @dataclass
 class AliasNode(ExpressionNode):
     """Alias node that represents assignment to FeatureGroup
 
     Note that this intentionally does not inherit from ExpressionNode. This node only arises from
-    assignment to FeatureGroup and is not expected to support the sql_standalone property, so
-    table_node is not required.
+    assignment to FeatureGroup.
     """
 
     name: str

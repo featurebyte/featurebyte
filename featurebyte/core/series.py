@@ -22,7 +22,6 @@ class Series(QueryObject, OpsMixin, ParentMixin):
     name: Optional[StrictStr] = Field(default=None)
     var_type: DBVarType = Field(allow_mutation=False)
     lineage: Tuple[StrictStr, ...]
-    frame: Any = Field(exclude=True)
 
     def __repr__(self) -> str:
         return (
@@ -101,13 +100,6 @@ class Series(QueryObject, OpsMixin, ParentMixin):
             if not self._is_assignment_valid(self.var_type, value):
                 raise ValueError(f"Setting key '{key}' with value '{value}' not supported!")
 
-            # Check if Series is named. Assignment to named Series modifies the Frame
-            original_node_type = self.node.type
-            if original_node_type in {NodeType.PROJECT, NodeType.ALIAS}:
-                name = self.name
-            else:
-                name = None
-
             self.node = self.graph.add_operation(
                 node_type=NodeType.CONDITIONAL,
                 node_params={"value": value},
@@ -115,19 +107,14 @@ class Series(QueryObject, OpsMixin, ParentMixin):
                 input_nodes=[self.node, key.node],
             )
 
-            # For named Series, apply the change to the original column in the Frame
-            if name is not None:
-                if self.frame is not None:
-                    # EventView case. Update the affected column by assigning to it
-                    assert original_node_type == NodeType.PROJECT
-                    self.frame[name] = self
-                    # Change node type back to PROJECT to allow consecutive conditional assigns
-                    self.node = self.frame[name].node
-                    assert self.node.type == NodeType.PROJECT
-                else:
-                    # FeatureGroup case. Setting name triggers the ALIAS node logic
-                    self.name = name
-                    assert self.node.type == NodeType.ALIAS
+            # For Series with a parent, apply the change to the parent (either an EventView or a
+            # FeatureGroup)
+            if self.parent is not None:
+                # Update the EventView column / Feature by doing an assign operation
+                self.parent[self.name] = self
+                # Update the current node as a PROJECT / ALIAS from the parent. This is to allow
+                # readable column name during series preview
+                self.node = self.parent[self.name].node
 
             self.lineage = self._append_to_lineage(self.lineage, self.node.name)
         else:
