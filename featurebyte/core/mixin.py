@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from pydantic import BaseModel, PrivateAttr
+
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
@@ -114,3 +116,39 @@ class OpsMixin:
         output = list(lineage)
         output.append(node_name)
         return tuple(output)
+
+
+class ParentMixin(BaseModel):
+    """
+    ParentMixin stores the parent object of the current object
+    """
+
+    _parent: Any = PrivateAttr(default=None)
+
+    @property
+    def parent(self) -> Any:
+        """
+        Parent Frame object of the current series
+
+        Returns
+        -------
+        BaseFrame
+        """
+        return self._parent
+
+    def set_parent(self, parent: Any) -> ParentMixin:
+        """
+        Set parent of the current object
+
+        Parameters
+        ----------
+        parent: Frame
+            Parent which current series belongs to
+
+        Returns
+        -------
+        Series
+            Reference to current object
+        """
+        self._parent = parent
+        return self

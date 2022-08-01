@@ -180,7 +180,7 @@ class Frame(BaseFrame, OpsMixin):
                 lineage=self._append_to_lineage(self.column_lineage_map[item], node.name),
                 row_index_lineage=self.row_index_lineage,
                 **self._getitem_series_params,
-            )
+            ).set_parent(self)
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
