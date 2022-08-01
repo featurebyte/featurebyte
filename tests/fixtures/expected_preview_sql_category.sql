@@ -37,10 +37,10 @@ REQUEST_TABLE AS (SELECT
 REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID AS (
     SELECT
         REQ.POINT_IN_TIME,
-        REQ.CUSTOMER_ID,
+        REQ."CUSTOMER_ID",
         T.value AS REQ_TILE_INDEX
     FROM (
-        SELECT DISTINCT POINT_IN_TIME, CUSTOMER_ID FROM REQUEST_TABLE
+        SELECT DISTINCT POINT_IN_TIME, "CUSTOMER_ID" FROM REQUEST_TABLE
     ) REQ,
     Table(
         Flatten(
@@ -57,10 +57,10 @@ REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID AS (
 REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID AS (
     SELECT
         REQ.POINT_IN_TIME,
-        REQ.CUSTOMER_ID,
+        REQ."CUSTOMER_ID",
         T.value AS REQ_TILE_INDEX
     FROM (
-        SELECT DISTINCT POINT_IN_TIME, CUSTOMER_ID FROM REQUEST_TABLE
+        SELECT DISTINCT POINT_IN_TIME, "CUSTOMER_ID" FROM REQUEST_TABLE
     ) REQ,
     Table(
         Flatten(
@@ -82,61 +82,61 @@ FROM REQUEST_TABLE AS REQ
 LEFT JOIN (
     SELECT
       INNER_.POINT_IN_TIME,
-      INNER_.CUSTOMER_ID,
+      INNER_."CUSTOMER_ID",
       OBJECT_AGG(CASE
-        WHEN INNER_.product_type IS NULL THEN '__MISSING__'
-        ELSE INNER_.product_type
+        WHEN INNER_."product_type" IS NULL THEN '__MISSING__'
+        ELSE INNER_."product_type"
       END, INNER_."inner_agg_w7200_avg_f3600_m1800_b900_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2") AS "agg_w7200_avg_f3600_m1800_b900_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2"
     FROM (
         SELECT
           REQ.POINT_IN_TIME,
-          REQ.CUSTOMER_ID,
-          TILE.product_type,
+          REQ."CUSTOMER_ID",
+          TILE."product_type",
           SUM(sum_value) / SUM(count_value) AS "inner_agg_w7200_avg_f3600_m1800_b900_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2"
         FROM REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID AS REQ
         INNER JOIN avg_f3600_m1800_b900_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2 AS TILE
           ON REQ.REQ_TILE_INDEX = TILE.INDEX
-          AND REQ.CUSTOMER_ID = TILE.cust_id
+          AND REQ."CUSTOMER_ID" = TILE."cust_id"
         GROUP BY
           REQ.POINT_IN_TIME,
-          REQ.CUSTOMER_ID,
-          TILE.product_type
+          REQ."CUSTOMER_ID",
+          TILE."product_type"
     ) AS INNER_
     GROUP BY
       INNER_.POINT_IN_TIME,
-      INNER_.CUSTOMER_ID
+      INNER_."CUSTOMER_ID"
 ) AS T0
   ON REQ.POINT_IN_TIME = T0.POINT_IN_TIME
-  AND REQ.CUSTOMER_ID = T0.CUSTOMER_ID
+  AND REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
 LEFT JOIN (
     SELECT
       INNER_.POINT_IN_TIME,
-      INNER_.CUSTOMER_ID,
+      INNER_."CUSTOMER_ID",
       OBJECT_AGG(CASE
-        WHEN INNER_.product_type IS NULL THEN '__MISSING__'
-        ELSE INNER_.product_type
+        WHEN INNER_."product_type" IS NULL THEN '__MISSING__'
+        ELSE INNER_."product_type"
       END, INNER_."inner_agg_w172800_avg_f3600_m1800_b900_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2") AS "agg_w172800_avg_f3600_m1800_b900_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2"
     FROM (
         SELECT
           REQ.POINT_IN_TIME,
-          REQ.CUSTOMER_ID,
-          TILE.product_type,
+          REQ."CUSTOMER_ID",
+          TILE."product_type",
           SUM(sum_value) / SUM(count_value) AS "inner_agg_w172800_avg_f3600_m1800_b900_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2"
         FROM REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID AS REQ
         INNER JOIN avg_f3600_m1800_b900_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2 AS TILE
           ON REQ.REQ_TILE_INDEX = TILE.INDEX
-          AND REQ.CUSTOMER_ID = TILE.cust_id
+          AND REQ."CUSTOMER_ID" = TILE."cust_id"
         GROUP BY
           REQ.POINT_IN_TIME,
-          REQ.CUSTOMER_ID,
-          TILE.product_type
+          REQ."CUSTOMER_ID",
+          TILE."product_type"
     ) AS INNER_
     GROUP BY
       INNER_.POINT_IN_TIME,
-      INNER_.CUSTOMER_ID
+      INNER_."CUSTOMER_ID"
 ) AS T1
   ON REQ.POINT_IN_TIME = T1.POINT_IN_TIME
-  AND REQ.CUSTOMER_ID = T1.CUSTOMER_ID)
+  AND REQ."CUSTOMER_ID" = T1."CUSTOMER_ID")
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
