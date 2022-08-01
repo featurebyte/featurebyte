@@ -13,6 +13,7 @@ def test__getitem__series_key(int_series, bool_series):
     Test filtering using boolean Series
     """
     series = int_series[bool_series]
+    assert series.parent is None
     series_dict = series.dict()
     assert (
         series_dict["node"].items()
@@ -42,6 +43,7 @@ def test__getitem__row_index_not_aligned(int_series, bool_series):
     """
     filtered_bool_series = bool_series[bool_series]
     assert filtered_bool_series.var_type == DBVarType.BOOL
+    assert filtered_bool_series.parent is None
     with pytest.raises(ValueError) as exc:
         _ = int_series[filtered_bool_series]
     expected_msg = (
@@ -74,7 +76,9 @@ def test__setitem__bool_series_key_scalar_value(dataframe, bool_series, column, 
     Test Series conditional assignment
     """
     series = dataframe[column]
+    assert series.parent is dataframe
     series[bool_series] = value
+    assert series.parent is dataframe
     series_dict = series.dict()
     assert series_dict["node"] == {
         "name": "project_3",
@@ -102,6 +106,7 @@ def test__setitem__cond_assign_with_same_input_nodes(bool_series):
     Test Series conditional assignment using same series for filtering & assignment
     """
     bool_series[bool_series] = True
+    assert bool_series.parent is not None
     bool_series_dict = bool_series.dict()
     assert dict(bool_series_dict["graph"]["edges"]) == {
         "assign_1": ["project_2"],
@@ -177,6 +182,7 @@ def test__setitem__row_index_not_aligned(int_series, bool_series):
     Test conditional assignment using non-aligned series
     """
     filtered_bool_series = bool_series[bool_series]
+    assert filtered_bool_series.parent is None
     with pytest.raises(ValueError) as exc:
         int_series[filtered_bool_series] = 1
     expected_msg = (
@@ -220,6 +226,7 @@ def test_logical_operators(bool_series, int_series):
     """
     output_and_series = bool_series & bool_series
     assert output_and_series.name is None
+    assert output_and_series.parent is None
     output_and_series_dict = output_and_series.dict()
     assert (
         output_and_series_dict["node"].items()
@@ -236,6 +243,7 @@ def test_logical_operators(bool_series, int_series):
 
     output_or_scalar = bool_series | False
     assert output_or_scalar.name is None
+    assert output_or_scalar.parent is None
     output_or_scalar_dict = output_or_scalar.dict()
     assert (
         output_or_scalar_dict["node"].items()

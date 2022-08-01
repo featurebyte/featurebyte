@@ -27,34 +27,6 @@ class EventViewColumn(Series):
     _parent: Optional[EventView] = PrivateAttr(default=None)
     event_data_id: PydanticObjectId = Field(allow_mutation=False)
 
-    @property
-    def parent(self) -> Optional[EventView]:
-        """
-        Parent Frame object of the current series
-
-        Returns
-        -------
-        BaseFrame
-        """
-        return self._parent
-
-    def set_parent(self, event_view: EventView) -> Series:
-        """
-        Set parent of the current object
-
-        Parameters
-        ----------
-        event_view: EventView
-            Parent which current series belongs to
-
-        Returns
-        -------
-        Series
-            Reference to current object
-        """
-        self._parent = event_view
-        return self
-
     def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
@@ -263,8 +235,6 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.inherited_columns.union(item))
         output = super().__getitem__(item)
-        if isinstance(item, str) and isinstance(output, EventViewColumn):
-            return output.set_parent(self)  # pylint: disable=no-member
         if isinstance(output, EventView):
             if self.column_entity_map:
                 output.column_entity_map = {

@@ -16,6 +16,7 @@ def production_ready_feature_fixture(feature_group):
     """Fixture for a production ready feature"""
     feature = feature_group["sum_30m"] + 123
     feature.name = "production_ready_feature"
+    assert feature.parent is None
     feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY
     feature.__dict__["version"] = "V220401"
     feature_group["production_ready_feature"] = feature
@@ -248,6 +249,8 @@ def test_base_feature_group__getitem__(production_ready_feature, draft_feature):
     feature_list = FeatureList([production_ready_feature, draft_feature], name="my_feature_list")
     feat1 = feature_group["production_ready_feature"]
     feat2 = feature_list["production_ready_feature"]
+    assert feat1.parent is feature_group
+    assert feat2.parent is None
     assert isinstance(feat1, Feature) and isinstance(feat2, Feature)
     assert feat1 == feat2 == production_ready_feature
     feat_group1 = feature_group[["production_ready_feature"]]

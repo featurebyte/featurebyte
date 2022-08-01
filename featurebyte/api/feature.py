@@ -6,28 +6,38 @@ from __future__ import annotations
 from typing import Any
 
 import time
-from http import HTTPStatus
 
 import pandas as pd
 from pydantic import Field
 
-from featurebyte.config import Configurations, Credentials
+from featurebyte.api.api_object import ApiObject
+from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.enum import SpecialColumnName
-from featurebyte.exception import DuplicatedRecordException, RecordCreationException
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
+from featurebyte.schema.feature import FeatureCreate
 
 
-class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
+class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
     """
     Feature class
     """
 
     feature_store: ExtendedFeatureStoreModel = Field(exclude=True, allow_mutation=False)
+
+    # class variables
+    _route = "/feature"
+
+    def _get_init_params(self) -> dict[str, Any]:
+        return {"feature_store": self.feature_store}
+
+    def _get_create_payload(self) -> dict[str, Any]:
+        data = FeatureCreate(**self.json_dict())
+        return data.json_dict()
 
     def __setattr__(self, key: str, value: Any) -> Any:
         """
@@ -193,22 +203,3 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel):
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
         return result
-
-    def save(self) -> None:
-        """
-        Save feature to persistent as draft
-
-        Raises
-        ------
-        DuplicatedRecordException
-            When record with the same key exists at the persistent layer
-        RecordCreationException
-            When fail to save the event data (general failure)
-        """
-        client = Configurations().get_client()
-        response = client.post(url="/feature", json=self.json_dict())
-        if response.status_code != HTTPStatus.CREATED:
-            if response.status_code == HTTPStatus.CONFLICT:
-                raise DuplicatedRecordException(response)
-            raise RecordCreationException(response)
-        type(self).__init__(self, **response.json(), feature_store=self.feature_store)

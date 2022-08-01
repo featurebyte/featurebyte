@@ -59,6 +59,9 @@ def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
     assert isinstance(snowflake_event_data.created_at, datetime)
     feature_store, _ = snowflake_event_data.tabular_source
     assert isinstance(feature_store, ObjectId)
+
+    # test list event data
+    assert EventData.list() == ["sf_event_data"]
     yield snowflake_event_data
 
 
@@ -276,7 +279,7 @@ def test_event_data__save__exceptions(saved_event_data):
 
     # check unhandled response status code
     with pytest.raises(RecordCreationException):
-        with patch("featurebyte.api.event_data.Configurations"):
+        with patch("featurebyte.api.api_object.Configurations"):
             saved_event_data.save()
 
 

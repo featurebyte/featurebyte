@@ -3,7 +3,7 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal, Optional
 
 from http import HTTPStatus
 
@@ -22,7 +22,7 @@ from featurebyte.models.feature import (
     FeatureReadiness,
 )
 from featurebyte.persistent import Persistent
-from featurebyte.schema.feature import FeatureCreate
+from featurebyte.schema.feature import FeatureCreate, FeatureList
 
 
 class FeatureController:
@@ -212,7 +212,7 @@ class FeatureController:
         user: Any
             User class to provide user identifier
         persistent: Persistent
-            Object that entity will be saved to
+            Object that feature will be saved to
         get_credential: Any
             Get credential handler function
         data: FeatureCreate
@@ -305,10 +305,95 @@ class FeatureController:
             # insert feature registry into feature store
             cls.insert_feature_registry(user, document, feature_store, get_credential)
 
-        # TODO: to fix after get route is implemented
-        feature = await session.find_one(
-            collection_name=cls.collection_name, query_filter={"_id": data.id}
+        return await cls.get_feature(
+            user=user,
+            persistent=persistent,
+            feature_id=insert_id,
         )
+
+    @classmethod
+    async def get_feature(
+        cls, user: Any, persistent: Persistent, feature_id: ObjectId
+    ) -> FeatureModel:
+        """
+        Get Feature from the persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that feature will be saved to
+        feature_id: ObjectId
+            Feature ID
+
+        Returns
+        -------
+        FeatureModel
+            Retrieve feature object
+
+        Raises
+        ------
+        HTTPException
+            If the feature not found
+        """
+        query_filter = {"_id": ObjectId(feature_id), "user_id": user.id}
+        feature = await persistent.find_one(
+            collection_name=cls.collection_name, query_filter=query_filter
+        )
+        # check that feature id exists
         if not feature:
-            return document
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail=f'Feature (feature.id: "{feature_id}") not found! Please save the Feature object first.',
+            )
         return FeatureModel(**feature)
+
+    @classmethod
+    async def list_features(
+        cls,
+        user: Any,
+        persistent: Persistent,
+        page: int = 1,
+        page_size: int = 10,
+        sort_by: str | None = "created_at",
+        sort_dir: Literal["asc", "desc"] = "desc",
+        name: Optional[str] = None,
+    ) -> FeatureList:
+        """
+        List Features stored at persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that feature will be saved to
+        page: int
+            Page number
+        page_size: int
+            Number of items per page
+        sort_by: str | None
+            Key used to sort the returning features
+        sort_dir: "asc" or "desc"
+            Sorting the returning features in ascending order or descending order
+        name: str | None
+            Entity name used to filter the features
+
+        Returns
+        -------
+        FeatureList
+            List of features fulfilled the filtering condition
+        """
+        query_filter = {"user_id": user.id}
+        if name is not None:
+            query_filter["name"] = name
+        docs, total = await persistent.find(
+            collection_name=cls.collection_name,
+            query_filter=query_filter,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            page=page,
+            page_size=page_size,
+        )
+        return FeatureList(page=page, page_size=page_size, total=total, data=list(docs))

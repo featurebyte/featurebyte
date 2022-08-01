@@ -8,7 +8,11 @@ import pytest
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
-from featurebyte.exception import DuplicatedRecordException, RecordCreationException
+from featurebyte.exception import (
+    DuplicatedRecordException,
+    RecordCreationException,
+    RecordRetrievalException,
+)
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
@@ -235,6 +239,10 @@ def saved_feature_fixture(
     float_feature.save()
     assert float_feature.id == feature_id_before
     assert float_feature.readiness == FeatureReadiness.DRAFT
+
+    # test list features
+    assert float_feature.name == "sum_1d"
+    assert Feature.list() == ["sum_1d"]
     yield float_feature
 
 
@@ -315,3 +323,15 @@ def test_feature_name__set_name_invalid_none(float_feature):
     with pytest.raises(ValueError) as exc_info:
         new_feature.name = None
     assert str(exc_info.value) == "None is not a valid feature name"
+
+
+def test_get_feature(saved_feature):
+    """
+    Test get feature using feature name
+    """
+    feature = Feature.get(name=saved_feature.name)
+    assert feature.dict() == saved_feature.dict()
+
+    with pytest.raises(RecordRetrievalException) as exc:
+        Feature.get(name="random_name")
+    assert 'Feature (feature.name: "random_name") not found!' in str(exc.value)
