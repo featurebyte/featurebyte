@@ -270,29 +270,68 @@ class GitDB(Persistent):
         """
         return os.path.join(self._working_tree_dir, collection_name)
 
-    def _get_doc_path(self, collection_path: str, doc_name: str) -> str:
+    def _get_doc_path(self, collection_name: str, document: Document) -> str:
         """
         Get path of a document
 
         Parameters
         ----------
-        collection_path: str
-            Path of collection directory
-        doc_name: str
-            Document name
+        collection_name: str
+            Name of collection
+        document: Document
+            Document object
 
         Returns
         -------
         str
             Path of document
         """
-        return os.path.join(collection_path, doc_name + ".json")
+        collection_path = self._get_collection_path(collection_name)
+        doc_filename = self.get_doc_name_func(collection_name)(document)
+        return os.path.join(collection_path, doc_filename + ".json")
+
+    def _get_doc_name(self, collection_name: str, document: Document) -> str:
+        """
+        Get name of a document
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection
+        document: Document
+            Document object
+
+        Returns
+        -------
+        str
+            Name of document
+        """
+        return document.get("name", self.get_doc_name_func(collection_name)(document))
+
+    @staticmethod
+    def _get_brief_path(doc_path: str) -> str:
+        """
+        Retrieve brief path for commit messages
+
+        Parameters
+        ----------
+        doc_path: str
+            Path to document
+
+        Returns
+        -------
+        str
+            Brief path
+        """
+        return os.path.join(
+            os.path.basename(os.path.dirname(doc_path)), os.path.basename(doc_path)[:-5]
+        )
 
     def _add_file(
         self,
         collection_name: str,
         document: Document,
-        doc_name: str,
+        doc_path: str,
         replace: bool,
     ) -> ObjectId:
         """
@@ -304,8 +343,8 @@ class GitDB(Persistent):
             Name of collection to add document to
         document: Document
             Document to insert
-        doc_name: str
-            Document name
+        doc_path: str
+            Document doc_path
         replace: bool
             Replace existing file
 
@@ -335,25 +374,24 @@ class GitDB(Persistent):
         document.pop("user_id", None)
 
         # create document
-        new_doc_name = self.get_doc_name_func(collection_name)(document)
-        new_doc_path = self._get_doc_path(collection_path, new_doc_name)
+        new_doc_name = self._get_doc_name(collection_name, document)
+        new_doc_path = self._get_doc_path(collection_name, document)
 
         doc_exists = os.path.exists(new_doc_path)
-        editing_same_file = replace and (new_doc_name == doc_name)
+        editing_same_file = replace and (new_doc_path == doc_path)
         if doc_exists and not editing_same_file:
             raise DuplicateDocumentError(
-                f"Document {collection_name}/{new_doc_name} already exists"
+                f"Document {self._get_brief_path(new_doc_path)} already exists"
             )
 
         # handle renaming
-        is_renaming = doc_name and doc_name != new_doc_name
+        is_renaming = doc_path and doc_path != new_doc_path
         if is_renaming:
-            old_doc_path = self._get_doc_path(collection_path, doc_name)
-            if os.path.exists(old_doc_path):
-                self.repo.git.mv(old_doc_path, new_doc_path)
+            if os.path.exists(doc_path):
+                self.repo.git.mv(doc_path, new_doc_path)
                 commit_message = (
-                    f"{GitDocumentAction.RENAME} document: {collection_name}/{doc_name} -> "
-                    f"{collection_name}/{new_doc_name}"
+                    f"{GitDocumentAction.RENAME} document: {self._get_brief_path(doc_path)} -> "
+                    f"{self._get_brief_path(new_doc_path)}"
                 )
                 self._handle_commit_message(commit_message)
                 doc_exists = True
@@ -387,9 +425,9 @@ class GitDB(Persistent):
         if not os.path.exists(collection_path):
             return
 
-        # remove document
-        doc_name = str(document.get("name", str(document["_id"])))
-        doc_path = self._get_doc_path(collection_path, doc_name)
+        # remove document0
+        doc_name = self._get_doc_name(collection_name, document)
+        doc_path = self._get_doc_path(collection_name, document)
 
         logger.debug("Remove file", extra={"doc_path": doc_path})
         if os.path.exists(doc_path):
@@ -495,12 +533,12 @@ class GitDB(Persistent):
 
         for doc in docs:
             # track original doc name
-            doc_name = self.get_doc_name_func(collection_name)(doc)
+            doc_path = self._get_doc_path(collection_name, doc)
             doc.update(update["$set"])
             self._add_file(
                 collection_name=collection_name,
                 document=doc,
-                doc_name=doc_name,
+                doc_path=doc_path,
                 replace=True,
             )
             num_updated += 1
@@ -539,12 +577,12 @@ class GitDB(Persistent):
 
         for doc in docs:
             # use original id for replacement doc
-            doc_name = self.get_doc_name_func(collection_name)(doc)
+            doc_path = self._get_doc_path(collection_name, doc)
             replacement["_id"] = doc["_id"]
             self._add_file(
                 collection_name=collection_name,
                 document=replacement,
-                doc_name=doc_name,
+                doc_path=doc_path,
                 replace=True,
             )
             num_updated += 1
@@ -721,7 +759,7 @@ class GitDB(Persistent):
         return self._add_file(
             collection_name=collection_name,
             document=document,
-            doc_name=self.get_doc_name_func(collection_name)(document),
+            doc_path=self._get_doc_path(collection_name, document),
             replace=False,
         )
 
@@ -750,7 +788,7 @@ class GitDB(Persistent):
                 self._add_file(
                     collection_name=collection_name,
                     document=document,
-                    doc_name=self.get_doc_name_func(collection_name)(document),
+                    doc_path=self._get_doc_path(collection_name, document),
                     replace=False,
                 )
             )

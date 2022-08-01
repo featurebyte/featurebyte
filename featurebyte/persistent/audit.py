@@ -1,7 +1,7 @@
 """
 Audit logging for persistent operations
 """
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, MutableMapping, Optional, Tuple
 
 from featurebyte.models.persistent import (
     AuditActionType,
@@ -68,7 +68,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
         Return from function
     """
 
-    async def _execute_transaction(
+    async def _execute_transaction(  # pylint: disable=unused-argument
         persistent: Any,
         async_execution: Any,
         collection_name: Optional[str] = None,
@@ -98,14 +98,16 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             number of records updated,
             list of affected documents prior to transaction
         """
+        original_docs: List[MutableMapping[str, Any]] = []
+
         if action_type == AuditActionType.INSERT:
             # insertion of new document(s)
             return_value = await async_execution
             if mode == AuditTransactionMode.SINGLE:
-                original_docs = [kwargs["document"]]
+                original_docs = [{"_id": return_value}]
                 num_updated = 1
             else:
-                original_docs = kwargs["documents"]
+                original_docs = [{"_id": _id} for _id in return_value]
                 num_updated = len(return_value)
         else:
             # retrieve original document(s)
@@ -163,6 +165,11 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
                 query_filter={"_id": {"$in": [doc["_id"] for doc in original_docs]}},
             )
             assert len(original_docs) == num_updated_docs
+
+            # for insertion, original docs is empty, so we set it to updated_docs
+            # so that previous_values will be empty
+            if action_type == AuditActionType.INSERT:
+                original_docs = updated_docs
 
         # create audit docs to track changes
         audit_docs = []
