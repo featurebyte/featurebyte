@@ -339,11 +339,7 @@ class Project(ExpressionNode):
 
 @dataclass
 class AliasNode(ExpressionNode):
-    """Alias node that represents assignment to FeatureGroup
-
-    Note that this intentionally does not inherit from ExpressionNode. This node only arises from
-    assignment to FeatureGroup.
-    """
+    """Alias node that represents assignment to FeatureGroup"""
 
     name: str
     expr_node: ExpressionNode
