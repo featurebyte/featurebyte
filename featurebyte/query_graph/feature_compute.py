@@ -581,7 +581,9 @@ class FeatureExecutionPlan(ABC):
         for feature_spec in self.feature_specs.values():
             feature_alias = f'{feature_spec.feature_expr} AS "{feature_spec.feature_name}"'
             qualified_feature_names.append(feature_alias)
-        request_table_column_names = ", ".join([f'AGG."{col}"' for col in request_table_columns])
+        request_table_column_names = ", ".join(
+            [f"AGG.{escape_column_name(col)}" for col in request_table_columns]
+        )
         qualified_feature_names_str = ", ".join(qualified_feature_names)
         sql = f"""
             SELECT
