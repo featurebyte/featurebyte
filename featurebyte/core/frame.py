@@ -171,7 +171,7 @@ class Frame(BaseFrame, OpsMixin):
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[self.graph.get_node_by_name(self.column_lineage_map[item][-1])],
             )
-            return self._series_class(
+            output = self._series_class(
                 feature_store=self.feature_store,
                 tabular_source=self.tabular_source,
                 node=node,
@@ -181,6 +181,8 @@ class Frame(BaseFrame, OpsMixin):
                 row_index_lineage=self.row_index_lineage,
                 **self._getitem_series_params,
             )
+            output.set_parent(self)
+            return output
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,

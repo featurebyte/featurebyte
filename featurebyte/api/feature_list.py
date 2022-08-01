@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field, parse_obj_as, root_validator
 from featurebyte.api.feature import Feature
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
+from featurebyte.core.mixin import ParentMixin
 from featurebyte.logger import logger
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.query_graph.feature_historical import get_historical_features
@@ -114,10 +115,17 @@ class BaseFeatureGroup(BaseModel):
         return self._subset_list_of_columns(selected_feat_names)
 
 
-class FeatureGroup(BaseFeatureGroup):
+class FeatureGroup(BaseFeatureGroup, ParentMixin):
     """
     FeatureGroup class
     """
+
+    def __getitem__(self, item: str | list[str]) -> Feature | FeatureGroup:
+        # Note: Feature can only modify FeatureGroup parent but not FeatureList parent.
+        output = super().__getitem__(item)
+        if isinstance(output, Feature):
+            output.set_parent(self)
+        return output
 
     def __setitem__(self, key: str, value: Feature) -> None:
         # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original

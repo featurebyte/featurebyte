@@ -8,13 +8,13 @@ from typing import Any, Optional, Tuple
 from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.core.generic import QueryObject
-from featurebyte.core.mixin import OpsMixin
+from featurebyte.core.mixin import OpsMixin, ParentMixin
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
-class Series(QueryObject, OpsMixin):
+class Series(QueryObject, OpsMixin, ParentMixin):
     """
     Implement operations to manipulate database column
     """
