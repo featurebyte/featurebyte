@@ -88,10 +88,10 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
     expected_sql = """
     SELECT
         REQ.POINT_IN_TIME,
-        REQ.CID,
+        REQ."CID",
         T.value AS REQ_TILE_INDEX
     FROM (
-        SELECT DISTINCT POINT_IN_TIME, CID FROM REQUEST_TABLE
+        SELECT DISTINCT POINT_IN_TIME, "CID" FROM REQUEST_TABLE
     ) REQ,
     Table(
         Flatten(
@@ -132,10 +132,10 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     expected_sql = """
     SELECT
         REQ.POINT_IN_TIME,
-        REQ.CID,
+        REQ."CID",
         T.value AS REQ_TILE_INDEX
     FROM (
-        SELECT DISTINCT POINT_IN_TIME, CID FROM REQUEST_TABLE
+        SELECT DISTINCT POINT_IN_TIME, "CID" FROM REQUEST_TABLE
     ) REQ,
     Table(
         Flatten(
@@ -157,10 +157,10 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     expected_sql = """
     SELECT
         REQ.POINT_IN_TIME,
-        REQ.CID,
+        REQ."CID",
         T.value AS REQ_TILE_INDEX
     FROM (
-        SELECT DISTINCT POINT_IN_TIME, CID FROM REQUEST_TABLE
+        SELECT DISTINCT POINT_IN_TIME, "CID" FROM REQUEST_TABLE
     ) REQ,
     Table(
         Flatten(

@@ -198,7 +198,7 @@ def test_query_object_operation_on_snowflake_source(
     }
 
     # assign new feature and preview again
-    feature_group["COUNT_2h DIV COUNT_24h"] = new_feature
+    feature_group["COUNT_2h / COUNT_24h"] = new_feature
     df_feature_preview = feature_group.preview(
         preview_param,
         credentials=config.credentials,
@@ -209,9 +209,9 @@ def test_query_object_operation_on_snowflake_source(
         "UID": 1,
         "COUNT_2h": 1,
         "COUNT_24h": 9,
-        "COUNT_2h DIV COUNT_24h": Decimal("0.111111"),
+        "COUNT_2h / COUNT_24h": Decimal("0.111111"),
     }
-    special_feature = feature_group["COUNT_2h DIV COUNT_24h"]
+    special_feature = feature_group["COUNT_2h / COUNT_24h"]
     special_feature.save()  # pylint: disable=no-member
     check_feature_and_remove_registry(special_feature, feature_manager)
 
@@ -231,7 +231,7 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
             feature_group["COUNT_2h"],
             feature_group["COUNT_24h"],
             feature_group_per_category["COUNT_BY_ACTION_24h"],
-            feature_group["COUNT_2h DIV COUNT_24h"],
+            feature_group["COUNT_2h / COUNT_24h"],
         ],
         name="My FeatureList",
     )
@@ -253,7 +253,7 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
                 '{\n  "add": 3,\n  "detail": 1,\n  "remove": 1\n}',
                 None,
             ],
-            "COUNT_2h DIV COUNT_24h": [
+            "COUNT_2h / COUNT_24h": [
                 0.111111,
                 0.142857,
                 np.nan,
@@ -284,13 +284,13 @@ def _test_get_historical_features_with_serving_names(
 ):
     """Test getting historical features from FeatureList with alternative serving names"""
 
-    mapping = {"UID": "NEW_UID"}
+    mapping = {"UID": "new_uid"}
 
     # Instead of providing the default serving name "UID", provide "NEW_UID" in data
     df_training_events = df_training_events.rename(mapping, axis=1)
     df_historical_expected = df_historical_expected.rename(mapping, axis=1)
-    assert "NEW_UID" in df_training_events
-    assert "NEW_UID" in df_historical_expected
+    assert "new_uid" in df_training_events
+    assert "new_uid" in df_historical_expected
 
     df_historical_features = feature_list.get_historical_features(
         df_training_events,

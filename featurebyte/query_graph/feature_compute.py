@@ -19,7 +19,14 @@ from featurebyte.query_graph.feature_common import (
 )
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.interpreter import SQLOperationGraph, find_parent_groupby_nodes
-from featurebyte.query_graph.sql import AliasNode, Project, SQLType, TableNode
+from featurebyte.query_graph.sql import (
+    AliasNode,
+    Project,
+    SQLType,
+    TableNode,
+    escape_column_name,
+    escape_column_names,
+)
 
 Window = int
 Frequency = int
@@ -203,8 +210,11 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
     ) -> str:
         # Input request table can have duplicated time points but aggregation should be done only on
         # distinct time points
-        select_distinct_columns = ", ".join([SpecialColumnName.POINT_IN_TIME.value] + serving_names)
-        select_serving_names = ", ".join([f"REQ.{col}" for col in serving_names])
+        quoted_serving_names = escape_column_names(serving_names)
+        select_distinct_columns = ", ".join(
+            [SpecialColumnName.POINT_IN_TIME.value] + quoted_serving_names
+        )
+        select_serving_names = ", ".join([f"REQ.{col}" for col in quoted_serving_names])
         sql = f"""
     SELECT
         REQ.{SpecialColumnName.POINT_IN_TIME},
@@ -372,12 +382,12 @@ class FeatureExecutionPlan(ABC):
         """
         # pylint: disable=too-many-locals
         join_conditions_lst = ["REQ.REQ_TILE_INDEX = TILE.INDEX"]
-        for serving_name, key in zip(serving_names, keys):
+        for serving_name, key in zip(escape_column_names(serving_names), escape_column_names(keys)):
             join_conditions_lst.append(f"REQ.{serving_name} = TILE.{key}")
         join_conditions = expressions.and_(*join_conditions_lst)
 
         group_by_keys = [f"REQ.{point_in_time_column}"]
-        for serving_name in serving_names:
+        for serving_name in escape_column_names(serving_names):
             group_by_keys.append(f"REQ.{serving_name}")
 
         if value_by is None:
@@ -385,7 +395,7 @@ class FeatureExecutionPlan(ABC):
             inner_group_by_keys = group_by_keys
         else:
             inner_agg_result_name = f"inner_{agg_result_name}"
-            inner_group_by_keys = group_by_keys + [f"TILE.{value_by}"]
+            inner_group_by_keys = group_by_keys + [f"TILE.{escape_column_name(value_by)}"]
 
         inner_agg_expr = (
             select(
@@ -485,7 +495,9 @@ class FeatureExecutionPlan(ABC):
             f"REQ.{point_in_time_column} = {agg_table_alias}.{point_in_time_column}",
         ]
         for serving_name in agg_spec.serving_names:
-            join_conditions_lst += [f"REQ.{serving_name} = {agg_table_alias}.{serving_name}"]
+            join_conditions_lst += [
+                f"REQ.{escape_column_name(serving_name)} = {agg_table_alias}.{escape_column_name(serving_name)}"
+            ]
         join_conditions = " AND ".join(join_conditions_lst)
         left_join_sql = f"""
             LEFT JOIN (
@@ -634,10 +646,10 @@ class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
 
         outer_group_by_keys = [f"{inner_alias}.{point_in_time_column}"]
         for serving_name in serving_names:
-            outer_group_by_keys.append(f"{inner_alias}.{serving_name}")
+            outer_group_by_keys.append(f"{inner_alias}.{escape_column_name(serving_name)}")
 
         # Replace missing category values since OBJECT_AGG ignores keys that are null
-        category_col = f"{inner_alias}.{value_by}"
+        category_col = f"{inner_alias}.{escape_column_name(value_by)}"
         category_filled_null = (
             f"CASE WHEN {category_col} IS NULL THEN '__MISSING__' ELSE {category_col} END"
         )

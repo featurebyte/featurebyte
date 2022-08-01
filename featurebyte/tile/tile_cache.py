@@ -18,6 +18,7 @@ from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME, apply_serving_names_mapping
 from featurebyte.query_graph.interpreter import GraphInterpreter, TileGenSql
+from featurebyte.query_graph.sql import escape_column_name
 from featurebyte.session.base import BaseSession
 
 
@@ -317,7 +318,9 @@ class SnowflakeTileCache(TileCache):
             table_alias = f"T{table_index}"
             join_conditions = []
             for serving_name, key in zip(tile_info.serving_names, tile_info.entity_columns):
-                join_conditions.append(f"REQ.{serving_name} = {table_alias}.{key}")
+                join_conditions.append(
+                    f"REQ.{escape_column_name(serving_name)} = {table_alias}.{escape_column_name(key)}"
+                )
             join_conditions.append(
                 f"{last_tile_start_date_expr} <= {table_alias}.{InternalName.TILE_LAST_START_DATE}"
             )
@@ -404,12 +407,12 @@ class SnowflakeTileCache(TileCache):
 
         # Tile compute sql uses original table columns instead of serving names
         serving_names_to_keys = [
-            f'"{serving_name}" AS "{col}"'
+            f"{escape_column_name(serving_name)} AS {escape_column_name(col)}"
             for serving_name, col in zip(tile_info.serving_names, tile_info.entity_columns)
         ]
 
         # This is the groupby keys used to construct the entity table
-        serving_names = [f'"{col}"' for col in tile_info.serving_names]
+        serving_names = [f"{escape_column_name(col)}" for col in tile_info.serving_names]
 
         entity_table_expr = (
             select(
