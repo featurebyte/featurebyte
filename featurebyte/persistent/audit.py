@@ -97,13 +97,8 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             Return value from transaction,
             number of records updated,
             list of affected documents prior to transaction
-
-        Raises
-        ------
-        ValueError
-            Transaction did not execute
         """
-        if query_filter is None:
+        if action_type == AuditActionType.INSERT:
             # insertion of new document(s)
             return_value = await async_execution
             if mode == AuditTransactionMode.SINGLE:
@@ -120,16 +115,14 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
                     query_filter=query_filter,
                 )
                 if not original_doc:
-                    raise ValueError("No document found")
-                original_docs = [original_doc]
+                    original_docs = []
+                else:
+                    original_docs = [original_doc]
             else:
                 original_docs, _ = await persistent._find(  # pylint: disable=protected-access
                     collection_name=collection_name,
                     query_filter=query_filter,
                 )
-                original_docs = list(original_docs)
-                if not original_docs:
-                    raise ValueError("No document found")
             return_value = num_updated = await async_execution
 
         return return_value, num_updated, original_docs
@@ -232,16 +225,13 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             """
             async with persistent.start_transaction() as session:
 
-                try:
-                    return_value, num_updated, original_docs = await _execute_transaction(
-                        persistent=session,
-                        async_execution=func(session, *args, **kwargs),
-                        **kwargs,
-                    )
-                except ValueError:
-                    return 0
+                return_value, num_updated, original_docs = await _execute_transaction(
+                    persistent=session,
+                    async_execution=func(session, *args, **kwargs),
+                    **kwargs,
+                )
 
-                if num_updated:
+                if num_updated and original_docs:
                     await _create_audit_docs(
                         persistent=session,
                         action_type=action_type,
