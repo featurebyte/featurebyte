@@ -331,8 +331,10 @@ class Project(ExpressionNode):
 
     @property
     def sql_standalone(self) -> Expression:
-        column_name = escape_column_name(self.column_name)
-        return select(expressions.alias_(self.sql, column_name)).from_(self.table_node.sql_nested())
+        # This is overridden to bypass self.sql - the column expression would have been evaluated in
+        # self.table_node.sql_nested already, and the expression must not be evaluated again.
+        # Instead, simply select the column name from the nested query.
+        return select(escape_column_name(self.column_name)).from_(self.table_node.sql_nested())
 
 
 @dataclass

@@ -847,10 +847,7 @@ def test_conditional_assign__project_named(graph, node_input):
     expected = textwrap.dedent(
         """
         SELECT
-          CASE
-            WHEN ("a" = -999) THEN 0
-            ELSE "a"
-          END AS "a"
+          "a"
         FROM (
             SELECT
               "ts" AS "ts",
