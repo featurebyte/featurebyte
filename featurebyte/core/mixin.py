@@ -132,23 +132,17 @@ class ParentMixin(BaseModel):
 
         Returns
         -------
-        BaseFrame
+        Any
         """
         return self._parent
 
-    def set_parent(self, parent: Any) -> ParentMixin:
+    def set_parent(self, parent: Any) -> None:
         """
         Set parent of the current object
 
         Parameters
         ----------
-        parent: Frame
+        parent: Any
             Parent which current series belongs to
-
-        Returns
-        -------
-        Series
-            Reference to current object
         """
         self._parent = parent
-        return self
