@@ -244,9 +244,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
                     )
 
             document = FeatureModel(
-                user_id=user.id,
-                readiness=FeatureReadiness.DRAFT,
-                **data.dict(by_alias=True),
+                user_id=user.id, readiness=FeatureReadiness.DRAFT, **data.json_dict()
             )
             assert document.id == data.id
 

@@ -56,12 +56,7 @@ class EntityController(BaseController[EntityModel, EntityList]):
         HTTPException
             If the entity name conflicts with existing entity name
         """
-        document = EntityModel(
-            _id=data.id,
-            name=data.name,
-            serving_names=[data.serving_name],
-            user_id=user.id,
-        )
+        document = EntityModel(serving_names=[data.serving_name], **data.json_dict())
 
         conflict_entity = await persistent.find_one(
             collection_name=cls.collection_name, query_filter={"name": data.name}

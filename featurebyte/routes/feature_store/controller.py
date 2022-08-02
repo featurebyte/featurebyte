@@ -56,11 +56,7 @@ class FeatureStoreController(BaseController[FeatureStoreModel, FeatureStoreList]
             If the feature store name conflicts with existing feature store name
         """
 
-        document = FeatureStoreModel(
-            **data.dict(by_alias=True),
-            user_id=user.id,
-            created_at=get_utc_now(),
-        )
+        document = FeatureStoreModel(**data.json_dict(), user_id=user.id)
 
         # check id conflict
         conflict_feature_store = await persistent.find_one(

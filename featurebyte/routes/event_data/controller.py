@@ -91,7 +91,7 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
             user_id=user.id,
             status=EventDataStatus.DRAFT,
             history=history,
-            **data.dict(by_alias=True),
+            **data.json_dict(),
         )
         assert document.id == data.id
         try:
