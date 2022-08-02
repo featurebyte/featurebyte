@@ -76,6 +76,7 @@ class SnowflakeOnDemandTileComputeRequest:
             entity_column_names=entity_column_names,
             value_column_names=self.tile_gen_info.tile_value_columns,
             tile_id=self.tile_table_id,
+            category_column_name=self.tile_gen_info.value_by_column,
         )
         return tile_spec, self.tracker_sql
 

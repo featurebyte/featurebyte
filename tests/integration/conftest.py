@@ -333,6 +333,7 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
         "tile_id": "sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
         "tile_sql": tile_sql,
         "time_modulo_frequency_second": 300,
+        "category_column_name": None,
     }
     return expected_tile_spec
 

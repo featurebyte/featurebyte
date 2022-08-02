@@ -18,7 +18,7 @@ def feature_for_tile_cache_tests_fixture(event_data):
     computation, get_historical_features(), etc.
     """
     event_view = EventView.from_event_data(event_data)
-    feature_group = event_view.groupby("USER_ID").aggregate(
+    feature_group = event_view.groupby("USER_ID", category="PRODUCT_ACTION").aggregate(
         "SESSION_ID",
         "count",
         windows=["48h"],

@@ -106,9 +106,15 @@ class TileManagerSnowflake(BaseModel):
         -------
             generated sql
         """
+        if tile_spec.category_column_name is None:
+            entity_column_names = tile_spec.entity_column_names
+        else:
+            entity_column_names = [
+                c for c in tile_spec.entity_column_names if c != tile_spec.category_column_name
+            ]
         sql = tm_tile_entity_tracking.render(
             tile_id=tile_spec.tile_id,
-            entity_column_names=",".join(tile_spec.entity_column_names),
+            entity_column_names=",".join(entity_column_names),
             entity_table=temp_entity_table.replace("'", "''"),
             tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
         )
