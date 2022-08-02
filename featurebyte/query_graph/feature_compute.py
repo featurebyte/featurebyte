@@ -507,13 +507,17 @@ class FeatureExecutionPlan(ABC):
             """
         return left_join_sql, agg_result_name_alias
 
-    def construct_combined_aggregation_cte(self, point_in_time_column: str) -> tuple[str, str]:
+    def construct_combined_aggregation_cte(
+        self, point_in_time_column: str, request_table_columns: list[str]
+    ) -> tuple[str, str]:
         """Construct SQL code for all aggregations
 
         Parameters
         ----------
         point_in_time_column : str
             Point in time column
+        request_table_columns : list[str]
+            Request table columns
 
         Returns
         -------
@@ -547,10 +551,13 @@ class FeatureExecutionPlan(ABC):
             left_joins.append(left_join_sql)
         left_joins_sql = "\n".join(left_joins)
         qualified_aggregation_names_str = ", ".join(qualified_aggregation_names)
+        request_table_columns = ", ".join(
+            [f"REQ.{escape_column_name(c)}" for c in request_table_columns]
+        )
         combined_sql = (
             f"""
             SELECT
-                REQ.*,
+                {request_table_columns},
                 {qualified_aggregation_names_str}
             FROM {REQUEST_TABLE_NAME} REQ
             """
@@ -622,7 +629,9 @@ class FeatureExecutionPlan(ABC):
             cte_statements.extend(prior_cte_statements)
 
         cte_statements.extend(self.request_table_plan.construct_request_tile_indices_ctes())
-        cte_statements.append(self.construct_combined_aggregation_cte(point_in_time_column))
+        cte_statements.append(
+            self.construct_combined_aggregation_cte(point_in_time_column, request_table_columns)
+        )
         cte_sql = construct_cte_sql(cte_statements)
 
         post_aggregation_sql = self.construct_post_aggregation_sql(request_table_columns)

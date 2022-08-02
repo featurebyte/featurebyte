@@ -426,7 +426,7 @@ def event_data_fixture(config, snowflake_session, snowflake_feature_store, mock_
     )
 
     # create entity & event data
-    Entity(name="User", serving_names=["UID"]).save()
+    Entity(name="User", serving_names=["uid"]).save()
     event_data["USER_ID"].as_entity("User")
     snowflake_feature_store.save()
     event_data.save()
