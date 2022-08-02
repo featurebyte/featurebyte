@@ -78,7 +78,7 @@ def test_feature_model(snowflake_event_view, feature_model_dict):
     loaded_feature = FeatureModel.parse_raw(feature_json)
     assert loaded_feature.id == feature.id
     for key in feature_model_dict.keys():
-        if key not in {"graph", "node", "lineage", "row_index_lineage"}:
+        if key not in {"graph", "node", "row_index_lineage"}:
             # feature_json uses pruned graph, feature uses global graph,
             # therefore the graph & node could be different
             assert getattr(feature, key) == getattr(loaded_feature, key)

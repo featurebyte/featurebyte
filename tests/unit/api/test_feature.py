@@ -155,7 +155,6 @@ def test_feature_deserialization(
     assert deserialized_float_feature.id == float_feature.id
     assert deserialized_float_feature.name == float_feature.name
     assert deserialized_float_feature.var_type == float_feature.var_type
-    assert deserialized_float_feature.lineage == float_feature.lineage
     assert deserialized_float_feature.node == float_feature.node
     assert deserialized_float_feature.graph.dict() == global_graph_dict
     assert deserialized_float_feature.row_index_lineage == float_feature.row_index_lineage

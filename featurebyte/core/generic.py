@@ -179,7 +179,7 @@ class QueryObject(FeatureByteBaseModel):
         dict_object = json.loads(json_object)
         if "graph" in dict_object:
             pruned_dict_object = self.dict()
-            for key in ["graph", "node", "lineage", "column_lineage_map", "row_index_lineage"]:
+            for key in ["graph", "node", "column_lineage_map", "row_index_lineage"]:
                 if key in dict_object:
                     dict_object[key] = pruned_dict_object[key]
             json_object = self.__config__.json_dumps(dict_object, default=encoder, **dumps_kwargs)
