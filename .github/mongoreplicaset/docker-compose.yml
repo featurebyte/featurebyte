@@ -10,9 +10,4 @@ services:
     ports:
       - 27021:27021
       - 27022:27022
-    restart: always
     entrypoint: [ "/bin/sh", "./scripts/entrypoint.sh"]
-
-#networks:
-#  mongors-network:
-#    driver: bridge
