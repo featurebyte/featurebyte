@@ -133,7 +133,7 @@ def test_feature_list_creation__success(production_ready_feature, config):
     assert flist.dict(exclude={"id": True}) == {
         "name": "my_feature_list",
         "description": None,
-        "features": [("production_ready_feature", "V220401")],
+        "feature_ids": [production_ready_feature.id],
         "readiness": "PRODUCTION_READY",
         "status": "DRAFT",
         "version": "V220501",
@@ -158,10 +158,10 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         "user_id": None,
         "description": None,
         "version": "V220501",
-        "features": [
-            ("production_ready_feature", "V220401"),
-            ("sum_30m", feature_group["sum_30m"].version),
-            ("sum_1d", feature_group["sum_1d"].version),
+        "feature_ids": [
+            production_ready_feature.id,
+            feature_group["sum_30m"].id,
+            feature_group["sum_1d"].id,
         ],
         "name": "my_feature_list",
         "readiness": None,
@@ -343,10 +343,7 @@ def test_feature_list__construction(production_ready_feature, draft_feature):
     """
     feature_list = FeatureList([production_ready_feature, draft_feature], name="my_feature_list")
     assert feature_list.readiness == FeatureReadiness.DRAFT
-    assert feature_list.features == [
-        ("production_ready_feature", "V220401"),
-        ("draft_feature", "V220402"),
-    ]
+    assert feature_list.feature_ids == [production_ready_feature.id, draft_feature.id]
     assert feature_list.feature_names == ["production_ready_feature", "draft_feature"]
     assert feature_list.status == FeatureListStatus.DRAFT
     assert feature_list.version == "V220720"

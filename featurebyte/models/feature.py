@@ -176,8 +176,8 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         Name of the feature list
     description: Optional[str]
         Description of the feature list
-    features: List[Tuple[str, FeatureVersionIdentifier]]
-        List of tuples which contain (feature name, feature version)
+    feature_ids: List[PydanticObjectId]
+        List of feature IDs
     readiness: FeatureReadiness
         Aggregated readiness of the features/feature classes
     status: FeatureListStatus
@@ -189,9 +189,7 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     """
 
     description: Optional[StrictStr]
-    features: List[Tuple[StrictStr, Optional[FeatureVersionIdentifier]]] = Field(
-        default_factory=list
-    )
+    feature_ids: List[PydanticObjectId] = Field(default_factory=list)
     readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
     status: Optional[FeatureListStatus] = Field(allow_mutation=False)
     version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)

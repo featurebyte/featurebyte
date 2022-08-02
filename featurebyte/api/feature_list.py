@@ -201,6 +201,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel):
         values["features"] = [
             (feature.name, feature.version) for feature in values["feature_objects"].values()
         ]
+        values["feature_ids"] = [feature.id for feature in values["feature_objects"].values()]
         values["status"] = FeatureListStatus.DRAFT
         values["version"] = get_version()
         return values
