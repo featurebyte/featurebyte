@@ -24,7 +24,9 @@ def entity_fixture():
     Entity fixture
     """
     entity = Entity(name="customer", serving_names=["cust_id"])
+    previous_id = entity.id
     entity.save()
+    assert entity.id == previous_id
     yield entity
 
 

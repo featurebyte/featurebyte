@@ -14,7 +14,7 @@ def entity_dict_fixture():
     """
     Entity dictionary fixture
     """
-    return {"name": "customer", "serving_name": "cust_id"}
+    return {"_id": str(ObjectId()), "name": "customer", "serving_name": "cust_id"}
 
 
 @pytest.fixture(name="create_success_response")
@@ -33,13 +33,23 @@ def create_multiple_entries_fixture(test_api_client_persistent):
     Create multiple entries to the persistent
     """
     test_api_client, _ = test_api_client_persistent
-    res_region = test_api_client.post("/entity", json={"name": "region", "serving_name": "region"})
-    res_cust = test_api_client.post("/entity", json={"name": "customer", "serving_name": "cust_id"})
-    res_prod = test_api_client.post("/entity", json={"name": "product", "serving_name": "prod_id"})
+    entity_id1, entity_id2, entity_id3 = str(ObjectId()), str(ObjectId()), str(ObjectId())
+    res_region = test_api_client.post(
+        "/entity", json={"_id": entity_id1, "name": "region", "serving_name": "region"}
+    )
+    res_cust = test_api_client.post(
+        "/entity", json={"_id": entity_id2, "name": "customer", "serving_name": "cust_id"}
+    )
+    res_prod = test_api_client.post(
+        "/entity", json={"_id": entity_id3, "name": "product", "serving_name": "prod_id"}
+    )
     assert res_region.status_code == HTTPStatus.CREATED
     assert res_cust.status_code == HTTPStatus.CREATED
     assert res_prod.status_code == HTTPStatus.CREATED
-    return [res_region.json()["_id"], res_cust.json()["_id"], res_prod.json()["_id"]]
+    assert res_region.json()["_id"] == entity_id1
+    assert res_cust.json()["_id"] == entity_id2
+    assert res_prod.json()["_id"] == entity_id3
+    return [entity_id1, entity_id2, entity_id3]
 
 
 def test_create_201(create_success_response):

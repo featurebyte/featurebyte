@@ -23,7 +23,7 @@ class Entity(EntityModel, ApiObject):
     _route = "/entity"
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = EntityCreate(name=self.name, serving_name=self.serving_names[0])
+        data = EntityCreate(_id=self.id, name=self.name, serving_name=self.serving_names[0])
         return data.json_dict()
 
     @property

@@ -101,7 +101,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         name: Optional[str] = None,
-        **kwargs: Any,
+        search: str | None = None,
     ) -> PaginatedDocument:
         """
         List documents stored at persistent (GitDB or MongoDB)
@@ -122,6 +122,8 @@ class BaseController(Generic[Document, PaginatedDocument]):
             Sorting the returning documents in ascending order or descending order
         name: str | None
             Document name used to filter the documents
+        search: str | None
+            Search term (not supported)
 
         Returns
         -------
@@ -131,8 +133,8 @@ class BaseController(Generic[Document, PaginatedDocument]):
         query_filter = {"user_id": user.id}
         if name is not None:
             query_filter["name"] = name
-        if kwargs.get("search"):
-            query_filter["$text"] = {"$search": kwargs["search"]}
+        if search:
+            query_filter["$text"] = {"$search": search}
 
         try:
             docs, total = await persistent.find(

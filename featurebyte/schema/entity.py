@@ -3,7 +3,8 @@ Entity API payload schema
 """
 from typing import List
 
-from pydantic import StrictStr
+from beanie import PydanticObjectId
+from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.entity import EntityModel
@@ -15,6 +16,7 @@ class EntityCreate(FeatureByteBaseModel):
     Entity Creation schema
     """
 
+    id: PydanticObjectId = Field(alias="_id")
     name: StrictStr
     serving_name: StrictStr
 

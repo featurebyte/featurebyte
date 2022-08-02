@@ -57,6 +57,7 @@ class EntityController(BaseController[EntityModel, EntityList]):
             If the entity name conflicts with existing entity name
         """
         document = EntityModel(
+            _id=data.id,
             name=data.name,
             serving_names=[data.serving_name],
             user_id=user.id,
