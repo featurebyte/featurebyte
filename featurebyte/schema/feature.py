@@ -25,7 +25,6 @@ class FeatureCreate(FeatureByteBaseModel):
     name: StrictStr
     description: Optional[StrictStr]
     var_type: DBVarType
-    lineage: Tuple[StrictStr, ...]
     row_index_lineage: Tuple[StrictStr, ...]
     graph: QueryGraph
     node: Node

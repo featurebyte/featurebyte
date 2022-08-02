@@ -34,7 +34,6 @@ def test__getitem__str_key(dataframe, item, expected_type):
             "output_type": NodeOutputType.SERIES,
         }.items()
     )
-    assert series_dict["lineage"] == ("input_1", "project_1")
     assert series_dict["row_index_lineage"] == ("input_1",)
     assert dict(series_dict["graph"]["edges"]) == {"input_1": ["project_1"]}
 
@@ -217,7 +216,6 @@ def test__setitem__str_key_series_value__row_index_not_aligned(dataframe, bool_s
     value = dataframe[bool_series]["PRODUCT_ACTION"]
     assert isinstance(value, Series)
     value_dict = value.dict()
-    assert value_dict["lineage"] == ("input_1", "filter_1", "project_2")
     assert value_dict["row_index_lineage"] == ("input_1", "filter_1")
     with pytest.raises(ValueError) as exc:
         dataframe["new_column"] = value
@@ -257,7 +255,6 @@ def test_multiple_statements(dataframe):
             "output_type": NodeOutputType.SERIES,
         }.items()
     )
-    assert cust_id_dict["lineage"] == ("input_1", "filter_1", "project_2")
     assert cust_id_dict["row_index_lineage"] == ("input_1", "filter_1")
     assert dataframe_dict["column_var_type_map"] == {
         "CUST_ID": DBVarType.INT,

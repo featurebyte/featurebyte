@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from pydantic import Field, StrictStr, root_validator
 
@@ -21,7 +21,6 @@ class Series(QueryObject, OpsMixin, ParentMixin):
 
     name: Optional[StrictStr] = Field(default=None)
     var_type: DBVarType = Field(allow_mutation=False)
-    lineage: Tuple[StrictStr, ...]
 
     def __repr__(self) -> str:
         return (
@@ -42,7 +41,6 @@ class Series(QueryObject, OpsMixin, ParentMixin):
                 node=node,
                 name=self.name,
                 var_type=self.var_type,
-                lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
             )
         raise KeyError(f"Series indexing with value '{item}' not supported!")
@@ -115,8 +113,6 @@ class Series(QueryObject, OpsMixin, ParentMixin):
                 # Update the current node as a PROJECT / ALIAS from the parent. This is to allow
                 # readable column name during series preview
                 self.node = self.parent[self.name].node
-
-            self.lineage = self._append_to_lineage(self.lineage, self.node.name)
         else:
             raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
 
@@ -180,7 +176,6 @@ class Series(QueryObject, OpsMixin, ParentMixin):
                 node=node,
                 name=None,
                 var_type=output_var_type,
-                lineage=self._append_to_lineage(self.lineage, node.name),
                 row_index_lineage=self.row_index_lineage,
                 **self._binary_op_series_params(),
             )
@@ -197,7 +192,6 @@ class Series(QueryObject, OpsMixin, ParentMixin):
             node=node,
             name=None,
             var_type=output_var_type,
-            lineage=self._append_to_lineage(self.lineage, node.name),
             row_index_lineage=self.row_index_lineage,
             **self._binary_op_series_params(other),  # type: ignore
         )
@@ -381,7 +375,6 @@ class Series(QueryObject, OpsMixin, ParentMixin):
             global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
             values["graph"] = global_graph
             values["node"] = global_graph.get_node_by_name(node_name_map[values["node"].name])
-            values["lineage"] = tuple(node_name_map[node_name] for node_name in values["lineage"])
             values["row_index_lineage"] = tuple(
                 node_name_map[node_name] for node_name in values["row_index_lineage"]
             )
@@ -398,7 +391,6 @@ class Series(QueryObject, OpsMixin, ParentMixin):
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
             new_object.node = mapped_node
-            new_object.lineage = tuple(node_name_map[node_name] for node_name in new_object.lineage)
             new_object.row_index_lineage = tuple(
                 node_name_map[node_name] for node_name in new_object.row_index_lineage
             )

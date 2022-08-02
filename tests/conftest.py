@@ -30,7 +30,6 @@ def feature_model_dict_feature():
         "name": "sum_30m",
         "description": None,
         "var_type": "FLOAT",
-        "lineage": ("groupby_1", "project_1"),
         "row_index_lineage": ("groupby_1",),
         "graph": {
             "edges": {

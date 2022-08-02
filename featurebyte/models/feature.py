@@ -90,8 +90,6 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Feature description specific to this feature version
     var_type: DBVarType
         Variable type of the feature
-    lineage: Tuple[str, ...]
-        Tuple of transformation step node names which affect the value of the feature
     row_index_lineage: Tuple[str, ...]
         Tuple of transformation step node names which affect the row number of the feature
     graph: QueryGraph
@@ -118,7 +116,6 @@ class FeatureModel(FeatureByteBaseDocumentModel):
 
     description: Optional[StrictStr]
     var_type: DBVarType = Field(allow_mutation=False)
-    lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
     row_index_lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
     graph: QueryGraph = Field(allow_mutation=False)
     node: Node = Field(allow_mutation=False)

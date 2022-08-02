@@ -61,7 +61,6 @@ def test_getitem__str(snowflake_event_view):
         "parameters": {"columns": ["cust_id"]},
         "output_type": NodeOutputType.SERIES,
     }
-    assert cust_id.lineage == (snowflake_event_view.node.name, cust_id.node.name)
     assert cust_id.row_index_lineage == (snowflake_event_view.node.name,)
     assert cust_id.parent.node == snowflake_event_view.node
 

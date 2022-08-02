@@ -115,7 +115,7 @@ async def test_create_201(
     assert created_at < datetime.utcnow()
     assert updated_at is None
     assert feature_readiness == "DRAFT"
-    for key in ["tabular_source", "lineage", "row_index_lineage"]:
+    for key in ["tabular_source", "row_index_lineage"]:
         assert tuple(result.pop(key)) == feature_model_dict[key]
     for key in result.keys():
         assert result[key] == feature_model_dict[key]
