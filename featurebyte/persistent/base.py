@@ -3,28 +3,22 @@ Persistent persistent base class
 """
 from __future__ import annotations
 
-from typing import (
-    Any,
-    AsyncIterator,
-    Iterable,
-    List,
-    Literal,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Tuple,
-)
+from typing import AsyncIterator, Iterable, List, Literal, Optional, Tuple
 
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 
 from bson.objectid import ObjectId
 
+from featurebyte.models.persistent import (
+    AuditActionType,
+    AuditTransactionMode,
+    Document,
+    DocumentUpdate,
+    QueryFilter,
+)
+from featurebyte.persistent.audit import audit_transaction
 from featurebyte.routes.common.util import get_utc_now
-
-Document = MutableMapping[str, Any]
-QueryFilter = MutableMapping[str, Any]
-DocumentUpdate = Mapping[str, Any]
 
 
 class DuplicateDocumentError(Exception):
@@ -38,7 +32,16 @@ class Persistent(ABC):
     Persistent persistent base class
     """
 
-    async def insert_one(self, collection_name: str, document: Document) -> ObjectId:
+    def __init__(self) -> None:
+        self._in_transaction: bool = False
+
+    @audit_transaction(mode=AuditTransactionMode.SINGLE, action_type=AuditActionType.INSERT)
+    async def insert_one(
+        self,
+        collection_name: str,
+        document: Document,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
+    ) -> ObjectId:
         """
         Insert record into collection
 
@@ -48,6 +51,8 @@ class Persistent(ABC):
             Name of collection to use
         document: Document
             Document to insert
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
@@ -57,8 +62,12 @@ class Persistent(ABC):
         document["created_at"] = get_utc_now()
         return await self._insert_one(collection_name=collection_name, document=document)
 
+    @audit_transaction(mode=AuditTransactionMode.MULTI, action_type=AuditActionType.INSERT)
     async def insert_many(
-        self, collection_name: str, documents: Iterable[Document]
+        self,
+        collection_name: str,
+        documents: Iterable[Document],
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> List[ObjectId]:
         """
         Insert records into collection
@@ -69,6 +78,8 @@ class Persistent(ABC):
             Name of collection to use
         documents: Iterable[Document]
             Documents to insert
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
@@ -78,9 +89,15 @@ class Persistent(ABC):
         utc_now = get_utc_now()
         for document in documents:
             document["created_at"] = utc_now
+
         return await self._insert_many(collection_name=collection_name, documents=documents)
 
-    async def find_one(self, collection_name: str, query_filter: QueryFilter) -> Optional[Document]:
+    async def find_one(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
+    ) -> Optional[Document]:
         """
         Find one record from collection
 
@@ -90,6 +107,8 @@ class Persistent(ABC):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
@@ -106,6 +125,7 @@ class Persistent(ABC):
         sort_dir: Optional[Literal["asc", "desc"]] = "asc",
         page: int = 1,
         page_size: int = 0,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> Tuple[Iterable[Document], int]:
         """
         Find all records from collection
@@ -124,6 +144,8 @@ class Persistent(ABC):
             Page number for pagination
         page_size: int
             Page size (0 to return all records)
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
@@ -139,22 +161,26 @@ class Persistent(ABC):
             page_size=page_size,
         )
 
+    @audit_transaction(mode=AuditTransactionMode.SINGLE, action_type=AuditActionType.UPDATE)
     async def update_one(
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        update: Document,
+        update: DocumentUpdate,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> int:
         """
         Update one record in collection
 
         Parameters
         ----------
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
         collection_name: str
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
-        update: Document
+        update: DocumentUpdate
             Values to update
 
         Returns
@@ -171,18 +197,21 @@ class Persistent(ABC):
         if not isinstance(set_val, dict):
             raise NotImplementedError("Unsupported update value")
         set_val["updated_at"] = get_utc_now()
-        update["$set"] = set_val
+        update = {key: set_val if key == "$set" else value for key, value in update.items()}
+
         return await self._update_one(
             collection_name=collection_name,
             query_filter=query_filter,
             update=update,
         )
 
+    @audit_transaction(mode=AuditTransactionMode.MULTI, action_type=AuditActionType.UPDATE)
     async def update_many(
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        update: Document,
+        update: DocumentUpdate,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> int:
         """
         Update many records in collection
@@ -193,8 +222,10 @@ class Persistent(ABC):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
-        update: Document
+        update: DocumentUpdate
             Values to update
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
@@ -210,18 +241,21 @@ class Persistent(ABC):
         if not isinstance(set_val, dict):
             raise NotImplementedError("Unsupported update value")
         set_val["updated_at"] = get_utc_now()
-        update["$set"] = set_val
+        update = {key: set_val if key == "$set" else value for key, value in update.items()}
+
         return await self._update_many(
             collection_name=collection_name,
             query_filter=query_filter,
             update=update,
         )
 
+    @audit_transaction(mode=AuditTransactionMode.SINGLE, action_type=AuditActionType.REPLACE)
     async def replace_one(
         self,
         collection_name: str,
         query_filter: QueryFilter,
         replacement: Document,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
     ) -> int:
         """
         Replace one record in collection
@@ -234,6 +268,8 @@ class Persistent(ABC):
             Conditions to filter on
         replacement: Document
             New document to replace existing one
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
@@ -247,7 +283,13 @@ class Persistent(ABC):
             replacement=replacement,
         )
 
-    async def delete_one(self, collection_name: str, query_filter: QueryFilter) -> int:
+    @audit_transaction(mode=AuditTransactionMode.SINGLE, action_type=AuditActionType.DELETE)
+    async def delete_one(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
+    ) -> int:
         """
         Delete one record from collection
 
@@ -257,6 +299,8 @@ class Persistent(ABC):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
@@ -265,7 +309,13 @@ class Persistent(ABC):
         """
         return await self._delete_one(collection_name=collection_name, query_filter=query_filter)
 
-    async def delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
+    @audit_transaction(mode=AuditTransactionMode.MULTI, action_type=AuditActionType.DELETE)
+    async def delete_many(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
+    ) -> int:
         """
         Delete many records from collection
 
@@ -275,6 +325,8 @@ class Persistent(ABC):
             Name of collection to use
         query_filter: QueryFilter
             Conditions to filter on
+        user_id: Optional[ObjectId]
+            ID of user who performed this operation
 
         Returns
         -------
@@ -283,11 +335,32 @@ class Persistent(ABC):
         """
         return await self._delete_many(collection_name=collection_name, query_filter=query_filter)
 
-    @abstractmethod
     @asynccontextmanager
     async def start_transaction(self) -> AsyncIterator[Persistent]:
         """
-        Context manager for transaction session
+        Context manager for transaction self
+
+        Yields
+        ------
+        AsyncIterator[Persistent]
+            Persistent object
+        """
+        if self._in_transaction:
+            # prevent entering nested transaction in the actual db layer
+            yield self
+        else:
+            try:
+                async with self._start_transaction():
+                    self._in_transaction = True
+                    yield self
+            finally:
+                self._in_transaction = False
+
+    @abstractmethod
+    @asynccontextmanager
+    async def _start_transaction(self) -> AsyncIterator[Persistent]:
+        """
+        Context manager for transaction self
 
         Yields
         ------
@@ -329,7 +402,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        update: Document,
+        update: DocumentUpdate,
     ) -> int:
         pass
 
@@ -338,7 +411,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        update: Document,
+        update: DocumentUpdate,
     ) -> int:
         pass
 

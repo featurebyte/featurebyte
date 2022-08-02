@@ -12,13 +12,8 @@ from bson.objectid import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.results import DeleteResult, InsertManyResult, InsertOneResult, UpdateResult
 
-from featurebyte.persistent.base import (
-    Document,
-    DocumentUpdate,
-    DuplicateDocumentError,
-    Persistent,
-    QueryFilter,
-)
+from featurebyte.models.persistent import Document, DocumentUpdate, QueryFilter
+from featurebyte.persistent.base import DuplicateDocumentError, Persistent
 
 
 class MongoDB(Persistent):
@@ -37,6 +32,7 @@ class MongoDB(Persistent):
         database: str
             Database to use
         """
+        super().__init__()
         self._database = database
         self._client = AsyncIOMotorClient(uri)
         self._db = self._client[self._database]
@@ -120,7 +116,9 @@ class MongoDB(Persistent):
         Optional[DocumentType]
             Retrieved document
         """
-        result: Optional[Document] = await self._db[collection_name].find_one(query_filter)
+        result: Optional[Document] = await self._db[collection_name].find_one(
+            query_filter, session=self._session
+        )
         return result
 
     async def _find(
@@ -155,8 +153,8 @@ class MongoDB(Persistent):
         Tuple[Iterable[Document], int]
             Retrieved documents and total count
         """
-        cursor = self._db[collection_name].find(query_filter)
-        total = await self._db[collection_name].count_documents(query_filter)
+        cursor = self._db[collection_name].find(query_filter, session=self._session)
+        total = await self._db[collection_name].count_documents(query_filter, session=self._session)
 
         if sort_by:
             cursor = cursor.sort(
@@ -297,7 +295,7 @@ class MongoDB(Persistent):
         return result.deleted_count
 
     @asynccontextmanager
-    async def start_transaction(self) -> AsyncIterator[MongoDB]:
+    async def _start_transaction(self) -> AsyncIterator[MongoDB]:
         """
         MongoDB transaction session context manager
 

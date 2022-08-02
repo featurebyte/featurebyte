@@ -26,7 +26,7 @@ def test_document_fixture() -> Dict[str, Any]:
         Document for testing
     """
     return {
-        "id": ObjectId(),
+        "_id": ObjectId(),
         "name": "Generic Document",
         "value": [
             {
@@ -52,6 +52,11 @@ def persistent_data_fixture():
         key_path=ssh_key_path,
     )
     persistent.insert_doc_name_func("data", lambda doc: doc["name"])
+    persistent.insert_doc_name_func("data1", lambda doc: doc["name"])
+    persistent.insert_doc_name_func("data2", lambda doc: doc["name"])
+    persistent.insert_doc_name_func("__audit__data", lambda doc: doc["name"])
+    persistent.insert_doc_name_func("__audit__data1", lambda doc: doc["name"])
+    persistent.insert_doc_name_func("__audit__data2", lambda doc: doc["name"])
     yield persistent, branch, remote_url, ssh_key_path
 
     # cleanup local and remote repo
@@ -100,7 +105,11 @@ async def test_persistence(test_document, persistent_data):
     messages_first = _get_commit_messages(persistent.repo, branch)
     expected_clean_status = f"On branch {branch}\nnothing to commit, working tree clean"
     async with persistent.start_transaction() as session:
+        doc["_id"] = ObjectId()
+        doc["name"] = str(doc["_id"])
         doc1_id = await session.insert_one(collection_name="data1", document=doc)
+        doc["_id"] = ObjectId()
+        doc["name"] = str(doc["_id"])
         doc2_id = await session.insert_one(collection_name="data2", document=doc)
 
     # When start a transaction, it did a shallow fetch first. Therefore, not all commits are kept.
@@ -108,7 +117,14 @@ async def test_persistence(test_document, persistent_data):
     assert persistent.repo.git.status() == expected_clean_status
     assert messages_second == (
         messages_first[-1:]
-        + [f"Create document: data1/{doc1_id}\nCreate document: data2/{doc2_id}\n"]
+        + [
+            (
+                f"Create document: data1/{doc1_id}\n"
+                f'Create document: __audit__data1/insert: "{doc1_id}"\n'
+                f"Create document: data2/{doc2_id}\n"
+                f'Create document: __audit__data2/insert: "{doc2_id}"\n'
+            )
+        ]
     )
 
     # test transaction failure within the context

@@ -2,9 +2,12 @@
 Test MongoDB persistent backend
 """
 import os.path
+from datetime import datetime
 
 import pytest
+from bson.objectid import ObjectId
 
+from featurebyte.models.persistent import AuditActionType
 from featurebyte.persistent import DuplicateDocumentError
 
 
@@ -21,17 +24,30 @@ async def test_insert_one(git_persistent, test_document):
     Test inserting one document
     """
     persistent, repo = git_persistent
-    await persistent.insert_one(collection_name="data", document=test_document)
+    inserted_id = await persistent.insert_one(collection_name="data", document=test_document)
 
     # check document is inserted
     expected_doc_path = os.path.join(repo.working_tree_dir, "data", test_document["name"] + ".json")
     assert os.path.exists(expected_doc_path)
 
     # check commit messages
-    assert _get_commit_messages(repo) == [
+    messages = _get_commit_messages(repo)
+    assert messages == [
         "Initial commit\n",
-        "Create document: data/Generic Document\n",
+        (
+            "Create document: data/Generic Document\n"
+            'Create document: __audit__data/insert: "Generic Document"\n'
+        ),
     ]
+
+    # check audit record is inserted
+    results, _ = await persistent.find(
+        collection_name="__audit__data", query_filter={"document_id": inserted_id}
+    )
+    assert len(results) == 1
+    assert isinstance(results[0]["action_at"], datetime)
+    assert results[0]["action_type"] == AuditActionType.INSERT
+    assert results[0]["previous_values"] == {}
 
 
 @pytest.mark.asyncio
@@ -40,7 +56,7 @@ async def test_insert_one__no_id(git_persistent, test_document):
     Test inserting one document without id works, and id is added
     """
     persistent, repo = git_persistent
-    await persistent.insert_one(collection_name="data", document=test_document)
+    inserted_id = await persistent.insert_one(collection_name="data", document=test_document)
     assert "_id" in test_document
 
     # check document is inserted
@@ -50,8 +66,20 @@ async def test_insert_one__no_id(git_persistent, test_document):
     # check commit messages
     assert _get_commit_messages(repo) == [
         "Initial commit\n",
-        "Create document: data/Generic Document\n",
+        (
+            "Create document: data/Generic Document\n"
+            'Create document: __audit__data/insert: "Generic Document"\n'
+        ),
     ]
+
+    # check audit record is inserted
+    results, _ = await persistent.find(
+        collection_name="__audit__data", query_filter={"document_id": inserted_id}
+    )
+    assert len(results) == 1
+    assert isinstance(results[0]["action_at"], datetime)
+    assert results[0]["action_type"] == AuditActionType.INSERT
+    assert results[0]["previous_values"] == {}
 
 
 @pytest.mark.asyncio
@@ -60,9 +88,10 @@ async def test_insert_many(git_persistent, test_documents):
     Test inserting many documents
     """
     persistent, repo = git_persistent
-    await persistent.insert_many(collection_name="data", documents=test_documents)
+    inserted_ids = await persistent.insert_many(collection_name="data", documents=test_documents)
 
     # check documents are inserted
+    assert [doc["_id"] for doc in test_documents] == inserted_ids
     for test_document in test_documents:
         expected_doc_path = os.path.join(
             repo.working_tree_dir, "data", test_document["name"] + ".json"
@@ -70,12 +99,27 @@ async def test_insert_many(git_persistent, test_documents):
         assert os.path.exists(expected_doc_path)
 
     # check commit messages
-    assert _get_commit_messages(repo) == [
+    assert _get_commit_messages(repo, max_count=10) == [
         "Initial commit\n",
-        "Create document: data/Object 0\n",
-        "Create document: data/Object 1\n",
-        "Create document: data/Object 2\n",
+        (
+            "Create document: data/Object 0\n"
+            "Create document: data/Object 1\n"
+            "Create document: data/Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
+        ),
     ]
+
+    # check audit record is inserted
+    for doc in test_documents:
+        results, _ = await persistent.find(
+            collection_name="__audit__data", query_filter={"document_id": doc["_id"]}
+        )
+        assert len(results) == 1
+        assert isinstance(results[0]["action_at"], datetime)
+        assert results[0]["action_type"] == AuditActionType.INSERT
+        assert results[0]["previous_values"] == {}
 
 
 @pytest.mark.asyncio
@@ -83,10 +127,32 @@ async def test_find_one(git_persistent, test_documents):
     """
     Test finding one document
     """
-    persistent, _ = git_persistent
+    persistent, repo = git_persistent
     await persistent.insert_many(collection_name="data", documents=test_documents)
     doc = await persistent.find_one(collection_name="data", query_filter={})
     assert doc == test_documents[0]
+
+    # check no new audit record is inserted for find
+    for doc in test_documents:
+        results, _ = await persistent.find(
+            collection_name="__audit__data", query_filter={"document_id": doc["_id"]}
+        )
+        assert len(results) == 1
+        assert isinstance(results[0]["action_at"], datetime)
+        assert results[0]["action_type"] == AuditActionType.INSERT
+        assert results[0]["previous_values"] == {}
+
+    assert _get_commit_messages(repo, max_count=10) == [
+        "Initial commit\n",
+        (
+            "Create document: data/Object 0\n"
+            "Create document: data/Object 1\n"
+            "Create document: data/Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
+        ),
+    ]
 
 
 @pytest.mark.asyncio
@@ -139,6 +205,16 @@ async def test_find_many(git_persistent, test_documents):
     )
     assert list(docs) == test_documents
     assert total == 3
+
+    # check no new audit record is inserted for find
+    for doc in test_documents:
+        results, _ = await persistent.find(
+            collection_name="__audit__data", query_filter={"document_id": doc["_id"]}
+        )
+        assert len(results) == 1
+        assert isinstance(results[0]["action_at"], datetime)
+        assert results[0]["action_type"] == AuditActionType.INSERT
+        assert results[0]["previous_values"] == {}
 
 
 @pytest.mark.parametrize(
@@ -196,11 +272,44 @@ async def test_update_one(git_persistent, test_documents):
     # check commit messages
     assert _get_commit_messages(repo, max_count=10) == [
         "Initial commit\n",
-        "Create document: data/Object 0\n",
-        "Create document: data/Object 1\n",
-        "Create document: data/Object 2\n",
-        "Rename document: data/Object 0 -> data/apple\n",
-        "Update document: data/apple\n",
+        (
+            "Create document: data/Object 0\n"
+            "Create document: data/Object 1\n"
+            "Create document: data/Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
+        ),
+        (
+            "Rename document: data/Object 0 -> data/apple\n"
+            "Update document: data/apple\n"
+            'Create document: __audit__data/update: "Object 0"\n'
+        ),
+    ]
+
+    # check audit record is inserted
+    updated_doc = test_documents[0]
+    results, _ = await persistent.find(
+        collection_name="__audit__data", query_filter={"document_id": updated_doc["_id"]}
+    )
+    assert len(results) == 2
+    assert isinstance(results[0].pop("_id"), ObjectId)
+    assert isinstance(results[0].pop("action_at"), datetime)
+    assert isinstance(results[1].pop("_id"), ObjectId)
+    assert isinstance(results[1].pop("action_at"), datetime)
+    assert results == [
+        {
+            "name": 'insert: "Object 0"',
+            "document_id": updated_doc["_id"],
+            "action_type": AuditActionType.INSERT,
+            "previous_values": {},
+        },
+        {
+            "name": 'update: "Object 0"',
+            "document_id": updated_doc["_id"],
+            "action_type": AuditActionType.UPDATE,
+            "previous_values": {"name": "Object 0"},
+        },
     ]
 
 
@@ -221,15 +330,50 @@ async def test_update_many(git_persistent, test_documents):
         assert result["value"] == 1
 
     # check commit messages
-    assert _get_commit_messages(repo, max_count=10) == [
+    assert _get_commit_messages(repo, max_count=15) == [
         "Initial commit\n",
-        "Create document: data/Object 0\n",
-        "Create document: data/Object 1\n",
-        "Create document: data/Object 2\n",
-        "Update document: data/Object 0\n",
-        "Update document: data/Object 1\n",
-        "Update document: data/Object 2\n",
+        (
+            "Create document: data/Object 0\n"
+            "Create document: data/Object 1\n"
+            "Create document: data/Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
+        ),
+        (
+            "Update document: data/Object 0\n"
+            "Update document: data/Object 1\n"
+            "Update document: data/Object 2\n"
+            'Create document: __audit__data/update: "Object 0"\n'
+            'Create document: __audit__data/update: "Object 1"\n'
+            'Create document: __audit__data/update: "Object 2"\n'
+        ),
     ]
+
+    # check audit record is inserted
+    for i, updated_doc in enumerate(test_documents):
+        results, _ = await persistent.find(
+            collection_name="__audit__data", query_filter={"document_id": updated_doc["_id"]}
+        )
+        assert len(results) == 2
+        assert isinstance(results[0].pop("_id"), ObjectId)
+        assert isinstance(results[0].pop("action_at"), datetime)
+        assert isinstance(results[1].pop("_id"), ObjectId)
+        assert isinstance(results[1].pop("action_at"), datetime)
+        assert results == [
+            {
+                "name": f'insert: "Object {i}"',
+                "document_id": updated_doc["_id"],
+                "action_type": AuditActionType.INSERT,
+                "previous_values": {},
+            },
+            {
+                "name": f'update: "Object {i}"',
+                "document_id": updated_doc["_id"],
+                "action_type": AuditActionType.UPDATE,
+                "previous_values": {"value": [{"key1": "value1", "key2": "value2"}]},
+            },
+        ]
 
 
 @pytest.mark.asyncio
@@ -257,11 +401,48 @@ async def test_replace_one(git_persistent, test_documents):
     # check commit messages
     assert _get_commit_messages(repo, max_count=10) == [
         "Initial commit\n",
-        "Create document: data/Object 0\n",
-        "Create document: data/Object 1\n",
-        "Create document: data/Object 2\n",
-        "Rename document: data/Object 0 -> data/apple\n",
-        "Update document: data/apple\n",
+        (
+            "Create document: data/Object 0\n"
+            "Create document: data/Object 1\n"
+            "Create document: data/Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
+        ),
+        (
+            "Rename document: data/Object 0 -> data/apple\n"
+            "Update document: data/apple\n"
+            'Create document: __audit__data/replace: "Object 0"\n'
+        ),
+    ]
+
+    # check audit record is inserted
+    updated_doc = test_documents[0]
+    results, _ = await persistent.find(
+        collection_name="__audit__data", query_filter={"document_id": updated_doc["_id"]}
+    )
+    assert len(results) == 2
+    assert isinstance(results[0].pop("_id"), ObjectId)
+    assert isinstance(results[0].pop("action_at"), datetime)
+    assert isinstance(results[1].pop("_id"), ObjectId)
+    assert isinstance(results[1].pop("action_at"), datetime)
+
+    # id should remain unchanged, so it won't be captured in old values
+    before[0].pop("_id")
+
+    assert results == [
+        {
+            "name": 'insert: "Object 0"',
+            "document_id": updated_doc["_id"],
+            "action_type": AuditActionType.INSERT,
+            "previous_values": {},
+        },
+        {
+            "name": 'replace: "Object 0"',
+            "document_id": updated_doc["_id"],
+            "action_type": AuditActionType.REPLACE,
+            "previous_values": before[0],
+        },
     ]
 
 
@@ -326,10 +507,40 @@ async def test_delete_one(git_persistent, test_documents):
     # check commit messages
     assert _get_commit_messages(repo, max_count=10) == [
         "Initial commit\n",
-        "Create document: data/Object 0\n",
-        "Create document: data/Object 1\n",
-        "Create document: data/Object 2\n",
-        "Delete document: data/Object 0\n",
+        (
+            "Create document: data/Object 0\n"
+            "Create document: data/Object 1\n"
+            "Create document: data/Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
+        ),
+        ("Delete document: data/Object 0\n" 'Create document: __audit__data/delete: "Object 0"\n'),
+    ]
+
+    # check audit record is inserted
+    deleted_doc = test_documents[0]
+    results, _ = await persistent.find(
+        collection_name="__audit__data", query_filter={"document_id": deleted_doc["_id"]}
+    )
+    assert len(results) == 2
+    assert isinstance(results[0].pop("_id"), ObjectId)
+    assert isinstance(results[0].pop("action_at"), datetime)
+    assert isinstance(results[1].pop("_id"), ObjectId)
+    assert isinstance(results[1].pop("action_at"), datetime)
+    assert results == [
+        {
+            "name": 'insert: "Object 0"',
+            "document_id": deleted_doc["_id"],
+            "action_type": AuditActionType.INSERT,
+            "previous_values": {},
+        },
+        {
+            "name": 'delete: "Object 0"',
+            "document_id": deleted_doc["_id"],
+            "action_type": AuditActionType.DELETE,
+            "previous_values": test_documents[0],
+        },
     ]
 
 
@@ -347,14 +558,24 @@ async def test_delete_many(git_persistent, test_documents):
     assert len(results) == 0
 
     # check commit messages
-    assert _get_commit_messages(repo, max_count=10) == [
+    assert _get_commit_messages(repo, max_count=15) == [
         "Initial commit\n",
-        "Create document: data/Object 0\n",
-        "Create document: data/Object 1\n",
-        "Create document: data/Object 2\n",
-        "Delete document: data/Object 0\n",
-        "Delete document: data/Object 1\n",
-        "Delete document: data/Object 2\n",
+        (
+            "Create document: data/Object 0\n"
+            "Create document: data/Object 1\n"
+            "Create document: data/Object 2\n"
+            'Create document: __audit__data/insert: "Object 0"\n'
+            'Create document: __audit__data/insert: "Object 1"\n'
+            'Create document: __audit__data/insert: "Object 2"\n'
+        ),
+        (
+            "Delete document: data/Object 0\n"
+            "Delete document: data/Object 1\n"
+            "Delete document: data/Object 2\n"
+            'Create document: __audit__data/delete: "Object 0"\n'
+            'Create document: __audit__data/delete: "Object 1"\n'
+            'Create document: __audit__data/delete: "Object 2"\n'
+        ),
     ]
 
 
@@ -390,7 +611,12 @@ async def test_start_transaction__success(git_persistent):
     # check commit messages
     assert _get_commit_messages(repo) == [
         "Initial commit\n",
-        "Create document: test_col/1234\nUpdate document: test_col/1234\n",
+        (
+            "Create document: test_col/1234\n"
+            "Create document: __audit__test_col/insert: None\n"
+            "Update document: test_col/1234\n"
+            "Create document: __audit__test_col/update: None\n"
+        ),
     ]
     assert repo.git.status() == "On branch test\nnothing to commit, working tree clean"
 
@@ -403,19 +629,21 @@ async def test_start_transaction__exception_within_transaction(git_persistent):
     persistent, repo = git_persistent
     col = "test_col"
 
-    with pytest.raises(AssertionError):
-        # set up an exception happens within the context
-        async with persistent.start_transaction() as session:
-            await session.insert_one(
-                collection_name=col, document={"_id": "1234", "key1": "value1"}
-            )
-            await session.update_one(
-                collection_name=col,
-                query_filter={"_id": "1234"},
-                update={"$set": {"key1": "value2"}},
-            )
-            assert False
+    # expect consistent behavior in 2 consecutive attempts
+    for _ in range(2):
+        with pytest.raises(AssertionError):
+            # set up an exception happens within the context
+            async with persistent.start_transaction() as session:
+                await session.insert_one(
+                    collection_name=col, document={"_id": "1234", "key1": "value1"}
+                )
+                await session.update_one(
+                    collection_name=col,
+                    query_filter={"_id": "1234"},
+                    update={"$set": {"key1": "value2"}},
+                )
+                assert False
 
-    # check commit messages & status
-    assert _get_commit_messages(repo) == ["Initial commit\n"]
-    assert repo.git.status() == "On branch test\nnothing to commit, working tree clean"
+        # check commit messages & status
+        assert _get_commit_messages(repo) == ["Initial commit\n"]
+        assert repo.git.status() == "On branch test\nnothing to commit, working tree clean"
