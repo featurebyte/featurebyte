@@ -145,7 +145,7 @@ def test_query_object_operation_on_snowflake_source(
     # preview the features
     preview_param = {
         "POINT_IN_TIME": "2001-01-02 10:00:00",
-        "UID": 1,
+        "uid": 1,
     }
 
     # preview count features
@@ -156,7 +156,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "UID": 1,
+        "uid": 1,
         "COUNT_2h": 1,
         "COUNT_24h": 9,
     }
@@ -169,7 +169,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "UID": 1,
+        "uid": 1,
         "COUNT_BY_ACTION_24h": '{\n  "add": 2,\n  "purchase": 3,\n  "remove": 4\n}',
     }
 
@@ -180,7 +180,7 @@ def test_query_object_operation_on_snowflake_source(
     )
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "UID": 1,
+        "uid": 1,
         "COUNT_2h": 1,
     }
 
@@ -193,7 +193,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "UID": 1,
+        "uid": 1,
         "Unnamed": Decimal("0.111111"),
     }
 
@@ -208,7 +208,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "UID": 1,
+        "uid": 1,
         "COUNT_2h": 1,
         "COUNT_24h": 9,
         "COUNT_2h / COUNT_24h": Decimal("0.111111"),
@@ -233,7 +233,7 @@ def run_test_conditional_assign_feature(config, feature_group):
     feature_count_24h = feature_group["COUNT_24h"]
     preview_param = {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "UID": 1,
+        "uid": 1,
     }
     result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
     assert result == {**preview_param, "COUNT_24h": 9}
@@ -271,7 +271,7 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
-            "UID": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "uid": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         }
     )
     feature_list = FeatureList(
@@ -286,7 +286,7 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
     df_historical_expected = pd.DataFrame(
         {
             "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
-            "UID": df_training_events["UID"],
+            "uid": df_training_events["uid"],
             "COUNT_2h": [1.0, 1.0, np.nan, 1.0, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
             "COUNT_24h": [9.0, 7.0, 2.0, 5.0, 5.0, 4.0, 4.0, 7.0, 5.0, np.nan],
             "COUNT_BY_ACTION_24h": [
@@ -332,9 +332,9 @@ def _test_get_historical_features_with_serving_names(
 ):
     """Test getting historical features from FeatureList with alternative serving names"""
 
-    mapping = {"UID": "new_uid"}
+    mapping = {"uid": "new_uid"}
 
-    # Instead of providing the default serving name "UID", provide "NEW_UID" in data
+    # Instead of providing the default serving name "uid", provide "new_uid" in data
     df_training_events = df_training_events.rename(mapping, axis=1)
     df_historical_expected = df_historical_expected.rename(mapping, axis=1)
     assert "new_uid" in df_training_events

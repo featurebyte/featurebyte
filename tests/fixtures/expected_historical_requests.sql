@@ -59,7 +59,11 @@ REQUEST_TABLE_W86400_F1800_BS600_M300_cust_id AS (
     ) T
 ),
 _FB_AGGREGATED AS (SELECT
-  REQ.*,
+  REQ."POINT_IN_TIME",
+  REQ."cust_id",
+  REQ."A",
+  REQ."B",
+  REQ."C",
   "T0"."agg_w1800_sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512" AS "agg_w1800_sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
   "T1"."agg_w7200_sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512" AS "agg_w7200_sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
   "T2"."agg_w86400_sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512" AS "agg_w86400_sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512"

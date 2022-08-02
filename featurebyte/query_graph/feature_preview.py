@@ -15,6 +15,7 @@ from featurebyte.logger import logger
 from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME, prettify_sql
 from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.sql import escape_column_name
 from featurebyte.query_graph.tile_compute import construct_on_demand_tile_ctes
 
 
@@ -41,6 +42,7 @@ def construct_preview_request_table_sql(
     for _, row in request_dataframe.iterrows():
         columns = []
         for col, value in row.items():
+            assert isinstance(col, str)
             if col in date_cols:
                 expr = f"CAST('{str(value)}' AS TIMESTAMP)"
             else:
@@ -48,7 +50,7 @@ def construct_preview_request_table_sql(
                     expr = f"'{value}'"
                 else:
                     expr = value
-            columns.append(f"{expr} AS {col}")
+            columns.append(f"{expr} AS {escape_column_name(col)}")
         row_sql = select(*columns).sql()
         row_sqls.append(row_sql)
     return prettify_sql(" UNION ALL\n".join(row_sqls))
