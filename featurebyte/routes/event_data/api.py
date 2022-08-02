@@ -42,7 +42,7 @@ async def list_event_datas(
     """
     List Event Datas
     """
-    event_data_list: EventDataList = await request.state.controller.list_event_datas(
+    event_data_list: EventDataList = await request.state.controller.list(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,
@@ -63,10 +63,10 @@ async def retrieve_event_data(
     """
     Retrieve Event Data
     """
-    event_data: EventDataModel = await request.state.controller.retrieve_event_data(
+    event_data: EventDataModel = await request.state.controller.get(
         user=request.state.user,
         persistent=request.state.persistent,
-        event_data_id=event_data_id,
+        document_id=event_data_id,
     )
     return event_data
 

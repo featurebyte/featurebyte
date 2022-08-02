@@ -54,7 +54,9 @@ def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
     Saved event data fixture
     """
     snowflake_feature_store.save()
+    previous_id = snowflake_event_data.id
     snowflake_event_data.save()
+    assert snowflake_event_data.id == previous_id
     assert snowflake_event_data.status == EventDataStatus.DRAFT
     assert isinstance(snowflake_event_data.created_at, datetime)
     feature_store, _ = snowflake_event_data.tabular_source

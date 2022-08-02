@@ -34,8 +34,8 @@ async def get_feature(request: Request, feature_id: str) -> FeatureModel:
     """
     Get Feature
     """
-    feature: FeatureModel = await request.state.controller.get_feature(
-        user=request.state.user, persistent=request.state.persistent, feature_id=feature_id
+    feature: FeatureModel = await request.state.controller.get(
+        user=request.state.user, persistent=request.state.persistent, document_id=feature_id
     )
     return feature
 
@@ -52,7 +52,7 @@ async def list_features(
     """
     List Features
     """
-    feature_list: FeatureList = await request.state.controller.list_features(
+    feature_list: FeatureList = await request.state.controller.list(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,

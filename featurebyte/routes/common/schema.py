@@ -1,6 +1,8 @@
 """
 Common classes mixin for API payload schema
 """
+from typing import Any, List
+
 from pydantic import validator
 
 from featurebyte.models.base import FeatureByteBaseModel
@@ -14,6 +16,7 @@ class PaginationMixin(FeatureByteBaseModel):
     page: int = 1
     page_size: int = 10
     total: int
+    data: List[Any]
 
     @validator("page_size")
     @classmethod

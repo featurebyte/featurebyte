@@ -125,7 +125,7 @@ def test_save__duplicate_record_exception(saved_snowflake_feature_store):
     with pytest.raises(DuplicatedRecordException) as exc:
         saved_snowflake_feature_store.save()
     expected_msg = (
-        f'FeatureStore (feature_store.id: "{saved_snowflake_feature_store.id}") already exists.'
+        f'FeatureStore id (feature_store.id: "{saved_snowflake_feature_store.id}") already exists.'
     )
     assert expected_msg in str(exc.value)
 

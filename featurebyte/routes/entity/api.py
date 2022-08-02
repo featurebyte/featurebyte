@@ -31,8 +31,8 @@ async def get_entity(request: Request, entity_id: str) -> EntityModel:
     """
     Get Entity
     """
-    entity: EntityModel = await request.state.controller.get_entity(
-        user=request.state.user, persistent=request.state.persistent, entity_id=entity_id
+    entity: EntityModel = await request.state.controller.get(
+        user=request.state.user, persistent=request.state.persistent, document_id=entity_id
     )
     return entity
 
@@ -49,7 +49,7 @@ async def list_entities(
     """
     List Entity
     """
-    entity_list: EntityList = await request.state.controller.list_entities(
+    entity_list: EntityList = await request.state.controller.list(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,
