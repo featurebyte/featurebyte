@@ -524,6 +524,7 @@ class FeatureExecutionPlan(ABC):
         tuple[str, str]
             Tuple of table name and SQL code
         """
+        # pylint: disable=too-many-locals
         left_joins = []
         qualified_aggregation_names = []
         for i, agg_spec in enumerate(self.aggregation_specs.values()):
@@ -551,13 +552,13 @@ class FeatureExecutionPlan(ABC):
             left_joins.append(left_join_sql)
         left_joins_sql = "\n".join(left_joins)
         qualified_aggregation_names_str = ", ".join(qualified_aggregation_names)
-        request_table_columns = ", ".join(
+        request_table_columns_str = ", ".join(
             [f"REQ.{escape_column_name(c)}" for c in request_table_columns]
         )
         combined_sql = (
             f"""
             SELECT
-                {request_table_columns},
+                {request_table_columns_str},
                 {qualified_aggregation_names_str}
             FROM {REQUEST_TABLE_NAME} REQ
             """
