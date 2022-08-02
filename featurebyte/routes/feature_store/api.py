@@ -37,10 +37,10 @@ async def get_feature_store(
     """
     Retrieve Feature Store
     """
-    feature_store: FeatureStoreModel = await request.state.controller.get_feature_store(
+    feature_store: FeatureStoreModel = await request.state.controller.get(
         user=request.state.user,
         persistent=request.state.persistent,
-        feature_store_id=feature_store_id,
+        document_id=feature_store_id,
     )
     return feature_store
 
@@ -57,7 +57,7 @@ async def list_feature_stores(
     """
     List FeatureStore
     """
-    feature_store_list: FeatureStoreList = await request.state.controller.list_feature_stores(
+    feature_store_list: FeatureStoreList = await request.state.controller.list(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,

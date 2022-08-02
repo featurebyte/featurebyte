@@ -3,7 +3,7 @@ EventData API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any
 
 from http import HTTPStatus
 
@@ -17,16 +17,19 @@ from featurebyte.models.event_data import (
     FeatureJobSettingHistoryEntry,
 )
 from featurebyte.persistent import DuplicateDocumentError, Persistent
+from featurebyte.routes.common.base import BaseController
 from featurebyte.routes.common.util import get_utc_now
 from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
 
 
-class EventDataController:
+class EventDataController(BaseController[EventDataModel, EventDataList]):
     """
     EventData controller
     """
 
     collection_name = CollectionName.EVENT_DATA
+    document_class = EventDataModel
+    paginated_document_class = EventDataList
 
     @classmethod
     async def create_event_data(
@@ -102,122 +105,7 @@ class EventDataController:
                 detail=f'EventData (event_data.name: "{data.name}") already exists.',
             ) from exc
 
-        return await cls.retrieve_event_data(
-            user=user,
-            persistent=persistent,
-            event_data_id=insert_id,
-        )
-
-    @classmethod
-    async def list_event_datas(
-        cls,
-        user: Any,
-        persistent: Persistent,
-        page: int = 1,
-        page_size: int = 10,
-        sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
-        search: str | None = None,
-        name: str | None = None,
-    ) -> EventDataList:
-        """
-        List EventData objects stored at the persistent (GitDB or MongoDB)
-
-        Parameters
-        ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Object that entity will be saved to
-        page: int
-            Page number
-        page_size: int
-            Number of items per page
-        sort_by: str | None
-            Key used to sort the returning entities
-        sort_dir: "asc" or "desc"
-            Sorting the returning entities in ascending order or descending order
-        search: str | None
-            Search term (not supported)
-        name: str | None
-            EventData name used to filter the entities
-
-        Returns
-        -------
-        EventDataList
-            List of event data fulfilled the filtering condition
-
-        Raises
-        ------
-        HTTPException
-            If the query is not supported
-        """
-        query_filter = {"user_id": user.id}
-
-        if name is not None:
-            query_filter["name"] = name
-
-        # Apply search
-        if search:
-            query_filter["$text"] = {"$search": search}
-
-        try:
-            docs, total = await persistent.find(
-                collection_name=cls.collection_name,
-                query_filter=query_filter,
-                sort_by=sort_by,
-                sort_dir=sort_dir,
-                page=page,
-                page_size=page_size,
-            )
-            return EventDataList(page=page, page_size=page_size, total=total, data=list(docs))
-        except NotImplementedError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_IMPLEMENTED, detail="Query not supported."
-            ) from exc
-
-    @classmethod
-    async def retrieve_event_data(
-        cls,
-        user: Any,
-        persistent: Persistent,
-        event_data_id: ObjectId,
-    ) -> EventDataModel:
-        """
-        Retrieve Event Data given event data identifier (GitDB or MongoDB)
-
-        Parameters
-        ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Object that entity will be saved to
-        event_data_id: ObjectId
-            EventData ID
-
-        Returns
-        -------
-        EventDataModel
-            EventData object which matches given event data id
-
-        Raises
-        ------
-        HTTPException
-            If the event data not found
-        """
-        query_filter = {"_id": ObjectId(event_data_id), "user_id": user.id}
-        event_data = await persistent.find_one(
-            collection_name=cls.collection_name, query_filter=query_filter
-        )
-        if event_data is None:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail=(
-                    f'EventData (event_data.id: "{event_data_id}") not found! '
-                    f"Please save the EventData object first."
-                ),
-            )
-        return EventDataModel(**event_data)
+        return await cls.get(user=user, persistent=persistent, document_id=insert_id)
 
     @classmethod
     async def update_event_data(
@@ -253,11 +141,7 @@ class EventDataController:
         """
         query_filter = {"_id": ObjectId(event_data_id), "user_id": user.id}
         event_data = (
-            await cls.retrieve_event_data(
-                user=user,
-                persistent=persistent,
-                event_data_id=event_data_id,
-            )
+            await cls.get(user=user, persistent=persistent, document_id=event_data_id)
         ).dict(by_alias=True)
 
         # prepare update payload
@@ -299,8 +183,4 @@ class EventDataController:
             update={"$set": update_payload},
         )
 
-        return await cls.retrieve_event_data(
-            user=user,
-            persistent=persistent,
-            event_data_id=event_data_id,
-        )
+        return await cls.get(user=user, persistent=persistent, document_id=event_data_id)
