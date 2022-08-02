@@ -647,3 +647,44 @@ async def test_start_transaction__exception_within_transaction(git_persistent):
         # check commit messages & status
         assert _get_commit_messages(repo) == ["Initial commit\n"]
         assert repo.git.status() == "On branch test\nnothing to commit, working tree clean"
+
+
+@pytest.mark.asyncio
+async def test_get_audit_logs(git_persistent, test_document):
+    """
+    Test retrieving audit logs
+    """
+    persistent, repo = git_persistent
+
+    # insert a doc
+    inserted_id = await persistent.insert_one(collection_name="data", document=test_document)
+
+    # update the doc a few times
+    for i in range(5):
+        num_updated = await persistent.update_one(
+            collection_name="data", query_filter={"_id": inserted_id}, update={"$set": {"value": i}}
+        )
+        assert num_updated == 1
+
+    # delete the doc
+    num_deleted = await persistent.delete_one(
+        collection_name="data", query_filter={"_id": inserted_id}
+    )
+    assert num_deleted == 1
+
+    # check retrieve audit logs work as expected
+    audit_logs, _ = await persistent.get_audit_logs(collection_name="data", document_id=inserted_id)
+    assert [log["action_type"] for log in audit_logs] == ["DELETE"] + ["UPDATE"] * 5 + ["INSERT"]
+
+    # check update logs only
+    audit_logs, _ = await persistent.get_audit_logs(
+        collection_name="data", document_id=inserted_id, query_filter={"action_type": "UPDATE"}
+    )
+    assert [log["action_type"] for log in audit_logs] == ["UPDATE"] * 5
+    assert [log["previous_values"]["value"] for log in audit_logs] == [
+        3,
+        2,
+        1,
+        0,
+        [{"key1": "value1", "key2": "value2"}],
+    ]

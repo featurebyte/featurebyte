@@ -303,3 +303,44 @@ async def test_delete_many(mongo_persistent, test_documents):
         assert audit_doc["user_id"] == user_id
         assert audit_doc["action_type"] == AuditActionType.DELETE
         assert audit_doc["previous_values"] == doc
+
+
+@pytest.mark.asyncio
+async def test_get_audit_logs(mongo_persistent, test_document):
+    """
+    Test retrieving audit logs
+    """
+    persistent, _ = mongo_persistent
+
+    # insert a doc
+    inserted_id = await persistent.insert_one(collection_name="data", document=test_document)
+
+    # update the doc a few times
+    for i in range(5):
+        num_updated = await persistent.update_one(
+            collection_name="data", query_filter={"_id": inserted_id}, update={"$set": {"value": i}}
+        )
+        assert num_updated == 1
+
+    # delete the doc
+    num_deleted = await persistent.delete_one(
+        collection_name="data", query_filter={"_id": inserted_id}
+    )
+    assert num_deleted == 1
+
+    # check retrieve audit logs work as expected
+    audit_logs, _ = await persistent.get_audit_logs(collection_name="data", document_id=inserted_id)
+    assert [log["action_type"] for log in audit_logs] == ["DELETE"] + ["UPDATE"] * 5 + ["INSERT"]
+
+    # check update logs only
+    audit_logs, _ = await persistent.get_audit_logs(
+        collection_name="data", document_id=inserted_id, query_filter={"action_type": "UPDATE"}
+    )
+    assert [log["action_type"] for log in audit_logs] == ["UPDATE"] * 5
+    assert [log["previous_values"]["value"] for log in audit_logs] == [
+        3,
+        2,
+        1,
+        0,
+        [{"key1": "value1", "key2": "value2"}],
+    ]

@@ -12,6 +12,23 @@ from featurebyte.models.persistent import (
 )
 
 
+def get_audit_collection_name(collection_name: str) -> str:
+    """
+    Get name of audit collection
+
+    Parameters
+    ----------
+    collection_name: str
+        Name of collection to be audited
+
+    Returns
+    -------
+    str
+        Audit collection name
+    """
+    return f"__audit__{collection_name}"
+
+
 def get_doc_name(doc: Document) -> str:
     """
     Retrieve document name for audit log record names
@@ -70,8 +87,8 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
 
     async def _execute_transaction(  # pylint: disable=unused-argument
         persistent: Any,
+        collection_name: str,
         async_execution: Any,
-        collection_name: Optional[str] = None,
         query_filter: Optional[QueryFilter] = None,
         **kwargs: Any,
     ) -> Tuple[Any, int, List[Document]]:
@@ -82,10 +99,10 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
         ----------
         persistent: Any
             Persistent object to execute transaction
+        collection_name: str
+            Collection name
         async_execution: Any
             Async executed coroutine
-        collection_name: Optional[str]
-            Collection name
         query_filter: Optional[QueryFilter]
             Conditions to filter on
         kwargs: Any
@@ -131,9 +148,9 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
 
     async def _create_audit_docs(
         persistent: Any,
+        collection_name: str,
         action_type: AuditActionType,
         original_docs: List[Document],
-        collection_name: Optional[str] = None,
         **kwargs: str,
     ) -> None:
         """
@@ -143,12 +160,12 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
         ----------
         persistent: Any
             Persistent object to execute transaction
+        collection_name: str
+            Collection name
         action_type: AuditActionType
             Transaction auction type
         original_docs: List[Document]
             list of affected documents prior to transaction
-        collection_name: Optional[str]
-            Collection name
         kwargs: Any
             Other keyword arguments
         """
@@ -194,7 +211,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             )
 
         await persistent._insert_many(  # pylint: disable=protected-access
-            collection_name=f"__audit__{collection_name}", documents=audit_docs
+            collection_name=get_audit_collection_name(collection_name), documents=audit_docs
         )
 
     def inner(func: Any) -> Any:
@@ -212,7 +229,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             Wrapped function
         """
 
-        async def wrapper(persistent: Any, *args: Any, **kwargs: Any) -> Any:
+        async def wrapper(persistent: Any, collection_name: str, *args: Any, **kwargs: Any) -> Any:
             """
             Wrapped function to perform audit logging of the persistent function
 
@@ -220,6 +237,8 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             ----------
             persistent: Any
                 Persistent object from function to be wrapped
+            collection_name: str
+                Collection name to use
             args: Any
                 Positional arguments for the function
             kwargs: Any
@@ -234,13 +253,15 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
 
                 return_value, num_updated, original_docs = await _execute_transaction(
                     persistent=session,
-                    async_execution=func(session, *args, **kwargs),
+                    collection_name=collection_name,
+                    async_execution=func(session, collection_name=collection_name, *args, **kwargs),
                     **kwargs,
                 )
 
                 if num_updated and original_docs:
                     await _create_audit_docs(
                         persistent=session,
+                        collection_name=collection_name,
                         action_type=action_type,
                         original_docs=original_docs,
                         **kwargs,

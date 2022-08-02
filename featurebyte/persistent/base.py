@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import AsyncIterator, Iterable, List, Literal, Optional, Tuple
 
+import copy
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 
@@ -17,7 +18,7 @@ from featurebyte.models.persistent import (
     DocumentUpdate,
     QueryFilter,
 )
-from featurebyte.persistent.audit import audit_transaction
+from featurebyte.persistent.audit import audit_transaction, get_audit_collection_name
 from featurebyte.routes.common.util import get_utc_now
 
 
@@ -355,6 +356,51 @@ class Persistent(ABC):
                     yield self
             finally:
                 self._in_transaction = False
+
+    async def get_audit_logs(
+        self,
+        collection_name: str,
+        document_id: ObjectId,
+        query_filter: Optional[QueryFilter] = None,
+        sort_by: Optional[str] = "_id",
+        sort_dir: Optional[Literal["asc", "desc"]] = "desc",
+        page: int = 1,
+        page_size: int = 0,
+    ) -> Tuple[Iterable[Document], int]:
+        """
+        Retrieve audit records for a document
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        document_id: ObjectId
+            ID of document to use
+        query_filter: Optional[QueryFilter]
+            Conditions to filter on
+        sort_by: Optional[str]
+            Column to sort by
+        sort_dir: Optional[Literal["asc", "desc"]]
+            Direction to sort
+        page: int
+            Page number for pagination
+        page_size: int
+            Page size (0 to return all records)
+
+        Returns
+        -------
+        List[Document]
+        """
+        _query_filter = copy.deepcopy(query_filter) if query_filter else {}
+        _query_filter["document_id"] = document_id
+        return await self._find(
+            collection_name=get_audit_collection_name(collection_name),
+            query_filter=_query_filter,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            page=page,
+            page_size=page_size,
+        )
 
     @abstractmethod
     @asynccontextmanager
