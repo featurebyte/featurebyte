@@ -3,7 +3,7 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import datetime
 import time
@@ -11,9 +11,8 @@ import time
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 
-from featurebyte.api.feature import Feature
-from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Credentials
+from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
@@ -26,6 +25,9 @@ from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import SnowflakeTileCache
+
+if TYPE_CHECKING:
+    from featurebyte.api.feature import Feature
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
@@ -51,10 +53,10 @@ def get_session_from_feature_objects(
     NotImplementedError
         If the list of Features do not all use the same store
     """
-    feature_store: Optional[FeatureStore] = None
+    feature_store: Optional[ExtendedFeatureStoreModel] = None
     for feature in feature_objects:
         store = feature.feature_store
-        assert isinstance(store, FeatureStore)
+        assert isinstance(store, ExtendedFeatureStoreModel)
         if feature_store is None:
             feature_store = store
         elif feature_store != store:

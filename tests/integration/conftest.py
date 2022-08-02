@@ -430,4 +430,6 @@ def event_data_fixture(config, snowflake_session, snowflake_feature_store, mock_
     event_data["USER_ID"].as_entity("User")
     snowflake_feature_store.save()
     event_data.save()
+
+    event_data = EventData.get("snowflake_event_data")
     return event_data
