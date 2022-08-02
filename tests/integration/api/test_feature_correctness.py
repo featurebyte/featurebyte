@@ -166,7 +166,7 @@ def test_aggregation(
     df_expected = pd.concat(df_expected_all, axis=1)
     feature_list = FeatureList(features)
     df_historical_features = feature_list.get_historical_features(
-        training_events, credentials=config.credentials, serving_names_mapping={"UID": "USER_ID"}
+        training_events, credentials=config.credentials, serving_names_mapping={"uid": "USER_ID"}
     )
 
     # Note: The row output order can be different, so sort before comparing
