@@ -11,14 +11,14 @@ from featurebyte.tile.tile_cache import SnowflakeOnDemandTileComputeRequest, Sno
 
 
 @pytest.fixture(name="feature_for_tile_cache_tests")
-def feature_for_tile_cache_tests_fixture(event_data):
+def feature_for_tile_cache_tests_fixture(event_data, groupby_category):
     """Fixture for a feature used for tile cache test
 
     Should not be shared with other tests because of side effects after running on-demand tiles
     computation, get_historical_features(), etc.
     """
     event_view = EventView.from_event_data(event_data)
-    feature_group = event_view.groupby("USER_ID").aggregate(
+    feature_group = event_view.groupby("USER_ID", category=groupby_category).aggregate(
         "SESSION_ID",
         "count",
         windows=["48h"],
@@ -54,11 +54,13 @@ def check_temp_tables_cleaned_up(session):
     assert InternalName.TILE_CACHE_WORKING_TABLE.value not in temp_table_names
 
 
-def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests):
+@pytest.mark.parametrize("groupby_category", [None, "PRODUCT_ACTION"])
+def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests, groupby_category):
     """Test SnowflakeTileCache performs caching properly"""
     feature = feature_for_tile_cache_tests
     tile_cache = SnowflakeTileCache(snowflake_session)
     feature_objects = [feature]
+    _ = groupby_category
 
     df_training_events = pd.DataFrame(
         {

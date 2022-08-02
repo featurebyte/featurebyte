@@ -106,6 +106,7 @@ def test_extended_feature_model__agg_per_category_feature(
             entity_column_names=["cust_id", "col_int"],
             value_column_names=["value"],
             tile_id="sum_f1800_m300_b600_b2cfe14613c88a50946d1b99fa0ae3ca5d89849d",
+            category_column_name="col_int",
         )
     ]
     assert model.tile_specs == expected_tile_specs

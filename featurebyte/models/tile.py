@@ -1,7 +1,7 @@
 """
 This module contains Tile related models
 """
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from enum import Enum
 
@@ -31,10 +31,12 @@ class TileSpec(FeatureByteBaseModel):
         frequency minute for the tile
     tile_sql: str
         sql for tile generation
-    column_names: str
-        comma separated string of column names for the tile table
-    entity_column_names: str
-        comma separated string of entity column names for the tile table
+    entity_column_names: List[str]
+        entity column names for the tile table
+    value_column_names: List[str]
+        tile value column names for the tile table
+    category_column_name: Optional[str]
+        optional category column name when the groupby operation specifies a category
     """
 
     time_modulo_frequency_second: int = Field(gt=0)
@@ -44,6 +46,7 @@ class TileSpec(FeatureByteBaseModel):
     entity_column_names: List[str]
     value_column_names: List[str]
     tile_id: str
+    category_column_name: Optional[str]
 
     @validator("tile_id")
     @classmethod
