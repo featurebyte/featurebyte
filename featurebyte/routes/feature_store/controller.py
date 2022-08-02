@@ -13,7 +13,6 @@ from featurebyte.enum import CollectionName
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.routes.common.base import BaseController
-from featurebyte.routes.common.util import get_utc_now
 from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreList
 
 
