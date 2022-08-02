@@ -25,6 +25,7 @@ env:
   SNOWFLAKE_SCHEMA_FEATUREBYTE: FEATUREBYTE
   GIT_SSH_KEY_PATH: "/tmp/git_key"
   SLACK_OAUTH: ${{ secrets.SLACK_OAUTH }}
+  MONGO_CONNECTION: mongodb://localhost:27021
 
 jobs:
   build:
@@ -44,6 +45,10 @@ jobs:
       uses: actions/setup-python@v4.0.0
       with:
         python-version: ${{ matrix.python-version }}
+
+    - name: Setup local mongodb for testing
+      run: |
+        cd .github/mongoreplicaset && ./startdb.sh
 
     - name: Setup cache keys
       run: |
