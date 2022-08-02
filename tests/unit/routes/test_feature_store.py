@@ -1,7 +1,6 @@
 """
 Test for FeatureStore route
 """
-import pdb
 from datetime import datetime
 from http import HTTPStatus
 
