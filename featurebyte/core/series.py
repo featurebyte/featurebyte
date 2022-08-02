@@ -62,6 +62,9 @@ class Series(QueryObject, OpsMixin, ParentMixin):
         _ = other
         return {}
 
+    def _unary_op_series_params(self) -> dict[str, Any]:
+        return {}
+
     @staticmethod
     def _is_assignment_valid(left_dbtype: DBVarType, right_value: Any) -> bool:
         """
@@ -349,6 +352,43 @@ class Series(QueryObject, OpsMixin, ParentMixin):
 
     def __rtruediv__(self, other: int | float | Series) -> Series:
         return self._binary_arithmetic_op(other, NodeType.DIV, right_op=True)
+
+    def _unary_op(self, node_type: NodeType, output_var_type: DBVarType) -> Series:
+        """
+        Apply an operation on the Series itself and return another Series
+
+        Parameters
+        ----------
+        node_type : NodeType
+            Output node type
+        output_var_type: : DBVarType
+            Output variable type
+
+        Returns
+        -------
+        Series
+        """
+        node = self.graph.add_operation(
+            node_type=node_type,
+            node_params={},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[self.node],
+        )
+        return type(self)(
+            feature_store=self.feature_store,
+            tabular_source=self.tabular_source,
+            node=node,
+            name=None,
+            var_type=output_var_type,
+            row_index_lineage=self.row_index_lineage,
+            **self._unary_op_series_params(),
+        )
+
+    def isnull(self) -> Series:
+        """
+        Returns a boolean Series indicating whether each value is missing
+        """
+        return self._unary_op(node_type=NodeType.IS_NULL, output_var_type=DBVarType.BOOL)
 
     def preview_sql(self, limit: int = 10) -> str:
         """

@@ -881,3 +881,37 @@ def test_conditional_assign__project_named(graph, node_input):
         """
     ).strip()
     assert sql_code == expected
+
+
+def test_isnull(graph, node_input):
+    """Test graph with isnull operation"""
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    mask_node = graph.add_operation(
+        node_type=NodeType.IS_NULL,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a],
+    )
+    interpreter = GraphInterpreter(graph)
+    sql_code = interpreter.construct_preview_sql(mask_node.name)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "a" IS NULL
+        FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b"
+            FROM "db"."public"."event_table"
+        )
+        LIMIT 10
+        """
+    ).strip()
+    assert sql_code == expected

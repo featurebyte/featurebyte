@@ -334,3 +334,11 @@ def test_get_feature(saved_feature):
     with pytest.raises(RecordRetrievalException) as exc:
         Feature.get(name="random_name")
     assert 'Feature (feature.name: "random_name") not found!' in str(exc.value)
+
+
+def test_unary_op_inherits_event_data_id(float_feature):
+    """
+    Test unary operation inherits event_data_ids
+    """
+    new_feature = float_feature.isnull()
+    assert new_feature.event_data_ids == float_feature.event_data_ids
