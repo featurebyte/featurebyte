@@ -11,9 +11,6 @@ import time
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 
-if TYPE_CHECKING:
-    from featurebyte.api.feature import Feature
-
 from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import SpecialColumnName
@@ -28,6 +25,9 @@ from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import SnowflakeTileCache
+
+if TYPE_CHECKING:
+    from featurebyte.api.feature import Feature
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
