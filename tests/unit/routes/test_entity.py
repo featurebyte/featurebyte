@@ -61,9 +61,10 @@ def test_create_201(create_success_response):
     result = create_success_response.json()
 
     # check response
-    _ = ObjectId(result.pop("_id"))  # valid ObjectId
-    assert result.pop("user_id") is None
-    assert datetime.fromisoformat(result.pop("created_at")) < utcnow
+    _ = ObjectId(result["_id"])  # valid ObjectId
+    assert result["user_id"] is None
+    assert datetime.fromisoformat(result["created_at"]) < utcnow
+    assert result["updated_at"] is None
 
 
 def test_create_409(create_success_response, test_api_client_persistent, entity_dict):
@@ -154,6 +155,7 @@ def test_get_200(create_success_response, test_api_client_persistent):
     created_entity = create_success_response.json()
     entity_id = created_entity["_id"]
     response = test_api_client.get(f"/entity/{entity_id}")
+    assert response.status_code == HTTPStatus.OK
     response_data = response.json()
     response_data.pop("created_at")
     response_data.pop("updated_at")

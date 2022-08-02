@@ -69,7 +69,7 @@ class FeatureStoreController(BaseController[FeatureStoreModel, FeatureStoreList]
         if conflict_feature_store:
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=f'FeatureStore (feature_store.id: "{data.id}") already exists.',
+                detail=f'FeatureStore id (feature_store.id: "{data.id}") already exists.',
             )
 
         # check name conflict
@@ -79,7 +79,7 @@ class FeatureStoreController(BaseController[FeatureStoreModel, FeatureStoreList]
         if conflict_feature_store:
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=f'FeatureStore (feature_store.name: "{data.name}") already exists.',
+                detail=f'FeatureStore name (feature_store.name: "{data.name}") already exists.',
             )
 
         insert_id = await persistent.insert_one(
