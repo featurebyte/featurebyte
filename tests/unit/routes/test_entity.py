@@ -183,7 +183,6 @@ def test_get_404(test_api_client_persistent):
     }
 
 
-@freeze_time("2022-07-01")
 def test_update_200(create_success_response, test_api_client_persistent):
     """
     Test entity update (success)
@@ -196,7 +195,7 @@ def test_update_200(create_success_response, test_api_client_persistent):
     result = response.json()
 
     assert result["name"] == "Customer"
-    assert result["name_history"] == [{"created_at": "2022-07-01T00:00:00", "name": "customer"}]
+    assert result["name_history"] == [{"created_at": result["updated_at"], "name": "customer"}]
     for key in result.keys():
         if key not in {"name", "name_history", "updated_at"}:
             assert result[key] == response_dict[key]
@@ -205,6 +204,24 @@ def test_update_200(create_success_response, test_api_client_persistent):
     response = test_api_client.patch(f"/entity/{entity_id}", json={"name": "Customer"})
     assert response.status_code == HTTPStatus.OK
     assert response.json() == result
+
+    # test get audit records
+    response = test_api_client.get(f"/entity/audit/{entity_id}")
+    assert response.status_code == HTTPStatus.OK
+    results = response.json()
+    print(results)
+    assert results["total"] == 2
+    assert [record["action_type"] for record in results["data"]] == ["UPDATE", "INSERT"]
+    assert [record["previous_values"].get("name") for record in results["data"]] == [
+        "customer",
+        None,
+    ]
+
+    # test get default_feature_job_setting_history
+    response = test_api_client.get(f"/entity/history/name/{entity_id}")
+    assert response.status_code == HTTPStatus.OK
+    results = response.json()
+    assert [doc["name"] for doc in results] == ["Customer", "customer"]
 
 
 def test_update_404(test_api_client_persistent):
@@ -251,3 +268,38 @@ def test_update_422(test_api_client_persistent):
             }
         ]
     }
+
+
+def tests_get_name_history(test_api_client_persistent, create_success_response):
+    """
+    Test retrieve name history
+    """
+    test_api_client, _ = test_api_client_persistent
+    response_dict = create_success_response.json()
+    document_id = response_dict["_id"]
+    expected_history = [
+        {
+            "created_at": response_dict["created_at"],
+            "name": response_dict["name"],
+        }
+    ]
+
+    for name in ["a", "b", "c", "d", "e"]:
+        response = test_api_client.patch(
+            f"/entity/{document_id}",
+            json={"name": name},
+        )
+        assert response.status_code == HTTPStatus.OK
+        update_response_dict = response.json()
+        expected_history.append(
+            {
+                "created_at": update_response_dict["updated_at"],
+                "name": name,
+            }
+        )
+
+    # test get default_feature_job_setting_history
+    response = test_api_client.get(f"/entity/history/name/{document_id}")
+    assert response.status_code == HTTPStatus.OK
+    results = response.json()
+    assert list(reversed(results)) == expected_history

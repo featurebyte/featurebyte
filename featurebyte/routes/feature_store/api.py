@@ -7,9 +7,11 @@ from typing import Literal, Optional
 
 from http import HTTPStatus
 
+from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
 
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreList
 
 router = APIRouter(prefix="/feature_store")
@@ -67,3 +69,29 @@ async def list_feature_stores(
         name=name,
     )
     return feature_store_list
+
+
+@router.get("/audit/{feature_store_id}", response_model=AuditDocumentList)
+async def list_entity_audit_logs(
+    request: Request,
+    feature_store_id: PydanticObjectId,
+    page: int = 1,
+    page_size: int = 10,
+    sort_by: Optional[str] = "_id",
+    sort_dir: Literal["asc", "desc"] = "desc",
+    search: Optional[str] = None,
+) -> AuditDocumentList:
+    """
+    List Feature Store audit logs
+    """
+    audit_doc_list: AuditDocumentList = await request.state.controller.list_audit(
+        user=request.state.user,
+        persistent=request.state.persistent,
+        document_id=feature_store_id,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        search=search,
+    )
+    return audit_doc_list
