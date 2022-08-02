@@ -21,6 +21,7 @@ from featurebyte.query_graph.sql import (
     TableNode,
     handle_groupby_node,
     make_binary_operation_node,
+    make_conditional_node,
     make_filter_node,
     make_input_node,
     make_project_node,
@@ -126,13 +127,18 @@ class SQLOperationGraph:
         elif node_type == NodeType.ALIAS:
             expr_node = input_sql_nodes[0]
             assert isinstance(expr_node, ExpressionNode)
-            sql_node = AliasNode(name=parameters["name"], expr_node=expr_node)
+            sql_node = AliasNode(
+                table_node=expr_node.table_node, name=parameters["name"], expr_node=expr_node
+            )
 
         elif node_type in BINARY_OPERATION_NODE_TYPES:
             sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)
 
         elif node_type == NodeType.FILTER:
             sql_node = make_filter_node(input_sql_nodes, output_type)
+
+        elif node_type == NodeType.CONDITIONAL:
+            sql_node = make_conditional_node(input_sql_nodes, cur_node)
 
         elif node_type == NodeType.GROUPBY:
             sql_node = handle_groupby_node(

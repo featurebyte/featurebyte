@@ -329,15 +329,17 @@ class Project(ExpressionNode):
     def sql(self) -> Expression:
         return self.table_node.get_column_expr(self.column_name)
 
+    @property
+    def sql_standalone(self) -> Expression:
+        # This is overridden to bypass self.sql - the column expression would have been evaluated in
+        # self.table_node.sql_nested already, and the expression must not be evaluated again.
+        # Instead, simply select the column name from the nested query.
+        return select(escape_column_name(self.column_name)).from_(self.table_node.sql_nested())
+
 
 @dataclass
-class AliasNode(SQLNode):
-    """Alias node that represents assignment to FeatureGroup
-
-    Note that this intentionally does not inherit from ExpressionNode. This node only arises from
-    assignment to FeatureGroup and is not expected to support the sql_standalone property, so
-    table_node is not required.
-    """
+class AliasNode(ExpressionNode):
+    """Alias node that represents assignment to FeatureGroup"""
 
     name: str
     expr_node: ExpressionNode
@@ -394,6 +396,21 @@ class FilteredSeries(ExpressionNode):
         pre_filter_sql = super().sql_standalone
         assert isinstance(pre_filter_sql, expressions.Select)
         return pre_filter_sql.where(self.mask.sql)
+
+
+@dataclass
+class Conditional(ExpressionNode):
+    """Conditional node"""
+
+    series_node: ExpressionNode
+    mask: ExpressionNode
+    value: Any
+
+    @property
+    def sql(self) -> Expression:
+        if_expr = expressions.If(this=self.mask.sql, true=make_literal_value(self.value))
+        expr = expressions.Case(ifs=[if_expr], default=self.series_node.sql)
+        return expr
 
 
 @dataclass
@@ -804,4 +821,34 @@ def handle_groupby_node(
         sql_node = make_aggregated_tiles_node(groupby_node)
     else:
         raise NotImplementedError(f"SQLNode not implemented for {groupby_node}")
+    return sql_node
+
+
+def make_conditional_node(input_sql_nodes: list[SQLNode], node: Node) -> Conditional:
+    """Create a Conditional node
+
+    Parameters
+    ----------
+    input_sql_nodes : list[SQLNode]
+        Input SQL nodes
+    node : Node
+        Query graph node
+
+    Returns
+    -------
+    Conditional
+    """
+    assert len(input_sql_nodes) == 2
+    parameters = node.parameters
+
+    series_node = input_sql_nodes[0]
+    mask = input_sql_nodes[1]
+    value = parameters["value"]
+    assert isinstance(series_node, ExpressionNode)
+    assert isinstance(mask, ExpressionNode)
+    input_table_node = series_node.table_node
+
+    sql_node = Conditional(
+        table_node=input_table_node, series_node=series_node, mask=mask, value=value
+    )
     return sql_node

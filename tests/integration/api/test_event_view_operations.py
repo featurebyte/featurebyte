@@ -197,6 +197,8 @@ def test_query_object_operation_on_snowflake_source(
         "Unnamed": Decimal("0.111111"),
     }
 
+    run_test_conditional_assign_feature(config, feature_group)
+
     # assign new feature and preview again
     feature_group["COUNT_2h / COUNT_24h"] = new_feature
     df_feature_preview = feature_group.preview(
@@ -216,6 +218,52 @@ def test_query_object_operation_on_snowflake_source(
     check_feature_and_remove_registry(special_feature, feature_manager)
 
     run_and_test_get_historical_features(config, feature_group, feature_group_per_category)
+
+
+def get_feature_preview_as_dict(obj, preview_param, config):
+    df_feature_preview = obj.preview(preview_param, credentials=config.credentials)
+    assert df_feature_preview.shape[0] == 1
+    return df_feature_preview.iloc[0].to_dict()
+
+
+def run_test_conditional_assign_feature(config, feature_group):
+    """
+    Test conditional assignment operations on Feature
+    """
+    feature_count_24h = feature_group["COUNT_24h"]
+    preview_param = {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "UID": 1,
+    }
+    result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
+    assert result == {**preview_param, "COUNT_24h": 9}
+
+    # Assign feature conditionally. Should be reflected in both Feature and FeatureGroup
+    mask = feature_count_24h == 9.0
+    feature_count_24h[mask] = 900
+    result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
+    assert result == {**preview_param, "COUNT_24h": 900}
+    result = get_feature_preview_as_dict(feature_group, preview_param, config)
+    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 900}
+
+    # Assign conditionally again (revert the above). Should be reflected in both Feature and
+    # FeatureGroup
+    mask = feature_count_24h == 900.0
+    feature_count_24h[mask] = 9
+    result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
+    assert result == {**preview_param, "COUNT_24h": 9}
+    result = get_feature_preview_as_dict(feature_group, preview_param, config)
+    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 9}
+
+    # Assign to an unnamed Feature conditionally. Should not be reflected in Feature only and has no
+    # effect on FeatureGroup
+    temp_feature = feature_count_24h * 10
+    mask = temp_feature == 90.0
+    temp_feature[mask] = 900
+    result = get_feature_preview_as_dict(temp_feature, preview_param, config)
+    assert result == {**preview_param, "Unnamed": 900}
+    result = get_feature_preview_as_dict(feature_group, preview_param, config)
+    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 9}
 
 
 def run_and_test_get_historical_features(config, feature_group, feature_group_per_category):

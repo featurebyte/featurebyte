@@ -99,12 +99,23 @@ class Series(QueryObject, OpsMixin, ParentMixin):
                 raise TypeError("Only boolean Series filtering is supported!")
             if not self._is_assignment_valid(self.var_type, value):
                 raise ValueError(f"Setting key '{key}' with value '{value}' not supported!")
+
             self.node = self.graph.add_operation(
-                node_type=NodeType.COND_ASSIGN,
+                node_type=NodeType.CONDITIONAL,
                 node_params={"value": value},
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[self.node, key.node],
             )
+
+            # For Series with a parent, apply the change to the parent (either an EventView or a
+            # FeatureGroup)
+            if self.parent is not None:
+                # Update the EventView column / Feature by doing an assign operation
+                self.parent[self.name] = self
+                # Update the current node as a PROJECT / ALIAS from the parent. This is to allow
+                # readable column name during series preview
+                self.node = self.parent[self.name].node
+
             self.lineage = self._append_to_lineage(self.lineage, self.node.name)
         else:
             raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")

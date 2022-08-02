@@ -14,7 +14,6 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.models.feature import FeatureReadiness
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
@@ -59,9 +58,52 @@ def test_feature__bool_series_key_scalar_value(float_feature, bool_feature):
     """
     float_feature[bool_feature] = 10
     assert float_feature.node.dict(exclude={"name": True}) == {
-        "type": NodeType.COND_ASSIGN,
+        "type": "alias",
+        "parameters": {"name": "sum_1d"},
+        "output_type": "series",
+    }
+    float_feature_dict = float_feature.dict()
+    assert float_feature_dict["graph"]["nodes"]["conditional_1"] == {
+        "name": "conditional_1",
+        "type": "conditional",
         "parameters": {"value": 10},
-        "output_type": NodeOutputType.SERIES,
+        "output_type": "series",
+    }
+    assert float_feature_dict["graph"]["backward_edges"] == {
+        "groupby_1": ["input_1"],
+        "project_1": ["groupby_1"],
+        "gt_1": ["project_1"],
+        "conditional_1": ["project_1", "gt_1"],
+        "alias_1": ["conditional_1"],
+    }
+
+
+def test_feature__cond_assign_unnamed(float_feature, bool_feature):
+    """
+    Test Feature conditional assignment on unnamed Feature
+    """
+    temp_feature = float_feature + 123.0
+    temp_feature[bool_feature] = 0.0
+    temp_feature_dict = temp_feature.dict()
+    assert temp_feature_dict["node"] == {
+        "name": "conditional_1",
+        "output_type": "series",
+        "parameters": {"value": 0.0},
+        "type": "conditional",
+    }
+    assert temp_feature_dict["graph"]["nodes"]["conditional_1"] == {
+        "name": "conditional_1",
+        "output_type": "series",
+        "parameters": {"value": 0.0},
+        "type": "conditional",
+    }
+    # No assignment occurred
+    assert temp_feature_dict["graph"]["backward_edges"] == {
+        "add_1": ["project_1"],
+        "conditional_1": ["add_1", "gt_1"],
+        "groupby_1": ["input_1"],
+        "gt_1": ["project_1"],
+        "project_1": ["groupby_1"],
     }
 
 

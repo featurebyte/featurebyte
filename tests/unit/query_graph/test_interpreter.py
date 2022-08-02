@@ -807,3 +807,77 @@ def test_project_multi_then_assign(graph, node_input):
         """
     ).strip()
     assert sql_code == expected
+
+
+def test_conditional_assign__project_named(graph, node_input):
+    """Test graph with conditional assign operation"""
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    mask_node = graph.add_operation(
+        node_type=NodeType.EQ,
+        node_params={"value": -999},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a],
+    )
+    conditional_node = graph.add_operation(
+        node_type=NodeType.CONDITIONAL,
+        node_params={"value": 0},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[proj_a, mask_node],
+    )
+    assign_node = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "a"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, conditional_node],
+    )
+    projected_conditional = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[assign_node],
+    )
+
+    interpreter = GraphInterpreter(graph)
+    sql_code = interpreter.construct_preview_sql(projected_conditional.name)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "a"
+        FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              CASE
+                WHEN ("a" = -999) THEN 0
+                ELSE "a"
+              END AS "a",
+              "b" AS "b"
+            FROM "db"."public"."event_table"
+        )
+        LIMIT 10
+        """
+    ).strip()
+    assert sql_code == expected
+
+    interpreter = GraphInterpreter(graph)
+    sql_code = interpreter.construct_preview_sql(assign_node.name)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          CASE
+            WHEN ("a" = -999) THEN 0
+            ELSE "a"
+          END AS "a",
+          "b" AS "b"
+        FROM "db"."public"."event_table"
+        LIMIT 10
+        """
+    ).strip()
+    assert sql_code == expected
