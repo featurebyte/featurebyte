@@ -58,23 +58,22 @@ class EntityController(BaseController[EntityModel, EntityList]):
         """
         document = EntityModel(serving_names=[data.serving_name], **data.json_dict())
 
-        conflict_entity = await persistent.find_one(
-            collection_name=cls.collection_name, query_filter={"name": data.name}
-        )
-        if conflict_entity:
-            raise HTTPException(
-                status_code=HTTPStatus.CONFLICT,
-                detail=f'Entity name (entity.name: "{data.name}") already exists.',
-            )
-
-        conflict_entity = await persistent.find_one(
-            collection_name=cls.collection_name,
-            query_filter={"serving_names": document.serving_names},
-        )
-        if conflict_entity:
-            raise HTTPException(
-                status_code=HTTPStatus.CONFLICT,
-                detail=f'Entity serving name (entity.serving_names: "{data.serving_name}") already exists.',
+        # check any conflict with existing documents
+        constraints_check_triples = [
+            ({"_id": data.id}, {"id": data.id}, "name"),
+            ({"name": data.name}, {"name": data.name}, "name"),
+            (
+                {"serving_names": document.serving_names},
+                {"serving_name": data.serving_name},
+                "name",
+            ),
+        ]
+        for query_filter, doc_represent, get_type in constraints_check_triples:
+            await cls.check_document_creation_conflict(
+                persistent=persistent,
+                query_filter=query_filter,
+                doc_represent=doc_represent,
+                get_type=get_type,
             )
 
         insert_id = await persistent.insert_one(

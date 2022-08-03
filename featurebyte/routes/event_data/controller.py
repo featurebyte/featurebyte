@@ -87,6 +87,19 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
         else:
             history = []
 
+        # check any conflict with existing documents
+        constraints_check_triples = [
+            ({"_id": data.id}, {"id": data.id}, "name"),
+            ({"name": data.name}, {"name": data.name}, "name"),
+        ]
+        for query_filter, doc_represent, get_type in constraints_check_triples:
+            await cls.check_document_creation_conflict(
+                persistent=persistent,
+                query_filter=query_filter,
+                doc_represent=doc_represent,
+                get_type=get_type,
+            )
+
         document = EventDataModel(
             user_id=user.id,
             status=EventDataStatus.DRAFT,

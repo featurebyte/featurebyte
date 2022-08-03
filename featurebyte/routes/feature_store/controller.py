@@ -57,24 +57,17 @@ class FeatureStoreController(BaseController[FeatureStoreModel, FeatureStoreList]
 
         document = FeatureStoreModel(**data.json_dict(), user_id=user.id)
 
-        # check id conflict
-        conflict_feature_store = await persistent.find_one(
-            collection_name=cls.collection_name, query_filter={"_id": data.id}
-        )
-        if conflict_feature_store:
-            raise HTTPException(
-                status_code=HTTPStatus.CONFLICT,
-                detail=f'FeatureStore id (feature_store.id: "{data.id}") already exists.',
-            )
-
-        # check name conflict
-        conflict_feature_store = await persistent.find_one(
-            collection_name=cls.collection_name, query_filter={"name": data.name}
-        )
-        if conflict_feature_store:
-            raise HTTPException(
-                status_code=HTTPStatus.CONFLICT,
-                detail=f'FeatureStore name (feature_store.name: "{data.name}") already exists.',
+        # check any conflict with existing documents
+        constraints_check_triples = [
+            ({"_id": data.id}, {"id": data.id}, "name"),
+            ({"name": data.name}, {"name": data.name}, "name"),
+        ]
+        for query_filter, doc_represent, get_type in constraints_check_triples:
+            await cls.check_document_creation_conflict(
+                persistent=persistent,
+                query_filter=query_filter,
+                doc_represent=doc_represent,
+                get_type=get_type,
             )
 
         insert_id = await persistent.insert_one(

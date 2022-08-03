@@ -118,12 +118,18 @@ def test_create_fails_table_exists(
     Create Event Data fails if table with same name already exists
     """
     _ = event_data_response
+    event_data_model_dict["_id"] = str(ObjectId())
     test_api_client, _ = test_api_client_persistent
     response = test_api_client.post(
         "/event_data", json=EventDataModel(**event_data_model_dict).json_dict()
     )
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'EventData (event_data.name: "订单表") already exists.'}
+    assert response.json() == {
+        "detail": (
+            'EventData (name: "订单表") already exists. '
+            'Get the existing object with the same name by `EventData.get(name="订单表")`.'
+        )
+    }
 
 
 def test_create_fails_table_exists_during_insert(

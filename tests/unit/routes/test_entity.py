@@ -73,15 +73,34 @@ def test_create_409(create_success_response, test_api_client_persistent, entity_
     """
     test_api_client, _ = test_api_client_persistent
     _ = create_success_response
+
     response = test_api_client.post("/entity", json=entity_dict)
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'Entity name (entity.name: "customer") already exists.'}
+    assert response.json() == {
+        "detail": (
+            f'Entity (id: "{entity_dict["_id"]}") already exists. '
+            'Get the existing object with the same id by `Entity.get(name="customer")`.'
+        )
+    }
+
+    entity_dict["_id"] = str(ObjectId())
+    response = test_api_client.post("/entity", json=entity_dict)
+    assert response.status_code == HTTPStatus.CONFLICT
+    assert response.json() == {
+        "detail": (
+            'Entity (name: "customer") already exists. '
+            'Get the existing object with the same name by `Entity.get(name="customer")`.'
+        )
+    }
 
     entity_dict["name"] = "Customer"
     response = test_api_client.post("/entity", json=entity_dict)
     assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {
-        "detail": 'Entity serving name (entity.serving_names: "cust_id") already exists.'
+        "detail": (
+            'Entity (serving_name: "cust_id") already exists. '
+            'Get the existing object with the same serving_name by `Entity.get(name="customer")`.'
+        )
     }
 
 

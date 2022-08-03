@@ -57,6 +57,43 @@ class BaseController(Generic[Document, PaginatedDocument]):
         return cls.collection_name
 
     @classmethod
+    def _format_document(cls, doc: dict[str, Any]) -> str:
+        return ", ".join(f'{key}: "{value}"' for key, value in doc.items())
+
+    @classmethod
+    def _format_document_keys(cls, doc: dict[str, Any]) -> str:
+        keys = tuple(doc.keys())
+        if len(keys) == 1:
+            return str(keys[0])
+        return f'({", ".join(str(key) for key in keys)})'
+
+    @classmethod
+    async def check_document_creation_conflict(
+        cls,
+        persistent: Persistent,
+        query_filter: dict[str, Any],
+        doc_represent: dict[str, Any],
+        get_type: Literal["id", "name"] = "id",
+    ):
+        conflict_doc = await persistent.find_one(
+            collection_name=cls.collection_name, query_filter=query_filter
+        )
+        if conflict_doc:
+            get_type_map = {
+                "id": f'{cls.class_name()}.get_by_id(id="{conflict_doc["_id"]}")',
+                "name": f'{cls.class_name()}.get(name="{conflict_doc["name"]}")',
+            }
+            get_statement = get_type_map[get_type]
+            raise HTTPException(
+                status_code=HTTPStatus.CONFLICT,
+                detail=(
+                    f"{cls.class_name()} ({cls._format_document(doc_represent)}) already exists. "
+                    f"Get the existing object with the same {cls._format_document_keys(doc_represent)} by "
+                    f"`{get_statement}`."
+                ),
+            )
+
+    @classmethod
     async def get(
         cls,
         user: Any,

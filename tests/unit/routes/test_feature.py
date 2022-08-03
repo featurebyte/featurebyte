@@ -188,7 +188,10 @@ def test_create_409(
     feature_id = feature_model_dict.pop("_id")
     assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {
-        "detail": f'Feature (feature.id: "{feature_id}") has been saved before.'
+        "detail": (
+            f'Feature (id: "{feature_id}") already exists. '
+            f'Get the existing object with the same id by `Feature.get_by_id(id="{feature_id}")`.'
+        )
     }
 
     feature_model_dict["_id"] = str(ObjectId())

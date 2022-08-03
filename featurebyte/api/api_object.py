@@ -7,6 +7,8 @@ from typing import Any
 
 from http import HTTPStatus
 
+from bson.objectid import ObjectId
+
 from featurebyte.config import Configurations
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.exception import (
@@ -108,6 +110,27 @@ class ApiObject(FeatureByteBaseModel):
             raise RecordRetrievalException(
                 response, f'{class_name} ({object_name}.name: "{name}") not found!'
             )
+        raise RecordRetrievalException(response, "Failed to retrieve specified object!")
+
+    @classmethod
+    def get_by_id(cls, id: ObjectId) -> ApiObject:
+        """
+        Get the API object by specifying the object ID
+
+        Parameters
+        ----------
+        id: ObjectId
+            Object ID value
+
+        Returns
+        -------
+        ApiObject
+            ApiObject object of the given object ID
+        """
+        client = Configurations().get_client()
+        response = client.get(url=f"{cls._route}/{id}")
+        if response.status_code == HTTPStatus.OK:
+            return cls(**response.json())
         raise RecordRetrievalException(response, "Failed to retrieve specified object!")
 
     @classmethod

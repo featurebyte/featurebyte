@@ -265,7 +265,10 @@ def test_feature_save__exception_due_to_feature_saved_before(float_feature, save
     _ = saved_feature
     with pytest.raises(DuplicatedRecordException) as exc:
         float_feature.save()
-    expected_msg = f'Feature (feature.id: "{float_feature.id}") has been saved before.'
+    expected_msg = (
+        f'Feature (id: "{float_feature.id}") already exists. '
+        f'Get the existing object with the same id by `Feature.get_by_id(id="{float_feature.id}")`.'
+    )
     assert expected_msg in str(exc.value)
 
 

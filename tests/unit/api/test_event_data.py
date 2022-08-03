@@ -274,10 +274,11 @@ def test_event_data__save__exceptions(saved_event_data):
     with pytest.raises(DuplicatedRecordException) as exc:
         saved_event_data.save()
     assert exc.value.status_code == 409
-    assert (
-        exc.value.response.json()["detail"]
-        == 'EventData (event_data.name: "sf_event_data") already exists.'
+    expected_msg = (
+        f'EventData (id: "{saved_event_data.id}") already exists. '
+        'Get the existing object with the same id by `EventData.get(name="sf_event_data")`.'
     )
+    assert exc.value.response.json()["detail"] == expected_msg
 
     # check unhandled response status code
     with pytest.raises(RecordCreationException):

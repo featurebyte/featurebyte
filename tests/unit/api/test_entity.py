@@ -76,11 +76,19 @@ def test_entity_creation(entity):
 
     with pytest.raises(DuplicatedRecordException) as exc:
         Entity(name="customer", serving_names=["customer_id"]).save()
-    assert 'Entity name (entity.name: "customer") already exists.' in str(exc.value)
+    expected_msg = (
+        'Entity (name: "customer") already exists. '
+        'Get the existing object with the same name by `Entity.get(name="customer")`.'
+    )
+    assert expected_msg in str(exc.value)
 
     with pytest.raises(DuplicatedRecordException) as exc:
         Entity(name="Customer", serving_names=["cust_id"]).save()
-    assert 'Entity serving name (entity.serving_names: "cust_id") already exists.' in str(exc.value)
+    expected_msg = (
+        'Entity (serving_name: "cust_id") already exists. '
+        'Get the existing object with the same serving_name by `Entity.get(name="customer")`.'
+    )
+    assert expected_msg in str(exc.value)
 
     with mock.patch("featurebyte.api.api_object.Configurations"):
         with pytest.raises(RecordCreationException):
