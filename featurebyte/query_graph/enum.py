@@ -39,7 +39,6 @@ class NodeType(str, Enum):
     CONDITIONAL = "conditional"
     ALIAS = "alias"
     IS_NULL = "is_null"
-    NOT_NULL = "is_not_null"
 
     # operations with side effect
     INPUT = "input"
