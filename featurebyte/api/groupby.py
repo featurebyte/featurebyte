@@ -248,6 +248,8 @@ class EventViewGroupBy(OpsMixin):
         feature_group = FeatureGroup(items)
         for name in feature_group.feature_names:
             if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.category is None:
-                feature_group[name].fillna(0)
+                feature = feature_group[name]
+                assert isinstance(feature, Feature)
+                feature.fillna(0)
 
         return feature_group
