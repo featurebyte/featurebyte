@@ -7,7 +7,7 @@ EXECUTABLES = poetry git
 .PHONY: update update-main update-dev update-lint update-docs
 .PHONY: format
 .PHONY: lint lint-style lint-type lint-safety
-.PHONY: test
+.PHONY: test test-setup test-teardown
 .PHONY: docs
 .PHONY: clean
 
@@ -87,12 +87,19 @@ lint-safety:
 	@poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing
-test:
+test: test-setup
 	@poetry run coverage run -m pytest -c pyproject.toml --timeout=120 --junitxml=pytest.xml tests featurebyte | tee pytest-coverage.txt
 	# Hack to support github-coverage action
 	@echo "coverage: platform" >> pytest-coverage.txt
 
 	@poetry run coverage report -m | tee -a pytest-coverage.txt
+	${MAKE} test-teardown
+
+test-setup:
+	cd .github/mongoreplicaset && ./startdb.sh
+
+test-teardown:
+	cd .github/mongoreplicaset && docker-compose down
 
 #* Docs Generation
 docs:
