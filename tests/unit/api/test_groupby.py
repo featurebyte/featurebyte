@@ -6,6 +6,7 @@ import pytest
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.groupby import EventViewGroupBy
+from featurebyte.query_graph.enum import NodeType
 
 
 @pytest.mark.parametrize(
@@ -238,3 +239,27 @@ def test_groupby__category(snowflake_event_view):
         "value_by": "col_int",
         "serving_names": ["cust_id"],
     }
+
+
+@pytest.mark.parametrize("method", ["count", "na_count"])
+@pytest.mark.parametrize("category", [None, "col_int"])
+def test_groupby__count_features(snowflake_event_view, method, category):
+    """
+    Test count features have fillna transform applied
+    """
+    Entity(name="customer", serving_names=["cust_id"]).save()
+    snowflake_event_view.cust_id.as_entity("customer")
+    feature_group = snowflake_event_view.groupby("cust_id", category=category).aggregate(
+        value_column="col_float",
+        method=method,
+        windows=["30m", "1h", "2h"],
+        feature_names=["feat_30m", "feat_1h", "feat_2h"],
+        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+    )
+    feature = feature_group["feat_30m"]
+    feature_dict = feature.dict()
+    if category is None:
+        # node type changes to ALIAS because of fillna
+        assert feature_dict["node"]["type"] == NodeType.ALIAS
+    else:
+        assert feature_dict["node"]["type"] == NodeType.PROJECT

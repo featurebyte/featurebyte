@@ -120,6 +120,7 @@ def test_aggregation(
         ("max", "max_24h", lambda x: x.max()),
         ("sum", "sum_24h", sum_func),
         ("count", "count_24h", lambda x: len(x)),
+        ("na_count", "na_count_24h", lambda x: x.isnull().sum()),
     ]
 
     event_view = EventView.from_event_data(event_data)
