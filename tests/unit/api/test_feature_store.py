@@ -147,6 +147,7 @@ def test_get(saved_snowflake_feature_store):
     """
     loaded_feature_store = FeatureStore.get(saved_snowflake_feature_store.name)
     assert loaded_feature_store == saved_snowflake_feature_store
+    assert FeatureStore.get_by_id(saved_snowflake_feature_store.id) == saved_snowflake_feature_store
 
 
 def test_get__unexpected_retrieval_exception():

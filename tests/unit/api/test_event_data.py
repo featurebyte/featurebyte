@@ -445,6 +445,7 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
     # load the event data from the persistent
     loaded_event_data = EventData.get(snowflake_event_data.name)
     assert loaded_event_data == snowflake_event_data
+    assert EventData.get_by_id(id=snowflake_event_data.id) == snowflake_event_data
 
     with pytest.raises(RecordRetrievalException) as exc:
         EventData.get("unknown_event_data")

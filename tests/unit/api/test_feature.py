@@ -333,6 +333,7 @@ def test_get_feature(saved_feature):
     """
     feature = Feature.get(name=saved_feature.name)
     assert feature.dict() == saved_feature.dict()
+    assert Feature.get_by_id(feature.id) == feature
 
     with pytest.raises(RecordRetrievalException) as exc:
         Feature.get(name="random_name")

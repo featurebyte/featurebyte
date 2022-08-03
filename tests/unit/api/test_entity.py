@@ -141,10 +141,11 @@ def test_get_entity():
     region_entity.save()
 
     # load the entities from the persistent
-    excluded = {"created_at": True, "updated_at": True}
-    assert Entity.get("customer").dict(exclude=excluded) == cust_entity.dict(exclude=excluded)
-    assert Entity.get("product").dict(exclude=excluded) == prod_entity.dict(exclude=excluded)
-    assert Entity.get("region").dict(exclude=excluded) == region_entity.dict(exclude=excluded)
+    exclude = {"created_at": True, "updated_at": True}
+    assert Entity.get("customer").dict(exclude=exclude) == cust_entity.dict(exclude=exclude)
+    assert Entity.get("product").dict(exclude=exclude) == prod_entity.dict(exclude=exclude)
+    assert Entity.get("region").dict(exclude=exclude) == region_entity.dict(exclude=exclude)
+    assert Entity.get_by_id(id=cust_entity.id) == cust_entity
 
     # test unexpected retrieval exception for Entity.get
     with mock.patch("featurebyte.api.api_object.Configurations"):

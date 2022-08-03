@@ -135,7 +135,19 @@ class ApiObject(FeatureByteBaseModel):
         client = Configurations().get_client()
         response = client.get(url=f"{cls._route}/{id}")
         if response.status_code == HTTPStatus.OK:
-            return cls(**response.json())
+            response_dict = response.json()
+            tabular_source = response_dict.get("tabular_source")
+            if tabular_source:
+                feature_store_id, _ = tabular_source
+                feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
+                if feature_store_response.status_code == HTTPStatus.OK:
+                    feature_store = ExtendedFeatureStoreModel(**feature_store_response.json())
+                    return cls(**response_dict, feature_store=feature_store)
+                raise RecordRetrievalException(
+                    response,
+                    f'FeatureStore (feature_store.id: "{feature_store_id}") not found!',
+                )
+            return cls(**response_dict)
         raise RecordRetrievalException(response, "Failed to retrieve specified object!")
 
     @classmethod
