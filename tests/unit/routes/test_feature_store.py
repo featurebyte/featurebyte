@@ -38,7 +38,7 @@ def create_success_response_fixture(
     return response
 
 
-def test_create_201(create_success_response):
+def test_create_201(create_success_response, test_api_client_persistent):
     """
     Test feature store creation (success)
     """
@@ -47,10 +47,20 @@ def test_create_201(create_success_response):
     result = create_success_response.json()
 
     # check response
-    _ = ObjectId(result["_id"])  # valid ObjectId
+    feature_store_id = ObjectId(result["_id"])  # valid ObjectId
     assert result["user_id"] is None
     assert datetime.fromisoformat(result["created_at"]) < utcnow
     assert result["updated_at"] is None
+
+    # test get audit records
+    test_api_client, _ = test_api_client_persistent
+    response = test_api_client.get(f"/feature_store/audit/{feature_store_id}")
+    assert response.status_code == HTTPStatus.OK
+    results = response.json()
+    print(results)
+    assert results["total"] == 1
+    assert [record["action_type"] for record in results["data"]] == ["INSERT"]
+    assert [record["previous_values"] for record in results["data"]] == [{}]
 
 
 def test_create_409(create_success_response, test_api_client_persistent, feature_store_dict):

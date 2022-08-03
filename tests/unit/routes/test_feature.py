@@ -163,6 +163,15 @@ async def test_create_201(
     assert feat_namespace_docs[0]["created_at"] > created_at
     assert feat_namespace_docs[0]["updated_at"] > feat_namespace_docs[0]["created_at"]
 
+    # test get audit records
+    response = test_api_client.get(f"/feature/audit/{feature_id}")
+    assert response.status_code == HTTPStatus.OK
+    results = response.json()
+    print(results)
+    assert results["total"] == 1
+    assert [record["action_type"] for record in results["data"]] == ["INSERT"]
+    assert [record["previous_values"] for record in results["data"]] == [{}]
+
 
 def test_create_409(
     create_success_response, test_api_client_persistent, feature_model_dict, snowflake_event_data

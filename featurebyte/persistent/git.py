@@ -25,6 +25,7 @@ import tempfile
 import uuid
 from contextlib import asynccontextmanager
 from enum import Enum
+from operator import itemgetter
 
 from bson import json_util
 from bson.objectid import ObjectId
@@ -861,7 +862,7 @@ class GitDB(Persistent):
 
         docs = sorted(
             docs,
-            key=lambda doc: str(doc[sort_col]),
+            key=itemgetter(sort_col, "_id"),
             reverse=sort_dir == "desc",
         )
 

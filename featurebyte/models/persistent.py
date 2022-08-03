@@ -1,7 +1,7 @@
 """
 Pydantic Model for persistent storage
 """
-from typing import Any, Dict, Mapping, MutableMapping, Optional
+from typing import Any, Dict, List, Mapping, MutableMapping, Optional
 
 from datetime import datetime
 from enum import Enum
@@ -11,6 +11,7 @@ from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.routes.common.util import get_utc_now
 
 Document = MutableMapping[str, Any]
@@ -50,3 +51,20 @@ class AuditDocument(FeatureByteBaseModel):
     action_at: datetime = Field(default_factory=get_utc_now)
     action_type: AuditActionType
     previous_values: Dict[str, Any]
+
+
+class AuditDocumentList(PaginationMixin):
+    """
+    Paginated list of Event Data
+    """
+
+    data: List[AuditDocument]
+
+
+class FieldValueHistory(FeatureByteBaseModel):
+    """
+    Field value history
+    """
+
+    created_at: datetime
+    value: Any

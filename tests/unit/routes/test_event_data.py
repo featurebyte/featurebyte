@@ -301,6 +301,25 @@ def test_update_success(
     assert new_history[1:] == previous_history
     assert new_history[0]["setting"] == event_data_update_dict["default_feature_job_setting"]
 
+    # test get audit records
+    response = test_api_client.get(f"/event_data/audit/{insert_id}")
+    assert response.status_code == HTTPStatus.OK
+    results = response.json()
+    assert results["total"] == 2
+    assert [record["action_type"] for record in results["data"]] == ["UPDATE", "INSERT"]
+    assert [
+        record["previous_values"].get("default_feature_job_setting") for record in results["data"]
+    ] == [{"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"}, None]
+
+    # test get default_feature_job_setting_history
+    response = test_api_client.get(f"/event_data/history/default_feature_job_setting/{insert_id}")
+    assert response.status_code == HTTPStatus.OK
+    results = response.json()
+    assert [doc["setting"] for doc in results] == [
+        {"blind_spot": "12m", "frequency": "30m", "time_modulo_frequency": "5m"},
+        {"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"},
+    ]
+
 
 def test_update_fails_table_not_found(test_api_client_persistent, event_data_update_dict):
     """
@@ -401,3 +420,55 @@ def test_update_status_only(test_api_client_persistent, event_data_response):
 
     # the other fields should be unchanged
     assert updated_data == current_data
+
+    # test get audit records
+    response = test_api_client.get(f"/event_data/audit/{current_data['_id']}")
+    assert response.status_code == HTTPStatus.OK
+    results = response.json()
+    assert results["total"] == 2
+    assert [record["action_type"] for record in results["data"]] == ["UPDATE", "INSERT"]
+    assert [record["previous_values"].get("status") for record in results["data"]] == [
+        "DRAFT",
+        None,
+    ]
+
+
+def test_get_default_feature_job_setting_history(test_api_client_persistent, event_data_response):
+    """
+    Test retrieve default feature job settings history
+    """
+    test_api_client, _ = test_api_client_persistent
+    response_dict = event_data_response.json()
+    document_id = response_dict["_id"]
+    expected_history = [
+        {
+            "created_at": response_dict["created_at"],
+            "setting": response_dict["default_feature_job_setting"],
+        }
+    ]
+
+    for blind_spot in ["1m", "3m", "5m", "10m", "12m"]:
+        response = test_api_client.patch(
+            f"/event_data/{document_id}",
+            json={
+                "default_feature_job_setting": {
+                    "blind_spot": blind_spot,
+                    "frequency": "30m",
+                    "time_modulo_frequency": "5m",
+                }
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+        update_response_dict = response.json()
+        expected_history.append(
+            {
+                "created_at": update_response_dict["updated_at"],
+                "setting": update_response_dict["default_feature_job_setting"],
+            }
+        )
+
+    # test get default_feature_job_setting_history
+    response = test_api_client.get(f"/event_data/history/default_feature_job_setting/{document_id}")
+    assert response.status_code == HTTPStatus.OK
+    results = response.json()
+    assert list(reversed(results)) == expected_history
