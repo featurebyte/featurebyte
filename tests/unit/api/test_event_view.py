@@ -275,3 +275,29 @@ def test_unary_op_params(snowflake_event_view):
     column = snowflake_event_view["cust_id"]
     output = column.isnull()
     assert output.event_data_id == column.event_data_id
+
+
+def test_event_view_copy(snowflake_event_view):
+    """
+    Test event view copy
+    """
+    new_snowflake_event_view = snowflake_event_view.copy()
+    assert new_snowflake_event_view == snowflake_event_view
+    assert new_snowflake_event_view.feature_store == snowflake_event_view.feature_store
+    assert id(new_snowflake_event_view.graph.nodes) == id(snowflake_event_view.graph.nodes)
+
+    deep_snowflake_event_view = snowflake_event_view.copy()
+    assert deep_snowflake_event_view == snowflake_event_view
+    assert deep_snowflake_event_view.feature_store == snowflake_event_view.feature_store
+    assert id(deep_snowflake_event_view.graph.nodes) == id(snowflake_event_view.graph.nodes)
+
+    view_column = snowflake_event_view["col_int"]
+    new_view_column = view_column.copy()
+    assert new_view_column == view_column
+    assert new_view_column.parent == view_column.parent == snowflake_event_view
+    assert id(new_view_column.graph.nodes) == id(view_column.graph.nodes)
+
+    deep_view_column = view_column.copy(deep=True)
+    assert deep_view_column == view_column
+    assert deep_view_column.parent == view_column.parent
+    assert id(deep_view_column.graph.nodes) == id(view_column.graph.nodes)
