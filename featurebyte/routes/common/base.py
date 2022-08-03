@@ -72,6 +72,23 @@ class BaseController(Generic[Document, PaginatedDocument]):
     def get_conflict_message(
         cls, conflict_doc: dict[str, Any], doc_represent: dict[str, Any], get_type: GetType
     ) -> str:
+        """
+        Get the conflict error message
+
+        Parameters
+        ----------
+        conflict_doc: dict[str, Any]
+            Existing document that causes conflict
+        doc_represent: dict[str, Any]
+            Document used to represent conflict information
+        get_type: GetType
+            Get method used to retrieved conflict object
+
+        Returns
+        -------
+        str
+            Error message for conflict exception
+        """
         get_type_map = {
             "id": lambda doc: f'{cls.to_class_name()}.get_by_id(id="{doc["_id"]}")',
             "name": lambda doc: f'{cls.to_class_name()}.get(name="{doc["name"]}")',
@@ -117,7 +134,9 @@ class BaseController(Generic[Document, PaginatedDocument]):
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
                 detail=cls.get_conflict_message(
-                    conflict_doc=conflict_doc, doc_represent=doc_represent, get_type=get_type
+                    conflict_doc=cast(dict[str, Any], conflict_doc),
+                    doc_represent=doc_represent,
+                    get_type=get_type,
                 ),
             )
 

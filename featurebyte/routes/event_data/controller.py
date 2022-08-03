@@ -54,11 +54,6 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
         -------
         EventDataModel
             Newly created event data object
-
-        Raises
-        ------
-        HTTPException
-            If the event data name conflicts with existing event data name
         """
         # exclude microseconds from timestamp as it's not supported in persistent
         utc_now = get_utc_now()

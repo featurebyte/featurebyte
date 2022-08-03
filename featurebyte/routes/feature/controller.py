@@ -216,11 +216,6 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
         -------
         FeatureModel
             Newly created feature object
-
-        Raises
-        ------
-        HTTPException
-            If the feature name conflicts with existing feature name
         """
 
         async with persistent.start_transaction() as session:
