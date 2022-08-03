@@ -134,7 +134,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
                 detail=cls.get_conflict_message(
-                    conflict_doc=cast(dict[str, Any], conflict_doc),
+                    conflict_doc=cast(Dict[str, Any], conflict_doc),
                     doc_represent=doc_represent,
                     get_type=get_type,
                 ),
