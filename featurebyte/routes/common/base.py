@@ -270,7 +270,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
                     collection_name=cls.collection_name,
                     document_id=document_id,
                     query_filter={**query_filter, "action_type": AuditActionType.UPDATE.value},
-                    sort_by="_id",
+                    sort_by="action_at",
                     sort_dir="asc",
                 )
 
@@ -284,20 +284,19 @@ class BaseController(Generic[Document, PaginatedDocument]):
                         # field filled in last update & empty in current update -> field dropped
                         # field filled in last update & filled in current update -> field changed
                         # field empty in last update & empty in current update -> no change
-                        history.insert(0, FieldValueHistory(created_at=_date, value=_value))
+                        history.append(FieldValueHistory(created_at=_date, value=_value))
                     last_value = _value
 
                 if last_value:
                     # field filled in last update -> current value is the latest
-                    history.insert(
-                        0,
+                    history.append(
                         FieldValueHistory(
                             created_at=current_doc.updated_at,
                             value=getattr(current_doc, field, None),
                         ),
                     )
 
-                return history
+                return list(reversed(history))
 
         except NotImplementedError as exc:
             raise HTTPException(
