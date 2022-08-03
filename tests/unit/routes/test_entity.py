@@ -195,7 +195,8 @@ def test_update_200(create_success_response, test_api_client_persistent):
     result = response.json()
 
     assert result["name"] == "Customer"
-    assert result["name_history"] == [{"created_at": result["updated_at"], "name": "customer"}]
+    assert len(result["name_history"]) == 1
+    assert result["name_history"][0]["name"] == "customer"
     for key in result.keys():
         if key not in {"name", "name_history", "updated_at"}:
             assert result[key] == response_dict[key]
