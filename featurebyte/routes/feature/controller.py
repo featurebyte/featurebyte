@@ -234,16 +234,12 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
 
         async with persistent.start_transaction() as session:
             # check any conflict with existing documents
-            constraints_check_triples = [
-                ({"_id": data.id}, {"id": data.id}, "id"),
-            ]
-            for query_filter, doc_represent, get_type in constraints_check_triples:
-                await cls.check_document_creation_conflict(
-                    persistent=persistent,
-                    query_filter=query_filter,
-                    doc_represent=doc_represent,
-                    get_type=get_type,
-                )
+            await cls.check_document_creation_conflict(
+                persistent=persistent,
+                query_filter={"_id": data.id},
+                doc_represent={"id": data.id},
+                get_type="id",
+            )
 
             document = FeatureModel(
                 user_id=user.id, readiness=FeatureReadiness.DRAFT, **data.json_dict()

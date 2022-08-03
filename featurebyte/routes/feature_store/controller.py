@@ -5,14 +5,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from http import HTTPStatus
-
-from fastapi import HTTPException
-
 from featurebyte.enum import CollectionName
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent.base import Persistent
-from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.common.base import BaseController, GetType
 from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreList
 
 
@@ -48,17 +44,12 @@ class FeatureStoreController(BaseController[FeatureStoreModel, FeatureStoreList]
         -------
         FeatureStoreModel
             Newly created feature store document
-
-        Raises
-        ------
-        HTTPException
-            If the feature store name conflicts with existing feature store name
         """
 
         document = FeatureStoreModel(**data.json_dict(), user_id=user.id)
 
         # check any conflict with existing documents
-        constraints_check_triples = [
+        constraints_check_triples: list[tuple[dict[str, Any], dict[str, Any], GetType]] = [
             ({"_id": data.id}, {"id": data.id}, "name"),
             ({"name": data.name}, {"name": data.name}, "name"),
         ]

@@ -17,7 +17,7 @@ from featurebyte.models.event_data import (
     FeatureJobSettingHistoryEntry,
 )
 from featurebyte.persistent import DuplicateDocumentError, Persistent
-from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.common.base import BaseController, GetType
 from featurebyte.routes.common.util import get_utc_now
 from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
 
@@ -88,7 +88,7 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
             history = []
 
         # check any conflict with existing documents
-        constraints_check_triples = [
+        constraints_check_triples: list[tuple[dict[str, Any], dict[str, Any], GetType]] = [
             ({"_id": data.id}, {"id": data.id}, "name"),
             ({"name": data.name}, {"name": data.name}, "name"),
         ]

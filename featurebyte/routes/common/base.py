@@ -23,6 +23,7 @@ from featurebyte.routes.common.schema import PaginationMixin
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
+GetType = Literal["id", "name"]
 
 
 class BaseController(Generic[Document, PaginatedDocument]):
@@ -73,8 +74,28 @@ class BaseController(Generic[Document, PaginatedDocument]):
         persistent: Persistent,
         query_filter: dict[str, Any],
         doc_represent: dict[str, Any],
-        get_type: Literal["id", "name"] = "id",
-    ):
+        get_type: GetType = "id",
+    ) -> None:
+        """
+        Check document creation conflict
+
+        Parameters
+        ----------
+        persistent: Persistent
+            Persistent object
+        query_filter: dict[str, Any]
+            Query filter that will be passed to persistent
+        doc_represent: dict[str, Any]
+            Document representation that shows user the conflict fields
+        get_type: GetType
+            Object retrieval option shows in error message.
+
+        Raises
+        ------
+        HTTPException
+            When there is a conflict with existing document(s) stored at the persistent
+        """
+
         conflict_doc = await persistent.find_one(
             collection_name=cls.collection_name, query_filter=query_filter
         )

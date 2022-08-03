@@ -113,7 +113,7 @@ class ApiObject(FeatureByteBaseModel):
         raise RecordRetrievalException(response, "Failed to retrieve specified object!")
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> ApiObject:
+    def get_by_id(cls, id: ObjectId) -> ApiObject:  # pylint: disable=redefined-builtin,invalid-name
         """
         Get the API object by specifying the object ID
 
@@ -126,6 +126,11 @@ class ApiObject(FeatureByteBaseModel):
         -------
         ApiObject
             ApiObject object of the given object ID
+
+        Raises
+        ------
+        RecordRetrievalException
+            When the object not found
         """
         client = Configurations().get_client()
         response = client.get(url=f"{cls._route}/{id}")

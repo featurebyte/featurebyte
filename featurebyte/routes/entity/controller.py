@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from featurebyte.enum import CollectionName
 from featurebyte.models.entity import EntityModel, EntityNameHistoryEntry
 from featurebyte.persistent.base import Persistent
-from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.common.base import BaseController, GetType
 from featurebyte.routes.common.util import get_utc_now
 from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
 
@@ -50,16 +50,11 @@ class EntityController(BaseController[EntityModel, EntityList]):
         -------
         EntityModel
             Newly created entity object
-
-        Raises
-        ------
-        HTTPException
-            If the entity name conflicts with existing entity name
         """
         document = EntityModel(serving_names=[data.serving_name], **data.json_dict())
 
         # check any conflict with existing documents
-        constraints_check_triples = [
+        constraints_check_triples: list[tuple[dict[str, Any], dict[str, Any], GetType]] = [
             ({"_id": data.id}, {"id": data.id}, "name"),
             ({"name": data.name}, {"name": data.name}, "name"),
             (
