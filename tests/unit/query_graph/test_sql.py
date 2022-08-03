@@ -42,7 +42,7 @@ def input_node_fixture():
         (NodeType.ADD, "(a + b)"),
         (NodeType.SUB, "(a - b)"),
         (NodeType.MUL, "(a * b)"),
-        (NodeType.DIV, "(a / b)"),
+        (NodeType.DIV, "(a / NULLIF(b, 0))"),
         (NodeType.EQ, "(a = b)"),
         (NodeType.NE, "(a <> b)"),
         (NodeType.LT, "(a < b)"),
@@ -70,7 +70,7 @@ def test_binary_operation_node__consecutive_ops_1(input_node):
     col_c = sql.StrExpressionNode(table_node=input_node, expr="c")
     a_plus_b = sql.make_binary_operation_node(NodeType.ADD, [col_a, col_b], {})
     a_plus_b_div_c = sql.make_binary_operation_node(NodeType.DIV, [a_plus_b, col_c], {})
-    assert a_plus_b_div_c.sql.sql() == "((a + b) / c)"
+    assert a_plus_b_div_c.sql.sql() == "((a + b) / NULLIF(c, 0))"
 
 
 def test_binary_operation_node__consecutive_ops_2(input_node):
@@ -80,7 +80,7 @@ def test_binary_operation_node__consecutive_ops_2(input_node):
     col_c = sql.StrExpressionNode(table_node=input_node, expr="c")
     a_plus_b = sql.make_binary_operation_node(NodeType.ADD, [col_a, col_b], {})
     c_div_a_plus_b = sql.make_binary_operation_node(NodeType.DIV, [col_c, a_plus_b], {})
-    assert c_div_a_plus_b.sql.sql() == "(c / (a + b))"
+    assert c_div_a_plus_b.sql.sql() == "(c / NULLIF((a + b), 0))"
 
 
 @pytest.mark.parametrize(
@@ -92,8 +92,8 @@ def test_binary_operation_node__consecutive_ops_2(input_node):
         (NodeType.SUB, 1, True, "(1 - a)"),
         (NodeType.MUL, 1.0, False, "(a * 1.0)"),
         (NodeType.MUL, 1.0, True, "(1.0 * a)"),
-        (NodeType.DIV, 1.0, False, "(a / 1.0)"),
-        (NodeType.DIV, 1.0, True, "(1.0 / a)"),
+        (NodeType.DIV, 1.0, False, "(a / NULLIF(1.0, 0))"),
+        (NodeType.DIV, 1.0, True, "(1.0 / NULLIF(a, 0))"),
         (NodeType.EQ, "apple", False, "(a = 'apple')"),
     ],
 )

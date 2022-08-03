@@ -243,8 +243,11 @@ class EventViewGroupBy(OpsMixin):
                     event_data_ids=[self.obj.event_data_id],
                 )
             )
+
+        # Count features should be 0 instead of NaN when there are no records
         feature_group = FeatureGroup(items)
         for name in feature_group.feature_names:
             if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.category is None:
                 feature_group[name].fillna(0)
+
         return feature_group

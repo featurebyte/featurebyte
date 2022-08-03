@@ -144,7 +144,7 @@ def test_graph_interpreter_multi_assign(graph, node_input):
         (NodeType.ADD, '"a" + 123'),
         (NodeType.SUB, '"a" - 123'),
         (NodeType.MUL, '"a" * 123'),
-        (NodeType.DIV, '"a" / 123'),
+        (NodeType.DIV, '"a" / NULLIF(123, 0)'),
         (NodeType.EQ, '"a" = 123'),
         (NodeType.NE, '"a" <> 123'),
         (NodeType.LT, '"a" < 123'),

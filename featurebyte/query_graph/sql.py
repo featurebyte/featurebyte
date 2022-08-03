@@ -314,9 +314,12 @@ class BinaryOp(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return expressions.Paren(
-            this=self.operation(this=self.left_node.sql, expression=self.right_node.sql)
-        )
+        right_expr = self.right_node.sql
+        if self.operation == expressions.Div:
+            # Make 0 divisor null to prevent division-by-zero error
+            right_expr = parse_one(f"NULLIF({right_expr.sql()}, 0)")
+        op_expr = self.operation(this=self.left_node.sql, expression=right_expr)
+        return expressions.Paren(this=op_expr)
 
 
 @dataclass
