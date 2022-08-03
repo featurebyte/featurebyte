@@ -126,7 +126,7 @@ def test_save__duplicate_record_exception(saved_snowflake_feature_store):
         saved_snowflake_feature_store.save()
     expected_msg = (
         f'FeatureStore (id: "{saved_snowflake_feature_store.id}") already exists. '
-        f'Get the existing object with the same id by `FeatureStore.get(name="sf_featurestore")`.'
+        f'Get the existing object by `FeatureStore.get(name="sf_featurestore")`.'
     )
     assert expected_msg in str(exc.value)
 
@@ -157,5 +157,5 @@ def test_get__unexpected_retrieval_exception():
     # check unexpected creation exception
     with pytest.raises(RecordRetrievalException) as exc:
         FeatureStore.get("some random name")
-    expected_msg = 'FeatureStore (feature_store.name: "some random name") not found!'
+    expected_msg = 'FeatureStore (name: "some random name") not found. Please save the FeatureStore object first.'
     assert expected_msg in str(exc.value)

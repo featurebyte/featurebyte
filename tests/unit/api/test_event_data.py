@@ -260,7 +260,7 @@ def test_event_data__save__feature_store_not_saved_exception(snowflake_event_dat
         snowflake_event_data.save()
     feature_store_id = snowflake_event_data.feature_store.id
     expect_msg = (
-        f'FeatureStore (feature_store.id: "{feature_store_id}") not found! '
+        f'FeatureStore (id: "{feature_store_id}") not found. '
         f"Please save the FeatureStore object first."
     )
     assert expect_msg in str(exc.value)
@@ -276,7 +276,7 @@ def test_event_data__save__exceptions(saved_event_data):
     assert exc.value.status_code == 409
     expected_msg = (
         f'EventData (id: "{saved_event_data.id}") already exists. '
-        'Get the existing object with the same id by `EventData.get(name="sf_event_data")`.'
+        'Get the existing object by `EventData.get(name="sf_event_data")`.'
     )
     assert exc.value.response.json()["detail"] == expected_msg
 
@@ -449,4 +449,8 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
 
     with pytest.raises(RecordRetrievalException) as exc:
         EventData.get("unknown_event_data")
-    assert 'EventData (event_data.name: "unknown_event_data") not found!' in str(exc.value)
+    expected_msg = (
+        'EventData (name: "unknown_event_data") not found. '
+        "Please save the EventData object first."
+    )
+    assert expected_msg in str(exc.value)

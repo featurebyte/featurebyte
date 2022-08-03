@@ -3,7 +3,7 @@ BaseController for API routes
 """
 from __future__ import annotations
 
-from typing import Any, Generic, List, Literal, Optional, Type, TypeVar, cast
+from typing import Any, Dict, Generic, List, Literal, Optional, Type, TypeVar, cast
 
 import copy
 from http import HTTPStatus
@@ -36,18 +36,24 @@ class BaseController(Generic[Document, PaginatedDocument]):
     paginated_document_class: Type[PaginationMixin] = PaginationMixin
 
     @classmethod
-    def class_name(cls) -> str:
+    def to_class_name(cls, collection_name: str | None = None) -> str:
         """
         Class represents the underlying collection name
+
+        Parameters
+        ----------
+        collection_name: str | None
+            Collection name
 
         Returns
         -------
         str
         """
-        return "".join(elem.title() for elem in cls.collection_name.split("_"))
+        collection_name = collection_name or cls.collection_name
+        return "".join(elem.title() for elem in collection_name.split("_"))
 
     @classmethod
-    def object_name(cls) -> str:
+    def to_object_name(cls, collection_name: str | None = None) -> str:
         """
         Object that is constructed by the class represents the underlying collection
 
@@ -55,18 +61,26 @@ class BaseController(Generic[Document, PaginatedDocument]):
         -------
         str
         """
-        return cls.collection_name
+        collection_name = collection_name or cls.collection_name
+        return collection_name
 
     @classmethod
     def _format_document(cls, doc: dict[str, Any]) -> str:
         return ", ".join(f'{key}: "{value}"' for key, value in doc.items())
 
     @classmethod
-    def _format_document_keys(cls, doc: dict[str, Any]) -> str:
-        keys = tuple(doc.keys())
-        if len(keys) == 1:
-            return str(keys[0])
-        return f'({", ".join(str(key) for key in keys)})'
+    def get_conflict_message(
+        cls, conflict_doc: dict[str, Any], doc_represent: dict[str, Any], get_type: GetType
+    ) -> str:
+        get_type_map = {
+            "id": lambda doc: f'{cls.to_class_name()}.get_by_id(id="{doc["_id"]}")',
+            "name": lambda doc: f'{cls.to_class_name()}.get(name="{doc["name"]}")',
+        }
+        get_statement = get_type_map[get_type](conflict_doc)
+        return (
+            f"{cls.to_class_name()} ({cls._format_document(doc_represent)}) already exists. "
+            f"Get the existing object by `{get_statement}`."
+        )
 
     @classmethod
     async def check_document_creation_conflict(
@@ -100,19 +114,60 @@ class BaseController(Generic[Document, PaginatedDocument]):
             collection_name=cls.collection_name, query_filter=query_filter
         )
         if conflict_doc:
-            get_type_map = {
-                "id": f'{cls.class_name()}.get_by_id(id="{conflict_doc["_id"]}")',
-                "name": f'{cls.class_name()}.get(name="{conflict_doc["name"]}")',
-            }
-            get_statement = get_type_map[get_type]
             raise HTTPException(
                 status_code=HTTPStatus.CONFLICT,
-                detail=(
-                    f"{cls.class_name()} ({cls._format_document(doc_represent)}) already exists. "
-                    f"Get the existing object with the same {cls._format_document_keys(doc_represent)} by "
-                    f"`{get_statement}`."
+                detail=cls.get_conflict_message(
+                    conflict_doc=conflict_doc, doc_represent=doc_represent, get_type=get_type
                 ),
             )
+
+    @classmethod
+    async def get_document(
+        cls,
+        user: Any,
+        persistent: Persistent,
+        collection_name: str,
+        document_id: ObjectId,
+        exception_status_code: int = HTTPStatus.NOT_FOUND,
+        exception_detail: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Retrieve document dictionary given collection and document id (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Persistent that the document will be saved to
+        collection_name: str
+            Collection name
+        document_id: ObjectId
+            Document ID
+        exception_status_code: HTTPStatus
+            Status code used in raising exception
+        exception_detail: str | None
+            Exception detail message
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        query_filter = {"_id": ObjectId(document_id), "user_id": user.id}
+        document = await persistent.find_one(
+            collection_name=collection_name, query_filter=query_filter
+        )
+        if document is None:
+            class_name = cls.to_class_name(collection_name)
+            exception_detail = exception_detail or (
+                f'{class_name} (id: "{document_id}") not found. '
+                f"Please save the {class_name} object first."
+            )
+            raise HTTPException(
+                status_code=exception_status_code,
+                detail=exception_detail,
+            )
+        return cast(Dict[str, Any], document)
 
     @classmethod
     async def get(
@@ -142,18 +197,12 @@ class BaseController(Generic[Document, PaginatedDocument]):
         HTTPException
             If the object not found
         """
-        query_filter = {"_id": ObjectId(document_id), "user_id": user.id}
-        document = await persistent.find_one(
-            collection_name=cls.collection_name, query_filter=query_filter
+        document = await cls.get_document(
+            user=user,
+            persistent=persistent,
+            collection_name=cls.collection_name,
+            document_id=document_id,
         )
-        if document is None:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail=(
-                    f'{cls.class_name()} ({cls.object_name()}.id: "{document_id}") not found! '
-                    f"Please save the {cls.class_name()} object first."
-                ),
-            )
         return cast(Document, cls.document_class(**document))
 
     @classmethod

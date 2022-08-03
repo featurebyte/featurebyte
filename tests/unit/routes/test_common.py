@@ -19,7 +19,7 @@ from featurebyte.routes.common.base import BaseController
             "id",
             (
                 'Col (id: "id_val") already exists. '
-                'Get the existing object with the same id by `Col.get_by_id(id="conflict_id_val")`.'
+                'Get the existing object by `Col.get_by_id(id="conflict_id_val")`.'
             ),
         ),
         (
@@ -28,7 +28,7 @@ from featurebyte.routes.common.base import BaseController
             "id",
             (
                 'Col (id: "id_val", name: "name_val") already exists. '
-                'Get the existing object with the same (id, name) by `Col.get_by_id(id="conflict_id_val")`.'
+                'Get the existing object by `Col.get_by_id(id="conflict_id_val")`.'
             ),
         ),
         (
@@ -37,7 +37,7 @@ from featurebyte.routes.common.base import BaseController
             "name",
             (
                 'Col (id: "id_val") already exists. '
-                'Get the existing object with the same id by `Col.get(name="conflict_name_val")`.'
+                'Get the existing object by `Col.get(name="conflict_name_val")`.'
             ),
         ),
     ],

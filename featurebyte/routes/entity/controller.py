@@ -130,7 +130,11 @@ class EntityController(BaseController[EntityModel, EntityList]):
                     return EntityModel(**entity)
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
-                    detail=f'Entity name (entity.name: "{data.name}") already exists.',
+                    detail=cls.get_conflict_message(
+                        conflict_doc=data.json_dict(),
+                        doc_represent={"name": data.name},
+                        get_type="name",
+                    ),
                 )
 
         name_history.append(EntityNameHistoryEntry(created_at=get_utc_now(), name=cur_name).dict())

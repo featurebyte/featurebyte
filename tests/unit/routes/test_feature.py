@@ -190,7 +190,7 @@ def test_create_409(
     assert response.json() == {
         "detail": (
             f'Feature (id: "{feature_id}") already exists. '
-            f'Get the existing object with the same id by `Feature.get_by_id(id="{feature_id}")`.'
+            f'Get the existing object by `Feature.get_by_id(id="{feature_id}")`.'
         )
     }
 
@@ -199,7 +199,12 @@ def test_create_409(
     assert feature_model_dict["parent_id"] is None
     response = test_api_client.post("/feature", json=feature_model_dict)
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'Feature name (feature.name: "sum_30m") already exists.'}
+    assert response.json() == {
+        "detail": (
+            'Feature (name: "sum_30m") already exists. '
+            f'Get the existing object by `Feature.get_by_id(id="{feature_id}")`.'
+        )
+    }
 
 
 def test_create_422__not_proper_parent(
@@ -215,10 +220,10 @@ def test_create_422__not_proper_parent(
     feature_model_dict["event_data_ids"] = [str(snowflake_event_data.id)]
     feature_model_dict["parent_id"] = parent_id
     response = test_api_client.post("/feature", json=feature_model_dict)
-    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert response.json() == {
         "detail": (
-            f'The original feature (feature.id: "{parent_id}") not found! '
+            f'The original feature (id: "{parent_id}") not found. '
             f"Please save the Feature object first."
         )
     }
@@ -231,8 +236,8 @@ def test_create_422__not_proper_parent(
     assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {
         "detail": (
-            f'Feature (feature.id: "{feature_id}", feature.name: "other_name") '
-            f'has invalid parent feature (feature.id: "{parent_id}", feature.name: "sum_30m")!'
+            f'Feature (id: "{feature_id}", name: "other_name") '
+            f'has invalid parent feature (id: "{parent_id}", name: "sum_30m")!'
         )
     }
 
@@ -262,7 +267,7 @@ def test_create_422(test_api_client_persistent, feature_model_dict):
     response = test_api_client.post("/feature", json=feature_model_dict)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     assert response.json()["detail"] == (
-        f'EventData (event_data.id: "{unknown_event_id}") not found! '
+        f'EventData (id: "{unknown_event_id}") not found. '
         f"Please save the EventData object first."
     )
 
@@ -496,7 +501,7 @@ def test_get_404(test_api_client_persistent):
     response = test_api_client.get(f"/feature/{random_id}")
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {
-        "detail": f'Feature (feature.id: "{random_id}") not found! Please save the Feature object first.'
+        "detail": f'Feature (id: "{random_id}") not found. Please save the Feature object first.'
     }
 
 

@@ -36,12 +36,14 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
     paginated_document_class = FeatureList
 
     @classmethod
-    async def _validate_feature(cls, data: FeatureCreate, session: Persistent) -> None:
+    async def _validate_feature(cls, user: Any, data: FeatureCreate, session: Persistent) -> None:
         """
         Validate feature document to make sure the feature & parent feature are valid
 
         Parameters
         ----------
+        user: Any
+            User object
         data: FeatureCreate
             Feature document
         session: Persistent
@@ -54,55 +56,44 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
         """
         if data.parent_id is None:
             # when the parent_id is missing, it implies that the feature is a new feature
-            conflict_feature = await session.find_one(
-                collection_name=cls.collection_name, query_filter={"name": data.name}
+            await cls.check_document_creation_conflict(
+                persistent=session,
+                query_filter={"name": data.name},
+                doc_represent={"name": data.name},
+                get_type="id",
             )
-            if conflict_feature:
-                # if it is not a new feature throws exception
-                raise HTTPException(
-                    status_code=HTTPStatus.CONFLICT,
-                    detail=f'Feature name (feature.name: "{data.name}") already exists.',
-                )
         else:
             # if parent_id exists, make sure the parent feature exists at persistent & has consistent name
-            parent_feature_dict = await session.find_one(
+            parent_feature_dict = await cls.get_document(
+                user=user,
+                persistent=session,
                 collection_name=cls.collection_name,
-                query_filter={"_id": ObjectId(data.parent_id)},
+                document_id=data.parent_id,
+                exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+                exception_detail=(
+                    f'The original feature (id: "{data.parent_id}") not found. '
+                    "Please save the Feature object first."
+                ),
             )
-            if not parent_feature_dict:
-                # if parent feature not found at persistent, throws exception
-                raise HTTPException(
-                    status_code=HTTPStatus.NOT_FOUND,
-                    detail=(
-                        f'The original feature (feature.id: "{data.parent_id}") not found! '
-                        f"Please save the Feature object first."
-                    ),
-                )
             parent_name = parent_feature_dict["name"]
             if parent_name != data.name:
                 # if the parent feature is inconsistent with feature to be created, throws exception
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
                     detail=(
-                        f'Feature (feature.id: "{data.id}", feature.name: "{data.name}") '
-                        f'has invalid parent feature (feature.id: "{data.parent_id}", feature.name: "{parent_name}")!'
+                        f'Feature (id: "{data.id}", name: "{data.name}") '
+                        f'has invalid parent feature (id: "{data.parent_id}", name: "{parent_name}")!'
                     ),
                 )
 
         for event_data_id in data.event_data_ids:
-            event_data_dict = await session.find_one(
+            _ = await cls.get_document(
+                user=user,
+                persistent=session,
                 collection_name=CollectionName.EVENT_DATA,
-                query_filter={"_id": ObjectId(event_data_id)},
+                document_id=event_data_id,
+                exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             )
-            if not event_data_dict:
-                # if event data not saved at persistent, throws exception
-                raise HTTPException(
-                    status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-                    detail=(
-                        f'EventData (event_data.id: "{event_data_id}") not found! '
-                        f"Please save the EventData object first."
-                    ),
-                )
 
     @classmethod
     def prepare_feature_namespace_payload(
@@ -247,22 +238,17 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
             assert document.id == data.id
 
             # validate feature payload
-            await cls._validate_feature(data=data, session=session)
+            await cls._validate_feature(user=user, data=data, session=session)
 
-            # get feature store
-            feature_store_dict = await session.find_one(
+            # get the feature store at persistent
+            feature_store_id, _ = data.tabular_source
+            feature_store_dict = await cls.get_document(
+                user=user,
+                persistent=persistent,
                 collection_name=CollectionName.FEATURE_STORE,
-                query_filter={"_id": document.tabular_source[0]},
+                document_id=feature_store_id,
+                exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             )
-            if not feature_store_dict:
-                # if event data not saved at persistent, throws exception
-                raise HTTPException(
-                    status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-                    detail=(
-                        f'FeatureStore (feature_store.id: "{document.tabular_source[0]}") not found! '
-                        f"Please save the FeatureStore object first."
-                    ),
-                )
             feature_store = ExtendedFeatureStoreModel(**feature_store_dict)
 
             insert_id = await session.insert_one(

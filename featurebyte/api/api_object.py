@@ -27,25 +27,6 @@ class ApiObject(FeatureByteBaseModel):
     # class variables
     _route = ""
 
-    @classmethod
-    def _get_object_name(cls, class_name: str) -> str:
-        """
-        Convert camel case class name to snake case object name
-
-        Parameters
-        ----------
-        class_name: str
-            Class name
-
-        Returns
-        -------
-        str
-        """
-        object_name = "".join(
-            "_" + char.lower() if char.isupper() else char for char in class_name
-        ).lstrip("_")
-        return object_name
-
     def _get_init_params(self) -> dict[str, Any]:
         """
         Additional parameters pass to constructor (other than those parameters from response)
@@ -65,6 +46,15 @@ class ApiObject(FeatureByteBaseModel):
         dict[str, Any]
         """
         return self.json_dict()
+
+    @classmethod
+    def _get_feature_store(
+        cls, client: Any, feature_store_id: ObjectId
+    ) -> ExtendedFeatureStoreModel:
+        feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
+        if feature_store_response.status_code == HTTPStatus.OK:
+            return ExtendedFeatureStoreModel(**feature_store_response.json())
+        raise RecordRetrievalException(feature_store_response)
 
     @classmethod
     def get(cls, name: str) -> ApiObject:
@@ -95,22 +85,17 @@ class ApiObject(FeatureByteBaseModel):
                 tabular_source = object_dict.get("tabular_source")
                 if tabular_source:
                     feature_store_id, _ = tabular_source
-                    feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
-                    if feature_store_response.status_code == HTTPStatus.OK:
-                        feature_store = ExtendedFeatureStoreModel(**feature_store_response.json())
-                        return cls(**object_dict, feature_store=feature_store)
-                    raise RecordRetrievalException(
-                        response,
-                        f'FeatureStore (feature_store.id: "{feature_store_id}") not found!',
+                    object_dict["feature_store"] = cls._get_feature_store(
+                        client=client, feature_store_id=feature_store_id
                     )
                 return cls(**object_dict)
 
             class_name = cls.__name__
-            object_name = cls._get_object_name(class_name)
             raise RecordRetrievalException(
-                response, f'{class_name} ({object_name}.name: "{name}") not found!'
+                response,
+                f'{class_name} (name: "{name}") not found. Please save the {class_name} object first.',
             )
-        raise RecordRetrievalException(response, "Failed to retrieve specified object!")
+        raise RecordRetrievalException(response, "Failed to retrieve the specified object.")
 
     @classmethod
     def get_by_id(cls, id: ObjectId) -> ApiObject:  # pylint: disable=redefined-builtin,invalid-name
@@ -139,16 +124,11 @@ class ApiObject(FeatureByteBaseModel):
             tabular_source = response_dict.get("tabular_source")
             if tabular_source:
                 feature_store_id, _ = tabular_source
-                feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
-                if feature_store_response.status_code == HTTPStatus.OK:
-                    feature_store = ExtendedFeatureStoreModel(**feature_store_response.json())
-                    return cls(**response_dict, feature_store=feature_store)
-                raise RecordRetrievalException(
-                    response,
-                    f'FeatureStore (feature_store.id: "{feature_store_id}") not found!',
+                response_dict["feature_store"] = cls._get_feature_store(
+                    client=client, feature_store_id=feature_store_id
                 )
             return cls(**response_dict)
-        raise RecordRetrievalException(response, "Failed to retrieve specified object!")
+        raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
     @classmethod
     def list(cls) -> list[str]:
@@ -170,7 +150,7 @@ class ApiObject(FeatureByteBaseModel):
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             return [elem["name"] for elem in response_dict["data"]]
-        raise RecordRetrievalException(response, "Failed to list object names!")
+        raise RecordRetrievalException(response, "Failed to list object names.")
 
     def save(self) -> None:
         """

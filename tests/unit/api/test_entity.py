@@ -60,7 +60,10 @@ def test_entity__update_name(entity):
     another_entity = Entity(name="AnotherCustomer", serving_names=["cust"])
     with pytest.raises(RecordRetrievalException) as exc:
         Entity.get("AnotherCustomer")
-    assert 'Entity (entity.name: "AnotherCustomer") not found!' in str(exc.value)
+    expected_msg = (
+        'Entity (name: "AnotherCustomer") not found. ' "Please save the Entity object first."
+    )
+    assert expected_msg in str(exc.value)
     assert another_entity.name == "AnotherCustomer"
     another_entity.update_name("another_customer")
     assert another_entity.name == "another_customer"
@@ -78,7 +81,7 @@ def test_entity_creation(entity):
         Entity(name="customer", serving_names=["customer_id"]).save()
     expected_msg = (
         'Entity (name: "customer") already exists. '
-        'Get the existing object with the same name by `Entity.get(name="customer")`.'
+        'Get the existing object by `Entity.get(name="customer")`.'
     )
     assert expected_msg in str(exc.value)
 
@@ -86,7 +89,7 @@ def test_entity_creation(entity):
         Entity(name="Customer", serving_names=["cust_id"]).save()
     expected_msg = (
         'Entity (serving_name: "cust_id") already exists. '
-        'Get the existing object with the same serving_name by `Entity.get(name="customer")`.'
+        'Get the existing object by `Entity.get(name="customer")`.'
     )
     assert expected_msg in str(exc.value)
 
@@ -120,7 +123,10 @@ def test_entity_update_name(entity):
     with pytest.raises(DuplicatedRecordException) as exc:
         entity.update_name("product")
     assert exc.value.response.json() == {
-        "detail": 'Entity name (entity.name: "product") already exists.'
+        "detail": (
+            'Entity (name: "product") already exists. '
+            'Get the existing object by `Entity.get(name="product")`.'
+        )
     }
 
     with mock.patch("featurebyte.api.entity.Configurations"):
@@ -151,7 +157,7 @@ def test_get_entity():
     with mock.patch("featurebyte.api.api_object.Configurations"):
         with pytest.raises(RecordRetrievalException) as exc:
             Entity.get("anything")
-    assert "Failed to retrieve specified object!" in str(exc.value)
+    assert "Failed to retrieve the specified object." in str(exc.value)
 
     # test list entity names
     assert Entity.list() == ["region", "product", "customer"]
@@ -160,4 +166,4 @@ def test_get_entity():
     with mock.patch("featurebyte.api.api_object.Configurations"):
         with pytest.raises(RecordRetrievalException) as exc:
             Entity.list()
-    assert "Failed to list object names!" in str(exc.value)
+    assert "Failed to list object names." in str(exc.value)
