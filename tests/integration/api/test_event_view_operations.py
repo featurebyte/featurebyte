@@ -116,10 +116,14 @@ def test_query_object_operation_on_snowflake_source(
     event_view["CUST_ID_X_SESSION_ID"] = event_view["CUST_ID"] * event_view["SESSION_ID"] / 1000.0
     event_view["LUCKY_CUSTOMER"] = event_view["CUST_ID_X_SESSION_ID"] > 140.0
 
+    # apply more event view operations
+    event_view["AMOUNT"].fillna(0)
+
     # construct expected results
     expected = transaction_data_upper_case.copy()
     expected["CUST_ID_X_SESSION_ID"] = (expected["CUST_ID"] * expected["SESSION_ID"]) / 1000.0
     expected["LUCKY_CUSTOMER"] = (expected["CUST_ID_X_SESSION_ID"] > 140.0).astype(int)
+    expected["AMOUNT"] = expected["AMOUNT"].fillna(0)
 
     # check agreement
     output = event_view.preview(limit=expected.shape[0], credentials=config.credentials)

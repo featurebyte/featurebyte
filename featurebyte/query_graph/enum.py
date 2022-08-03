@@ -38,6 +38,7 @@ class NodeType(str, Enum):
     ASSIGN = "assign"
     CONDITIONAL = "conditional"
     ALIAS = "alias"
+    IS_NULL = "is_null"
 
     # operations with side effect
     INPUT = "input"

@@ -44,6 +44,9 @@ class EventViewColumn(Series):
         _ = other
         return {"event_data_id": self.event_data_id}
 
+    def _unary_op_series_params(self) -> dict[str, Any]:
+        return {"event_data_id": self.event_data_id}
+
     def _validate_series_to_set_parent_attribute(self) -> None:
         """
         Check whether the current series has right to set parent frame

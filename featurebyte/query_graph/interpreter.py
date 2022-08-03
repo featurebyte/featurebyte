@@ -14,6 +14,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.sql import (
     BINARY_OPERATION_NODE_TYPES,
+    SUPPORTED_EXPRESSION_NODE_TYPES,
     AliasNode,
     ExpressionNode,
     SQLNode,
@@ -22,6 +23,7 @@ from featurebyte.query_graph.sql import (
     handle_groupby_node,
     make_binary_operation_node,
     make_conditional_node,
+    make_expression_node,
     make_filter_node,
     make_input_node,
     make_project_node,
@@ -86,6 +88,7 @@ class SQLOperationGraph:
             If a query node is not yet supported
         """
         # pylint: disable=too-many-locals
+        # pylint: disable=too-many-branches
         cur_node_id = cur_node.name
         assert cur_node_id not in self.sql_nodes
 
@@ -133,6 +136,9 @@ class SQLOperationGraph:
 
         elif node_type in BINARY_OPERATION_NODE_TYPES:
             sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)
+
+        elif node_type in SUPPORTED_EXPRESSION_NODE_TYPES:
+            sql_node = make_expression_node(input_sql_nodes, node_type)
 
         elif node_type == NodeType.FILTER:
             sql_node = make_filter_node(input_sql_nodes, output_type)

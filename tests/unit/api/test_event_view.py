@@ -266,3 +266,12 @@ def test_add_description(snowflake_event_view):
     with pytest.raises(TypeError) as exc:
         snowflake_event_view.cust_id.add_description(1234)
     assert 'Unsupported type "<class \'int\'>" for description "1234"!' in str(exc.value)
+
+
+def test_unary_op_params(snowflake_event_view):
+    """
+    Test unary operation inherits event_data_id
+    """
+    column = snowflake_event_view["cust_id"]
+    output = column.isnull()
+    assert output.event_data_id == column.event_data_id

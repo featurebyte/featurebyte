@@ -509,3 +509,43 @@ def test_arithmetic_operators__types_not_supported(varchar_series, int_series):
         f"'Series[VARCHAR](name=PRODUCT_ACTION, node.name={varchar_series.node.name})'!"
     )
     assert expected_msg in str(exc.value)
+
+
+def assert_series_attributes_equal(left, right):
+    """
+    Check that common series attributes unrelated to transforms are the same
+    """
+    assert left.tabular_source == right.tabular_source
+    assert left.feature_store == right.feature_store
+    assert left.row_index_lineage == right.row_index_lineage
+
+
+def test_isnull(bool_series):
+    """
+    Test isnull operation
+    """
+    result = bool_series.isnull()
+    assert result.var_type == DBVarType.BOOL
+    assert_series_attributes_equal(result, bool_series)
+    node_kwargs = {"parameters": {}, "output_type": NodeOutputType.SERIES}
+    exclude = {"name": True}
+    _check_node_equality(
+        result.node,
+        Node(name="is_null_1", type=NodeType.IS_NULL, **node_kwargs),
+        exclude=exclude,
+    )
+
+
+def test_fillna(float_series):
+    """
+    Test fillna operation
+    """
+    float_series.fillna(0.0)
+    float_series_dict = float_series.dict()
+    assert float_series_dict["graph"]["backward_edges"] == {
+        "project_1": ["input_1"],
+        "is_null_1": ["project_1"],
+        "conditional_1": ["project_1", "is_null_1"],
+        "assign_1": ["input_1", "conditional_1"],
+        "project_2": ["assign_1"],
+    }

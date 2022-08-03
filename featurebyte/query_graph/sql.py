@@ -414,6 +414,17 @@ class Conditional(ExpressionNode):
 
 
 @dataclass
+class IsNullNode(ExpressionNode):
+    """Node for IS_NULL operation"""
+
+    expr: ExpressionNode
+
+    @property
+    def sql(self) -> Expression:
+        return expressions.Is(this=self.expr.sql, expression=expressions.Null())
+
+
+@dataclass
 class BuildTileNode(TableNode):
     """Tile builder node
 
@@ -851,4 +862,38 @@ def make_conditional_node(input_sql_nodes: list[SQLNode], node: Node) -> Conditi
     sql_node = Conditional(
         table_node=input_table_node, series_node=series_node, mask=mask, value=value
     )
+    return sql_node
+
+
+SUPPORTED_EXPRESSION_NODE_TYPES = {
+    NodeType.IS_NULL,
+}
+
+
+def make_expression_node(input_sql_nodes: list[SQLNode], node_type: NodeType) -> ExpressionNode:
+    """Create an Expression node
+
+    Parameters
+    ----------
+    input_sql_nodes : list[SQLNode]
+        Input SQL nodes
+    node_type : NodeType
+        Query graph node type
+
+    Returns
+    -------
+    ExpressionNode
+
+    Raises
+    ------
+    NotImplementedError
+        if the query graph node type is not supported
+    """
+    input_expr_node = input_sql_nodes[0]
+    assert isinstance(input_expr_node, ExpressionNode)
+    table_node = input_expr_node.table_node
+    if node_type == NodeType.IS_NULL:
+        sql_node = IsNullNode(table_node=table_node, expr=input_expr_node)
+    else:
+        raise NotImplementedError(f"Unexpected node type: {node_type}")
     return sql_node
