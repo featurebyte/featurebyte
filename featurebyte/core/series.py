@@ -390,6 +390,17 @@ class Series(QueryObject, OpsMixin, ParentMixin):
         """
         return self._unary_op(node_type=NodeType.IS_NULL, output_var_type=DBVarType.BOOL)
 
+    def fillna(self, other: int | float | str | bool) -> None:
+        """
+        Replace missing values with the provided value in-place
+
+        Parameters
+        ----------
+        other : int | float | str | bool
+            Value to replace missing values
+        """
+        self[self.isnull()] = other
+
     def preview_sql(self, limit: int = 10) -> str:
         """
         Generate SQL query to preview the transformed column
