@@ -870,7 +870,7 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
 }
 
 
-def make_expression_node(input_sql_nodes: list[SQLNode], node_type: NodeType):
+def make_expression_node(input_sql_nodes: list[SQLNode], node_type: NodeType) -> ExpressionNode:
     """Create an Expression node
 
     Parameters
@@ -883,6 +883,11 @@ def make_expression_node(input_sql_nodes: list[SQLNode], node_type: NodeType):
     Returns
     -------
     ExpressionNode
+
+    Raises
+    ------
+    NotImplementedError
+        if the query graph node type is not supported
     """
     input_expr_node = input_sql_nodes[0]
     assert isinstance(input_expr_node, ExpressionNode)

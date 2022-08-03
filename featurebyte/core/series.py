@@ -361,7 +361,7 @@ class Series(QueryObject, OpsMixin, ParentMixin):
         ----------
         node_type : NodeType
             Output node type
-        output_var_type: : DBVarType
+        output_var_type : DBVarType
             Output variable type
 
         Returns
@@ -387,6 +387,10 @@ class Series(QueryObject, OpsMixin, ParentMixin):
     def isnull(self) -> Series:
         """
         Returns a boolean Series indicating whether each value is missing
+
+        Returns
+        -------
+        Series
         """
         return self._unary_op(node_type=NodeType.IS_NULL, output_var_type=DBVarType.BOOL)
 

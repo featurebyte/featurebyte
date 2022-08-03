@@ -88,6 +88,7 @@ class SQLOperationGraph:
             If a query node is not yet supported
         """
         # pylint: disable=too-many-locals
+        # pylint: disable=too-many-branches
         cur_node_id = cur_node.name
         assert cur_node_id not in self.sql_nodes
 
