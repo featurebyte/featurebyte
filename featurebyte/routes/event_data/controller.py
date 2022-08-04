@@ -16,8 +16,8 @@ from featurebyte.models.event_data import (
     EventDataStatus,
     FeatureJobSettingHistoryEntry,
 )
-from featurebyte.persistent import DuplicateDocumentError, Persistent
-from featurebyte.routes.common.base import BaseController
+from featurebyte.persistent import Persistent
+from featurebyte.routes.common.base import BaseController, GetType
 from featurebyte.routes.common.util import get_utc_now
 from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
 
@@ -54,27 +54,18 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
         -------
         EventDataModel
             Newly created event data object
-
-        Raises
-        ------
-        HTTPException
-            If the event data name conflicts with existing event data name
         """
         # exclude microseconds from timestamp as it's not supported in persistent
         utc_now = get_utc_now()
 
+        # check the existence of the feature store at persistent
         feature_store_id, _ = data.tabular_source
-        feature_store = await persistent.find_one(
-            collection_name=CollectionName.FEATURE_STORE, query_filter={"_id": feature_store_id}
+        _ = await cls.get_document(
+            user=user,
+            persistent=persistent,
+            collection_name=CollectionName.FEATURE_STORE,
+            document_id=feature_store_id,
         )
-        if feature_store is None:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail=(
-                    f'FeatureStore (feature_store.id: "{feature_store_id}") not found! '
-                    f"Please save the FeatureStore object first."
-                ),
-            )
 
         # init history and set status to draft
         if data.default_feature_job_setting:
@@ -87,23 +78,29 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
         else:
             history = []
 
+        # check any conflict with existing documents
+        constraints_check_triples: list[tuple[dict[str, Any], dict[str, Any], GetType]] = [
+            ({"_id": data.id}, {"id": data.id}, "name"),
+            ({"name": data.name}, {"name": data.name}, "name"),
+        ]
+        for query_filter, doc_represent, get_type in constraints_check_triples:
+            await cls.check_document_creation_conflict(
+                persistent=persistent,
+                query_filter=query_filter,
+                doc_represent=doc_represent,
+                get_type=get_type,
+            )
+
         document = EventDataModel(
             user_id=user.id,
             status=EventDataStatus.DRAFT,
             history=history,
             **data.json_dict(),
         )
-        assert document.id == data.id
-        try:
-            insert_id = await persistent.insert_one(
-                collection_name=cls.collection_name, document=document.dict(by_alias=True)
-            )
-            assert insert_id == document.id
-        except DuplicateDocumentError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.CONFLICT,
-                detail=f'EventData (event_data.name: "{data.name}") already exists.',
-            ) from exc
+        insert_id = await persistent.insert_one(
+            collection_name=cls.collection_name, document=document.dict(by_alias=True)
+        )
+        assert insert_id == document.id == data.id
 
         return await cls.get(user=user, persistent=persistent, document_id=insert_id)
 

@@ -7,8 +7,9 @@ from typing import Any
 
 from http import HTTPStatus
 
+from bson.objectid import ObjectId
+
 from featurebyte.config import Configurations
-from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
@@ -24,25 +25,6 @@ class ApiObject(FeatureByteBaseModel):
 
     # class variables
     _route = ""
-
-    @classmethod
-    def _get_object_name(cls, class_name: str) -> str:
-        """
-        Convert camel case class name to snake case object name
-
-        Parameters
-        ----------
-        class_name: str
-            Class name
-
-        Returns
-        -------
-        str
-        """
-        object_name = "".join(
-            "_" + char.lower() if char.isupper() else char for char in class_name
-        ).lstrip("_")
-        return object_name
 
     def _get_init_params(self) -> dict[str, Any]:
         """
@@ -90,25 +72,40 @@ class ApiObject(FeatureByteBaseModel):
             response_dict = response.json()
             if response_dict["data"]:
                 object_dict = response_dict["data"][0]
-                tabular_source = object_dict.get("tabular_source")
-                if tabular_source:
-                    feature_store_id, _ = tabular_source
-                    feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
-                    if feature_store_response.status_code == HTTPStatus.OK:
-                        feature_store = ExtendedFeatureStoreModel(**feature_store_response.json())
-                        return cls(**object_dict, feature_store=feature_store)
-                    raise RecordRetrievalException(
-                        response,
-                        f'FeatureStore (feature_store.id: "{feature_store_id}") not found!',
-                    )
                 return cls(**object_dict)
 
             class_name = cls.__name__
-            object_name = cls._get_object_name(class_name)
             raise RecordRetrievalException(
-                response, f'{class_name} ({object_name}.name: "{name}") not found!'
+                response,
+                f'{class_name} (name: "{name}") not found. Please save the {class_name} object first.',
             )
-        raise RecordRetrievalException(response, "Failed to retrieve specified object!")
+        raise RecordRetrievalException(response, "Failed to retrieve the specified object.")
+
+    @classmethod
+    def get_by_id(cls, id: ObjectId) -> ApiObject:  # pylint: disable=redefined-builtin,invalid-name
+        """
+        Get the API object by specifying the object ID
+
+        Parameters
+        ----------
+        id: ObjectId
+            Object ID value
+
+        Returns
+        -------
+        ApiObject
+            ApiObject object of the given object ID
+
+        Raises
+        ------
+        RecordRetrievalException
+            When the object not found
+        """
+        client = Configurations().get_client()
+        response = client.get(url=f"{cls._route}/{id}")
+        if response.status_code == HTTPStatus.OK:
+            return cls(**response.json())
+        raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
     @classmethod
     def list(cls) -> list[str]:
@@ -130,7 +127,7 @@ class ApiObject(FeatureByteBaseModel):
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             return [elem["name"] for elem in response_dict["data"]]
-        raise RecordRetrievalException(response, "Failed to list object names!")
+        raise RecordRetrievalException(response, "Failed to list object names.")
 
     def save(self) -> None:
         """

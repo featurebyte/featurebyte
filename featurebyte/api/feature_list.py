@@ -9,19 +9,20 @@ import collections
 import time
 
 import pandas as pd
-from pydantic import BaseModel, Field, parse_obj_as, root_validator
+from pydantic import Field, parse_obj_as, root_validator
 
 from featurebyte.api.feature import Feature
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.logger import logger
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.query_graph.feature_historical import get_historical_features
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
 
-class BaseFeatureGroup(BaseModel):
+class BaseFeatureGroup(FeatureByteBaseModel):
     """
     BaseFeatureGroup class
 

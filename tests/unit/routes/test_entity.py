@@ -73,15 +73,34 @@ def test_create_409(create_success_response, test_api_client_persistent, entity_
     """
     test_api_client, _ = test_api_client_persistent
     _ = create_success_response
+
     response = test_api_client.post("/entity", json=entity_dict)
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'Entity name (entity.name: "customer") already exists.'}
+    assert response.json() == {
+        "detail": (
+            f'Entity (id: "{entity_dict["_id"]}") already exists. '
+            'Get the existing object by `Entity.get(name="customer")`.'
+        )
+    }
+
+    entity_dict["_id"] = str(ObjectId())
+    response = test_api_client.post("/entity", json=entity_dict)
+    assert response.status_code == HTTPStatus.CONFLICT
+    assert response.json() == {
+        "detail": (
+            'Entity (name: "customer") already exists. '
+            'Get the existing object by `Entity.get(name="customer")`.'
+        )
+    }
 
     entity_dict["name"] = "Customer"
     response = test_api_client.post("/entity", json=entity_dict)
     assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {
-        "detail": 'Entity serving name (entity.serving_names: "cust_id") already exists.'
+        "detail": (
+            'Entity (serving_name: "cust_id") already exists. '
+            'Get the existing object by `Entity.get(name="customer")`.'
+        )
     }
 
 
@@ -178,7 +197,7 @@ def test_get_404(test_api_client_persistent):
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {
         "detail": (
-            f'Entity (entity.id: "{unknown_entity_id}") not found! Please save the Entity object first.'
+            f'Entity (id: "{unknown_entity_id}") not found. Please save the Entity object first.'
         )
     }
 
@@ -235,7 +254,7 @@ def test_update_404(test_api_client_persistent):
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {
         "detail": (
-            f'Entity (entity.id: "{unknown_entity_id}") not found! Please save the Entity object first.'
+            f'Entity (id: "{unknown_entity_id}") not found. Please save the Entity object first.'
         )
     }
 
@@ -249,7 +268,12 @@ def test_update_409(create_multiple_entries, test_api_client_persistent):
         f"/entity/{create_multiple_entries[0]}", json={"name": "customer"}
     )
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'Entity name (entity.name: "customer") already exists.'}
+    assert response.json() == {
+        "detail": (
+            'Entity (name: "customer") already exists. '
+            'Get the existing object by `Entity.get(name="customer")`.'
+        )
+    }
 
 
 def test_update_422(test_api_client_persistent):

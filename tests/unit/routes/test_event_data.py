@@ -118,33 +118,18 @@ def test_create_fails_table_exists(
     Create Event Data fails if table with same name already exists
     """
     _ = event_data_response
+    event_data_model_dict["_id"] = str(ObjectId())
     test_api_client, _ = test_api_client_persistent
     response = test_api_client.post(
         "/event_data", json=EventDataModel(**event_data_model_dict).json_dict()
     )
     assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'EventData (event_data.name: "订单表") already exists.'}
-
-
-def test_create_fails_table_exists_during_insert(
-    test_api_client_persistent, event_data_model_dict, snowflake_feature_store
-):
-    """
-    Create Event Data fails if table with same name already exists during persistent insert
-    """
-    test_api_client, persistent = test_api_client_persistent
-    snowflake_feature_store.save()
-    if isinstance(persistent, GitDB):
-        func_path = "featurebyte.persistent.GitDB.insert_one"
-    else:
-        func_path = "featurebyte.persistent.MongoDB.insert_one"
-    with mock.patch(func_path) as mock_insert:
-        mock_insert.side_effect = DuplicateDocumentError
-        response = test_api_client.post(
-            "/event_data", json=EventDataModel(**event_data_model_dict).json_dict()
+    assert response.json() == {
+        "detail": (
+            'EventData (name: "订单表") already exists. '
+            'Get the existing object by `EventData.get(name="订单表")`.'
         )
-    assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {"detail": 'EventData (event_data.name: "订单表") already exists.'}
+    }
 
 
 def test_create_fails_wrong_field_type(test_api_client_persistent, event_data_model_dict):
@@ -261,7 +246,7 @@ def test_retrieve_fails_table_not_found(test_api_client_persistent):
     response = test_api_client.get(f"/event_data/{random_id}")
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {
-        "detail": f'EventData (event_data.id: "{random_id}") not found! Please save the EventData object first.'
+        "detail": f'EventData (id: "{random_id}") not found. Please save the EventData object first.'
     }
 
 
@@ -330,7 +315,7 @@ def test_update_fails_table_not_found(test_api_client_persistent, event_data_upd
     response = test_api_client.patch(f"/event_data/{random_id}", json=event_data_update_dict)
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {
-        "detail": f'EventData (event_data.id: "{random_id}") not found! Please save the EventData object first.'
+        "detail": f'EventData (id: "{random_id}") not found. Please save the EventData object first.'
     }
 
 

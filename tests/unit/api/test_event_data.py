@@ -260,7 +260,7 @@ def test_event_data__save__feature_store_not_saved_exception(snowflake_event_dat
         snowflake_event_data.save()
     feature_store_id = snowflake_event_data.feature_store.id
     expect_msg = (
-        f'FeatureStore (feature_store.id: "{feature_store_id}") not found! '
+        f'FeatureStore (id: "{feature_store_id}") not found. '
         f"Please save the FeatureStore object first."
     )
     assert expect_msg in str(exc.value)
@@ -274,10 +274,11 @@ def test_event_data__save__exceptions(saved_event_data):
     with pytest.raises(DuplicatedRecordException) as exc:
         saved_event_data.save()
     assert exc.value.status_code == 409
-    assert (
-        exc.value.response.json()["detail"]
-        == 'EventData (event_data.name: "sf_event_data") already exists.'
+    expected_msg = (
+        f'EventData (id: "{saved_event_data.id}") already exists. '
+        'Get the existing object by `EventData.get(name="sf_event_data")`.'
     )
+    assert exc.value.response.json()["detail"] == expected_msg
 
     # check unhandled response status code
     with pytest.raises(RecordCreationException):
@@ -444,7 +445,12 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
     # load the event data from the persistent
     loaded_event_data = EventData.get(snowflake_event_data.name)
     assert loaded_event_data == snowflake_event_data
+    assert EventData.get_by_id(id=snowflake_event_data.id) == snowflake_event_data
 
     with pytest.raises(RecordRetrievalException) as exc:
         EventData.get("unknown_event_data")
-    assert 'EventData (event_data.name: "unknown_event_data") not found!' in str(exc.value)
+    expected_msg = (
+        'EventData (name: "unknown_event_data") not found. '
+        "Please save the EventData object first."
+    )
+    assert expected_msg in str(exc.value)

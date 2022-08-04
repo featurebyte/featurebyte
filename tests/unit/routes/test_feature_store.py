@@ -73,14 +73,20 @@ def test_create_409(create_success_response, test_api_client_persistent, feature
     feature_store_id = feature_store_dict["_id"]
     assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {
-        "detail": f'FeatureStore id (feature_store.id: "{feature_store_id}") already exists.'
+        "detail": (
+            f'FeatureStore (id: "{feature_store_id}") already exists. '
+            f'Get the existing object by `FeatureStore.get(name="my_feature_store")`.'
+        )
     }
 
     feature_store_dict["_id"] = str(ObjectId())
     response = test_api_client.post("/feature_store", json=feature_store_dict)
     assert response.status_code == HTTPStatus.CONFLICT
     assert response.json() == {
-        "detail": 'FeatureStore name (feature_store.name: "my_feature_store") already exists.'
+        "detail": (
+            f'FeatureStore (name: "my_feature_store") already exists. '
+            f'Get the existing object by `FeatureStore.get(name="my_feature_store")`.'
+        )
     }
 
 
@@ -142,7 +148,7 @@ def test_get_404(test_api_client_persistent):
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {
         "detail": (
-            f'FeatureStore (feature_store.id: "{unknown_feature_store_id}") not found! '
+            f'FeatureStore (id: "{unknown_feature_store_id}") not found. '
             "Please save the FeatureStore object first."
         )
     }

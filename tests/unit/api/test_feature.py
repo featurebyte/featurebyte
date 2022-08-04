@@ -252,7 +252,7 @@ def test_feature_save__exception_due_to_event_data_not_saved(float_feature, snow
     with pytest.raises(RecordCreationException) as exc:
         float_feature.save()
     expected_msg = (
-        f'EventData (event_data.id: "{snowflake_event_data.id}") not found! '
+        f'EventData (id: "{snowflake_event_data.id}") not found. '
         f"Please save the EventData object first."
     )
     assert expected_msg in str(exc.value)
@@ -265,7 +265,10 @@ def test_feature_save__exception_due_to_feature_saved_before(float_feature, save
     _ = saved_feature
     with pytest.raises(DuplicatedRecordException) as exc:
         float_feature.save()
-    expected_msg = f'Feature (feature.id: "{float_feature.id}") has been saved before.'
+    expected_msg = (
+        f'Feature (id: "{float_feature.id}") already exists. '
+        f'Get the existing object by `Feature.get_by_id(id="{float_feature.id}")`.'
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -330,10 +333,12 @@ def test_get_feature(saved_feature):
     """
     feature = Feature.get(name=saved_feature.name)
     assert feature.dict() == saved_feature.dict()
+    assert Feature.get_by_id(feature.id) == feature
 
     with pytest.raises(RecordRetrievalException) as exc:
         Feature.get(name="random_name")
-    assert 'Feature (feature.name: "random_name") not found!' in str(exc.value)
+    expected_msg = 'Feature (name: "random_name") not found. Please save the Feature object first.'
+    assert expected_msg in str(exc.value)
 
 
 def test_unary_op_inherits_event_data_id(float_feature):
