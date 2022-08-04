@@ -291,8 +291,8 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
         {
             "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
             "uid": df_training_events["uid"],
-            "COUNT_2h": [1.0, 1.0, np.nan, 1.0, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
-            "COUNT_24h": [9.0, 7.0, 2.0, 5.0, 5.0, 4.0, 4.0, 7.0, 5.0, np.nan],
+            "COUNT_2h": [1, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+            "COUNT_24h": [9, 7, 2, 5, 5, 4, 4, 7, 5, 0],
             "COUNT_BY_ACTION_24h": [
                 '{\n  "add": 2,\n  "purchase": 3,\n  "remove": 4\n}',
                 '{\n  "__MISSING__": 2,\n  "add": 3,\n  "detail": 1,\n  "purchase": 1\n}',
@@ -308,14 +308,14 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
             "COUNT_2h / COUNT_24h": [
                 0.111111,
                 0.142857,
-                np.nan,
+                0,
                 0.2,
-                np.nan,
-                np.nan,
-                np.nan,
-                np.nan,
-                np.nan,
-                np.nan,
+                0,
+                0,
+                0,
+                0,
+                0,
+                np.nan,  # Note: zero divide by zero
             ],
         }
     )

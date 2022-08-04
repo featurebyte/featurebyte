@@ -229,18 +229,22 @@ class EventViewGroupBy(OpsMixin):
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[groupby_node],
             )
-            items.append(
-                Feature(
-                    name=feature_name,
-                    feature_store=self.obj.feature_store,
-                    tabular_source=self.obj.tabular_source,
-                    node=feature_node,
-                    var_type=column_var_type_map[feature_name],
-                    lineage=self._append_to_lineage(
-                        column_lineage_map[feature_name], feature_node.name
-                    ),
-                    row_index_lineage=(groupby_node.name,),
-                    event_data_ids=[self.obj.event_data_id],
-                )
+            feature = Feature(
+                name=feature_name,
+                feature_store=self.obj.feature_store,
+                tabular_source=self.obj.tabular_source,
+                node=feature_node,
+                var_type=column_var_type_map[feature_name],
+                lineage=self._append_to_lineage(
+                    column_lineage_map[feature_name], feature_node.name
+                ),
+                row_index_lineage=(groupby_node.name,),
+                event_data_ids=[self.obj.event_data_id],
             )
-        return FeatureGroup(items)
+            # Count features should be 0 instead of NaN when there are no records
+            if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.category is None:
+                feature.fillna(0)
+                feature.name = feature_name
+            items.append(feature)
+        feature_group = FeatureGroup(items)
+        return feature_group
