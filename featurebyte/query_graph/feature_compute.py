@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 
 from abc import ABC, abstractmethod
 
-from sqlglot import Expression, expressions, select
+from sqlglot import expressions, select
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.feature_common import (
@@ -15,7 +15,6 @@ from featurebyte.query_graph.feature_common import (
     AggregationSpec,
     FeatureSpec,
     construct_cte_sql,
-    prettify_sql,
 )
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.interpreter import SQLOperationGraph, find_parent_groupby_nodes
@@ -326,7 +325,7 @@ class FeatureExecutionPlan(ABC):
         value_by: str | None,
         merge_expr: str,
         agg_result_name: str,
-    ) -> str:
+    ) -> expressions.Select:
         """Construct SQL code for one specific aggregation
 
         The aggregation consists of inner joining with the tile table on entity id and required tile
@@ -378,7 +377,7 @@ class FeatureExecutionPlan(ABC):
 
         Returns
         -------
-        str
+        expressions.Select
         """
         # pylint: disable=too-many-locals
         join_conditions_lst = ["REQ.REQ_TILE_INDEX = TILE.INDEX"]
@@ -424,8 +423,7 @@ class FeatureExecutionPlan(ABC):
                 inner_agg_expr=inner_agg_expr,
             )
 
-        out: str = agg_expr.sql(pretty=True)
-        return out
+        return agg_expr
 
     @classmethod
     @abstractmethod
@@ -436,8 +434,8 @@ class FeatureExecutionPlan(ABC):
         value_by: str,
         agg_result_name: str,
         inner_agg_result_name: str,
-        inner_agg_expr: expressions.Subqueryable,
-    ) -> Expression:
+        inner_agg_expr: expressions.Select,
+    ) -> expressions.Select:
         """Aggregate per category values into key value pairs
 
         # noqa: DAR103
@@ -468,8 +466,9 @@ class FeatureExecutionPlan(ABC):
         index: int,
         point_in_time_column: str,
         agg_spec: AggregationSpec,
-        agg_sql: str,
-    ) -> tuple[str, str]:
+        table_expr: expressions.Select,
+        agg_expr: expressions.Select,
+    ) -> tuple[expressions.Select, str]:
         """Construct SQL that left join aggregated result back to request table
 
         Parameters
@@ -480,13 +479,15 @@ class FeatureExecutionPlan(ABC):
             Point in time column
         agg_spec : AggregationSpec
             Aggregation specification
-        agg_sql : str
-            SQL that performs the aggregation
+        table_expr : expressions.Select
+            Table to which the left join should be added to
+        agg_expr : expressions.Select
+            SQL expression that performs the aggregation
 
         Returns
         -------
-        tuple[str, str]
-            Tuple of left join SQL and alias name for the aggregated column
+        tuple[Select, str]
+            Tuple of updated table expression and alias name for the aggregated column
         """
         agg_table_alias = f"T{index}"
         agg_result_name = agg_spec.agg_result_name
@@ -498,14 +499,13 @@ class FeatureExecutionPlan(ABC):
             join_conditions_lst += [
                 f"REQ.{escape_column_name(serving_name)} = {agg_table_alias}.{escape_column_name(serving_name)}"
             ]
-        join_conditions = " AND ".join(join_conditions_lst)
-        left_join_sql = f"""
-            LEFT JOIN (
-                {agg_sql}
-            ) {agg_table_alias}
-            ON {join_conditions}
-            """
-        return left_join_sql, agg_result_name_alias
+        updated_table_expr = table_expr.join(
+            agg_expr.subquery(),
+            join_type="left",
+            join_alias=agg_table_alias,
+            on=expressions.and_(*join_conditions_lst),
+        )
+        return updated_table_expr, agg_result_name_alias
 
     def construct_combined_aggregation_cte(
         self, point_in_time_column: str, request_table_columns: list[str]
@@ -524,15 +524,14 @@ class FeatureExecutionPlan(ABC):
         tuple[str, str]
             Tuple of table name and SQL code
         """
-        # pylint: disable=too-many-locals
-        left_joins = []
+        table_expr = select().from_(f"{REQUEST_TABLE_NAME} AS REQ")
         qualified_aggregation_names = []
         for i, agg_spec in enumerate(self.aggregation_specs.values()):
             expanded_request_table_name = self.request_table_plan.get_expanded_request_table_name(
                 agg_spec
             )
             agg_result_name = agg_spec.agg_result_name
-            agg_sql = self.construct_aggregation_sql(
+            agg_expr = self.construct_aggregation_sql(
                 expanded_request_table_name=expanded_request_table_name,
                 tile_table_id=agg_spec.tile_table_id,
                 point_in_time_column=point_in_time_column,
@@ -542,29 +541,17 @@ class FeatureExecutionPlan(ABC):
                 merge_expr=agg_spec.merge_expr,
                 agg_result_name=agg_result_name,
             )
-            left_join_sql, agg_result_name_alias = self.construct_left_join_sql(
+            table_expr, agg_result_name_alias = self.construct_left_join_sql(
                 index=i,
                 point_in_time_column=point_in_time_column,
                 agg_spec=agg_spec,
-                agg_sql=agg_sql,
+                table_expr=table_expr,
+                agg_expr=agg_expr,
             )
             qualified_aggregation_names.append(agg_result_name_alias)
-            left_joins.append(left_join_sql)
-        left_joins_sql = "\n".join(left_joins)
-        qualified_aggregation_names_str = ", ".join(qualified_aggregation_names)
-        request_table_columns_str = ", ".join(
-            [f"REQ.{escape_column_name(c)}" for c in request_table_columns]
-        )
-        combined_sql = (
-            f"""
-            SELECT
-                {request_table_columns_str},
-                {qualified_aggregation_names_str}
-            FROM {REQUEST_TABLE_NAME} REQ
-            """
-            + left_joins_sql
-        )
-        combined_sql = prettify_sql(combined_sql)
+        request_table_columns = [f"REQ.{escape_column_name(c)}" for c in request_table_columns]
+        table_expr = table_expr.select(*request_table_columns, *qualified_aggregation_names)
+        combined_sql = table_expr.sql(pretty=True)
         return self.AGGREGATION_TABLE_NAME, combined_sql
 
     def construct_post_aggregation_sql(self, request_table_columns: list[str]) -> str:
@@ -587,19 +574,18 @@ class FeatureExecutionPlan(ABC):
         """
         qualified_feature_names = []
         for feature_spec in self.feature_specs.values():
-            feature_alias = f'{feature_spec.feature_expr} AS "{feature_spec.feature_name}"'
+            feature_alias = (
+                f"{feature_spec.feature_expr} AS {escape_column_name(feature_spec.feature_name)}"
+            )
             qualified_feature_names.append(feature_alias)
-        request_table_column_names = ", ".join(
-            [f"AGG.{escape_column_name(col)}" for col in request_table_columns]
+        request_table_column_names = [
+            f"AGG.{escape_column_name(col)}" for col in request_table_columns
+        ]
+        table_expr = select(*request_table_column_names, *qualified_feature_names).from_(
+            f"{self.AGGREGATION_TABLE_NAME} AS AGG"
         )
-        qualified_feature_names_str = ", ".join(qualified_feature_names)
-        sql = f"""
-            SELECT
-                {request_table_column_names},
-                {qualified_feature_names_str}
-            FROM {self.AGGREGATION_TABLE_NAME} AGG
-            """
-        sql = prettify_sql(sql)
+        sql = table_expr.sql(pretty=True)
+        assert isinstance(sql, str)
         return sql
 
     def construct_combined_sql(
@@ -651,8 +637,8 @@ class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
         value_by: str,
         agg_result_name: str,
         inner_agg_result_name: str,
-        inner_agg_expr: expressions.Subqueryable,
-    ) -> Expression:
+        inner_agg_expr: expressions.Select,
+    ) -> expressions.Select:
 
         inner_alias = "INNER_"
 
