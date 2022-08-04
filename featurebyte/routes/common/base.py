@@ -53,18 +53,6 @@ class BaseController(Generic[Document, PaginatedDocument]):
         return "".join(elem.title() for elem in collection_name.split("_"))
 
     @classmethod
-    def to_object_name(cls, collection_name: str | None = None) -> str:
-        """
-        Object that is constructed by the class represents the underlying collection
-
-        Returns
-        -------
-        str
-        """
-        collection_name = collection_name or cls.collection_name
-        return collection_name
-
-    @classmethod
     def _format_document(cls, doc: dict[str, Any]) -> str:
         return ", ".join(f'{key}: "{value}"' for key, value in doc.items())
 
