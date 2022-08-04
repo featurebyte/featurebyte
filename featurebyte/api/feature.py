@@ -6,12 +6,13 @@ from __future__ import annotations
 from typing import Any
 
 import time
+from http import HTTPStatus
 
 import pandas as pd
-from pydantic import Field
+from pydantic import Field, root_validator
 
 from featurebyte.api.api_object import ApiObject
-from featurebyte.config import Credentials
+from featurebyte.config import Configurations, Credentials
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.enum import SpecialColumnName
@@ -38,6 +39,21 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
     def _get_create_payload(self) -> dict[str, Any]:
         data = FeatureCreate(**self.json_dict())
         return data.json_dict()
+
+    @root_validator(pre=True)
+    @classmethod
+    def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "feature_store" not in values:
+            tabular_source = values.get("tabular_source")
+            if tabular_source and isinstance(tabular_source, (list, tuple)) and len(tabular_source):
+                client = Configurations().get_client()
+                feature_store_id = tabular_source[0]
+                feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
+                if feature_store_response.status_code == HTTPStatus.OK:
+                    values["feature_store"] = ExtendedFeatureStoreModel(
+                        **feature_store_response.json()
+                    )
+        return values
 
     def __setattr__(self, key: str, value: Any) -> Any:
         """

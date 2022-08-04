@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from http import HTTPStatus
+
 from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.config import Configurations, Credentials
@@ -58,9 +60,9 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
 
     @root_validator(pre=True)
     @classmethod
-    def _set_graph_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _set_feature_store_and_graph_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         """
-        Construct input node & set the graph related parameters based on the given input dictionary
+        Construct feature_store, input node & set the graph related parameters based on the given input dictionary
 
         Parameters
         ----------
@@ -72,15 +74,19 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         dict[str, Any]
         """
         credentials = values.get("credentials")
+        config = Configurations()
         if credentials is None:
-            config = Configurations()
             credentials = config.credentials
 
-        feature_store = values["feature_store"]
-        if isinstance(feature_store, dict):
-            feature_store = ExtendedFeatureStoreModel(**feature_store)
+        feature_store_id, table_details = values["tabular_source"]
+        if "feature_store" not in values:
+            # attempt to set feature_store object if it does not exist
+            client = config.get_client()
+            feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
+            if feature_store_response.status_code == HTTPStatus.OK:
+                values["feature_store"] = ExtendedFeatureStoreModel(**feature_store_response.json())
 
-        _, table_details = values["tabular_source"]
+        feature_store = values["feature_store"]
         if isinstance(table_details, dict):
             table_details = TableDetails(**table_details)
 

@@ -10,7 +10,6 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 
 from featurebyte.config import Configurations
-from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
@@ -48,15 +47,6 @@ class ApiObject(FeatureByteBaseModel):
         return self.json_dict()
 
     @classmethod
-    def _get_feature_store(
-        cls, client: Any, feature_store_id: ObjectId
-    ) -> ExtendedFeatureStoreModel:
-        feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
-        if feature_store_response.status_code == HTTPStatus.OK:
-            return ExtendedFeatureStoreModel(**feature_store_response.json())
-        raise RecordRetrievalException(feature_store_response)
-
-    @classmethod
     def get(cls, name: str) -> ApiObject:
         """
         Retrieve object dictionary from the persistent given object name
@@ -82,12 +72,6 @@ class ApiObject(FeatureByteBaseModel):
             response_dict = response.json()
             if response_dict["data"]:
                 object_dict = response_dict["data"][0]
-                tabular_source = object_dict.get("tabular_source")
-                if tabular_source:
-                    feature_store_id, _ = tabular_source
-                    object_dict["feature_store"] = cls._get_feature_store(
-                        client=client, feature_store_id=feature_store_id
-                    )
                 return cls(**object_dict)
 
             class_name = cls.__name__
@@ -120,14 +104,7 @@ class ApiObject(FeatureByteBaseModel):
         client = Configurations().get_client()
         response = client.get(url=f"{cls._route}/{id}")
         if response.status_code == HTTPStatus.OK:
-            response_dict = response.json()
-            tabular_source = response_dict.get("tabular_source")
-            if tabular_source:
-                feature_store_id, _ = tabular_source
-                response_dict["feature_store"] = cls._get_feature_store(
-                    client=client, feature_store_id=feature_store_id
-                )
-            return cls(**response_dict)
+            return cls(**response.json())
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
     @classmethod
