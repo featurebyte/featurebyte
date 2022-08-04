@@ -224,8 +224,10 @@ class Frame(BaseFrame, OpsMixin):
             )
         raise TypeError(f"Frame indexing with value '{item}' is not supported!")
 
-    def __getattr__(self, item: str | list[str] | Series) -> Series | Frame:
-        return self.__getitem__(item)
+    def __getattr__(self, item: str) -> Any:
+        if item in self.columns:
+            return self.__getitem__(item)
+        return object.__getattribute__(self, item)
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         """

@@ -101,7 +101,9 @@ def test_copy_global_query_graph(query_object1, query_object2):
     """
     global_graph = GlobalQueryGraph()
     query_object3 = query_object1.copy()
+    assert query_object3 == query_object1
     query_object4 = query_object2.copy(deep=True)
+    assert query_object4 == query_object2
     query_object5 = copy.copy(query_object3)
     query_object6 = copy.deepcopy(query_object4)
     check_graph_state(query_object1.graph, global_graph)

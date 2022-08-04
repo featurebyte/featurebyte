@@ -347,3 +347,27 @@ def test_frame__dict(dataframe):
     # loaded_sub_dataframe = input -> filter (input_frame, "MASK") -> project ["VALUE", "CUST_ID"]
     # sub_dataframe = input -> filter (assign_frame, "MASK") -> project ["VALUE", "CUST_ID"]
     assert sub_dataframe.preview_sql() == loaded_sub_dataframe.preview_sql()
+
+
+def test_frame_copy(dataframe):
+    """
+    Test dataframe copy
+    """
+    assert dataframe.feature_store is not None
+    new_dataframe = dataframe.copy()
+    assert new_dataframe.feature_store == dataframe.feature_store
+    assert id(new_dataframe.graph.nodes) == id(dataframe.graph.nodes)
+
+    deep_dataframe = dataframe.copy(deep=True)
+    assert deep_dataframe == dataframe
+    assert id(deep_dataframe.graph.nodes) == id(dataframe.graph.nodes)
+
+
+def test_frame__getattr__method(dataframe):
+    """
+    Test Frame __getattr__ magic method
+    """
+    assert dataframe.CUST_ID == dataframe["CUST_ID"]
+    with pytest.raises(AttributeError):
+        # expect to throw attribute error rather than KeyError due to column not exists
+        dataframe.random_attribute

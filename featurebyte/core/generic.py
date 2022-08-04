@@ -3,7 +3,7 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar
 
 import json
 from abc import abstractmethod
@@ -46,6 +46,9 @@ class ExtendedFeatureStoreModel(FeatureStoreModel):
             credentials = config.credentials
         session_manager = SessionManager(credentials=credentials)
         return session_manager[self]
+
+
+QueryObjectT = TypeVar("QueryObjectT", bound="QueryObject")
 
 
 class QueryObject(FeatureByteBaseModel):
@@ -144,6 +147,23 @@ class QueryObject(FeatureByteBaseModel):
 
         session = self.feature_store.get_session(credentials=credentials)
         return session
+
+    def copy(
+        self: QueryObjectT,
+        *,
+        include: AbstractSetIntStr | MappingIntStrAny | None = None,
+        exclude: AbstractSetIntStr | MappingIntStrAny | None = None,
+        update: dict[str, Any] | None = None,
+        deep: bool = False,
+    ) -> QueryObjectT:
+        update_dict = update or {}
+        update_dict.update({"feature_store": self.feature_store.copy(deep=deep)})
+        return super().copy(
+            include=include,  # type: ignore
+            exclude=exclude,  # type: ignore
+            update=update_dict,
+            deep=deep,
+        )
 
     def json(
         self,

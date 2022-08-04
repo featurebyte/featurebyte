@@ -549,3 +549,29 @@ def test_fillna(float_series):
         "assign_1": ["input_1", "conditional_1"],
         "project_2": ["assign_1"],
     }
+
+
+def test_series_copy(float_series):
+    """
+    Test series copy
+    """
+    assert float_series.feature_store is not None
+    assert float_series.parent is not None
+    new_float_series = float_series.copy()
+    assert new_float_series == float_series
+    assert new_float_series.feature_store == float_series.feature_store
+    assert id(new_float_series.feature_store) != id(float_series.feature_store)
+    assert id(new_float_series.graph.nodes) == id(float_series.graph.nodes)
+
+    # check for the series without parent
+    feat = float_series + 1
+    assert feat.feature_store is not None
+    assert feat.parent is None
+    new_feat = feat.copy()
+    assert new_feat == feat
+    assert id(new_feat.graph.nodes) == id(feat.graph.nodes) == id(float_series.graph.nodes)
+
+    # check that deepcopy is working
+    deep_float_series = float_series.copy(deep=True)
+    assert deep_float_series == float_series
+    assert id(deep_float_series.graph.nodes) == id(float_series.graph.nodes)
