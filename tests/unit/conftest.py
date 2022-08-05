@@ -17,9 +17,10 @@ from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.config import Configurations
-from featurebyte.enum import CollectionName, InternalName
+from featurebyte.enum import InternalName
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
+from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.models.tile import TileSpec
@@ -389,7 +390,7 @@ def mock_get_persistent_fixture():
     """
     with mock.patch("featurebyte.app._get_persistent") as mock_get_persistent:
         gitdb = GitDB()
-        gitdb.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])
+        gitdb.insert_doc_name_func(EventDataModel.collection_name(), lambda doc: doc["name"])
         mock_get_persistent.return_value = gitdb
         yield mock_get_persistent
 

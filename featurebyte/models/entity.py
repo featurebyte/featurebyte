@@ -10,7 +10,11 @@ from datetime import datetime
 
 from pydantic import Field, StrictStr
 
-from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+    UniqueValuesConstraint,
+)
 
 
 class EntityNameHistoryEntry(FeatureByteBaseModel):
@@ -43,3 +47,27 @@ class EntityModel(FeatureByteBaseDocumentModel):
 
     serving_names: List[StrictStr] = Field(allow_mutation=False)
     name_history: List[EntityNameHistoryEntry] = Field(default_factory=list, allow_mutation=False)
+
+    class Settings:
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "entity"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature="get",
+            ),
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature="get",
+            ),
+            UniqueValuesConstraint(
+                fields=("serving_names",),
+                conflict_fields_signature={"serving_name": ["serving_names"]},
+                resolution_signature="get",
+            ),
+        ]

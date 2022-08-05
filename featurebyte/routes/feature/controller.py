@@ -11,16 +11,18 @@ from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.enum import CollectionName, SourceType
+from featurebyte.enum import SourceType
 from featurebyte.exception import DuplicatedFeatureRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
+from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import (
     DefaultVersionMode,
     FeatureModel,
     FeatureNameSpaceModel,
     FeatureReadiness,
 )
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseController
 from featurebyte.schema.feature import FeatureCreate, FeatureList
@@ -31,7 +33,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
     Feature controller
     """
 
-    collection_name = CollectionName.FEATURE
+    collection_name = FeatureModel.collection_name()
     document_class = FeatureModel
     paginated_document_class = FeatureList
 
@@ -90,7 +92,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
             _ = await cls.get_document(
                 user=user,
                 persistent=session,
-                collection_name=CollectionName.EVENT_DATA,
+                collection_name=EventDataModel.collection_name(),
                 document_id=event_data_id,
                 exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             )
@@ -240,7 +242,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
             feature_store_dict = await cls.get_document(
                 user=user,
                 persistent=persistent,
-                collection_name=CollectionName.FEATURE_STORE,
+                collection_name=FeatureStoreModel.collection_name(),
                 document_id=feature_store_id,
                 exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             )
@@ -262,18 +264,18 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
                     default_version_mode=DefaultVersionMode.AUTO,
                 )
                 await session.insert_one(
-                    collection_name=CollectionName.FEATURE_NAMESPACE,
+                    collection_name=FeatureNameSpaceModel.collection_name(),
                     document=doc_feature_namespace.dict(by_alias=True),
                 )
             else:
                 # update feature namespace object
                 feature_namespace_dict = await session.find_one(
-                    collection_name=CollectionName.FEATURE_NAMESPACE,
+                    collection_name=FeatureNameSpaceModel.collection_name(),
                     query_filter={"name": document.name},
                 )
                 feature_namespace = FeatureNameSpaceModel(**feature_namespace_dict)  # type: ignore
                 await session.update_one(
-                    collection_name=CollectionName.FEATURE_NAMESPACE,
+                    collection_name=FeatureNameSpaceModel.collection_name(),
                     query_filter={"_id": feature_namespace.id},
                     update={
                         "$set": cls.prepare_feature_namespace_payload(

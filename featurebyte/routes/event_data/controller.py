@@ -10,12 +10,12 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.enum import CollectionName
 from featurebyte.models.event_data import (
     EventDataModel,
     EventDataStatus,
     FeatureJobSettingHistoryEntry,
 )
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseController, GetType
 from featurebyte.routes.common.util import get_utc_now
@@ -27,7 +27,7 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
     EventData controller
     """
 
-    collection_name = CollectionName.EVENT_DATA
+    collection_name = EventDataModel.collection_name()
     document_class = EventDataModel
     paginated_document_class = EventDataList
 
@@ -63,7 +63,7 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
         _ = await cls.get_document(
             user=user,
             persistent=persistent,
-            collection_name=CollectionName.FEATURE_STORE,
+            collection_name=FeatureStoreModel.collection_name(),
             document_id=feature_store_id,
         )
 

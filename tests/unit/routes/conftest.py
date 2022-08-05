@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
 from featurebyte.app import app
-from featurebyte.enum import CollectionName
+from featurebyte.models.event_data import EventDataModel
 from featurebyte.persistent import GitDB
 from featurebyte.persistent.mongo import MongoDB
 
@@ -38,7 +38,7 @@ async def persistent_fixture(request):
             persistent = MongoDB(uri="mongodb://server.example.com:27017", database="test")
             database = mongo_client["test"]
             collection_index_map = {
-                CollectionName.EVENT_DATA: [
+                EventDataModel.collection_name(): [
                     ("_id", {}),
                     ("user_id", {}),
                     ("source", {}),
@@ -63,7 +63,7 @@ async def persistent_fixture(request):
 
     if request.param == "gitdb":
         gitdb = GitDB()
-        gitdb.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])
+        gitdb.insert_doc_name_func(EventDataModel.collection_name(), lambda doc: doc["name"])
         yield gitdb
 
 
