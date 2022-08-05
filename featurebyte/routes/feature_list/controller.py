@@ -60,12 +60,12 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
             )
 
         # check whether the feature(s) in the feature list saved to persistent or not
-        for feature_id in document.feature_ids:
+        for feature in document.features:
             await cls.get_document(
                 user=user,
                 persistent=persistent,
                 collection_name=FeatureModel.collection_name(),
-                document_id=feature_id,
+                document_id=feature.id,
                 exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             )
 

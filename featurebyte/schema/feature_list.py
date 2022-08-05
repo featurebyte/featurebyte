@@ -14,6 +14,7 @@ from featurebyte.models.feature import (
     FeatureListStatus,
     FeatureListVersionIdentifier,
     FeatureReadiness,
+    FeatureSignature,
 )
 from featurebyte.routes.common.schema import PaginationMixin
 
@@ -26,7 +27,7 @@ class FeatureListCreate(FeatureByteBaseModel):
     id: PydanticObjectId = Field(alias="_id")
     name: StrictStr
     description: Optional[str]
-    feature_ids: List[PydanticObjectId] = Field(min_items=1)
+    features: List[FeatureSignature] = Field(default_factory=list)
     readiness: Optional[FeatureReadiness]
     status: Optional[FeatureListStatus]
     version: Optional[FeatureListVersionIdentifier]

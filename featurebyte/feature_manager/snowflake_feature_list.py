@@ -66,7 +66,9 @@ class FeatureListManagerSnowflake(BaseModel):
             )
 
             if feature_list.features:
-                feature_lst = [{"feature": f[0], "version": f[1]} for f in feature_list.features]
+                feature_lst = [
+                    {"feature": f.name, "version": f.version} for f in feature_list.features
+                ]
                 feature_lst_str = str(feature_lst).replace("'", '"')
             else:
                 feature_lst_str = "[]"

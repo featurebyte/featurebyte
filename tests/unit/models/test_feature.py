@@ -23,7 +23,7 @@ def feature_list_model_dict_fixture():
     return {
         "name": "my_feature_list",
         "description": None,
-        "feature_ids": [],
+        "features": [],
         "readiness": "DRAFT",
         "status": None,
         "version": "V220710",

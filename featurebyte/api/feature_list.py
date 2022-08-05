@@ -18,7 +18,12 @@ from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature import (
+    FeatureListModel,
+    FeatureListStatus,
+    FeatureReadiness,
+    FeatureSignature,
+)
 from featurebyte.query_graph.feature_historical import get_historical_features
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
@@ -202,7 +207,10 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
             values["feature_objects"].values(),
             key=lambda feature: FeatureReadiness(feature.readiness or FeatureReadiness.min()),
         ).readiness
-        values["feature_ids"] = [feature.id for feature in values["feature_objects"].values()]
+        values["features"] = [
+            FeatureSignature(id=feature.id, name=feature.name, version=feature.version)
+            for feature in values["feature_objects"].values()
+        ]
         values["status"] = FeatureListStatus.DRAFT
         values["version"] = get_version()
         return values

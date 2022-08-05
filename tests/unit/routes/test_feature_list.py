@@ -34,7 +34,14 @@ class TestFeatureListApi(BaseApiTestSuite):
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
-            {**payload, "_id": object_id, "name": "random_name", "feature_ids": [object_id]},
+            {
+                **payload,
+                "_id": object_id,
+                "name": "random_name",
+                "features": [
+                    {"id": object_id, "name": "some_feature", "version": "random_version"}
+                ],
+            },
             f'Feature (id: "{object_id}") not found. ' "Please save the Feature object first.",
         )
     ]
