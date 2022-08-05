@@ -491,7 +491,7 @@ def mock_snowflake_feature_list_model(
     mock_feature_list = FeatureListModel(
         name="feature_list1",
         description="test_description1",
-        features=[(feature.id, feature.name, feature.version)],
+        features=[{"id": feature.id, "name": feature.name, "version": feature.version}],
         readiness=FeatureReadiness.DRAFT,
         status=FeatureListStatus.DRAFT,
         version="v1",

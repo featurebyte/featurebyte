@@ -35,13 +35,13 @@ class TestFeatureApi(BaseApiTestSuite):
         ),
         (
             {**payload, "_id": str(ObjectId())},
-            'Feature (name: "sum_1d") already exists. '
+            'Feature (name: "sum_30m") already exists. '
             f'Get the existing object by `Feature.get_by_id(id="{payload["_id"]}")`.',
         ),
         (
             {**payload, "_id": object_id, "parent_id": payload["_id"], "name": "random_name"},
             f'Feature (id: "{object_id}", name: "random_name") '
-            f'has invalid parent feature (id: "{payload["_id"]}", name: "sum_1d")!',
+            f'has invalid parent feature (id: "{payload["_id"]}", name: "sum_30m")!',
         ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
