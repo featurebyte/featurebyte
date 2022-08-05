@@ -1,154 +1,41 @@
 """
 Test for FeatureStore route
 """
-from datetime import datetime
-from http import HTTPStatus
-
-import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.enum import SourceType
+from tests.unit.routes.base import BaseApiTestSuite
 
 
-@pytest.fixture(name="feature_store_dict")
-def feature_store_dict_fixture():
+class TestFeatureStoreApi(BaseApiTestSuite):
     """
-    FeatureStore model dictionary fixture
+    TestFeatureStoreApi
     """
-    return {
-        "_id": str(ObjectId()),
-        "name": "my_feature_store",
-        "type": SourceType.SNOWFLAKE,
-        "details": {
-            "account": "sf_account",
-            "warehouse": "sf_warehouse",
-            "database": "sf_database",
-            "sf_schema": "sf_schema",
-        },
-    }
 
-
-@pytest.fixture(name="create_success_response")
-def create_success_response_fixture(
-    test_api_client_persistent,
-    feature_store_dict,
-):
-    test_api_client, persistent = test_api_client_persistent
-    response = test_api_client.post("/feature_store", json=feature_store_dict)
-    return response
-
-
-def test_create_201(create_success_response, test_api_client_persistent):
-    """
-    Test feature store creation (success)
-    """
-    utcnow = datetime.utcnow()
-    assert create_success_response.status_code == HTTPStatus.CREATED
-    result = create_success_response.json()
-
-    # check response
-    feature_store_id = ObjectId(result["_id"])  # valid ObjectId
-    assert result["user_id"] is None
-    assert datetime.fromisoformat(result["created_at"]) < utcnow
-    assert result["updated_at"] is None
-
-    # test get audit records
-    test_api_client, _ = test_api_client_persistent
-    response = test_api_client.get(f"/feature_store/audit/{feature_store_id}")
-    assert response.status_code == HTTPStatus.OK
-    results = response.json()
-    print(results)
-    assert results["total"] == 1
-    assert [record["action_type"] for record in results["data"]] == ["INSERT"]
-    assert [record["previous_values"] for record in results["data"]] == [{}]
-
-
-def test_create_409(create_success_response, test_api_client_persistent, feature_store_dict):
-    """
-    Test feature store creation (conflict)
-    """
-    test_api_client, _ = test_api_client_persistent
-    _ = create_success_response
-    response = test_api_client.post("/feature_store", json=feature_store_dict)
-    feature_store_id = feature_store_dict["_id"]
-    assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {
-        "detail": (
-            f'FeatureStore (id: "{feature_store_id}") already exists. '
-            f'Get the existing object by `FeatureStore.get(name="my_feature_store")`.'
+    class_name = "FeatureStore"
+    base_route = "/feature_store"
+    payload_filename = "tests/fixtures/request_payloads/feature_store.json"
+    payload = BaseApiTestSuite.load_payload(payload_filename)
+    create_conflict_payload_expected_detail_pairs = [
+        (
+            payload,
+            f'FeatureStore (id: "{payload["_id"]}") already exists. '
+            f'Get the existing object by `FeatureStore.get(name="sf_featurestore")`.',
+        ),
+        (
+            {**payload, "_id": str(ObjectId())},
+            f'FeatureStore (name: "sf_featurestore") already exists. '
+            f'Get the existing object by `FeatureStore.get(name="sf_featurestore")`.',
+        ),
+    ]
+    create_unprocessable_payload_expected_detail_pairs = [
+        (
+            {key: val for key, val in payload.items() if key != "_id"},
+            [
+                {
+                    "loc": ["body", "_id"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                }
+            ],
         )
-    }
-
-    feature_store_dict["_id"] = str(ObjectId())
-    response = test_api_client.post("/feature_store", json=feature_store_dict)
-    assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {
-        "detail": (
-            f'FeatureStore (name: "my_feature_store") already exists. '
-            f'Get the existing object by `FeatureStore.get(name="my_feature_store")`.'
-        )
-    }
-
-
-def test_create_422(test_api_client_persistent, feature_store_dict):
-    """
-    Test feature store creation (unprocessable entity)
-    """
-    test_api_client, _ = test_api_client_persistent
-    feature_store_dict.pop("_id")
-    response = test_api_client.post("/feature_store", json=feature_store_dict)
-    assert response.json() == {
-        "detail": [
-            {
-                "loc": ["body", "_id"],
-                "msg": "field required",
-                "type": "value_error.missing",
-            }
-        ]
-    }
-
-
-def test_list_200(create_success_response, test_api_client_persistent, feature_store_dict):
-    """
-    Test list entities (success)
-    """
-    test_api_client, _ = test_api_client_persistent
-    _ = create_success_response
-    response = test_api_client.get("/feature_store")
-    assert response.status_code == HTTPStatus.OK
-    result = response.json()
-    expected_paginated_info = {"page": 1, "page_size": 10, "total": 1}
-
-    result_data = result.pop("data")
-    assert len(result_data) == 1
-    assert result_data[0].items() >= feature_store_dict.items()
-    assert result == expected_paginated_info
-
-
-def test_get_200(create_success_response, test_api_client_persistent):
-    """
-    Test get feature store (success)
-    """
-    test_api_client, _ = test_api_client_persistent
-    created_feature_store = create_success_response.json()
-    feature_store_id = created_feature_store["_id"]
-    response = test_api_client.get(f"/feature_store/{feature_store_id}")
-    assert response.status_code == HTTPStatus.OK
-    response_data = response.json()
-    assert response_data == created_feature_store
-
-
-def test_get_404(test_api_client_persistent):
-    """
-    Test get feature store (not found)
-    """
-    test_api_client, _ = test_api_client_persistent
-    unknown_feature_store_id = ObjectId()
-    response = test_api_client.get(f"/feature_store/{unknown_feature_store_id}")
-    assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {
-        "detail": (
-            f'FeatureStore (id: "{unknown_feature_store_id}") not found. '
-            "Please save the FeatureStore object first."
-        )
-    }
+    ]

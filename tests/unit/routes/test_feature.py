@@ -9,13 +9,148 @@ import pytest
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.api.event_data import EventData
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.exception import DuplicatedFeatureRegistryError
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import SourceType, SQLiteDetails, TableDetails
-from featurebyte.persistent.mongo import MongoDB
 from featurebyte.routes.feature.controller import FeatureController
+from tests.unit.routes.base import BaseApiTestSuite
+
+
+class TestFeatureApi(BaseApiTestSuite):
+    """
+    TestFeatureApi class
+    """
+
+    class_name = "Feature"
+    base_route = "/feature"
+    payload_filename = "tests/fixtures/request_payloads/feature.json"
+    payload = BaseApiTestSuite.load_payload(payload_filename)
+    object_id = str(ObjectId())
+    create_conflict_payload_expected_detail_pairs = [
+        (
+            payload,
+            f'Feature (id: "{payload["_id"]}") already exists. '
+            f'Get the existing object by `Feature.get_by_id(id="{payload["_id"]}")`.',
+        ),
+        (
+            {**payload, "_id": str(ObjectId())},
+            'Feature (name: "sum_1d") already exists. '
+            f'Get the existing object by `Feature.get_by_id(id="{payload["_id"]}")`.',
+        ),
+        (
+            {**payload, "_id": object_id, "parent_id": payload["_id"], "name": "random_name"},
+            f'Feature (id: "{object_id}", name: "random_name") '
+            f'has invalid parent feature (id: "{payload["_id"]}", name: "sum_1d")!',
+        ),
+    ]
+    create_unprocessable_payload_expected_detail_pairs = [
+        (
+            {**payload, "_id": object_id, "parent_id": object_id},
+            f'The original feature (id: "{object_id}") not found. '
+            f"Please save the Feature object first.",
+        ),
+        (
+            {**payload, "event_data_ids": []},
+            [
+                {
+                    "loc": ["body", "event_data_ids"],
+                    "msg": "ensure this value has at least 1 items",
+                    "type": "value_error.list.min_items",
+                    "ctx": {"limit_value": 1},
+                }
+            ],
+        ),
+        (
+            {**payload, "_id": object_id, "name": "random_name", "event_data_ids": [object_id]},
+            f'EventData (id: "{object_id}") not found. ' f"Please save the EventData object first.",
+        ),
+    ]
+
+    @pytest.fixture(autouse=True)
+    def mock_insert_feature_registry_fixture(self):
+        """
+        Mock insert feature registry at the controller level
+        """
+        with patch(
+            "featurebyte.routes.feature.controller.FeatureController.insert_feature_registry"
+        ) as mock:
+            yield mock
+
+    def setup_creation_route(self, api_client):
+        """
+        Setup for post route
+        """
+        # save feature store
+        feature_store_payload = self.load_payload(
+            "tests/fixtures/request_payloads/feature_store.json"
+        )
+        response = api_client.post("/feature_store", json=feature_store_payload)
+        assert response.status_code == HTTPStatus.CREATED
+
+        # save event data
+        feature_store_payload = self.load_payload("tests/fixtures/request_payloads/event_data.json")
+        response = api_client.post("/event_data", json=feature_store_payload)
+        assert response.status_code == HTTPStatus.CREATED
+
+    @pytest.mark.asyncio
+    async def test_create_201(self, test_api_client_persistent, create_success_response):
+        """Test creation (success)"""
+        super().test_create_201(test_api_client_persistent, create_success_response)
+        response_dict = create_success_response.json()
+        assert response_dict["readiness"] == "DRAFT"
+
+        # check feature namespace
+        test_api_client, persistent = test_api_client_persistent
+        feat_namespace_docs, match_count = await persistent.find(
+            collection_name="feature_namespace",
+            query_filter={"name": self.payload["name"]},
+        )
+        assert match_count == 1
+        assert feat_namespace_docs[0]["name"] == self.payload["name"]
+        assert feat_namespace_docs[0]["description"] is None
+        assert feat_namespace_docs[0]["versions"] == [response_dict["version"]]
+        assert feat_namespace_docs[0]["version_ids"] == [ObjectId(self.payload["_id"])]
+        assert feat_namespace_docs[0]["readiness"] == "DRAFT"
+        assert feat_namespace_docs[0]["default_version_id"] == ObjectId(self.payload["_id"])
+        assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
+        assert feat_namespace_docs[0]["created_at"] >= datetime.fromisoformat(
+            response_dict["created_at"]
+        )
+        assert feat_namespace_docs[0]["updated_at"] is None
+
+        # create a new feature version with the same namespace
+        new_payload = self.payload.copy()
+        new_payload["_id"] = str(ObjectId())
+        new_payload["parent_id"] = self.payload["_id"]
+        new_response = test_api_client.post("/feature", json=new_payload)
+        new_response_dict = new_response.json()
+        assert new_response.status_code == HTTPStatus.CREATED
+        assert new_response_dict.items() >= new_payload.items()
+
+        # check feature namespace with the new feature version
+        feat_namespace_docs, match_count = await persistent.find(
+            collection_name="feature_namespace",
+            query_filter={"name": self.payload["name"]},
+        )
+        assert match_count == 1
+        assert feat_namespace_docs[0]["name"] == self.payload["name"]
+        assert feat_namespace_docs[0]["description"] is None
+        assert feat_namespace_docs[0]["versions"] == [
+            response_dict["version"],
+            f"{response_dict['version']}_1",
+        ]
+        assert feat_namespace_docs[0]["version_ids"] == [
+            ObjectId(self.payload["_id"]),
+            ObjectId(new_payload["_id"]),
+        ]
+        assert feat_namespace_docs[0]["readiness"] == "DRAFT"
+        assert feat_namespace_docs[0]["default_version_id"] == ObjectId(new_payload["_id"])
+        assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
+        assert feat_namespace_docs[0]["created_at"] >= datetime.fromisoformat(
+            response_dict["created_at"]
+        )
+        assert feat_namespace_docs[0]["updated_at"] > feat_namespace_docs[0]["created_at"]
 
 
 @pytest.fixture(name="feature_model_dict")
@@ -33,243 +168,6 @@ def feature_model_dict_fixture(feature_model_dict):
         },
     )
     return feature_model_dict
-
-
-@pytest.fixture(name="snowflake_event_data")
-def snowflake_event_data_fixture(snowflake_database_table, config):
-    """
-    EventData object fixture
-    """
-    yield EventData.from_tabular_source(
-        tabular_source=snowflake_database_table,
-        name="sf_event_data",
-        event_timestamp_column="event_timestamp",
-        record_creation_date_column="created_at",
-        credentials=config.credentials,
-    )
-
-
-@pytest.fixture(name="mock_insert_feature_registry")
-def mock_insert_feature_registry_fixture():
-    """
-    Mock insert feature registry at the controller level
-    """
-    with patch(
-        "featurebyte.routes.feature.controller.FeatureController.insert_feature_registry"
-    ) as mock:
-        yield mock
-
-
-@pytest.fixture(name="create_success_response")
-def create_success_response_fixture(
-    test_api_client_persistent,
-    feature_model_dict,
-    snowflake_feature_store,
-    snowflake_event_data,
-    mock_insert_feature_registry,
-):
-    """
-    Post create success response fixture
-    """
-    _ = mock_insert_feature_registry
-    test_api_client, persistent = test_api_client_persistent
-    if isinstance(persistent, MongoDB):
-        pytest.skip("Session not supported in Mongomock!")
-
-    snowflake_feature_store.save()
-    snowflake_event_data.save()
-    feature_model_dict["event_data_ids"] = [str(snowflake_event_data.id)]
-    feature_model_dict["tabular_source"] = (
-        str(snowflake_feature_store.id),
-        {
-            "database_name": "sf_database",
-            "schema_name": "sf_schema",
-            "table_name": "sf_table",
-        },
-    )
-    response = test_api_client.post("/feature", json=feature_model_dict)
-    return response
-
-
-@pytest.mark.asyncio
-async def test_create_201(
-    test_api_client_persistent,
-    feature_model_dict,
-    create_success_response,
-    mock_insert_feature_registry,
-):
-    """
-    Test feature creation
-    """
-    _ = mock_insert_feature_registry
-    test_api_client, persistent = test_api_client_persistent
-
-    # check response
-    assert create_success_response.status_code == HTTPStatus.CREATED
-    result = create_success_response.json()
-    feature_id = result.pop("_id")
-    feature_readiness = result.pop("readiness")
-    created_at = datetime.fromisoformat(result.pop("created_at"))
-    updated_at = result.pop("updated_at")
-    assert result.pop("user_id") is None
-    assert created_at < datetime.utcnow()
-    assert updated_at is None
-    assert feature_readiness == "DRAFT"
-    for key in ["tabular_source", "row_index_lineage"]:
-        assert tuple(result.pop(key)) == feature_model_dict[key]
-    for key in result.keys():
-        assert result[key] == feature_model_dict[key]
-
-    # check feature namespace
-    feat_namespace_docs, match_count = await persistent.find(
-        collection_name="feature_namespace",
-        query_filter={"name": feature_model_dict["name"]},
-    )
-    assert match_count == 1
-    assert feat_namespace_docs[0]["name"] == feature_model_dict["name"]
-    assert feat_namespace_docs[0]["description"] is None
-    assert feat_namespace_docs[0]["versions"] == ["V220710"]
-    assert feat_namespace_docs[0]["version_ids"] == [ObjectId(feature_id)]
-    assert feat_namespace_docs[0]["readiness"] == feature_readiness
-    assert feat_namespace_docs[0]["default_version_id"] == ObjectId(feature_id)
-    assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
-    assert feat_namespace_docs[0]["created_at"] > created_at
-    assert feat_namespace_docs[0]["updated_at"] == updated_at
-
-    # create a new feature version with the same namespace
-    feature_model_dict["_id"] = str(ObjectId())
-    feature_model_dict["parent_id"] = feature_id
-    feature_model_dict["event_data_ids"] = result["event_data_ids"]
-    response = test_api_client.post("/feature", json=feature_model_dict)
-    assert response.status_code == HTTPStatus.CREATED
-    new_version_result = response.json()
-
-    # check feature namespace
-    feat_namespace_docs, match_count = await persistent.find(
-        collection_name="feature_namespace",
-        query_filter={"name": feature_model_dict["name"]},
-    )
-    assert match_count == 1
-    assert feat_namespace_docs[0]["name"] == feature_model_dict["name"]
-    assert feat_namespace_docs[0]["description"] is None
-    assert feat_namespace_docs[0]["version_ids"] == [
-        ObjectId(feature_id),
-        ObjectId(new_version_result["_id"]),
-    ]
-    assert feat_namespace_docs[0]["versions"] == ["V220710", "V220710_1"]
-    assert feat_namespace_docs[0]["readiness"] == feature_readiness
-    assert feat_namespace_docs[0]["default_version_id"] == ObjectId(new_version_result["_id"])
-    assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
-    assert feat_namespace_docs[0]["created_at"] > created_at
-    assert feat_namespace_docs[0]["updated_at"] > feat_namespace_docs[0]["created_at"]
-
-    # test get audit records
-    response = test_api_client.get(f"/feature/audit/{feature_id}")
-    assert response.status_code == HTTPStatus.OK
-    results = response.json()
-    print(results)
-    assert results["total"] == 1
-    assert [record["action_type"] for record in results["data"]] == ["INSERT"]
-    assert [record["previous_values"] for record in results["data"]] == [{}]
-
-
-def test_create_409(
-    create_success_response, test_api_client_persistent, feature_model_dict, snowflake_event_data
-):
-    """
-    Test feature creation (conflict)
-    """
-    test_api_client, _ = test_api_client_persistent
-
-    # simulate the case when the feature id has been saved
-    create_result = create_success_response.json()
-    feature_model_dict["_id"] = create_result["_id"]
-    response = test_api_client.post("/feature", json=feature_model_dict)
-    feature_id = feature_model_dict.pop("_id")
-    assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {
-        "detail": (
-            f'Feature (id: "{feature_id}") already exists. '
-            f'Get the existing object by `Feature.get_by_id(id="{feature_id}")`.'
-        )
-    }
-
-    feature_model_dict["_id"] = str(ObjectId())
-    feature_model_dict["event_data_ids"] = [str(snowflake_event_data.id)]
-    assert feature_model_dict["parent_id"] is None
-    response = test_api_client.post("/feature", json=feature_model_dict)
-    assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {
-        "detail": (
-            'Feature (name: "sum_30m") already exists. '
-            f'Get the existing object by `Feature.get_by_id(id="{feature_id}")`.'
-        )
-    }
-
-
-def test_create_422__not_proper_parent(
-    create_success_response, test_api_client_persistent, feature_model_dict, snowflake_event_data
-):
-    """
-    Test feature creation (when the parent id)
-    """
-    test_api_client, _ = test_api_client_persistent
-    feature_id = str(ObjectId())
-    parent_id = str(ObjectId())
-    feature_model_dict["_id"] = feature_id
-    feature_model_dict["event_data_ids"] = [str(snowflake_event_data.id)]
-    feature_model_dict["parent_id"] = parent_id
-    response = test_api_client.post("/feature", json=feature_model_dict)
-    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert response.json() == {
-        "detail": (
-            f'The original feature (id: "{parent_id}") not found. '
-            f"Please save the Feature object first."
-        )
-    }
-
-    create_result = create_success_response.json()
-    parent_id = create_result["_id"]
-    feature_model_dict["name"] = "other_name"
-    feature_model_dict["parent_id"] = parent_id
-    response = test_api_client.post("/feature", json=feature_model_dict)
-    assert response.status_code == HTTPStatus.CONFLICT
-    assert response.json() == {
-        "detail": (
-            f'Feature (id: "{feature_id}", name: "other_name") '
-            f'has invalid parent feature (id: "{parent_id}", name: "sum_30m")!'
-        )
-    }
-
-
-def test_create_422(test_api_client_persistent, feature_model_dict):
-    """
-    Test feature creation (unprocessable entity due to missing event data ids)
-    """
-    test_api_client, persistent = test_api_client_persistent
-    if isinstance(persistent, MongoDB):
-        pytest.skip("Session not supported in Mongomock!")
-
-    response = test_api_client.post("/feature", json=feature_model_dict)
-    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert response.json()["detail"] == [
-        {
-            "loc": ["body", "event_data_ids"],
-            "msg": "ensure this value has at least 1 items",
-            "type": "value_error.list.min_items",
-            "ctx": {"limit_value": 1},
-        }
-    ]
-
-    # test unsaved event ids
-    unknown_event_id = str(ObjectId())
-    feature_model_dict["event_data_ids"] = [unknown_event_id]
-    response = test_api_client.post("/feature", json=feature_model_dict)
-    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert response.json()["detail"] == (
-        f'EventData (id: "{unknown_event_id}") not found. '
-        f"Please save the EventData object first."
-    )
 
 
 @pytest.mark.parametrize(
@@ -475,48 +373,3 @@ def test_insert_feature_registry__other_exception(
             get_credential=get_credential,
         )
     assert mock_feature_manager.return_value.remove_feature_registry.called
-
-
-def test_get_200(
-    test_api_client_persistent,
-    feature_model_dict,
-    create_success_response,
-):
-    """
-    Test feature retrieval
-    """
-    test_api_client, persistent = test_api_client_persistent
-    feature_id = create_success_response.json()["_id"]
-    response = test_api_client.get(f"/feature/{feature_id}")
-    assert response.status_code == HTTPStatus.OK
-    assert response.json() == create_success_response.json()
-
-
-def test_get_404(test_api_client_persistent):
-    """
-    Test feature retrieval (not found)
-    """
-    test_api_client, _ = test_api_client_persistent
-    random_id = str(ObjectId())
-    response = test_api_client.get(f"/feature/{random_id}")
-    assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {
-        "detail": f'Feature (id: "{random_id}") not found. Please save the Feature object first.'
-    }
-
-
-def test_list_200(test_api_client_persistent, create_success_response):
-    """
-    Test list features (success)
-    """
-    test_api_client, _ = test_api_client_persistent
-    response = test_api_client.get("/feature")
-    assert response.status_code == HTTPStatus.OK
-    result = response.json()
-    assert result.items() >= {"page": 1, "page_size": 10, "total": 1}.items()
-
-    created_feature = create_success_response.json()
-    assert created_feature in result["data"]
-
-    response = test_api_client.get("/feature", params={"name": "random_name"})
-    assert response.json().items() >= {"page": 1, "page_size": 10, "total": 0}.items()

@@ -1,0 +1,126 @@
+{
+    "_id": "62ebd26ff1d781fa2938d258",
+    "description": null,
+    "event_data_ids": [
+        "62ebd26ff1d781fa2938d253"
+    ],
+    "graph": {
+        "backward_edges": {
+            "groupby_1": [
+                "input_1"
+            ],
+            "project_1": [
+                "groupby_1"
+            ]
+        },
+        "edges": {
+            "groupby_1": [
+                "project_1"
+            ],
+            "input_1": [
+                "groupby_1"
+            ]
+        },
+        "nodes": {
+            "groupby_1": {
+                "name": "groupby_1",
+                "output_type": "frame",
+                "parameters": {
+                    "agg_func": "sum",
+                    "blind_spot": 600,
+                    "frequency": 1800,
+                    "keys": [
+                        "cust_id"
+                    ],
+                    "names": [
+                        "sum_30m",
+                        "sum_2h",
+                        "sum_1d"
+                    ],
+                    "parent": "col_float",
+                    "serving_names": [
+                        "cust_id"
+                    ],
+                    "tile_id": "sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
+                    "time_modulo_frequency": 300,
+                    "timestamp": "event_timestamp",
+                    "value_by": null,
+                    "windows": [
+                        "30m",
+                        "2h",
+                        "1d"
+                    ]
+                },
+                "type": "groupby"
+            },
+            "input_1": {
+                "name": "input_1",
+                "output_type": "frame",
+                "parameters": {
+                    "columns": [
+                        "col_int",
+                        "col_float",
+                        "col_char",
+                        "col_text",
+                        "col_binary",
+                        "col_boolean",
+                        "event_timestamp",
+                        "created_at",
+                        "cust_id"
+                    ],
+                    "dbtable": {
+                        "database_name": "sf_database",
+                        "schema_name": "sf_schema",
+                        "table_name": "sf_table"
+                    },
+                    "feature_store": {
+                        "details": {
+                            "account": "sf_account",
+                            "database": "sf_database",
+                            "sf_schema": "sf_schema",
+                            "warehouse": "sf_warehouse"
+                        },
+                        "type": "snowflake"
+                    },
+                    "timestamp": "event_timestamp"
+                },
+                "type": "input"
+            },
+            "project_1": {
+                "name": "project_1",
+                "output_type": "series",
+                "parameters": {
+                    "columns": [
+                        "sum_1d"
+                    ]
+                },
+                "type": "project"
+            }
+        }
+    },
+    "name": "sum_1d",
+    "node": {
+        "name": "project_1",
+        "output_type": "series",
+        "parameters": {
+            "columns": [
+                "sum_1d"
+            ]
+        },
+        "type": "project"
+    },
+    "parent_id": null,
+    "row_index_lineage": [
+        "groupby_1"
+    ],
+    "tabular_source": [
+        "62ebd26ff1d781fa2938d24f",
+        {
+            "database_name": "sf_database",
+            "schema_name": "sf_schema",
+            "table_name": "sf_table"
+        }
+    ],
+    "var_type": "FLOAT",
+    "version": "V220804"
+}

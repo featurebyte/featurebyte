@@ -1,6 +1,7 @@
 """
 Unit test for Feature & FeatureList classes
 """
+import json
 from datetime import datetime
 from unittest.mock import patch
 
@@ -223,7 +224,11 @@ def mock_insert_feature_registry_fixture():
 
 @pytest.fixture(name="saved_feature")
 def saved_feature_fixture(
-    snowflake_feature_store, snowflake_event_data, float_feature, mock_insert_feature_registry
+    snowflake_feature_store,
+    snowflake_event_data,
+    float_feature,
+    mock_insert_feature_registry,
+    update_fixtures,
 ):
     """
     Saved feature fixture
@@ -242,7 +247,22 @@ def saved_feature_fixture(
     # test list features
     assert float_feature.name == "sum_1d"
     assert Feature.list() == ["sum_1d"]
-    yield float_feature
+
+    if update_fixtures:
+        # write request payload for testing api route
+        with open("tests/fixtures/request_payloads/feature_store.json", "w") as fhandle:
+            fhandle.write(
+                json.dumps(snowflake_feature_store._get_create_payload(), indent=4, sort_keys=True)
+            )
+
+        with open("tests/fixtures/request_payloads/event_data.json", "w") as fhandle:
+            fhandle.write(
+                json.dumps(snowflake_event_data._get_create_payload(), indent=4, sort_keys=True)
+            )
+
+        with open("tests/fixtures/request_payloads/feature.json", "w") as fhandle:
+            fhandle.write(json.dumps(float_feature._get_create_payload(), indent=4, sort_keys=True))
+    return float_feature
 
 
 def test_feature_save__exception_due_to_event_data_not_saved(float_feature, snowflake_event_data):
