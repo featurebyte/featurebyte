@@ -54,6 +54,7 @@ async def list_feature_stores(
     page_size: int = 10,
     sort_by: Optional[str] = "created_at",
     sort_dir: Literal["asc", "desc"] = "desc",
+    search: Optional[str] = None,
     name: Optional[str] = None,
 ) -> FeatureStoreList:
     """
@@ -66,6 +67,7 @@ async def list_feature_stores(
         page_size=page_size,
         sort_by=sort_by,
         sort_dir=sort_dir,
+        search=search,
         name=name,
     )
     return feature_store_list

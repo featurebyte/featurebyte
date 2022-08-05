@@ -1,0 +1,11 @@
+{
+    "_id": "62ebd26ff1d781fa2938d24f",
+    "details": {
+        "account": "sf_account",
+        "database": "sf_database",
+        "sf_schema": "sf_schema",
+        "warehouse": "sf_warehouse"
+    },
+    "name": "sf_featurestore",
+    "type": "snowflake"
+}

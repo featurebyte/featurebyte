@@ -45,7 +45,7 @@ class FeatureStoreController(BaseController[FeatureStoreModel, FeatureStoreList]
         FeatureStoreModel
             Newly created feature store document
         """
-
+        # pylint: disable=duplicate-code
         document = FeatureStoreModel(**data.json_dict(), user_id=user.id)
 
         # check any conflict with existing documents
@@ -59,14 +59,13 @@ class FeatureStoreController(BaseController[FeatureStoreModel, FeatureStoreList]
                 query_filter=query_filter,
                 doc_represent=doc_represent,
                 get_type=get_type,
+                user_id=user.id,
             )
 
         insert_id = await persistent.insert_one(
-            collection_name=cls.collection_name, document=document.dict(by_alias=True)
+            collection_name=cls.collection_name,
+            document=document.dict(by_alias=True),
+            user_id=user.id,
         )
         assert insert_id == document.id
-        return await cls.get(
-            user=user,
-            persistent=persistent,
-            document_id=insert_id,
-        )
+        return await cls.get(user=user, persistent=persistent, document_id=insert_id)

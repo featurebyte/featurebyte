@@ -89,6 +89,7 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
                 query_filter=query_filter,
                 doc_represent=doc_represent,
                 get_type=get_type,
+                user_id=user.id,
             )
 
         document = EventDataModel(
@@ -98,7 +99,9 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
             **data.json_dict(),
         )
         insert_id = await persistent.insert_one(
-            collection_name=cls.collection_name, document=document.dict(by_alias=True)
+            collection_name=cls.collection_name,
+            document=document.dict(by_alias=True),
+            user_id=user.id,
         )
         assert insert_id == document.id == data.id
 
@@ -178,6 +181,7 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
             collection_name=cls.collection_name,
             query_filter=query_filter,
             update={"$set": update_payload},
+            user_id=user.id,
         )
 
         return await cls.get(user=user, persistent=persistent, document_id=event_data_id)

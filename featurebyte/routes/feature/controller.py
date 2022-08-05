@@ -61,6 +61,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
                 query_filter={"name": data.name},
                 doc_represent={"name": data.name},
                 get_type="id",
+                user_id=user.id,
             )
         else:
             # if parent_id exists, make sure the parent feature exists at persistent & has consistent name
@@ -225,6 +226,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
                 query_filter={"_id": data.id},
                 doc_represent={"id": data.id},
                 get_type="id",
+                user_id=user.id,
             )
 
             document = FeatureModel(
@@ -247,7 +249,9 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
             feature_store = ExtendedFeatureStoreModel(**feature_store_dict)
 
             insert_id = await session.insert_one(
-                collection_name=cls.collection_name, document=document.dict(by_alias=True)
+                collection_name=cls.collection_name,
+                document=document.dict(by_alias=True),
+                user_id=user.id,
             )
             assert insert_id == document.id
 
@@ -264,12 +268,14 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
                 await session.insert_one(
                     collection_name=CollectionName.FEATURE_NAMESPACE,
                     document=doc_feature_namespace.dict(by_alias=True),
+                    user_id=user.id,
                 )
             else:
                 # update feature namespace object
                 feature_namespace_dict = await session.find_one(
                     collection_name=CollectionName.FEATURE_NAMESPACE,
                     query_filter={"name": document.name},
+                    user_id=user.id,
                 )
                 feature_namespace = FeatureNameSpaceModel(**feature_namespace_dict)  # type: ignore
                 await session.update_one(
@@ -280,6 +286,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
                             document=document, feature_namespace=feature_namespace
                         )
                     },
+                    user_id=user.id,
                 )
 
             # insert feature registry into feature store

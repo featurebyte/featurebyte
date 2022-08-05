@@ -51,7 +51,10 @@ class EntityController(BaseController[EntityModel, EntityList]):
         EntityModel
             Newly created entity object
         """
-        document = EntityModel(serving_names=[data.serving_name], **data.json_dict())
+        # pylint: disable=duplicate-code
+        document = EntityModel(
+            **data.json_dict(), user_id=user.id, serving_names=[data.serving_name]
+        )
 
         # check any conflict with existing documents
         constraints_check_triples: list[tuple[dict[str, Any], dict[str, Any], GetType]] = [
@@ -69,13 +72,15 @@ class EntityController(BaseController[EntityModel, EntityList]):
                 query_filter=query_filter,
                 doc_represent=doc_represent,
                 get_type=get_type,
+                user_id=user.id,
             )
 
         insert_id = await persistent.insert_one(
-            collection_name=cls.collection_name, document=document.dict(by_alias=True)
+            collection_name=cls.collection_name,
+            document=document.dict(by_alias=True),
+            user_id=user.id,
         )
         assert insert_id == document.id
-
         return await cls.get(user=user, persistent=persistent, document_id=insert_id)
 
     @classmethod
@@ -122,6 +127,7 @@ class EntityController(BaseController[EntityModel, EntityList]):
             collection_name=cls.collection_name,
             query_filter={"user_id": user.id, "name": data.name},
             page_size=2,
+            user_id=user.id,
         )
         if total_cnt:
             for entity in entities:
@@ -142,6 +148,7 @@ class EntityController(BaseController[EntityModel, EntityList]):
             collection_name=cls.collection_name,
             query_filter=query_filter,
             update={"$set": {"name": data.name, "name_history": name_history}},
+            user_id=user.id,
         )
 
         return await cls.get(user=user, persistent=persistent, document_id=entity_id)
