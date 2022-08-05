@@ -363,12 +363,12 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config, snowfl
             "is_default": True,
         }
     )
-    mock_feature = FeatureModel(**feature_model_dict)
+    feature = FeatureModel(**feature_model_dict)
 
     feature_list = FeatureListModel(
         name="feature_list1",
         description="test_description1",
-        features=[(mock_feature.name, mock_feature.version)],
+        features=[{"id": feature.id, "name": feature.name, "version": feature.version}],
         readiness=FeatureReadiness.DRAFT,
         status=FeatureListStatus.DRAFT,
         version="v1",
