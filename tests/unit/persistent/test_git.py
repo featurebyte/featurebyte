@@ -303,12 +303,14 @@ async def test_update_one(git_persistent, test_documents):
             "document_id": updated_doc["_id"],
             "action_type": AuditActionType.INSERT,
             "previous_values": {},
+            "user_id": None,
         },
         {
             "name": 'update: "Object 0"',
             "document_id": updated_doc["_id"],
             "action_type": AuditActionType.UPDATE,
             "previous_values": {"name": "Object 0"},
+            "user_id": None,
         },
     ]
 
@@ -366,12 +368,14 @@ async def test_update_many(git_persistent, test_documents):
                 "document_id": updated_doc["_id"],
                 "action_type": AuditActionType.INSERT,
                 "previous_values": {},
+                "user_id": None,
             },
             {
                 "name": f'update: "Object {i}"',
                 "document_id": updated_doc["_id"],
                 "action_type": AuditActionType.UPDATE,
                 "previous_values": {"value": [{"key1": "value1", "key2": "value2"}]},
+                "user_id": None,
             },
         ]
 
@@ -436,12 +440,14 @@ async def test_replace_one(git_persistent, test_documents):
             "document_id": updated_doc["_id"],
             "action_type": AuditActionType.INSERT,
             "previous_values": {},
+            "user_id": None,
         },
         {
             "name": 'replace: "Object 0"',
             "document_id": updated_doc["_id"],
             "action_type": AuditActionType.REPLACE,
             "previous_values": before[0],
+            "user_id": None,
         },
     ]
 
@@ -534,12 +540,14 @@ async def test_delete_one(git_persistent, test_documents):
             "document_id": deleted_doc["_id"],
             "action_type": AuditActionType.INSERT,
             "previous_values": {},
+            "user_id": None,
         },
         {
             "name": 'delete: "Object 0"',
             "document_id": deleted_doc["_id"],
             "action_type": AuditActionType.DELETE,
             "previous_values": test_documents[0],
+            "user_id": None,
         },
     ]
 
