@@ -13,7 +13,7 @@ from pydantic import Field, StrictStr
 
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import DBVarType, OrderedStrEnum
-from featurebyte.models.base import FeatureByteBaseDocumentModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel, UniqueValuesConstraint
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import Node, QueryGraph
 
@@ -77,6 +77,25 @@ class FeatureNameSpaceModel(FeatureByteBaseDocumentModel):
     default_version_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
 
+    class Settings:
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "feature_namespace"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature="get",
+            ),
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature="get",
+            ),
+        ]
+
 
 class FeatureModel(FeatureByteBaseDocumentModel):
     """
@@ -127,6 +146,25 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     event_data_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
     parent_id: Optional[PydanticObjectId] = Field(allow_mutation=False)
 
+    class Settings:
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "feature"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature="get",
+            ),
+            UniqueValuesConstraint(
+                fields=("name", "version"),
+                conflict_fields_signature={"name": ["name"], "version": ["version"]},
+                resolution_signature="get_name_version",
+            ),
+        ]
+
 
 class FeatureListModel(FeatureByteBaseDocumentModel):
     """
@@ -157,3 +195,27 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
     status: Optional[FeatureListStatus] = Field(allow_mutation=False)
     version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)
+
+    class Settings:
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "feature_list"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature="get",
+            ),
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature="get",
+            ),
+            UniqueValuesConstraint(
+                fields=("features",),
+                conflict_fields_signature={"features": ["features"]},
+                resolution_signature="get",
+            ),
+        ]

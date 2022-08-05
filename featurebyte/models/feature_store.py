@@ -4,13 +4,17 @@ This module contains DatabaseSource related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 from beanie import PydanticObjectId
 from pydantic import StrictStr
 
 from featurebyte.enum import SourceType
-from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+    UniqueValuesConstraint,
+)
 
 
 class SnowflakeDetails(FeatureByteBaseModel):
@@ -37,6 +41,30 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel):
     name: StrictStr
     type: SourceType
     details: DatabaseDetails
+
+    class Settings:
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "feature_store"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature="get",
+            ),
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature="get",
+            ),
+            UniqueValuesConstraint(
+                fields=("details",),
+                conflict_fields_signature={"details": ["details"]},
+                resolution_signature="get",
+            ),
+        ]
 
 
 class TableDetails(FeatureByteBaseModel):

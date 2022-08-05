@@ -69,18 +69,6 @@ class OrderedStrEnum(OrderedEnum):
         return str.__hash__(self.value)
 
 
-class CollectionName(str, Enum):
-    """
-    Collection name
-    """
-
-    ENTITY = "entity"
-    EVENT_DATA = "event_data"
-    FEATURE = "feature"
-    FEATURE_NAMESPACE = "feature_namespace"
-    FEATURE_STORE = "feature_store"
-
-
 class DBVarType(str, Enum):
     """
     Database variable type

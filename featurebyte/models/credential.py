@@ -6,7 +6,6 @@ from typing import Union
 
 from enum import Enum
 
-import pymongo
 from pydantic import StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
@@ -37,15 +36,3 @@ class Credential(FeatureByteBaseModel):
     name: StrictStr
     credential_type: CredentialType
     credential: Union[UsernamePasswordCredential]
-
-    class Settings:
-        """
-        Collection settings for Credential document
-        """
-
-        name = "credential"
-        indexes = [
-            pymongo.operations.IndexModel("_id"),
-            pymongo.operations.IndexModel("user_id"),
-            pymongo.operations.IndexModel("source"),
-        ]

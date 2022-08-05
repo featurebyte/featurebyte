@@ -261,15 +261,16 @@ def get_credential_fixture(config):
     get_credential fixture
     """
 
-    def get_credential(user_id, feature_store_name):
+    async def get_credential(user_id, feature_store_name):
         _ = user_id
         return config.credentials.get(feature_store_name)
 
     return get_credential
 
 
+@pytest.mark.asyncio
 @patch("featurebyte.session.base.BaseSession.execute_query")
-def test_insert_feature_register(
+async def test_insert_feature_register(
     mock_execute_query,
     feature_model_dict,
     snowflake_connector,
@@ -282,7 +283,7 @@ def test_insert_feature_register(
     _ = snowflake_connector
     user = Mock()
     feature = FeatureModel(**feature_model_dict)
-    FeatureController.insert_feature_registry(
+    await FeatureController.insert_feature_registry(
         user=user,
         document=feature,
         feature_store=snowflake_feature_store,
@@ -318,8 +319,9 @@ def test_insert_feature_registry__non_snowflake_feature_store(
     assert mock_execute_query.call_count == 0
 
 
+@pytest.mark.asyncio
 @patch("featurebyte.routes.feature.controller.FeatureManagerSnowflake")
-def test_insert_feature_registry__duplicated_feature_registry_exception(
+async def test_insert_feature_registry__duplicated_feature_registry_exception(
     mock_feature_manager,
     feature_model_dict,
     get_credential,
@@ -336,7 +338,7 @@ def test_insert_feature_registry__duplicated_feature_registry_exception(
     feature = FeatureModel(**feature_model_dict)
     user = Mock()
     with pytest.raises(HTTPException) as exc:
-        FeatureController.insert_feature_registry(
+        await FeatureController.insert_feature_registry(
             user=user,
             document=feature,
             feature_store=snowflake_feature_store,
@@ -350,8 +352,9 @@ def test_insert_feature_registry__duplicated_feature_registry_exception(
     assert not mock_feature_manager.return_value.remove_feature_registry.called
 
 
+@pytest.mark.asyncio
 @patch("featurebyte.routes.feature.controller.FeatureManagerSnowflake")
-def test_insert_feature_registry__other_exception(
+async def test_insert_feature_registry__other_exception(
     mock_feature_manager,
     feature_model_dict,
     get_credential,
@@ -366,7 +369,7 @@ def test_insert_feature_registry__other_exception(
     feature = FeatureModel(**feature_model_dict)
     user = Mock()
     with pytest.raises(ValueError):
-        FeatureController.insert_feature_registry(
+        await FeatureController.insert_feature_registry(
             user=user,
             document=feature,
             feature_store=snowflake_feature_store,

@@ -10,7 +10,7 @@ from featurebyte.app import _get_credential, _get_persistent
 from featurebyte.config import Configurations
 
 
-def test_get_credential():
+async def test_get_credential():
     """
     Test get_credential works as expected
     """
@@ -19,7 +19,9 @@ def test_get_credential():
 
     with patch("featurebyte.app.Configurations") as mock_config:
         mock_config.return_value = config
-        credential = _get_credential(user_id=ObjectId(), feature_store_name=feature_store_name)
+        credential = await _get_credential(
+            user_id=ObjectId(), feature_store_name=feature_store_name
+        )
     assert credential == config.credentials[feature_store_name]
 
 

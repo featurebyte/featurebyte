@@ -34,7 +34,7 @@ class MongoDB(Persistent):
         """
         super().__init__()
         self._database = database
-        self._client = AsyncIOMotorClient(uri)
+        self._client = AsyncIOMotorClient(uri, uuidRepresentation="standard")
         self._db = self._client[self._database]
         self._session: Any = None
 
@@ -304,8 +304,12 @@ class MongoDB(Persistent):
         AsyncIterator[MongoDB]
             MongoDB object
         """
-        async with await self._client.start_session() as session:
-            async with session.start_transaction():
-                self._session = session
-                yield self
+        try:
+            async with await self._client.start_session() as session:
+                async with session.start_transaction():
+                    self._session = session
+                    yield self
+        finally:
+            if self._session:
+                self._session.end_session()
                 self._session = None

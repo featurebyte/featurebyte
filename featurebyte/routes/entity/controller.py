@@ -10,7 +10,6 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.enum import CollectionName
 from featurebyte.models.entity import EntityModel, EntityNameHistoryEntry
 from featurebyte.persistent.base import Persistent
 from featurebyte.routes.common.base import BaseController, GetType
@@ -23,7 +22,7 @@ class EntityController(BaseController[EntityModel, EntityList]):
     Entity Controller
     """
 
-    collection_name = CollectionName.ENTITY
+    collection_name = EntityModel.collection_name()
     document_class = EntityModel
     paginated_document_class = EntityList
 

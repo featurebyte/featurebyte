@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from featurebyte.enum import CollectionName
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.routes.common.base import BaseController, GetType
@@ -17,7 +16,7 @@ class FeatureStoreController(BaseController[FeatureStoreModel, FeatureStoreList]
     FeatureStore controller
     """
 
-    collection_name = CollectionName.FEATURE_STORE
+    collection_name = FeatureStoreModel.collection_name()
     document_class = FeatureStoreModel
     paginated_document_class = FeatureStoreList
 

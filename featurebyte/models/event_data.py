@@ -1,6 +1,7 @@
 """
 This module contains EventData related models
 """
+# pylint: disable=too-few-public-methods
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -12,7 +13,11 @@ from pydantic import Field, StrictStr, root_validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.enum import OrderedStrEnum
-from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+    UniqueValuesConstraint,
+)
 from featurebyte.models.feature_store import DatabaseTableModel
 
 
@@ -100,3 +105,27 @@ class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
     default_feature_job_setting: Optional[FeatureJobSetting]
     history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list, allow_mutation=False)
     status: Optional[EventDataStatus] = Field(default=None, allow_mutation=False)
+
+    class Settings:
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "event_data"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature="get",
+            ),
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature="get",
+            ),
+            UniqueValuesConstraint(
+                fields=("tabular_source",),
+                conflict_fields_signature={"tabular_source": ["tabular_source"]},
+                resolution_signature="get",
+            ),
+        ]

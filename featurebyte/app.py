@@ -16,8 +16,8 @@ import featurebyte.routes.event_data.api as event_data_api
 import featurebyte.routes.feature.api as feature_api
 import featurebyte.routes.feature_store.api as feature_store_api
 from featurebyte.config import Configurations
-from featurebyte.enum import CollectionName
 from featurebyte.models.credential import Credential
+from featurebyte.models.event_data import EventDataModel
 from featurebyte.persistent import GitDB, Persistent
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_data.controller import EventDataController
@@ -58,13 +58,13 @@ def _get_persistent() -> Persistent:
         git_db = GitDB(**config.git.dict())
 
         # GitDB configuration
-        git_db.insert_doc_name_func(CollectionName.EVENT_DATA, lambda doc: doc["name"])  # type: ignore
+        git_db.insert_doc_name_func(EventDataModel.collection_name(), lambda doc: doc["name"])  # type: ignore
 
         PERSISTENT = git_db
     return PERSISTENT
 
 
-def _get_credential(user_id: ObjectId | None, feature_store_name: str) -> Credential | None:
+async def _get_credential(user_id: ObjectId | None, feature_store_name: str) -> Credential | None:
     """
     Retrieve credential from FeatureStoreModel
 

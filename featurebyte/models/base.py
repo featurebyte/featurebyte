@@ -4,7 +4,7 @@ FeatureByte specific BaseModel
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import json
 from datetime import datetime
@@ -66,6 +66,16 @@ class FeatureByteBaseModel(BaseModel):
         json_encoders = {ObjectId: str}
 
 
+class UniqueValuesConstraint(FeatureByteBaseModel):
+    """
+    Unique values constraints for fields in a collection
+    """
+
+    fields: List[str]
+    conflict_fields_signature: Dict[str, Any]
+    resolution_signature: str
+
+
 class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     """
     FeatureByte specific BaseDocumentModel
@@ -83,3 +93,33 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     name: Optional[StrictStr]
     created_at: Optional[datetime] = Field(default=None, allow_mutation=False)
     updated_at: Optional[datetime] = Field(default=None, allow_mutation=False)
+
+    @classmethod
+    def collection_name(cls) -> str:
+        """
+        Retrieve collection name
+        Returns
+        -------
+        str
+            collection name
+        """
+        return cls.Settings.collection_name
+
+    @classmethod
+    def unique_constraints(cls) -> List[UniqueValuesConstraint]:
+        """
+        Retrieve unique_constraints
+        Returns
+        -------
+        List[UniqueValuesConstraint]
+            collection name
+        """
+        return cls.Settings.unique_constraints
+
+    class Settings:
+        """
+        MongoDB settings
+        """
+
+        collection_name: str
+        unique_constraints: List[UniqueValuesConstraint]
