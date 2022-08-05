@@ -188,8 +188,10 @@ class EventData(EventDataModel, DatabaseTable, ApiObject):
             raise KeyError(f'Column "{item}" does not exist!')
         return EventDataColumn(event_data=self, column_name=item)
 
-    def __getattr__(self, item: str) -> EventDataColumn:
-        return self.__getitem__(item)
+    def __getattr__(self, item: str) -> Any:
+        if item in self.column_var_type_map:
+            return self.__getitem__(item)
+        return object.__getattribute__(self, item)
 
     def info(self) -> dict[str, Any]:
         """
@@ -261,3 +263,24 @@ class EventData(EventDataModel, DatabaseTable, ApiObject):
             self.default_feature_job_setting = data.default_feature_job_setting
         else:
             raise RecordUpdateException(response)
+
+    @property
+    def default_feature_job_setting_history(self) -> list[dict[str, Any]]:
+        """
+        List of default_job_setting history entries
+
+        Returns
+        -------
+        list[dict[str, Any]]
+
+        Raises
+        ------
+        RecordRetrievalException
+            When unexpected retrieval failure
+        """
+        client = Configurations().get_client()
+        response = client.get(url=f"/event_data/history/default_feature_job_setting/{self.id}")
+        if response.status_code == HTTPStatus.OK:
+            history: list[dict[str, Any]] = response.json()
+            return history
+        raise RecordRetrievalException(response)

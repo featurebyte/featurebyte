@@ -159,3 +159,23 @@ class ApiObject(FeatureByteBaseDocumentModel):
                 raise DuplicatedRecordException(response=response)
             raise RecordCreationException(response=response)
         type(self).__init__(self, **response.json(), **self._get_init_params_from_object())
+
+    def audit(self) -> Any:
+        """
+        Get list of persistent audit logs which records the object update history
+
+        Returns
+        -------
+        Any
+            List of audit log
+
+        Raises
+        ------
+        RecordRetrievalException
+            When the response status code is unexpected
+        """
+        client = Configurations().get_client()
+        response = client.get(url=f"{self._route}/audit/{self.id}", json=self._get_create_payload())
+        if response.status_code == HTTPStatus.OK:
+            return response.json()
+        raise RecordRetrievalException(response, "Failed to list object audit log.")

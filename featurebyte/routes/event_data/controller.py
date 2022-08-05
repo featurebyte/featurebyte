@@ -146,14 +146,7 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
 
         # prepare update payload
         update_payload = data.dict()
-        if data.default_feature_job_setting:
-            update_payload["history"] = [
-                FeatureJobSettingHistoryEntry(
-                    created_at=get_utc_now(),
-                    setting=update_payload["default_feature_job_setting"],
-                ).dict()
-            ] + event_data["history"]
-        else:
+        if not data.default_feature_job_setting:
             update_payload.pop("default_feature_job_setting")
 
         if data.column_entity_map is not None:

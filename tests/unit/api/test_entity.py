@@ -99,18 +99,41 @@ def test_entity_creation(entity):
             Entity(name="Customer", serving_names=["cust_id"]).save()
 
 
-@freeze_time("2022-07-01")
 def test_entity_update_name(entity):
     """
     Test update entity name
     """
     assert entity.name_history == []
     entity_id = entity.id
+    tic = datetime.utcnow()
     entity.update_name("Customer")
+    toc = datetime.utcnow()
     assert entity.id == entity_id
-    assert entity.name_history == [
-        EntityNameHistoryEntry(created_at=datetime(2022, 7, 1), name="customer")
-    ]
+    name_history = entity.name_history
+    assert len(name_history) == 2
+    assert name_history[0].items() >= {"name": "Customer"}.items()
+    assert toc > datetime.fromisoformat(name_history[0]["created_at"]) > tic
+    assert name_history[1].items() >= {"name": "customer"}.items()
+    assert tic > datetime.fromisoformat(name_history[1]["created_at"])
+
+    # check audit history
+    audit_history = entity.audit()
+    expected_paginatation_info = {"page": 1, "page_size": 10, "total": 2}
+    assert audit_history.items() >= expected_paginatation_info.items()
+    history_data = audit_history["data"]
+    assert len(history_data) == 2
+    assert (
+        history_data[0].items()
+        > {
+            "name": 'update: "customer"',
+            "action_type": "UPDATE",
+            "previous_values": {"name": "customer", "updated_at": None},
+        }.items()
+    )
+    assert (
+        history_data[1].items()
+        > {"name": 'insert: "customer"', "action_type": "INSERT", "previous_values": {}}.items()
+    )
 
     # create another entity
     Entity(name="product", serving_names=["product_id"]).save()

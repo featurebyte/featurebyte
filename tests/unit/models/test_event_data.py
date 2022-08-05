@@ -70,16 +70,6 @@ def test_event_data_model(
             "time_modulo_frequency": "5m",
         },
         "event_timestamp_column": "event_date",
-        "history": [
-            {
-                "created_at": datetime.datetime(2022, 4, 1, 0, 0),
-                "setting": {"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"},
-            },
-            {
-                "created_at": datetime.datetime(2022, 2, 1, 0, 0),
-                "setting": {"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"},
-            },
-        ],
         "id": event_data.id,
         "name": "my_event_data",
         "record_creation_date_column": "created_at",

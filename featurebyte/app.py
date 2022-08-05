@@ -18,7 +18,6 @@ import featurebyte.routes.feature_list.api as feature_list_api
 import featurebyte.routes.feature_store.api as feature_store_api
 from featurebyte.config import Configurations
 from featurebyte.models.credential import Credential
-from featurebyte.models.event_data import EventDataModel
 from featurebyte.persistent import GitDB, Persistent
 from featurebyte.routes.common.base import BaseController
 from featurebyte.routes.entity.controller import EntityController
@@ -59,10 +58,6 @@ def _get_persistent() -> Persistent:
         if not config.git:
             raise ValueError("Git settings not available in configurations")
         git_db = GitDB(**config.git.dict())
-
-        # GitDB configuration
-        git_db.insert_doc_name_func(EventDataModel.collection_name(), lambda doc: doc["name"])  # type: ignore
-
         PERSISTENT = git_db
     return PERSISTENT
 

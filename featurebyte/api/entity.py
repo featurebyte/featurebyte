@@ -9,7 +9,11 @@ from http import HTTPStatus
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.config import Configurations
-from featurebyte.exception import DuplicatedRecordException, RecordUpdateException
+from featurebyte.exception import (
+    DuplicatedRecordException,
+    RecordRetrievalException,
+    RecordUpdateException,
+)
 from featurebyte.models.entity import EntityModel
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
@@ -65,3 +69,24 @@ class Entity(EntityModel, ApiObject):
                     raise DuplicatedRecordException(response=response)
                 raise RecordUpdateException(response=response)
             super().__init__(**response.json())
+
+    @property
+    def name_history(self) -> list[dict[str, Any]]:
+        """
+        List of name history entries
+
+        Returns
+        -------
+        list[dict[str, Any]]
+
+        Raises
+        ------
+        RecordRetrievalException
+            When unexpected retrieval failure
+        """
+        client = Configurations().get_client()
+        response = client.get(url=f"/entity/history/name/{self.id}")
+        if response.status_code == HTTPStatus.OK:
+            history: list[dict[str, Any]] = response.json()
+            return history
+        raise RecordRetrievalException(response)

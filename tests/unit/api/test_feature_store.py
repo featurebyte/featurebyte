@@ -149,6 +149,21 @@ def test_get(saved_snowflake_feature_store):
     assert loaded_feature_store == saved_snowflake_feature_store
     assert FeatureStore.get_by_id(saved_snowflake_feature_store.id) == saved_snowflake_feature_store
 
+    # check audit history
+    audit_history = loaded_feature_store.audit()
+    expected_pagination_info = {"page": 1, "page_size": 10, "total": 1}
+    assert audit_history.items() > expected_pagination_info.items()
+    history_data = audit_history["data"]
+    assert len(history_data) == 1
+    assert (
+        history_data[0].items()
+        > {
+            "name": 'insert: "sf_featurestore"',
+            "action_type": "INSERT",
+            "previous_values": {},
+        }.items()
+    )
+
 
 def test_get__unexpected_retrieval_exception():
     """

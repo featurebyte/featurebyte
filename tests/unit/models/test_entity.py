@@ -14,7 +14,6 @@ def test_entity_model():
     entity = EntityModel(
         name="customer",
         serving_names=["cust_id"],
-        name_history=[EntityNameHistoryEntry(name="Customer", created_at=datetime(2022, 7, 1))],
         created_at=datetime(2022, 6, 30),
         updated_at=datetime(2022, 6, 30),
         user_id=ObjectId(),
@@ -25,7 +24,6 @@ def test_entity_model():
         "user_id",
         "name",
         "serving_names",
-        "name_history",
         "created_at",
         "updated_at",
     }
@@ -33,7 +31,6 @@ def test_entity_model():
     assert isinstance(entity_dict["user_id"], ObjectId)
     assert entity_dict["name"] == "customer"
     assert entity_dict["serving_names"] == ["cust_id"]
-    assert entity_dict["name_history"] == [{"created_at": datetime(2022, 7, 1), "name": "Customer"}]
     assert entity_dict["created_at"] == datetime(2022, 6, 30)
     assert entity_dict["updated_at"] == datetime(2022, 6, 30)
 
