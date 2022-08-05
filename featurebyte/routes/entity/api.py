@@ -46,6 +46,7 @@ async def list_entities(
     page_size: int = 10,
     sort_by: Optional[str] = "created_at",
     sort_dir: Literal["asc", "desc"] = "desc",
+    search: Optional[str] = None,
     name: Optional[str] = None,
 ) -> EntityList:
     """
@@ -58,6 +59,7 @@ async def list_entities(
         page_size=page_size,
         sort_by=sort_by,
         sort_dir=sort_dir,
+        search=search,
         name=name,
     )
     return entity_list

@@ -3,6 +3,7 @@ Tests for Entity route
 """
 from http import HTTPStatus
 
+import pytest
 from bson.objectid import ObjectId
 
 from tests.unit.routes.base import BaseApiTestSuite
@@ -46,6 +47,30 @@ class TestEntityApi(BaseApiTestSuite):
             ],
         )
     ]
+
+    @pytest.fixture(name="create_multiple_entries")
+    def create_multiple_entries_fixture(self, test_api_client_persistent):
+        """
+        Create multiple entries to the persistent
+        """
+        test_api_client, _ = test_api_client_persistent
+        entity_id1, entity_id2, entity_id3 = str(ObjectId()), str(ObjectId()), str(ObjectId())
+        res_region = test_api_client.post(
+            "/entity", json={"_id": entity_id1, "name": "region", "serving_name": "region"}
+        )
+        res_cust = test_api_client.post(
+            "/entity", json={"_id": entity_id2, "name": "customer", "serving_name": "cust_id"}
+        )
+        res_prod = test_api_client.post(
+            "/entity", json={"_id": entity_id3, "name": "product", "serving_name": "prod_id"}
+        )
+        assert res_region.status_code == HTTPStatus.CREATED
+        assert res_cust.status_code == HTTPStatus.CREATED
+        assert res_prod.status_code == HTTPStatus.CREATED
+        assert res_region.json()["_id"] == entity_id1
+        assert res_cust.json()["_id"] == entity_id2
+        assert res_prod.json()["_id"] == entity_id3
+        return [entity_id1, entity_id2, entity_id3]
 
     def test_update_200(self, create_success_response, test_api_client_persistent):
         """
