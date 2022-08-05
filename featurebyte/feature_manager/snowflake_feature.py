@@ -83,6 +83,7 @@ class FeatureManagerSnowflake(BaseModel):
                 # This JSON encoded string will be embedded in Snowflake SQL, which has its own
                 # escape sequence, so we need to escape one more time
                 tile_specs_str = tile_specs_str.replace("\\", "\\\\")
+                tile_specs_str = tile_specs_str.replace("'", "\\'")
             else:
                 tile_specs_str = "[]"
 

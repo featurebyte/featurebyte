@@ -217,11 +217,26 @@ def test_query_object_operation_on_snowflake_source(
         "COUNT_24h": 9,
         "COUNT_2h / COUNT_24h": Decimal("0.111111"),
     }
-    special_feature = feature_group["COUNT_2h / COUNT_24h"]
+    special_feature = create_feature_with_filtered_event_view(event_view)
     special_feature.save()  # pylint: disable=no-member
     check_feature_and_remove_registry(special_feature, feature_manager)
 
     run_and_test_get_historical_features(config, feature_group, feature_group_per_category)
+
+
+def create_feature_with_filtered_event_view(event_view):
+    """
+    Create a feature with filtered event view using string literal
+    """
+    event_view = event_view[event_view["PRODUCT_ACTION"] == "purchase"]
+    feature_group = event_view.groupby("USER_ID").aggregate(
+        "USER_ID",
+        "count",
+        windows=["7d"],
+        feature_names=["NUM_PURCHASE_7d"],
+    )
+    feature = feature_group["NUM_PURCHASE_7d"]
+    return feature
 
 
 def get_feature_preview_as_dict(obj, preview_param, config):
