@@ -35,18 +35,13 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
             User class to provide user identifier
         persistent: Persistent
             Object that feature list will be saved to
-        data: FeatureCreate
+        data: FeatureListCreate
             Feature creation payload
 
         Returns
         -------
         FeatureListModel
             Newly created feature list object
-
-        Raises
-        ------
-        HTTPException
-            If the feature list name conflicts with existing feature name
         """
         document = FeatureListModel(**data.json_dict(), user_id=user.id)
 

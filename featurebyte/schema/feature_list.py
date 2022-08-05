@@ -3,7 +3,7 @@ FeatureList API payload schema
 """
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from beanie import PydanticObjectId
 from pydantic import Field, StrictStr
@@ -14,7 +14,6 @@ from featurebyte.models.feature import (
     FeatureListStatus,
     FeatureListVersionIdentifier,
     FeatureReadiness,
-    FeatureVersionIdentifier,
 )
 from featurebyte.routes.common.schema import PaginationMixin
 
