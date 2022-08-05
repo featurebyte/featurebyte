@@ -1,0 +1,14 @@
+{
+    "_id": "62ed07434a18c0b8a5ca0e94",
+    "created_at": null,
+    "description": null,
+    "feature_ids": [
+        "62ed07434a18c0b8a5ca0e90"
+    ],
+    "name": "sf_feature_list",
+    "readiness": null,
+    "status": "DRAFT",
+    "updated_at": null,
+    "user_id": null,
+    "version": "V220805"
+}

@@ -11,6 +11,7 @@ import time
 import pandas as pd
 from pydantic import Field, parse_obj_as, root_validator
 
+from featurebyte.api.api_object import ApiObject
 from featurebyte.api.feature import Feature
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
@@ -181,7 +182,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         raise ValueError("There is no feature in the FeatureGroup object.")
 
 
-class FeatureList(BaseFeatureGroup, FeatureListModel):
+class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     """
     FeatureList class
 
@@ -191,6 +192,9 @@ class FeatureList(BaseFeatureGroup, FeatureListModel):
         Name of the FeatureList
     """
 
+    # class variables
+    _route = "/feature_list"
+
     @root_validator()
     @classmethod
     def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -198,9 +202,6 @@ class FeatureList(BaseFeatureGroup, FeatureListModel):
             values["feature_objects"].values(),
             key=lambda feature: FeatureReadiness(feature.readiness or FeatureReadiness.min()),
         ).readiness
-        values["features"] = [
-            (feature.name, feature.version) for feature in values["feature_objects"].values()
-        ]
         values["feature_ids"] = [feature.id for feature in values["feature_objects"].values()]
         values["status"] = FeatureListStatus.DRAFT
         values["version"] = get_version()

@@ -69,7 +69,7 @@ async def list_features(
 
 
 @router.get("/audit/{feature_id}", response_model=AuditDocumentList)
-async def list_entity_audit_logs(
+async def list_feature_audit_logs(
     request: Request,
     feature_id: PydanticObjectId,
     page: int = 1,

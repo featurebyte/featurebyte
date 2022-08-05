@@ -1,7 +1,6 @@
 """
 Unit test for Feature & FeatureList classes
 """
-import json
 from datetime import datetime
 from unittest.mock import patch
 
@@ -247,21 +246,6 @@ def saved_feature_fixture(
     # test list features
     assert float_feature.name == "sum_1d"
     assert Feature.list() == ["sum_1d"]
-
-    if update_fixtures:
-        # write request payload for testing api route
-        with open("tests/fixtures/request_payloads/feature_store.json", "w") as fhandle:
-            fhandle.write(
-                json.dumps(snowflake_feature_store._get_create_payload(), indent=4, sort_keys=True)
-            )
-
-        with open("tests/fixtures/request_payloads/event_data.json", "w") as fhandle:
-            fhandle.write(
-                json.dumps(snowflake_event_data._get_create_payload(), indent=4, sort_keys=True)
-            )
-
-        with open("tests/fixtures/request_payloads/feature.json", "w") as fhandle:
-            fhandle.write(json.dumps(float_feature._get_create_payload(), indent=4, sort_keys=True))
     return float_feature
 
 

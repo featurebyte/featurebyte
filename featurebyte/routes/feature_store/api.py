@@ -74,7 +74,7 @@ async def list_feature_stores(
 
 
 @router.get("/audit/{feature_store_id}", response_model=AuditDocumentList)
-async def list_entity_audit_logs(
+async def list_feature_store_audit_logs(
     request: Request,
     feature_store_id: PydanticObjectId,
     page: int = 1,
