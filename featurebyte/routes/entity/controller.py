@@ -51,6 +51,7 @@ class EntityController(BaseController[EntityModel, EntityList]):
         EntityModel
             Newly created entity object
         """
+        # pylint: disable=duplicate-code
         document = EntityModel(
             **data.json_dict(), user_id=user.id, serving_names=[data.serving_name]
         )
@@ -80,7 +81,6 @@ class EntityController(BaseController[EntityModel, EntityList]):
             user_id=user.id,
         )
         assert insert_id == document.id
-
         return await cls.get(user=user, persistent=persistent, document_id=insert_id)
 
     @classmethod
