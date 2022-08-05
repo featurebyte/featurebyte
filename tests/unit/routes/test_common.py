@@ -59,6 +59,7 @@ async def test_check_document_creation_conflict(
             persistent=persistent,
             query_filter=query_filter,
             doc_represent=doc_represent,
+            user_id=None,
             get_type=get_type,
         )
     assert expected_msg in str(exc.value.detail)

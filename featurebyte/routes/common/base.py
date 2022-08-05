@@ -93,8 +93,8 @@ class BaseController(Generic[Document, PaginatedDocument]):
         persistent: Persistent,
         query_filter: dict[str, Any],
         doc_represent: dict[str, Any],
+        user_id: ObjectId | None,
         get_type: GetType = "id",
-        user_id: ObjectId | None = None,
     ) -> None:
         """
         Check document creation conflict
@@ -107,10 +107,10 @@ class BaseController(Generic[Document, PaginatedDocument]):
             Query filter that will be passed to persistent
         doc_represent: dict[str, Any]
             Document representation that shows user the conflict fields
-        get_type: GetType
-            Object retrieval option shows in error message.
         user_id: ObjectId
             user_id
+        get_type: GetType
+            Object retrieval option shows in error message.
 
         Raises
         ------
