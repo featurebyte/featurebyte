@@ -62,13 +62,13 @@ class TestEventDataApi(BaseApiTestSuite):
         response = api_client.post("/feature_store", json=feature_store_payload)
         assert response.status_code == HTTPStatus.CREATED
 
-    def test_create_201(self, test_api_client_persistent, create_success_response):
+    def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
-        super().test_create_201(test_api_client_persistent, create_success_response)
+        super().test_create_201(test_api_client_persistent, create_success_response, user_id)
         assert create_success_response.json()["status"] == EventDataStatus.DRAFT
 
     @pytest.fixture(name="event_data_model_dict")
-    def event_data_model_dict_fixture(self, snowflake_feature_store):
+    def event_data_model_dict_fixture(self, snowflake_feature_store, user_id):
         """Fixture for a Event Data dict"""
         event_data_dict = {
             "name": "订单表",
@@ -107,6 +107,7 @@ class TestEventDataApi(BaseApiTestSuite):
                 },
             ],
             "status": "PUBLISHED",
+            "user_id": str(user_id),
         }
         output = EventDataModel(**event_data_dict).json_dict()
         assert output.pop("created_at") is None

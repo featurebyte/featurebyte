@@ -371,9 +371,6 @@ class GitDB(Persistent):
             doc_id = ObjectId()
             document["_id"] = doc_id
 
-        # strip user id
-        document.pop("user_id", None)
-
         # create document
         new_doc_name = self._get_doc_name(collection_name, document)
         new_doc_path = self._get_doc_path(collection_name, document)
@@ -467,9 +464,6 @@ class GitDB(Persistent):
 
         # check unsupported filters
         self._check_filter(query_filter)
-
-        # strip user id
-        query_filter.pop("user_id", None)
         filter_items = query_filter.items()
 
         # check if we are doing search by id in a set

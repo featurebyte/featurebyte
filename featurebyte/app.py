@@ -28,6 +28,14 @@ app = FastAPI()
 PERSISTENT = None
 
 
+class User:
+    """
+    Skeleton user class to provide static user for API routes
+    """
+
+    id = None
+
+
 def _get_persistent() -> Persistent:
     """
     Return global Persistent object
@@ -91,13 +99,6 @@ def _get_api_deps(controller: type) -> Callable[[Request], None]:
     Callable[Request]
         Dependency injection function
     """
-
-    class User:
-        """
-        Skeleton user class to provide static user for API routes
-        """
-
-        id = None
 
     def _dep_injection_func(request: Request) -> None:
         """

@@ -94,9 +94,9 @@ class TestFeatureApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.CREATED
 
     @pytest.mark.asyncio
-    async def test_create_201(self, test_api_client_persistent, create_success_response):
+    async def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
-        super().test_create_201(test_api_client_persistent, create_success_response)
+        super().test_create_201(test_api_client_persistent, create_success_response, user_id)
         response_dict = create_success_response.json()
         assert response_dict["readiness"] == "DRAFT"
 

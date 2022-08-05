@@ -4,6 +4,7 @@ BaseApiTestSuite
 import json
 from datetime import datetime
 from http import HTTPStatus
+from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -70,14 +71,14 @@ class BaseApiTestSuite:
             output.append(response)
         return output
 
-    def test_create_201(self, test_api_client_persistent, create_success_response):
+    def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
         assert create_success_response.status_code == HTTPStatus.CREATED
         result = create_success_response.json()
 
         # check response
         doc_id = ObjectId(result["_id"])
-        assert result["user_id"] is None
+        assert result["user_id"] == str(user_id)
         assert datetime.fromisoformat(result["created_at"]) < datetime.utcnow()
         assert result["updated_at"] is None
 
@@ -119,7 +120,7 @@ class BaseApiTestSuite:
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == expected_message
 
-    def test_get_200(self, test_api_client_persistent, create_success_response):
+    def test_get_200(self, test_api_client_persistent, create_success_response, user_id):
         """Test get (success)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -130,7 +131,7 @@ class BaseApiTestSuite:
         assert response_dict["_id"] == doc_id
         assert datetime.fromisoformat(response_dict["created_at"]) < datetime.utcnow()
         assert response_dict["updated_at"] is None
-        assert response_dict["user_id"] is None
+        assert response_dict["user_id"] == str(user_id)
         assert response_dict["name"] == self.payload["name"]
 
     def test_get_404(self, test_api_client_persistent):

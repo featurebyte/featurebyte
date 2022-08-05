@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pymongo
 import pytest
 import pytest_asyncio
+from bson.objectid import ObjectId
 from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
@@ -67,12 +68,19 @@ async def persistent_fixture(request):
         yield gitdb
 
 
+@pytest.fixture(scope="session")
+def user_id():
+    return ObjectId()
+
+
 @pytest.fixture()
-def test_api_client_persistent(persistent):
+def test_api_client_persistent(persistent, user_id):
     """
     Test API client
     """
     with patch("featurebyte.app._get_persistent") as mock_get_persistent:
-        mock_get_persistent.return_value = persistent
-        with TestClient(app) as client:
-            yield client, persistent
+        with patch("featurebyte.app.User") as mock_user:
+            mock_user.return_value.id = user_id
+            mock_get_persistent.return_value = persistent
+            with TestClient(app) as client:
+                yield client, persistent

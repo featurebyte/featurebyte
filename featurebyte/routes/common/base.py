@@ -94,6 +94,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         query_filter: dict[str, Any],
         doc_represent: dict[str, Any],
         get_type: GetType = "id",
+        user_id: ObjectId | None = None,
     ) -> None:
         """
         Check document creation conflict
@@ -108,6 +109,8 @@ class BaseController(Generic[Document, PaginatedDocument]):
             Document representation that shows user the conflict fields
         get_type: GetType
             Object retrieval option shows in error message.
+        user_id: ObjectId
+            user_id
 
         Raises
         ------
@@ -116,7 +119,9 @@ class BaseController(Generic[Document, PaginatedDocument]):
         """
 
         conflict_doc = await persistent.find_one(
-            collection_name=cls.collection_name, query_filter=query_filter
+            collection_name=cls.collection_name,
+            query_filter=query_filter,
+            user_id=user_id,
         )
         if conflict_doc:
             raise HTTPException(
@@ -162,7 +167,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         """
         query_filter = {"_id": ObjectId(document_id), "user_id": user.id}
         document = await persistent.find_one(
-            collection_name=collection_name, query_filter=query_filter
+            collection_name=collection_name, query_filter=query_filter, user_id=user.id
         )
         if document is None:
             class_name = cls.to_class_name(collection_name)
@@ -265,6 +270,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
                 sort_dir=sort_dir,
                 page=page,
                 page_size=page_size,
+                user_id=user.id,
             )
             return cast(
                 PaginatedDocument,
