@@ -56,7 +56,7 @@ def _get_persistent() -> Persistent:
     return PERSISTENT
 
 
-def _get_credential(user_id: ObjectId | None, feature_store_name: str) -> Credential | None:
+async def _get_credential(user_id: ObjectId | None, feature_store_name: str) -> Credential | None:
     """
     Retrieve credential from FeatureStoreModel
 

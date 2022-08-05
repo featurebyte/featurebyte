@@ -304,8 +304,10 @@ class MongoDB(Persistent):
         AsyncIterator[MongoDB]
             MongoDB object
         """
-        async with await self._client.start_session() as session:
-            async with session.start_transaction():
-                self._session = session
-                yield self
-                self._session = None
+        try:
+            async with await self._client.start_session() as session:
+                async with session.start_transaction():
+                    self._session = session
+                    yield self
+        finally:
+            self._session = None

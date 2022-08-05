@@ -4,7 +4,7 @@ FeatureByte specific BaseModel
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import json
 from datetime import datetime
@@ -71,7 +71,7 @@ class UniqueValuesConstraint(FeatureByteBaseModel):
     Unique values constraints for fields in a collection
     """
 
-    fields: Tuple[str]
+    fields: List[str]
     conflict_fields_signature: Dict[str, Any]
     resolution_signature: str
 

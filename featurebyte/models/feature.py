@@ -83,6 +83,18 @@ class FeatureNameSpaceModel(FeatureByteBaseDocumentModel):
         """
 
         collection_name: str = "feature_namespace"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature="get",
+            ),
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature="get",
+            ),
+        ]
 
 
 class FeatureModel(FeatureByteBaseDocumentModel):
@@ -140,6 +152,18 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         """
 
         collection_name: str = "feature"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature="get",
+            ),
+            UniqueValuesConstraint(
+                fields=("name", "version"),
+                conflict_fields_signature={"name": ["name"], "version": ["version"]},
+                resolution_signature="get_name_version",
+            ),
+        ]
 
 
 class FeatureListModel(FeatureByteBaseDocumentModel):
