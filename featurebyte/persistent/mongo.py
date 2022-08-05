@@ -310,4 +310,6 @@ class MongoDB(Persistent):
                     self._session = session
                     yield self
         finally:
-            self._session = None
+            if self._session:
+                self._session.end_session()
+                self._session = None

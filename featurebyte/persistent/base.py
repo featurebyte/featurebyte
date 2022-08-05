@@ -346,16 +346,16 @@ class Persistent(ABC):
         AsyncIterator[Persistent]
             Persistent object
         """
-        try:
-            if self._in_transaction:
-                # prevent entering nested transaction in the actual db layer
-                yield self
-            else:
+        if self._in_transaction:
+            # prevent entering nested transaction in the actual db layer
+            yield self
+        else:
+            try:
                 async with self._start_transaction():
                     self._in_transaction = True
                     yield self
-        finally:
-            self._in_transaction = False
+            finally:
+                self._in_transaction = False
 
     async def get_audit_logs(
         self,

@@ -56,11 +56,14 @@ async def test_start_transaction__exception_within_transaction(mongo_persistent)
     persistent, database = mongo_persistent
     col = "test_col"
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(TypeError):
         async with persistent.start_transaction() as session:
             await session.insert_one(collection_name=col, document={"key1": "value1"})
             await session.insert_one(collection_name=col, document={"key2": "value2"})
-            assert False
+            session.find(collection_name="data4", query_filter={})[0]
+
+    # ensure persistent is working after failed transaction
+    await persistent.find(collection_name="data4", query_filter={})
 
     # check no record written to the mongodb
     output = list(database[col].find({}, {"_id": False}))
