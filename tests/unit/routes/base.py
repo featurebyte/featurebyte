@@ -74,12 +74,7 @@ class BaseApiTestSuite:
 
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
-        try:
-            assert create_success_response.status_code == HTTPStatus.CREATED
-        except:
-            import pdb
-
-            pdb.set_trace()
+        assert create_success_response.status_code == HTTPStatus.CREATED
         result = create_success_response.json()
 
         # check response
