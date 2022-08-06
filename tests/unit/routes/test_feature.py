@@ -24,7 +24,7 @@ class TestFeatureApi(BaseApiTestSuite):
 
     class_name = "Feature"
     base_route = "/feature"
-    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/feature.json")
+    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
     object_id = str(ObjectId())
     create_conflict_payload_expected_detail_pairs = [
         (
@@ -254,22 +254,9 @@ def test_prepare_feature_namespace_payload(
     )
 
 
-@pytest.fixture(name="get_credential")
-def get_credential_fixture(config):
-    """
-    get_credential fixture
-    """
-
-    async def get_credential(user_id, feature_store_name):
-        _ = user_id
-        return config.credentials.get(feature_store_name)
-
-    return get_credential
-
-
 @pytest.mark.asyncio
 @patch("featurebyte.session.base.BaseSession.execute_query")
-async def test_insert_feature_register(
+async def test_insert_feature_registry(
     mock_execute_query,
     feature_model_dict,
     snowflake_connector,
@@ -328,7 +315,7 @@ async def test_insert_feature_registry__duplicated_feature_registry_exception(
     snowflake_feature_store,
 ):
     """
-    Test insert_feature_registry with duplicated_feature_registry exception
+    Test insert_feature_registry with duplicated_registry exception
     """
     _ = snowflake_connector
     mock_feature_manager.return_value.insert_feature_registry.side_effect = DuplicatedRegistryError

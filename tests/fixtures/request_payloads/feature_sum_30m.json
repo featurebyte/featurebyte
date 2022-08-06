@@ -1,8 +1,8 @@
 {
-    "_id": "62ee50a925a193d9dad36f98",
+    "_id": "62ee60e6aded74387d0830e3",
     "description": null,
     "event_data_ids": [
-        "62ee50a925a193d9dad36f95"
+        "62ee60e6aded74387d0830e0"
     ],
     "graph": {
         "backward_edges": {
@@ -114,7 +114,7 @@
         "groupby_1"
     ],
     "tabular_source": [
-        "62ee50a925a193d9dad36f93",
+        "62ee60e6aded74387d0830de",
         {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

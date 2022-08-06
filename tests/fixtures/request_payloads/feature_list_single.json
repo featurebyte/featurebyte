@@ -1,10 +1,10 @@
 {
-    "_id": "62ee50a925a193d9dad36f9c",
+    "_id": "62ee60e6aded74387d0830e7",
     "created_at": null,
     "description": null,
     "features": [
         {
-            "id": "62ee50a925a193d9dad36f98",
+            "id": "62ee60e6aded74387d0830e3",
             "name": "sum_30m",
             "version": "V220806"
         }

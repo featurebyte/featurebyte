@@ -529,16 +529,20 @@ def test_save_payload_fixtures(
     Write request payload for testing api route
     """
     entity = Entity(name="customer", serving_names=["cust_id"])
-    feature = feature_group["sum_30m"]
-    feature_list = FeatureList([feature], name="sf_feature_list")
-    feature_list_multiple = FeatureList([feature_group], name="sf_feature_list_multiple")
+    feature_sum_30m = feature_group["sum_30m"]
+    feature_sum_2h = feature_group["sum_2h"]
+    feature_list = FeatureList([feature_sum_30m], name="sf_feature_list")
+    feature_list_multiple = FeatureList(
+        [feature_sum_30m, feature_sum_2h], name="sf_feature_list_multiple"
+    )
 
     if update_fixtures:
         api_object_name_pairs = [
             (entity, "entity"),
             (snowflake_feature_store, "feature_store"),
             (snowflake_event_data, "event_data"),
-            (feature, "feature"),
+            (feature_sum_30m, "feature_sum_30m"),
+            (feature_sum_2h, "feature_sum_2h"),
             (feature_list, "feature_list_single"),
             (feature_list_multiple, "feature_list_multi"),
         ]

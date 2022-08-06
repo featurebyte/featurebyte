@@ -1,21 +1,16 @@
 {
-    "_id": "62ee50a925a193d9dad36f9d",
+    "_id": "62ee60e6aded74387d0830e8",
     "created_at": null,
     "description": null,
     "features": [
         {
-            "id": "62ee50a925a193d9dad36f98",
+            "id": "62ee60e6aded74387d0830e3",
             "name": "sum_30m",
             "version": "V220806"
         },
         {
-            "id": "62ee50a925a193d9dad36f99",
+            "id": "62ee60e6aded74387d0830e4",
             "name": "sum_2h",
-            "version": "V220806"
-        },
-        {
-            "id": "62ee50a925a193d9dad36f9a",
-            "name": "sum_1d",
             "version": "V220806"
         }
     ],
