@@ -1,12 +1,12 @@
 {
-    "_id": "62ed07434a18c0b8a5ca0e8d",
+    "_id": "62ee50a925a193d9dad36f95",
     "column_entity_map": null,
     "default_feature_job_setting": null,
     "event_timestamp_column": "event_timestamp",
     "name": "sf_event_data",
     "record_creation_date_column": "created_at",
     "tabular_source": [
-        "62ed07434a18c0b8a5ca0e8b",
+        "62ee50a925a193d9dad36f93",
         {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

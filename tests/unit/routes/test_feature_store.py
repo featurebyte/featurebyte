@@ -13,8 +13,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
 
     class_name = "FeatureStore"
     base_route = "/feature_store"
-    payload_filename = "tests/fixtures/request_payloads/feature_store.json"
-    payload = BaseApiTestSuite.load_payload(payload_filename)
+    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/feature_store.json")
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,

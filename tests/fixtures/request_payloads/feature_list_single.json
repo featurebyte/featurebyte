@@ -1,0 +1,18 @@
+{
+    "_id": "62ee50a925a193d9dad36f9c",
+    "created_at": null,
+    "description": null,
+    "features": [
+        {
+            "id": "62ee50a925a193d9dad36f98",
+            "name": "sum_30m",
+            "version": "V220806"
+        }
+    ],
+    "name": "sf_feature_list",
+    "readiness": null,
+    "status": "DRAFT",
+    "updated_at": null,
+    "user_id": null,
+    "version": "V220806"
+}

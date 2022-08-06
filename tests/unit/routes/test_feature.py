@@ -10,7 +10,7 @@ from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.exception import DuplicatedFeatureRegistryError
+from featurebyte.exception import DuplicatedRegistryError
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import SourceType, SQLiteDetails, TableDetails
 from featurebyte.routes.feature.controller import FeatureController
@@ -24,8 +24,7 @@ class TestFeatureApi(BaseApiTestSuite):
 
     class_name = "Feature"
     base_route = "/feature"
-    payload_filename = "tests/fixtures/request_payloads/feature.json"
-    payload = BaseApiTestSuite.load_payload(payload_filename)
+    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/feature.json")
     object_id = str(ObjectId())
     create_conflict_payload_expected_detail_pairs = [
         (
@@ -332,9 +331,7 @@ async def test_insert_feature_registry__duplicated_feature_registry_exception(
     Test insert_feature_registry with duplicated_feature_registry exception
     """
     _ = snowflake_connector
-    mock_feature_manager.return_value.insert_feature_registry.side_effect = (
-        DuplicatedFeatureRegistryError
-    )
+    mock_feature_manager.return_value.insert_feature_registry.side_effect = DuplicatedRegistryError
     feature = FeatureModel(**feature_model_dict)
     user = Mock()
     with pytest.raises(HTTPException) as exc:
@@ -345,7 +342,7 @@ async def test_insert_feature_registry__duplicated_feature_registry_exception(
             get_credential=get_credential,
         )
     expected_msg = (
-        'Feature (feature.name: "sum_30m") has been registered by other feature '
+        'Feature (name: "sum_30m") has been registered by other feature '
         "at Snowflake feature store."
     )
     assert expected_msg in str(exc.value.detail)

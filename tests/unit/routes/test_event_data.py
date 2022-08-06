@@ -18,8 +18,7 @@ class TestEventDataApi(BaseApiTestSuite):
 
     class_name = "EventData"
     base_route = "/event_data"
-    payload_filename = "tests/fixtures/request_payloads/event_data.json"
-    payload = BaseApiTestSuite.load_payload(payload_filename)
+    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/event_data.json")
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,

@@ -16,8 +16,7 @@ class TestEntityApi(BaseApiTestSuite):
 
     class_name = "Entity"
     base_route = "/entity"
-    payload_filename = "tests/fixtures/request_payloads/entity.json"
-    payload = BaseApiTestSuite.load_payload(payload_filename)
+    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/entity.json")
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,

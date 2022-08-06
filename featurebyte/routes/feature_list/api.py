@@ -23,7 +23,10 @@ async def create_feature_list(request: Request, data: FeatureListCreate) -> Feat
     Create FeatureList
     """
     feature_list: FeatureListModel = await request.state.controller.create_feature_list(
-        user=request.state.user, persistent=request.state.persistent, data=data
+        user=request.state.user,
+        persistent=request.state.persistent,
+        get_credential=request.state.get_credential,
+        data=data,
     )
     return feature_list
 

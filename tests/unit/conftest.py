@@ -531,6 +531,7 @@ def test_save_payload_fixtures(
     entity = Entity(name="customer", serving_names=["cust_id"])
     feature = feature_group["sum_30m"]
     feature_list = FeatureList([feature], name="sf_feature_list")
+    feature_list_multiple = FeatureList([feature_group], name="sf_feature_list_multiple")
 
     if update_fixtures:
         api_object_name_pairs = [
@@ -538,7 +539,8 @@ def test_save_payload_fixtures(
             (snowflake_feature_store, "feature_store"),
             (snowflake_event_data, "event_data"),
             (feature, "feature"),
-            (feature_list, "feature_list"),
+            (feature_list, "feature_list_single"),
+            (feature_list_multiple, "feature_list_multi"),
         ]
         output_filenames = []
         for api_object, name in api_object_name_pairs:

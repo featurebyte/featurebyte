@@ -12,7 +12,7 @@ from fastapi import HTTPException
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import SourceType
-from featurebyte.exception import DuplicatedFeatureRegistryError
+from featurebyte.exception import DuplicatedRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.models.event_data import EventDataModel
@@ -182,13 +182,13 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
             feature_manager = FeatureManagerSnowflake(session=db_session)
             try:
                 feature_manager.insert_feature_registry(extended_feature)
-            except DuplicatedFeatureRegistryError as exc:
+            except DuplicatedRegistryError as exc:
                 # someone else already registered the feature at snowflake
                 # do not remove the current registry & raise error to remove persistent record
                 raise HTTPException(
                     status_code=HTTPStatus.CONFLICT,
                     detail=(
-                        f'Feature (feature.name: "{document.name}") has been registered by '
+                        f'Feature (name: "{document.name}") has been registered by '
                         f"other feature at Snowflake feature store."
                     ),
                 ) from exc
@@ -224,7 +224,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
         async with persistent.start_transaction() as session:
             # check any conflict with existing documents
             await cls.check_document_creation_conflict(
-                persistent=persistent,
+                persistent=session,
                 query_filter={"_id": data.id},
                 doc_represent={"id": data.id},
                 get_type="id",
@@ -243,7 +243,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
             feature_store_id, _ = data.tabular_source
             feature_store_dict = await cls.get_document(
                 user=user,
-                persistent=persistent,
+                persistent=session,
                 collection_name=FeatureStoreModel.collection_name(),
                 document_id=feature_store_id,
                 exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,

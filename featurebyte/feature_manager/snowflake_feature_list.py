@@ -8,6 +8,7 @@ from typing import Any, List, Optional, Tuple
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
+from featurebyte.exception import DuplicatedRegistryError
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_insert_feature_list_registry,
     tm_select_feature_list_registry,
@@ -79,7 +80,7 @@ class FeatureListManagerSnowflake(BaseModel):
             logger.debug(f"generated sql: {sql}")
             self._session.execute_query(sql)
         else:
-            raise ValueError(
+            raise DuplicatedRegistryError(
                 f"FeatureList version already exist for {feature_list.name} with version {feature_list.version}"
             )
 

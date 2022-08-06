@@ -17,8 +17,12 @@ class TestFeatureListApi(BaseApiTestSuite):
 
     class_name = "FeatureList"
     base_route = "/feature_list"
-    payload_filename = "tests/fixtures/request_payloads/feature_list.json"
-    payload = BaseApiTestSuite.load_payload(payload_filename)
+    payload = BaseApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/feature_list_single.json"
+    )
+    payload_multi = BaseApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/feature_list_multi.json"
+    )
     object_id = str(ObjectId())
     create_conflict_payload_expected_detail_pairs = [
         (
@@ -53,6 +57,16 @@ class TestFeatureListApi(BaseApiTestSuite):
         """
         with patch(
             "featurebyte.routes.feature.controller.FeatureController.insert_feature_registry"
+        ) as mock:
+            yield mock
+
+    @pytest.fixture(autouse=True)
+    def mock_insert_feature_list_registry_fixture(self):
+        """
+        Mock insert feature registry at the controller level
+        """
+        with patch(
+            "featurebyte.routes.feature_list.controller.FeatureListController.insert_feature_list_registry"
         ) as mock:
             yield mock
 

@@ -7,7 +7,14 @@ from typing import Any
 
 from http import HTTPStatus
 
+from fastapi import HTTPException
+
+from featurebyte.core.generic import ExtendedFeatureStoreModel
+from featurebyte.enum import SourceType
+from featurebyte.exception import DuplicatedRegistryError
+from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.feature import FeatureListModel, FeatureModel
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseController, GetType
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListPaginatedList
@@ -23,8 +30,53 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
     paginated_document_class = FeatureListPaginatedList
 
     @classmethod
+    async def insert_feature_list_registry(
+        cls,
+        user: Any,
+        document: FeatureListModel,
+        feature_store: ExtendedFeatureStoreModel,
+        get_credential: Any,
+    ) -> None:
+        """
+        Insert feature list registry into feature list store
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        document: FeatureListModel
+            FeatureList document
+        feature_store: ExtendedFeatureStoreModel
+            FeatureStore document
+        get_credential: Any
+            Get credential handler function
+
+        """
+        if feature_store.type == SourceType.SNOWFLAKE:
+            db_session = feature_store.get_session(
+                credentials={
+                    feature_store.name: await get_credential(
+                        user_id=user.id, feature_store_name=feature_store.name
+                    )
+                }
+            )
+            feature_list_manager = FeatureListManagerSnowflake(session=db_session)
+            try:
+                feature_list_manager.insert_feature_list_registry(document)
+            except DuplicatedRegistryError as exc:
+                # someone else already registered the feature at snowflake
+                # do not remove the current registry & raise error to remove persistent record
+                raise HTTPException(
+                    status_code=HTTPStatus.CONFLICT,
+                    detail=(
+                        f'FeatureList (name: "{document.name}") has been registered by '
+                        f"other feature list at Snowflake feature list store."
+                    ),
+                ) from exc
+
+    @classmethod
     async def create_feature_list(
-        cls, user: Any, persistent: Persistent, data: FeatureListCreate
+        cls, user: Any, persistent: Persistent, get_credential: Any, data: FeatureListCreate
     ) -> FeatureListModel:
         """
         Create FeatureList at persistent (GitDB or MongoDB)
@@ -35,6 +87,8 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
             User class to provide user identifier
         persistent: Persistent
             Object that feature list will be saved to
+        get_credential: Any
+            Get credential handler function
         data: FeatureListCreate
             Feature creation payload
 
@@ -45,35 +99,65 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
         """
         document = FeatureListModel(**data.json_dict(), user_id=user.id)
 
-        # check any conflict with existing documents
-        constraints_check_triples: list[tuple[dict[str, Any], dict[str, Any], GetType]] = [
-            ({"_id": data.id}, {"id": data.id}, "name"),
-            ({"name": data.name}, {"name": data.name}, "name"),
-        ]
-        for query_filter, doc_represent, get_type in constraints_check_triples:
-            await cls.check_document_creation_conflict(
-                persistent=persistent,
-                query_filter=query_filter,
-                doc_represent=doc_represent,
-                get_type=get_type,
-                user_id=user.id,
-            )
+        async with persistent.start_transaction() as session:
+            # check any conflict with existing documents
+            constraints_check_triples: list[tuple[dict[str, Any], dict[str, Any], GetType]] = [
+                ({"_id": data.id}, {"id": data.id}, "name"),
+                ({"name": data.name}, {"name": data.name}, "name"),
+            ]
+            for query_filter, doc_represent, get_type in constraints_check_triples:
+                await cls.check_document_creation_conflict(
+                    persistent=session,
+                    query_filter=query_filter,
+                    doc_represent=doc_represent,
+                    get_type=get_type,
+                    user_id=user.id,
+                )
 
-        # check whether the feature(s) in the feature list saved to persistent or not
-        for feature in document.features:
-            await cls.get_document(
+            # check whether the feature(s) in the feature list saved to persistent or not
+            feature_store_id = None
+            for feature in document.features:
+                feature_dict = await cls.get_document(
+                    user=user,
+                    persistent=session,
+                    collection_name=FeatureModel.collection_name(),
+                    document_id=feature.id,
+                    exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+                )
+                feature = FeatureModel(**feature_dict)
+                if feature_store_id is None:
+                    feature_store_id, _ = feature.tabular_source
+                elif feature.tabular_source[0] != feature_store_id:
+                    raise HTTPException(
+                        status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+                        detail=(
+                            "All the Feature objects within the same FeatureList object must be from the same "
+                            "feature store."
+                        ),
+                    )
+
+            feature_store_dict = await cls.get_document(
                 user=user,
-                persistent=persistent,
-                collection_name=FeatureModel.collection_name(),
-                document_id=feature.id,
+                persistent=session,
+                collection_name=FeatureStoreModel.collection_name(),
+                document_id=feature_store_id,
                 exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             )
+            feature_store = ExtendedFeatureStoreModel(**feature_store_dict)
 
-        insert_id = await persistent.insert_one(
-            collection_name=cls.collection_name,
-            document=document.dict(by_alias=True),
-            user_id=user.id,
-        )
-        assert insert_id == document.id
+            insert_id = await session.insert_one(
+                collection_name=cls.collection_name,
+                document=document.dict(by_alias=True),
+                user_id=user.id,
+            )
+            assert insert_id == document.id
+
+            # insert feature list registry into feature list store
+            await cls.insert_feature_list_registry(
+                user=user,
+                document=document,
+                feature_store=feature_store,
+                get_credential=get_credential,
+            )
 
         return await cls.get(user=user, persistent=persistent, document_id=insert_id)

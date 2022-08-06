@@ -11,7 +11,7 @@ import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.exception import (
-    DuplicatedFeatureRegistryError,
+    DuplicatedRegistryError,
     InvalidFeatureRegistryOperationError,
     MissingFeatureRegistryError,
 )
@@ -64,7 +64,7 @@ class FeatureManagerSnowflake(BaseModel):
 
         Raises
         ----------
-        DuplicatedFeatureRegistryError
+        DuplicatedRegistryError
             when the feature registry record already exists
         """
         feature_versions = self.retrieve_feature_registries(
@@ -96,7 +96,7 @@ class FeatureManagerSnowflake(BaseModel):
             logger.debug(f"generated insert sql: {sql}")
             self._session.execute_query(sql)
         else:
-            raise DuplicatedFeatureRegistryError(
+            raise DuplicatedRegistryError(
                 f"Feature version already exist for {feature.name} with version {feature.version}"
             )
 
