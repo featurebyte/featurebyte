@@ -33,7 +33,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
     # class variables
     _route = "/feature"
 
-    def _get_init_params(self) -> dict[str, Any]:
+    def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
 
     def _get_create_payload(self) -> dict[str, Any]:

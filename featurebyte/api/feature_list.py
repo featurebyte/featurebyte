@@ -200,6 +200,28 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     # class variables
     _route = "/feature_list"
 
+    def _get_init_params_from_object(self) -> dict[str, Any]:
+        return {"items": self.items}
+
+    @classmethod
+    def _get_init_params(cls) -> dict[str, Any]:
+        return {"items": []}
+
+    @root_validator(pre=True)
+    @classmethod
+    def _initialize_feature_objects_and_items(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "features" in values:
+            if "feature_objects" not in values or "items" not in values:
+                items = []
+                feature_objects = collections.OrderedDict()
+                for feature_signature in values["features"]:
+                    feature = Feature.get_by_id(dict(feature_signature)["id"])
+                    items.append(feature)
+                    feature_objects[feature.name] = feature
+                values["items"] = items
+                values["feature_objects"] = feature_objects
+        return values
+
     @root_validator()
     @classmethod
     def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:

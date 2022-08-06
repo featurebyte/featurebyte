@@ -1,12 +1,15 @@
 """
 Tests for featurebyte.api.feature_list
 """
+from unittest.mock import patch
+
 import pandas as pd
 import pytest
 from freezegun import freeze_time
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, FeatureList
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 
@@ -384,3 +387,63 @@ def test_feature_list__construction(production_ready_feature, draft_feature):
         "production_ready_feature": production_ready_feature,
         "draft_feature": draft_feature,
     }
+
+
+@pytest.fixture(name="mock_insert_feature_list_registry")
+def mock_insert_feature_registry_fixture():
+    """
+    Mock insert feature registry at the controller level
+    """
+    with patch(
+        "featurebyte.routes.feature_list.controller.FeatureListController.insert_feature_list_registry"
+    ) as mock:
+        yield mock
+
+
+@pytest.fixture(name="saved_feature_list")
+def save_feature_list(
+    snowflake_feature_store,
+    snowflake_event_data,
+    float_feature,
+    mock_insert_feature_registry,
+    mock_insert_feature_list_registry,
+):
+    """
+    Saved feature list fixture
+    """
+    _ = mock_insert_feature_list_registry, mock_insert_feature_registry
+    snowflake_feature_store.save()
+    snowflake_event_data.save()
+    float_feature.save()
+    assert float_feature.tabular_source[0] == snowflake_feature_store.id
+    feature_list = FeatureList([float_feature], name="my_feature_list")
+    feature_list_id_before = feature_list.id
+    feature_list.save()
+    assert feature_list.id == feature_list_id_before
+    assert feature_list.readiness == FeatureReadiness.DRAFT
+    assert feature_list.name == "my_feature_list"
+    return feature_list
+
+
+def test_get_feature_list(saved_feature_list):
+    """
+    Test get feature list using feature list name
+    """
+    loaded_feature_list_by_name = FeatureList.get(name=saved_feature_list.name)
+    assert loaded_feature_list_by_name.dict() == saved_feature_list.dict()
+    assert loaded_feature_list_by_name == saved_feature_list
+    assert loaded_feature_list_by_name.feature_objects == saved_feature_list.feature_objects
+    assert loaded_feature_list_by_name.items == saved_feature_list.items
+
+    loaded_feature_list_by_id = FeatureList.get_by_id(saved_feature_list.id)
+    assert loaded_feature_list_by_id.dict() == saved_feature_list.dict()
+    assert loaded_feature_list_by_id == saved_feature_list
+    assert loaded_feature_list_by_id.feature_objects == saved_feature_list.feature_objects
+    assert loaded_feature_list_by_id.items == saved_feature_list.items
+
+    with pytest.raises(RecordRetrievalException) as exc:
+        FeatureList.get(name="random_name")
+    expected_msg = (
+        'FeatureList (name: "random_name") not found. Please save the FeatureList object first.'
+    )
+    assert expected_msg in str(exc.value)

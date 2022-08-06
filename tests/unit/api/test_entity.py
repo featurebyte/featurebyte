@@ -135,7 +135,7 @@ def test_entity_update_name(entity):
             entity.update_name("hello")
 
 
-def test_get_entity(update_fixtures):
+def test_get_entity():
     """
     Test Entity.get function
     """

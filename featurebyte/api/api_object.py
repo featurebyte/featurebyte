@@ -15,10 +15,10 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
 )
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel
 
 
-class ApiObject(FeatureByteBaseModel):
+class ApiObject(FeatureByteBaseDocumentModel):
     """
     ApiObject contains common methods used to interact with API routes
     """
@@ -26,9 +26,21 @@ class ApiObject(FeatureByteBaseModel):
     # class variables
     _route = ""
 
-    def _get_init_params(self) -> dict[str, Any]:
+    def _get_init_params_from_object(self) -> dict[str, Any]:
         """
-        Additional parameters pass to constructor (other than those parameters from response)
+        Additional parameters pass to constructor from object of the same class
+        (other than those parameters from response)
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {}
+
+    @classmethod
+    def _get_init_params(cls) -> dict[str, Any]:
+        """
+        Additional parameters pass to constructor (without referencing any object)
 
         Returns
         -------
@@ -72,7 +84,7 @@ class ApiObject(FeatureByteBaseModel):
             response_dict = response.json()
             if response_dict["data"]:
                 object_dict = response_dict["data"][0]
-                return cls(**object_dict)
+                return cls(**object_dict, **cls._get_init_params())
 
             class_name = cls.__name__
             raise RecordRetrievalException(
@@ -104,7 +116,7 @@ class ApiObject(FeatureByteBaseModel):
         client = Configurations().get_client()
         response = client.get(url=f"{cls._route}/{id}")
         if response.status_code == HTTPStatus.OK:
-            return cls(**response.json())
+            return cls(**response.json(), **cls._get_init_params())
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
     @classmethod
@@ -146,4 +158,4 @@ class ApiObject(FeatureByteBaseModel):
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response=response)
             raise RecordCreationException(response=response)
-        type(self).__init__(self, **response.json(), **self._get_init_params())
+        type(self).__init__(self, **response.json(), **self._get_init_params_from_object())

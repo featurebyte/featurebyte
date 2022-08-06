@@ -210,24 +210,12 @@ def test_feature_to_json(float_feature):
     assert '"created_at": "__default__"' in output_encoder
 
 
-@pytest.fixture(name="mock_insert_feature_registry")
-def mock_insert_feature_registry_fixture():
-    """
-    Mock insert feature registry at the controller level
-    """
-    with patch(
-        "featurebyte.routes.feature.controller.FeatureController.insert_feature_registry"
-    ) as mock:
-        yield mock
-
-
 @pytest.fixture(name="saved_feature")
 def saved_feature_fixture(
     snowflake_feature_store,
     snowflake_event_data,
     float_feature,
     mock_insert_feature_registry,
-    update_fixtures,
 ):
     """
     Saved feature fixture
