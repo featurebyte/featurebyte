@@ -3,10 +3,11 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from http import HTTPStatus
 
+from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
@@ -51,6 +52,10 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
         get_credential: Any
             Get credential handler function
 
+        Raises
+        ------
+        HTTPException
+            When the feature registry already exists at the feature store
         """
         if feature_store.type == SourceType.SNOWFLAKE:
             db_session = feature_store.get_session(
@@ -96,6 +101,11 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
         -------
         FeatureListModel
             Newly created feature list object
+
+        Raises
+        ------
+        HTTPException
+            When not all features share the same feature store
         """
         # pylint: disable=too-many-locals
         document = FeatureListModel(**data.json_dict(), user_id=user.id)
@@ -116,19 +126,17 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
                 )
 
             # check whether the feature(s) in the feature list saved to persistent or not
-            feature_store_id = None
-            for feature in document.features:
+            feature_store_id: Optional[ObjectId] = None
+            for feature_signature in document.features:
                 feature_dict = await cls.get_document(
                     user=user,
                     persistent=session,
                     collection_name=FeatureModel.collection_name(),
-                    document_id=feature.id,
+                    document_id=feature_signature.id,
                     exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                 )
                 feature = FeatureModel(**feature_dict)
-                if feature_store_id is None:
-                    feature_store_id, _ = feature.tabular_source
-                elif feature.tabular_source[0] != feature_store_id:
+                if feature_store_id and (feature_store_id != feature.tabular_source[0]):
                     raise HTTPException(
                         status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                         detail=(
@@ -137,11 +145,14 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
                         ),
                     )
 
+                # store previous feature store id
+                feature_store_id = feature.tabular_source[0]
+
             feature_store_dict = await cls.get_document(
                 user=user,
                 persistent=session,
                 collection_name=FeatureStoreModel.collection_name(),
-                document_id=feature_store_id,
+                document_id=ObjectId(feature_store_id),
                 exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             )
             feature_store = ExtendedFeatureStoreModel(**feature_store_dict)

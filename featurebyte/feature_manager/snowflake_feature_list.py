@@ -53,7 +53,7 @@ class FeatureListManagerSnowflake(BaseModel):
 
         Raises
         ----------
-        ValueError
+        DuplicatedRegistryError
             when the feature list registry record already exists
         """
         feature_list_versions = self.retrieve_feature_list_registries(
