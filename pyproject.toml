@@ -112,6 +112,7 @@ pytest-timeout = "^2.1.0"
 pyupgrade = "^2.37.2"
 requests = "^2.27.1"
 toml-sort = "^0.20.0"
+uvicorn = "^0.18.2"
 
 [tool.poetry.group.docs.dependencies]
 Sphinx = "^4.5.0"
