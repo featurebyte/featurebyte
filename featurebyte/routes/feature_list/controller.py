@@ -97,6 +97,7 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
         FeatureListModel
             Newly created feature list object
         """
+        # pylint: disable=too-many-locals
         document = FeatureListModel(**data.json_dict(), user_id=user.id)
 
         async with persistent.start_transaction() as session:
