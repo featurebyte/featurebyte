@@ -210,7 +210,7 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     """
 
     description: Optional[StrictStr]
-    features: List[FeatureSignature] = Field(default_factory=list)
+    feature_ids: List[PydanticObjectId] = Field(default_factory=list)
     readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
     status: Optional[FeatureListStatus] = Field(allow_mutation=False)
     version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)

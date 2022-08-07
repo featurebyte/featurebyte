@@ -12,7 +12,7 @@ from fastapi import HTTPException
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import SourceType
 from featurebyte.exception import DuplicatedRegistryError
-from featurebyte.models.feature import FeatureListModel
+from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.models.feature_store import SQLiteDetails, TableDetails
 from featurebyte.routes.feature_list.controller import FeatureListController
 from tests.unit.routes.base import BaseApiTestSuite
@@ -46,19 +46,12 @@ class TestFeatureListApi(BaseApiTestSuite):
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
-            {
-                **payload,
-                "_id": object_id,
-                "name": "random_name",
-                "features": [
-                    {"id": object_id, "name": "some_feature", "version": "random_version"}
-                ],
-            },
+            {**payload, "_id": object_id, "name": "random_name", "feature_ids": [object_id]},
             f'Feature (id: "{object_id}") not found. ' "Please save the Feature object first.",
         ),
         (
             payload_multi,
-            'Feature (id: "62ee60e6aded74387d0830e4") not found. Please save the Feature object first.',
+            'Feature (id: "62ef015b940d152708e1e5dc") not found. Please save the Feature object first.',
         ),
     ]
 
@@ -139,8 +132,19 @@ class TestFeatureListApi(BaseApiTestSuite):
 @pytest.fixture(name="feature_list_model")
 def feature_list_model_fixture():
     """FeatureList model fixture"""
+    with open("tests/fixtures/request_payloads/feature_sum_30m.json") as fhandle:
+        feature_dict = json.loads(fhandle.read())
+
     with open("tests/fixtures/request_payloads/feature_list_single.json") as fhandle:
-        feature_list = FeatureListModel(**json.loads(fhandle.read()))
+        feature_list_dict = json.loads(fhandle.read())
+        feature_list_dict["features"] = [
+            {
+                "id": feature_dict["_id"],
+                "name": feature_list_dict["name"],
+                "version": feature_list_dict["version"],
+            }
+        ]
+        feature_list = ExtendedFeatureListModel(**feature_list_dict)
     return feature_list
 
 

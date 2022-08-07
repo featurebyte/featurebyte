@@ -9,6 +9,7 @@ import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.exception import DuplicatedRegistryError
+from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_insert_feature_list_registry,
     tm_select_feature_list_registry,
@@ -42,13 +43,13 @@ class FeatureListManagerSnowflake(BaseModel):
         super().__init__(**kw)
         self._session = session
 
-    def insert_feature_list_registry(self, feature_list: FeatureListModel) -> None:
+    def insert_feature_list_registry(self, feature_list: ExtendedFeatureListModel) -> None:
         """
         Insert featurelist registry record. If the feature list record already exists, return False
 
         Parameters
         ----------
-        feature_list: FeatureListModel
+        feature_list: ExtendedFeatureListModel
             input featurelist instance
 
         Raises

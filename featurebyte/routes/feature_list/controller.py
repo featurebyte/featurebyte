@@ -3,7 +3,7 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from http import HTTPStatus
 
@@ -13,6 +13,7 @@ from fastapi import HTTPException
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import SourceType
 from featurebyte.exception import DuplicatedRegistryError
+from featurebyte.feature_manager.model import ExtendedFeatureListModel, FeatureSignature
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.feature import FeatureListModel, FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -34,7 +35,7 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
     async def insert_feature_list_registry(
         cls,
         user: Any,
-        document: FeatureListModel,
+        document: ExtendedFeatureListModel,
         feature_store: ExtendedFeatureStoreModel,
         get_credential: Any,
     ) -> None:
@@ -45,8 +46,8 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
         ----------
         user: Any
             User class to provide user identifier
-        document: FeatureListModel
-            FeatureList document
+        document: ExtendedFeatureListModel
+            ExtendedFeatureList document
         feature_store: ExtendedFeatureStoreModel
             FeatureStore document
         get_credential: Any
@@ -127,15 +128,19 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
 
             # check whether the feature(s) in the feature list saved to persistent or not
             feature_store_id: Optional[ObjectId] = None
-            for feature_signature in document.features:
+            feature_signatures: List[FeatureSignature] = []
+            for feature_id in document.feature_ids:
                 feature_dict = await cls.get_document(
                     user=user,
                     persistent=session,
                     collection_name=FeatureModel.collection_name(),
-                    document_id=feature_signature.id,
+                    document_id=feature_id,
                     exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                 )
                 feature = FeatureModel(**feature_dict)
+                feature_signatures.append(
+                    FeatureSignature(id=feature.id, name=feature.name, version=feature.version)
+                )
                 if feature_store_id and (feature_store_id != feature.tabular_source[0]):
                     raise HTTPException(
                         status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -167,7 +172,9 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
             # insert feature list registry into feature list store
             await cls.insert_feature_list_registry(
                 user=user,
-                document=document,
+                document=ExtendedFeatureListModel(
+                    **document.dict(by_alias=True), features=feature_signatures
+                ),
                 feature_store=feature_store,
                 get_credential=get_credential,
             )

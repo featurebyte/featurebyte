@@ -1,23 +1,15 @@
 {
-    "_id": "62ee60e6aded74387d0830e8",
+    "_id": "62ef015b940d152708e1e5e0",
     "created_at": null,
     "description": null,
-    "features": [
-        {
-            "id": "62ee60e6aded74387d0830e3",
-            "name": "sum_30m",
-            "version": "V220806"
-        },
-        {
-            "id": "62ee60e6aded74387d0830e4",
-            "name": "sum_2h",
-            "version": "V220806"
-        }
+    "feature_ids": [
+        "62ef015b940d152708e1e5db",
+        "62ef015b940d152708e1e5dc"
     ],
     "name": "sf_feature_list_multiple",
     "readiness": null,
     "status": "DRAFT",
     "updated_at": null,
     "user_id": null,
-    "version": "V220806"
+    "version": "V220807"
 }

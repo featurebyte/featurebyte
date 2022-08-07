@@ -18,12 +18,7 @@ from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import (
-    FeatureListModel,
-    FeatureListStatus,
-    FeatureReadiness,
-    FeatureSignature,
-)
+from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
 from featurebyte.query_graph.feature_historical import get_historical_features
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
@@ -210,12 +205,12 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     @root_validator(pre=True)
     @classmethod
     def _initialize_feature_objects_and_items(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "features" in values:
+        if "feature_ids" in values:
             if "feature_objects" not in values or "items" not in values:
                 items = []
                 feature_objects = collections.OrderedDict()
-                for feature_signature in values["features"]:
-                    feature = Feature.get_by_id(dict(feature_signature)["id"])
+                for feature_id in values["feature_ids"]:
+                    feature = Feature.get_by_id(feature_id)
                     items.append(feature)
                     feature_objects[feature.name] = feature
                 values["items"] = items
@@ -229,10 +224,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
             values["feature_objects"].values(),
             key=lambda feature: FeatureReadiness(feature.readiness or FeatureReadiness.min()),
         ).readiness
-        values["features"] = [
-            FeatureSignature(id=feature.id, name=feature.name, version=feature.version)
-            for feature in values["feature_objects"].values()
-        ]
+        values["feature_ids"] = [feature.id for feature in values["feature_objects"].values()]
         values["status"] = FeatureListStatus.DRAFT
         values["version"] = get_version()
         return values

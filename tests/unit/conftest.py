@@ -18,10 +18,11 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
+from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.event_data import EventDataModel
-from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
 from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
@@ -488,9 +489,10 @@ def mock_snowflake_feature_list_model(
     )
     feature = feature_group["sum_30m"]
 
-    mock_feature_list = FeatureListModel(
+    mock_feature_list = ExtendedFeatureListModel(
         name="feature_list1",
         description="test_description1",
+        feature_ids=[feature.id],
         features=[{"id": feature.id, "name": feature.name, "version": feature.version}],
         readiness=FeatureReadiness.DRAFT,
         status=FeatureListStatus.DRAFT,
