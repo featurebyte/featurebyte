@@ -19,16 +19,11 @@ from featurebyte.api.event_data import EventData
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
-from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.event_data import EventDataModel
-from featurebyte.models.feature import (
-    FeatureListModel,
-    FeatureListStatus,
-    FeatureModel,
-    FeatureReadiness,
-)
+from featurebyte.models.feature import FeatureListStatus, FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import SnowflakeDetails, SQLiteDetails, TableDetails
 from featurebyte.persistent.git import GitDB
 from featurebyte.session.manager import SessionManager
@@ -363,12 +358,13 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config, snowfl
             "is_default": True,
         }
     )
-    mock_feature = FeatureModel(**feature_model_dict)
+    feature = FeatureModel(**feature_model_dict)
 
-    feature_list = FeatureListModel(
+    feature_list = ExtendedFeatureListModel(
         name="feature_list1",
         description="test_description1",
-        features=[(mock_feature.name, mock_feature.version)],
+        feature_ids=[feature.id],
+        features=[{"id": feature.id, "name": feature.name, "version": feature.version}],
         readiness=FeatureReadiness.DRAFT,
         status=FeatureListStatus.DRAFT,
         version="v1",

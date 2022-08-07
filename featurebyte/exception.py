@@ -90,7 +90,7 @@ class InvalidSettingsError(Exception):
     """
 
 
-class DuplicatedFeatureRegistryError(Exception):
+class DuplicatedRegistryError(Exception):
     """
     Raised when the feature registry record already exists at the feature store
     """

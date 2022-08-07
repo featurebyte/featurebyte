@@ -84,3 +84,16 @@ def test_api_client_persistent(persistent, user_id):
             mock_get_persistent.return_value = persistent
             with TestClient(app) as client:
                 yield client, persistent
+
+
+@pytest.fixture(name="get_credential")
+def get_credential_fixture(config):
+    """
+    get_credential fixture
+    """
+
+    async def get_credential(user_id, feature_store_name):
+        _ = user_id
+        return config.credentials.get(feature_store_name)
+
+    return get_credential

@@ -83,7 +83,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject):
     # class variables
     _route = "/event_data"
 
-    def _get_init_params(self) -> dict[str, Any]:
+    def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store, "credentials": self.credentials}
 
     def _get_create_payload(self) -> dict[str, Any]:

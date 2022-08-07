@@ -10,7 +10,7 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import InternalName
 from featurebyte.exception import (
-    DuplicatedFeatureRegistryError,
+    DuplicatedRegistryError,
     InvalidFeatureRegistryOperationError,
     MissingFeatureRegistryError,
 )
@@ -66,7 +66,7 @@ def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature,
     assert result.iloc[0]["NAME"] == "sum_30m"
     assert result.iloc[0]["VERSION"] == "v1"
 
-    with pytest.raises(DuplicatedFeatureRegistryError) as excinfo:
+    with pytest.raises(DuplicatedRegistryError) as excinfo:
         feature_manager.insert_feature_registry(snowflake_feature)
 
     assert (

@@ -11,6 +11,7 @@ import time
 import pandas as pd
 from pydantic import Field, parse_obj_as, root_validator
 
+from featurebyte.api.api_object import ApiObject
 from featurebyte.api.feature import Feature
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
@@ -181,7 +182,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         raise ValueError("There is no feature in the FeatureGroup object.")
 
 
-class FeatureList(BaseFeatureGroup, FeatureListModel):
+class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     """
     FeatureList class
 
@@ -191,6 +192,31 @@ class FeatureList(BaseFeatureGroup, FeatureListModel):
         Name of the FeatureList
     """
 
+    # class variables
+    _route = "/feature_list"
+
+    def _get_init_params_from_object(self) -> dict[str, Any]:
+        return {"items": self.items}
+
+    @classmethod
+    def _get_init_params(cls) -> dict[str, Any]:
+        return {"items": []}
+
+    @root_validator(pre=True)
+    @classmethod
+    def _initialize_feature_objects_and_items(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if "feature_ids" in values:
+            if "feature_objects" not in values or "items" not in values:
+                items = []
+                feature_objects = collections.OrderedDict()
+                for feature_id in values["feature_ids"]:
+                    feature = Feature.get_by_id(feature_id)
+                    items.append(feature)
+                    feature_objects[feature.name] = feature
+                values["items"] = items
+                values["feature_objects"] = feature_objects
+        return values
+
     @root_validator()
     @classmethod
     def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -198,9 +224,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel):
             values["feature_objects"].values(),
             key=lambda feature: FeatureReadiness(feature.readiness or FeatureReadiness.min()),
         ).readiness
-        values["features"] = [
-            (feature.name, feature.version) for feature in values["feature_objects"].values()
-        ]
+        values["feature_ids"] = [feature.id for feature in values["feature_objects"].values()]
         values["status"] = FeatureListStatus.DRAFT
         values["version"] = get_version()
         return values

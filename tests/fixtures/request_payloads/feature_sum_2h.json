@@ -1,8 +1,8 @@
 {
-    "_id": "62ebd26ff1d781fa2938d258",
+    "_id": "62ef015b940d152708e1e5dc",
     "description": null,
     "event_data_ids": [
-        "62ebd26ff1d781fa2938d253"
+        "62ef015b940d152708e1e5d8"
     ],
     "graph": {
         "backward_edges": {
@@ -91,20 +91,20 @@
                 "output_type": "series",
                 "parameters": {
                     "columns": [
-                        "sum_1d"
+                        "sum_2h"
                     ]
                 },
                 "type": "project"
             }
         }
     },
-    "name": "sum_1d",
+    "name": "sum_2h",
     "node": {
         "name": "project_1",
         "output_type": "series",
         "parameters": {
             "columns": [
-                "sum_1d"
+                "sum_2h"
             ]
         },
         "type": "project"
@@ -114,7 +114,7 @@
         "groupby_1"
     ],
     "tabular_source": [
-        "62ebd26ff1d781fa2938d24f",
+        "62ef015b940d152708e1e5d6",
         {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
@@ -122,5 +122,5 @@
         }
     ],
     "var_type": "FLOAT",
-    "version": "V220804"
+    "version": "V220807"
 }

@@ -1,5 +1,5 @@
 """
-Feature API routes
+FeatureList API routes
 """
 from __future__ import annotations
 
@@ -10,40 +10,40 @@ from http import HTTPStatus
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
 
-from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature import FeatureListModel
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.schema.feature import FeatureCreate, FeatureList
+from featurebyte.schema.feature_list import FeatureListCreate, FeatureListPaginatedList
 
-router = APIRouter(prefix="/feature")
+router = APIRouter(prefix="/feature_list")
 
 
-@router.post("", response_model=FeatureModel, status_code=HTTPStatus.CREATED)
-async def create_feature(request: Request, data: FeatureCreate) -> FeatureModel:
+@router.post("", response_model=FeatureListModel, status_code=HTTPStatus.CREATED)
+async def create_feature_list(request: Request, data: FeatureListCreate) -> FeatureListModel:
     """
-    Create Feature
+    Create FeatureList
     """
-    feature: FeatureModel = await request.state.controller.create_feature(
+    feature_list: FeatureListModel = await request.state.controller.create_feature_list(
         user=request.state.user,
         persistent=request.state.persistent,
         get_credential=request.state.get_credential,
         data=data,
     )
-    return feature
+    return feature_list
 
 
-@router.get("/{feature_id}", response_model=FeatureModel)
-async def get_feature(request: Request, feature_id: str) -> FeatureModel:
+@router.get("/{feature_list_id}", response_model=FeatureListModel)
+async def get_feature_list(request: Request, feature_list_id: str) -> FeatureListModel:
     """
-    Get Feature
+    Get FeatureList
     """
-    feature: FeatureModel = await request.state.controller.get(
-        user=request.state.user, persistent=request.state.persistent, document_id=feature_id
+    feature_list: FeatureListModel = await request.state.controller.get(
+        user=request.state.user, persistent=request.state.persistent, document_id=feature_list_id
     )
-    return feature
+    return feature_list
 
 
-@router.get("", response_model=FeatureList)
-async def list_features(
+@router.get("", response_model=FeatureListPaginatedList)
+async def list_feature_list(
     request: Request,
     page: int = 1,
     page_size: int = 10,
@@ -51,11 +51,11 @@ async def list_features(
     sort_dir: Literal["asc", "desc"] = "desc",
     search: Optional[str] = None,
     name: Optional[str] = None,
-) -> FeatureList:
+) -> FeatureListPaginatedList:
     """
-    List Features
+    List FeatureLists
     """
-    feature_list: FeatureList = await request.state.controller.list(
+    feature_list_paginated_list: FeatureListPaginatedList = await request.state.controller.list(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,
@@ -65,13 +65,13 @@ async def list_features(
         search=search,
         name=name,
     )
-    return feature_list
+    return feature_list_paginated_list
 
 
-@router.get("/audit/{feature_id}", response_model=AuditDocumentList)
-async def list_feature_audit_logs(
+@router.get("/audit/{feature_list_id}", response_model=AuditDocumentList)
+async def list_feature_list_audit_logs(
     request: Request,
-    feature_id: PydanticObjectId,
+    feature_list_id: PydanticObjectId,
     page: int = 1,
     page_size: int = 10,
     sort_by: Optional[str] = "_id",
@@ -84,7 +84,7 @@ async def list_feature_audit_logs(
     audit_doc_list: AuditDocumentList = await request.state.controller.list_audit(
         user=request.state.user,
         persistent=request.state.persistent,
-        document_id=feature_id,
+        document_id=feature_list_id,
         page=page,
         page_size=page_size,
         sort_by=sort_by,

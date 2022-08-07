@@ -13,15 +13,16 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
+from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.event_data import EventDataModel
-from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
 from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
@@ -488,10 +489,11 @@ def mock_snowflake_feature_list_model(
     )
     feature = feature_group["sum_30m"]
 
-    mock_feature_list = FeatureListModel(
+    mock_feature_list = ExtendedFeatureListModel(
         name="feature_list1",
         description="test_description1",
-        features=[(feature.name, feature.version)],
+        feature_ids=[feature.id],
+        features=[{"id": feature.id, "name": feature.name, "version": feature.version}],
         readiness=FeatureReadiness.DRAFT,
         status=FeatureListStatus.DRAFT,
         version="v1",
@@ -517,3 +519,44 @@ def mocked_tile_cache_fixture():
         "featurebyte.query_graph.feature_historical.SnowflakeTileCache", autospec=True
     ) as mocked_cls:
         yield mocked_cls.return_value
+
+
+def test_save_payload_fixtures(
+    update_fixtures,
+    snowflake_feature_store,
+    snowflake_event_data,
+    feature_group,
+):
+    """
+    Write request payload for testing api route
+    """
+    entity = Entity(name="customer", serving_names=["cust_id"])
+    feature_sum_30m = feature_group["sum_30m"]
+    feature_sum_2h = feature_group["sum_2h"]
+    feature_list = FeatureList([feature_sum_30m], name="sf_feature_list")
+    feature_list_multiple = FeatureList(
+        [feature_sum_30m, feature_sum_2h], name="sf_feature_list_multiple"
+    )
+
+    if update_fixtures:
+        api_object_name_pairs = [
+            (entity, "entity"),
+            (snowflake_feature_store, "feature_store"),
+            (snowflake_event_data, "event_data"),
+            (feature_sum_30m, "feature_sum_30m"),
+            (feature_sum_2h, "feature_sum_2h"),
+            (feature_list, "feature_list_single"),
+            (feature_list_multiple, "feature_list_multi"),
+        ]
+        output_filenames = []
+        for api_object, name in api_object_name_pairs:
+            filename = f"tests/fixtures/request_payloads/{name}.json"
+            with open(filename, "w") as fhandle:
+                fhandle.write(
+                    json.dumps(api_object._get_create_payload(), indent=4, sort_keys=True)
+                )
+            output_filenames.append(filename)
+
+        raise AssertionError(
+            f"Fixture {output_filenames} updated, please set update_fixture to False"
+        )

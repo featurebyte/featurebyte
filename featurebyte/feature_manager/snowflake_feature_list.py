@@ -8,6 +8,8 @@ from typing import Any, List, Optional, Tuple
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
+from featurebyte.exception import DuplicatedRegistryError
+from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_insert_feature_list_registry,
     tm_select_feature_list_registry,
@@ -41,18 +43,18 @@ class FeatureListManagerSnowflake(BaseModel):
         super().__init__(**kw)
         self._session = session
 
-    def insert_feature_list_registry(self, feature_list: FeatureListModel) -> None:
+    def insert_feature_list_registry(self, feature_list: ExtendedFeatureListModel) -> None:
         """
         Insert featurelist registry record. If the feature list record already exists, return False
 
         Parameters
         ----------
-        feature_list: FeatureListModel
+        feature_list: ExtendedFeatureListModel
             input featurelist instance
 
         Raises
         ----------
-        ValueError
+        DuplicatedRegistryError
             when the feature list registry record already exists
         """
         feature_list_versions = self.retrieve_feature_list_registries(
@@ -66,7 +68,9 @@ class FeatureListManagerSnowflake(BaseModel):
             )
 
             if feature_list.features:
-                feature_lst = [{"feature": f[0], "version": f[1]} for f in feature_list.features]
+                feature_lst = [
+                    {"feature": f.name, "version": f.version} for f in feature_list.features
+                ]
                 feature_lst_str = str(feature_lst).replace("'", '"')
             else:
                 feature_lst_str = "[]"
@@ -77,7 +81,7 @@ class FeatureListManagerSnowflake(BaseModel):
             logger.debug(f"generated sql: {sql}")
             self._session.execute_query(sql)
         else:
-            raise ValueError(
+            raise DuplicatedRegistryError(
                 f"FeatureList version already exist for {feature_list.name} with version {feature_list.version}"
             )
 

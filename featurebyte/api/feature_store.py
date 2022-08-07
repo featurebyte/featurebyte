@@ -3,14 +3,16 @@ FeatureStore class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from featurebyte.api.api_object import ApiObject
-from featurebyte.api.database_table import DatabaseTable
 from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.models.feature_store import TableDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
+
+if TYPE_CHECKING:
+    from featurebyte.api.database_table import DatabaseTable
 
 
 class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
@@ -111,6 +113,9 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
         -------
         DatabaseTable
         """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.api.database_table import DatabaseTable
+
         return DatabaseTable(
             feature_store=self,
             tabular_source=(

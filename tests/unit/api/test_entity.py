@@ -135,7 +135,7 @@ def test_entity_update_name(entity):
             entity.update_name("hello")
 
 
-def test_get_entity(update_fixtures):
+def test_get_entity():
     """
     Test Entity.get function
     """
@@ -146,11 +146,6 @@ def test_get_entity(update_fixtures):
     cust_entity.save()
     prod_entity.save()
     region_entity.save()
-
-    if update_fixtures:
-        # write request payload for testing api route
-        with open("tests/fixtures/request_payloads/entity.json", "w") as fhandle:
-            fhandle.write(json.dumps(cust_entity._get_create_payload(), indent=4, sort_keys=True))
 
     # load the entities from the persistent
     exclude = {"created_at": True, "updated_at": True}

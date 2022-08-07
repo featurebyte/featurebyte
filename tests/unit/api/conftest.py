@@ -2,6 +2,7 @@
 Common test fixtures used across api test directories
 """
 import textwrap
+from unittest.mock import patch
 
 import pytest
 
@@ -116,3 +117,14 @@ def snowflake_event_data_fixture(
             event_timestamp_column="event_timestamp",
             record_creation_date_column="created_at",
         )
+
+
+@pytest.fixture(name="mock_insert_feature_registry")
+def mock_insert_feature_registry_fixture():
+    """
+    Mock insert feature registry at the controller level
+    """
+    with patch(
+        "featurebyte.routes.feature.controller.FeatureController._insert_feature_registry"
+    ) as mock:
+        yield mock

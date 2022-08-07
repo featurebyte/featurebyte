@@ -8,6 +8,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import InternalName
+from featurebyte.exception import DuplicatedRegistryError
 from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
 
 
@@ -60,7 +61,7 @@ def test_insert_feature_list_registry_duplicate(
     assert result.iloc[0]["NAME"] == "feature_list1"
     assert result.iloc[0]["VERSION"] == "v1"
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(DuplicatedRegistryError) as excinfo:
         feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
 
     assert (

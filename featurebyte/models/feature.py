@@ -13,7 +13,11 @@ from pydantic import Field, StrictStr
 
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import DBVarType, OrderedStrEnum
-from featurebyte.models.base import FeatureByteBaseDocumentModel, UniqueValuesConstraint
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+    UniqueValuesConstraint,
+)
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import Node, QueryGraph
 
@@ -166,6 +170,23 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         ]
 
 
+class FeatureSignature(FeatureByteBaseModel):
+    """
+    FeatureSignature class used in FeatureList object
+
+    id: PydanticObjectId
+        Feature id of the object
+    name: str
+        Name of the feature
+    version: FeatureVersionIdentifier
+        Feature version
+    """
+
+    id: PydanticObjectId
+    name: Optional[StrictStr]
+    version: FeatureVersionIdentifier
+
+
 class FeatureListModel(FeatureByteBaseDocumentModel):
     """
     Model for feature list entity
@@ -176,8 +197,8 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         Name of the feature list
     description: Optional[str]
         Description of the feature list
-    features: List[Tuple[str, FeatureVersionIdentifier]]
-        List of tuples which contain (feature name, feature version)
+    feature_ids: List[PydanticObjectId]
+        List of feature IDs
     readiness: FeatureReadiness
         Aggregated readiness of the features/feature classes
     status: FeatureListStatus
@@ -189,9 +210,7 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     """
 
     description: Optional[StrictStr]
-    features: List[Tuple[StrictStr, Optional[FeatureVersionIdentifier]]] = Field(
-        default_factory=list
-    )
+    feature_ids: List[PydanticObjectId] = Field(default_factory=list)
     readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
     status: Optional[FeatureListStatus] = Field(allow_mutation=False)
     version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)

@@ -5,10 +5,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from http import HTTPStatus
-
 from pydantic import Field, StrictStr, root_validator
 
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.frame import BaseFrame
 from featurebyte.core.generic import ExtendedFeatureStoreModel
@@ -81,10 +80,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         feature_store_id, table_details = values["tabular_source"]
         if "feature_store" not in values:
             # attempt to set feature_store object if it does not exist
-            client = config.get_client()
-            feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
-            if feature_store_response.status_code == HTTPStatus.OK:
-                values["feature_store"] = ExtendedFeatureStoreModel(**feature_store_response.json())
+            values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
 
         feature_store = values["feature_store"]
         if isinstance(table_details, dict):
