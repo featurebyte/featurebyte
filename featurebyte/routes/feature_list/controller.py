@@ -32,7 +32,7 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
     paginated_document_class = FeatureListPaginatedList
 
     @classmethod
-    async def insert_feature_list_registry(
+    async def _insert_feature_list_registry(
         cls,
         user: Any,
         document: ExtendedFeatureListModel,
@@ -170,7 +170,7 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
             assert insert_id == document.id
 
             # insert feature list registry into feature list store
-            await cls.insert_feature_list_registry(
+            await cls._insert_feature_list_registry(
                 user=user,
                 document=ExtendedFeatureListModel(
                     **document.dict(by_alias=True), features=feature_signatures

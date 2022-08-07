@@ -72,7 +72,7 @@ class TestFeatureApi(BaseApiTestSuite):
         Mock insert feature registry at the controller level
         """
         with patch(
-            "featurebyte.routes.feature.controller.FeatureController.insert_feature_registry"
+            "featurebyte.routes.feature.controller.FeatureController._insert_feature_registry"
         ) as mock:
             yield mock
 
@@ -269,7 +269,7 @@ async def test_insert_feature_registry(
     _ = snowflake_connector
     user = Mock()
     feature = FeatureModel(**feature_model_dict)
-    await FeatureController.insert_feature_registry(
+    await FeatureController._insert_feature_registry(
         user=user,
         document=feature,
         feature_store=snowflake_feature_store,
@@ -299,7 +299,7 @@ def test_insert_feature_registry__non_snowflake_feature_store(
     feature_model_dict["tabular_source"] = (feature_store.id, TableDetails(table_name="some_table"))
     feature = FeatureModel(**feature_model_dict)
     user, get_credential = Mock(), Mock()
-    FeatureController.insert_feature_registry(
+    FeatureController._insert_feature_registry(
         user=user, document=feature, feature_store=feature_store, get_credential=get_credential
     )
     assert mock_execute_query.call_count == 0
@@ -322,7 +322,7 @@ async def test_insert_feature_registry__duplicated_feature_registry_exception(
     feature = FeatureModel(**feature_model_dict)
     user = Mock()
     with pytest.raises(HTTPException) as exc:
-        await FeatureController.insert_feature_registry(
+        await FeatureController._insert_feature_registry(
             user=user,
             document=feature,
             feature_store=snowflake_feature_store,
@@ -353,7 +353,7 @@ async def test_insert_feature_registry__other_exception(
     feature = FeatureModel(**feature_model_dict)
     user = Mock()
     with pytest.raises(ValueError):
-        await FeatureController.insert_feature_registry(
+        await FeatureController._insert_feature_registry(
             user=user,
             document=feature,
             feature_store=snowflake_feature_store,

@@ -140,7 +140,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
         }
 
     @classmethod
-    async def insert_feature_registry(
+    async def _insert_feature_registry(
         cls,
         user: Any,
         document: FeatureModel,
@@ -292,6 +292,6 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
                 )
 
             # insert feature registry into feature store
-            await cls.insert_feature_registry(user, document, feature_store, get_credential)
+            await cls._insert_feature_registry(user, document, feature_store, get_credential)
 
         return await cls.get(user=user, persistent=persistent, document_id=insert_id)

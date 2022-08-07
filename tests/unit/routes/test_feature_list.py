@@ -61,7 +61,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         Mock insert feature registry at the controller level
         """
         with patch(
-            "featurebyte.routes.feature.controller.FeatureController.insert_feature_registry"
+            "featurebyte.routes.feature.controller.FeatureController._insert_feature_registry"
         ) as mock:
             yield mock
 
@@ -71,7 +71,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         Mock insert feature registry at the controller level
         """
         with patch(
-            "featurebyte.routes.feature_list.controller.FeatureListController.insert_feature_list_registry"
+            "featurebyte.routes.feature_list.controller.FeatureListController._insert_feature_list_registry"
         ) as mock:
             yield mock
 
@@ -163,7 +163,7 @@ async def test_insert_feature_list_registry(
     _ = snowflake_connector
     user = Mock()
 
-    await FeatureListController.insert_feature_list_registry(
+    await FeatureListController._insert_feature_list_registry(
         user=user,
         document=feature_list_model,
         feature_store=snowflake_feature_store,
@@ -192,7 +192,7 @@ def test_insert_feature_list_registry__non_snowflake_feature_store(
     )
 
     user, get_credential = Mock(), Mock()
-    FeatureListController.insert_feature_list_registry(
+    FeatureListController._insert_feature_list_registry(
         user=user,
         document=feature_list_model,
         feature_store=feature_store,
@@ -219,7 +219,7 @@ async def test_insert_feature_registry__duplicated_feature_registry_exception(
     )
     user = Mock()
     with pytest.raises(HTTPException) as exc:
-        await FeatureListController.insert_feature_list_registry(
+        await FeatureListController._insert_feature_list_registry(
             user=user,
             document=feature_list_model,
             feature_store=snowflake_feature_store,
