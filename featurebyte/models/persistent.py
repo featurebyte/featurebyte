@@ -67,5 +67,5 @@ class FieldValueHistory(FeatureByteBaseModel):
     Field value history
     """
 
-    created_at: Optional[datetime]
+    created_at: datetime
     value: Any
