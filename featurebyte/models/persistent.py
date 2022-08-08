@@ -51,6 +51,7 @@ class AuditDocument(FeatureByteBaseModel):
     action_at: datetime = Field(default_factory=get_utc_now)
     action_type: AuditActionType
     previous_values: Dict[str, Any]
+    current_values: Dict[str, Any]
 
 
 class AuditDocumentList(PaginationMixin):
