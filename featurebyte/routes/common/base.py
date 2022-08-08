@@ -424,7 +424,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
                 sort_by="action_at",
                 sort_dir="asc",
             )
-            return cls._get_field_history(field=field, audit_docs=docs)
+            return cls._get_field_history(field=field, audit_docs=cast(List[Dict[str, Any]], docs))
 
         except NotImplementedError as exc:
             raise HTTPException(
