@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from featurebyte.models.event_data import EventDataModel, EventDataStatus
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.common.base import BaseController, GetType
+from featurebyte.routes.common.base import BaseController
 from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
 
 
@@ -59,25 +59,19 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
             document_id=feature_store_id,
         )
 
-        # check any conflict with existing documents
-        constraints_check_triples: list[tuple[dict[str, Any], dict[str, Any], GetType]] = [
-            ({"_id": data.id}, {"id": data.id}, "name"),
-            ({"name": data.name}, {"name": data.name}, "name"),
-        ]
-        for query_filter, doc_represent, get_type in constraints_check_triples:
-            await cls.check_document_creation_conflict(
-                persistent=persistent,
-                query_filter=query_filter,
-                doc_represent=doc_represent,
-                get_type=get_type,
-                user_id=user.id,
-            )
-
         document = EventDataModel(
             user_id=user.id,
             status=EventDataStatus.DRAFT,
             **data.json_dict(),
         )
+
+        # check any conflict with existing documents
+        await cls.check_document_unique_constraints(
+            persistent=persistent,
+            user_id=user.id,
+            document=document,
+        )
+
         insert_id = await persistent.insert_one(
             collection_name=cls.collection_name,
             document=document.dict(by_alias=True),

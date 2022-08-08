@@ -64,9 +64,22 @@ class BaseApiTestSuite:
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            for key in ["name", "serving_name"]:
+            for key in ["name", "serving_name", "details"]:
                 if key in payload:
-                    payload[key] = f"{self.payload[key]}_{i}"
+                    if isinstance(self.payload[key], str):
+                        payload[key] = f"{self.payload[key]}_{i}"
+                    elif isinstance(self.payload[key], dict):
+                        payload[key] = {
+                            key: f"{value}_{i}" for key, value in self.payload[key].items()
+                        }
+
+            if "tabular_source" in payload:
+                feature_store_id, table_details = payload["tabular_source"]
+                payload["tabular_source"] = [
+                    feature_store_id,
+                    {key: f"{value}_{i}" for key, value in table_details.items()},
+                ]
+
             response = test_api_client.post(f"{self.base_route}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
             output.append(response)

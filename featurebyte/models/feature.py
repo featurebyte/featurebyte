@@ -16,6 +16,7 @@ from featurebyte.enum import DBVarType, OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
 from featurebyte.models.feature_store import TabularSource
@@ -91,12 +92,12 @@ class FeatureNameSpaceModel(FeatureByteBaseDocumentModel):
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
             UniqueValuesConstraint(
                 fields=("name",),
                 conflict_fields_signature={"name": ["name"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
         ]
 
@@ -225,16 +226,16 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
             UniqueValuesConstraint(
                 fields=("name",),
                 conflict_fields_signature={"name": ["name"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
-            UniqueValuesConstraint(
-                fields=("features",),
-                conflict_fields_signature={"features": ["features"]},
-                resolution_signature="get",
-            ),
+            # UniqueValuesConstraint(
+            #     fields=("feature_ids",),
+            #     conflict_fields_signature={"feature_ids": ["feature_ids"]},
+            #     resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            # ),
         ]

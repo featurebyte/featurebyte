@@ -15,6 +15,7 @@ from featurebyte.enum import SourceType
 from featurebyte.exception import DuplicatedRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
+from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import (
     DefaultVersionMode,
@@ -58,12 +59,12 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
         """
         if data.parent_id is None:
             # when the parent_id is missing, it implies that the feature is a new feature
-            await cls.check_document_creation_conflict(
+            await cls.check_document_unique_constraint(
                 persistent=session,
                 query_filter={"name": data.name},
-                doc_represent={"name": data.name},
-                get_type="id",
+                conflict_signature={"name": data.name},
                 user_id=user.id,
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             )
         else:
             # if parent_id exists, make sure the parent feature exists at persistent & has consistent name
@@ -223,12 +224,12 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
 
         async with persistent.start_transaction() as session:
             # check any conflict with existing documents
-            await cls.check_document_creation_conflict(
+            await cls.check_document_unique_constraint(
                 persistent=session,
                 query_filter={"_id": data.id},
-                doc_represent={"id": data.id},
-                get_type="id",
+                conflict_signature={"id": data.id},
                 user_id=user.id,
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             )
 
             document = FeatureModel(

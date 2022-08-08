@@ -93,7 +93,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         """
         Test feature list with different feature stores
         """
-        test_api_client, _ = test_api_client_persistent
+        test_api_client, persistent = test_api_client_persistent
         # create feature_store, event_data & feature
         self.setup_creation_route(api_client=test_api_client)
 
@@ -101,6 +101,9 @@ class TestFeatureListApi(BaseApiTestSuite):
         feature_store = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
         feature_store["_id"] = str(ObjectId())
         feature_store["name"] = f'new_{feature_store["name"]}'
+        feature_store["details"] = {
+            key: f"{value}_1" for key, value in feature_store["details"].items()
+        }
 
         event_data = self.load_payload("tests/fixtures/request_payloads/event_data.json")
         event_data["_id"] = str(ObjectId())

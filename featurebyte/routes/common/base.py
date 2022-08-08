@@ -13,7 +13,10 @@ import pandas as pd
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.models.base import FeatureByteBaseDocumentModel
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    UniqueConstraintResolutionSignature,
+)
 from featurebyte.models.persistent import (
     AuditActionType,
     AuditDocumentList,
@@ -25,7 +28,6 @@ from featurebyte.routes.common.schema import PaginationMixin
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
-GetType = Literal["id", "name"]
 
 
 class BaseController(Generic[Document, PaginatedDocument]):
@@ -60,7 +62,11 @@ class BaseController(Generic[Document, PaginatedDocument]):
 
     @classmethod
     def get_conflict_message(
-        cls, conflict_doc: dict[str, Any], doc_represent: dict[str, Any], get_type: GetType
+        cls,
+        conflict_doc: dict[str, Any],
+        conflict_signature: dict[str, Any],
+        resolution_signature: UniqueConstraintResolutionSignature,
+        class_name: str | None = None,
     ) -> str:
         """
         Get the conflict error message
@@ -69,34 +75,36 @@ class BaseController(Generic[Document, PaginatedDocument]):
         ----------
         conflict_doc: dict[str, Any]
             Existing document that causes conflict
-        doc_represent: dict[str, Any]
+        conflict_signature: dict[str, Any]
             Document used to represent conflict information
-        get_type: GetType
+        resolution_signature: UniqueConstraintResolutionSignature
             Get method used to retrieved conflict object
+        class_name: str | None
+            Class used in the resolution statement
 
         Returns
         -------
         str
             Error message for conflict exception
         """
-        get_type_map = {
-            "id": lambda doc: f'{cls.to_class_name()}.get_by_id(id="{doc["_id"]}")',
-            "name": lambda doc: f'{cls.to_class_name()}.get(name="{doc["name"]}")',
-        }
-        get_statement = get_type_map[get_type](conflict_doc)
+        resolution_statement = UniqueConstraintResolutionSignature.get_resolution_statement(
+            resolution_signature=resolution_signature,
+            class_name=class_name or cls.to_class_name(),
+            document=conflict_doc,
+        )
         return (
-            f"{cls.to_class_name()} ({cls._format_document(doc_represent)}) already exists. "
-            f"Get the existing object by `{get_statement}`."
+            f"{cls.to_class_name()} ({cls._format_document(conflict_signature)}) already exists. "
+            f"Get the existing object by `{resolution_statement}`."
         )
 
     @classmethod
-    async def check_document_creation_conflict(
+    async def check_document_unique_constraint(
         cls,
         persistent: Persistent,
         query_filter: dict[str, Any],
-        doc_represent: dict[str, Any],
+        conflict_signature: dict[str, Any],
         user_id: ObjectId | None,
-        get_type: GetType = "id",
+        resolution_signature: UniqueConstraintResolutionSignature,
     ) -> None:
         """
         Check document creation conflict
@@ -107,11 +115,11 @@ class BaseController(Generic[Document, PaginatedDocument]):
             Persistent object
         query_filter: dict[str, Any]
             Query filter that will be passed to persistent
-        doc_represent: dict[str, Any]
+        conflict_signature: dict[str, Any]
             Document representation that shows user the conflict fields
         user_id: ObjectId
             user_id
-        get_type: GetType
+        resolution_signature: UniqueConstraintResolutionSignature
             Object retrieval option shows in error message.
 
         Raises
@@ -130,9 +138,48 @@ class BaseController(Generic[Document, PaginatedDocument]):
                 status_code=HTTPStatus.CONFLICT,
                 detail=cls.get_conflict_message(
                     conflict_doc=cast(Dict[str, Any], conflict_doc),
-                    doc_represent=doc_represent,
-                    get_type=get_type,
+                    conflict_signature=conflict_signature,
+                    resolution_signature=resolution_signature,
                 ),
+            )
+
+    @classmethod
+    def _get_fields_value(cls, doc_dict: dict[str, Any], fields: list[str]):
+        if isinstance(doc_dict, list) and isinstance(fields, int):
+            return doc_dict[fields]
+        if fields:
+            return cls._get_fields_value(doc_dict[fields[0]], fields[1:])
+        return doc_dict
+
+    @classmethod
+    def get_unique_constraints(
+        cls, document: FeatureByteBaseDocumentModel
+    ) -> list[tuple[dict[str, Any], dict[str, Any], UniqueConstraintResolutionSignature]]:
+        doc_dict = document.dict(by_alias=True)
+        for constraint in cls.document_class.Settings.unique_constraints:
+            query_filter = {field: doc_dict[field] for field in constraint.fields}
+            conflict_signature = {
+                name: cls._get_fields_value(doc_dict, fields)
+                for name, fields in constraint.conflict_fields_signature.items()
+            }
+            yield query_filter, conflict_signature, constraint.resolution_signature
+
+    @classmethod
+    async def check_document_unique_constraints(
+        cls,
+        persistent: Persistent,
+        user_id: ObjectId | None,
+        document: FeatureByteBaseDocumentModel,
+    ):
+        for query_filter, conflict_signature, resolution_signature in cls.get_unique_constraints(
+            document
+        ):
+            await cls.check_document_unique_constraint(
+                persistent=persistent,
+                query_filter=query_filter,
+                conflict_signature=conflict_signature,
+                user_id=user_id,
+                resolution_signature=resolution_signature,
             )
 
     @classmethod
