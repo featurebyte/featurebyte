@@ -10,15 +10,10 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.models.event_data import (
-    EventDataModel,
-    EventDataStatus,
-    FeatureJobSettingHistoryEntry,
-)
+from featurebyte.models.event_data import EventDataModel, EventDataStatus
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseController, GetType
-from featurebyte.routes.common.util import get_utc_now
 from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
 
 
@@ -55,9 +50,6 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
         EventDataModel
             Newly created event data object
         """
-        # exclude microseconds from timestamp as it's not supported in persistent
-        utc_now = get_utc_now()
-
         # check the existence of the feature store at persistent
         feature_store_id, _ = data.tabular_source
         _ = await cls.get_document(
@@ -66,17 +58,6 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
             collection_name=FeatureStoreModel.collection_name(),
             document_id=feature_store_id,
         )
-
-        # init history and set status to draft
-        if data.default_feature_job_setting:
-            history = [
-                FeatureJobSettingHistoryEntry(
-                    created_at=utc_now,
-                    setting=data.default_feature_job_setting,
-                )
-            ]
-        else:
-            history = []
 
         # check any conflict with existing documents
         constraints_check_triples: list[tuple[dict[str, Any], dict[str, Any], GetType]] = [
@@ -95,7 +76,6 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
         document = EventDataModel(
             user_id=user.id,
             status=EventDataStatus.DRAFT,
-            history=history,
             **data.json_dict(),
         )
         insert_id = await persistent.insert_one(
@@ -146,14 +126,7 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
 
         # prepare update payload
         update_payload = data.dict()
-        if data.default_feature_job_setting:
-            update_payload["history"] = [
-                FeatureJobSettingHistoryEntry(
-                    created_at=get_utc_now(),
-                    setting=update_payload["default_feature_job_setting"],
-                ).dict()
-            ] + event_data["history"]
-        else:
+        if not data.default_feature_job_setting:
             update_payload.pop("default_feature_job_setting")
 
         if data.column_entity_map is not None:

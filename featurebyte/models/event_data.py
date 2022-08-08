@@ -62,7 +62,7 @@ class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
     """
 
     created_at: datetime
-    setting: FeatureJobSetting
+    setting: Optional[FeatureJobSetting]
 
 
 class EventDataStatus(OrderedStrEnum):
@@ -93,8 +93,6 @@ class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
         Default feature job setting
     created_at : Optional[datetime]
         Datetime when the EventData was first saved or published
-    history : list[FeatureJobSettingHistoryEntry]
-        History of feature job settings
     status : Optional[EventDataStatus]
         Status of the EventData
     """
@@ -103,7 +101,6 @@ class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
     record_creation_date_column: Optional[StrictStr]
     column_entity_map: Optional[Dict[StrictStr, PydanticObjectId]] = Field(default=None)
     default_feature_job_setting: Optional[FeatureJobSetting]
-    history: List[FeatureJobSettingHistoryEntry] = Field(default_factory=list, allow_mutation=False)
     status: Optional[EventDataStatus] = Field(default=None, allow_mutation=False)
 
     class Settings:

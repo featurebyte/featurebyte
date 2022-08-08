@@ -43,7 +43,6 @@ def event_data_dict_fixture(snowflake_database_table):
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "history": [],
         "status": None,
     }
 
@@ -176,14 +175,13 @@ def test_event_data_column__not_exists(snowflake_event_data):
     """
     Test non-exist column retrieval
     """
-    expected = 'Column "non_exist_column" does not exist!'
     with pytest.raises(KeyError) as exc:
         _ = snowflake_event_data["non_exist_column"]
-    assert expected in str(exc.value)
+    assert 'Column "non_exist_column" does not exist!' in str(exc.value)
 
-    with pytest.raises(KeyError) as exc:
+    with pytest.raises(AttributeError) as exc:
         _ = snowflake_event_data.non_exist_column
-    assert expected in str(exc.value)
+    assert "'EventData' object has no attribute 'non_exist_column'" in str(exc.value)
 
 
 def test_event_data_column__as_entity(snowflake_event_data):
@@ -303,7 +301,6 @@ def test_event_data__info__not_saved_event_data(snowflake_feature_store, snowfla
         "updated_at": None,
         "default_feature_job_setting": None,
         "event_timestamp_column": "col_int",
-        "history": [],
         "status": None,
         "tabular_source": (
             snowflake_feature_store.id,
@@ -355,7 +352,6 @@ def test_event_data__info__saved_event_data(snowflake_feature_store, saved_event
             "updated_at": None,
             "default_feature_job_setting": None,
             "event_timestamp_column": "event_timestamp",
-            "history": [],
             "status": "DRAFT",
             "tabular_source": (
                 snowflake_feature_store.id,
@@ -454,3 +450,115 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
         "Please save the EventData object first."
     )
     assert expected_msg in str(exc.value)
+
+
+def test_default_feature_job_setting_history(saved_event_data):
+    """
+    Test default_feature_job_setting_history on saved event data
+    """
+    assert saved_event_data.default_feature_job_setting is None
+    setting_history = saved_event_data.default_feature_job_setting_history
+    assert len(setting_history) == 1
+    assert setting_history[0].items() > {"setting": None}.items()
+    t1 = datetime.utcnow()
+    saved_event_data.update_default_feature_job_setting(
+        blind_spot="1m30s",
+        frequency="10m",
+        time_modulo_frequency="2m",
+    )
+    t2 = datetime.utcnow()
+
+    history = saved_event_data.default_feature_job_setting_history
+    expected_history_0 = {
+        "setting": {"blind_spot": "1m30s", "frequency": "10m", "time_modulo_frequency": "2m"}
+    }
+    assert len(history) == 2
+    assert history[0].items() >= expected_history_0.items()
+    assert t2 >= datetime.fromisoformat(history[0]["created_at"]) >= t1
+
+    saved_event_data.update_default_feature_job_setting(
+        blind_spot="1m",
+        frequency="5m",
+        time_modulo_frequency="2m",
+    )
+    t3 = datetime.utcnow()
+
+    history = saved_event_data.default_feature_job_setting_history
+    expected_history_1 = {
+        "setting": {"blind_spot": "1m", "frequency": "5m", "time_modulo_frequency": "2m"}
+    }
+    assert len(history) == 3
+    assert history[1].items() >= expected_history_0.items()
+    assert history[0].items() >= expected_history_1.items()
+    assert t3 >= datetime.fromisoformat(history[0]["created_at"]) >= t2
+
+    # check audit history
+    audit_history = saved_event_data.audit()
+    expected_pagination_info = {"page": 1, "page_size": 10, "total": 3}
+    assert audit_history.items() > expected_pagination_info.items()
+    history_data = audit_history["data"]
+    assert len(history_data) == 3
+    assert (
+        history_data[0].items()
+        > {
+            "name": 'update: "sf_event_data"',
+            "action_type": "UPDATE",
+        }.items()
+    )
+    assert (
+        history_data[0]["previous_values"].items()
+        > {
+            "default_feature_job_setting": {
+                "blind_spot": "1m30s",
+                "frequency": "10m",
+                "time_modulo_frequency": "2m",
+            }
+        }.items()
+    )
+    assert (
+        history_data[0]["current_values"].items()
+        > {
+            "default_feature_job_setting": {
+                "blind_spot": "1m",
+                "frequency": "5m",
+                "time_modulo_frequency": "2m",
+            }
+        }.items()
+    )
+    assert (
+        history_data[1].items()
+        > {
+            "name": 'update: "sf_event_data"',
+            "action_type": "UPDATE",
+            "previous_values": {"default_feature_job_setting": None, "updated_at": None},
+        }.items()
+    )
+    assert (
+        history_data[1]["current_values"].items()
+        > {
+            "default_feature_job_setting": {
+                "blind_spot": "1m30s",
+                "frequency": "10m",
+                "time_modulo_frequency": "2m",
+            }
+        }.items()
+    )
+    assert (
+        history_data[2].items()
+        > {
+            "name": 'insert: "sf_event_data"',
+            "action_type": "INSERT",
+            "previous_values": {},
+        }.items()
+    )
+    assert (
+        history_data[2]["current_values"].items()
+        > {
+            "name": "sf_event_data",
+            "event_timestamp_column": "event_timestamp",
+            "record_creation_date_column": "created_at",
+            "column_entity_map": None,
+            "default_feature_job_setting": None,
+            "status": "DRAFT",
+        }.items()
+    )

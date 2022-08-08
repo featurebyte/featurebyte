@@ -6,12 +6,7 @@ import datetime
 import pytest
 from pydantic.error_wrappers import ValidationError
 
-from featurebyte.models.event_data import (
-    EventDataModel,
-    EventDataStatus,
-    FeatureJobSetting,
-    FeatureJobSettingHistoryEntry,
-)
+from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
 from featurebyte.models.feature_store import TableDetails
 
 
@@ -26,25 +21,7 @@ def feature_job_setting_fixture():
     return feature_job_setting
 
 
-@pytest.fixture(name="feature_job_setting_history")
-def feature_job_setting_history_fixture(feature_job_setting):
-    """Fixture for a Feature Job Setting history"""
-    history = [
-        FeatureJobSettingHistoryEntry(
-            created_at=datetime.datetime(2022, 4, 1),
-            setting=feature_job_setting,
-        ),
-        FeatureJobSettingHistoryEntry(
-            created_at=datetime.datetime(2022, 2, 1),
-            setting=feature_job_setting,
-        ),
-    ]
-    return history
-
-
-def test_event_data_model(
-    snowflake_feature_store, feature_job_setting, feature_job_setting_history
-):
+def test_event_data_model(snowflake_feature_store, feature_job_setting):
     """Test creation, serialization and deserialization of an EventData"""
     event_data = EventDataModel(
         name="my_event_data",
@@ -56,7 +33,6 @@ def test_event_data_model(
         record_creation_date_column="created_at",
         default_feature_job_setting=feature_job_setting,
         created_at=datetime.datetime(2022, 2, 1),
-        history=feature_job_setting_history,
         status=EventDataStatus.PUBLISHED,
     )
     expected_event_data_dict = {
@@ -70,16 +46,6 @@ def test_event_data_model(
             "time_modulo_frequency": "5m",
         },
         "event_timestamp_column": "event_date",
-        "history": [
-            {
-                "created_at": datetime.datetime(2022, 4, 1, 0, 0),
-                "setting": {"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"},
-            },
-            {
-                "created_at": datetime.datetime(2022, 2, 1, 0, 0),
-                "setting": {"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"},
-            },
-        ],
         "id": event_data.id,
         "name": "my_event_data",
         "record_creation_date_column": "created_at",

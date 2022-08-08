@@ -391,7 +391,6 @@ def mock_get_persistent_fixture():
     """
     with mock.patch("featurebyte.app._get_persistent") as mock_get_persistent:
         gitdb = GitDB()
-        gitdb.insert_doc_name_func(EventDataModel.collection_name(), lambda doc: doc["name"])
         mock_get_persistent.return_value = gitdb
         yield mock_get_persistent
 

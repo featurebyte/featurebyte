@@ -372,7 +372,7 @@ def mock_insert_feature_registry_fixture():
 
 
 @pytest.fixture(name="saved_feature_list")
-def save_feature_list(
+def saved_feature_list_fixture(
     snowflake_feature_store,
     snowflake_event_data,
     float_feature,
@@ -412,9 +412,41 @@ def test_get_feature_list(saved_feature_list):
     assert loaded_feature_list_by_id.feature_objects == saved_feature_list.feature_objects
     assert loaded_feature_list_by_id.items == saved_feature_list.items
 
+    # check unexpected exception in get
     with pytest.raises(RecordRetrievalException) as exc:
         FeatureList.get(name="random_name")
     expected_msg = (
         'FeatureList (name: "random_name") not found. Please save the FeatureList object first.'
     )
     assert expected_msg in str(exc.value)
+
+    # check audit log
+    audit_history = saved_feature_list.audit()
+    expected_pagination_info = {"page": 1, "page_size": 10, "total": 1}
+    assert audit_history.items() > expected_pagination_info.items()
+    history_data = audit_history["data"]
+    assert (
+        history_data[0].items()
+        > {
+            "name": 'insert: "my_feature_list"',
+            "action_type": "INSERT",
+            "previous_values": {},
+        }.items()
+    )
+    assert (
+        history_data[0]["current_values"].items()
+        > {
+            "name": "my_feature_list",
+            "description": None,
+            "status": "DRAFT",
+            "readiness": "DRAFT",
+            "updated_at": None,
+            "user_id": None,
+        }.items()
+    )
+
+    # check unexpected exception in audit
+    with patch("featurebyte.api.api_object.Configurations"):
+        with pytest.raises(RecordRetrievalException) as exc:
+            saved_feature_list.audit()
+    assert "Failed to list object audit log." in str(exc.value)

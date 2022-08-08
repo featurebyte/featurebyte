@@ -10,10 +10,9 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.models.entity import EntityModel, EntityNameHistoryEntry
+from featurebyte.models.entity import EntityModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.routes.common.base import BaseController, GetType
-from featurebyte.routes.common.util import get_utc_now
 from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
 
 
@@ -111,15 +110,6 @@ class EntityController(BaseController[EntityModel, EntityList]):
             If the entity name already exists in persistent
         """
         query_filter = {"_id": ObjectId(entity_id), "user_id": user.id}
-        entity_obj = await cls.get(
-            user=user,
-            persistent=persistent,
-            document_id=entity_id,
-        )
-
-        # store current name & name_history
-        cur_name = entity_obj.name
-        name_history = [record.dict() for record in entity_obj.name_history]
 
         # check whether conflict with other entity name
         entities, total_cnt = await persistent.find(
@@ -142,11 +132,10 @@ class EntityController(BaseController[EntityModel, EntityList]):
                     ),
                 )
 
-        name_history.append(EntityNameHistoryEntry(created_at=get_utc_now(), name=cur_name).dict())
         await persistent.update_one(
             collection_name=cls.collection_name,
             query_filter=query_filter,
-            update={"$set": {"name": data.name, "name_history": name_history}},
+            update={"$set": {"name": data.name}},
             user_id=user.id,
         )
 

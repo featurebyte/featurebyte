@@ -155,7 +155,6 @@ class TestEventDataApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         response_dict = event_data_response.json()
         insert_id = response_dict["_id"]
-        previous_history = response_dict["history"]
 
         response = test_api_client.patch(f"/event_data/{insert_id}", json=event_data_update_dict)
         assert response.status_code == HTTPStatus.OK
@@ -172,15 +171,8 @@ class TestEventDataApi(BaseApiTestSuite):
 
         # the other fields should be unchanged
         event_data_model_dict.pop("default_feature_job_setting")
-        new_history = update_response_dict.pop("history")
-        event_data_model_dict.pop("history")
         event_data_model_dict["status"] = EventDataStatus.DRAFT
         assert update_response_dict == event_data_model_dict
-
-        # history should be appended with new default job settings update
-        assert len(new_history) == len(previous_history) + 1
-        assert new_history[1:] == previous_history
-        assert new_history[0]["setting"] == event_data_update_dict["default_feature_job_setting"]
 
         # test get audit records
         response = test_api_client.get(f"/event_data/audit/{insert_id}")
@@ -230,7 +222,6 @@ class TestEventDataApi(BaseApiTestSuite):
         response_dict = event_data_response.json()
         insert_id = response_dict["_id"]
         assert insert_id
-        previous_history = response_dict["history"]
 
         # expect status to be draft
         assert response_dict["status"] == EventDataStatus.DRAFT
@@ -253,15 +244,7 @@ class TestEventDataApi(BaseApiTestSuite):
 
         # the other fields should be unchanged
         event_data_model_dict.pop("default_feature_job_setting")
-        event_data_model_dict["history"] = []
-        new_history = data.pop("history")
-        event_data_model_dict.pop("history")
         assert data == event_data_model_dict
-
-        # history should be appended with new default job settings update
-        assert len(new_history) == len(previous_history) + 1
-        assert new_history[1:] == previous_history
-        assert new_history[0]["setting"] == event_data_update_dict["default_feature_job_setting"]
 
         # expect status to be updated to published
         assert data["status"] == EventDataStatus.PUBLISHED

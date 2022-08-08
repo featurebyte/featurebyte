@@ -327,6 +327,33 @@ def test_get_feature(saved_feature):
     assert feature.dict() == saved_feature.dict()
     assert Feature.get_by_id(feature.id) == feature
 
+    # check audit history
+    audit_history = saved_feature.audit()
+    expected_pagination_info = {"page": 1, "page_size": 10, "total": 1}
+    assert audit_history.items() > expected_pagination_info.items()
+    history_data = audit_history["data"]
+    assert len(history_data) == 1
+    assert (
+        history_data[0].items()
+        > {
+            "name": 'insert: "sum_1d"',
+            "action_type": "INSERT",
+            "previous_values": {},
+        }.items()
+    )
+    assert (
+        history_data[0]["current_values"].items()
+        > {
+            "name": "sum_1d",
+            "description": None,
+            "parent_id": None,
+            "readiness": "DRAFT",
+            "var_type": "FLOAT",
+            "updated_at": None,
+            "user_id": None,
+        }.items()
+    )
+
     with pytest.raises(RecordRetrievalException) as exc:
         Feature.get(name="random_name")
     expected_msg = 'Feature (name: "random_name") not found. Please save the Feature object first.'

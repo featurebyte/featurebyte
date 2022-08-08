@@ -46,7 +46,6 @@ class EntityModel(FeatureByteBaseDocumentModel):
     """
 
     serving_names: List[StrictStr] = Field(allow_mutation=False)
-    name_history: List[EntityNameHistoryEntry] = Field(default_factory=list, allow_mutation=False)
 
     class Settings:
         """

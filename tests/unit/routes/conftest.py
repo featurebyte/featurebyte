@@ -64,7 +64,6 @@ async def persistent_fixture(request):
 
     if request.param == "gitdb":
         gitdb = GitDB()
-        gitdb.insert_doc_name_func(EventDataModel.collection_name(), lambda doc: doc["name"])
         yield gitdb
 
 
