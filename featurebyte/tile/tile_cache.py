@@ -52,6 +52,7 @@ class SnowflakeOnDemandTileComputeRequest:
     """Information required to compute and update a single tile table"""
 
     tile_table_id: str
+    aggregation_id: str
     tracker_sql: str
     tile_compute_sql: str
     tile_gen_info: TileGenSql
@@ -76,6 +77,7 @@ class SnowflakeOnDemandTileComputeRequest:
             entity_column_names=entity_column_names,
             value_column_names=self.tile_gen_info.tile_value_columns,
             tile_id=self.tile_table_id,
+            aggregation_id=self.aggregation_id,
             category_column_name=self.tile_gen_info.value_by_column,
         )
         return tile_spec, self.tracker_sql
@@ -223,12 +225,12 @@ class SnowflakeTileCache(TileCache):
             interpreter = GraphInterpreter(feature.graph)
             infos = interpreter.construct_tile_gen_sql(feature.node, is_on_demand=True)
             for info in infos:
-                if info.tile_table_id not in out:
+                if info.aggregation_id not in out:
                     if serving_names_mapping is not None:
                         info.serving_names = apply_serving_names_mapping(
                             info.serving_names, serving_names_mapping
                         )
-                    out[info.tile_table_id] = info
+                    out[info.aggregation_id] = info
         return out
 
     def _filter_tile_ids_with_tracker(self, tile_ids: list[str]) -> list[str]:
@@ -393,9 +395,10 @@ class SnowflakeTileCache(TileCache):
         SnowflakeOnDemandTileComputeRequest
         """
         tile_id = tile_info.tile_table_id
+        aggregation_id = tile_info.aggregation_id
 
         # Filter for rows where tile cache are outdated
-        working_table_filter = f"{tile_id} IS NULL"
+        working_table_filter = f"{aggregation_id} IS NULL"
 
         # Expressions to inform the date range for tile building
         point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=True)
@@ -433,6 +436,7 @@ class SnowflakeTileCache(TileCache):
         )
         request = SnowflakeOnDemandTileComputeRequest(
             tile_table_id=tile_id,
+            aggregation_id=aggregation_id,
             tracker_sql=entity_table_sql,
             tile_compute_sql=tile_compute_sql,
             tile_gen_info=tile_info,

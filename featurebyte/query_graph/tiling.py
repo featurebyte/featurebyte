@@ -34,7 +34,7 @@ class TilingAggregator(ABC):
 
     @staticmethod
     @abstractmethod
-    def tile(col: str) -> list[TileSpec]:
+    def tile(col: str, agg_id: str) -> list[TileSpec]:
         """Construct the expressions required for computing tiles
 
         Parameters
@@ -49,7 +49,7 @@ class TilingAggregator(ABC):
 
     @staticmethod
     @abstractmethod
-    def merge() -> str:
+    def merge(agg_id: str) -> str:
         """Construct the expressions required to merge tiles"""
 
 
@@ -57,77 +57,77 @@ class CountAggregator(TilingAggregator):
     """Aggregator that computes the row count"""
 
     @staticmethod
-    def tile(col: str) -> list[TileSpec]:
+    def tile(col: str, agg_id: str) -> list[TileSpec]:
         _ = col
-        return [TileSpec("COUNT(*)", "value")]
+        return [TileSpec("COUNT(*)", f"value_{agg_id}")]
 
     @staticmethod
-    def merge() -> str:
-        return "SUM(value)"
+    def merge(agg_id: str) -> str:
+        return f"SUM(value_{agg_id})"
 
 
 class AvgAggregator(TilingAggregator):
     """Aggregator that computes the average"""
 
     @staticmethod
-    def tile(col: str) -> list[TileSpec]:
+    def tile(col: str, agg_id: str) -> list[TileSpec]:
         tile_specs = [
-            TileSpec(f'SUM("{col}")', "sum_value"),
-            TileSpec(f'COUNT("{col}")', "count_value"),
+            TileSpec(f'SUM("{col}")', f"sum_value_{agg_id}"),
+            TileSpec(f'COUNT("{col}")', f"count_value_{agg_id}"),
         ]
         return tile_specs
 
     @staticmethod
-    def merge() -> str:
-        return "SUM(sum_value) / SUM(count_value)"
+    def merge(agg_id: str) -> str:
+        return f"SUM(sum_value_{agg_id}) / SUM(count_value_{agg_id})"
 
 
 class SumAggregator(TilingAggregator):
     """Aggregator that computes the sum"""
 
     @staticmethod
-    def tile(col: str) -> list[TileSpec]:
-        return [TileSpec(f'SUM("{col}")', "value")]
+    def tile(col: str, agg_id: str) -> list[TileSpec]:
+        return [TileSpec(f'SUM("{col}")', f"value_{agg_id}")]
 
     @staticmethod
-    def merge() -> str:
-        return "SUM(value)"
+    def merge(agg_id: str) -> str:
+        return f"SUM(value_{agg_id})"
 
 
 class MinAggregator(TilingAggregator):
     """Aggregator that computes the minimum value"""
 
     @staticmethod
-    def tile(col: str) -> list[TileSpec]:
-        return [TileSpec(f'MIN("{col}")', "value")]
+    def tile(col: str, agg_id: str) -> list[TileSpec]:
+        return [TileSpec(f'MIN("{col}")', f"value_{agg_id}")]
 
     @staticmethod
-    def merge() -> str:
-        return "MIN(value)"
+    def merge(agg_id: str) -> str:
+        return f"MIN(value_{agg_id})"
 
 
 class MaxAggregator(TilingAggregator):
     """Aggregator that computes the maximum value"""
 
     @staticmethod
-    def tile(col: str) -> list[TileSpec]:
-        return [TileSpec(f'MAX("{col}")', "value")]
+    def tile(col: str, agg_id: str) -> list[TileSpec]:
+        return [TileSpec(f'MAX("{col}")', f"value_{agg_id}")]
 
     @staticmethod
-    def merge() -> str:
-        return "MAX(value)"
+    def merge(agg_id: str) -> str:
+        return f"MAX(value_{agg_id})"
 
 
 class NACountAggregator(TilingAggregator):
     """Aggregator that counts the number of missing values"""
 
     @staticmethod
-    def tile(col: str) -> list[TileSpec]:
-        return [TileSpec(f'SUM(CAST("{col}" IS NULL AS INTEGER))', "value")]
+    def tile(col: str, agg_id: str) -> list[TileSpec]:
+        return [TileSpec(f'SUM(CAST("{col}" IS NULL AS INTEGER))', f"value_{agg_id}")]
 
     @staticmethod
-    def merge() -> str:
-        return "SUM(value)"
+    def merge(agg_id: str) -> str:
+        return f"SUM(value_{agg_id})"
 
 
 def get_aggregator(agg_name: AggFunc) -> type[TilingAggregator]:

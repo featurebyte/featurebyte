@@ -37,13 +37,20 @@ $$
 
     //check whether tile table already exists
     var tile_exist = true
+    var tile_value_exist = true
     try {
         snowflake.execute({sqlText: `SELECT * FROM ${TILE_ID} LIMIT 1`})
+        try {
+            snowflake.execute({sqlText: `SELECT ${VALUE_COLUMN_NAMES} FROM ${TILE_ID} LIMIT 1`})
+        }
+        catch (err) {
+            tile_value_exist = false
+        }
     } catch (err)  {
         tile_exist = false
+        tile_value_exist = false
     }
     debug = debug + " - tile_exist: " + tile_exist
-
 
     //replace SQL template with start and end date strings for tile generation sql
     var tile_sql = `
@@ -66,6 +73,22 @@ $$
         debug = debug + " - tile_create_sql: " + tile_create_sql
 
     } else {
+
+        if (tile_value_exist === false) {
+            //tile table exists but not the tile values, add new columns in this case
+            var tile_add_sql = `alter table ${TILE_ID} add\n`
+            add_statements = []
+            for (const [i, element] of VALUE_COLUMN_NAMES.split(",").entries()) {
+                add_statements.push(`${element} real default null`)
+            }
+            tile_add_sql += add_statements.join(",\n")
+            snowflake.execute(
+                {
+                    sqlText: tile_add_sql
+                }
+            )
+            debug = debug + " - tile_add_sql: " + tile_add_sql
+        }
 
         //feature tile table already exists, insert tile records with the input tile sql
         entity_insert_cols = []

@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Optional, Tuple
 
 from abc import ABC, abstractmethod
+from collections import defaultdict
 
 from sqlglot import expressions, select
 
@@ -310,9 +311,9 @@ class FeatureExecutionPlan(ABC):
         -------
         tuple
         """
-        tile_table_id = aggregation_spec.tile_table_id
+        agg_id = aggregation_spec.aggregation_id
         window = aggregation_spec.window
-        return tile_table_id, window
+        return agg_id, window
 
     @classmethod
     def construct_aggregation_sql(
@@ -323,8 +324,8 @@ class FeatureExecutionPlan(ABC):
         keys: list[str],
         serving_names: list[str],
         value_by: str | None,
-        merge_expr: str,
-        agg_result_name: str,
+        merge_exprs: list[str],
+        agg_result_names: list[str],
     ) -> expressions.Select:
         """Construct SQL code for one specific aggregation
 
@@ -390,16 +391,23 @@ class FeatureExecutionPlan(ABC):
             group_by_keys.append(f"REQ.{serving_name}")
 
         if value_by is None:
-            inner_agg_result_name = agg_result_name
+            inner_agg_result_names = agg_result_names
             inner_group_by_keys = group_by_keys
         else:
-            inner_agg_result_name = f"inner_{agg_result_name}"
+            inner_agg_result_names = [
+                f"inner_{agg_result_name}" for agg_result_name in agg_result_names
+            ]
             inner_group_by_keys = group_by_keys + [f"TILE.{escape_column_name(value_by)}"]
 
         inner_agg_expr = (
             select(
                 *inner_group_by_keys,
-                f'{merge_expr} AS "{inner_agg_result_name}"',
+                *[
+                    f'{merge_expr} AS "{inner_agg_result_name}"'
+                    for merge_expr, inner_agg_result_name in zip(
+                        merge_exprs, inner_agg_result_names
+                    )
+                ],
             )
             .from_(f"{expanded_request_table_name} AS REQ")
             .join(
@@ -418,8 +426,8 @@ class FeatureExecutionPlan(ABC):
                 point_in_time_column=point_in_time_column,
                 serving_names=serving_names,
                 value_by=value_by,
-                agg_result_name=agg_result_name,
-                inner_agg_result_name=inner_agg_result_name,
+                agg_result_names=agg_result_names,
+                inner_agg_result_names=inner_agg_result_names,
                 inner_agg_expr=inner_agg_expr,
             )
 
@@ -432,8 +440,8 @@ class FeatureExecutionPlan(ABC):
         point_in_time_column: str,
         serving_names: list[str],
         value_by: str,
-        agg_result_name: str,
-        inner_agg_result_name: str,
+        agg_result_names: list[str],
+        inner_agg_result_names: list[str],
         inner_agg_expr: expressions.Select,
     ) -> expressions.Select:
         """Aggregate per category values into key value pairs
@@ -465,10 +473,11 @@ class FeatureExecutionPlan(ABC):
     def construct_left_join_sql(
         index: int,
         point_in_time_column: str,
-        agg_spec: AggregationSpec,
+        agg_result_names: list[str],
+        serving_names: list[str],
         table_expr: expressions.Select,
         agg_expr: expressions.Select,
-    ) -> tuple[expressions.Select, str]:
+    ) -> tuple[expressions.Select, list[str]]:
         """Construct SQL that left join aggregated result back to request table
 
         Parameters
@@ -490,12 +499,14 @@ class FeatureExecutionPlan(ABC):
             Tuple of updated table expression and alias name for the aggregated column
         """
         agg_table_alias = f"T{index}"
-        agg_result_name = agg_spec.agg_result_name
-        agg_result_name_alias = f'"{agg_table_alias}"."{agg_result_name}" AS "{agg_result_name}"'
+        agg_result_name_aliases = [
+            f'"{agg_table_alias}"."{agg_result_name}" AS "{agg_result_name}"'
+            for agg_result_name in agg_result_names
+        ]
         join_conditions_lst = [
             f"REQ.{point_in_time_column} = {agg_table_alias}.{point_in_time_column}",
         ]
-        for serving_name in agg_spec.serving_names:
+        for serving_name in serving_names:
             join_conditions_lst += [
                 f"REQ.{escape_column_name(serving_name)} = {agg_table_alias}.{escape_column_name(serving_name)}"
             ]
@@ -505,7 +516,7 @@ class FeatureExecutionPlan(ABC):
             join_alias=agg_table_alias,
             on=expressions.and_(*join_conditions_lst),
         )
-        return updated_table_expr, agg_result_name_alias
+        return updated_table_expr, agg_result_name_aliases
 
     def construct_combined_aggregation_cte(
         self, point_in_time_column: str, request_table_columns: list[str]
@@ -526,29 +537,38 @@ class FeatureExecutionPlan(ABC):
         """
         table_expr = select().from_(f"{REQUEST_TABLE_NAME} AS REQ")
         qualified_aggregation_names = []
-        for i, agg_spec in enumerate(self.aggregation_specs.values()):
-            expanded_request_table_name = self.request_table_plan.get_expanded_request_table_name(
+
+        aggregation_specs_by_tile_table = defaultdict(list)
+        for agg_spec in self.aggregation_specs.values():
+            aggregation_specs_by_tile_table[(agg_spec.tile_table_id, agg_spec.window)].append(
                 agg_spec
             )
-            agg_result_name = agg_spec.agg_result_name
+
+        for i, agg_specs in enumerate(aggregation_specs_by_tile_table.values()):
+            expanded_request_table_name = self.request_table_plan.get_expanded_request_table_name(
+                agg_specs[0]
+            )
+            merge_exprs = [agg_spec.merge_expr for agg_spec in agg_specs]
+            agg_result_names = [agg_spec.agg_result_name for agg_spec in agg_specs]
             agg_expr = self.construct_aggregation_sql(
                 expanded_request_table_name=expanded_request_table_name,
-                tile_table_id=agg_spec.tile_table_id,
+                tile_table_id=agg_specs[0].tile_table_id,
                 point_in_time_column=point_in_time_column,
-                keys=agg_spec.keys,
-                serving_names=agg_spec.serving_names,
-                value_by=agg_spec.value_by,
-                merge_expr=agg_spec.merge_expr,
-                agg_result_name=agg_result_name,
+                keys=agg_specs[0].keys,
+                serving_names=agg_specs[0].serving_names,
+                value_by=agg_specs[0].value_by,
+                merge_exprs=merge_exprs,
+                agg_result_names=agg_result_names,
             )
-            table_expr, agg_result_name_alias = self.construct_left_join_sql(
+            table_expr, agg_result_name_aliases = self.construct_left_join_sql(
                 index=i,
                 point_in_time_column=point_in_time_column,
-                agg_spec=agg_spec,
+                agg_result_names=agg_result_names,
+                serving_names=agg_specs[0].serving_names,
                 table_expr=table_expr,
                 agg_expr=agg_expr,
             )
-            qualified_aggregation_names.append(agg_result_name_alias)
+            qualified_aggregation_names.extend(agg_result_name_aliases)
         request_table_columns = [f"REQ.{escape_column_name(c)}" for c in request_table_columns]
         table_expr = table_expr.select(*request_table_columns, *qualified_aggregation_names)
         combined_sql = table_expr.sql(pretty=True)
@@ -635,8 +655,8 @@ class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
         point_in_time_column: str,
         serving_names: list[str],
         value_by: str,
-        agg_result_name: str,
-        inner_agg_result_name: str,
+        agg_result_names: list[str],
+        inner_agg_result_names: list[str],
         inner_agg_expr: expressions.Select,
     ) -> expressions.Select:
 
@@ -651,13 +671,15 @@ class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
         category_filled_null = (
             f"CASE WHEN {category_col} IS NULL THEN '__MISSING__' ELSE {category_col} END"
         )
-
-        agg_expr = (
-            select(
-                *outer_group_by_keys,
-                f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'
-                f' AS "{agg_result_name}"',
+        object_agg_exprs = [
+            f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'
+            f' AS "{agg_result_name}"'
+            for inner_agg_result_name, agg_result_name in zip(
+                inner_agg_result_names, agg_result_names
             )
+        ]
+        agg_expr = (
+            select(*outer_group_by_keys, *object_agg_exprs)
             .from_(inner_agg_expr.subquery(alias=inner_alias))
             .group_by(*outer_group_by_keys)
         )

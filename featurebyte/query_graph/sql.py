@@ -699,7 +699,7 @@ def make_build_tile_node(
     input_node = input_sql_nodes[0]
     assert isinstance(input_node, TableNode)
     aggregator = get_aggregator(parameters["agg_func"])
-    tile_specs = aggregator.tile(parameters["parent"])
+    tile_specs = aggregator.tile(parameters["parent"], parameters["aggregation_id"])
     columns = (
         [InternalName.TILE_START_DATE.value]
         + parameters["keys"]

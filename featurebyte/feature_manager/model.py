@@ -46,6 +46,7 @@ class ExtendedFeatureModel(FeatureModel):
                 entity_column_names=entity_column_names,
                 value_column_names=info.tile_value_columns,
                 tile_id=info.tile_table_id,
+                aggregation_id=info.aggregation_id,
                 category_column_name=info.value_by_column,
             )
             out.append(tile_spec)

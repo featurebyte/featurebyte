@@ -24,6 +24,26 @@ def test_get_feature_preview_sql(query_graph_with_groupby, update_fixtures):
     )
 
 
+def test_get_feature_preview_sql__complex_feature(complex_feature_query_graph, update_fixtures):
+    """Test generated preview SQL is as expected"""
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    node, graph = complex_feature_query_graph
+    preview_sql = get_feature_preview_sql(
+        graph=graph,
+        nodes=[node],
+        point_in_time_and_serving_name=point_in_time_and_serving_name,
+    )
+
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_complex.sql",
+        update_fixture=update_fixtures,
+    )
+
+
 def test_get_feature_preview_sql__category_groupby(
     query_graph_with_category_groupby, update_fixtures
 ):

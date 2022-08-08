@@ -3,11 +3,15 @@ On-demand tile computation for feature preview
 """
 from __future__ import annotations
 
+from collections import defaultdict
+
 import pandas as pd
+from sqlglot import expressions, parse_one, select
 
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter, TileGenSql
+from featurebyte.query_graph.sql import escape_column_name
 
 
 def construct_on_demand_tile_ctes(
@@ -31,7 +35,10 @@ def construct_on_demand_tile_ctes(
     list[tuple[str, str]]
     """
     tile_gen_info_lst = get_tile_gen_info(graph, node)
-    cte_statements = []
+
+    tile_sqls = {}
+    prev_aliases = {}
+    all_aliases = defaultdict(list)
 
     for tile_info in tile_gen_info_lst:
         # Convert template SQL with concrete start and end timestamps, based on the requested
@@ -53,7 +60,49 @@ def construct_on_demand_tile_ctes(
             blind_spot=tile_info.blind_spot,
         )
         tile_table_id = tile_info.tile_table_id
-        cte_statements.append((tile_table_id, final_tile_sql))
+        agg_id = tile_info.aggregation_id
+        tile_sql_expr = parse_one(final_tile_sql)
+        assert isinstance(tile_sql_expr, expressions.Subqueryable)
+
+        if tile_table_id not in tile_sqls:
+            keys = [escape_column_name(key) for key in tile_info.entity_columns]
+            if tile_info.value_by_column is not None:
+                keys.append(escape_column_name(tile_info.value_by_column))
+            tile_sql = select(*keys, *tile_info.tile_value_columns).from_(
+                tile_sql_expr.subquery(alias=agg_id)
+            )
+            tile_sqls[tile_table_id] = tile_sql
+        else:
+            prev_alias = prev_aliases[tile_table_id]
+            join_conditions = [f"{prev_alias}.INDEX"]
+            for key in tile_info.entity_columns:
+                join_conditions.append(f"{prev_alias}.{key} = {agg_id}.{key}")
+            tile_sqls[tile_table_id] = (
+                tile_sqls[tile_table_id]
+                .join(
+                    tile_sql_expr.subquery(),
+                    join_type="outer",
+                    join_alias=agg_id,
+                    on=expressions.and_(*join_conditions),
+                )
+                .select(*tile_info.tile_value_columns)
+            )
+        prev_aliases[tile_table_id] = agg_id
+        all_aliases[tile_table_id].append(agg_id)
+
+    cte_statements = []
+    for tile_table_id, tile_sql_expr in tile_sqls.items():
+        tile_start_date_columns = []
+        for alias in all_aliases[tile_table_id]:
+            tile_start_date_columns.append(f"{alias}.INDEX")
+        if len(tile_start_date_columns) > 1:
+            tile_start_date_expr = expressions.Coalesce(
+                this=tile_start_date_columns[0], expressions=tile_start_date_columns[1:]
+            )
+        else:
+            tile_start_date_expr = tile_start_date_columns[0]
+        tile_sql_expr = tile_sql_expr.select(expressions.alias_(tile_start_date_expr, "INDEX"))
+        cte_statements.append((tile_table_id, tile_sql_expr.sql(pretty=True)))
 
     return cte_statements
 
