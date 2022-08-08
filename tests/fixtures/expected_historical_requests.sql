@@ -2,7 +2,7 @@ WITH REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id AS (
     SELECT
         REQ.POINT_IN_TIME,
         REQ."cust_id",
-        T.value AS REQ_TILE_INDEX
+        T.value::INTEGER AS REQ_TILE_INDEX
     FROM (
         SELECT DISTINCT POINT_IN_TIME, "cust_id" FROM REQUEST_TABLE
     ) REQ,
@@ -22,7 +22,7 @@ REQUEST_TABLE_W7200_F1800_BS600_M300_cust_id AS (
     SELECT
         REQ.POINT_IN_TIME,
         REQ."cust_id",
-        T.value AS REQ_TILE_INDEX
+        T.value::INTEGER AS REQ_TILE_INDEX
     FROM (
         SELECT DISTINCT POINT_IN_TIME, "cust_id" FROM REQUEST_TABLE
     ) REQ,
@@ -42,7 +42,7 @@ REQUEST_TABLE_W86400_F1800_BS600_M300_cust_id AS (
     SELECT
         REQ.POINT_IN_TIME,
         REQ."cust_id",
-        T.value AS REQ_TILE_INDEX
+        T.value::INTEGER AS REQ_TILE_INDEX
     FROM (
         SELECT DISTINCT POINT_IN_TIME, "cust_id" FROM REQUEST_TABLE
     ) REQ,

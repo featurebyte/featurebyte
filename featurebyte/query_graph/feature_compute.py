@@ -218,7 +218,7 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
     SELECT
         REQ.{SpecialColumnName.POINT_IN_TIME},
         {select_serving_names},
-        T.value AS REQ_TILE_INDEX
+        T.value::INTEGER AS REQ_TILE_INDEX
     FROM (
         SELECT DISTINCT {select_distinct_columns} FROM {REQUEST_TABLE_NAME}
     ) REQ,
