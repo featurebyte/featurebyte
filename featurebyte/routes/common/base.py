@@ -8,6 +8,8 @@ from typing import Any, Dict, Generic, List, Literal, Optional, Type, TypeVar, c
 import copy
 from http import HTTPStatus
 
+import numpy as np
+import pandas as pd
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
@@ -347,6 +349,43 @@ class BaseController(Generic[Document, PaginatedDocument]):
             ) from exc
 
     @classmethod
+    def _get_field_history(
+        cls, field: str, audit_docs: List[Dict[str, Any]]
+    ) -> List[FieldValueHistory]:
+        history: List[FieldValueHistory] = []
+        for doc in audit_docs:
+            if doc["action_type"] not in {AuditActionType.INSERT, AuditActionType.UPDATE}:
+                # skip action_type other than insert & update
+                continue
+            current_values, previous_values = doc["current_values"], doc["previous_values"]
+            current_value = current_values.get(field, np.nan)
+            previous_value = previous_values.get(field, np.nan)
+            if doc["action_type"] == AuditActionType.INSERT:
+                # always insert an initial record (display np.nan if the value is missing)
+                history.append(
+                    FieldValueHistory(
+                        created_at=current_values.get("created_at"),
+                        value=current_values.get(field, np.nan),
+                    )
+                )
+            elif doc["action_type"] == AuditActionType.UPDATE:
+                # previous null, current not null => a new field is introduced
+                # previous null, current null => not related
+                # previous not null, current null => an existing field is removed
+                # previous not null, current not null => update an existing field
+                if pd.isnull(current_value) and pd.isnull(previous_value):
+                    continue
+
+                # for the other 3 cases, just need to insert current updated value (np.nan for field removal)
+                history.append(
+                    FieldValueHistory(
+                        created_at=current_values.get("updated_at"),
+                        value=current_value,
+                    ),
+                )
+        return list(reversed(history))
+
+    @classmethod
     async def list_field_history(
         cls,
         user: Any,
@@ -378,45 +417,14 @@ class BaseController(Generic[Document, PaginatedDocument]):
         }
 
         try:
-            async with persistent.start_transaction():
-
-                current_doc = await cls.get(
-                    user=user,
-                    persistent=persistent,
-                    document_id=document_id,
-                )
-
-                docs, _ = await persistent.get_audit_logs(
-                    collection_name=cls.collection_name,
-                    document_id=document_id,
-                    query_filter={**query_filter, "action_type": AuditActionType.UPDATE.value},
-                    sort_by="action_at",
-                    sort_dir="asc",
-                )
-
-                history: List[FieldValueHistory] = []
-                last_value = None
-                for doc in docs:
-                    _date = doc["previous_values"].get("updated_at") or current_doc.created_at
-                    _value = doc["previous_values"].get(field)
-                    if _value or last_value:
-                        # field empty in last update & filled in current update -> field added
-                        # field filled in last update & empty in current update -> field dropped
-                        # field filled in last update & filled in current update -> field changed
-                        # field empty in last update & empty in current update -> no change
-                        history.append(FieldValueHistory(created_at=_date, value=_value))
-                    last_value = _value
-
-                if last_value:
-                    # field filled in last update -> current value is the latest
-                    history.append(
-                        FieldValueHistory(
-                            created_at=current_doc.updated_at,
-                            value=getattr(current_doc, field, None),
-                        ),
-                    )
-
-                return list(reversed(history))
+            docs, _ = await persistent.get_audit_logs(
+                collection_name=cls.collection_name,
+                document_id=document_id,
+                query_filter={**query_filter},
+                sort_by="action_at",
+                sort_dir="asc",
+            )
+            return cls._get_field_history(field=field, audit_docs=docs)
 
         except NotImplementedError as exc:
             raise HTTPException(
