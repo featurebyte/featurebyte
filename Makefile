@@ -101,6 +101,9 @@ test-setup:
 test-teardown:
 	cd .github/mongoreplicaset && docker-compose down
 
+test-routes:
+	uvicorn featurebyte.app:app --reload
+
 #* Docs Generation
 docs:
 	poetry run sphinx-build -b html docs/source docs/build

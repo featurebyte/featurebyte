@@ -4,7 +4,7 @@ FastAPI Application
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Callable
+from typing import Any, Callable
 
 import signal
 
@@ -20,6 +20,7 @@ from featurebyte.config import Configurations
 from featurebyte.models.credential import Credential
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.persistent import GitDB, Persistent
+from featurebyte.routes.common.base import BaseController
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_data.controller import EventDataController
 from featurebyte.routes.feature.controller import FeatureController
@@ -120,7 +121,7 @@ def _get_api_deps(controller: type) -> Callable[[Request], None]:
 
 
 # add routers into the app
-resource_api_controller_pairs = [
+resource_api_controller_pairs: list[tuple[Any, type[BaseController[Any, Any]]]] = [
     (event_data_api, EventDataController),
     (entity_api, EntityController),
     (feature_api, FeatureController),
@@ -131,6 +132,7 @@ for resource_api, resource_controller in resource_api_controller_pairs:
     app.include_router(
         resource_api.router,
         dependencies=[Depends(_get_api_deps(resource_controller))],
+        tags=[resource_controller.collection_name],
     )
 
 
