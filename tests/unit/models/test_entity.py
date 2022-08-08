@@ -5,7 +5,7 @@ from datetime import datetime
 
 from bson import ObjectId
 
-from featurebyte.models.entity import EntityModel, EntityNameHistoryEntry
+from featurebyte.models.entity import EntityModel
 
 
 def test_entity_model():

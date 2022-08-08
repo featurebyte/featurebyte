@@ -1,12 +1,10 @@
 """
 Unit test for Entity class
 """
-import json
 from datetime import datetime
 from unittest import mock
 
 import pytest
-from freezegun import freeze_time
 from pydantic import ValidationError
 
 from featurebyte.api.entity import Entity
@@ -16,7 +14,6 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.entity import EntityNameHistoryEntry
 
 
 @pytest.fixture(name="entity")
