@@ -3,7 +3,6 @@ Unit test for EventData class
 """
 from __future__ import annotations
 
-import pdb
 from datetime import datetime
 from unittest.mock import patch
 
