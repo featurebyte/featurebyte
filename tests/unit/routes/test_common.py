@@ -1,11 +1,14 @@
 """
 Tests functions/methods in routes/common directory
 """
+from datetime import datetime
 from unittest.mock import AsyncMock
 
+import numpy as np
 import pytest
 from fastapi import HTTPException
 
+from featurebyte.models.persistent import AuditActionType
 from featurebyte.routes.common.base import BaseController
 
 
@@ -63,3 +66,186 @@ async def test_check_document_creation_conflict(
             get_type=get_type,
         )
     assert expected_msg in str(exc.value.detail)
+
+
+INSERTION_WITH_FIELD_AUDIT_LOG = {
+    "action_type": AuditActionType.INSERT,
+    "previous_values": {},
+    "current_values": {"field": "init_value", "created_at": datetime(2022, 2, 1)},
+}
+INSERTION_WITH_OTHER_FIELD_AUDIT_LOG = {
+    "action_type": AuditActionType.INSERT,
+    "previous_values": {},
+    "current_values": {"other_field": "other_value", "created_at": datetime(2022, 2, 1)},
+}
+
+
+@pytest.mark.parametrize(
+    "audit_docs,expected",
+    [
+        ([], []),  # no audit_doc record
+        (
+            # one insertion record only
+            [INSERTION_WITH_FIELD_AUDIT_LOG],
+            [{"created_at": datetime(2022, 2, 1), "value": "init_value"}],
+        ),
+        (
+            # one unrelated insertion, one related update after that
+            [
+                INSERTION_WITH_OTHER_FIELD_AUDIT_LOG,
+                {
+                    "action_type": AuditActionType.UPDATE,
+                    "previous_values": {"updated_at": None},
+                    "current_values": {
+                        "field": "updated_value",
+                        "updated_at": datetime(2022, 2, 2),
+                    },
+                },
+            ],
+            [
+                {"created_at": datetime(2022, 2, 2), "value": "updated_value"},
+                {"created_at": datetime(2022, 2, 1), "value": np.nan},
+            ],
+        ),
+        (
+            # one unrelated insertion, one non-related update after that, following one related update
+            [
+                INSERTION_WITH_OTHER_FIELD_AUDIT_LOG,
+                {
+                    "action_type": AuditActionType.UPDATE,
+                    "previous_values": {
+                        "other_field": "other_value",
+                        "updated_at": datetime(2022, 2, 1),
+                    },
+                    "current_values": {
+                        "other_field": "other_updated_value",
+                        "updated_at": datetime(2022, 2, 2),
+                    },
+                },
+                {
+                    "action_type": AuditActionType.UPDATE,
+                    "previous_values": {"updated_at": datetime(2022, 2, 3)},
+                    "current_values": {
+                        "field": "updated_value",
+                        "updated_at": datetime(2022, 2, 3),
+                    },
+                },
+            ],
+            [
+                {"created_at": datetime(2022, 2, 3), "value": "updated_value"},
+                {"created_at": datetime(2022, 2, 1), "value": np.nan},
+            ],
+        ),
+        (
+            # one related insertion, two non-related update after that, following one related update
+            [
+                INSERTION_WITH_FIELD_AUDIT_LOG,
+                {
+                    "action_type": AuditActionType.UPDATE,
+                    "previous_values": {"updated_at": datetime(2022, 2, 1)},
+                    "current_values": {
+                        "other_field": "other_value",
+                        "updated_at": datetime(2022, 2, 2),
+                    },
+                },
+                {
+                    "action_type": AuditActionType.UPDATE,
+                    "previous_values": {
+                        "other_field": "other_value",
+                        "updated_at": datetime(2022, 2, 2),
+                    },
+                    "current_values": {
+                        "other_field": "other_updated_value",
+                        "updated_at": datetime(2022, 2, 3),
+                    },
+                },
+                {
+                    "action_type": AuditActionType.UPDATE,
+                    "previous_values": {"field": "init_value", "updated_at": datetime(2022, 2, 3)},
+                    "current_values": {
+                        "field": "updated_value",
+                        "updated_at": datetime(2022, 2, 4),
+                    },
+                },
+            ],
+            [
+                {"created_at": datetime(2022, 2, 4), "value": "updated_value"},
+                {"created_at": datetime(2022, 2, 1), "value": "init_value"},
+            ],
+        ),
+    ],
+)
+def test_get_field_history__new_field_introduction(audit_docs, expected):
+    """Test a new field get introduced or updated"""
+    output = BaseController._get_field_history(field="field", audit_docs=audit_docs)
+    assert output == expected
+
+
+@pytest.mark.parametrize(
+    "audit_docs,expected",
+    [
+        (
+            # one unrelated insertion, remove that field after that
+            [
+                INSERTION_WITH_FIELD_AUDIT_LOG,
+                {
+                    "action_type": AuditActionType.UPDATE,
+                    "previous_values": {"field": "init_value", "updated_at": datetime(2022, 2, 1)},
+                    "current_values": {"updated_at": datetime(2022, 2, 2)},
+                },
+            ],
+            [
+                {"created_at": datetime(2022, 2, 2), "value": np.nan},
+                {"created_at": datetime(2022, 2, 1), "value": "init_value"},
+            ],
+        ),
+        (
+            # one related insertion, one unrelated updated after that, then remove that field
+            [
+                INSERTION_WITH_FIELD_AUDIT_LOG,
+                {
+                    "action_type": AuditActionType.UPDATE,
+                    "previous_values": {"updated_at": datetime(2022, 2, 1)},
+                    "current_values": {
+                        "other_field": "other_value",
+                        "updated_at": datetime(2022, 2, 2),
+                    },
+                },
+                {
+                    "action_type": AuditActionType.UPDATE,
+                    "previous_values": {"field": "init_value", "updated_at": datetime(2022, 2, 2)},
+                    "current_values": {"updated_at": datetime(2022, 2, 3)},
+                },
+            ],
+            [
+                {"created_at": datetime(2022, 2, 3), "value": np.nan},
+                {"created_at": datetime(2022, 2, 1), "value": "init_value"},
+            ],
+        ),
+        (
+            # one unrelated insertion, one related update after that, then remove that field
+            [
+                INSERTION_WITH_OTHER_FIELD_AUDIT_LOG,
+                {
+                    "action_type": AuditActionType.UPDATE,
+                    "previous_values": {"updated_at": None},
+                    "current_values": {"updated_at": datetime(2022, 2, 2), "field": "value"},
+                },
+                {
+                    "action_type": AuditActionType.UPDATE,
+                    "previous_values": {"updated_at": datetime(2022, 2, 2), "field": "value"},
+                    "current_values": {"updated_at": datetime(2022, 2, 3)},
+                },
+            ],
+            [
+                {"created_at": datetime(2022, 2, 3), "value": np.nan},
+                {"created_at": datetime(2022, 2, 2), "value": "value"},
+                {"created_at": datetime(2022, 2, 1), "value": np.nan},
+            ],
+        ),
+    ],
+)
+def test_get_filed_history__existing_field_removal(audit_docs, expected):
+    """Test an existing field get removed or updated"""
+    output = BaseController._get_field_history(field="field", audit_docs=audit_docs)
+    assert output == expected

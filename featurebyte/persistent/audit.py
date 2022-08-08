@@ -1,7 +1,11 @@
 """
 Audit logging for persistent operations
 """
+from __future__ import annotations
+
 from typing import Any, List, MutableMapping, Optional, Tuple
+
+import numpy as np
 
 from featurebyte.models.persistent import (
     AuditActionType,
@@ -29,27 +33,39 @@ def get_audit_collection_name(collection_name: str) -> str:
     return f"__audit__{collection_name}"
 
 
-def get_doc_name(doc: Document) -> str:
+def get_audit_doc_name(
+    action_type: AuditActionType, original_doc: Document, updated_doc: Document
+) -> str:
     """
     Retrieve document name for audit log record names
 
     Parameters
     ----------
-    doc: Document
-        Document object
+    action_type: AuditActionType
+        Audit action type
+    original_doc: Document
+        Original document object
+    updated_doc: Document
+        Updated document object
 
     Returns
     -------
     str
         Document name
     """
-    name = doc.get("name")
-    if name:
-        return f'"{name}"'
-    return "None"
+    if action_type == AuditActionType.INSERT:
+        doc_name = updated_doc.get("name")
+    else:
+        doc_name = original_doc.get("name")
+
+    if doc_name is not None:
+        doc_name = f'"{doc_name}"'
+    return f"{action_type.lower()}: {doc_name}"
 
 
-def get_previous_values(original_doc: Document, updated_doc: Document) -> Document:
+def get_previous_and_current_values(
+    original_doc: Document, updated_doc: Document
+) -> tuple[Document, Document]:
     """
     Get values in original document that has been changed in updated document
 
@@ -62,10 +78,17 @@ def get_previous_values(original_doc: Document, updated_doc: Document) -> Docume
 
     Returns
     -------
-    Document
-        Document with values in original document that has been updated
+    tuple[Document, Document]
+        Previous values documents (document with values in original document that has been updated)
+        and current values documents (document with values in current document that has been updated)
     """
-    return {key: value for key, value in original_doc.items() if value != updated_doc.get(key)}
+    previous_values = {
+        key: value for key, value in original_doc.items() if value != updated_doc.get(key, np.nan)
+    }
+    current_values = {
+        key: value for key, value in updated_doc.items() if value != original_doc.get(key, np.nan)
+    }
+    return previous_values, current_values
 
 
 def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) -> Any:
@@ -186,7 +209,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             # for insertion, original docs is empty, so we set it to updated_docs
             # so that previous_values will be empty
             if action_type == AuditActionType.INSERT:
-                original_docs = updated_docs
+                original_docs = [{"_id": doc.get("_id")} for doc in updated_docs]
 
         # create audit docs to track changes
         audit_docs = []
@@ -200,13 +223,17 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             else:
                 updated_doc = {}
 
+            previous_values, current_values = get_previous_and_current_values(
+                original_doc, updated_doc
+            )
             audit_docs.append(
                 AuditDocument(
                     user_id=user_id,
-                    name=f"{action_type.lower()}: {get_doc_name(original_doc)}",
+                    name=get_audit_doc_name(action_type, original_doc, updated_doc),
                     document_id=original_doc["_id"],
                     action_type=action_type,
-                    previous_values=get_previous_values(original_doc, updated_doc),
+                    previous_values=previous_values,
+                    current_values=current_values,
                 ).dict(by_alias=True)
             )
 

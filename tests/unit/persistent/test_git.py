@@ -6,6 +6,7 @@ from datetime import datetime
 
 import pytest
 from bson.objectid import ObjectId
+from freezegun import freeze_time
 
 from featurebyte.models.persistent import AuditActionType
 from featurebyte.persistent import DuplicateDocumentError
@@ -250,6 +251,7 @@ async def test_filter_values(git_persistent, test_document, query_filter, valid)
 
 
 @pytest.mark.asyncio
+@freeze_time("2022-08-01")
 async def test_update_one(git_persistent, test_documents):
     """
     Test updating one document
@@ -303,6 +305,11 @@ async def test_update_one(git_persistent, test_documents):
             "document_id": updated_doc["_id"],
             "action_type": AuditActionType.INSERT,
             "previous_values": {},
+            "current_values": {
+                "name": "Object 0",
+                "value": [{"key1": "value1", "key2": "value2"}],
+                "created_at": datetime(2022, 8, 1),
+            },
             "user_id": None,
         },
         {
@@ -310,12 +317,17 @@ async def test_update_one(git_persistent, test_documents):
             "document_id": updated_doc["_id"],
             "action_type": AuditActionType.UPDATE,
             "previous_values": {"name": "Object 0"},
+            "current_values": {
+                "name": "apple",
+                "updated_at": datetime(2022, 8, 1),
+            },
             "user_id": None,
         },
     ]
 
 
 @pytest.mark.asyncio
+@freeze_time("2022-08-01")
 async def test_update_many(git_persistent, test_documents):
     """
     Test updating one document
@@ -368,6 +380,11 @@ async def test_update_many(git_persistent, test_documents):
                 "document_id": updated_doc["_id"],
                 "action_type": AuditActionType.INSERT,
                 "previous_values": {},
+                "current_values": {
+                    "name": f"Object {i}",
+                    "value": [{"key1": "value1", "key2": "value2"}],
+                    "created_at": datetime(2022, 8, 1),
+                },
                 "user_id": None,
             },
             {
@@ -375,12 +392,17 @@ async def test_update_many(git_persistent, test_documents):
                 "document_id": updated_doc["_id"],
                 "action_type": AuditActionType.UPDATE,
                 "previous_values": {"value": [{"key1": "value1", "key2": "value2"}]},
+                "current_values": {
+                    "value": 1,
+                    "updated_at": datetime(2022, 8, 1),
+                },
                 "user_id": None,
             },
         ]
 
 
 @pytest.mark.asyncio
+@freeze_time("2022-08-01")
 async def test_replace_one(git_persistent, test_documents):
     """
     Test replacing one document
@@ -433,6 +455,7 @@ async def test_replace_one(git_persistent, test_documents):
 
     # id should remain unchanged, so it won't be captured in old values
     before[0].pop("_id")
+    before[0].pop("created_at")  # due to freeze_time, this value is the same too
 
     assert results == [
         {
@@ -440,6 +463,11 @@ async def test_replace_one(git_persistent, test_documents):
             "document_id": updated_doc["_id"],
             "action_type": AuditActionType.INSERT,
             "previous_values": {},
+            "current_values": {
+                "name": f"Object 0",
+                "value": [{"key1": "value1", "key2": "value2"}],
+                "created_at": datetime(2022, 8, 1),
+            },
             "user_id": None,
         },
         {
@@ -447,6 +475,10 @@ async def test_replace_one(git_persistent, test_documents):
             "document_id": updated_doc["_id"],
             "action_type": AuditActionType.REPLACE,
             "previous_values": before[0],
+            "current_values": {
+                "name": "apple",
+                "updated_at": datetime(2022, 8, 1),
+            },
             "user_id": None,
         },
     ]
@@ -498,6 +530,7 @@ async def test_update_values(git_persistent, test_document, update, valid):
 
 
 @pytest.mark.asyncio
+@freeze_time("2022-08-01")
 async def test_delete_one(git_persistent, test_documents):
     """
     Test deleting one document
@@ -540,6 +573,11 @@ async def test_delete_one(git_persistent, test_documents):
             "document_id": deleted_doc["_id"],
             "action_type": AuditActionType.INSERT,
             "previous_values": {},
+            "current_values": {
+                "name": f"Object 0",
+                "value": [{"key1": "value1", "key2": "value2"}],
+                "created_at": datetime(2022, 8, 1),
+            },
             "user_id": None,
         },
         {
@@ -547,6 +585,7 @@ async def test_delete_one(git_persistent, test_documents):
             "document_id": deleted_doc["_id"],
             "action_type": AuditActionType.DELETE,
             "previous_values": test_documents[0],
+            "current_values": {},
             "user_id": None,
         },
     ]
