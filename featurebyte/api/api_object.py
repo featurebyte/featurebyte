@@ -175,7 +175,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
             When the response status code is unexpected
         """
         client = Configurations().get_client()
-        response = client.get(url=f"{self._route}/audit/{self.id}", json=self._get_create_payload())
+        response = client.get(url=f"{self._route}/audit/{self.id}")
         if response.status_code == HTTPStatus.OK:
             return response.json()
         raise RecordRetrievalException(response, "Failed to list object audit log.")
