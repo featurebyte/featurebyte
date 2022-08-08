@@ -517,6 +517,16 @@ def test_default_feature_job_setting_history(saved_event_data):
         }.items()
     )
     assert (
+        history_data[0]["current_values"].items()
+        > {
+            "default_feature_job_setting": {
+                "blind_spot": "1m",
+                "frequency": "5m",
+                "time_modulo_frequency": "2m",
+            }
+        }.items()
+    )
+    assert (
         history_data[1].items()
         > {
             "name": 'update: "sf_event_data"',
@@ -525,10 +535,31 @@ def test_default_feature_job_setting_history(saved_event_data):
         }.items()
     )
     assert (
+        history_data[1]["current_values"].items()
+        > {
+            "default_feature_job_setting": {
+                "blind_spot": "1m30s",
+                "frequency": "10m",
+                "time_modulo_frequency": "2m",
+            }
+        }.items()
+    )
+    assert (
         history_data[2].items()
         > {
             "name": 'insert: "sf_event_data"',
             "action_type": "INSERT",
             "previous_values": {},
+        }.items()
+    )
+    assert (
+        history_data[2]["current_values"].items()
+        > {
+            "name": "sf_event_data",
+            "event_timestamp_column": "event_timestamp",
+            "record_creation_date_column": "created_at",
+            "column_entity_map": None,
+            "default_feature_job_setting": None,
+            "status": "DRAFT",
         }.items()
     )

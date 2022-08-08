@@ -163,6 +163,21 @@ def test_get(saved_snowflake_feature_store):
             "previous_values": {},
         }.items()
     )
+    assert (
+        history_data[0]["current_values"].items()
+        > {
+            "name": "sf_featurestore",
+            "details": {
+                "account": "sf_account",
+                "database": "sf_database",
+                "sf_schema": "sf_schema",
+                "warehouse": "sf_warehouse",
+            },
+            "updated_at": None,
+            "type": "snowflake",
+            "user_id": None,
+        }.items()
+    )
 
 
 def test_get__unexpected_retrieval_exception():

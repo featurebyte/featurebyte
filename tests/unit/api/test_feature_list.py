@@ -433,6 +433,17 @@ def test_get_feature_list(saved_feature_list):
             "previous_values": {},
         }.items()
     )
+    assert (
+        history_data[0]["current_values"].items()
+        > {
+            "name": "my_feature_list",
+            "description": None,
+            "status": "DRAFT",
+            "readiness": "DRAFT",
+            "updated_at": None,
+            "user_id": None,
+        }.items()
+    )
 
     # check unexpected exception in audit
     with patch("featurebyte.api.api_object.Configurations"):

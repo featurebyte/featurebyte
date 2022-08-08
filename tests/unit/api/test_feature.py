@@ -341,6 +341,18 @@ def test_get_feature(saved_feature):
             "previous_values": {},
         }.items()
     )
+    assert (
+        history_data[0]["current_values"].items()
+        > {
+            "name": "sum_1d",
+            "description": None,
+            "parent_id": None,
+            "readiness": "DRAFT",
+            "var_type": "FLOAT",
+            "updated_at": None,
+            "user_id": None,
+        }.items()
+    )
 
     with pytest.raises(RecordRetrievalException) as exc:
         Feature.get(name="random_name")

@@ -135,9 +135,14 @@ def test_entity_update_name(entity):
             "previous_values": {"name": "customer", "updated_at": None},
         }.items()
     )
+    assert history_data[0]["current_values"].items() > {"name": "Customer"}.items()
     assert (
         history_data[1].items()
         > {"name": 'insert: "customer"', "action_type": "INSERT", "previous_values": {}}.items()
+    )
+    assert (
+        history_data[1]["current_values"].items()
+        > {"name": "customer", "updated_at": None, "serving_names": ["cust_id"]}.items()
     )
 
     # create another entity
