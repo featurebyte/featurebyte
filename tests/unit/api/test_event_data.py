@@ -458,7 +458,9 @@ def test_default_feature_job_setting_history(saved_event_data):
     Test default_feature_job_setting_history on saved event data
     """
     assert saved_event_data.default_feature_job_setting is None
-    assert saved_event_data.default_feature_job_setting_history == []
+    setting_history = saved_event_data.default_feature_job_setting_history
+    assert len(setting_history) == 1
+    assert setting_history[0].items() > {"setting": None}.items()
     t1 = datetime.utcnow()
     saved_event_data.update_default_feature_job_setting(
         blind_spot="1m30s",
@@ -471,7 +473,7 @@ def test_default_feature_job_setting_history(saved_event_data):
     expected_history_0 = {
         "setting": {"blind_spot": "1m30s", "frequency": "10m", "time_modulo_frequency": "2m"}
     }
-    assert len(history) == 1
+    assert len(history) == 2
     assert history[0].items() >= expected_history_0.items()
     assert t2 >= datetime.fromisoformat(history[0]["created_at"]) >= t1
 
@@ -486,7 +488,7 @@ def test_default_feature_job_setting_history(saved_event_data):
     expected_history_1 = {
         "setting": {"blind_spot": "1m", "frequency": "5m", "time_modulo_frequency": "2m"}
     }
-    assert len(history) == 2
+    assert len(history) == 3
     assert history[1].items() >= expected_history_0.items()
     assert history[0].items() >= expected_history_1.items()
     assert t3 >= datetime.fromisoformat(history[0]["created_at"]) >= t2

@@ -76,7 +76,9 @@ def test_entity_creation(entity):
     """
     assert entity.name == "customer"
     assert entity.serving_name == "cust_id"
-    assert entity.name_history == []
+    name_history = entity.name_history
+    assert len(name_history) == 1
+    assert name_history[0].items() > {"name": "customer"}.items()
 
     with pytest.raises(DuplicatedRecordException) as exc:
         Entity(name="customer", serving_names=["customer_id"]).save()
@@ -103,7 +105,10 @@ def test_entity_update_name(entity):
     """
     Test update entity name
     """
-    assert entity.name_history == []
+    name_history = entity.name_history
+    assert len(name_history) == 1
+    assert name_history[0].items() > {"name": "customer"}.items()
+
     entity_id = entity.id
     tic = datetime.utcnow()
     entity.update_name("Customer")

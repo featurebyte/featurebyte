@@ -62,7 +62,7 @@ class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
     """
 
     created_at: datetime
-    setting: FeatureJobSetting
+    setting: Optional[FeatureJobSetting]
 
 
 class EventDataStatus(OrderedStrEnum):
