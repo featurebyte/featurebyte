@@ -16,7 +16,7 @@ from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME, prettify_
 from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.sql import escape_column_name
-from featurebyte.query_graph.tile_compute import construct_on_demand_tile_ctes
+from featurebyte.query_graph.tile_compute import OnDemandTileComputePlan
 
 
 def construct_preview_request_table_sql(
@@ -77,20 +77,16 @@ def get_feature_preview_sql(
     -------
     str
     """
-
-    point_in_time = point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME]
-
-    cte_statements = []
-
     planner = FeatureExecutionPlanner(graph)
     execution_plan = planner.generate_plan(nodes)
 
     # build required tiles
     tic = time.time()
+    point_in_time = point_in_time_and_serving_name[SpecialColumnName.POINT_IN_TIME]
+    tile_compute_plan = OnDemandTileComputePlan(point_in_time)
     for node in nodes:
-        on_demand_tile_ctes = construct_on_demand_tile_ctes(graph, node, point_in_time)
-        cte_statements.extend(on_demand_tile_ctes)
-    cte_statements = sorted(set(cte_statements))
+        tile_compute_plan.process_node(graph, node)
+    cte_statements = sorted(tile_compute_plan.construct_on_demand_tile_ctes())
     elapsed = time.time() - tic
     logger.debug(f"Constructing required tiles SQL took {elapsed:.2}s")
 
