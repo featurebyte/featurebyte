@@ -90,6 +90,29 @@ def groupby_node_params_fixture():
     return node_params
 
 
+@pytest.fixture(name="groupby_node_params_sum_agg")
+def groupby_node_params_sum_agg_fixture():
+    """Fixture groupby node parameters
+
+    Same feature job settings as groupby_node_params_fixture, but with different aggregation and
+    different feature windows
+    """
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "max",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["a_2h_max", "a_36h_max"],
+        "windows": ["2h", "36h"],
+    }
+    return node_params
+
+
 @pytest.fixture(name="query_graph_with_groupby")
 def query_graph_with_groupby_fixture(query_graph_and_assign_node, groupby_node_params):
     """Fixture of a query graph with a groupby operation"""
@@ -129,6 +152,39 @@ def query_graph_with_category_groupby_fixture(query_graph_and_assign_node, group
     return graph
 
 
+@pytest.fixture(name="query_graph_with_similar_groupby_nodes")
+def query_graph_with_similar_groupby_nodes(
+    query_graph_and_assign_node, groupby_node_params, groupby_node_params_sum_agg
+):
+    """Fixture of a query graph with two similar groupby operations (identical job settings and
+    entity columns)
+    """
+    graph, assign_node = query_graph_and_assign_node
+    node1 = graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params={
+            **groupby_node_params,
+            "tile_id": get_tile_table_identifier(
+                graph.node_name_to_ref[assign_node.name], groupby_node_params
+            ),
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node],
+    )
+    node2 = graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params={
+            **groupby_node_params_sum_agg,
+            "tile_id": get_tile_table_identifier(
+                graph.node_name_to_ref[assign_node.name], groupby_node_params_sum_agg
+            ),
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node],
+    )
+    return [node1, node2], graph
+
+
 @pytest.fixture(name="complex_feature_query_graph")
 def complex_feature_query_graph_fixture(query_graph_with_groupby):
     """Fixture of a query graph with two independent groupby operations"""
@@ -142,8 +198,8 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby):
         "frequency": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
-        "names": ["a"],
-        "windows": ["a_7d_sum_by_business"],
+        "names": ["a_7d_sum_by_business"],
+        "windows": ["7d"],
         "serving_names": ["BUSINESS_ID"],
     }
     assign_node = graph.get_node_by_name("assign_1")

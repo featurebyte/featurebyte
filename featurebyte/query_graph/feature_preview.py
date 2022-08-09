@@ -90,7 +90,7 @@ def get_feature_preview_sql(
     for node in nodes:
         on_demand_tile_ctes = construct_on_demand_tile_ctes(graph, node, point_in_time)
         cte_statements.extend(on_demand_tile_ctes)
-    cte_statements = list(set(cte_statements))
+    cte_statements = sorted(set(cte_statements))
     elapsed = time.time() - tic
     logger.debug(f"Constructing required tiles SQL took {elapsed:.2}s")
 
