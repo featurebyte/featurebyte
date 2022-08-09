@@ -94,7 +94,7 @@ def groupby_node_params_fixture():
 def groupby_node_params_sum_agg_fixture():
     """Fixture groupby node parameters
 
-    Same feature job settings as groupby_node_params_fixture, but with sum aggregation and slightly
+    Same feature job settings as groupby_node_params_fixture, but with different aggregation and
     different feature windows
     """
     node_params = {
@@ -102,12 +102,12 @@ def groupby_node_params_sum_agg_fixture():
         "serving_names": ["CUSTOMER_ID"],
         "value_by": None,
         "parent": "a",
-        "agg_func": "sum",
+        "agg_func": "max",
         "time_modulo_frequency": 1800,  # 30m
         "frequency": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
-        "names": ["a_2h_sum", "a_36h_sum"],
+        "names": ["a_2h_max", "a_36h_max"],
         "windows": ["2h", "36h"],
     }
     return node_params
