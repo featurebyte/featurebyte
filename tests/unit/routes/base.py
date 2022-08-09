@@ -21,6 +21,7 @@ class BaseApiTestSuite:
     payload = None
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
+    not_found_save_suggestion = True
 
     @staticmethod
     def load_payload(filename):
@@ -143,10 +144,10 @@ class BaseApiTestSuite:
         unknown_id = ObjectId()
         response = test_api_client.get(f"{self.base_route}/{unknown_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
-        assert response.json()["detail"] == (
-            f'{self.class_name} (id: "{unknown_id}") not found. '
-            f"Please save the {self.class_name} object first."
-        )
+        error_message = f'{self.class_name} (id: "{unknown_id}") not found.'
+        if self.not_found_save_suggestion:
+            error_message += f" Please save the {self.class_name} object first."
+        assert response.json()["detail"] == error_message
 
     def test_list_200(self, test_api_client_persistent, create_multiple_success_responses):
         """Test list (success, multiple)"""

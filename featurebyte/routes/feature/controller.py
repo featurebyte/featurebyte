@@ -20,7 +20,7 @@ from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import (
     DefaultVersionMode,
     FeatureModel,
-    FeatureNameSpaceModel,
+    FeatureNamespaceModel,
     FeatureReadiness,
 )
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -101,7 +101,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
 
     @classmethod
     def prepare_feature_namespace_payload(
-        cls, document: FeatureModel, feature_namespace: FeatureNameSpaceModel
+        cls, document: FeatureModel, feature_namespace: FeatureNamespaceModel
     ) -> dict[str, Any]:
         """
         Prepare payload to update feature namespace record
@@ -110,7 +110,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
         ----------
         document: FeatureModel
             Feature document
-        feature_namespace: FeatureNameSpaceModel
+        feature_namespace: FeatureNamespaceModel
             Feature Namespace object
 
         Returns
@@ -258,7 +258,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
 
             if document.parent_id is None:
                 # create a new feature namespace object
-                doc_feature_namespace = FeatureNameSpaceModel(
+                doc_feature_namespace = FeatureNamespaceModel(
                     name=document.name,
                     version_ids=[insert_id],
                     versions=[document.version],
@@ -267,20 +267,20 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
                     default_version_mode=DefaultVersionMode.AUTO,
                 )
                 await session.insert_one(
-                    collection_name=FeatureNameSpaceModel.collection_name(),
+                    collection_name=FeatureNamespaceModel.collection_name(),
                     document=doc_feature_namespace.dict(by_alias=True),
                     user_id=user.id,
                 )
             else:
                 # update feature namespace object
                 feature_namespace_dict = await session.find_one(
-                    collection_name=FeatureNameSpaceModel.collection_name(),
+                    collection_name=FeatureNamespaceModel.collection_name(),
                     query_filter={"name": document.name},
                     user_id=user.id,
                 )
-                feature_namespace = FeatureNameSpaceModel(**feature_namespace_dict)  # type: ignore
+                feature_namespace = FeatureNamespaceModel(**feature_namespace_dict)  # type: ignore
                 await session.update_one(
-                    collection_name=FeatureNameSpaceModel.collection_name(),
+                    collection_name=FeatureNamespaceModel.collection_name(),
                     query_filter={"_id": feature_namespace.id},
                     update={
                         "$set": cls.prepare_feature_namespace_payload(

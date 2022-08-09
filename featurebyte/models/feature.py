@@ -51,7 +51,7 @@ class DefaultVersionMode(str, Enum):
     MANUAL = "MANUAL"
 
 
-class FeatureNameSpaceModel(FeatureByteBaseDocumentModel):
+class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
     """
     Feature set with the same feature name
 
@@ -92,12 +92,12 @@ class FeatureNameSpaceModel(FeatureByteBaseDocumentModel):
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+                resolution_signature=None,
             ),
             UniqueValuesConstraint(
                 fields=("name",),
                 conflict_fields_signature={"name": ["name"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+                resolution_signature=None,
             ),
         ]
 

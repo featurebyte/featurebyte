@@ -126,7 +126,7 @@ class UniqueValuesConstraint(FeatureByteBaseModel):
 
     fields: List[str]
     conflict_fields_signature: Dict[str, Any]
-    resolution_signature: UniqueConstraintResolutionSignature
+    resolution_signature: Optional[UniqueConstraintResolutionSignature]
 
 
 class FeatureByteBaseDocumentModel(FeatureByteBaseModel):

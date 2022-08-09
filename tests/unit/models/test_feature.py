@@ -12,7 +12,7 @@ from featurebyte.models.feature import (
     FeatureListModel,
     FeatureListStatus,
     FeatureModel,
-    FeatureNameSpaceModel,
+    FeatureNamespaceModel,
     FeatureReadiness,
 )
 
@@ -96,10 +96,10 @@ def test_feature_list_model(feature_list_model_dict):
 
 def test_feature_name_space(feature_name_space_dict):
     """Test feature name space model"""
-    feature_name_space = FeatureNameSpaceModel.parse_obj(feature_name_space_dict)
+    feature_name_space = FeatureNamespaceModel.parse_obj(feature_name_space_dict)
     feat_name_space_dict = feature_name_space.dict(exclude={"id": True})
     assert feat_name_space_dict == feature_name_space_dict
-    loaded_feature_name_space = FeatureNameSpaceModel.parse_raw(
+    loaded_feature_name_space = FeatureNamespaceModel.parse_raw(
         feature_name_space.json(by_alias=True)
     )
     assert loaded_feature_name_space == feature_name_space

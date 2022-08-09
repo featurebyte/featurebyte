@@ -65,7 +65,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         cls,
         conflict_doc: dict[str, Any],
         conflict_signature: dict[str, Any],
-        resolution_signature: UniqueConstraintResolutionSignature,
+        resolution_signature: Optional[UniqueConstraintResolutionSignature],
         class_name: str | None = None,
     ) -> str:
         """
@@ -77,7 +77,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
             Existing document that causes conflict
         conflict_signature: dict[str, Any]
             Document used to represent conflict information
-        resolution_signature: UniqueConstraintResolutionSignature
+        resolution_signature: Optional[UniqueConstraintResolutionSignature]
             Get method used to retrieved conflict object
         class_name: str | None
             Class used in the resolution statement
@@ -87,15 +87,17 @@ class BaseController(Generic[Document, PaginatedDocument]):
         str
             Error message for conflict exception
         """
-        resolution_statement = UniqueConstraintResolutionSignature.get_resolution_statement(
-            resolution_signature=resolution_signature,
-            class_name=class_name or cls.to_class_name(),
-            document=conflict_doc,
+        message = (
+            f"{cls.to_class_name()} ({cls._format_document(conflict_signature)}) already exists."
         )
-        return (
-            f"{cls.to_class_name()} ({cls._format_document(conflict_signature)}) already exists. "
-            f"Get the existing object by `{resolution_statement}`."
-        )
+        if resolution_signature:
+            resolution_statement = UniqueConstraintResolutionSignature.get_resolution_statement(
+                resolution_signature=resolution_signature,
+                class_name=class_name or cls.to_class_name(),
+                document=conflict_doc,
+            )
+            message += f" Get the existing object by `{resolution_statement}`."
+        return message
 
     @classmethod
     async def check_document_unique_constraint(
@@ -104,7 +106,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         query_filter: dict[str, Any],
         conflict_signature: dict[str, Any],
         user_id: ObjectId | None,
-        resolution_signature: UniqueConstraintResolutionSignature,
+        resolution_signature: UniqueConstraintResolutionSignature | None,
     ) -> None:
         """
         Check document creation conflict
@@ -119,7 +121,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
             Document representation that shows user the conflict fields
         user_id: ObjectId
             user_id
-        resolution_signature: UniqueConstraintResolutionSignature
+        resolution_signature: UniqueConstraintResolutionSignature | None
             Object retrieval option shows in error message.
 
         Raises
@@ -172,7 +174,9 @@ class BaseController(Generic[Document, PaginatedDocument]):
     @classmethod
     def get_unique_constraints(
         cls, document: FeatureByteBaseDocumentModel
-    ) -> Iterator[tuple[dict[str, Any], dict[str, Any], UniqueConstraintResolutionSignature]]:
+    ) -> Iterator[
+        tuple[dict[str, Any], dict[str, Any], Optional[UniqueConstraintResolutionSignature]]
+    ]:
         """
         Generator used to extract uniqueness constraints from document model setting
 
@@ -183,7 +187,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
 
         Returns
         -------
-        Iterator[dict[str, Any], dict[str, Any], UniqueConstraintResolutionSignature]
+        Iterator[dict[str, Any], dict[str, Any], Optional[UniqueConstraintResolutionSignature]]
         """
         doc_dict = document.dict(by_alias=True)
         for constraint in cls.document_class.Settings.unique_constraints:
@@ -278,6 +282,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         user: Any,
         persistent: Persistent,
         document_id: ObjectId,
+        exception_detail: str | None = None,
     ) -> Document:
         """
         Retrieve document given document id (GitDB or MongoDB)
@@ -290,6 +295,8 @@ class BaseController(Generic[Document, PaginatedDocument]):
             Persistent that the document will be saved to
         document_id: ObjectId
             Document ID
+        exception_detail: str | None
+            Exception detail message
 
         Returns
         -------
@@ -305,6 +312,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
             persistent=persistent,
             collection_name=cls.collection_name,
             document_id=document_id,
+            exception_detail=exception_detail,
         )
         return cast(Document, cls.document_class(**document))
 
