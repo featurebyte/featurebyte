@@ -223,19 +223,17 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
         """
 
         async with persistent.start_transaction() as session:
-            # check any conflict with existing documents
-            await cls.check_document_unique_constraint(
-                persistent=session,
-                query_filter={"_id": data.id},
-                conflict_signature={"id": data.id},
-                user_id=user.id,
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            )
-
             document = FeatureModel(
                 user_id=user.id, readiness=FeatureReadiness.DRAFT, **data.json_dict()
             )
             assert document.id == data.id
+
+            # check any conflict with existing documents
+            await cls.check_document_unique_constraints(
+                persistent=persistent,
+                user_id=user.id,
+                document=document,
+            )
 
             # validate feature payload
             await cls._validate_feature(user=user, data=data, session=session)

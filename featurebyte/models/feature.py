@@ -161,12 +161,12 @@ class FeatureModel(FeatureByteBaseDocumentModel):
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
             UniqueValuesConstraint(
                 fields=("name", "version"),
                 conflict_fields_signature={"name": ["name"], "version": ["version"]},
-                resolution_signature="get_name_version",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
         ]
 
@@ -233,9 +233,9 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
-            # UniqueValuesConstraint(
-            #     fields=("feature_ids",),
-            #     conflict_fields_signature={"feature_ids": ["feature_ids"]},
-            #     resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            # ),
+            UniqueValuesConstraint(
+                fields=("feature_ids",),
+                conflict_fields_signature={"feature_ids": ["feature_ids"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
         ]

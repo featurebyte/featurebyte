@@ -43,6 +43,11 @@ class TestFeatureListApi(BaseApiTestSuite):
             'FeatureList (name: "sf_feature_list") already exists. '
             'Get the existing object by `FeatureList.get(name="sf_feature_list")`.',
         ),
+        (
+            {**payload, "_id": object_id, "name": "other_name"},
+            "FeatureList (feature_ids: \"[ObjectId('62ef015b940d152708e1e5db')]\") already exists. "
+            'Get the existing object by `FeatureList.get(name="sf_feature_list")`.',
+        ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
@@ -88,6 +93,50 @@ class TestFeatureListApi(BaseApiTestSuite):
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
+
+    def multiple_success_payload_generator(self, api_client):
+        """Create multiple payload for setting up create_multiple_success_responses fixture"""
+        for i in range(3):
+            # make a new feature from feature_sum_30m & create a new feature_ids
+            feature_payload = self.load_payload(
+                f"tests/fixtures/request_payloads/feature_sum_30m.json"
+            )
+            new_feature_id = str(ObjectId())
+            response = api_client.post(
+                "/feature",
+                json={
+                    **feature_payload,
+                    "_id": new_feature_id,
+                    "parent_id": str(feature_payload["_id"]),
+                    "version": f'{feature_payload["version"]}_{i}',
+                },
+            )
+            assert response.status_code == HTTPStatus.CREATED
+
+            payload = self.payload.copy()
+            payload["_id"] = str(ObjectId())
+            payload["feature_ids"] = [new_feature_id]
+            yield payload
+
+    def test_create_201_multiple_features(self, test_api_client_persistent, user_id):
+        """Create feature list with multiple features"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # save another feature
+        payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")
+        response = test_api_client.post("/feature", json=payload)
+        assert response.status_code == HTTPStatus.CREATED
+
+        # make sure the payload feature_ids is in non-sorted order
+        payload_multi = self.payload_multi.copy()
+        payload_multi["feature_ids"] = list(reversed(payload_multi["feature_ids"]))
+        assert payload_multi["feature_ids"] != sorted(payload_multi["feature_ids"])
+
+        # check that feature_ids in post response are sorted
+        response = test_api_client.post(f"/feature_list", json=payload_multi)
+        assert response.status_code == HTTPStatus.CREATED
+        assert response.json()["feature_ids"] == sorted(payload_multi["feature_ids"])
 
     def test_create_422_different_feature_stores(self, test_api_client_persistent):
         """

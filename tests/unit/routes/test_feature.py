@@ -34,6 +34,11 @@ class TestFeatureApi(BaseApiTestSuite):
         ),
         (
             {**payload, "_id": str(ObjectId())},
+            f'Feature (name: "sum_30m", version: "{payload["version"]}") already exists. '
+            f'Get the existing object by `Feature.get_by_id(id="{payload["_id"]}")`.',
+        ),
+        (
+            {**payload, "_id": str(ObjectId()), "version": f'{payload["version"]}_1'},
             'Feature (name: "sum_30m") already exists. '
             f'Get the existing object by `Feature.get_by_id(id="{payload["_id"]}")`.',
         ),
@@ -45,7 +50,12 @@ class TestFeatureApi(BaseApiTestSuite):
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
-            {**payload, "_id": object_id, "parent_id": object_id},
+            {
+                **payload,
+                "_id": object_id,
+                "parent_id": object_id,
+                "version": f'{payload["version"]}_1',
+            },
             f'The original feature (id: "{object_id}") not found. '
             f"Please save the Feature object first.",
         ),
@@ -92,6 +102,19 @@ class TestFeatureApi(BaseApiTestSuite):
         response = api_client.post("/event_data", json=feature_store_payload)
         assert response.status_code == HTTPStatus.CREATED
 
+    def multiple_success_payload_generator(self, api_client):
+        """Create multiple payload for setting up create_multiple_success_responses fixture"""
+        _ = api_client
+        for i in range(3):
+            payload = self.payload.copy()
+            payload["_id"] = str(ObjectId())
+            feature_store_id, table_details = payload["tabular_source"]
+            payload["tabular_source"] = [
+                feature_store_id,
+                {key: f"{value}_{i}" for key, value in table_details.items()},
+            ]
+            yield payload
+
     @pytest.mark.asyncio
     async def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
@@ -121,6 +144,7 @@ class TestFeatureApi(BaseApiTestSuite):
         # create a new feature version with the same namespace
         new_payload = self.payload.copy()
         new_payload["_id"] = str(ObjectId())
+        new_payload["version"] = f'{self.payload["version"]}_1'
         new_payload["parent_id"] = self.payload["_id"]
         new_response = test_api_client.post("/feature", json=new_payload)
         new_response_dict = new_response.json()

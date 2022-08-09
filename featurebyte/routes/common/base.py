@@ -3,7 +3,7 @@ BaseController for API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Generic, List, Literal, Optional, Type, TypeVar, cast
+from typing import Any, Dict, Generic, Iterator, List, Literal, Optional, Type, TypeVar, cast
 
 import copy
 from http import HTTPStatus
@@ -127,6 +127,12 @@ class BaseController(Generic[Document, PaginatedDocument]):
         HTTPException
             When there is a conflict with existing document(s) stored at the persistent
         """
+        if query_filter:
+            # this is temporary fix to make sure we handle tabular_source tuple properly.
+            # after revising current document models by removing all tuple attributes, this will be fixed.
+            for key, value in query_filter.items():
+                if isinstance(value, tuple):
+                    query_filter[key] = list(query_filter[key])
 
         conflict_doc = await persistent.find_one(
             collection_name=cls.collection_name,
@@ -144,22 +150,34 @@ class BaseController(Generic[Document, PaginatedDocument]):
             )
 
     @classmethod
-    def _get_fields_value(cls, doc_dict: dict[str, Any], fields: list[str]):
-        if isinstance(doc_dict, list) and isinstance(fields, int):
-            return doc_dict[fields]
-        if fields:
-            return cls._get_fields_value(doc_dict[fields[0]], fields[1:])
+    def _get_field_path_value(cls, doc_dict: Any, field_path: Any) -> Any:
+        if isinstance(doc_dict, list) and isinstance(field_path, int):
+            return doc_dict[field_path]
+        if field_path:
+            return cls._get_field_path_value(doc_dict[field_path[0]], field_path[1:])
         return doc_dict
 
     @classmethod
     def get_unique_constraints(
         cls, document: FeatureByteBaseDocumentModel
-    ) -> list[tuple[dict[str, Any], dict[str, Any], UniqueConstraintResolutionSignature]]:
+    ) -> Iterator[tuple[dict[str, Any], dict[str, Any], UniqueConstraintResolutionSignature]]:
+        """
+        Generator used to extract uniqueness constraints from document model setting
+
+        Parameters
+        ----------
+        document: FeatureByteBaseDocumentModel
+            Document contains information to construct query filter & conflict signature
+
+        Returns
+        -------
+        Iterator[dict[str, Any], dict[str, Any], UniqueConstraintResolutionSignature]
+        """
         doc_dict = document.dict(by_alias=True)
         for constraint in cls.document_class.Settings.unique_constraints:
             query_filter = {field: doc_dict[field] for field in constraint.fields}
             conflict_signature = {
-                name: cls._get_fields_value(doc_dict, fields)
+                name: cls._get_field_path_value(doc_dict, fields)
                 for name, fields in constraint.conflict_fields_signature.items()
             }
             yield query_filter, conflict_signature, constraint.resolution_signature
@@ -168,9 +186,21 @@ class BaseController(Generic[Document, PaginatedDocument]):
     async def check_document_unique_constraints(
         cls,
         persistent: Persistent,
-        user_id: ObjectId | None,
+        user_id: ObjectId,
         document: FeatureByteBaseDocumentModel,
-    ):
+    ) -> None:
+        """
+        Check document uniqueness constraints given document
+
+        Parameters
+        ----------
+        persistent: Persistent
+            persistent object
+        user_id: ObjectId
+            user id
+        document: FeatureByteBaseDocumentModel
+            document to be checked
+        """
         for query_filter, conflict_signature, resolution_signature in cls.get_unique_constraints(
             document
         ):

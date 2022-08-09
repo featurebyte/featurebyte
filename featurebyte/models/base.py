@@ -67,16 +67,6 @@ class FeatureByteBaseModel(BaseModel):
         json_encoders = {ObjectId: str}
 
 
-class UniqueValuesConstraint(FeatureByteBaseModel):
-    """
-    Unique values constraints for fields in a collection
-    """
-
-    fields: List[str]
-    conflict_fields_signature: Dict[str, Any]
-    resolution_signature: str
-
-
 class UniqueConstraintResolutionSignature(str, Enum):
     """
     UniqueConstraintResolutionSignature
@@ -87,15 +77,15 @@ class UniqueConstraintResolutionSignature(str, Enum):
     GET_NAME_VERSION = "get_name_version"
 
     @staticmethod
-    def _get_by_id(class_name: str, document: dict[str, Any]):
+    def _get_by_id(class_name: str, document: dict[str, Any]) -> str:
         return f'{class_name}.get_by_id(id="{document["_id"]}")'
 
     @staticmethod
-    def _get_name(class_name: str, document: dict[str, Any]):
+    def _get_name(class_name: str, document: dict[str, Any]) -> str:
         return f'{class_name}.get(name="{document["name"]}")'
 
     @staticmethod
-    def _get_name_version(class_name: str, document: dict[str, Any]):
+    def _get_name_version(class_name: str, document: dict[str, Any]) -> str:
         return f'{class_name}.get(name="{document["name"]}", version="{document["version"]}")'
 
     @classmethod
@@ -104,12 +94,39 @@ class UniqueConstraintResolutionSignature(str, Enum):
         resolution_signature: UniqueConstraintResolutionSignature,
         class_name: str,
         document: dict[str, Any],
-    ):
+    ) -> str:
+        """
+        Retrieve conflict resolution statement used in conflict error message
+
+        Parameters
+        ----------
+        resolution_signature: UniqueConstraintResolutionSignature
+            Type of resolution used to control the function call used in resolution statement
+        class_name: str
+            Class used to trigger the resolution statement
+        document: dict[str, Any]
+            Conflict document used to extract information for resolution statement
+
+        Returns
+        -------
+        str
+            Resolution statement used in conflict error message
+        """
         return {
             cls.GET_BY_ID: cls._get_by_id,
             cls.GET_NAME: cls._get_name,
             cls.GET_NAME_VERSION: cls._get_name_version,
         }[resolution_signature](class_name=class_name, document=document)
+
+
+class UniqueValuesConstraint(FeatureByteBaseModel):
+    """
+    Unique values constraints for fields in a collection
+    """
+
+    fields: List[str]
+    conflict_fields_signature: Dict[str, Any]
+    resolution_signature: UniqueConstraintResolutionSignature
 
 
 class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
