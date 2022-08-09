@@ -171,6 +171,9 @@ def query_graph_with_similar_groupby_nodes(
         node_params={
             **groupby_node_params,
             "tile_id": get_tile_table_identifier(
+                {"table_name": "fake_transactions_table"}, groupby_node_params
+            ),
+            "aggregation_id": get_aggregation_identifier(
                 graph.node_name_to_ref[assign_node.name], groupby_node_params
             ),
         },
@@ -182,6 +185,9 @@ def query_graph_with_similar_groupby_nodes(
         node_params={
             **groupby_node_params_sum_agg,
             "tile_id": get_tile_table_identifier(
+                {"table_name": "fake_transactions_table"}, groupby_node_params_sum_agg
+            ),
+            "aggregation_id": get_aggregation_identifier(
                 graph.node_name_to_ref[assign_node.name], groupby_node_params_sum_agg
             ),
         },
