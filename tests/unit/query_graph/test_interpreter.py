@@ -447,7 +447,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
         "time_modulo_frequency": 1800,
         "frequency": 3600,
         "blind_spot": 900,
-        "windows": ["a_7d_sum_by_business"],
+        "windows": ["7d"],
         "serving_names": ["BUSINESS_ID"],
         "value_by_column": None,
     }
