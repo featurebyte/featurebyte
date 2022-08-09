@@ -10,9 +10,10 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
+from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.entity import EntityModel
 from featurebyte.persistent.base import Persistent
-from featurebyte.routes.common.base import BaseController, GetType
+from featurebyte.routes.common.base import BaseController
 from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
 
 
@@ -55,23 +56,11 @@ class EntityController(BaseController[EntityModel, EntityList]):
         )
 
         # check any conflict with existing documents
-        constraints_check_triples: list[tuple[dict[str, Any], dict[str, Any], GetType]] = [
-            ({"_id": data.id}, {"id": data.id}, "name"),
-            ({"name": data.name}, {"name": data.name}, "name"),
-            (
-                {"serving_names": document.serving_names},
-                {"serving_name": data.serving_name},
-                "name",
-            ),
-        ]
-        for query_filter, doc_represent, get_type in constraints_check_triples:
-            await cls.check_document_creation_conflict(
-                persistent=persistent,
-                query_filter=query_filter,
-                doc_represent=doc_represent,
-                get_type=get_type,
-                user_id=user.id,
-            )
+        await cls.check_document_unique_constraints(
+            persistent=persistent,
+            user_id=user.id,
+            document=document,
+        )
 
         insert_id = await persistent.insert_one(
             collection_name=cls.collection_name,
@@ -127,8 +116,9 @@ class EntityController(BaseController[EntityModel, EntityList]):
                     status_code=HTTPStatus.CONFLICT,
                     detail=cls.get_conflict_message(
                         conflict_doc=data.json_dict(),
-                        doc_represent={"name": data.name},
-                        get_type="name",
+                        conflict_signature={"name": data.name},
+                        resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+                        class_name=cls.to_class_name(),
                     ),
                 )
 

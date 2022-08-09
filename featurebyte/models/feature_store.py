@@ -13,6 +13,7 @@ from featurebyte.enum import SourceType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
 
@@ -52,17 +53,17 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel):
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
             UniqueValuesConstraint(
                 fields=("name",),
                 conflict_fields_signature={"name": ["name"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
             UniqueValuesConstraint(
                 fields=("details",),
                 conflict_fields_signature={"details": ["details"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
         ]
 

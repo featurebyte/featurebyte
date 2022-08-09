@@ -30,6 +30,12 @@ class TestEventDataApi(BaseApiTestSuite):
             f'EventData (name: "sf_event_data") already exists. '
             f'Get the existing object by `EventData.get(name="sf_event_data")`.',
         ),
+        (
+            {**payload, "_id": str(ObjectId()), "name": "other_name"},
+            f'EventData (tabular_source: "(ObjectId(\'{payload["tabular_source"][0]}\'), '
+            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_table'})\") "
+            'already exists. Get the existing object by `EventData.get(name="sf_event_data")`.',
+        ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
@@ -60,6 +66,19 @@ class TestEventDataApi(BaseApiTestSuite):
         )
         response = api_client.post("/feature_store", json=feature_store_payload)
         assert response.status_code == HTTPStatus.CREATED
+
+    def multiple_success_payload_generator(self, api_client):
+        """Create multiple payload for setting up create_multiple_success_responses fixture"""
+        _ = api_client
+        for i in range(3):
+            payload = self.payload.copy()
+            payload["_id"] = str(ObjectId())
+            feature_store_id, table_details = payload["tabular_source"]
+            payload["tabular_source"] = [
+                feature_store_id,
+                {key: f"{value}_{i}" for key, value in table_details.items()},
+            ]
+            yield payload
 
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""

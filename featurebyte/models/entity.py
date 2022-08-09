@@ -13,6 +13,7 @@ from pydantic import Field, StrictStr
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
 
@@ -57,16 +58,16 @@ class EntityModel(FeatureByteBaseDocumentModel):
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
             UniqueValuesConstraint(
                 fields=("name",),
                 conflict_fields_signature={"name": ["name"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
             UniqueValuesConstraint(
                 fields=("serving_names",),
-                conflict_fields_signature={"serving_name": ["serving_names"]},
-                resolution_signature="get",
+                conflict_fields_signature={"serving_name": ["serving_names", 0]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
         ]

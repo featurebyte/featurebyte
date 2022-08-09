@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import json
 from datetime import datetime
+from enum import Enum
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
@@ -66,6 +67,58 @@ class FeatureByteBaseModel(BaseModel):
         json_encoders = {ObjectId: str}
 
 
+class UniqueConstraintResolutionSignature(str, Enum):
+    """
+    UniqueConstraintResolutionSignature
+    """
+
+    GET_BY_ID = "get_by_id"
+    GET_NAME = "get_name"
+    GET_NAME_VERSION = "get_name_version"
+
+    @staticmethod
+    def _get_by_id(class_name: str, document: dict[str, Any]) -> str:
+        return f'{class_name}.get_by_id(id="{document["_id"]}")'
+
+    @staticmethod
+    def _get_name(class_name: str, document: dict[str, Any]) -> str:
+        return f'{class_name}.get(name="{document["name"]}")'
+
+    @staticmethod
+    def _get_name_version(class_name: str, document: dict[str, Any]) -> str:
+        return f'{class_name}.get(name="{document["name"]}", version="{document["version"]}")'
+
+    @classmethod
+    def get_resolution_statement(
+        cls,
+        resolution_signature: UniqueConstraintResolutionSignature,
+        class_name: str,
+        document: dict[str, Any],
+    ) -> str:
+        """
+        Retrieve conflict resolution statement used in conflict error message
+
+        Parameters
+        ----------
+        resolution_signature: UniqueConstraintResolutionSignature
+            Type of resolution used to control the function call used in resolution statement
+        class_name: str
+            Class used to trigger the resolution statement
+        document: dict[str, Any]
+            Conflict document used to extract information for resolution statement
+
+        Returns
+        -------
+        str
+            Resolution statement used in conflict error message
+        """
+        return {
+            cls.GET_BY_ID: cls._get_by_id,
+            cls.GET_NAME: cls._get_name,
+            cls.GET_NAME_VERSION: cls._get_name_version,
+        }[resolution_signature](class_name=class_name, document=document)
+
+
 class UniqueValuesConstraint(FeatureByteBaseModel):
     """
     Unique values constraints for fields in a collection
@@ -73,7 +126,7 @@ class UniqueValuesConstraint(FeatureByteBaseModel):
 
     fields: List[str]
     conflict_fields_signature: Dict[str, Any]
-    resolution_signature: str
+    resolution_signature: UniqueConstraintResolutionSignature
 
 
 class FeatureByteBaseDocumentModel(FeatureByteBaseModel):

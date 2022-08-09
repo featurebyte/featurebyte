@@ -55,18 +55,20 @@ class BaseApiTestSuite:
         response = test_api_client.post(f"{self.base_route}", json=self.payload)
         return response
 
+    def multiple_success_payload_generator(self, api_client):
+        """Create multiple payload for setting up create_multiple_success_responses fixture"""
+        _ = api_client
+        return []
+
     @pytest.fixture()
     def create_multiple_success_responses(self, test_api_client_persistent):
         """Post multiple success responses"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         output = []
-        for i in range(3):
-            payload = self.payload.copy()
-            payload["_id"] = str(ObjectId())
-            for key in ["name", "serving_name"]:
-                if key in payload:
-                    payload[key] = f"{self.payload[key]}_{i}"
+        for i, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
+            # payload name is set here as we need the exact name value for test_list_200 test
+            payload["name"] = f'{self.payload["name"]}_{i}'
             response = test_api_client.post(f"{self.base_route}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
             output.append(response)

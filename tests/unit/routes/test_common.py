@@ -8,18 +8,19 @@ import numpy as np
 import pytest
 from fastapi import HTTPException
 
+from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.persistent import AuditActionType
 from featurebyte.routes.common.base import BaseController
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "query_filter, doc_represent, get_type, expected_msg",
+    "query_filter, conflict_signature, resolution_signature, expected_msg",
     [
         (
             {"_id": "id_val"},
             {"id": "id_val"},
-            "id",
+            UniqueConstraintResolutionSignature.GET_BY_ID,
             (
                 'Col (id: "id_val") already exists. '
                 'Get the existing object by `Col.get_by_id(id="conflict_id_val")`.'
@@ -28,7 +29,7 @@ from featurebyte.routes.common.base import BaseController
         (
             {"_id": "id_val"},
             {"id": "id_val", "name": "name_val"},
-            "id",
+            UniqueConstraintResolutionSignature.GET_BY_ID,
             (
                 'Col (id: "id_val", name: "name_val") already exists. '
                 'Get the existing object by `Col.get_by_id(id="conflict_id_val")`.'
@@ -37,7 +38,7 @@ from featurebyte.routes.common.base import BaseController
         (
             {"_id": "id_val"},
             {"id": "id_val"},
-            "name",
+            UniqueConstraintResolutionSignature.GET_NAME,
             (
                 'Col (id: "id_val") already exists. '
                 'Get the existing object by `Col.get(name="conflict_name_val")`.'
@@ -46,7 +47,7 @@ from featurebyte.routes.common.base import BaseController
     ],
 )
 async def test_check_document_creation_conflict(
-    query_filter, doc_represent, get_type, expected_msg
+    query_filter, conflict_signature, resolution_signature, expected_msg
 ):
     """
     Test check_document_creation_conflict error message
@@ -58,12 +59,12 @@ async def test_check_document_creation_conflict(
     persistent = AsyncMock()
     persistent.find_one.return_value = {"_id": "conflict_id_val", "name": "conflict_name_val"}
     with pytest.raises(HTTPException) as exc:
-        await Controller.check_document_creation_conflict(
+        await Controller.check_document_unique_constraint(
             persistent=persistent,
             query_filter=query_filter,
-            doc_represent=doc_represent,
+            conflict_signature=conflict_signature,
             user_id=None,
-            get_type=get_type,
+            resolution_signature=resolution_signature,
         )
     assert expected_msg in str(exc.value.detail)
 
@@ -249,3 +250,17 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
     """Test an existing field get removed or updated"""
     output = BaseController._get_field_history(field="field", audit_docs=audit_docs)
     assert output == expected
+
+
+@pytest.mark.parametrize(
+    "doc, field_path, expected",
+    [
+        ({"a": [1]}, [], {"a": [1]}),
+        ({"a": [1]}, ["a"], [1]),
+        ({"a": [1]}, ["a", 0], 1),
+        ({"a": {"b": {"c": {"d": [123]}}}}, ["a", "b", "c", "d", 0], 123),
+        ({"a": [{"b": {"c": [{"d": [123]}]}}]}, ["a", 0, "b", "c", 0, "d", 0], 123),
+    ],
+)
+def test_field_path_value(doc, field_path, expected):
+    assert BaseController.get_field_path_value(doc_dict=doc, field_path=field_path) == expected

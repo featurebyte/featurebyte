@@ -18,7 +18,7 @@ from featurebyte.feature_manager.snowflake_feature_list import FeatureListManage
 from featurebyte.models.feature import FeatureListModel, FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.common.base import BaseController, GetType
+from featurebyte.routes.common.base import BaseController
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListPaginatedList
 
 
@@ -108,23 +108,18 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
         HTTPException
             When not all features share the same feature store
         """
-        # pylint: disable=too-many-locals
-        document = FeatureListModel(**data.json_dict(), user_id=user.id)
+        # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
+        document = FeatureListModel(
+            **{**data.json_dict(), "feature_ids": sorted(data.feature_ids), "user_id": user.id}
+        )
 
         async with persistent.start_transaction() as session:
             # check any conflict with existing documents
-            constraints_check_triples: list[tuple[dict[str, Any], dict[str, Any], GetType]] = [
-                ({"_id": data.id}, {"id": data.id}, "name"),
-                ({"name": data.name}, {"name": data.name}, "name"),
-            ]
-            for query_filter, doc_represent, get_type in constraints_check_triples:
-                await cls.check_document_creation_conflict(
-                    persistent=session,
-                    query_filter=query_filter,
-                    doc_represent=doc_represent,
-                    get_type=get_type,
-                    user_id=user.id,
-                )
+            await cls.check_document_unique_constraints(
+                persistent=persistent,
+                user_id=user.id,
+                document=document,
+            )
 
             # check whether the feature(s) in the feature list saved to persistent or not
             feature_store_id: Optional[ObjectId] = None

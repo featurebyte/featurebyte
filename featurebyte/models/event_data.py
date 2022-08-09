@@ -16,6 +16,7 @@ from featurebyte.enum import OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
 from featurebyte.models.feature_store import DatabaseTableModel
@@ -113,16 +114,16 @@ class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
             UniqueValuesConstraint(
                 fields=("name",),
                 conflict_fields_signature={"name": ["name"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
             UniqueValuesConstraint(
                 fields=("tabular_source",),
                 conflict_fields_signature={"tabular_source": ["tabular_source"]},
-                resolution_signature="get",
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
         ]

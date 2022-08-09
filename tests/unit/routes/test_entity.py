@@ -71,6 +71,15 @@ class TestEntityApi(BaseApiTestSuite):
         assert res_prod.json()["_id"] == entity_id3
         return [entity_id1, entity_id2, entity_id3]
 
+    def multiple_success_payload_generator(self, api_client):
+        """Create multiple payload for setting up create_multiple_success_responses fixture"""
+        _ = api_client
+        for i in range(3):
+            payload = self.payload.copy()
+            payload["_id"] = str(ObjectId())
+            payload["serving_name"] = f'{payload["serving_name"]}_{i}'
+            yield payload
+
     def test_update_200(self, create_success_response, test_api_client_persistent):
         """
         Test entity update (success)

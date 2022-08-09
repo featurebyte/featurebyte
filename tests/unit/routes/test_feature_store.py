@@ -38,3 +38,14 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             ],
         )
     ]
+
+    def multiple_success_payload_generator(self, api_client):
+        """Create multiple payload for setting up create_multiple_success_responses fixture"""
+        _ = api_client
+        for i in range(3):
+            payload = self.payload.copy()
+            payload["_id"] = str(ObjectId())
+            payload["details"] = {
+                key: f"{value}_{i}" for key, value in self.payload["details"].items()
+            }
+            yield payload
