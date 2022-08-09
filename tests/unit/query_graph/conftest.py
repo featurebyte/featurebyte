@@ -198,8 +198,8 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby):
         "frequency": 3600,  # 1h
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
-        "names": ["a"],
-        "windows": ["a_7d_sum_by_business"],
+        "names": ["a_7d_sum_by_business"],
+        "windows": ["7d"],
         "serving_names": ["BUSINESS_ID"],
     }
     assign_node = graph.get_node_by_name("assign_1")
