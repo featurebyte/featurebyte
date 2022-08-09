@@ -165,8 +165,6 @@ class BaseController(Generic[Document, PaginatedDocument]):
         -------
         Any
         """
-        if isinstance(doc_dict, list) and isinstance(field_path, int):
-            return doc_dict[field_path]
         if field_path:
             return cls.get_field_path_value(doc_dict[field_path[0]], field_path[1:])
         return doc_dict
