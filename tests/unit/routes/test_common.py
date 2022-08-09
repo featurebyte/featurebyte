@@ -250,3 +250,16 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
     """Test an existing field get removed or updated"""
     output = BaseController._get_field_history(field="field", audit_docs=audit_docs)
     assert output == expected
+
+
+@pytest.mark.parametrize(
+    "doc, field_path, expected",
+    [
+        ({"a": [1]}, [], {"a": [1]}),
+        ({"a": [1]}, ["a"], [1]),
+        ({"a": [1]}, ["a", 0], 1),
+        ({"a": {"b": {"c": {"d": [123]}}}}, ["a", "b", "c", "d", 0], 123),
+    ],
+)
+def test_field_path_value(doc, field_path, expected):
+    assert BaseController.get_field_path_value(doc_dict=doc, field_path=field_path) == expected

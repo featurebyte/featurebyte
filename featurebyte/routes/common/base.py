@@ -150,11 +150,25 @@ class BaseController(Generic[Document, PaginatedDocument]):
             )
 
     @classmethod
-    def _get_field_path_value(cls, doc_dict: Any, field_path: Any) -> Any:
+    def get_field_path_value(cls, doc_dict: Any, field_path: Any) -> Any:
+        """
+        Traverse document dictionary using the given field_path
+
+        Parameters
+        ----------
+        doc_dict: Any
+            Document in dictionary format
+        field_path: Any
+            List of str or int used to traverse the document
+
+        Returns
+        -------
+        Any
+        """
         if isinstance(doc_dict, list) and isinstance(field_path, int):
             return doc_dict[field_path]
         if field_path:
-            return cls._get_field_path_value(doc_dict[field_path[0]], field_path[1:])
+            return cls.get_field_path_value(doc_dict[field_path[0]], field_path[1:])
         return doc_dict
 
     @classmethod
@@ -177,7 +191,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         for constraint in cls.document_class.Settings.unique_constraints:
             query_filter = {field: doc_dict[field] for field in constraint.fields}
             conflict_signature = {
-                name: cls._get_field_path_value(doc_dict, fields)
+                name: cls.get_field_path_value(doc_dict, fields)
                 for name, fields in constraint.conflict_fields_signature.items()
             }
             yield query_filter, conflict_signature, constraint.resolution_signature
