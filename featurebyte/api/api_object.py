@@ -25,6 +25,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
     # class variables
     _route = ""
+    _route_list = ""
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         """
@@ -135,7 +136,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
             When the response status code is unexpected
         """
         client = Configurations().get_client()
-        response = client.get(url=cls._route)
+        response = client.get(url=(cls._route_list or cls._route))
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             return [elem["name"] for elem in response_dict["data"]]

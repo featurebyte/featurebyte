@@ -32,6 +32,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
 
     # class variables
     _route = "/feature"
+    _route_list = "/feature_namespace"
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
