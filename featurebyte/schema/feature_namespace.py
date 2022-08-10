@@ -4,6 +4,7 @@ FeatureNamespace API pyaload schema
 from typing import List, Optional
 
 from beanie import PydanticObjectId
+from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
@@ -16,7 +17,7 @@ class FeatureNamespaceCreate(FeatureByteBaseModel):
     Feature Namespace Creation Schema
     """
 
-    id: PydanticObjectId = Field(alias="_id")
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     description: Optional[StrictStr]
     version_ids: List[PydanticObjectId] = Field(default_factory=list)
