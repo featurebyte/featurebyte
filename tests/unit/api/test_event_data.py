@@ -77,6 +77,11 @@ def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
         record_creation_date_column="created_at",
         credentials=config.credentials,
     )
+
+    # check that event data columns for autocompletion
+    assert set(event_data.columns).issubset(dir(event_data))
+    assert event_data._ipython_key_completions_() == set(event_data.columns)
+
     event_data_dict["id"] = event_data.id
     assert event_data.dict() == event_data_dict
 

@@ -14,6 +14,7 @@ from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.util import get_entity
 from featurebyte.config import Configurations, Credentials
+from featurebyte.core.mixin import AutoCompletionMixin
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordRetrievalException,
@@ -75,7 +76,7 @@ class EventDataColumn:
             raise RecordUpdateException(response)
 
 
-class EventData(EventDataModel, DatabaseTable, ApiObject):
+class EventData(EventDataModel, DatabaseTable, ApiObject, AutoCompletionMixin):
     """
     EventData class
     """

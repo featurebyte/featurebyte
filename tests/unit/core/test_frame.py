@@ -371,3 +371,11 @@ def test_frame__getattr__method(dataframe):
     with pytest.raises(AttributeError):
         # expect to throw attribute error rather than KeyError due to column not exists
         dataframe.random_attribute
+
+
+def test_frame__autocompletion(dataframe):
+    """
+    Test Frame __dir__ and _ipython_key_completions_ methods
+    """
+    assert set(dataframe.columns).issubset(dir(dataframe))
+    assert dataframe._ipython_key_completions_() == set(dataframe.columns)

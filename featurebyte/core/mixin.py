@@ -3,7 +3,7 @@ OpsMixin class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterable
 
 from pydantic import BaseModel, PrivateAttr
 
@@ -146,3 +146,18 @@ class ParentMixin(BaseModel):
             Parent which current series belongs to
         """
         self._parent = parent
+
+
+class AutoCompletionMixin:
+    """
+    AutoCompletionMixin contains methods to support tab completion for getattr & getitem
+    """
+
+    # pylint: disable=too-few-public-methods
+
+    def __dir__(self) -> Iterable[str]:
+        attrs = set(super().__dir__())
+        return attrs.union(getattr(self, "column_var_type_map", {}).keys())
+
+    def _ipython_key_completions_(self) -> set[str]:
+        return set(getattr(self, "column_var_type_map", {}).keys())
