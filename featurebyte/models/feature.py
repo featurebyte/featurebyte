@@ -133,7 +133,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     created_at: Optional[datetime]
         Datetime when the Feature was first saved or published
     feature_namespace_id: PydanticObjectId
-        Parent feature id of the object
+        Feature namespace id of the object
     """
 
     description: Optional[StrictStr]
