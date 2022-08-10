@@ -3,10 +3,9 @@ Module with logic related to feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Iterable, Optional, Tuple
 
 from abc import ABC, abstractmethod
-from collections import defaultdict
 
 from sqlglot import expressions, select
 
@@ -238,13 +237,79 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
         return sql
 
 
+class AggregationSpecSet:
+    """Responsible for keeping track of AggregationSpec that arises from query graph nodes"""
+
+    def __init__(self):
+        self.aggregation_specs: dict[tuple[str, int], list[AggregationSpec]] = {}
+        self.processed_agg_specs: dict[tuple[str, int], set[str]] = {}
+
+    def add_aggregation_spec(self, aggregation_spec: AggregationSpec) -> None:
+        """Update state given an AggregationSpec
+
+        Some aggregations can be shared by different features, e.g. "transaction_type (7 day
+        entropy)" and "transaction_type (7 day most frequent)" can both reuse the aggregated result
+        of "transaction (7 day category count by transaction_type)". This information is tracked
+        using the aggregation_id attribute of AggregationSpec - the AggregationSpec for all of these
+        three features will have the same aggregation_id.
+
+        Parameters
+        ----------
+        aggregation_spec : AggregationSpec
+            Aggregation_specification
+        """
+        # AggregationSpec is window size specific. Two AggregationSpec with different window sizes
+        # require two different groupbys and left joins in the resulting SQL
+        key = aggregation_spec.tile_table_id, aggregation_spec.window
+
+        # Initialize containers for new tile_table_id and window combination
+        if key not in self.aggregation_specs:
+            self.aggregation_specs[key] = []
+            self.processed_agg_specs[key] = set()
+
+        agg_id = aggregation_spec.aggregation_id
+        # Skip if the same AggregationSpec is already seen
+        if agg_id in self.processed_agg_specs[key]:
+            return
+
+        # Sanity check: if given the same tile table id, certain attributes should be identical
+        self._sanity_check(key, aggregation_spec)
+
+        # Update containers
+        self.aggregation_specs[key].append(aggregation_spec)
+        self.processed_agg_specs[key].add(agg_id)
+
+    def get_grouped_aggregation_specs(self) -> Iterable[list[AggregationSpec]]:
+        """Yields groups of AggregationSpec
+
+        Each group of AggregationSpec has the same tile_table_id. Their tile values can be
+        aggregated in a single GROUP BY clause.
+
+        Yields
+        ------
+        list[AggregationSpec]
+            Group of AggregationSpec
+        """
+        for agg_specs in self.aggregation_specs.values():
+            yield agg_specs
+
+    def _sanity_check(self, key: tuple[str, int], aggregation_spec: AggregationSpec):
+        spec = self.aggregation_specs.get(key)
+        if not spec:
+            return
+        spec = self.aggregation_specs[key][0]
+        fields_expected_to_match = ["serving_names", "tile_table_id", "keys", "value_by"]
+        for k in fields_expected_to_match:
+            assert getattr(spec, k) == getattr(aggregation_spec, k), f"Field {k} does not match"
+
+
 class FeatureExecutionPlan(ABC):
     """Responsible for constructing the SQL to compute features by aggregating tiles"""
 
     AGGREGATION_TABLE_NAME = "_FB_AGGREGATED"
 
     def __init__(self) -> None:
-        self.aggregation_specs: dict[tuple[str, int], AggregationSpec] = {}
+        self.aggregation_spec_set = AggregationSpecSet()
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.request_table_plan: RequestTablePlan = SnowflakeRequestTablePlan()
 
@@ -257,8 +322,9 @@ class FeatureExecutionPlan(ABC):
         set[str]
         """
         out = set()
-        for agg_spec in self.aggregation_specs.values():
-            out.update(agg_spec.serving_names)
+        for agg_specs in self.aggregation_spec_set.get_grouped_aggregation_specs():
+            for agg_spec in agg_specs:
+                out.update(agg_spec.serving_names)
         return out
 
     def add_aggregation_spec(self, aggregation_spec: AggregationSpec) -> None:
@@ -269,8 +335,7 @@ class FeatureExecutionPlan(ABC):
         aggregation_spec : AggregationSpec
             Aggregation specification
         """
-        key = self.get_aggregation_spec_key(aggregation_spec)
-        self.aggregation_specs[key] = aggregation_spec
+        self.aggregation_spec_set.add_aggregation_spec(aggregation_spec)
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
 
     def add_feature_spec(self, feature_spec: FeatureSpec) -> None:
@@ -290,30 +355,6 @@ class FeatureExecutionPlan(ABC):
         if key in self.feature_specs:
             raise ValueError(f"Duplicated feature name: {key}")
         self.feature_specs[key] = feature_spec
-
-    @staticmethod
-    def get_aggregation_spec_key(aggregation_spec: AggregationSpec) -> tuple[str, int]:
-        """Get a key for a AggregationSpec that determines whether it can be shared
-
-        Some aggregations can be shared by different features, e.g. "transaction_type (7 day
-        entropy)" and "transaction_type (7 day most frequent)" can both reuse the aggregated result
-        of "transaction (7 day category count by transaction_type)".
-
-        Note that this is different from tile table reuse. Tile table reuse depends on
-        tile_table_id and does not consider feature window size.
-
-        Parameters
-        ----------
-        aggregation_spec : AggregationSpec
-            Aggregation_specification
-
-        Returns
-        -------
-        tuple
-        """
-        agg_id = aggregation_spec.aggregation_id
-        window = aggregation_spec.window
-        return agg_id, window
 
     @classmethod
     def construct_aggregation_sql(
@@ -538,25 +579,22 @@ class FeatureExecutionPlan(ABC):
         table_expr = select().from_(f"{REQUEST_TABLE_NAME} AS REQ")
         qualified_aggregation_names = []
 
-        aggregation_specs_by_tile_table = defaultdict(list)
-        for agg_spec in self.aggregation_specs.values():
-            aggregation_specs_by_tile_table[(agg_spec.tile_table_id, agg_spec.window)].append(
-                agg_spec
-            )
-
-        for i, agg_specs in enumerate(aggregation_specs_by_tile_table.values()):
+        for i, agg_specs in enumerate(self.aggregation_spec_set.get_grouped_aggregation_specs()):
+            # All AggregationSpec in agg_specs share common attributes such as tile_table_id, keys,
+            # etc. Get the first one to access them.
+            agg_spec = agg_specs[0]
             expanded_request_table_name = self.request_table_plan.get_expanded_request_table_name(
-                agg_specs[0]
+                agg_spec
             )
             merge_exprs = [agg_spec.merge_expr for agg_spec in agg_specs]
             agg_result_names = [agg_spec.agg_result_name for agg_spec in agg_specs]
             agg_expr = self.construct_aggregation_sql(
                 expanded_request_table_name=expanded_request_table_name,
-                tile_table_id=agg_specs[0].tile_table_id,
+                tile_table_id=agg_spec.tile_table_id,
                 point_in_time_column=point_in_time_column,
-                keys=agg_specs[0].keys,
-                serving_names=agg_specs[0].serving_names,
-                value_by=agg_specs[0].value_by,
+                keys=agg_spec.keys,
+                serving_names=agg_spec.serving_names,
+                value_by=agg_spec.value_by,
                 merge_exprs=merge_exprs,
                 agg_result_names=agg_result_names,
             )
@@ -564,14 +602,16 @@ class FeatureExecutionPlan(ABC):
                 index=i,
                 point_in_time_column=point_in_time_column,
                 agg_result_names=agg_result_names,
-                serving_names=agg_specs[0].serving_names,
+                serving_names=agg_spec.serving_names,
                 table_expr=table_expr,
                 agg_expr=agg_expr,
             )
             qualified_aggregation_names.extend(agg_result_name_aliases)
+
         request_table_columns = [f"REQ.{escape_column_name(c)}" for c in request_table_columns]
         table_expr = table_expr.select(*request_table_columns, *qualified_aggregation_names)
         combined_sql = table_expr.sql(pretty=True)
+
         return self.AGGREGATION_TABLE_NAME, combined_sql
 
     def construct_post_aggregation_sql(self, request_table_columns: list[str]) -> str:
