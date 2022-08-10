@@ -1,9 +1,10 @@
 {
-    "_id": "62ef015b940d152708e1e5db",
+    "_id": "62f301e841b73757c7bf873d",
     "description": null,
     "event_data_ids": [
-        "62ef015b940d152708e1e5d8"
+        "62f301e841b73757c7bf873a"
     ],
+    "feature_namespace_id": "62f301e841b73757c7bf873e",
     "graph": {
         "backward_edges": {
             "groupby_1": [
@@ -109,12 +110,11 @@
         },
         "type": "project"
     },
-    "parent_id": null,
     "row_index_lineage": [
         "groupby_1"
     ],
     "tabular_source": [
-        "62ef015b940d152708e1e5d6",
+        "62f301e841b73757c7bf8738",
         {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
@@ -122,5 +122,5 @@
         }
     ],
     "var_type": "FLOAT",
-    "version": "V220807"
+    "version": "V220810"
 }

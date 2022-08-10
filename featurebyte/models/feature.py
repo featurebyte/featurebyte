@@ -9,6 +9,7 @@ from typing import List, Optional, Tuple
 from enum import Enum
 
 from beanie import PydanticObjectId
+from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.common.model_util import get_version
@@ -51,7 +52,7 @@ class DefaultVersionMode(str, Enum):
     MANUAL = "MANUAL"
 
 
-class FeatureNameSpaceModel(FeatureByteBaseDocumentModel):
+class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
     """
     Feature set with the same feature name
 
@@ -63,8 +64,6 @@ class FeatureNameSpaceModel(FeatureByteBaseDocumentModel):
         Feature namespace descriptions applied to all features with the same family
     version_ids: List[PydanticObjectId]
         List of feature version id
-    versions: List[FeatureVersionIdentifier]
-        List of available feature version
     readiness: FeatureReadiness
         Aggregated readiness across all feature versions of the same feature namespace
     created_at: datetime
@@ -77,7 +76,6 @@ class FeatureNameSpaceModel(FeatureByteBaseDocumentModel):
 
     description: Optional[StrictStr]
     version_ids: List[PydanticObjectId]
-    versions: List[FeatureVersionIdentifier]
     readiness: FeatureReadiness
     default_version_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
@@ -92,12 +90,12 @@ class FeatureNameSpaceModel(FeatureByteBaseDocumentModel):
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+                resolution_signature=None,
             ),
             UniqueValuesConstraint(
                 fields=("name",),
                 conflict_fields_signature={"name": ["name"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+                resolution_signature=UniqueConstraintResolutionSignature.RENAME,
             ),
         ]
 
@@ -134,8 +132,8 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         EventData IDs used for the feature version
     created_at: Optional[datetime]
         Datetime when the Feature was first saved or published
-    parent_id: PydanticObjectId
-        Parent feature id of the object
+    feature_namespace_id: PydanticObjectId
+        Feature namespace id of the object
     """
 
     description: Optional[StrictStr]
@@ -149,7 +147,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     is_default: Optional[bool] = Field(allow_mutation=False)
     online_enabled: Optional[bool] = Field(allow_mutation=False)
     event_data_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
-    parent_id: Optional[PydanticObjectId] = Field(allow_mutation=False)
+    feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
 
     class Settings:
         """
