@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 from beanie import PydanticObjectId
+from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
@@ -23,7 +24,7 @@ class FeatureListCreate(FeatureByteBaseModel):
     FeatureList Creation schema
     """
 
-    id: PydanticObjectId = Field(alias="_id")
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     description: Optional[str]
     feature_ids: List[PydanticObjectId]
