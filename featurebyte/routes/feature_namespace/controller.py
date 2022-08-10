@@ -96,6 +96,11 @@ class FeatureNamespaceController(BaseController[FeatureNamespaceModel, FeatureNa
         -------
         FeatureNamespaceModel
             FeatureNamespace object with updated attribute(s)
+
+        Raises
+        ------
+        HTTPException
+            When the feature namespace has different name from the feature name
         """
 
         feature_namespace = await cls.get(

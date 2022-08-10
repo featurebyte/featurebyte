@@ -90,9 +90,13 @@ class UniqueConstraintResolutionSignature(str, Enum):
         return f'{class_name}.get(name="{document["name"]}", version="{document["version"]}")'
 
     @classmethod
-    def get_existing_object_type(cls):
+    def get_existing_object_type(cls) -> set[UniqueConstraintResolutionSignature]:
         """
         Get existing object resolution type
+
+        Returns
+        -------
+        set[UniqueConstraintResolutionSignature]
         """
         return {cls.GET_BY_ID, cls.GET_NAME, cls.GET_NAME_VERSION}
 

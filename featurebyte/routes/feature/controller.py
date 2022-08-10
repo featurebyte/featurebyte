@@ -7,7 +7,6 @@ from typing import Any
 
 from http import HTTPStatus
 
-from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
@@ -114,6 +113,13 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
         -------
         FeatureModel
             Newly created feature object
+
+        Raises
+        ------
+        HTTPException
+            When unexpected failure happens during feature namespace retrieval
+            When feature namespace creation fails uniqueness constraint check
+            When unexpected failure happens during feature namespace creation
         """
 
         async with persistent.start_transaction() as session:
