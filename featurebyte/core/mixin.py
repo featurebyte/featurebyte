@@ -148,9 +148,9 @@ class ParentMixin(BaseModel):
         self._parent = parent
 
 
-class AutoCompletionMixin:
+class TabCompletionMixin:
     """
-    AutoCompletionMixin contains methods to support tab completion for getattr & getitem
+    TabCompletionMixin contains methods to support tab completion for getattr & getitem
     """
 
     # pylint: disable=too-few-public-methods

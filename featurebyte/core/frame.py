@@ -11,7 +11,7 @@ import pandas as pd
 from pydantic import StrictStr, root_validator
 
 from featurebyte.core.generic import QueryObject
-from featurebyte.core.mixin import AutoCompletionMixin, OpsMixin
+from featurebyte.core.mixin import OpsMixin, TabCompletionMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -63,7 +63,7 @@ class BaseFrame(QueryObject):
         return self._preview_sql(columns=self.columns, limit=limit)
 
 
-class Frame(BaseFrame, OpsMixin, AutoCompletionMixin):
+class Frame(BaseFrame, OpsMixin, TabCompletionMixin):
     """
     Implement operations to manipulate database table
     """
