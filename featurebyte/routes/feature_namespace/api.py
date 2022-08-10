@@ -12,7 +12,11 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.feature import FeatureNamespaceModel
 from featurebyte.models.persistent import AuditDocumentList
-from featurebyte.schema.feature_namespace import FeatureNamespaceCreate, FeatureNamespaceList
+from featurebyte.schema.feature_namespace import (
+    FeatureNamespaceCreate,
+    FeatureNamespaceList,
+    FeatureNamespaceUpdate,
+)
 
 router = APIRouter(prefix="/feature_namespace")
 
@@ -75,8 +79,28 @@ async def list_feature_namespaces(
     return feature_namespace_list
 
 
+@router.patch("/{feature_namespace_id}", response_model=FeatureNamespaceModel)
+async def update_feature_namespace(
+    request: Request,
+    feature_namespace_id: str,
+    data: FeatureNamespaceUpdate,
+) -> FeatureNamespaceModel:
+    """
+    Update FeatureNamespace
+    """
+    feature_namespace: FeatureNamespaceModel = (
+        await request.state.controller.update_feature_namespace(
+            user=request.state.user,
+            persistent=request.state.persistent,
+            feature_namespace_id=feature_namespace_id,
+            data=data,
+        )
+    )
+    return feature_namespace
+
+
 @router.get("/audit/{feature_namespace_id}", response_model=AuditDocumentList)
-async def list_feature_store_audit_logs(
+async def list_feature_namespace_audit_logs(
     request: Request,
     feature_namespace_id: PydanticObjectId,
     page: int = 1,

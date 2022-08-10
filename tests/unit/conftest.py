@@ -8,6 +8,7 @@ from unittest import mock
 import pandas as pd
 import pytest
 import yaml
+from bson.objectid import ObjectId
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
@@ -21,13 +22,13 @@ from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
-from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
 from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
+from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.session.manager import SessionManager, get_session
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
@@ -548,13 +549,24 @@ def test_save_payload_fixtures(
             (feature_list_multiple, "feature_list_multi"),
         ]
         output_filenames = []
+        base_path = "tests/fixtures/request_payloads"
         for api_object, name in api_object_name_pairs:
-            filename = f"tests/fixtures/request_payloads/{name}.json"
+            filename = f"{base_path}/{name}.json"
             with open(filename, "w") as fhandle:
                 fhandle.write(
                     json.dumps(api_object._get_create_payload(), indent=4, sort_keys=True)
                 )
             output_filenames.append(filename)
+
+        feature_namespace = FeatureNamespaceCreate(
+            _id=ObjectId(),
+            name=feature_sum_30m.name,
+            version_ids=[feature_sum_30m.id],
+            readiness=FeatureReadiness.DRAFT,
+            default_version_id=feature_sum_30m.id,
+        )
+        with open(f"{base_path}/feature_namespace.json", "w") as fhandle:
+            fhandle.write(json.dumps(feature_namespace.json_dict(), indent=4, sort_keys=True))
 
         raise AssertionError(
             f"Fixture {output_filenames} updated, please set update_fixture to False"

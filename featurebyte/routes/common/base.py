@@ -91,12 +91,20 @@ class BaseController(Generic[Document, PaginatedDocument]):
             f"{cls.to_class_name()} ({cls._format_document(conflict_signature)}) already exists."
         )
         if resolution_signature:
-            resolution_statement = UniqueConstraintResolutionSignature.get_resolution_statement(
-                resolution_signature=resolution_signature,
-                class_name=class_name or cls.to_class_name(),
-                document=conflict_doc,
-            )
-            message += f" Get the existing object by `{resolution_statement}`."
+            if (
+                resolution_signature
+                in UniqueConstraintResolutionSignature.get_existing_object_type()
+            ):
+                resolution_statement = UniqueConstraintResolutionSignature.get_resolution_statement(
+                    resolution_signature=resolution_signature,
+                    class_name=class_name or cls.to_class_name(),
+                    document=conflict_doc,
+                )
+                message += f" Get the existing object by `{resolution_statement}`."
+            if resolution_signature == UniqueConstraintResolutionSignature.RENAME:
+                message += (
+                    f' Please rename object (name: "{conflict_doc["name"]}") to something else.'
+                )
         return message
 
     @classmethod

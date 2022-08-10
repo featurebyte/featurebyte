@@ -41,7 +41,6 @@ def feature_name_space_dict_fixture():
         "name": "some_feature_name",
         "description": None,
         "version_ids": [version_id],
-        "versions": ["V220710"],
         "readiness": "DRAFT",
         "created_at": datetime.now(),
         "updated_at": datetime.now(),
@@ -71,7 +70,14 @@ def test_feature_model(snowflake_event_view, feature_model_dict):
     feature = feature_group["sum_30m"]
     feature_model_dict.pop("event_data_ids")
     assert (
-        feature.dict(exclude={"id": True, "event_data_ids": True, "tabular_source": True})
+        feature.dict(
+            exclude={
+                "id": True,
+                "event_data_ids": True,
+                "tabular_source": True,
+                "feature_namespace_id": True,
+            }
+        )
         == feature_model_dict
     )
     feature_json = feature.json(by_alias=True)

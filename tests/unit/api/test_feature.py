@@ -179,11 +179,14 @@ def test_feature_deserialization(
             "time_modulo_frequency": "5m",
         },
     )
-    same_float_feature_dict = feature_group["sum_1d"].dict(exclude={"id": True})
+    same_float_feature_dict = feature_group["sum_1d"].dict(
+        exclude={"id": True, "feature_namespace_id": True}
+    )
     tile_id2 = float_feature.graph.nodes["groupby_2"]["parameters"]["tile_id"]
     assert tile_id1 != tile_id2
     float_feature_dict.pop("_id")
     float_feature_dict.pop("feature_store")
+    float_feature_dict.pop("feature_namespace_id")
     assert float_feature_dict == same_float_feature_dict
 
 
@@ -346,7 +349,6 @@ def test_get_feature(saved_feature):
         > {
             "name": "sum_1d",
             "description": None,
-            "parent_id": None,
             "readiness": "DRAFT",
             "var_type": "FLOAT",
             "updated_at": None,

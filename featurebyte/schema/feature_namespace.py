@@ -7,12 +7,7 @@ from beanie import PydanticObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import (
-    DefaultVersionMode,
-    FeatureNamespaceModel,
-    FeatureReadiness,
-    FeatureVersionIdentifier,
-)
+from featurebyte.models.feature import DefaultVersionMode, FeatureNamespaceModel, FeatureReadiness
 from featurebyte.routes.common.schema import PaginationMixin
 
 
@@ -24,8 +19,7 @@ class FeatureNamespaceCreate(FeatureByteBaseModel):
     id: PydanticObjectId = Field(alias="_id")
     name: StrictStr
     description: Optional[StrictStr]
-    version_ids: List[PydanticObjectId]
-    versions: List[FeatureVersionIdentifier]
+    version_ids: List[PydanticObjectId] = Field(default_factory=list)
     readiness: FeatureReadiness
     default_version_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
@@ -37,3 +31,12 @@ class FeatureNamespaceList(PaginationMixin):
     """
 
     data: List[FeatureNamespaceModel]
+
+
+class FeatureNamespaceUpdate(FeatureByteBaseModel):
+    """
+    FeatureNamespace update schema
+    """
+
+    version_id: Optional[PydanticObjectId]
+    default_version_mode: Optional[DefaultVersionMode]

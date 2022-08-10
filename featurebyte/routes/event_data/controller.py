@@ -114,9 +114,12 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
             Invalid event data status transition
         """
         query_filter = {"_id": ObjectId(event_data_id), "user_id": user.id}
-        event_data = (
-            await cls.get(user=user, persistent=persistent, document_id=event_data_id)
-        ).dict(by_alias=True)
+        event_data = await cls.get_document(
+            user=user,
+            persistent=persistent,
+            collection_name=cls.collection_name,
+            document_id=event_data_id,
+        )
 
         # prepare update payload
         update_payload = data.dict()

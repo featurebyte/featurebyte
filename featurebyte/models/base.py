@@ -75,6 +75,7 @@ class UniqueConstraintResolutionSignature(str, Enum):
     GET_BY_ID = "get_by_id"
     GET_NAME = "get_name"
     GET_NAME_VERSION = "get_name_version"
+    RENAME = "rename"
 
     @staticmethod
     def _get_by_id(class_name: str, document: dict[str, Any]) -> str:
@@ -87,6 +88,13 @@ class UniqueConstraintResolutionSignature(str, Enum):
     @staticmethod
     def _get_name_version(class_name: str, document: dict[str, Any]) -> str:
         return f'{class_name}.get(name="{document["name"]}", version="{document["version"]}")'
+
+    @classmethod
+    def get_existing_object_type(cls):
+        """
+        Get existing object resolution type
+        """
+        return {cls.GET_BY_ID, cls.GET_NAME, cls.GET_NAME_VERSION}
 
     @classmethod
     def get_resolution_statement(
