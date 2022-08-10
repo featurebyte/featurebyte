@@ -53,7 +53,10 @@ class BaseApiTestSuite:
         """Post route success response object"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
+        id_before = self.payload["_id"]
         response = test_api_client.post(f"{self.base_route}", json=self.payload)
+        response_dict = response.json()
+        assert response_dict["_id"] == id_before
         return response
 
     def multiple_success_payload_generator(self, api_client):
@@ -74,6 +77,15 @@ class BaseApiTestSuite:
             assert response.status_code == HTTPStatus.CREATED
             output.append(response)
         return output
+
+    def test_create_201__without_specifying_id_field(self, test_api_client_persistent):
+        """Test creation (success) without specifying id field"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        payload = {key: value for key, value in self.payload.items() if key != "_id"}
+        assert "_id" not in payload
+        response = test_api_client.post(f"{self.base_route}", json=payload)
+        assert response.status_code == HTTPStatus.CREATED
 
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""

@@ -4,6 +4,7 @@ EventData API payload schema
 from typing import Dict, List, Optional
 
 from beanie import PydanticObjectId
+from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
@@ -17,7 +18,7 @@ class EventDataCreate(FeatureByteBaseModel):
     Event Data Creation Schema
     """
 
-    id: PydanticObjectId = Field(alias="_id")
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     tabular_source: TabularSource
     event_timestamp_column: StrictStr
