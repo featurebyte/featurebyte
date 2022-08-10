@@ -3,8 +3,6 @@ On-demand tile computation for feature preview
 """
 from __future__ import annotations
 
-from collections import defaultdict
-
 import pandas as pd
 from sqlglot import expressions, parse_one, select
 
@@ -15,11 +13,18 @@ from featurebyte.query_graph.sql import escape_column_name
 
 
 class OnDemandTileComputePlan:
+    """Responsible for generating SQL to compute tiles for preview purpose
+
+    Parameters
+    ----------
+    point_in_time : str
+        Point in time value specified when calling preview
+    """
+
     def __init__(self, point_in_time: str):
         self.point_in_time = point_in_time
         self.tile_sqls = {}
         self.prev_aliases = {}
-        self.all_aliases = defaultdict(list)
         self.processed_agg_ids = set()
 
     def process_node(self, graph: QueryGraph, node: Node) -> None:
@@ -48,6 +53,8 @@ class OnDemandTileComputePlan:
                 time_modulo_frequency=tile_info.time_modulo_frequency,
                 blind_spot=tile_info.blind_spot,
             )
+
+            # Build wide tile table by joining tile sqls with the same tile_table_id
             tile_table_id = tile_info.tile_table_id
             agg_id = tile_info.aggregation_id
             tile_sql_expr = parse_one(final_tile_sql)
@@ -57,7 +64,7 @@ class OnDemandTileComputePlan:
                 keys = [f"{agg_id}.{escape_column_name(key)}" for key in tile_info.entity_columns]
                 if tile_info.value_by_column is not None:
                     keys.append(f"{agg_id}.{escape_column_name(tile_info.value_by_column)}")
-                tile_sql = select(*keys, *tile_info.tile_value_columns).from_(
+                tile_sql = select(f"{agg_id}.INDEX", *keys, *tile_info.tile_value_columns).from_(
                     tile_sql_expr.subquery(alias=agg_id)
                 )
                 self.tile_sqls[tile_table_id] = tile_sql
@@ -66,6 +73,10 @@ class OnDemandTileComputePlan:
                 join_conditions = [f"{prev_alias}.INDEX = {agg_id}.INDEX"]
                 for key in tile_info.entity_columns:
                     join_conditions.append(f"{prev_alias}.{key} = {agg_id}.{key}")
+                # Tile sqls with the same tile_table_id should generate output with identical set of
+                # tile indices and entity columns (they are derived from the same event data using
+                # the same entity columns and feature job settings). Hence, any join_type will work
+                # and "inner" is used for simplicity.
                 self.tile_sqls[tile_table_id] = (
                     self.tile_sqls[tile_table_id]
                     .join(
@@ -76,25 +87,14 @@ class OnDemandTileComputePlan:
                     )
                     .select(*tile_info.tile_value_columns)
                 )
+
             self.prev_aliases[tile_table_id] = agg_id
-            self.all_aliases[tile_table_id].append(agg_id)
             self.processed_agg_ids.add(agg_id)
 
     def construct_on_demand_tile_ctes(self) -> list[tuple[str, str]]:
         cte_statements = []
         for tile_table_id, tile_sql_expr in self.tile_sqls.items():
-            tile_start_date_columns = []
-            for alias in self.all_aliases[tile_table_id]:
-                tile_start_date_columns.append(f"{alias}.INDEX")
-            if len(tile_start_date_columns) > 1:
-                tile_start_date_expr = expressions.Coalesce(
-                    this=tile_start_date_columns[0], expressions=tile_start_date_columns[1:]
-                )
-            else:
-                tile_start_date_expr = tile_start_date_columns[0]
-            tile_sql_expr = tile_sql_expr.select(expressions.alias_(tile_start_date_expr, "INDEX"))
             cte_statements.append((tile_table_id, tile_sql_expr.sql(pretty=True)))
-
         return cte_statements
 
 
