@@ -372,6 +372,13 @@ def test_frame__getattr__method(dataframe):
         # expect to throw attribute error rather than KeyError due to column not exists
         dataframe.random_attribute
 
+    # check that "columns" column is set properly
+    dataframe["columns"] = dataframe["CUST_ID"] + 1
+    assert isinstance(dataframe["columns"], Series)
+
+    # when accessing the `columns` attribute, make sure we don't retrieve a Series object
+    assert set(dataframe.columns) == {"CUST_ID", "PRODUCT_ACTION", "VALUE", "MASK", "columns"}
+
 
 def test_frame__autocompletion(dataframe):
     """

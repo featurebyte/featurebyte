@@ -1,11 +1,12 @@
 """
 OpsMixin class
 """
+# pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Protocol
 
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, PrivateAttr, StrictStr
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -148,16 +149,32 @@ class ParentMixin(BaseModel):
         self._parent = parent
 
 
-class TabCompletionMixin:
+class HasColumnVarTypeMap(Protocol):
     """
-    TabCompletionMixin contains methods to support tab completion for getattr & getitem
+    Class with column_var_type_map attribute / property
     """
 
-    # pylint: disable=too-few-public-methods
+    column_var_type_map: Dict[StrictStr, DBVarType]
 
-    def __dir__(self) -> Iterable[str]:
-        attrs = set(super().__dir__())
-        return attrs.union(getattr(self, "column_var_type_map", {}).keys())
 
-    def _ipython_key_completions_(self) -> set[str]:
-        return set(getattr(self, "column_var_type_map", {}).keys())
+class GetAttrMixin:
+    """
+    GetAttrMixin contains some helper methods to access column in a frame like object
+    """
+
+    def __dir__(self: HasColumnVarTypeMap) -> Iterable[str]:
+        # provide column name lookup and completion for __getattr__
+        attrs = set(object.__dir__(self))
+        return attrs.union(self.column_var_type_map)
+
+    def _ipython_key_completions_(self: HasColumnVarTypeMap) -> set[str]:
+        # provide column name lookup and completion for __getitem__
+        return set(self.column_var_type_map)
+
+    def __getattr__(self, item: str) -> Any:
+        try:
+            return object.__getattribute__(self, item)
+        except AttributeError as exc:
+            if item in self.column_var_type_map:
+                return self.__getitem__(item)
+            raise exc

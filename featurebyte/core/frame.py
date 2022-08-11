@@ -11,7 +11,7 @@ import pandas as pd
 from pydantic import StrictStr, root_validator
 
 from featurebyte.core.generic import QueryObject
-from featurebyte.core.mixin import OpsMixin, TabCompletionMixin
+from featurebyte.core.mixin import GetAttrMixin, OpsMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -63,7 +63,7 @@ class BaseFrame(QueryObject):
         return self._preview_sql(columns=self.columns, limit=limit)
 
 
-class Frame(BaseFrame, OpsMixin, TabCompletionMixin):
+class Frame(BaseFrame, OpsMixin, GetAttrMixin):
     """
     Implement operations to manipulate database table
     """
@@ -223,11 +223,6 @@ class Frame(BaseFrame, OpsMixin, TabCompletionMixin):
                 **self._getitem_frame_params,
             )
         raise TypeError(f"Frame indexing with value '{item}' is not supported!")
-
-    def __getattr__(self, item: str) -> Any:
-        if item in self.columns:
-            return self.__getitem__(item)
-        return object.__getattribute__(self, item)
 
     def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
         """
