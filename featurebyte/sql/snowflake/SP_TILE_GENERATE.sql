@@ -22,28 +22,11 @@ $$
 
     var debug = "Debug"
 
-    //check whether the tile registry record already exists
-    var result = snowflake.execute({sqlText: `SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '${TILE_ID}'`})
-    if (result.getRowCount() === 0) {
-        // no registry record exists, insert a new registry record
-        var tile_sql = SQL.replaceAll("'", "''")
-        var insert_sql = `
-            INSERT INTO TILE_REGISTRY (TILE_ID, TILE_SQL, ENTITY_COLUMN_NAMES, VALUE_COLUMN_NAMES, FREQUENCY_MINUTE, TIME_MODULO_FREQUENCY_SECOND, BLIND_SPOT_SECOND, IS_ENABLED)
-            VALUES ('${TILE_ID}', '${tile_sql}', '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', ${FREQUENCY_MINUTE}, ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, False)
-        `
-        snowflake.execute({sqlText: insert_sql})
-        debug = debug + " - inserted new tile registry record with " + insert_sql
-    }
-
-    //check whether tile table already exists
-    var tile_exist = true
-    try {
-        snowflake.execute({sqlText: `SELECT * FROM ${TILE_ID} LIMIT 1`})
-    } catch (err)  {
-        tile_exist = false
-    }
+    var tile_sql = SQL.replaceAll("'", "''")
+    var result = snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TILE_ID}', '${TILE_ID}')`})
+    result.next()
+    tile_exist = result.getColumnValue(1)
     debug = debug + " - tile_exist: " + tile_exist
-
 
     //replace SQL template with start and end date strings for tile generation sql
     var tile_sql = `
@@ -58,11 +41,7 @@ $$
 
         //feature tile table does not exist, create the table with the input tile sql
         var tile_create_sql = `create table ${TILE_ID} as ${tile_sql}`
-        snowflake.execute(
-            {
-                sqlText: tile_create_sql
-            }
-        )
+        snowflake.execute({sqlText: tile_create_sql})
         debug = debug + " - tile_create_sql: " + tile_create_sql
 
     } else {
@@ -100,11 +79,7 @@ $$
                     insert (INDEX, ${ENTITY_COLUMN_NAMES}, ${VALUE_COLUMN_NAMES}, CREATED_AT)
                         values (b.INDEX, ${entity_insert_cols_str}, ${value_insert_cols_str}, SYSDATE())
         `
-        snowflake.execute(
-            {
-                sqlText: tile_insert_sql
-            }
-        )
+        snowflake.execute({sqlText: tile_insert_sql})
         debug = debug + " - tile_insert_sql: " + tile_insert_sql
     }
 
