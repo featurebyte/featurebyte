@@ -54,12 +54,23 @@ def hash_node(
 
 
 def get_aggregation_identifier(transformations_hash: str, parameters: dict[str, Any]) -> str:
-    """Get tile table identifier that can be used as tile table name
+    """Get aggregation identifier that can be used to determine the column names in tile table
+
+    Aggregation identifier is determined by the combination of:
+    1) Entity columns
+    2) Category column specified in groupby
+    3) Feature job settings
+    4) EventView transformations
+
+    Technically aggregation identifier can only consider EventView transformations since factors 1)
+    to 3) are already considered as part of tile table identifier. But for ease of troubleshooting
+    and as an extra guardrail, aggregation identifier includes all of these factors. It is more
+    specific than the tile table identifier.
 
     Parameters
     ----------
     transformations_hash : str
-        Input node hash
+        A hash that uniquely identifies the applied EventView transformations
     parameters : dict[str, Any]
         Node parameters
 
@@ -109,8 +120,16 @@ def get_tile_table_identifier(
 ) -> str:
     """Get tile table identifier that can be used as tile table name
 
+    Tile table identifier is determined by the combination of:
+    1) Tabular source
+    2) Entity columns
+    3) Category column specified in groupby
+    4) Feature job settings
+
     Parameters
     ----------
+    table_details_dict : dict[str, Any]
+        Dict representation of the underlying TableDetails of the EventData
     parameters : dict[str, Any]
         Node parameters
 
@@ -121,7 +140,6 @@ def get_tile_table_identifier(
     # This should include factors that affect whether a tile table can be reused
     hash_components: list[Any] = []
 
-    # TODO: need to include entity identifier
     # Aggregation related parameters
     keys_params = [
         parameters["keys"],
