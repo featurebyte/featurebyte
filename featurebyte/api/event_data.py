@@ -14,6 +14,7 @@ from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.util import get_entity
 from featurebyte.config import Configurations, Credentials
+from featurebyte.core.mixin import GetAttrMixin
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordRetrievalException,
@@ -75,7 +76,7 @@ class EventDataColumn:
             raise RecordUpdateException(response)
 
 
-class EventData(EventDataModel, DatabaseTable, ApiObject):
+class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
     """
     EventData class
     """
@@ -187,11 +188,6 @@ class EventData(EventDataModel, DatabaseTable, ApiObject):
         if item not in self.column_var_type_map:
             raise KeyError(f'Column "{item}" does not exist!')
         return EventDataColumn(event_data=self, column_name=item)
-
-    def __getattr__(self, item: str) -> Any:
-        if item in self.column_var_type_map:
-            return self.__getitem__(item)
-        return object.__getattribute__(self, item)
 
     def info(self) -> dict[str, Any]:
         """

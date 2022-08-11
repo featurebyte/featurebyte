@@ -388,7 +388,11 @@ def feature_list_manager(snowflake_session):
 def event_data_fixture(config, snowflake_session, snowflake_feature_store, mock_config_path_env):
     """Fixture for an EventData in integration tests"""
     table_name = "TEST_TABLE"
-    assert table_name in snowflake_feature_store.list_tables(credentials=config.credentials)
+    assert table_name in snowflake_feature_store.list_tables(
+        database_name=snowflake_session.database,
+        schema_name=snowflake_session.sf_schema,
+        credentials=config.credentials,
+    )
 
     snowflake_database_table = snowflake_feature_store.get_table(
         database_name=snowflake_session.database,

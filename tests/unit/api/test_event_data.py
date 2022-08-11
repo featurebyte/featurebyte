@@ -77,6 +77,11 @@ def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
         record_creation_date_column="created_at",
         credentials=config.credentials,
     )
+
+    # check that event data columns for autocompletion
+    assert set(event_data.columns).issubset(dir(event_data))
+    assert event_data._ipython_key_completions_() == set(event_data.columns)
+
     event_data_dict["id"] = event_data.id
     assert event_data.dict() == event_data_dict
 
@@ -182,6 +187,26 @@ def test_event_data_column__not_exists(snowflake_event_data):
     with pytest.raises(AttributeError) as exc:
         _ = snowflake_event_data.non_exist_column
     assert "'EventData' object has no attribute 'non_exist_column'" in str(exc.value)
+
+    # check __getattr__ is working properly
+    assert isinstance(snowflake_event_data.col_int, EventDataColumn)
+
+    # add a key `columns` to `column_var_type_map` to pretend there is a column called `columns`
+    snowflake_event_data.column_var_type_map["columns"] = "whatever_type"
+
+    # when accessing the `columns` attribute, make sure we retrieve it properly
+    assert set(snowflake_event_data.columns) == {
+        "col_char",
+        "col_float",
+        "col_boolean",
+        "event_timestamp",
+        "col_text",
+        "created_at",
+        "columns",
+        "col_binary",
+        "col_int",
+        "cust_id",
+    }
 
 
 def test_event_data_column__as_entity(snowflake_event_data):
