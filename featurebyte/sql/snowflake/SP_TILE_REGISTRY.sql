@@ -33,7 +33,18 @@ $$
         snowflake.execute({sqlText: insert_sql})
         debug = debug + " - inserted new tile registry record with " + insert_sql
     } else {
-        snowflake.execute({sqlText: `UPDATE TILE_REGISTRY SET VALUE_COLUMN_NAMES = '${VALUE_COLUMN_NAMES}' WHERE TILE_ID = '${TILE_ID}'`})
+        result.next()
+
+        exist_value_columns = result.getColumnValue(1).split(",")
+        input_value_columns = VALUE_COLUMN_NAMES.split(",")
+        for (const [i, element] of input_value_columns.entries()) {
+            if (!exist_value_columns.includes(element)) {
+                exist_value_columns.push(element)
+            }
+        }
+        // there are new value columns - update tile registry
+        new_value_columns_str = exist_value_columns.join(",")
+        snowflake.execute({sqlText: `UPDATE TILE_REGISTRY SET VALUE_COLUMN_NAMES = '${new_value_columns_str}' WHERE TILE_ID = '${TILE_ID}'`})
     }
 
     //check whether tile table already exists and add new value columns for the tile or monitor table
