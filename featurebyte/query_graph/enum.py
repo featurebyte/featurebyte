@@ -40,6 +40,15 @@ class NodeType(str, Enum):
     ALIAS = "alias"
     IS_NULL = "is_null"
 
+    # string operation
+    LENGTH = "length"
+    TRIM = "trim"
+    REPLACE = "replace"
+    PAD = "pad"
+    STRCASE = "strcase"
+    STRCONTAINS = "strcontains"
+    SUBSTRING = "substring"
+
     # operations with side effect
     INPUT = "input"
 
