@@ -48,6 +48,7 @@ class NodeType(str, Enum):
     STRCASE = "strcase"
     STRCONTAINS = "strcontains"
     SUBSTRING = "substring"
+    CONCAT = "concat"
 
     # operations with side effect
     INPUT = "input"

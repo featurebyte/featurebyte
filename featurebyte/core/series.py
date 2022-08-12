@@ -292,14 +292,14 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin):
         return self._binary_relational_op(other, NodeType.GE)
 
     def _binary_arithmetic_op(
-        self, other: int | float | Series, node_type: NodeType, right_op: bool = False
+        self, other: int | float | str | Series, node_type: NodeType, right_op: bool = False
     ) -> Series:
         """
         Apply binary arithmetic operation between self & other objects
 
         Parameters
         ----------
-        other: int | float | Series
+        other: int | float | str | Series
             right value of the binary arithmetic operator
         node_type: NodeType
             binary arithmetic operator node type
@@ -338,10 +338,25 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin):
 
         raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
-    def __add__(self, other: int | float | Series) -> Series:
+    def __add__(self, other: int | float | str | Series) -> Series:
+        is_other_string_like = isinstance(other, str)
+        is_other_string_like |= isinstance(other, Series) and other.var_type in DBVarType.VARCHAR
+        if self.var_type == DBVarType.VARCHAR and is_other_string_like:
+            return self._binary_op(
+                other=other, node_type=NodeType.CONCAT, output_var_type=DBVarType.VARCHAR
+            )
         return self._binary_arithmetic_op(other, NodeType.ADD)
 
     def __radd__(self, other: int | float | Series) -> Series:
+        is_other_string_like = isinstance(other, str)
+        is_other_string_like |= isinstance(other, Series) and other.var_type in DBVarType.VARCHAR
+        if self.var_type == DBVarType.VARCHAR and is_other_string_like:
+            return self._binary_op(
+                other=other,
+                node_type=NodeType.CONCAT,
+                output_var_type=DBVarType.VARCHAR,
+                right_op=True,
+            )
         return self._binary_arithmetic_op(other, NodeType.ADD, right_op=True)
 
     def __sub__(self, other: int | float | Series) -> Series:

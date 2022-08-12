@@ -319,7 +319,10 @@ class BinaryOp(ExpressionNode):
         if self.operation == expressions.Div:
             # Make 0 divisor null to prevent division-by-zero error
             right_expr = parse_one(f"NULLIF({right_expr.sql()}, 0)")
-        op_expr = self.operation(this=self.left_node.sql, expression=right_expr)
+        if self.operation == fb_expressions.Concat:
+            op_expr = self.operation(expressions=[self.left_node.sql, right_expr])
+        else:
+            op_expr = self.operation(this=self.left_node.sql, expression=right_expr)
         return expressions.Paren(this=op_expr)
 
 
@@ -675,6 +678,7 @@ BINARY_OPERATION_NODE_TYPES = {
     NodeType.GE,
     NodeType.AND,
     NodeType.OR,
+    NodeType.CONCAT,
 }
 
 
@@ -736,6 +740,8 @@ def make_binary_operation_node(
         # Logical
         NodeType.AND: expressions.And,
         NodeType.OR: expressions.Or,
+        # String
+        NodeType.CONCAT: fb_expressions.Concat,
     }
     assert sorted(node_type_to_expression_cls.keys()) == sorted(BINARY_OPERATION_NODE_TYPES)
     expression_cls = node_type_to_expression_cls.get(node_type)

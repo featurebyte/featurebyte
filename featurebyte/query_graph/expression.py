@@ -48,3 +48,10 @@ class Contains(Func):
     """Contains function"""
 
     arg_types = {"this": True, "pattern": True}
+
+
+class Concat(Func):
+    """Concat function"""
+
+    arg_types = {"expressions": False}
+    is_var_len_args = True
