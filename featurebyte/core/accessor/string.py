@@ -51,6 +51,13 @@ class StringAccessor:
         return self.slice(start=item.start, stop=item.stop, step=item.step)
 
     def len(self) -> Series:
+        """
+        Compute len of the string for each row
+
+        Returns
+        -------
+        Series
+        """
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.LENGTH,
@@ -60,6 +67,13 @@ class StringAccessor:
         )
 
     def lower(self) -> Series:
+        """
+        Convert the string value into the lower case
+
+        Returns
+        -------
+        Series
+        """
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.STRCASE,
@@ -69,6 +83,13 @@ class StringAccessor:
         )
 
     def upper(self) -> Series:
+        """
+        Convert the string value into the upper case
+
+        Returns
+        -------
+        Series
+        """
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.STRCASE,
@@ -78,82 +99,184 @@ class StringAccessor:
         )
 
     def strip(self, to_strip: Optional[str] = None) -> Series:
-        to_strip = parse_obj_as(Optional[StrictStr], to_strip)
+        """
+        Trim the white space(s) on the left & right string boundaries
+
+        Parameters
+        ----------
+        to_strip: Optional[str]
+            Characters to remove, white space is used by default
+
+        Returns
+        -------
+        Series
+        """
+        char_to_strip: Optional[str] = parse_obj_as(Optional[StrictStr], to_strip)  # type: ignore
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.TRIM,
             output_var_type=DBVarType.VARCHAR,
-            node_params={"character": to_strip, "side": "both"},
+            node_params={"character": char_to_strip, "side": "both"},
             **self._obj.unary_op_series_params(),
         )
 
     def lstrip(self, to_strip: Optional[str] = None) -> Series:
-        to_strip = parse_obj_as(Optional[StrictStr], to_strip)
+        """
+        Trim the white space(s) on the left string boundaries
+
+        Parameters
+        ----------
+        to_strip: Optional[str]
+            Characters to remove, white space is used by default
+
+        Returns
+        -------
+        Series
+        """
+        char_to_strip: Optional[str] = parse_obj_as(Optional[StrictStr], to_strip)  # type: ignore
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.TRIM,
             output_var_type=DBVarType.VARCHAR,
-            node_params={"character": to_strip, "side": "left"},
+            node_params={"character": char_to_strip, "side": "left"},
             **self._obj.unary_op_series_params(),
         )
 
     def rstrip(self, to_strip: Optional[str] = None) -> Series:
-        to_strip = parse_obj_as(Optional[StrictStr], to_strip)
+        """
+        Trim the white space(s) on the right string boundaries
+
+        Parameters
+        ----------
+        to_strip: Optional[str]
+            Characters to remove, white space is used by default
+
+        Returns
+        -------
+        Series
+        """
+        char_to_strip: Optional[str] = parse_obj_as(Optional[StrictStr], to_strip)  # type: ignore
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.TRIM,
             output_var_type=DBVarType.VARCHAR,
-            node_params={"character": to_strip, "side": "right"},
+            node_params={"character": char_to_strip, "side": "right"},
             **self._obj.unary_op_series_params(),
         )
 
     def replace(self, pat: str, repl: str) -> Series:
-        pat = parse_obj_as(StrictStr, pat)
-        repl = parse_obj_as(StrictStr, repl)
+        """
+        Replace the substring within the original string
+
+        Parameters
+        ----------
+        pat: str
+            Substring to match
+        repl: str
+            Replacement string
+
+        Returns
+        -------
+        Series
+        """
+        pattern: str = parse_obj_as(StrictStr, pat)
+        replacement: str = parse_obj_as(StrictStr, repl)
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.REPLACE,
             output_var_type=DBVarType.VARCHAR,
-            node_params={"pattern": pat, "replacement": repl},
+            node_params={"pattern": pattern, "replacement": replacement},
             **self._obj.unary_op_series_params(),
         )
 
-    def pad(self, width: int, side: Side = "left", fillchar: str = " "):
-        width = parse_obj_as(StrictInt, width)
-        side = parse_obj_as(Side, side)
-        fillchar = parse_obj_as(StrictStr, fillchar)
+    def pad(self, width: int, side: Side = "left", fillchar: str = " ") -> Series:
+        """
+        Pad the string up to the specified width size
+
+        Parameters
+        ----------
+        width: int
+            Minimum width of resulting string, additional characters will be filled with `fillchar`
+        side: Side
+            Padding direction
+        fillchar: str
+            Character used to pad
+
+        Returns
+        -------
+        Series
+        """
+        width_size: int = parse_obj_as(StrictInt, width)
+        pad_side: Side = parse_obj_as(Side, side)  # type: ignore
+        filled_char: str = parse_obj_as(StrictStr, fillchar)
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.PAD,
             output_var_type=DBVarType.VARCHAR,
-            node_params={"side": side, "length": width, "pad": fillchar},
+            node_params={"side": pad_side, "length": width_size, "pad": filled_char},
             **self._obj.unary_op_series_params(),
         )
 
-    def contains(self, pat: str, case: bool = True):
-        pat = parse_obj_as(StrictStr, pat)
-        case = True if case else False
+    def contains(self, pat: str, case: bool = True) -> Series:
+        """
+        Compute a boolean flag where each value is a result of test whether the substring is inside the value
+
+        Parameters
+        ----------
+        pat: str
+            Substring pattern
+        case: bool
+            Whether the check is case-sensitive or not
+
+        Returns
+        -------
+        Series
+        """
+        pattern: str = parse_obj_as(StrictStr, pat)
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.STRCONTAINS,
             output_var_type=DBVarType.BOOL,
-            node_params={"pattern": pat, "case": case},
+            node_params={"pattern": pattern, "case": bool(case)},
             **self._obj.unary_op_series_params(),
         )
 
-    def slice(self, start=None, stop=None, step=None) -> Series:
-        start = parse_obj_as(Optional[StrictInt], start)
-        stop = parse_obj_as(Optional[StrictInt], stop)
-        step = parse_obj_as(Optional[StrictInt], step)
-        if step is not None and step != 1:
+    def slice(
+        self, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None
+    ) -> Series:
+        """
+        Slice substring from each element in the series
+
+        Parameters
+        ----------
+        start: Optional[int]
+            Starting position for slice operation
+        stop: Optional[int]
+            Ending position for slice operation
+        step: Optional[int]
+            Step size for slice operation (only size 1 is supported)
+
+        Returns
+        -------
+        Series
+
+        Raises
+        ------
+        ValueError
+            When the step size is neither None nor 1
+        """
+        start_pos: Optional[int] = parse_obj_as(Optional[StrictInt], start)  # type: ignore
+        stop_pos: Optional[int] = parse_obj_as(Optional[StrictInt], stop)  # type: ignore
+        step_size: Optional[int] = parse_obj_as(Optional[StrictInt], step)  # type: ignore
+        if step_size is not None and step_size != 1:
             raise ValueError("Can only use step size equals to 1.")
 
-        start = start or 0
-        length = stop - start if stop else None
+        start_pos = start_pos or 0
+        length = None if stop_pos is None else stop_pos - start_pos
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.SUBSTRING,
             output_var_type=DBVarType.VARCHAR,
-            node_params={"start": start, "length": length},
+            node_params={"start": start_pos, "length": length},
             **self._obj.unary_op_series_params(),
         )

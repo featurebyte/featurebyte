@@ -3,9 +3,9 @@ This module contains the list of SQL operations to be used by the Query Graph In
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Type
+from typing import Any, Literal, Optional
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,too-many-lines
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
@@ -467,11 +467,10 @@ class StringContains(ExpressionNode):
                 this=self.expr.sql,
                 pattern=make_literal_value(self.pattern),
             )
-        else:
-            return fb_expressions.Contains(
-                this=expressions.Lower(this=self.expr.sql),
-                pattern=expressions.Lower(this=make_literal_value(self.pattern)),
-            )
+        return fb_expressions.Contains(
+            this=expressions.Lower(this=self.expr.sql),
+            pattern=expressions.Lower(this=make_literal_value(self.pattern)),
+        )
 
 
 @dataclass
@@ -493,8 +492,7 @@ class TrimNode(ExpressionNode):
             return expression_class(
                 this=self.expr.sql, character=make_literal_value(self.character)
             )
-        else:
-            return expression_class(this=self.expr.sql)
+        return expression_class(this=self.expr.sql)
 
 
 @dataclass
@@ -529,7 +527,7 @@ class PadNode(ExpressionNode):
         target_length_expr: Expression,
         side: Literal["left", "right"],
         pad_char: str,
-    ):
+    ) -> Expression:
         pad_char_expr = make_literal_value(pad_char)
         if side == "left":
             return fb_expressions.LPad(
@@ -537,12 +535,11 @@ class PadNode(ExpressionNode):
                 length=target_length_expr,
                 pad=pad_char_expr,
             )
-        else:
-            return fb_expressions.RPad(
-                this=str_column_expr,
-                length=target_length_expr,
-                pad=pad_char_expr,
-            )
+        return fb_expressions.RPad(
+            this=str_column_expr,
+            length=target_length_expr,
+            pad=pad_char_expr,
+        )
 
     @property
     def sql(self) -> Expression:
@@ -553,7 +550,7 @@ class PadNode(ExpressionNode):
             pad_expr = self._generate_pad_expression(
                 str_column_expr=self.expr.sql,
                 target_length_expr=make_literal_value(self.length),
-                side=self.side,
+                side=self.side,  # type: ignore
                 pad_char=self.pad,
             )
         else:
@@ -1073,6 +1070,7 @@ def make_expression_node(
     input_expr_node = input_sql_nodes[0]
     assert isinstance(input_expr_node, ExpressionNode)
     table_node = input_expr_node.table_node
+    sql_node: ExpressionNode
     if node_type == NodeType.IS_NULL:
         sql_node = IsNullNode(table_node=table_node, expr=input_expr_node)
     elif node_type == NodeType.LENGTH:

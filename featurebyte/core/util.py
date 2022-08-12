@@ -26,7 +26,7 @@ def series_unary_operation(
 
     Parameters
     ----------
-    input_series : Series
+    input_series : SeriesT
         Series like input object
     node_type : NodeType
         Output node type
@@ -39,7 +39,7 @@ def series_unary_operation(
 
     Returns
     -------
-    Series
+    SeriesT
     """
     node = input_series.graph.add_operation(
         node_type=node_type,

@@ -65,6 +65,13 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin):
         return {}
 
     def unary_op_series_params(self) -> dict[str, Any]:
+        """
+        Additional parameters that will be passed to unary operation output constructor
+
+        Returns
+        -------
+        dict[str, Any]
+        """
         return {}
 
     @staticmethod
