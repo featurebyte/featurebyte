@@ -39,6 +39,12 @@ $$
     existing_value_columns = result.getColumnValue(1)
     debug = debug + " - existing_value_columns: " + existing_value_columns
 
+    if (existing_value_columns === "") {
+        // all are new value columns
+        debug = debug + " - all value columns are new: " + VALUE_COLUMN_NAMES
+        return debug
+    }
+
     entity_filter_cols = []
     for (const [i, element] of ENTITY_COLUMN_NAMES.split(",").entries()) {
         entity_filter_cols.push("a." + element + " = b."+ element)
