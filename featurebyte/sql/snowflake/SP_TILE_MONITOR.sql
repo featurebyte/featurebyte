@@ -20,19 +20,24 @@ $$
 
     var debug = "Debug"
 
-    var table_exist = true
+    var tile_exist = "Y"
     try {
         snowflake.execute({sqlText: `SELECT * FROM ${TILE_ID} LIMIT 1`})
     } catch (err)  {
-        table_exist = false
+        tile_exist = "N"
     }
-    debug = debug + " - online_tile_table_exist: " + table_exist
+    debug = debug + " - online_tile_table_exist: " + tile_exist
 
-
-    if (table_exist === false) {
+    if (tile_exist === "N") {
         // first-time execution that online tile table does not exist yet
         return debug
     }
+
+    var tile_sql = MONITOR_SQL.replaceAll("'", "''")
+    var result = snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TILE_ID}', '${TILE_ID}', 'Y')`})
+    result.next()
+    existing_value_columns = result.getColumnValue(1)
+    debug = debug + " - existing_value_columns: " + existing_value_columns
 
     entity_filter_cols = []
     for (const [i, element] of ENTITY_COLUMN_NAMES.split(",").entries()) {
@@ -42,7 +47,7 @@ $$
 
     value_filter_cols = []
     value_select_cols = []
-    for (const [i, element] of VALUE_COLUMN_NAMES.split(",").entries()) {
+    for (const [i, element] of existing_value_columns.split(",").entries()) {
         value_filter_cols.push(element + " != OLD_"+ element)
         value_filter_cols.push("(" + element + " IS NOT NULL AND OLD_" + element + " IS NULL)")
         value_select_cols.push("b." + element + " as OLD_" + element)
@@ -56,7 +61,7 @@ $$
         select
             ${TILE_START_DATE_COLUMN},
             F_TIMESTAMP_TO_INDEX(${TILE_START_DATE_COLUMN}, ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}) as INDEX,
-            ${ENTITY_COLUMN_NAMES}, ${VALUE_COLUMN_NAMES}
+            ${ENTITY_COLUMN_NAMES}, ${existing_value_columns}
         from (${MONITOR_SQL})
     `
 
@@ -77,19 +82,15 @@ $$
     debug = debug + " - compare_sql: " + compare_sql
 
     var monitor_table_name = TILE_ID + '_MONITOR'
-    table_exist = true
+    table_exist = "Y"
     try {
         snowflake.execute({sqlText: `SELECT * FROM ${monitor_table_name} LIMIT 1`})
     } catch (err)  {
-        table_exist = false
+        table_exist = "N"
     }
     debug = debug + " - monitor_table_exist: " + table_exist
 
-
-    var tile_sql = MONITOR_SQL.replaceAll("'", "''")
-    snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TILE_ID}', '${TILE_ID}')`})
-
-    if (table_exist === false) {
+    if (table_exist === "N") {
         // monitor table not exists, create table with new records
         var create_sql = `create table ${monitor_table_name} as ${compare_sql}`
         snowflake.execute({sqlText: create_sql})
@@ -97,12 +98,12 @@ $$
 
     } else {
 
-        snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TILE_ID}', '${monitor_table_name}')`})
+        snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TILE_ID}', '${monitor_table_name}', 'Y')`})
 
         // monitor table already exists, insert new records
         var insert_sql = `
             insert into ${monitor_table_name}
-                (${TILE_START_DATE_COLUMN}, INDEX, ${ENTITY_COLUMN_NAMES}, ${VALUE_COLUMN_NAMES}, EXPECTED_CREATED_AT, CREATED_AT)
+                (${TILE_START_DATE_COLUMN}, INDEX, ${ENTITY_COLUMN_NAMES}, ${existing_value_columns}, EXPECTED_CREATED_AT, CREATED_AT)
                 ${compare_sql}
         `
         snowflake.execute({sqlText: insert_sql})

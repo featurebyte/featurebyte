@@ -21,15 +21,19 @@ $$
     */
 
     var debug = "Debug"
+    var tile_exist = "Y"
+    try {
+        snowflake.execute({sqlText: `SELECT * FROM ${TILE_ID} LIMIT 1`})
+    } catch (err)  {
+        tile_exist = "N"
+    }
+    debug = debug + " - tile_exist: " + tile_exist + " - " + `SELECT * FROM ${TILE_ID} LIMIT 1`
 
     var tile_sql = SQL.replaceAll("'", "''")
-    var result = snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TILE_ID}', '${TILE_ID}')`})
-    result.next()
-    tile_exist = result.getColumnValue(1)
-    debug = debug + " - tile_exist: " + tile_exist
+    snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TILE_ID}', '${TILE_ID}', '${tile_exist}')`})
 
     //replace SQL template with start and end date strings for tile generation sql
-    var tile_sql = `
+    tile_sql = `
         select
             F_TIMESTAMP_TO_INDEX(${TILE_START_DATE_COLUMN}, ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}) as INDEX,
             ${ENTITY_COLUMN_NAMES}, ${VALUE_COLUMN_NAMES},
@@ -37,7 +41,7 @@ $$
         from (${SQL})
     `
 
-    if (tile_exist === false) {
+    if (tile_exist === "N") {
 
         //feature tile table does not exist, create the table with the input tile sql
         var tile_create_sql = `create table ${TILE_ID} as ${tile_sql}`
