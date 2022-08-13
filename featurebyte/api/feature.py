@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 import time
 from http import HTTPStatus
@@ -18,10 +18,24 @@ from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumns
 from featurebyte.core.series import Series
 from featurebyte.enum import SpecialColumnName
 from featurebyte.logger import logger
-from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature import (
+    DefaultVersionMode,
+    FeatureModel,
+    FeatureNamespaceModel,
+    FeatureReadiness,
+)
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 from featurebyte.schema.feature import FeatureCreate
+
+
+class FeatureNamespace(FeatureNamespaceModel, ApiObject):
+    """
+    FeatureNamespace class
+    """
+
+    # class variables
+    _route = "/feature_namespace"
 
 
 class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
@@ -155,6 +169,50 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
         set[str]
         """
         return set(self.entity_identifiers)
+
+    @property
+    def feature_namespace(self) -> FeatureNamespace:
+        """
+
+        Returns
+        -------
+
+        """
+        feature_namespace = FeatureNamespace.get_by_id(id=self.feature_namespace_id)
+        return cast(FeatureNamespace, feature_namespace)
+
+    @property
+    def is_default(self) -> bool:
+        """
+        Check whether current feature version is the default one or not
+
+        Returns
+        -------
+        bool
+        """
+        return self.id == self.feature_namespace.default_version_id
+
+    @property
+    def default_version_mode(self) -> DefaultVersionMode:
+        """
+        Retrieve default version mode of current feature namespace
+
+        Returns
+        -------
+        DefaultVersionMode
+        """
+        return self.feature_namespace.default_version_mode
+
+    @property
+    def default_readiness(self) -> FeatureReadiness:
+        """
+        Feature readiness of the default feature version
+
+        Returns
+        -------
+        FeatureReadiness
+        """
+        return self.feature_namespace.readiness
 
     def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
