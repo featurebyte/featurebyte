@@ -3,12 +3,13 @@ Frame class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import copy
 
 import pandas as pd
 from pydantic import StrictStr, root_validator
+from typeguard import typechecked
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import GetAttrMixin, OpsMixin
@@ -47,6 +48,7 @@ class BaseFrame(QueryObject):
         """
         return list(self.column_var_type_map)
 
+    @typechecked
     def preview_sql(self, limit: int = 10) -> str:
         """
         Generate SQL query to preview the transformed table
@@ -116,7 +118,8 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             if not_found_columns:
                 raise KeyError(f"Columns {not_found_columns} not found!")
 
-    def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
+    @typechecked
+    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, Frame]:
         """
         Extract column or perform row filtering on the table
 
@@ -154,11 +157,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         -------
         Series | Frame
             output of the operation
-
-        Raises
-        ------
-        TypeError
-            When the item type does not support
         """
         self._check_any_missing_column(item)
 
@@ -182,7 +180,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             )
             output.set_parent(self)
             return output
-        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
+        if isinstance(item, list):
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
                 node_params={"columns": item},
@@ -206,25 +204,25 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 row_index_lineage=self.row_index_lineage,
                 **self._getitem_frame_params,
             )
-        if isinstance(item, Series):
-            node = self._add_filter_operation(
-                item=self, mask=item, node_output_type=NodeOutputType.FRAME
-            )
-            column_lineage_map = {}
-            for col, lineage in self.column_lineage_map.items():
-                column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
-            return type(self)(
-                feature_store=self.feature_store,
-                tabular_source=self.tabular_source,
-                node=node,
-                column_var_type_map=copy.deepcopy(self.column_var_type_map),
-                column_lineage_map=column_lineage_map,
-                row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
-                **self._getitem_frame_params,
-            )
-        raise TypeError(f"Frame indexing with value '{item}' is not supported!")
+        # item must be Series type
+        node = self._add_filter_operation(
+            item=self, mask=item, node_output_type=NodeOutputType.FRAME
+        )
+        column_lineage_map = {}
+        for col, lineage in self.column_lineage_map.items():
+            column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
+        return type(self)(
+            feature_store=self.feature_store,
+            tabular_source=self.tabular_source,
+            node=node,
+            column_var_type_map=copy.deepcopy(self.column_var_type_map),
+            column_lineage_map=column_lineage_map,
+            row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+            **self._getitem_frame_params,
+        )
 
-    def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
+    @typechecked
+    def __setitem__(self, key: str, value: Union[int, float, str, bool, Series]) -> None:
         """
         Assign a scalar value or Series object of the same `var_type` to the `Frame` object
 
@@ -239,21 +237,8 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         ------
         ValueError
             when the row indices between the Frame object & value object are not aligned
-        TypeError
-            when the key type & value type combination is not supported
         """
-        if isinstance(key, str) and self.is_supported_scalar_pytype(value):
-            self.node = self.graph.add_operation(
-                node_type=NodeType.ASSIGN,
-                node_params={"value": value, "name": key},
-                node_output_type=NodeOutputType.FRAME,
-                input_nodes=[self.node],
-            )
-            self.column_var_type_map[key] = self.pytype_dbtype_map[type(value)]
-            self.column_lineage_map[key] = self._append_to_lineage(
-                self.column_lineage_map.get(key, tuple()), self.node.name
-            )
-        elif isinstance(key, str) and isinstance(value, Series):
+        if isinstance(value, Series):
             if self.row_index_lineage != value.row_index_lineage:
                 raise ValueError(f"Row indices between '{self}' and '{value}' are not aligned!")
             self.node = self.graph.add_operation(
@@ -267,7 +252,16 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 self.column_lineage_map.get(key, tuple()), self.node.name
             )
         else:
-            raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
+            self.node = self.graph.add_operation(
+                node_type=NodeType.ASSIGN,
+                node_params={"value": value, "name": key},
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=[self.node],
+            )
+            self.column_var_type_map[key] = self.pytype_dbtype_map[type(value)]
+            self.column_lineage_map[key] = self._append_to_lineage(
+                self.column_lineage_map.get(key, tuple()), self.node.name
+            )
 
     @root_validator()
     @classmethod

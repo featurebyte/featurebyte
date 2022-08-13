@@ -3,13 +3,14 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, TypeVar
 
 import json
 from abc import abstractmethod
 
 import pandas as pd
 from pydantic import Field, StrictStr
+from typeguard import typechecked
 
 from featurebyte.config import Configurations, Credentials
 from featurebyte.models.base import FeatureByteBaseModel
@@ -95,6 +96,7 @@ class QueryObject(FeatureByteBaseModel):
             node_name=self.node.name, num_rows=limit
         )
 
+    @typechecked
     def preview_sql(self, limit: int = 10) -> str:
         """
         Generate SQL query to preview the transformation output
@@ -110,7 +112,8 @@ class QueryObject(FeatureByteBaseModel):
         """
         return self._preview_sql(columns=[], limit=limit)
 
-    def preview(self, limit: int = 10, credentials: Credentials | None = None) -> pd.DataFrame:
+    @typechecked
+    def preview(self, limit: int = 10, credentials: Optional[Credentials] = None) -> pd.DataFrame:
         """
         Preview transformed table/column partial output
 

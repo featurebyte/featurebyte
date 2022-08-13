@@ -39,22 +39,6 @@ class OpsMixin:
             str: DBVarType.VARCHAR,
         }
 
-    def is_supported_scalar_pytype(self, item: Any) -> bool:
-        """
-        Check whether the input item is from the supported scalar types
-
-        Parameters
-        ----------
-        item: Any
-            input item
-
-        Returns
-        -------
-        bool
-            whether the specified item is from the supported scalar types
-        """
-        return isinstance(item, tuple(self.pytype_dbtype_map))
-
     @staticmethod
     def _add_filter_operation(
         item: Frame | Series, mask: Series, node_output_type: NodeOutputType
