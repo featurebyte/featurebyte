@@ -21,6 +21,57 @@ class BaseApiTestSuite:
     payload = None
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
+    list_unprocessable_params_expected_detail_pairs = [
+        (
+            {"page_size": 0},
+            [
+                {
+                    "loc": ["query", "page_size"],
+                    "msg": "ensure this value is greater than 0",
+                    "type": "value_error.number.not_gt",
+                    "ctx": {"limit_value": 0},
+                },
+            ],
+        ),
+        (
+            {"page_size": "abcd"},
+            [
+                {
+                    "loc": ["query", "page_size"],
+                    "msg": "value is not a valid integer",
+                    "type": "type_error.integer",
+                },
+            ],
+        ),
+        (
+            {"sort_by": "", "search": ""},
+            [
+                {
+                    "loc": ["query", "sort_by"],
+                    "msg": "ensure this value has at least 1 characters",
+                    "type": "value_error.any_str.min_length",
+                    "ctx": {"limit_value": 1},
+                },
+                {
+                    "loc": ["query", "search"],
+                    "msg": "ensure this value has at least 1 characters",
+                    "type": "value_error.any_str.min_length",
+                    "ctx": {"limit_value": 1},
+                },
+            ],
+        ),
+        (
+            {"sort_dir": "abcd"},
+            [
+                {
+                    "loc": ["query", "sort_dir"],
+                    "msg": 'string does not match regex "^(asc|desc)$"',
+                    "type": "value_error.str.regex",
+                    "ctx": {"pattern": "^(asc|desc)$"},
+                }
+            ],
+        ),
+    ]
     not_found_save_suggestion = True
 
     @staticmethod
@@ -42,6 +93,12 @@ class BaseApiTestSuite:
             metafunc.parametrize(
                 "create_unprocessable_payload_expected_detail",
                 self.create_unprocessable_payload_expected_detail_pairs,
+            )
+
+        if "list_unprocessable_params_expected_detail" in metafunc.fixturenames:
+            metafunc.parametrize(
+                "list_unprocessable_params_expected_detail",
+                self.list_unprocessable_params_expected_detail_pairs,
             )
 
     def setup_creation_route(self, api_client):
@@ -131,10 +188,10 @@ class BaseApiTestSuite:
         """Test creation (unprocessable entity)"""
         _ = create_success_response
         test_api_client, _ = test_api_client_persistent
-        unprocessable_payload, expected_message = create_unprocessable_payload_expected_detail
+        unprocessable_payload, expected_detail = create_unprocessable_payload_expected_detail
         response = test_api_client.post(f"{self.base_route}", json=unprocessable_payload)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == expected_message
+        assert response.json()["detail"] == expected_detail
 
     def test_get_200(self, test_api_client_persistent, create_success_response, user_id):
         """Test get (success)"""
@@ -201,6 +258,13 @@ class BaseApiTestSuite:
         response_with_params_names = [elem["name"] for elem in response_with_params_dict["data"]]
         assert response_with_params_names == [f"{payload_name}_2"]
 
+        # test sort_by with some random unknown column name
+        # should not throw error, just that the sort_by param has no real effect since column not found
+        response_with_params = test_api_client.get(
+            f"{self.base_route}", params={"sort_by": "random_name"}
+        )
+        assert response_with_params.status_code == HTTPStatus.OK
+
         # test name parameter
         response_with_params = test_api_client.get(
             f"{self.base_route}", params={"name": f"{payload_name}_1"}
@@ -208,6 +272,41 @@ class BaseApiTestSuite:
         assert response_with_params.status_code == HTTPStatus.OK
         response_with_params_names = [elem["name"] for elem in response_with_params.json()["data"]]
         assert response_with_params_names == [f"{payload_name}_1"]
+
+    def test_list_422(
+        self,
+        test_api_client_persistent,
+        create_multiple_success_responses,
+        list_unprocessable_params_expected_detail,
+    ):
+        """Test list (unprocessable)"""
+        test_api_client, _ = test_api_client_persistent
+        _ = create_multiple_success_responses
+        unprocessable_params, expected_detail = list_unprocessable_params_expected_detail
+        response = test_api_client.get(f"{self.base_route}", params=unprocessable_params)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == expected_detail
+
+    def test_list_audit_422(
+        self,
+        test_api_client_persistent,
+        create_multiple_success_responses,
+        list_unprocessable_params_expected_detail,
+    ):
+        """Test list audit (unprocessable)"""
+        test_api_client, _ = test_api_client_persistent
+        _ = create_multiple_success_responses
+        unprocessable_params, expected_detail = list_unprocessable_params_expected_detail
+        response = test_api_client.get(
+            f"{self.base_route}/audit/{ObjectId()}", params=unprocessable_params
+        )
+        try:
+            assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+            assert response.json()["detail"] == expected_detail
+        except:
+            import pdb
+
+            pdb.set_trace()
 
     def test_list_501(self, test_api_client_persistent, create_success_response):
         """Test list (not implemented)"""

@@ -3,12 +3,12 @@ FeatureStore API routes
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Optional
 
 from http import HTTPStatus
 
 from beanie import PydanticObjectId
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
@@ -50,12 +50,12 @@ async def get_feature_store(
 @router.get("", response_model=FeatureStoreList)
 async def list_feature_stores(
     request: Request,
-    page: int = 1,
-    page_size: int = 10,
-    sort_by: Optional[str] = "created_at",
-    sort_dir: Literal["asc", "desc"] = "desc",
-    search: Optional[str] = None,
-    name: Optional[str] = None,
+    page: int = Query(default=1, gt=0),
+    page_size: int = Query(default=10, gt=0),
+    sort_by: Optional[str] = Query(default="created_at", min_length=1, max_length=255),
+    sort_dir: Optional[str] = Query(default="desc", regex="^(asc|desc)$"),
+    search: Optional[str] = Query(default=None, min_length=1, max_length=255),
+    name: Optional[str] = Query(default=None, min_length=1, max_length=255),
 ) -> FeatureStoreList:
     """
     List FeatureStore
@@ -77,11 +77,11 @@ async def list_feature_stores(
 async def list_feature_store_audit_logs(
     request: Request,
     feature_store_id: PydanticObjectId,
-    page: int = 1,
-    page_size: int = 10,
-    sort_by: Optional[str] = "_id",
-    sort_dir: Literal["asc", "desc"] = "desc",
-    search: Optional[str] = None,
+    page: int = Query(default=1, gt=0),
+    page_size: int = Query(default=10, gt=0),
+    sort_by: Optional[str] = Query(default="_id", min_length=1, max_length=255),
+    sort_dir: Optional[str] = Query(default="desc", regex="^(asc|desc)$"),
+    search: Optional[str] = Query(default=None, min_length=1, max_length=255),
 ) -> AuditDocumentList:
     """
     List Feature Store audit logs

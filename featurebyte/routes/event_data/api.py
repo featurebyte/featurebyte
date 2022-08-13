@@ -3,12 +3,12 @@ EventData API routes
 """
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 from http import HTTPStatus
 
 from beanie import PydanticObjectId
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 
 from featurebyte.models.event_data import EventDataModel, FeatureJobSettingHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
@@ -34,12 +34,12 @@ async def create_event_data(
 @router.get("", response_model=EventDataList)
 async def list_event_data(
     request: Request,
-    page: int = 1,
-    page_size: int = 10,
-    sort_by: Optional[str] = "created_at",
-    sort_dir: Literal["asc", "desc"] = "desc",
-    search: Optional[str] = None,
-    name: Optional[str] = None,
+    page: int = Query(default=1, gt=0),
+    page_size: int = Query(default=10, gt=0),
+    sort_by: Optional[str] = Query(default="created_at", min_length=1, max_length=255),
+    sort_dir: Optional[str] = Query(default="desc", regex="^(asc|desc)$"),
+    search: Optional[str] = Query(default=None, min_length=1, max_length=255),
+    name: Optional[str] = Query(default=None, min_length=1, max_length=255),
 ) -> EventDataList:
     """
     List Event Datas
@@ -95,11 +95,11 @@ async def update_event_data(
 async def list_event_data_audit_logs(
     request: Request,
     event_data_id: PydanticObjectId,
-    page: int = 1,
-    page_size: int = 10,
-    sort_by: Optional[str] = "_id",
-    sort_dir: Literal["asc", "desc"] = "desc",
-    search: Optional[str] = None,
+    page: int = Query(default=1, gt=0),
+    page_size: int = Query(default=10, gt=0),
+    sort_by: Optional[str] = Query(default="_id", min_length=1, max_length=255),
+    sort_dir: Optional[str] = Query(default="desc", regex="^(asc|desc)$"),
+    search: Optional[str] = Query(default=None, min_length=1, max_length=255),
 ) -> AuditDocumentList:
     """
     List Event Data audit logs
