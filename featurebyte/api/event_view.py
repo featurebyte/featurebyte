@@ -71,7 +71,7 @@ class EventViewColumn(Series):
 
         Parameters
         ----------
-        entity_name: str | None
+        entity_name: Optional[str]
             Associate column name to the entity, remove association if entity name is None
         """
         self._validate_series_to_set_parent_attribute()
@@ -167,8 +167,8 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         """
         return {self.timestamp_column}
 
-    @typechecked
     @classmethod
+    @typechecked
     def from_event_data(cls, event_data: EventData) -> EventView:
         """
         Construct an EventView object using session object
@@ -251,9 +251,9 @@ class EventView(ProtectedColumnsQueryObject, Frame):
 
         Parameters
         ----------
-        by_keys: str | list[str]
+        by_keys: Union[str, List[str]]
             Define the key (entity) to for the `groupby` operation
-        category : str | None
+        category : Optional[str]
             Optional category parameter to enable aggregation per category. It should be a column
             name in the EventView.
 

@@ -86,7 +86,7 @@ def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
     assert event_data.dict() == event_data_dict
 
     # user input validation
-    with pytest.raises(ValidationError) as exc:
+    with pytest.raises(TypeError) as exc:
         EventData.from_tabular_source(
             tabular_source=snowflake_database_table,
             name=123,
@@ -94,16 +94,7 @@ def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
             record_creation_date_column=345,
             credentials=config.credentials,
         )
-
-    assert exc.value.errors() == [
-        {"loc": ("name",), "msg": "str type expected", "type": "type_error.str"},
-        {"loc": ("event_timestamp_column",), "msg": "str type expected", "type": "type_error.str"},
-        {
-            "loc": ("record_creation_date_column",),
-            "msg": "str type expected",
-            "type": "type_error.str",
-        },
-    ]
+    assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
 
 def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_database_table, config):

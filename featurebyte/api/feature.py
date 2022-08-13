@@ -201,10 +201,10 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
 
         Parameters
         ----------
-        point_in_time_and_serving_name : dict
+        point_in_time_and_serving_name : Dict[str, Any]
             Dictionary consisting the point in time and serving names based on which the feature
             preview will be computed
-        credentials: Credentials | None
+        credentials: Optional[Credentials]
             credentials to create a database session
 
         Returns

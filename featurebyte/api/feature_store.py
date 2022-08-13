@@ -38,7 +38,7 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
 
         Parameters
         ----------
-        credentials: Credentials
+        credentials: Optional[Credentials]
             configuration contains data source settings & credentials
 
         Returns
@@ -56,9 +56,9 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
 
         Parameters
         ----------
-        database_name: str | None
+        database_name: Optional[str]
             Database name
-        credentials: Credentials
+        credentials: Optional[Credentials]
             configuration contains data source settings & credentials
 
 
@@ -80,11 +80,11 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
 
         Parameters
         ----------
-        database_name: str | None
+        database_name: Optional[str]
             Database name
-        schema_name: str | None
+        schema_name: Optional[str]
             Schema name
-        credentials: Credentials
+        credentials: Optional[Credentials]
             configuration contains data source settings & credentials
 
         Returns
@@ -110,11 +110,11 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
         ----------
         table_name: str
             Table name
-        database_name: str | None
+        database_name: Optional[str]
             Database name
-        schema_name: str | None
+        schema_name: Optional[str]
             Schema name
-        credentials: Credentials
+        credentials: Optional[Credentials]
             configuration contains data source settings & credentials
 
         Returns

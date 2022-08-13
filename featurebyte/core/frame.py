@@ -44,7 +44,7 @@ class BaseFrame(QueryObject):
 
         Returns
         -------
-        list
+        list of columns
         """
         return list(self.column_var_type_map)
 
@@ -60,7 +60,7 @@ class BaseFrame(QueryObject):
 
         Returns
         -------
-        pd.DataFrame | None
+        SQL query
         """
         return self._preview_sql(columns=self.columns, limit=limit)
 
@@ -121,48 +121,39 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
     @typechecked
     def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, Frame]:
         """
-        Extract column or perform row filtering on the table
-
-        When the item has a `str` or `list[str]` type, column(s) projection is expected. When single column
-        projection happens, the last node of the Series lineage (`self.column_lineage_map[item][-1]`) is used
-        rather than the DataFrame's last node (`self.node`). This is to prevent adding redundant project node
-        to the graph when the value of the column does not change. Consider the following case if `self.node`
-        is used:
-
-        >>> df["c"] = df["b"]     # doctest: +SKIP
-        >>> b = df["b"]           # doctest: +SKIP
-        >>> dict(df.graph.edges)  # doctest: +SKIP
-        {
-            "input_1": ["project_1", "assign_1"],
-            "project_1": ["assign_1"],
-            "assign_1": ["project_2"]
-        }
-
-        Current implementation uses the last node of each lineage, it results in a simpler graph:
-
-        >>> dict(df.graph.edges)  # doctest: +SKIP
-        {
-            "input_1": ["project_1", "assign_1"],
-            "project_1": ["assign_1"],
-        }
-
-        When the item has a boolean `Series` type, row filtering operation is expected.
+        Extract column or perform row filtering on the table. When the item has a `str` or `list[str]` type,
+        column(s) projection is expected. When the item has a boolean `Series` type, row filtering operation
+        is expected.
 
         Parameters
         ----------
-        item: str | list[str] | Series
+        item: Union[str, List[str], Series]
             input item used to perform column(s) projection or row filtering
 
         Returns
         -------
-        Series | Frame
-            output of the operation
+        Series or Frame
         """
         self._check_any_missing_column(item)
-
         if isinstance(item, str):
-            # when doing projection, use the last updated node of the column rather than using
-            # the last updated dataframe node to prevent adding redundant project node to the graph.
+            # When single column projection happens, the last node of the Series lineage
+            # (`self.column_lineage_map[item][-1]`) is used rather than the DataFrame's last node (`self.node`).
+            # This is to prevent adding redundant project node to the graph when the value of the column does
+            # not change. Consider the following case if `self.node` is used:
+            # >>> df["c"] = df["b"]
+            # >>> b = df["b"]
+            # >>> dict(df.graph.edges)
+            # {
+            #     "input_1": ["project_1", "assign_1"],
+            #     "project_1": ["assign_1"],
+            #     "assign_1": ["project_2"]
+            # }
+            # Current implementation uses the last node of each lineage, it results in a simpler graph:
+            # >>> dict(df.graph.edges)
+            # {
+            #     "input_1": ["project_1", "assign_1"],
+            #     "project_1": ["assign_1"],
+            # }
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
                 node_params={"columns": [item]},
@@ -230,7 +221,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         ----------
         key: str
             column name to store the item
-        value: int | float | str | bool | Series
+        value: Union[int, float, str, bool, Series]
             value to be assigned to the column
 
         Raises

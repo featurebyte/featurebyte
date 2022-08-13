@@ -174,13 +174,13 @@ class EventViewGroupBy(OpsMixin):
             Column to be aggregated
         method: str
             Aggregation method
-        windows: list[str]
+        windows: List[str]
             List of aggregation window sizes
-        feature_names: list[str]
+        feature_names: List[str]
             Output feature names
-        timestamp_column: str | None
+        timestamp_column: Optional[str]
             Timestamp column used to specify the window (if not specified, event data timestamp is used)
-        feature_job_setting: dict[str, str] | None
+        feature_job_setting: Optional[Dict[str, str]]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
 

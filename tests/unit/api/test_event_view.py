@@ -29,6 +29,11 @@ def test_from_event_data(snowflake_event_data):
     """
     Test from_event_data
     """
+    with pytest.raises(TypeError) as exc:
+        EventView.from_event_data("hello")
+    expected_msg = 'type of argument "event_data" must be featurebyte.api.event_data.EventData; got str instead'
+    assert expected_msg in str(exc.value)
+
     event_view_first = EventView.from_event_data(snowflake_event_data)
     assert event_view_first.tabular_source == snowflake_event_data.tabular_source
     assert event_view_first.node == snowflake_event_data.node

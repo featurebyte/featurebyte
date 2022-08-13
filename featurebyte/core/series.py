@@ -91,7 +91,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin):
         bool
             whether the assignment operation is valid in terms of variable type
         """
-        valid_assignment_map = {
+        valid_assignment_map: dict[DBVarType, tuple[type[Any], ...]] = {
             DBVarType.BOOL: (bool,),
             DBVarType.INT: (int,),
             DBVarType.FLOAT: (int, float),
@@ -414,7 +414,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin):
 
         Parameters
         ----------
-        other : int | float | str | bool
+        other : Union[int, float, str, bool]
             Value to replace missing values
         """
         self[self.isnull()] = other
@@ -431,7 +431,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin):
 
         Returns
         -------
-        pd.DataFrame | None
+        SQL query
         """
         columns = []
         if self.name:

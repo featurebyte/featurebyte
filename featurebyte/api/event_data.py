@@ -93,15 +93,15 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
     def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         return {"timestamp": values["event_timestamp_column"]}
 
-    @typechecked
     @classmethod
+    @typechecked
     def from_tabular_source(
         cls,
         tabular_source: DatabaseTable,
         name: str,
         event_timestamp_column: str,
-        record_creation_date_column: str | None = None,
-        credentials: Credentials | None = None,
+        record_creation_date_column: Optional[str] = None,
+        credentials: Optional[Credentials] = None,
     ) -> EventData:
         """
         Create EventData object from tabular source
@@ -116,7 +116,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
             Event timestamp column from the given tabular source
         record_creation_date_column: str
             Record creation datetime column from the given tabular source
-        credentials: Credentials | None
+        credentials: Optional[Credentials]
             Credentials dictionary mapping from the config file
 
         Returns

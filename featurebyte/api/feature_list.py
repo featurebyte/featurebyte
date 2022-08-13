@@ -105,7 +105,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
 
         Parameters
         ----------
-        items: list[str]
+        items: List[str]
             List of feature names to be dropped
 
         Returns
@@ -154,10 +154,10 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
 
         Parameters
         ----------
-        point_in_time_and_serving_name : dict
+        point_in_time_and_serving_name : Dict[str, Any]
             Dictionary consisting the point in time and serving names based on which the feature
             preview will be computed
-        credentials: Credentials | None
+        credentials: Optional[Credentials]
             credentials to create a database session
 
         Returns
@@ -247,9 +247,9 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         ----------
         training_events : pd.DataFrame
             Training events DataFrame
-        credentials : Credentials | None
+        credentials : Optional[Credentials]
             Optional feature store to credential mapping
-        serving_names_mapping : dict[str, str] | None
+        serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events data has different serving name
             columns than those defined in Entities. Mapping from original serving name to new
             serving name.
