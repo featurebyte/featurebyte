@@ -173,7 +173,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
             event_data_ids.extend(getattr(other, "event_data_ids", []))
         return {"event_data_ids": list(set(event_data_ids))}
 
-    def _unary_op_series_params(self) -> dict[str, Any]:
+    def unary_op_series_params(self) -> dict[str, Any]:
         return {"event_data_ids": list(self.event_data_ids)}
 
     def _validate_point_in_time_and_serving_name(
