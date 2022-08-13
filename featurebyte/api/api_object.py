@@ -18,25 +18,13 @@ from featurebyte.exception import (
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 
 
-class ApiObject(FeatureByteBaseDocumentModel):
+class ApiGetObject(FeatureByteBaseDocumentModel):
     """
-    ApiObject contains common methods used to interact with API routes
+    ApiGetObject contains common methods used to retrieve data
     """
 
     # class variables
     _route = ""
-    _route_list = ""
-
-    def _get_init_params_from_object(self) -> dict[str, Any]:
-        """
-        Additional parameters pass to constructor from object of the same class
-        (other than those parameters from response)
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        return {}
 
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
@@ -49,18 +37,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
         """
         return {}
 
-    def _get_create_payload(self) -> dict[str, Any]:
-        """
-        Construct payload used for post route
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        return self.json_dict()
-
     @classmethod
-    def get(cls, name: str) -> ApiObject:
+    def get(cls, name: str) -> ApiGetObject:
         """
         Retrieve object dictionary from the persistent given object name
 
@@ -71,7 +49,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         Returns
         -------
-        ApiObject
+        ApiGetObject
             ApiObject object of the given event data name
 
         Raises
@@ -95,7 +73,9 @@ class ApiObject(FeatureByteBaseDocumentModel):
         raise RecordRetrievalException(response, "Failed to retrieve the specified object.")
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> ApiObject:  # pylint: disable=redefined-builtin,invalid-name
+    def get_by_id(
+        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> ApiGetObject:
         """
         Get the API object by specifying the object ID
 
@@ -106,8 +86,8 @@ class ApiObject(FeatureByteBaseDocumentModel):
 
         Returns
         -------
-        ApiObject
-            ApiObject object of the given object ID
+        ApiGetObject
+            ApiGetObject object of the given object ID
 
         Raises
         ------
@@ -136,30 +116,11 @@ class ApiObject(FeatureByteBaseDocumentModel):
             When the response status code is unexpected
         """
         client = Configurations().get_client()
-        response = client.get(url=(cls._route_list or cls._route))
+        response = client.get(url=cls._route)
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             return [elem["name"] for elem in response_dict["data"]]
         raise RecordRetrievalException(response, "Failed to list object names.")
-
-    def save(self) -> None:
-        """
-        Save object to the persistent
-
-        Raises
-        ------
-        DuplicatedRecordException
-            When record with the same key exists at the persistent
-        RecordCreationException
-            When fail to save the event data (general failure)
-        """
-        client = Configurations().get_client()
-        response = client.post(url=self._route, json=self._get_create_payload())
-        if response.status_code != HTTPStatus.CREATED:
-            if response.status_code == HTTPStatus.CONFLICT:
-                raise DuplicatedRecordException(response=response)
-            raise RecordCreationException(response=response)
-        type(self).__init__(self, **response.json(), **self._get_init_params_from_object())
 
     def audit(self) -> Any:
         """
@@ -180,3 +141,49 @@ class ApiObject(FeatureByteBaseDocumentModel):
         if response.status_code == HTTPStatus.OK:
             return response.json()
         raise RecordRetrievalException(response, "Failed to list object audit log.")
+
+
+class ApiObject(ApiGetObject):
+    """
+    ApiObject contains common methods used to interact with API routes
+    """
+
+    def _get_create_payload(self) -> dict[str, Any]:
+        """
+        Construct payload used for post route
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return self.json_dict()
+
+    def _get_init_params_from_object(self) -> dict[str, Any]:
+        """
+        Additional parameters pass to constructor from object of the same class
+        (other than those parameters from response)
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {}
+
+    def save(self) -> None:
+        """
+        Save object to the persistent
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When record with the same key exists at the persistent
+        RecordCreationException
+            When fail to save the event data (general failure)
+        """
+        client = Configurations().get_client()
+        response = client.post(url=self._route, json=self._get_create_payload())
+        if response.status_code != HTTPStatus.CREATED:
+            if response.status_code == HTTPStatus.CONFLICT:
+                raise DuplicatedRecordException(response=response)
+            raise RecordCreationException(response=response)
+        type(self).__init__(self, **response.json(), **self._get_init_params_from_object())
