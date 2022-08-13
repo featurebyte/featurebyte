@@ -236,6 +236,30 @@ class BaseController(Generic[Document, PaginatedDocument]):
                 resolution_signature=resolution_signature,
             )
 
+    @staticmethod
+    def _construct_list_query_filter(user: Any, **kwargs: Any) -> dict[str, Any]:
+        """
+        Construct query filter used in list route
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        kwargs: Any
+            Keyword arguments passed to the list controller
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        _ = user
+        output = {}
+        if kwargs.get("name"):
+            output["name"] = kwargs["name"]
+        if kwargs.get("search"):
+            output["$text"] = {"$search": kwargs["search"]}
+        return output
+
     @classmethod
     async def get_document(
         cls,
@@ -333,8 +357,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         page_size: int = 10,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
-        name: Optional[str] = None,
-        search: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedDocument:
         """
         List documents stored at persistent (GitDB or MongoDB)
@@ -353,21 +376,15 @@ class BaseController(Generic[Document, PaginatedDocument]):
             Key used to sort the returning documents
         sort_dir: "asc" or "desc"
             Sorting the returning documents in ascending order or descending order
-        name: str | None
-            Document name used to filter the documents
-        search: str | None
-            Search term (not supported)
+        kwargs: Any
+            Other keyword arguments
 
         Returns
         -------
         dict[str, Any]
             List of documents fulfilled the filtering condition
         """
-        query_filter = {"user_id": user.id}
-        if name is not None:
-            query_filter["name"] = name
-        if search:
-            query_filter["$text"] = {"$search": search}
+        query_filter = cls._construct_list_query_filter(user, **kwargs)
 
         try:
             docs, total = await persistent.find(
