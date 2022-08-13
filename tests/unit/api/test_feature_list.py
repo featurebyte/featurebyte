@@ -9,6 +9,7 @@ from freezegun import freeze_time
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, FeatureList
+from featurebyte.config import Credentials
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
@@ -123,7 +124,7 @@ def test_features_readiness__production_ready(production_ready_feature):
 
 @pytest.mark.usefixtures("mocked_tile_cache")
 @freeze_time("2022-05-01")
-def test_feature_list_creation__success(production_ready_feature, config):
+def test_feature_list_creation__success(production_ready_feature, config, mocked_tile_cache):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
     dataframe = pd.DataFrame(
@@ -176,16 +177,20 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
 
 def test_feature_list_creation__not_a_list():
     """Test FeatureList must be created from a list"""
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(TypeError) as exc_info:
         FeatureList("my_feature", name="my_feature_list")
-    assert "value is not a valid list (type=type_error.list)" in str(exc_info.value)
+    assert 'type of argument "items" must be a list; got str instead' in str(exc_info.value)
 
 
 def test_feature_list_creation__invalid_item():
     """Test FeatureList creation list cannot have invalid types"""
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(TypeError) as exc_info:
         FeatureList(["my_feature"], name="my_feature_list")
-    assert "value is not a valid Feature type" in str(exc_info.value)
+    error_message = (
+        'type of argument "items"[0] must be one of '
+        "(featurebyte.api.feature.Feature, featurebyte.api.feature_list.BaseFeatureGroup); got str instead"
+    )
+    assert error_message in str(exc_info.value)
 
 
 def test_base_feature_group(
@@ -270,7 +275,7 @@ def test_feature_group__getitem__type_not_supported(production_ready_feature):
     feature_group = FeatureGroup([production_ready_feature])
     with pytest.raises(TypeError) as exc:
         _ = feature_group[True]
-    expected_msg = "Feature retrieval with value 'True' is not supported!"
+    expected_msg = 'type of argument "item" must be one of (str, List[str]); got bool instead'
     assert expected_msg in str(exc.value)
 
 
@@ -308,9 +313,9 @@ def test_feature_group__setitem__empty_name(production_ready_feature):
     """
     feature_group = FeatureGroup([production_ready_feature])
     new_feature = production_ready_feature + 123
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(TypeError) as exc_info:
         feature_group[None] = new_feature
-    assert str(exc_info.value) == "None is not a valid feature name"
+    assert str(exc_info.value) == 'type of argument "key" must be str; got NoneType instead'
 
 
 def test_feature_group__preview_zero_feature():

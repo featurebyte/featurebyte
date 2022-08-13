@@ -226,7 +226,9 @@ def test_event_data_column__as_entity(snowflake_event_data):
 
     with pytest.raises(TypeError) as exc:
         snowflake_event_data.col_int.as_entity(1234)
-    assert 'Unsupported type "<class \'int\'>" for tag name "1234"!' in str(exc.value)
+    assert 'type of argument "entity_name" must be one of (str, NoneType); got int instead' in str(
+        exc.value
+    )
 
     with pytest.raises(RecordRetrievalException) as exc:
         snowflake_event_data.col_int.as_entity("some_random_entity")

@@ -7,6 +7,8 @@ from typing import Any
 
 from http import HTTPStatus
 
+from typeguard import typechecked
+
 from featurebyte.api.api_object import ApiObject
 from featurebyte.config import Configurations
 from featurebyte.exception import (
@@ -41,6 +43,7 @@ class Entity(EntityModel, ApiObject):
         """
         return self.serving_names[0]
 
+    @typechecked
     def update_name(self, name: str) -> None:
         """
         Change entity name

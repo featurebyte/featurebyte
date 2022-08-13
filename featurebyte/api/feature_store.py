@@ -3,7 +3,9 @@ FeatureStore class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List, Optional, TypeVar
+
+from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.config import Credentials
@@ -13,6 +15,8 @@ from featurebyte.schema.feature_store import FeatureStoreCreate
 
 if TYPE_CHECKING:
     from featurebyte.api.database_table import DatabaseTable
+else:
+    DatabaseTable = TypeVar("DatabaseTable")
 
 
 class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
@@ -27,7 +31,8 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
         data = FeatureStoreCreate(**self.json_dict())
         return data.json_dict()
 
-    def list_databases(self, credentials: Credentials | None = None) -> list[str]:
+    @typechecked
+    def list_databases(self, credentials: Optional[Credentials] = None) -> List[str]:
         """
         List databases accessible by the feature store
 
@@ -42,9 +47,10 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
         """
         return self.get_session(credentials=credentials).list_databases()
 
+    @typechecked
     def list_schemas(
-        self, database_name: str | None = None, credentials: Credentials | None = None
-    ) -> list[str]:
+        self, database_name: Optional[str] = None, credentials: Optional[Credentials] = None
+    ) -> List[str]:
         """
         List schemas in the database
 
@@ -62,12 +68,13 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
         """
         return self.get_session(credentials=credentials).list_schemas(database_name=database_name)
 
+    @typechecked
     def list_tables(
         self,
-        database_name: str | None = None,
-        schema_name: str | None = None,
-        credentials: Credentials | None = None,
-    ) -> list[str]:
+        database_name: Optional[str] = None,
+        schema_name: Optional[str] = None,
+        credentials: Optional[Credentials] = None,
+    ) -> List[str]:
         """
         List tables in the schema
 
@@ -88,12 +95,13 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
             database_name=database_name, schema_name=schema_name
         )
 
+    @typechecked
     def get_table(
         self,
         table_name: str,
-        database_name: str | None = None,
-        schema_name: str | None = None,
-        credentials: Credentials | None = None,
+        database_name: Optional[str] = None,
+        schema_name: Optional[str] = None,
+        credentials: Optional[Credentials] = None,
     ) -> DatabaseTable:
         """
         Get table from the feature store

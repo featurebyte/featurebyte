@@ -3,13 +3,14 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, Optional
 
 import time
 from http import HTTPStatus
 
 import pandas as pd
 from pydantic import Field, root_validator
+from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.config import Configurations, Credentials
@@ -56,6 +57,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
                     )
         return values
 
+    @typechecked
     def __setattr__(self, key: str, value: Any) -> Any:
         """
         Custom __setattr__ to handle setting of special attributes such as name
@@ -180,9 +182,6 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
         self, point_in_time_and_serving_name: dict[str, Any]
     ) -> None:
 
-        if not isinstance(point_in_time_and_serving_name, dict):
-            raise ValueError("point_in_time_and_serving_name should be a dict")
-
         if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
             raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
 
@@ -191,10 +190,11 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
                 if col not in point_in_time_and_serving_name:
                     raise KeyError(f"Serving name not provided: {col}")
 
+    @typechecked
     def preview(  # type: ignore[override]  # pylint: disable=arguments-renamed
         self,
-        point_in_time_and_serving_name: dict[str, Any],
-        credentials: Credentials | None = None,
+        point_in_time_and_serving_name: Dict[str, Any],
+        credentials: Optional[Credentials] = None,
     ) -> pd.DataFrame:
         """
         Preview a Feature

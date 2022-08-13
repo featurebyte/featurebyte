@@ -252,7 +252,9 @@ def test_setting_column_as_entity__invalid_cases(snowflake_event_view):
 
     with pytest.raises(TypeError) as exc:
         cust_id.as_entity(1234)
-    assert 'Unsupported type "<class \'int\'>" for tag name "1234"!' in str(exc.value)
+    assert 'type of argument "entity_name" must be one of (str, NoneType); got int instead' in str(
+        exc.value
+    )
 
 
 def test_add_description(snowflake_event_view):
@@ -265,7 +267,7 @@ def test_add_description(snowflake_event_view):
 
     with pytest.raises(TypeError) as exc:
         snowflake_event_view.cust_id.add_description(1234)
-    assert 'Unsupported type "<class \'int\'>" for description "1234"!' in str(exc.value)
+    assert 'type of argument "description" must be str; got int instead' in str(exc.value)
 
 
 def test_unary_op_params(snowflake_event_view):

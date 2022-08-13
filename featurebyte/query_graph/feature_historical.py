@@ -176,7 +176,7 @@ def get_historical_features(
     training_events: pd.DataFrame,
     credentials: Credentials | None = None,
     serving_names_mapping: dict[str, str] | None = None,
-) -> pd.DataFrame:
+) -> Optional[pd.DataFrame]:
     """Get historical features
 
     Parameters

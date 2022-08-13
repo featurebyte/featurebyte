@@ -3,13 +3,14 @@ FeatureListVersion class
 """
 from __future__ import annotations
 
-from typing import Any, List, OrderedDict, Union
+from typing import Any, Dict, List, Optional, OrderedDict, Union
 
 import collections
 import time
 
 import pandas as pd
 from pydantic import Field, parse_obj_as, root_validator
+from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.feature import Feature
@@ -77,7 +78,8 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         values["feature_objects"] = feature_objects
         return values
 
-    def __init__(self, items: list[Union[Feature, BaseFeatureGroup]], **kwargs: Any):
+    @typechecked
+    def __init__(self, items: List[Union[Feature, BaseFeatureGroup]], **kwargs: Any):
         super().__init__(items=items, **kwargs)
         # sanity check: make sure we don't make a copy on global query graph
         for item_origin, item in zip(items, self.items):
@@ -90,14 +92,14 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     def _subset_list_of_columns(self, columns: list[str]) -> FeatureGroup:
         return FeatureGroup([self.feature_objects[elem] for elem in columns])
 
-    def __getitem__(self, item: str | list[str]) -> Feature | FeatureGroup:
+    @typechecked
+    def __getitem__(self, item: Union[str, List[str]]) -> Union[Feature, FeatureGroup]:
         if isinstance(item, str):
             return self._subset_single_column(item)
-        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
-            return self._subset_list_of_columns(item)
-        raise TypeError(f"Feature retrieval with value '{item}' is not supported!")
+        return self._subset_list_of_columns(item)
 
-    def drop(self, items: list[str]) -> FeatureGroup:
+    @typechecked
+    def drop(self, items: List[str]) -> FeatureGroup:
         """
         Drop feature(s) from the FeatureGroup/FeatureList
 
@@ -122,13 +124,15 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
     FeatureGroup class
     """
 
-    def __getitem__(self, item: str | list[str]) -> Feature | FeatureGroup:
+    @typechecked
+    def __getitem__(self, item: Union[str, List[str]]) -> Union[Feature, FeatureGroup]:
         # Note: Feature can only modify FeatureGroup parent but not FeatureList parent.
         output = super().__getitem__(item)
         if isinstance(output, Feature):
             output.set_parent(self)
         return output
 
+    @typechecked
     def __setitem__(self, key: str, value: Feature) -> None:
         # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original
         # Feature object
@@ -139,10 +143,11 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         # sanity check: make sure we don't copy global query graph
         assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
 
+    @typechecked
     def preview(
         self,
-        point_in_time_and_serving_name: dict[str, Any],
-        credentials: Credentials | None = None,
+        point_in_time_and_serving_name: Dict[str, Any],
+        credentials: Optional[Credentials] = None,
     ) -> pd.DataFrame:
         """
         Preview a FeatureGroup
@@ -229,12 +234,13 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         values["version"] = get_version()
         return values
 
+    @typechecked
     def get_historical_features(
         self,
         training_events: pd.DataFrame,
-        credentials: Credentials | None = None,
-        serving_names_mapping: dict[str, str] | None = None,
-    ) -> pd.DataFrame:
+        credentials: Optional[Credentials] = None,
+        serving_names_mapping: Optional[Dict[str, str]] = None,
+    ) -> Optional[pd.DataFrame]:
         """Get historical features
 
         Parameters

@@ -3,12 +3,13 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
 from pydantic import validator
+from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
@@ -35,19 +36,18 @@ class EventDataColumn:
         self.event_data = event_data
         self.column_name = column_name
 
-    def as_entity(self, entity_name: str | None) -> None:
+    @typechecked
+    def as_entity(self, entity_name: Optional[str]) -> None:
         """
         Set the column as the specified entity
 
         Parameters
         ----------
-        entity_name: str | None
+        entity_name: Optional[str]
             Associate column name to the entity, remove association if entity name is None
 
         Raises
         ------
-        TypeError
-            When the entity name has non-string type
         RecordUpdateException
             When unexpected record update failure
         """
@@ -57,8 +57,6 @@ class EventDataColumn:
         elif isinstance(entity_name, str):
             entity_dict = get_entity(entity_name)
             column_entity_map[self.column_name] = entity_dict["_id"]
-        else:
-            raise TypeError(f'Unsupported type "{type(entity_name)}" for tag name "{entity_name}"!')
 
         data = EventDataUpdate(column_entity_map=column_entity_map)
         client = Configurations().get_client()
@@ -95,6 +93,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
     def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
         return {"timestamp": values["event_timestamp_column"]}
 
+    @typechecked
     @classmethod
     def from_tabular_source(
         cls,
@@ -167,6 +166,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
             raise ValueError(f'Column "{value}" not found in the table!')
         return value
 
+    @typechecked
     def __getitem__(self, item: str) -> EventDataColumn:
         """
         Retrieve column from the table
@@ -220,6 +220,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
             return self.dict()
         raise RecordRetrievalException(response)
 
+    @typechecked
     def update_default_feature_job_setting(
         self, blind_spot: str, frequency: str, time_modulo_frequency: str
     ) -> None:
