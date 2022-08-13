@@ -1,13 +1,11 @@
 """
 This modul contains string accessor class
 """
-# pylint: disable=too-few-public-methods
-
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional, TypeVar
 
-from pydantic import StrictInt, StrictStr, parse_obj_as
+from typeguard import typechecked
 
 from featurebyte.core.util import series_unary_operation
 from featurebyte.enum import DBVarType
@@ -15,6 +13,8 @@ from featurebyte.query_graph.enum import NodeType
 
 if TYPE_CHECKING:
     from featurebyte.core.series import Series
+else:
+    Series = TypeVar("Series")
 
 
 Side = Literal["left", "right", "both"]
@@ -24,6 +24,8 @@ class StrAccessorMixin:
     """
     StrAccessorMixin class
     """
+
+    # pylint: disable=too-few-public-methods
 
     @property
     def str(self: Series) -> StringAccessor:  # type: ignore
@@ -48,6 +50,10 @@ class StringAccessor:
         self._obj = obj
 
     def __getitem__(self, item: slice) -> Series:
+        if not isinstance(item, slice):
+            raise TypeError(
+                f'type of argument "item" must be slice; got {type(item).__name__} instead'
+            )
         return self.slice(start=item.start, stop=item.stop, step=item.step)
 
     def len(self) -> Series:
@@ -98,6 +104,7 @@ class StringAccessor:
             **self._obj.unary_op_series_params(),
         )
 
+    @typechecked
     def strip(self, to_strip: Optional[str] = None) -> Series:
         """
         Trim the white space(s) on the left & right string boundaries
@@ -111,15 +118,15 @@ class StringAccessor:
         -------
         Series
         """
-        char_to_strip: Optional[str] = parse_obj_as(Optional[StrictStr], to_strip)  # type: ignore
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.TRIM,
             output_var_type=DBVarType.VARCHAR,
-            node_params={"character": char_to_strip, "side": "both"},
+            node_params={"character": to_strip, "side": "both"},
             **self._obj.unary_op_series_params(),
         )
 
+    @typechecked
     def lstrip(self, to_strip: Optional[str] = None) -> Series:
         """
         Trim the white space(s) on the left string boundaries
@@ -133,15 +140,15 @@ class StringAccessor:
         -------
         Series
         """
-        char_to_strip: Optional[str] = parse_obj_as(Optional[StrictStr], to_strip)  # type: ignore
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.TRIM,
             output_var_type=DBVarType.VARCHAR,
-            node_params={"character": char_to_strip, "side": "left"},
+            node_params={"character": to_strip, "side": "left"},
             **self._obj.unary_op_series_params(),
         )
 
+    @typechecked
     def rstrip(self, to_strip: Optional[str] = None) -> Series:
         """
         Trim the white space(s) on the right string boundaries
@@ -155,15 +162,15 @@ class StringAccessor:
         -------
         Series
         """
-        char_to_strip: Optional[str] = parse_obj_as(Optional[StrictStr], to_strip)  # type: ignore
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.TRIM,
             output_var_type=DBVarType.VARCHAR,
-            node_params={"character": char_to_strip, "side": "right"},
+            node_params={"character": to_strip, "side": "right"},
             **self._obj.unary_op_series_params(),
         )
 
+    @typechecked
     def replace(self, pat: str, repl: str) -> Series:
         """
         Replace the substring within the original string
@@ -179,16 +186,15 @@ class StringAccessor:
         -------
         Series
         """
-        pattern: str = parse_obj_as(StrictStr, pat)
-        replacement: str = parse_obj_as(StrictStr, repl)
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.REPLACE,
             output_var_type=DBVarType.VARCHAR,
-            node_params={"pattern": pattern, "replacement": replacement},
+            node_params={"pattern": pat, "replacement": repl},
             **self._obj.unary_op_series_params(),
         )
 
+    @typechecked
     def pad(self, width: int, side: Side = "left", fillchar: str = " ") -> Series:
         """
         Pad the string up to the specified width size
@@ -206,17 +212,15 @@ class StringAccessor:
         -------
         Series
         """
-        width_size: int = parse_obj_as(StrictInt, width)
-        pad_side: Side = parse_obj_as(Side, side)  # type: ignore
-        filled_char: str = parse_obj_as(StrictStr, fillchar)
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.PAD,
             output_var_type=DBVarType.VARCHAR,
-            node_params={"side": pad_side, "length": width_size, "pad": filled_char},
+            node_params={"side": side, "length": width, "pad": fillchar},
             **self._obj.unary_op_series_params(),
         )
 
+    @typechecked
     def contains(self, pat: str, case: bool = True) -> Series:
         """
         Compute a boolean flag where each value is a result of test whether the substring is inside the value
@@ -232,15 +236,15 @@ class StringAccessor:
         -------
         Series
         """
-        pattern: str = parse_obj_as(StrictStr, pat)
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.STRCONTAINS,
             output_var_type=DBVarType.BOOL,
-            node_params={"pattern": pattern, "case": bool(case)},
+            node_params={"pattern": pat, "case": bool(case)},
             **self._obj.unary_op_series_params(),
         )
 
+    @typechecked
     def slice(
         self, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None
     ) -> Series:
@@ -265,18 +269,15 @@ class StringAccessor:
         ValueError
             When the step size is neither None nor 1
         """
-        start_pos: Optional[int] = parse_obj_as(Optional[StrictInt], start)  # type: ignore
-        stop_pos: Optional[int] = parse_obj_as(Optional[StrictInt], stop)  # type: ignore
-        step_size: Optional[int] = parse_obj_as(Optional[StrictInt], step)  # type: ignore
-        if step_size is not None and step_size != 1:
+        if step is not None and step != 1:
             raise ValueError("Can only use step size equals to 1.")
 
-        start_pos = start_pos or 0
-        length = None if stop_pos is None else stop_pos - start_pos
+        start = start or 0
+        length = None if stop is None else stop - start
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.SUBSTRING,
             output_var_type=DBVarType.VARCHAR,
-            node_params={"start": start_pos, "length": length},
+            node_params={"start": start, "length": length},
             **self._obj.unary_op_series_params(),
         )
