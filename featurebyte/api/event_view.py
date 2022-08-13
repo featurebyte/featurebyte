@@ -75,16 +75,15 @@ class EventViewColumn(Series):
             Associate column name to the entity, remove association if entity name is None
         """
         self._validate_series_to_set_parent_attribute()
-        if self.name and self.parent:
-            if entity_name is None:
-                column_entity_map = self.parent.column_entity_map or {}
-                column_entity_map.pop(self.name)
-                self.parent.column_entity_map = column_entity_map
-            elif isinstance(entity_name, str):
-                entity_dict = get_entity(entity_name)
-                column_entity_map = self.parent.column_entity_map or {}
-                column_entity_map[self.name] = entity_dict["_id"]
-                self.parent.column_entity_map = column_entity_map
+        if entity_name is None:
+            column_entity_map = self.parent.column_entity_map or {}
+            column_entity_map.pop(self.name)
+            self.parent.column_entity_map = column_entity_map
+        else:
+            entity_dict = get_entity(entity_name)
+            column_entity_map = self.parent.column_entity_map or {}
+            column_entity_map[self.name] = entity_dict["_id"]
+            self.parent.column_entity_map = column_entity_map
 
     @typechecked
     def add_description(self, description: str) -> None:
@@ -97,9 +96,7 @@ class EventViewColumn(Series):
             Description for current series
         """
         self._validate_series_to_set_parent_attribute()
-        if self.name and self.parent:
-            if isinstance(description, str):
-                self.parent.column_description_map[self.name] = str(description)
+        self.parent.column_description_map[self.name] = description
 
 
 class EventView(ProtectedColumnsQueryObject, Frame):

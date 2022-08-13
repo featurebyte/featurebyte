@@ -54,7 +54,7 @@ class EventDataColumn:
         column_entity_map = self.event_data.column_entity_map or {}
         if entity_name is None:
             column_entity_map.pop(self.column_name, None)
-        elif isinstance(entity_name, str):
+        else:
             entity_dict = get_entity(entity_name)
             column_entity_map[self.column_name] = entity_dict["_id"]
 
