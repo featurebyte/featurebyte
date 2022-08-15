@@ -35,11 +35,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
 
     @classmethod
     async def _insert_feature_registry(
-        cls,
-        user: Any,
-        document: FeatureModel,
-        feature_store: ExtendedFeatureStoreModel,
-        get_credential: Any,
+        cls, user: Any, document: ExtendedFeatureModel, get_credential: Any
     ) -> None:
         """
         Insert feature registry into feature store
@@ -48,10 +44,8 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
         ----------
         user: Any
             User class to provide user identifier
-        document: FeatureModel
+        document: ExtendedFeatureModel
             Feature document
-        feature_store: ExtendedFeatureStoreModel
-            FeatureStore document
         get_credential: Any
             Get credential handler function
 
@@ -62,10 +56,8 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
         Exception
             Other errors during registry insertion / removal
         """
-        extended_feature = ExtendedFeatureModel(
-            **document.dict(by_alias=True), feature_store=feature_store
-        )
-        if extended_feature.feature_store.type == SourceType.SNOWFLAKE:
+        feature_store = document.feature_store
+        if feature_store.type == SourceType.SNOWFLAKE:
             db_session = feature_store.get_session(
                 credentials={
                     feature_store.name: await get_credential(
@@ -75,7 +67,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
             )
             feature_manager = FeatureManagerSnowflake(session=db_session)
             try:
-                feature_manager.insert_feature_registry(extended_feature)
+                feature_manager.insert_feature_registry(document)
             except DuplicatedRegistryError as exc:
                 # someone else already registered the feature at snowflake
                 # do not remove the current registry & raise error to remove persistent record
@@ -88,7 +80,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
                 ) from exc
             except Exception as exc:
                 # for other exceptions, cleanup feature registry record & persistent record
-                feature_manager.remove_feature_registry(extended_feature)
+                feature_manager.remove_feature_registry(document)
                 raise exc
 
     @classmethod
@@ -164,7 +156,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
                 )
 
                 # update feature namespace
-                await FeatureNamespaceController.update_feature_namespace(
+                feature_namespace = await FeatureNamespaceController.update_feature_namespace(
                     user=user,
                     persistent=persistent,
                     feature_namespace_id=feature_namespace.id,
@@ -174,7 +166,7 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
             except HTTPException as exc:
                 if exc.status_code == HTTPStatus.NOT_FOUND:
                     # create a new feature namespace object
-                    await FeatureNamespaceController.create_feature_namespace(
+                    feature_namespace = await FeatureNamespaceController.create_feature_namespace(
                         user=user,
                         persistent=session,
                         data=FeatureNamespaceCreate(
@@ -199,6 +191,11 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
                 exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             )
             feature_store = ExtendedFeatureStoreModel(**feature_store_dict)
-            await cls._insert_feature_registry(user, document, feature_store, get_credential)
+            extended_feature = ExtendedFeatureModel(
+                **document.dict(by_alias=True),
+                is_default=document.id == feature_namespace.default_version_id,
+                feature_store=feature_store,
+            )
+            await cls._insert_feature_registry(user, extended_feature, get_credential)
 
         return await cls.get(user=user, persistent=persistent, document_id=insert_id)

@@ -144,7 +144,6 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     tabular_source: TabularSource = Field(allow_mutation=False)
     readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
     version: FeatureVersionIdentifier = Field(default_factory=get_version, allow_mutation=False)
-    is_default: Optional[bool] = Field(allow_mutation=False)
     online_enabled: Optional[bool] = Field(allow_mutation=False)
     event_data_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)

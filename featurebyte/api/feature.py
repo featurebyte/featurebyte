@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import time
 from http import HTTPStatus
@@ -12,16 +12,30 @@ import pandas as pd
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object import ApiGetObject, ApiObject
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.enum import SpecialColumnName
 from featurebyte.logger import logger
-from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature import (
+    DefaultVersionMode,
+    FeatureModel,
+    FeatureNamespaceModel,
+    FeatureReadiness,
+)
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 from featurebyte.schema.feature import FeatureCreate
+
+
+class FeatureNamespace(FeatureNamespaceModel, ApiGetObject):
+    """
+    FeatureNamespace class
+    """
+
+    # class variables
+    _route = "/feature_namespace"
 
 
 class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
@@ -33,7 +47,6 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
 
     # class variables
     _route = "/feature"
-    _route_list = "/feature_namespace"
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
@@ -56,6 +69,10 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
                         **feature_store_response.json()
                     )
         return values
+
+    @classmethod
+    def list(cls) -> List[str]:
+        return FeatureNamespace.list()
 
     @typechecked
     def __setattr__(self, key: str, value: Any) -> Any:
@@ -110,36 +127,36 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
         return super().__setattr__(key, value)
 
     @property
-    def protected_attributes(self) -> list[str]:
+    def protected_attributes(self) -> List[str]:
         """
         List of protected attributes used to extract protected_columns
 
         Returns
         -------
-        list[str]
+        List[str]
         """
         return ["entity_identifiers"]
 
     @property
-    def entity_identifiers(self) -> list[str]:
+    def entity_identifiers(self) -> List[str]:
         """
         Entity identifiers column names
 
         Returns
         -------
-        list[str]
+        List[str]
         """
         entity_ids: list[str] = self.inception_node.parameters["keys"]
         return entity_ids
 
     @property
-    def serving_names(self) -> list[str]:
+    def serving_names(self) -> List[str]:
         """
         Serving name columns
 
         Returns
         -------
-        list[str]
+        List[str]
         """
         serving_names: list[str] = self.inception_node.parameters["serving_names"]
         return serving_names
@@ -155,6 +172,51 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
         set[str]
         """
         return set(self.entity_identifiers)
+
+    @property
+    def feature_namespace(self) -> FeatureNamespace:
+        """
+        FeatureNamespace object of current feature
+
+        Returns
+        -------
+        FeatureNamespace
+        """
+        feature_namespace = FeatureNamespace.get_by_id(id=self.feature_namespace_id)
+        return cast(FeatureNamespace, feature_namespace)
+
+    @property
+    def is_default(self) -> bool:
+        """
+        Check whether current feature version is the default one or not
+
+        Returns
+        -------
+        bool
+        """
+        return self.id == self.feature_namespace.default_version_id
+
+    @property
+    def default_version_mode(self) -> DefaultVersionMode:
+        """
+        Retrieve default version mode of current feature namespace
+
+        Returns
+        -------
+        DefaultVersionMode
+        """
+        return self.feature_namespace.default_version_mode
+
+    @property
+    def default_readiness(self) -> FeatureReadiness:
+        """
+        Feature readiness of the default feature version
+
+        Returns
+        -------
+        FeatureReadiness
+        """
+        return self.feature_namespace.readiness
 
     def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """

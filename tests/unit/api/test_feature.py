@@ -2,9 +2,9 @@
 Unit test for Feature & FeatureList classes
 """
 from datetime import datetime
-from unittest.mock import patch
 
 import pytest
+from bson.objectid import ObjectId
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
@@ -13,7 +13,7 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
 )
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
@@ -206,7 +206,6 @@ def test_feature_to_json(float_feature):
     assert "graph" not in output_exclude
 
     # exclude_none
-    assert float_feature.is_default is None
     output_exclude_none = float_feature.json(exclude_none=True)
     assert "is_default" not in output_exclude_none
 
@@ -371,3 +370,24 @@ def test_unary_op_inherits_event_data_id(float_feature):
     """
     new_feature = float_feature.isnull()
     assert new_feature.event_data_ids == float_feature.event_data_ids
+
+
+def test_feature__default_version_info_retrieval(saved_feature):
+    """
+    Test get feature using feature name
+    """
+    feature = Feature.get(name=saved_feature.name)
+    assert feature.is_default is True
+    assert feature.default_version_mode == DefaultVersionMode.AUTO
+    assert feature.default_readiness == FeatureReadiness.DRAFT
+
+    new_feature = feature.copy()
+    new_feature.__dict__["_id"] = ObjectId()
+    new_feature.__dict__["version"] = f"{new_feature.version}_1"
+    new_feature.save()
+    assert new_feature.is_default is True
+    assert new_feature.default_version_mode == DefaultVersionMode.AUTO
+    assert new_feature.default_readiness == FeatureReadiness.DRAFT
+
+    # check that feature becomes non-default
+    assert feature.is_default is False
