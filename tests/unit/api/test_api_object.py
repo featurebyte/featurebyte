@@ -34,7 +34,7 @@ def mock_configuration_fixture(request):
         yield mock_config
 
 
-@pytest.mark.parametrize("mock_configuration", [2, 3, 5], indirect=True)
+@pytest.mark.parametrize("mock_configuration", [1, 3, 5, 11, 25], indirect=True)
 def test_list(mock_configuration):
     """Test pagination list logic"""
     output = ApiGetObject.list()
