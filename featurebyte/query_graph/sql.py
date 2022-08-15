@@ -595,6 +595,19 @@ class SubStringNode(ExpressionNode):
 
 
 @dataclass
+class DatetimeExtractNode(ExpressionNode):
+    """Node for extract datetime properties operation"""
+
+    expr: ExpressionNode
+    dt_property: Literal["year"]
+
+    @property
+    def sql(self) -> Expression:
+        params = {"this": self.dt_property, "expression": self.expr.sql}
+        return expressions.Extract(**params)
+
+
+@dataclass
 class BuildTileNode(TableNode):
     """Tile builder node
 
@@ -1044,9 +1057,10 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.TRIM,
     NodeType.REPLACE,
     NodeType.PAD,
-    NodeType.STRCASE,
-    NodeType.STRCONTAINS,
+    NodeType.STR_CASE,
+    NodeType.STR_CONTAINS,
     NodeType.SUBSTRING,
+    NodeType.DT_EXTRACT,
 }
 
 
@@ -1081,7 +1095,7 @@ def make_expression_node(
         sql_node = IsNullNode(table_node=table_node, expr=input_expr_node)
     elif node_type == NodeType.LENGTH:
         sql_node = LengthNode(table_node=table_node, expr=input_expr_node)
-    elif node_type == NodeType.STRCASE:
+    elif node_type == NodeType.STR_CASE:
         sql_node = StringCaseNode(
             table_node=table_node,
             expr=input_expr_node,
@@ -1109,7 +1123,7 @@ def make_expression_node(
             length=parameters["length"],
             pad=parameters["pad"],
         )
-    elif node_type == NodeType.STRCONTAINS:
+    elif node_type == NodeType.STR_CONTAINS:
         sql_node = StringContains(
             table_node=table_node,
             expr=input_expr_node,
@@ -1122,6 +1136,12 @@ def make_expression_node(
             expr=input_expr_node,
             start=parameters["start"],
             length=parameters["length"],
+        )
+    elif node_type == NodeType.DT_EXTRACT:
+        sql_node = DatetimeExtractNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            dt_property=parameters["property"],
         )
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")

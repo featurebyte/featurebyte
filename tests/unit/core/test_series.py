@@ -623,7 +623,8 @@ def test_varchar_series_concat(varchar_series):
               "CUST_ID" AS "CUST_ID",
               "PRODUCT_ACTION" AS "PRODUCT_ACTION",
               "VALUE" AS "VALUE",
-              "MASK" AS "MASK"
+              "MASK" AS "MASK",
+              "TIMESTAMP" AS "TIMESTAMP"
             FROM "db"."public"."transaction"
         )
         LIMIT 10

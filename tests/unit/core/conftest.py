@@ -33,6 +33,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
         "PRODUCT_ACTION": DBVarType.VARCHAR,
         "VALUE": DBVarType.FLOAT,
         "MASK": DBVarType.BOOL,
+        "TIMESTAMP": DBVarType.TIMESTAMP,
     }
     node = global_graph.add_operation(
         node_type=NodeType.INPUT,
@@ -113,4 +114,16 @@ def varchar_series(dataframe):
     assert isinstance(series, Series)
     assert series.name == "PRODUCT_ACTION"
     assert series.var_type == DBVarType.VARCHAR
+    yield series
+
+
+@pytest.fixture()
+def timestamp_series(dataframe):
+    """
+    Series with timestamp var type
+    """
+    series = dataframe["TIMESTAMP"]
+    assert isinstance(series, Series)
+    assert series.name == "TIMESTAMP"
+    assert series.var_type == DBVarType.TIMESTAMP
     yield series

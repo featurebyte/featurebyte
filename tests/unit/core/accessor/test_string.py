@@ -1,31 +1,10 @@
 """
 Unit tests for core/accessor/string.py
 """
-import textwrap
-
 import pytest
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-
-
-@pytest.fixture(name="expression_sql_template")
-def expression_sql_template_fixture():
-    """SQL template used to construct the expect sql code"""
-    template_sql = """
-    SELECT
-      {expression}
-    FROM (
-        SELECT
-          "CUST_ID" AS "CUST_ID",
-          "PRODUCT_ACTION" AS "PRODUCT_ACTION",
-          "VALUE" AS "VALUE",
-          "MASK" AS "MASK"
-        FROM "db"."public"."transaction"
-    )
-    LIMIT 10
-    """
-    return textwrap.dedent(template_sql).strip()
 
 
 def test_length_expression(varchar_series, expression_sql_template):
@@ -58,7 +37,7 @@ def test_str_case_expression(
     """
     series = accessor_func(varchar_series)
     assert series.var_type == DBVarType.VARCHAR
-    assert series.node.type == NodeType.STRCASE
+    assert series.node.type == NodeType.STR_CASE
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
     assert series.preview_sql() == expected_sql
@@ -180,7 +159,7 @@ def test_contains_expression(
     """
     series = accessor_func(varchar_series)
     assert series.var_type == DBVarType.BOOL
-    assert series.node.type == NodeType.STRCONTAINS
+    assert series.node.type == NodeType.STR_CONTAINS
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
     assert series.preview_sql() == expected_sql

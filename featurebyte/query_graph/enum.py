@@ -40,15 +40,18 @@ class NodeType(str, Enum):
     ALIAS = "alias"
     IS_NULL = "is_null"
 
-    # string operation
+    # string operations
     LENGTH = "length"
     TRIM = "trim"
     REPLACE = "replace"
     PAD = "pad"
-    STRCASE = "strcase"
-    STRCONTAINS = "strcontains"
+    STR_CASE = "str_case"
+    STR_CONTAINS = "str_contains"
     SUBSTRING = "substring"
     CONCAT = "concat"
+
+    # datetime related operations
+    DT_EXTRACT = "dt_extract"
 
     # operations with side effect
     INPUT = "input"
