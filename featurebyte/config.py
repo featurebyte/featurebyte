@@ -13,7 +13,7 @@ from pathlib import Path
 import requests
 import yaml
 from fastapi.testclient import TestClient
-from pydantic import BaseSettings, ConstrainedStr, HttpUrl, StrictStr
+from pydantic import BaseSettings, ConstrainedStr, HttpUrl
 from pydantic.error_wrappers import ValidationError
 from requests import Response
 
@@ -21,7 +21,7 @@ from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.credential import Credential
 
 # data source to credential mapping
-Credentials = Dict[StrictStr, Optional[Credential]]
+Credentials = Dict[str, Optional[Credential]]
 
 
 class LogLevel(str, Enum):

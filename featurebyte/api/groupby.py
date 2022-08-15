@@ -3,7 +3,9 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, List, Optional, Union
+
+from typeguard import typechecked
 
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
@@ -22,17 +24,13 @@ class EventViewGroupBy(OpsMixin):
     EventViewGroupBy class
     """
 
-    def __init__(self, obj: EventView, keys: str | list[str], category: str | None = None):
-        if not isinstance(obj, EventView):
-            raise TypeError(f"Expect {EventView} object type!")
-
+    @typechecked
+    def __init__(self, obj: EventView, keys: Union[str, List[str]], category: Optional[str] = None):
         keys_value = []
         if isinstance(keys, str):
             keys_value.append(keys)
         elif isinstance(keys, list):
             keys_value = keys
-        else:
-            raise TypeError(f'Grouping {obj} by "{keys}" is not supported!')
 
         serving_names = []
         for key in keys_value:
@@ -157,14 +155,15 @@ class EventViewGroupBy(OpsMixin):
             column_lineage_map[column] = (node.name,)
         return node, column_var_type_map, column_lineage_map
 
+    @typechecked
     def aggregate(
         self,
         value_column: str,
         method: str,
-        windows: list[str],
-        feature_names: list[str],
-        timestamp_column: str | None = None,
-        feature_job_setting: dict[str, str] | None = None,
+        windows: List[str],
+        feature_names: List[str],
+        timestamp_column: Optional[str] = None,
+        feature_job_setting: Optional[Dict[str, str]] = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys
@@ -175,13 +174,13 @@ class EventViewGroupBy(OpsMixin):
             Column to be aggregated
         method: str
             Aggregation method
-        windows: list[str]
+        windows: List[str]
             List of aggregation window sizes
-        feature_names: list[str]
+        feature_names: List[str]
             Output feature names
-        timestamp_column: str | None
+        timestamp_column: Optional[str]
             Timestamp column used to specify the window (if not specified, event data timestamp is used)
-        feature_job_setting: dict[str, str] | None
+        feature_job_setting: Optional[Dict[str, str]]
             Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
             feature job setting parameters
 

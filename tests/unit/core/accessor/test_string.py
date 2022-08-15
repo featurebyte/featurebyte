@@ -214,13 +214,24 @@ def test_slice_expression(
     assert series.preview_sql() == expected_sql
 
 
-def test_slice_expression__step_size_not_supported(varchar_series):
+def test_slice_expression__step_size_not_supported_or_exception(varchar_series):
     """
     Test string accessor function (slice, step size not supported)
     """
     with pytest.raises(ValueError) as exc:
         varchar_series.str[::2]
     assert "Can only use step size equals to 1." in str(exc.value)
+
+    with pytest.raises(TypeError) as exc:
+        varchar_series.str["hello"]
+    assert 'type of argument "item" must be slice; got str instead' in str(exc.value)
+
+    with pytest.raises(TypeError) as exc:
+        varchar_series.str.pad(10, side="hello")
+    expected_msg = (
+        "the value of argument \"side\" must be one of ('left', 'right', 'both'); got hello instead"
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test_accessor_with_unsupported_var_type(int_series):

@@ -50,15 +50,14 @@ def test_constructor__wrong_input_type(snowflake_event_view):
     """
     with pytest.raises(TypeError) as exc:
         EventViewGroupBy(obj=True, keys="whatever")
-    expected_msg = "Expect <class 'featurebyte.api.event_view.EventView'> object type!"
+    expected_msg = (
+        'type of argument "obj" must be featurebyte.api.event_view.EventView; got bool instead'
+    )
     assert expected_msg in str(exc.value)
 
     with pytest.raises(TypeError) as exc:
         EventViewGroupBy(snowflake_event_view, True)
-    expected_msg = (
-        f"Grouping EventView(node.name={snowflake_event_view.node.name}, timestamp_column=event_timestamp) "
-        f'by "True" is not supported!'
-    )
+    expected_msg = 'type of argument "keys" must be one of (str, List[str]); got bool instead'
     assert expected_msg in str(exc.value)
 
 

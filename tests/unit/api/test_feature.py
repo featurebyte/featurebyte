@@ -136,9 +136,12 @@ def test_feature__preview_not_a_dict(float_feature):
     Test feature preview validation but dict is not provided
     """
     invalid_params = tuple(["2022-04-01", "C1"])
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(TypeError) as exc_info:
         float_feature.preview(invalid_params)
-    assert "point_in_time_and_serving_name should be a dict" in str(exc_info.value)
+    expected_error = (
+        'type of argument "point_in_time_and_serving_name" must be a dict; got tuple instead'
+    )
+    assert expected_error in str(exc_info.value)
 
 
 def test_feature_deserialization(

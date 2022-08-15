@@ -141,7 +141,8 @@ def test__getitem__type_not_supported(dataframe):
     """
     with pytest.raises(TypeError) as exc:
         _ = dataframe[True]
-    assert "Frame indexing with value 'True' is not supported!" in str(exc.value)
+    expected_msg = 'type of argument "item" must be one of (str, List[str], featurebyte.core.series.Series); got bool instead'
+    assert expected_msg in str(exc.value)
 
 
 @pytest.mark.parametrize(
@@ -232,7 +233,7 @@ def test__setitem__type_not_supported(dataframe):
     """
     with pytest.raises(TypeError) as exc:
         dataframe[1.234] = True
-    assert "Setting key '1.234' with value 'True' not supported!" in str(exc.value)
+    assert 'type of argument "key" must be str; got float instead' in str(exc.value)
 
 
 def test_multiple_statements(dataframe):
