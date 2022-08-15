@@ -3,7 +3,7 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from http import HTTPStatus
 
@@ -115,12 +115,22 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         RecordRetrievalException
             When the response status code is unexpected
         """
-        client = Configurations().get_client()
-        response = client.get(url=cls._route)
-        if response.status_code == HTTPStatus.OK:
-            response_dict = response.json()
-            return [elem["name"] for elem in response_dict["data"]]
-        raise RecordRetrievalException(response, "Failed to list object names.")
+        output = []
+        to_request = True
+        page = 1
+        while to_request:
+            client = Configurations().get_client()
+            response = client.get(url=cls._route, params={"page": page})
+            if response.status_code == HTTPStatus.OK:
+                response_dict = response.json()
+                total = response_dict["total"]
+                page_size = response_dict["page_size"]
+                to_request = total > page * page_size
+                page += 1
+                output.extend([elem["name"] for elem in response_dict["data"]])
+            else:
+                raise RecordRetrievalException(response, "Failed to list object names.")
+        return output
 
     def audit(self) -> Any:
         """
