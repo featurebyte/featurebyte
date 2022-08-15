@@ -13,6 +13,7 @@ from fastapi import APIRouter, Request
 from featurebyte.models.event_data import EventDataModel, FeatureJobSettingHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (
+    AuditLogSortByQuery,
     NameQuery,
     PageQuery,
     PageSizeQuery,
@@ -105,7 +106,7 @@ async def list_event_data_audit_logs(
     event_data_id: PydanticObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
+    sort_by: Optional[str] = AuditLogSortByQuery,
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
