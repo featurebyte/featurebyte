@@ -8,10 +8,18 @@ from typing import Optional
 from http import HTTPStatus
 
 from beanie import PydanticObjectId
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Request
 
 from featurebyte.models.feature import FeatureNamespaceModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.common.schema import (
+    NameQuery,
+    PageQuery,
+    PageSizeQuery,
+    SearchQuery,
+    SortByQuery,
+    SortDirQuery,
+)
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceList,
@@ -56,12 +64,12 @@ async def get_feature_namespace(
 @router.get("", response_model=FeatureNamespaceList)
 async def list_feature_namespaces(
     request: Request,
-    page: int = Query(default=1, gt=0),
-    page_size: int = Query(default=10, gt=0),
-    sort_by: Optional[str] = Query(default="created_at", min_length=1, max_length=255),
-    sort_dir: Optional[str] = Query(default="desc", regex="^(asc|desc)$"),
-    search: Optional[str] = Query(default=None, min_length=1, max_length=255),
-    name: Optional[str] = Query(default=None, min_length=1, max_length=255),
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = SortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
+    name: Optional[str] = NameQuery,
 ) -> FeatureNamespaceList:
     """
     List FeatureNamespace
@@ -103,11 +111,11 @@ async def update_feature_namespace(
 async def list_feature_namespace_audit_logs(
     request: Request,
     feature_namespace_id: PydanticObjectId,
-    page: int = Query(default=1, gt=0),
-    page_size: int = Query(default=10, gt=0),
-    sort_by: Optional[str] = Query(default="_id", min_length=1, max_length=255),
-    sort_dir: Optional[str] = Query(default="desc", regex="^(asc|desc)$"),
-    search: Optional[str] = Query(default=None, min_length=1, max_length=255),
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = SortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
     List Feature Namespace audit logs

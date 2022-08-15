@@ -8,10 +8,18 @@ from typing import List, Optional
 from http import HTTPStatus
 
 from beanie import PydanticObjectId
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Request
 
 from featurebyte.models.event_data import EventDataModel, FeatureJobSettingHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.common.schema import (
+    NameQuery,
+    PageQuery,
+    PageSizeQuery,
+    SearchQuery,
+    SortByQuery,
+    SortDirQuery,
+)
 from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
 
 router = APIRouter(prefix="/event_data")
@@ -34,12 +42,12 @@ async def create_event_data(
 @router.get("", response_model=EventDataList)
 async def list_event_data(
     request: Request,
-    page: int = Query(default=1, gt=0),
-    page_size: int = Query(default=10, gt=0),
-    sort_by: Optional[str] = Query(default="created_at", min_length=1, max_length=255),
-    sort_dir: Optional[str] = Query(default="desc", regex="^(asc|desc)$"),
-    search: Optional[str] = Query(default=None, min_length=1, max_length=255),
-    name: Optional[str] = Query(default=None, min_length=1, max_length=255),
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = SortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
+    name: Optional[str] = NameQuery,
 ) -> EventDataList:
     """
     List Event Datas
@@ -95,11 +103,11 @@ async def update_event_data(
 async def list_event_data_audit_logs(
     request: Request,
     event_data_id: PydanticObjectId,
-    page: int = Query(default=1, gt=0),
-    page_size: int = Query(default=10, gt=0),
-    sort_by: Optional[str] = Query(default="_id", min_length=1, max_length=255),
-    sort_dir: Optional[str] = Query(default="desc", regex="^(asc|desc)$"),
-    search: Optional[str] = Query(default=None, min_length=1, max_length=255),
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = SortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
     List Event Data audit logs

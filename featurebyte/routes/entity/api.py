@@ -8,10 +8,18 @@ from typing import List, Optional
 from http import HTTPStatus
 
 from beanie import PydanticObjectId
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Request
 
 from featurebyte.models.entity import EntityModel, EntityNameHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.common.schema import (
+    NameQuery,
+    PageQuery,
+    PageSizeQuery,
+    SearchQuery,
+    SortByQuery,
+    SortDirQuery,
+)
 from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
 
 router = APIRouter(prefix="/entity")
@@ -42,12 +50,12 @@ async def get_entity(request: Request, entity_id: str) -> EntityModel:
 @router.get("", response_model=EntityList)
 async def list_entities(
     request: Request,
-    page: int = Query(default=1, gt=0),
-    page_size: int = Query(default=10, gt=0),
-    sort_by: Optional[str] = Query(default="created_at", min_length=1, max_length=255),
-    sort_dir: Optional[str] = Query(default="desc", regex="^(asc|desc)$"),
-    search: Optional[str] = Query(default=None, min_length=1, max_length=255),
-    name: Optional[str] = Query(default=None, min_length=1, max_length=255),
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = SortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
+    name: Optional[str] = NameQuery,
 ) -> EntityList:
     """
     List Entity
@@ -83,11 +91,11 @@ async def update_entity(request: Request, entity_id: str, data: EntityUpdate) ->
 async def list_entity_audit_logs(
     request: Request,
     entity_id: PydanticObjectId,
-    page: int = Query(default=1, gt=0),
-    page_size: int = Query(default=10, gt=0),
-    sort_by: Optional[str] = Query(default="_id", min_length=1, max_length=255),
-    sort_dir: Optional[str] = Query(default="desc", regex="^(asc|desc)$"),
-    search: Optional[str] = Query(default=None, min_length=1, max_length=255),
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = SortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
     List Entity audit logs
