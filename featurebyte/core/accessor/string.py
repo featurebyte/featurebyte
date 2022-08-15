@@ -1,5 +1,5 @@
 """
-This modul contains string accessor class
+This module contains string accessor class
 """
 from __future__ import annotations
 
