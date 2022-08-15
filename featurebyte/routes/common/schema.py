@@ -3,7 +3,8 @@ Common classes mixin for API payload schema
 """
 from typing import Any, List
 
-from pydantic import validator
+from fastapi import Query
+from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel
 
@@ -13,45 +14,25 @@ class PaginationMixin(FeatureByteBaseModel):
     Add page and page_size
     """
 
-    page: int = 1
-    page_size: int = 10
+    page: int = Field(default=1, gt=0)
+    page_size: int = Field(default=10, gt=0, lt=100)
     total: int
     data: List[Any]
 
-    @validator("page_size")
-    @classmethod
-    def limit_size(cls, value: int) -> int:
-        """
-        Limit page size to 100
 
-        Parameters
-        ----------
-        value: int
-            value to be validated / updated
-
-        Returns
-        -------
-        int
-            validated / updated value
-        """
-        assert value <= 100, "Must not exceed 100"
-        return value
-
-    @validator("page", "page_size")
-    @classmethod
-    def min_value(cls, value: int) -> int:
-        """
-        Ensure page is 1 or larger
-
-        Parameters
-        ----------
-        value: int
-            value to be validated / updated
-
-        Returns
-        -------
-        int
-            validated / updated value
-        """
-        assert value > 0, "Must not be smaller than 1"
-        return value
+# route query parameters
+COLUMN_STR_MAX_LENGTH = 255
+COLUMN_STR_MIN_LENGTH = 1
+PageQuery = Query(default=1, gt=0)
+PageSizeQuery = Query(default=10, gt=0)
+SortByQuery = Query(
+    default="created_at", min_length=COLUMN_STR_MIN_LENGTH, max_length=COLUMN_STR_MAX_LENGTH
+)
+SortDirQuery = Query(default="desc", regex="^(asc|desc)$")
+SearchQuery = Query(
+    default=None, min_length=COLUMN_STR_MIN_LENGTH, max_length=COLUMN_STR_MAX_LENGTH
+)
+NameQuery = Query(default=None, min_length=COLUMN_STR_MIN_LENGTH, max_length=COLUMN_STR_MAX_LENGTH)
+AuditLogSortByQuery = Query(
+    default="_id", min_length=COLUMN_STR_MIN_LENGTH, max_length=COLUMN_STR_MAX_LENGTH
+)

@@ -3,7 +3,7 @@ FeatureList API routes
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Optional
 
 from http import HTTPStatus
 
@@ -12,6 +12,15 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.feature import FeatureListModel
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.common.schema import (
+    AuditLogSortByQuery,
+    NameQuery,
+    PageQuery,
+    PageSizeQuery,
+    SearchQuery,
+    SortByQuery,
+    SortDirQuery,
+)
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListPaginatedList
 
 router = APIRouter(prefix="/feature_list")
@@ -45,12 +54,12 @@ async def get_feature_list(request: Request, feature_list_id: str) -> FeatureLis
 @router.get("", response_model=FeatureListPaginatedList)
 async def list_feature_list(
     request: Request,
-    page: int = 1,
-    page_size: int = 10,
-    sort_by: Optional[str] = "created_at",
-    sort_dir: Literal["asc", "desc"] = "desc",
-    search: Optional[str] = None,
-    name: Optional[str] = None,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = SortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
+    name: Optional[str] = NameQuery,
 ) -> FeatureListPaginatedList:
     """
     List FeatureLists
@@ -72,11 +81,11 @@ async def list_feature_list(
 async def list_feature_list_audit_logs(
     request: Request,
     feature_list_id: PydanticObjectId,
-    page: int = 1,
-    page_size: int = 10,
-    sort_by: Optional[str] = "_id",
-    sort_dir: Literal["asc", "desc"] = "desc",
-    search: Optional[str] = None,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = AuditLogSortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
     List Feature audit logs

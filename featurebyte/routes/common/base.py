@@ -57,10 +57,6 @@ class BaseController(Generic[Document, PaginatedDocument]):
         return "".join(elem.title() for elem in collection_name.split("_"))
 
     @classmethod
-    def _format_document(cls, doc: dict[str, Any]) -> str:
-        return ", ".join(f'{key}: "{value}"' for key, value in doc.items())
-
-    @classmethod
     def get_conflict_message(
         cls,
         conflict_doc: dict[str, Any],
@@ -87,9 +83,10 @@ class BaseController(Generic[Document, PaginatedDocument]):
         str
             Error message for conflict exception
         """
-        message = (
-            f"{cls.to_class_name()} ({cls._format_document(conflict_signature)}) already exists."
+        formatted_conflict_signature = ", ".join(
+            f'{key}: "{value}"' for key, value in conflict_signature.items()
         )
+        message = f"{cls.to_class_name()} ({formatted_conflict_signature}) already exists."
         if resolution_signature:
             if (
                 resolution_signature
@@ -236,6 +233,75 @@ class BaseController(Generic[Document, PaginatedDocument]):
                 resolution_signature=resolution_signature,
             )
 
+    @staticmethod
+    def _construct_get_query_filter(user: Any, document_id: ObjectId) -> QueryFilter:
+        """
+        Construct query filter used in get route
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        document_id: ObjectId
+            Document ID
+
+        Returns
+        -------
+        QueryFilter
+        """
+        _ = user
+        return {"_id": ObjectId(document_id)}
+
+    @staticmethod
+    def _construct_list_query_filter(user: Any, **kwargs: Any) -> QueryFilter:
+        """
+        Construct query filter used in list route
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        kwargs: Any
+            Keyword arguments passed to the list controller
+
+        Returns
+        -------
+        QueryFilter
+        """
+        _ = user
+        output = {}
+        if kwargs.get("name"):
+            output["name"] = kwargs["name"]
+        if kwargs.get("search"):
+            output["$text"] = {"$search": kwargs["search"]}
+        return output
+
+    @staticmethod
+    def _construct_list_audit_query_filter(
+        user: Any, query_filter: Optional[QueryFilter], **kwargs: Any
+    ) -> QueryFilter:
+        """
+        Construct query filter used in list audit route
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        query_filter: Optional[QueryFilter]
+            Input query filter
+        kwargs: Any
+            Keyword arguments passed to the list controller
+
+        Returns
+        -------
+        QueryFilter
+        """
+        _ = user
+        query_filter = copy.deepcopy(query_filter) if query_filter else {}
+        if kwargs.get("search"):
+            query_filter["$text"] = {"$search": kwargs["search"]}
+        return query_filter
+
     @classmethod
     async def get_document(
         cls,
@@ -268,7 +334,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         -------
         dict[str, Any]
         """
-        query_filter = {"_id": ObjectId(document_id), "user_id": user.id}
+        query_filter = cls._construct_get_query_filter(user=user, document_id=document_id)
         document = await persistent.find_one(
             collection_name=collection_name, query_filter=query_filter, user_id=user.id
         )
@@ -333,8 +399,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         page_size: int = 10,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
-        name: Optional[str] = None,
-        search: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedDocument:
         """
         List documents stored at persistent (GitDB or MongoDB)
@@ -353,21 +418,15 @@ class BaseController(Generic[Document, PaginatedDocument]):
             Key used to sort the returning documents
         sort_dir: "asc" or "desc"
             Sorting the returning documents in ascending order or descending order
-        name: str | None
-            Document name used to filter the documents
-        search: str | None
-            Search term (not supported)
+        kwargs: Any
+            Additional keyword arguments
 
         Returns
         -------
         dict[str, Any]
             List of documents fulfilled the filtering condition
         """
-        query_filter = {"user_id": user.id}
-        if name is not None:
-            query_filter["name"] = name
-        if search:
-            query_filter["$text"] = {"$search": search}
+        query_filter = cls._construct_list_query_filter(user, **kwargs)
 
         try:
             docs, total = await persistent.find(
@@ -401,7 +460,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         page_size: int = 10,
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
-        search: str | None = None,
+        **kwargs: Any,
     ) -> AuditDocumentList:
         """
         List audit records stored at persistent (GitDB or MongoDB)
@@ -424,18 +483,17 @@ class BaseController(Generic[Document, PaginatedDocument]):
             Key used to sort the returning documents
         sort_dir: "asc" or "desc"
             Sorting the returning documents in ascending order or descending order
-        search: str | None
-            Search term (not supported)
+        kwargs: Any
+            Additional keyword arguments
 
         Returns
         -------
         AuditDocumentList
             List of documents fulfilled the filtering condition
         """
-        query_filter = copy.deepcopy(query_filter) if query_filter else {}
-        query_filter.update({"user_id": user.id})
-        if search:
-            query_filter["$text"] = {"$search": search}
+        query_filter = cls._construct_list_audit_query_filter(
+            user=user, query_filter=query_filter, **kwargs
+        )
 
         try:
             docs, total = await persistent.get_audit_logs(
@@ -457,6 +515,20 @@ class BaseController(Generic[Document, PaginatedDocument]):
     def _get_field_history(
         cls, field: str, audit_docs: List[Dict[str, Any]]
     ) -> List[FieldValueHistory]:
+        """
+        Construct list of audit history given field
+
+        Parameters
+        ----------
+        field: str
+            Field name
+        audit_docs: List[Dict[str, Any]]
+            List of audit history retrieved from persistent
+
+        Returns
+        -------
+        List[FieldValueHistory]
+        """
         history: List[FieldValueHistory] = []
         for doc in audit_docs:
             if doc["action_type"] not in {AuditActionType.INSERT, AuditActionType.UPDATE}:
@@ -517,15 +589,12 @@ class BaseController(Generic[Document, PaginatedDocument]):
         List[FieldValueHistory]
             List of historical values for a field in the document
         """
-        query_filter = {
-            "user_id": user.id,
-        }
-
+        _ = user
         try:
             docs, _ = await persistent.get_audit_logs(
                 collection_name=cls.collection_name,
                 document_id=document_id,
-                query_filter={**query_filter},
+                query_filter={},
                 sort_by="action_at",
                 sort_dir="asc",
             )
