@@ -608,6 +608,17 @@ class DatetimeExtractNode(ExpressionNode):
 
 
 @dataclass
+class NotNode(ExpressionNode):
+    """Node for inverting binary column operation"""
+
+    expr: ExpressionNode
+
+    @property
+    def sql(self) -> Expression:
+        return expressions.Not(this=self.expr.sql)
+
+
+@dataclass
 class BuildTileNode(TableNode):
     """Tile builder node
 
@@ -1061,6 +1072,7 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.STR_CONTAINS,
     NodeType.SUBSTRING,
     NodeType.DT_EXTRACT,
+    NodeType.NOT,
 }
 
 
@@ -1093,6 +1105,8 @@ def make_expression_node(
     sql_node: ExpressionNode
     if node_type == NodeType.IS_NULL:
         sql_node = IsNullNode(table_node=table_node, expr=input_expr_node)
+    elif node_type == NodeType.NOT:
+        sql_node = NotNode(table_node=table_node, expr=input_expr_node)
     elif node_type == NodeType.LENGTH:
         sql_node = LengthNode(table_node=table_node, expr=input_expr_node)
     elif node_type == NodeType.STR_CASE:

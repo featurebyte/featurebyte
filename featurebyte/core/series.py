@@ -392,6 +392,15 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
     def __rtruediv__(self, other: Union[int, float, Series]) -> Series:
         return self._binary_arithmetic_op(other, NodeType.DIV, right_op=True)
 
+    def __invert__(self) -> Series:
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.NOT,
+            output_var_type=DBVarType.BOOL,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
     def isnull(self) -> Series:
         """
         Returns a boolean Series indicating whether each value is missing
@@ -407,6 +416,16 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_params={},
             **self.unary_op_series_params(),
         )
+
+    def notnull(self) -> Series:
+        """
+        Returns a boolean Series indicating whether each value is not null
+
+        Returns
+        -------
+        Series
+        """
+        return ~self.isnull()
 
     @typechecked
     def fillna(self, other: Union[int, float, str, bool]) -> None:
