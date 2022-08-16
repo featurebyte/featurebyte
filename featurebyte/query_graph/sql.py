@@ -604,7 +604,15 @@ class DatetimeExtractNode(ExpressionNode):
     @property
     def sql(self) -> Expression:
         params = {"this": self.dt_property, "expression": self.expr.sql}
-        return expressions.Extract(**params)
+        prop_expr = expressions.Extract(**params)
+        if self.dt_property == "dayofweek":
+            return expressions.Mod(
+                this=expressions.Paren(
+                    this=expressions.Add(this=prop_expr, expression=make_literal_value(6))
+                ),
+                expression=make_literal_value(7),
+            )
+        return prop_expr
 
 
 @dataclass

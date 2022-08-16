@@ -131,10 +131,11 @@ def transaction_dataframe():
     Simulated transaction Dataframe
     """
     # pylint: disable=no-member
-    row_number = 100
+    row_number = 2 * 24 * 366
     rng = np.random.RandomState(1234)
     product_actions = ["detail", "add", "purchase", "remove", None]
-    timestamps = pd.date_range("2001-01-01", freq="1h", periods=48)
+    timestamps = pd.date_range("2001-01-01", freq="1h", periods=24 * 366)
+    timestamps += np.random.randint(0, 3600, len(timestamps)) * pd.Timedelta(seconds=1)
     data = pd.DataFrame(
         {
             "event_timestamp": rng.choice(timestamps, row_number),

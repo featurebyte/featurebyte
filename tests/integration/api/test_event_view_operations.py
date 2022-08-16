@@ -119,6 +119,10 @@ def test_query_object_operation_on_snowflake_source(
     # apply more event view operations
     event_view["AMOUNT"].fillna(0)
 
+    # check accessor operations
+    check_string_operations(event_view.PRODUCT_ACTION)
+    check_datetime_operations(event_view.EVENT_TIMESTAMP)
+
     # construct expected results
     expected = transaction_data_upper_case.copy()
     expected["CUST_ID_X_SESSION_ID"] = (expected["CUST_ID"] * expected["SESSION_ID"]) / 1000.0
@@ -162,7 +166,7 @@ def test_query_object_operation_on_snowflake_source(
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
         "COUNT_2h": 1,
-        "COUNT_24h": 9,
+        "COUNT_24h": 4,
     }
 
     # preview count per category features
@@ -174,7 +178,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "COUNT_BY_ACTION_24h": '{\n  "add": 2,\n  "purchase": 3,\n  "remove": 4\n}',
+        "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 1,\n  "detail": 1,\n  "remove": 1\n}',
     }
 
     # preview one feature only
@@ -198,7 +202,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "Unnamed": Decimal("0.111111"),
+        "Unnamed": Decimal("0.25"),
     }
 
     run_test_conditional_assign_feature(config, feature_group)
@@ -214,8 +218,8 @@ def test_query_object_operation_on_snowflake_source(
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
         "COUNT_2h": 1,
-        "COUNT_24h": 9,
-        "COUNT_2h / COUNT_24h": Decimal("0.111111"),
+        "COUNT_24h": 4,
+        "COUNT_2h / COUNT_24h": Decimal("0.25"),
     }
     special_feature = create_feature_with_filtered_event_view(event_view)
     special_feature.save()  # pylint: disable=no-member
@@ -255,10 +259,10 @@ def run_test_conditional_assign_feature(config, feature_group):
         "uid": 1,
     }
     result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
-    assert result == {**preview_param, "COUNT_24h": 9}
+    assert result == {**preview_param, "COUNT_24h": 4}
 
     # Assign feature conditionally. Should be reflected in both Feature and FeatureGroup
-    mask = feature_count_24h == 9.0
+    mask = feature_count_24h == 4.0
     feature_count_24h[mask] = 900
     result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
     assert result == {**preview_param, "COUNT_24h": 900}
@@ -268,21 +272,21 @@ def run_test_conditional_assign_feature(config, feature_group):
     # Assign conditionally again (revert the above). Should be reflected in both Feature and
     # FeatureGroup
     mask = feature_count_24h == 900.0
-    feature_count_24h[mask] = 9
+    feature_count_24h[mask] = 4.0
     result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
-    assert result == {**preview_param, "COUNT_24h": 9}
+    assert result == {**preview_param, "COUNT_24h": 4}
     result = get_feature_preview_as_dict(feature_group, preview_param, config)
-    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 9}
+    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 4}
 
     # Assign to an unnamed Feature conditionally. Should not be reflected in Feature only and has no
     # effect on FeatureGroup
     temp_feature = feature_count_24h * 10
-    mask = temp_feature == 90.0
+    mask = temp_feature == 40.0
     temp_feature[mask] = 900
     result = get_feature_preview_as_dict(temp_feature, preview_param, config)
     assert result == {**preview_param, "Unnamed": 900}
     result = get_feature_preview_as_dict(feature_group, preview_param, config)
-    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 9}
+    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 4}
 
 
 def run_and_test_get_historical_features(config, feature_group, feature_group_per_category):
@@ -306,30 +310,30 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
         {
             "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
             "uid": df_training_events["uid"],
-            "COUNT_2h": [1, 1, 0, 1, 0, 0, 0, 0, 0, 0],
-            "COUNT_24h": [9, 7, 2, 5, 5, 4, 4, 7, 5, 0],
+            "COUNT_2h": [1, 1, 0, 0, 1, 1, 0, 0, 1, 0],
+            "COUNT_24h": [4, 3, 8, 6, 3, 7, 4, 4, 8, 0],
             "COUNT_BY_ACTION_24h": [
-                '{\n  "add": 2,\n  "purchase": 3,\n  "remove": 4\n}',
-                '{\n  "__MISSING__": 2,\n  "add": 3,\n  "detail": 1,\n  "purchase": 1\n}',
-                '{\n  "__MISSING__": 1,\n  "remove": 1\n}',
-                '{\n  "__MISSING__": 1,\n  "add": 2,\n  "detail": 2\n}',
-                '{\n  "add": 1,\n  "detail": 1,\n  "purchase": 2,\n  "remove": 1\n}',
-                '{\n  "add": 1,\n  "detail": 1,\n  "remove": 2\n}',
-                '{\n  "add": 1,\n  "purchase": 2,\n  "remove": 1\n}',
-                '{\n  "__MISSING__": 3,\n  "add": 1,\n  "purchase": 1,\n  "remove": 2\n}',
-                '{\n  "add": 3,\n  "detail": 1,\n  "remove": 1\n}',
+                '{\n  "__MISSING__": 1,\n  "add": 1,\n  "detail": 1,\n  "remove": 1\n}',
+                '{\n  "__MISSING__": 1,\n  "purchase": 1,\n  "remove": 1\n}',
+                '{\n  "__MISSING__": 3,\n  "add": 1,\n  "detail": 2,\n  "remove": 2\n}',
+                '{\n  "__MISSING__": 1,\n  "add": 2,\n  "detail": 1,\n  "purchase": 1,\n  "remove": 1\n}',
+                '{\n  "detail": 1,\n  "purchase": 2\n}',
+                '{\n  "__MISSING__": 3,\n  "add": 2,\n  "purchase": 1,\n  "remove": 1\n}',
+                '{\n  "__MISSING__": 1,\n  "detail": 1,\n  "purchase": 1,\n  "remove": 1\n}',
+                '{\n  "__MISSING__": 1,\n  "add": 1,\n  "detail": 1,\n  "purchase": 1\n}',
+                '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 1,\n  "purchase": 3,\n  "remove": 1\n}',
                 None,
             ],
             "COUNT_2h / COUNT_24h": [
-                0.111111,
+                0.250000,
+                0.333333,
+                0,
+                0,
+                0.333333,
                 0.142857,
                 0,
-                0.2,
                 0,
-                0,
-                0,
-                0,
-                0,
+                0.125000,
                 np.nan,  # Note: zero divide by zero
             ],
         }
@@ -365,3 +369,84 @@ def _test_get_historical_features_with_serving_names(
         serving_names_mapping=mapping,
     )
     pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)
+
+
+def check_string_operations(varchar_series, limit=100):
+    """Test string operations"""
+    pandas_frame = varchar_series.preview(limit=limit)
+    pandas_series = pandas_frame[pandas_frame.columns[0]]
+
+    str_len = varchar_series.str.len().preview(limit=limit)
+    str_lower = varchar_series.str.lower().preview(limit=limit)
+    str_upper = varchar_series.str.upper().preview(limit=limit)
+    str_strip = varchar_series.str.strip("e").preview(limit=limit)
+    str_lstrip = varchar_series.str.lstrip("p").preview(limit=limit)
+    str_rstrip = varchar_series.str.rstrip("l").preview(limit=limit)
+    str_replace = varchar_series.str.replace("a", "i").preview(limit=limit)
+    str_pad = varchar_series.str.pad(10, side="both", fillchar="-").preview(limit=limit)
+    str_contains = varchar_series.str.contains("ai").preview(limit=limit)
+    str_slice = varchar_series.str[:5].preview(limit=limit)
+
+    pd.testing.assert_series_equal(
+        str_len[str_len.columns[0]], pandas_series.str.len(), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        str_lower[str_lower.columns[0]], pandas_series.str.lower(), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        str_upper[str_upper.columns[0]], pandas_series.str.upper(), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        str_strip[str_strip.columns[0]], pandas_series.str.strip("e"), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        str_lstrip[str_lstrip.columns[0]], pandas_series.str.lstrip("p"), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        str_rstrip[str_rstrip.columns[0]], pandas_series.str.rstrip("l"), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        str_replace[str_replace.columns[0]],
+        pandas_series.str.replace("a", "i"),
+        check_names=False,
+    )
+    pd.testing.assert_series_equal(
+        str_pad[str_pad.columns[0]],
+        pandas_series.str.pad(10, side="both", fillchar="-"),
+        check_names=False,
+    )
+    pd.testing.assert_series_equal(
+        str_contains[str_contains.columns[0]],
+        pandas_series.str.contains("ai"),
+        check_names=False,
+    )
+    pd.testing.assert_series_equal(
+        str_slice[str_slice.columns[0]], pandas_series.str[:5], check_names=False
+    )
+
+
+def check_datetime_operations(datetime_series, limit=100):
+    """Test datetime operations"""
+    pandas_frame = datetime_series.preview(limit=limit)
+    pandas_series = pandas_frame[pandas_frame.columns[0]]
+
+    properties = [
+        "year",
+        "quarter",
+        "month",
+        "week",
+        "day",
+        "day_of_week",
+        "hour",
+        "minute",
+        "second",
+    ]
+    for prop in properties:
+        dt_prop = getattr(datetime_series.dt, prop).preview(limit=limit)
+        series_prop = getattr(pandas_series.dt, prop)
+        pd.testing.assert_series_equal(
+            dt_prop[dt_prop.columns[0]],
+            series_prop,
+            check_names=False,
+            check_dtype=False,
+        )

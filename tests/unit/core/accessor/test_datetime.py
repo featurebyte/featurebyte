@@ -16,7 +16,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
         (lambda s: s.dt.month, 'EXTRACT(month FROM "TIMESTAMP")'),
         (lambda s: s.dt.week, 'EXTRACT(week FROM "TIMESTAMP")'),
         (lambda s: s.dt.day, 'EXTRACT(day FROM "TIMESTAMP")'),
-        (lambda s: s.dt.day_of_week, 'EXTRACT(dayofweek FROM "TIMESTAMP")'),
+        (lambda s: s.dt.day_of_week, '(EXTRACT(dayofweek FROM "TIMESTAMP") + 6) % 7'),
         (lambda s: s.dt.hour, 'EXTRACT(hour FROM "TIMESTAMP")'),
         (lambda s: s.dt.minute, 'EXTRACT(minute FROM "TIMESTAMP")'),
         (lambda s: s.dt.second, 'EXTRACT(second FROM "TIMESTAMP")'),
