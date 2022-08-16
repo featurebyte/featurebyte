@@ -599,7 +599,9 @@ class DatetimeExtractNode(ExpressionNode):
     """Node for extract datetime properties operation"""
 
     expr: ExpressionNode
-    dt_property: Literal["year"]
+    dt_property: Literal[
+        "year", "quarter", "month", "week", "day", "dayofweek", "hour", "minute", "second"
+    ]
 
     @property
     def sql(self) -> Expression:

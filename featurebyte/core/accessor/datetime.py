@@ -37,6 +37,8 @@ class DatetimeAccessor:
     DatetimeAccessor class used to manipulate datetime-like type Series object
     """
 
+    # pylint: disable=too-few-public-methods
+
     _property_node_params_map = {
         "year": "year",
         "quarter": "quarter",
@@ -49,14 +51,12 @@ class DatetimeAccessor:
         "second": "second",
     }
 
-    # pylint: disable=too-few-public-methods
-
     def __init__(self, obj: Series):
         if obj.var_type != DBVarType.TIMESTAMP:
             raise AttributeError("Can only use .dt accessor with TIMESTAMP values!")
         self._obj = obj
 
-    def _extract_datetime_properties(self, node_params: Dict[str, Any]):
+    def _extract_datetime_properties(self, node_params: Dict[str, Any]) -> Series:
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.DT_EXTRACT,
