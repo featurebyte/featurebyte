@@ -608,6 +608,8 @@ class DatetimeExtractNode(ExpressionNode):
         params = {"this": self.dt_property, "expression": self.expr.sql}
         prop_expr = expressions.Extract(**params)
         if self.dt_property == "dayofweek":
+            # pandas: Monday=0, Sunday=6; snowflake: Sunday=0, Saturday=6
+            # to follow pandas behavior, add 6 then modulo 7 to perform left-shift
             return expressions.Mod(
                 this=expressions.Paren(
                     this=expressions.Add(this=prop_expr, expression=make_literal_value(6))
