@@ -131,14 +131,28 @@ def transaction_dataframe():
     Simulated transaction Dataframe
     """
     # pylint: disable=no-member
-    row_number = 1 * 24 * 366
+    row_number = 24 * 366
     rng = np.random.RandomState(1234)
     product_actions = ["detail", "add", "purchase", "remove", None]
-    timestamps = pd.date_range("2001-01-01", freq="1h", periods=24 * 366)
+    timestamps = pd.date_range("2001-01-01", freq="1h", periods=24 * 366).to_series()
     timestamps += np.random.randint(0, 3600, len(timestamps)) * pd.Timedelta(seconds=1)
+
+    # add more points to the first one month
+    first_one_month_point_num = 24 * 31
+    target_point_num = 4000
+    event_timestamps = np.concatenate(
+        [
+            rng.choice(timestamps.head(first_one_month_point_num), target_point_num),
+            rng.choice(
+                timestamps.tail(row_number - first_one_month_point_num),
+                row_number - target_point_num,
+            ),
+        ]
+    )
+
     data = pd.DataFrame(
         {
-            "event_timestamp": rng.choice(timestamps, row_number),
+            "event_timestamp": event_timestamps,
             "created_at": pd.date_range("2001-01-01", freq="1min", periods=row_number),
             "cust_id": rng.randint(1, 10, row_number),
             "user_id": rng.randint(1, 10, row_number),

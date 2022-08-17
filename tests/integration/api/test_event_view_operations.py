@@ -168,7 +168,7 @@ def test_query_object_operation_on_snowflake_source(
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
         "COUNT_2h": 1,
-        "COUNT_24h": 4,
+        "COUNT_24h": 15,
     }
 
     # preview count per category features
@@ -180,7 +180,9 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 1,\n  "detail": 1,\n  "remove": 1\n}',
+        "COUNT_BY_ACTION_24h": (
+            '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 3,\n  "purchase": 2,\n  "remove": 7\n}'
+        ),
     }
 
     # preview one feature only
@@ -204,7 +206,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "Unnamed": Decimal("0.25"),
+        "Unnamed": Decimal("0.066667"),
     }
 
     run_test_conditional_assign_feature(config, feature_group)
@@ -220,8 +222,8 @@ def test_query_object_operation_on_snowflake_source(
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
         "COUNT_2h": 1,
-        "COUNT_24h": 4,
-        "COUNT_2h / COUNT_24h": Decimal("0.25"),
+        "COUNT_24h": 15,
+        "COUNT_2h / COUNT_24h": Decimal("0.066667"),
     }
     special_feature = create_feature_with_filtered_event_view(event_view)
     special_feature.save()  # pylint: disable=no-member
@@ -261,10 +263,10 @@ def run_test_conditional_assign_feature(config, feature_group):
         "uid": 1,
     }
     result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
-    assert result == {**preview_param, "COUNT_24h": 4}
+    assert result == {**preview_param, "COUNT_24h": 15}
 
     # Assign feature conditionally. Should be reflected in both Feature and FeatureGroup
-    mask = feature_count_24h == 4.0
+    mask = feature_count_24h == 15.0
     feature_count_24h[mask] = 900
     result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
     assert result == {**preview_param, "COUNT_24h": 900}
@@ -274,21 +276,21 @@ def run_test_conditional_assign_feature(config, feature_group):
     # Assign conditionally again (revert the above). Should be reflected in both Feature and
     # FeatureGroup
     mask = feature_count_24h == 900.0
-    feature_count_24h[mask] = 4.0
+    feature_count_24h[mask] = 15.0
     result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
-    assert result == {**preview_param, "COUNT_24h": 4}
+    assert result == {**preview_param, "COUNT_24h": 15}
     result = get_feature_preview_as_dict(feature_group, preview_param, config)
-    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 4}
+    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 15}
 
     # Assign to an unnamed Feature conditionally. Should not be reflected in Feature only and has no
     # effect on FeatureGroup
     temp_feature = feature_count_24h * 10
-    mask = temp_feature == 40.0
+    mask = temp_feature == 150.0
     temp_feature[mask] = 900
     result = get_feature_preview_as_dict(temp_feature, preview_param, config)
     assert result == {**preview_param, "Unnamed": 900}
     result = get_feature_preview_as_dict(feature_group, preview_param, config)
-    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 4}
+    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 15}
 
 
 def run_and_test_get_historical_features(config, feature_group, feature_group_per_category):
@@ -312,30 +314,30 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
         {
             "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
             "uid": df_training_events["uid"],
-            "COUNT_2h": [1, 1, 0, 0, 1, 1, 0, 0, 1, 0],
-            "COUNT_24h": [4, 3, 8, 6, 3, 7, 4, 4, 8, 0],
+            "COUNT_2h": [1, 0, 2, 3, 0, 1, 1, 3, 0, 0],
+            "COUNT_24h": [15, 12, 16, 21, 9, 8, 21, 13, 13, 0],
             "COUNT_BY_ACTION_24h": [
-                '{\n  "__MISSING__": 1,\n  "add": 1,\n  "detail": 1,\n  "remove": 1\n}',
-                '{\n  "__MISSING__": 1,\n  "purchase": 1,\n  "remove": 1\n}',
-                '{\n  "__MISSING__": 3,\n  "add": 1,\n  "detail": 2,\n  "remove": 2\n}',
-                '{\n  "__MISSING__": 1,\n  "add": 2,\n  "detail": 1,\n  "purchase": 1,\n  "remove": 1\n}',
-                '{\n  "detail": 1,\n  "purchase": 2\n}',
-                '{\n  "__MISSING__": 3,\n  "add": 2,\n  "purchase": 1,\n  "remove": 1\n}',
-                '{\n  "__MISSING__": 1,\n  "detail": 1,\n  "purchase": 1,\n  "remove": 1\n}',
-                '{\n  "__MISSING__": 1,\n  "add": 1,\n  "detail": 1,\n  "purchase": 1\n}',
-                '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 1,\n  "purchase": 3,\n  "remove": 1\n}',
+                '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 3,\n  "purchase": 2,\n  "remove": 7\n}',
+                '{\n  "__MISSING__": 3,\n  "add": 3,\n  "detail": 4,\n  "purchase": 1,\n  "remove": 1\n}',
+                '{\n  "__MISSING__": 3,\n  "add": 3,\n  "detail": 4,\n  "purchase": 4,\n  "remove": 2\n}',
+                '{\n  "__MISSING__": 4,\n  "add": 1,\n  "detail": 6,\n  "purchase": 6,\n  "remove": 4\n}',
+                '{\n  "__MISSING__": 3,\n  "add": 3,\n  "detail": 2,\n  "remove": 1\n}',
+                '{\n  "add": 4,\n  "detail": 3,\n  "purchase": 1\n}',
+                '{\n  "__MISSING__": 4,\n  "add": 2,\n  "detail": 3,\n  "purchase": 4,\n  "remove": 8\n}',
+                '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 4\n}',
+                '{\n  "__MISSING__": 4,\n  "add": 3,\n  "detail": 2,\n  "purchase": 3,\n  "remove": 1\n}',
                 None,
             ],
             "COUNT_2h / COUNT_24h": [
-                0.250000,
-                0.333333,
-                0,
-                0,
-                0.333333,
-                0.142857,
-                0,
-                0,
+                0.066667,
+                0.000000,
                 0.125000,
+                0.142857,
+                0.000000,
+                0.125000,
+                0.047619,
+                0.230769,
+                0.000000,
                 np.nan,  # Note: zero divide by zero
             ],
         }
