@@ -207,8 +207,8 @@ class QueryGraph(Graph):
 
         Returns
         -------
-        GlobalQueryGraph, dict[str, str]
-            updated global query graph with the node name mapping between query graph & global query graph
+        QueryGraph, dict[str, str]
+            updated query graph with the node name mapping between input query graph & output query graph
         """
         node_name_map: dict[str, str] = {}
         for node_name in topological_sort(graph):
