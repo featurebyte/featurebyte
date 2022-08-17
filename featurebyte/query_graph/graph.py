@@ -376,6 +376,7 @@ class GlobalQueryGraph(QueryGraph):
         processed_node_names: set[str],
         node_name_map: dict[str, str],
     ) -> QueryGraph:
+        # pylint: disable=too-many-locals
         # pruning: move backward from target node to the input node
         to_prune_target_node = False
         input_node_names = self.backward_edges.get(target_node.name, [])

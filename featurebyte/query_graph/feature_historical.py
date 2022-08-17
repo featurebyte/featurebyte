@@ -151,13 +151,15 @@ def get_historical_features_sql(
     MissingServingNameError
         If any required serving name is not provided
     """
+    # pylint: disable=too-many-locals
     # construct a local graph by combining multiple pruned graphs
     global_query_graph = GlobalQueryGraph()
     local_query_graph = QueryGraph()
     feature_nodes = []
     for feature in feature_objects:
+        target_columns = {feature.name} if feature.name else set()
         pruned_graph, node_name_map = global_query_graph.prune(
-            target_node=feature.node, target_columns={feature.name}
+            target_node=feature.node, target_columns=target_columns
         )
         pruned_node_name = node_name_map[feature.node.name]
         local_query_graph, local_name_map = local_query_graph.load(pruned_graph)
