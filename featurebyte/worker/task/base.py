@@ -32,7 +32,7 @@ class BaseTaskPayload(BaseModel):
         TASK_PAYLOAD_MAP[cls.command] = cls
 
     @property
-    def redirect_route(self) -> Optional[str]:
+    def task_output_path(self) -> Optional[str]:
         """
         Redirect route used to retrieve the task result
 
