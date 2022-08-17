@@ -139,14 +139,15 @@ def test_query_object_operation_on_snowflake_source(
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
     # create some features
+    event_view["derived_value_column"] = 1.0 * event_view["USER_ID"]
     feature_group = event_view.groupby("USER_ID").aggregate(
-        "USER_ID",
+        "derived_value_column",
         "count",
         windows=["2h", "24h"],
         feature_names=["COUNT_2h", "COUNT_24h"],
     )
     feature_group_per_category = event_view.groupby("USER_ID", category="PRODUCT_ACTION").aggregate(
-        "USER_ID",
+        "derived_value_column",
         "count",
         windows=["24h"],
         feature_names=["COUNT_BY_ACTION_24h"],
