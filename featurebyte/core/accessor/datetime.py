@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 class DtAccessorMixin:
     """
-    StrAccessorMixin class
+    DtAccessorMixin class
     """
 
     # pylint: disable=too-few-public-methods

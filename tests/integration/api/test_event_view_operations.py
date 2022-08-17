@@ -9,7 +9,6 @@ import pandas as pd
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
-from featurebyte.api.feature_store import FeatureStore
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureReadiness
 
@@ -120,8 +119,8 @@ def test_query_object_operation_on_snowflake_source(
     event_view["AMOUNT"].fillna(0)
 
     # check accessor operations
-    check_string_operations(event_view.PRODUCT_ACTION)
-    check_datetime_operations(event_view.EVENT_TIMESTAMP)
+    check_string_operations(event_view, "PRODUCT_ACTION")
+    check_datetime_operations(event_view, "EVENT_TIMESTAMP")
 
     # construct expected results
     expected = transaction_data_upper_case.copy()
@@ -134,7 +133,10 @@ def test_query_object_operation_on_snowflake_source(
     output["CUST_ID_X_SESSION_ID"] = output["CUST_ID_X_SESSION_ID"].astype(
         float
     )  # type is not correct here
-    pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
+    columns = [
+        col for col in output.columns if not col.startswith("str_") and not col.startswith("dt_")
+    ]
+    pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
     # create some features
     feature_group = event_view.groupby("USER_ID").aggregate(
@@ -371,62 +373,63 @@ def _test_get_historical_features_with_serving_names(
     pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)
 
 
-def check_string_operations(varchar_series, limit=100):
+def check_string_operations(event_view, column_name, limit=100):
     """Test string operations"""
+    varchar_series = event_view[column_name]
     pandas_frame = varchar_series.preview(limit=limit)
     pandas_series = pandas_frame[pandas_frame.columns[0]]
 
-    str_len = varchar_series.str.len().preview(limit=limit)
-    str_lower = varchar_series.str.lower().preview(limit=limit)
-    str_upper = varchar_series.str.upper().preview(limit=limit)
-    str_strip = varchar_series.str.strip("e").preview(limit=limit)
-    str_lstrip = varchar_series.str.lstrip("p").preview(limit=limit)
-    str_rstrip = varchar_series.str.rstrip("l").preview(limit=limit)
-    str_replace = varchar_series.str.replace("a", "i").preview(limit=limit)
-    str_pad = varchar_series.str.pad(10, side="both", fillchar="-").preview(limit=limit)
-    str_contains = varchar_series.str.contains("ai").preview(limit=limit)
-    str_slice = varchar_series.str[:5].preview(limit=limit)
+    event_view["str_len"] = varchar_series.str.len()
+    event_view["str_lower"] = varchar_series.str.lower()
+    event_view["str_upper"] = varchar_series.str.upper()
+    event_view["str_strip"] = varchar_series.str.strip("e")
+    event_view["str_lstrip"] = varchar_series.str.lstrip("p")
+    event_view["str_rstrip"] = varchar_series.str.rstrip("l")
+    event_view["str_replace"] = varchar_series.str.replace("a", "i")
+    event_view["str_pad"] = varchar_series.str.pad(10, side="both", fillchar="-")
+    event_view["str_contains"] = varchar_series.str.contains("ai")
+    event_view["str_slice"] = varchar_series.str[:5]
 
+    str_columns = [col for col in event_view.columns if col.startswith("str_")]
+    str_df = event_view[str_columns].preview(limit=limit)
+
+    pd.testing.assert_series_equal(str_df["str_len"], pandas_series.str.len(), check_names=False)
     pd.testing.assert_series_equal(
-        str_len[str_len.columns[0]], pandas_series.str.len(), check_names=False
+        str_df["str_lower"], pandas_series.str.lower(), check_names=False
     )
     pd.testing.assert_series_equal(
-        str_lower[str_lower.columns[0]], pandas_series.str.lower(), check_names=False
+        str_df["str_upper"], pandas_series.str.upper(), check_names=False
     )
     pd.testing.assert_series_equal(
-        str_upper[str_upper.columns[0]], pandas_series.str.upper(), check_names=False
+        str_df["str_strip"], pandas_series.str.strip("e"), check_names=False
     )
     pd.testing.assert_series_equal(
-        str_strip[str_strip.columns[0]], pandas_series.str.strip("e"), check_names=False
+        str_df["str_lstrip"], pandas_series.str.lstrip("p"), check_names=False
     )
     pd.testing.assert_series_equal(
-        str_lstrip[str_lstrip.columns[0]], pandas_series.str.lstrip("p"), check_names=False
+        str_df["str_rstrip"], pandas_series.str.rstrip("l"), check_names=False
     )
     pd.testing.assert_series_equal(
-        str_rstrip[str_rstrip.columns[0]], pandas_series.str.rstrip("l"), check_names=False
-    )
-    pd.testing.assert_series_equal(
-        str_replace[str_replace.columns[0]],
+        str_df["str_replace"],
         pandas_series.str.replace("a", "i"),
         check_names=False,
     )
     pd.testing.assert_series_equal(
-        str_pad[str_pad.columns[0]],
+        str_df["str_pad"],
         pandas_series.str.pad(10, side="both", fillchar="-"),
         check_names=False,
     )
     pd.testing.assert_series_equal(
-        str_contains[str_contains.columns[0]],
+        str_df["str_contains"],
         pandas_series.str.contains("ai"),
         check_names=False,
     )
-    pd.testing.assert_series_equal(
-        str_slice[str_slice.columns[0]], pandas_series.str[:5], check_names=False
-    )
+    pd.testing.assert_series_equal(str_df["str_slice"], pandas_series.str[:5], check_names=False)
 
 
-def check_datetime_operations(datetime_series, limit=100):
+def check_datetime_operations(event_view, column_name, limit=100):
     """Test datetime operations"""
+    datetime_series = event_view[column_name]
     pandas_frame = datetime_series.preview(limit=limit)
     pandas_series = pandas_frame[pandas_frame.columns[0]]
 
@@ -441,11 +444,17 @@ def check_datetime_operations(datetime_series, limit=100):
         "minute",
         "second",
     ]
+    columns = []
     for prop in properties:
-        dt_prop = getattr(datetime_series.dt, prop).preview(limit=limit)
+        name = f"dt_{prop}"
+        event_view[name] = getattr(datetime_series.dt, prop)
+        columns.append(name)
+
+    dt_df = event_view[columns].preview(limit=limit)
+    for prop in properties:
         series_prop = getattr(pandas_series.dt, prop)
         pd.testing.assert_series_equal(
-            dt_prop[dt_prop.columns[0]],
+            dt_df[f"dt_{prop}"],
             series_prop,
             check_names=False,
             check_dtype=False,
