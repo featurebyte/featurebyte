@@ -131,7 +131,7 @@ def transaction_dataframe():
     Simulated transaction Dataframe
     """
     # pylint: disable=no-member
-    row_number = 2 * 24 * 366
+    row_number = 1 * 24 * 366
     rng = np.random.RandomState(1234)
     product_actions = ["detail", "add", "purchase", "remove", None]
     timestamps = pd.date_range("2001-01-01", freq="1h", periods=24 * 366)
