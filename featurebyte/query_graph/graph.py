@@ -196,6 +196,36 @@ class QueryGraph(Graph):
             node = Node(**self.nodes[name])
         return node
 
+    def load(self, graph: QueryGraph) -> tuple[QueryGraph, dict[str, str]]:
+        """
+        Load the query graph into the global query graph
+
+        Parameters
+        ----------
+        graph: QueryGraph
+            query graph object to be loaded
+
+        Returns
+        -------
+        GlobalQueryGraph, dict[str, str]
+            updated global query graph with the node name mapping between query graph & global query graph
+        """
+        node_name_map: dict[str, str] = {}
+        for node_name in topological_sort(graph):
+            node = graph.get_node_by_name(node_name)
+            input_nodes = [
+                self.get_node_by_name(node_name_map[input_node_name])
+                for input_node_name in graph.backward_edges[node_name]
+            ]
+            node_global = self.add_operation(
+                node_type=NodeType(node.type),
+                node_params=node.parameters,
+                node_output_type=NodeOutputType(node.output_type),
+                input_nodes=input_nodes,
+            )
+            node_name_map[node_name] = node_global.name
+        return self, node_name_map
+
 
 class GraphState(TypedDict):
     """
@@ -361,6 +391,14 @@ class GlobalQueryGraph(QueryGraph):
         elif target_node.type == NodeType.PROJECT:
             # if columns are needed for projection, add them to the target_columns
             target_columns.update(target_node.parameters["columns"])
+        elif target_node.type == NodeType.GROUPBY:
+            # if columns are needed in groupby node, add them to the target_columns
+            required_columns = list(target_node.parameters["keys"])
+            required_columns.append(target_node.parameters["parent"])
+            value_by_col = target_node.parameters.get("value_by")
+            if value_by_col:
+                required_columns.append(value_by_col)
+            target_columns.update(required_columns)
 
         for input_node_name in input_node_names:
             input_node = self.get_node_by_name(input_node_name)
@@ -434,33 +472,3 @@ class GlobalQueryGraph(QueryGraph):
             node_name_map=node_name_map,
         )
         return pruned_graph, node_name_map
-
-    def load(self, graph: QueryGraph) -> tuple[GlobalQueryGraph, dict[str, str]]:
-        """
-        Load the query graph into the global query graph
-
-        Parameters
-        ----------
-        graph: QueryGraph
-            query graph object to be loaded
-
-        Returns
-        -------
-        GlobalQueryGraph, dict[str, str]
-            updated global query graph with the node name mapping between query graph & global query graph
-        """
-        node_name_map: dict[str, str] = {}
-        for node_name in topological_sort(graph):
-            node = graph.get_node_by_name(node_name)
-            input_nodes = [
-                self.get_node_by_name(node_name_map[input_node_name])
-                for input_node_name in graph.backward_edges[node_name]
-            ]
-            node_global = self.add_operation(
-                node_type=NodeType(node.type),
-                node_params=node.parameters,
-                node_output_type=NodeOutputType(node.output_type),
-                input_nodes=input_nodes,
-            )
-            node_name_map[node_name] = node_global.name
-        return self, node_name_map

@@ -22,7 +22,7 @@ from featurebyte.exception import (
 from featurebyte.logger import logger
 from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import SnowflakeTileCache
 
@@ -151,9 +151,20 @@ def get_historical_features_sql(
     MissingServingNameError
         If any required serving name is not provided
     """
-    feature_nodes = [feature.node for feature in feature_objects]
+    # construct a local graph by combining multiple pruned graphs
+    global_query_graph = GlobalQueryGraph()
+    local_query_graph = QueryGraph()
+    feature_nodes = []
+    for feature in feature_objects:
+        pruned_graph, node_name_map = global_query_graph.prune(
+            target_node=feature.node, target_columns={feature.name}
+        )
+        pruned_node_name = node_name_map[feature.node.name]
+        local_query_graph, local_name_map = local_query_graph.load(pruned_graph)
+        feature_nodes.append(local_query_graph.get_node_by_name(local_name_map[pruned_node_name]))
+
     planner = FeatureExecutionPlanner(
-        GlobalQueryGraph(), serving_names_mapping=serving_names_mapping
+        local_query_graph, serving_names_mapping=serving_names_mapping
     )
     plan = planner.generate_plan(feature_nodes)
 
