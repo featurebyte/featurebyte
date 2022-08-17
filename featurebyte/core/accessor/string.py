@@ -1,5 +1,5 @@
 """
-This modul contains string accessor class
+This module contains string accessor class
 """
 from __future__ import annotations
 
@@ -82,7 +82,7 @@ class StringAccessor:
         """
         return series_unary_operation(
             input_series=self._obj,
-            node_type=NodeType.STRCASE,
+            node_type=NodeType.STR_CASE,
             output_var_type=DBVarType.VARCHAR,
             node_params={"case": "lower"},
             **self._obj.unary_op_series_params(),
@@ -98,7 +98,7 @@ class StringAccessor:
         """
         return series_unary_operation(
             input_series=self._obj,
-            node_type=NodeType.STRCASE,
+            node_type=NodeType.STR_CASE,
             output_var_type=DBVarType.VARCHAR,
             node_params={"case": "upper"},
             **self._obj.unary_op_series_params(),
@@ -238,7 +238,7 @@ class StringAccessor:
         """
         return series_unary_operation(
             input_series=self._obj,
-            node_type=NodeType.STRCONTAINS,
+            node_type=NodeType.STR_CONTAINS,
             output_var_type=DBVarType.BOOL,
             node_params={"pattern": pat, "case": bool(case)},
             **self._obj.unary_op_series_params(),

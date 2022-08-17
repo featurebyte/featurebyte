@@ -8,6 +8,7 @@ from typing import Any, Optional, Union
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
+from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin, ParentMixin
@@ -17,7 +18,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
-class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin):
+class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin):
     """
     Implement operations to manipulate database column
     """
@@ -391,6 +392,15 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin):
     def __rtruediv__(self, other: Union[int, float, Series]) -> Series:
         return self._binary_arithmetic_op(other, NodeType.DIV, right_op=True)
 
+    def __invert__(self) -> Series:
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.NOT,
+            output_var_type=DBVarType.BOOL,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
     def isnull(self) -> Series:
         """
         Returns a boolean Series indicating whether each value is missing
@@ -406,6 +416,16 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin):
             node_params={},
             **self.unary_op_series_params(),
         )
+
+    def notnull(self) -> Series:
+        """
+        Returns a boolean Series indicating whether each value is not null
+
+        Returns
+        -------
+        Series
+        """
+        return ~self.isnull()
 
     @typechecked
     def fillna(self, other: Union[int, float, str, bool]) -> None:

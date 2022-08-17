@@ -565,6 +565,22 @@ def test_isnull(bool_series):
     )
 
 
+def test_notnull(bool_series):
+    """
+    Test notnull operation
+    """
+    result = bool_series.notnull()
+    assert result.var_type == DBVarType.BOOL
+    assert_series_attributes_equal(result, bool_series)
+    node_kwargs = {"parameters": {}, "output_type": NodeOutputType.SERIES}
+    exclude = {"name": True}
+    _check_node_equality(
+        result.node,
+        Node(name="not_1", type=NodeType.NOT, **node_kwargs),
+        exclude=exclude,
+    )
+
+
 def test_fillna(float_series):
     """
     Test fillna operation
@@ -623,7 +639,8 @@ def test_varchar_series_concat(varchar_series):
               "CUST_ID" AS "CUST_ID",
               "PRODUCT_ACTION" AS "PRODUCT_ACTION",
               "VALUE" AS "VALUE",
-              "MASK" AS "MASK"
+              "MASK" AS "MASK",
+              "TIMESTAMP" AS "TIMESTAMP"
             FROM "db"."public"."transaction"
         )
         LIMIT 10

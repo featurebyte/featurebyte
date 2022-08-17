@@ -595,6 +595,42 @@ class SubStringNode(ExpressionNode):
 
 
 @dataclass
+class DatetimeExtractNode(ExpressionNode):
+    """Node for extract datetime properties operation"""
+
+    expr: ExpressionNode
+    dt_property: Literal[
+        "year", "quarter", "month", "week", "day", "dayofweek", "hour", "minute", "second"
+    ]
+
+    @property
+    def sql(self) -> Expression:
+        params = {"this": self.dt_property, "expression": self.expr.sql}
+        prop_expr = expressions.Extract(**params)
+        if self.dt_property == "dayofweek":
+            # pandas: Monday=0, Sunday=6; snowflake: Sunday=0, Saturday=6
+            # to follow pandas behavior, add 6 then modulo 7 to perform left-shift
+            return expressions.Mod(
+                this=expressions.Paren(
+                    this=expressions.Add(this=prop_expr, expression=make_literal_value(6))
+                ),
+                expression=make_literal_value(7),
+            )
+        return prop_expr
+
+
+@dataclass
+class NotNode(ExpressionNode):
+    """Node for inverting binary column operation"""
+
+    expr: ExpressionNode
+
+    @property
+    def sql(self) -> Expression:
+        return expressions.Not(this=self.expr.sql)
+
+
+@dataclass
 class BuildTileNode(TableNode):
     """Tile builder node
 
@@ -1044,9 +1080,11 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.TRIM,
     NodeType.REPLACE,
     NodeType.PAD,
-    NodeType.STRCASE,
-    NodeType.STRCONTAINS,
+    NodeType.STR_CASE,
+    NodeType.STR_CONTAINS,
     NodeType.SUBSTRING,
+    NodeType.DT_EXTRACT,
+    NodeType.NOT,
 }
 
 
@@ -1079,9 +1117,11 @@ def make_expression_node(
     sql_node: ExpressionNode
     if node_type == NodeType.IS_NULL:
         sql_node = IsNullNode(table_node=table_node, expr=input_expr_node)
+    elif node_type == NodeType.NOT:
+        sql_node = NotNode(table_node=table_node, expr=input_expr_node)
     elif node_type == NodeType.LENGTH:
         sql_node = LengthNode(table_node=table_node, expr=input_expr_node)
-    elif node_type == NodeType.STRCASE:
+    elif node_type == NodeType.STR_CASE:
         sql_node = StringCaseNode(
             table_node=table_node,
             expr=input_expr_node,
@@ -1109,7 +1149,7 @@ def make_expression_node(
             length=parameters["length"],
             pad=parameters["pad"],
         )
-    elif node_type == NodeType.STRCONTAINS:
+    elif node_type == NodeType.STR_CONTAINS:
         sql_node = StringContains(
             table_node=table_node,
             expr=input_expr_node,
@@ -1122,6 +1162,12 @@ def make_expression_node(
             expr=input_expr_node,
             start=parameters["start"],
             length=parameters["length"],
+        )
+    elif node_type == NodeType.DT_EXTRACT:
+        sql_node = DatetimeExtractNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            dt_property=parameters["property"],
         )
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")
