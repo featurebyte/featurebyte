@@ -100,3 +100,79 @@ def test_generate_tile_non_exist_table(snowflake_session):
 
     # make sure the error is about table not existing
     assert "Object 'NON_EXIST_TABLE' does not exist or not authorized." in str(exc_info.value)
+
+
+def test_generate_tile_new_value_column(snowflake_session):
+    """
+    Test normal generation of tiles
+    """
+    entity_col_names = "PRODUCT_ACTION,CUST_ID"
+    value_col_names = "VALUE"
+    table_name = "TEMP_TABLE"
+    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    tile_sql = (
+        f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} "
+        f"WHERE {InternalName.TILE_START_DATE} >= '2022-06-05T23:48:00Z' "
+        f"AND {InternalName.TILE_START_DATE} < '2022-06-05T23:58:00Z'"
+    ).replace("'", "''")
+
+    sql = (
+        f"call SP_TILE_GENERATE("
+        f"  '{tile_sql}',"
+        f"  '{InternalName.TILE_START_DATE}',"
+        f"  '{InternalName.TILE_LAST_START_DATE}',"
+        f"  183,"
+        f"  3,"
+        f"  5,"
+        f"  '{entity_col_names}',"
+        f"  '{value_col_names}',"
+        f"  '{tile_id}',"
+        f"  'OFFLINE',"
+        f"  '2022-06-05T23:53:00Z')"
+    )
+    snowflake_session.execute_query(sql)
+
+    sql = f"SELECT {value_col_names} FROM {tile_id}"
+    result = snowflake_session.execute_query(sql)
+    assert len(result) == 2
+
+    sql = f"SELECT VALUE_COLUMN_NAMES FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
+    result = snowflake_session.execute_query(sql)
+    assert len(result) == 1
+    assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE"
+
+    value_col_names_2 = "VALUE,VALUE_2"
+    tile_sql_2 = (
+        f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names_2} FROM {table_name} "
+        f"WHERE {InternalName.TILE_START_DATE} >= '2022-06-05T23:48:00Z' "
+        f"AND {InternalName.TILE_START_DATE} < '2022-06-05T23:58:00Z'"
+    ).replace("'", "''")
+    with pytest.raises(ProgrammingError) as excinfo:
+        sql = f"SELECT {value_col_names_2} FROM {tile_id}"
+        snowflake_session.execute_query(sql)
+    assert "invalid identifier 'VALUE_2'" in str(excinfo.value)
+
+    sql = (
+        f"call SP_TILE_GENERATE("
+        f"  '{tile_sql_2}',"
+        f"  '{InternalName.TILE_START_DATE}',"
+        f"  '{InternalName.TILE_LAST_START_DATE}',"
+        f"  183,"
+        f"  3,"
+        f"  5,"
+        f"  '{entity_col_names}',"
+        f"  '{value_col_names_2}',"
+        f"  '{tile_id}',"
+        f"  'OFFLINE',"
+        f"  '2022-06-05T23:53:00Z')"
+    )
+    snowflake_session.execute_query(sql)
+
+    sql = f"SELECT {value_col_names_2} FROM {tile_id}"
+    result = snowflake_session.execute_query(sql)
+    assert len(result) == 2
+
+    sql = f"SELECT VALUE_COLUMN_NAMES FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
+    result = snowflake_session.execute_query(sql)
+    assert len(result) == 1
+    assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE,VALUE_2"

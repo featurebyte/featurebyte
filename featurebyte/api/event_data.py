@@ -3,17 +3,19 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
 from pydantic import validator
+from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.util import get_entity
 from featurebyte.config import Configurations, Credentials
+from featurebyte.core.mixin import GetAttrMixin
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordRetrievalException,
@@ -34,30 +36,27 @@ class EventDataColumn:
         self.event_data = event_data
         self.column_name = column_name
 
-    def as_entity(self, entity_name: str | None) -> None:
+    @typechecked
+    def as_entity(self, entity_name: Optional[str]) -> None:
         """
         Set the column as the specified entity
 
         Parameters
         ----------
-        entity_name: str | None
+        entity_name: Optional[str]
             Associate column name to the entity, remove association if entity name is None
 
         Raises
         ------
-        TypeError
-            When the entity name has non-string type
         RecordUpdateException
             When unexpected record update failure
         """
         column_entity_map = self.event_data.column_entity_map or {}
         if entity_name is None:
             column_entity_map.pop(self.column_name, None)
-        elif isinstance(entity_name, str):
+        else:
             entity_dict = get_entity(entity_name)
             column_entity_map[self.column_name] = entity_dict["_id"]
-        else:
-            raise TypeError(f'Unsupported type "{type(entity_name)}" for tag name "{entity_name}"!')
 
         data = EventDataUpdate(column_entity_map=column_entity_map)
         client = Configurations().get_client()
@@ -75,7 +74,7 @@ class EventDataColumn:
             raise RecordUpdateException(response)
 
 
-class EventData(EventDataModel, DatabaseTable, ApiObject):
+class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
     """
     EventData class
     """
@@ -95,13 +94,14 @@ class EventData(EventDataModel, DatabaseTable, ApiObject):
         return {"timestamp": values["event_timestamp_column"]}
 
     @classmethod
+    @typechecked
     def from_tabular_source(
         cls,
         tabular_source: DatabaseTable,
         name: str,
         event_timestamp_column: str,
-        record_creation_date_column: str | None = None,
-        credentials: Credentials | None = None,
+        record_creation_date_column: Optional[str] = None,
+        credentials: Optional[Credentials] = None,
     ) -> EventData:
         """
         Create EventData object from tabular source
@@ -116,7 +116,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject):
             Event timestamp column from the given tabular source
         record_creation_date_column: str
             Record creation datetime column from the given tabular source
-        credentials: Credentials | None
+        credentials: Optional[Credentials]
             Credentials dictionary mapping from the config file
 
         Returns
@@ -166,6 +166,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject):
             raise ValueError(f'Column "{value}" not found in the table!')
         return value
 
+    @typechecked
     def __getitem__(self, item: str) -> EventDataColumn:
         """
         Retrieve column from the table
@@ -187,11 +188,6 @@ class EventData(EventDataModel, DatabaseTable, ApiObject):
         if item not in self.column_var_type_map:
             raise KeyError(f'Column "{item}" does not exist!')
         return EventDataColumn(event_data=self, column_name=item)
-
-    def __getattr__(self, item: str) -> Any:
-        if item in self.column_var_type_map:
-            return self.__getitem__(item)
-        return object.__getattribute__(self, item)
 
     def info(self) -> dict[str, Any]:
         """
@@ -224,6 +220,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject):
             return self.dict()
         raise RecordRetrievalException(response)
 
+    @typechecked
     def update_default_feature_job_setting(
         self, blind_spot: str, frequency: str, time_modulo_frequency: str
     ) -> None:

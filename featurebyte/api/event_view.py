@@ -3,10 +3,11 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, TypeVar, Union
 
 from beanie import PydanticObjectId
 from pydantic import Field, PrivateAttr, StrictStr
+from typeguard import typechecked
 
 from featurebyte.api.event_data import EventData
 from featurebyte.api.util import get_entity
@@ -17,6 +18,8 @@ from featurebyte.models.event_data import FeatureJobSetting
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import EventViewGroupBy
+else:
+    EventViewGroupBy = TypeVar("EventViewGroupBy")
 
 
 class EventViewColumn(Series):
@@ -44,7 +47,7 @@ class EventViewColumn(Series):
         _ = other
         return {"event_data_id": self.event_data_id}
 
-    def _unary_op_series_params(self) -> dict[str, Any]:
+    def unary_op_series_params(self) -> dict[str, Any]:
         return {"event_data_id": self.event_data_id}
 
     def _validate_series_to_set_parent_attribute(self) -> None:
@@ -61,36 +64,28 @@ class EventViewColumn(Series):
         if self.parent is None:
             raise ValueError("Series object does not have parent frame object!")
 
-    def as_entity(self, entity_name: str | None) -> None:
+    @typechecked
+    def as_entity(self, entity_name: Optional[str]) -> None:
         """
         Set the column as the specified entity
 
         Parameters
         ----------
-        entity_name: str | None
+        entity_name: Optional[str]
             Associate column name to the entity, remove association if entity name is None
-
-        Raises
-        ------
-        TypeError
-            When the tag name has non-string type
         """
         self._validate_series_to_set_parent_attribute()
-        if self.name and self.parent:
-            if entity_name is None:
-                column_entity_map = self.parent.column_entity_map or {}
-                column_entity_map.pop(self.name)
-                self.parent.column_entity_map = column_entity_map
-            elif isinstance(entity_name, str):
-                entity_dict = get_entity(entity_name)
-                column_entity_map = self.parent.column_entity_map or {}
-                column_entity_map[self.name] = entity_dict["_id"]
-                self.parent.column_entity_map = column_entity_map
-            else:
-                raise TypeError(
-                    f'Unsupported type "{type(entity_name)}" for tag name "{entity_name}"!'
-                )
+        if entity_name is None:
+            column_entity_map = self.parent.column_entity_map or {}
+            column_entity_map.pop(self.name)
+            self.parent.column_entity_map = column_entity_map
+        else:
+            entity_dict = get_entity(entity_name)
+            column_entity_map = self.parent.column_entity_map or {}
+            column_entity_map[self.name] = entity_dict["_id"]
+            self.parent.column_entity_map = column_entity_map
 
+    @typechecked
     def add_description(self, description: str) -> None:
         """
         Add description to the column at parent frame
@@ -99,20 +94,9 @@ class EventViewColumn(Series):
         ----------
         description: str
             Description for current series
-
-        Raises
-        ------
-        TypeError
-            When the description has non-string type
         """
         self._validate_series_to_set_parent_attribute()
-        if self.name and self.parent:
-            if isinstance(description, str):
-                self.parent.column_description_map[self.name] = str(description)
-            else:
-                raise TypeError(
-                    f'Unsupported type "{type(description)}" for description "{description}"!'
-                )
+        self.parent.column_description_map[self.name] = description
 
 
 class EventView(ProtectedColumnsQueryObject, Frame):
@@ -181,6 +165,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         return {self.timestamp_column}
 
     @classmethod
+    @typechecked
     def from_event_data(cls, event_data: EventData) -> EventView:
         """
         Construct an EventView object using session object
@@ -234,7 +219,8 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         """
         return {"event_data_id": self.event_data_id}
 
-    def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
+    @typechecked
+    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, Frame]:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.inherited_columns.union(item))
         output = super().__getitem__(item)
@@ -247,20 +233,24 @@ class EventView(ProtectedColumnsQueryObject, Frame):
                 }
         return output
 
-    def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
+    @typechecked
+    def __setitem__(self, key: str, value: Union[int, float, str, bool, Series]) -> None:
         if key in self.protected_columns:
             raise ValueError(f"Timestamp or entity column '{key}' cannot be modified!")
         super().__setitem__(key, value)
 
-    def groupby(self, by_keys: str | list[str], category: str | None = None) -> EventViewGroupBy:
+    @typechecked
+    def groupby(
+        self, by_keys: Union[str, List[str]], category: Optional[str] = None
+    ) -> EventViewGroupBy:
         """
         Group EventView using a column or list of columns of the EventView object
 
         Parameters
         ----------
-        by_keys: str | list[str]
+        by_keys: Union[str, List[str]]
             Define the key (entity) to for the `groupby` operation
-        category : str | None
+        category : Optional[str]
             Optional category parameter to enable aggregation per category. It should be a column
             name in the EventView.
 
@@ -272,4 +262,4 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         # pylint: disable=import-outside-toplevel
         from featurebyte.api.groupby import EventViewGroupBy
 
-        return EventViewGroupBy(obj=self, keys=by_keys, category=category)
+        return EventViewGroupBy(obj=self, keys=by_keys, category=category)  # type: ignore

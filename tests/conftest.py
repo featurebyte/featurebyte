@@ -5,6 +5,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+from bson.objectid import ObjectId
 
 
 def pytest_addoption(parser):
@@ -110,11 +111,9 @@ def feature_model_dict_feature():
         },
         "readiness": None,
         "version": "V220710",
-        "is_default": None,
         "online_enabled": None,
         "event_data_ids": [],
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "parent_id": None,
     }

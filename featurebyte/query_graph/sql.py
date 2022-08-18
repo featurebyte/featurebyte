@@ -3,9 +3,9 @@ This module contains the list of SQL operations to be used by the Query Graph In
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal, Optional
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,too-many-lines
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
@@ -14,6 +14,7 @@ from enum import Enum
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.enum import InternalName, SourceType
+from featurebyte.query_graph import expression as fb_expressions
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_common import AggregationSpec
 from featurebyte.query_graph.graph import Node
@@ -318,7 +319,10 @@ class BinaryOp(ExpressionNode):
         if self.operation == expressions.Div:
             # Make 0 divisor null to prevent division-by-zero error
             right_expr = parse_one(f"NULLIF({right_expr.sql()}, 0)")
-        op_expr = self.operation(this=self.left_node.sql, expression=right_expr)
+        if self.operation == fb_expressions.Concat:
+            op_expr = self.operation(expressions=[self.left_node.sql, right_expr])
+        else:
+            op_expr = self.operation(this=self.left_node.sql, expression=right_expr)
         return expressions.Paren(this=op_expr)
 
 
@@ -428,6 +432,205 @@ class IsNullNode(ExpressionNode):
 
 
 @dataclass
+class LengthNode(ExpressionNode):
+    """Node for LENGTH operation"""
+
+    expr: ExpressionNode
+
+    @property
+    def sql(self) -> Expression:
+        return expressions.Length(this=self.expr.sql)
+
+
+@dataclass
+class StringCaseNode(ExpressionNode):
+    """Node for UPPER, LOWER operation"""
+
+    expr: ExpressionNode
+    case: Literal["upper", "lower"]
+
+    @property
+    def sql(self) -> Expression:
+        expression = {"upper": expressions.Upper, "lower": expressions.Lower}[self.case]
+        return expression(this=self.expr.sql)
+
+
+@dataclass
+class StringContains(ExpressionNode):
+    """Node for CONTAINS operation"""
+
+    expr: ExpressionNode
+    pattern: str
+    case: bool
+
+    @property
+    def sql(self) -> Expression:
+        if self.case:
+            return fb_expressions.Contains(
+                this=self.expr.sql,
+                pattern=make_literal_value(self.pattern),
+            )
+        return fb_expressions.Contains(
+            this=expressions.Lower(this=self.expr.sql),
+            pattern=expressions.Lower(this=make_literal_value(self.pattern)),
+        )
+
+
+@dataclass
+class TrimNode(ExpressionNode):
+    """Node for TRIM, LTRIM, RTRIM operations"""
+
+    expr: ExpressionNode
+    character: Optional[str]
+    side: Literal["left", "right", "both"]
+
+    @property
+    def sql(self) -> Expression:
+        expression_class = {
+            "left": fb_expressions.LTrim,
+            "right": fb_expressions.RTrim,
+            "both": fb_expressions.Trim,
+        }[self.side]
+        if self.character:
+            return expression_class(
+                this=self.expr.sql, character=make_literal_value(self.character)
+            )
+        return expression_class(this=self.expr.sql)
+
+
+@dataclass
+class ReplaceNode(ExpressionNode):
+    """Node for REPLACE operation"""
+
+    expr: ExpressionNode
+    pattern: str
+    replacement: str
+
+    @property
+    def sql(self) -> Expression:
+        return fb_expressions.Replace(
+            this=self.expr.sql,
+            pattern=make_literal_value(self.pattern),
+            replacement=make_literal_value(self.replacement),
+        )
+
+
+@dataclass
+class PadNode(ExpressionNode):
+    """Node for LPAD, RPAD operation"""
+
+    expr: ExpressionNode
+    side: Literal["left", "right", "both"]
+    length: int
+    pad: str
+
+    @staticmethod
+    def _generate_pad_expression(
+        str_column_expr: Expression,
+        target_length_expr: Expression,
+        side: Literal["left", "right"],
+        pad_char: str,
+    ) -> Expression:
+        pad_char_expr = make_literal_value(pad_char)
+        if side == "left":
+            return fb_expressions.LPad(
+                this=str_column_expr,
+                length=target_length_expr,
+                pad=pad_char_expr,
+            )
+        return fb_expressions.RPad(
+            this=str_column_expr,
+            length=target_length_expr,
+            pad=pad_char_expr,
+        )
+
+    @property
+    def sql(self) -> Expression:
+        target_length_expr = make_literal_value(self.length)
+        char_length_expr = expressions.Length(this=self.expr.sql)
+        mask_expr = expressions.GTE(this=char_length_expr, expression=target_length_expr)
+        if self.side in {"left", "right"}:
+            pad_expr = self._generate_pad_expression(
+                str_column_expr=self.expr.sql,
+                target_length_expr=make_literal_value(self.length),
+                side=self.side,  # type: ignore
+                pad_char=self.pad,
+            )
+        else:
+            remain_width = expressions.Paren(
+                this=expressions.Sub(this=target_length_expr, expression=char_length_expr)
+            )
+            left_remain_width = expressions.Ceil(
+                this=expressions.Div(this=remain_width, expression=make_literal_value(2))
+            )
+            left_length = expressions.Sub(this=target_length_expr, expression=left_remain_width)
+            pad_expr = self._generate_pad_expression(
+                str_column_expr=self._generate_pad_expression(
+                    str_column_expr=self.expr.sql,
+                    target_length_expr=left_length,
+                    side="left",
+                    pad_char=self.pad,
+                ),
+                target_length_expr=target_length_expr,
+                side="right",
+                pad_char=self.pad,
+            )
+        return expressions.If(this=mask_expr, true=self.expr.sql, false=pad_expr)
+
+
+@dataclass
+class SubStringNode(ExpressionNode):
+    """Node for SUBSTRING operation"""
+
+    expr: ExpressionNode
+    start: int
+    length: Optional[int]
+
+    @property
+    def sql(self) -> Expression:
+        params = {"this": self.expr.sql, "start": make_literal_value(self.start)}
+        if self.length is not None:
+            params["length"] = make_literal_value(self.length)
+        return expressions.Substring(**params)
+
+
+@dataclass
+class DatetimeExtractNode(ExpressionNode):
+    """Node for extract datetime properties operation"""
+
+    expr: ExpressionNode
+    dt_property: Literal[
+        "year", "quarter", "month", "week", "day", "dayofweek", "hour", "minute", "second"
+    ]
+
+    @property
+    def sql(self) -> Expression:
+        params = {"this": self.dt_property, "expression": self.expr.sql}
+        prop_expr = expressions.Extract(**params)
+        if self.dt_property == "dayofweek":
+            # pandas: Monday=0, Sunday=6; snowflake: Sunday=0, Saturday=6
+            # to follow pandas behavior, add 6 then modulo 7 to perform left-shift
+            return expressions.Mod(
+                this=expressions.Paren(
+                    this=expressions.Add(this=prop_expr, expression=make_literal_value(6))
+                ),
+                expression=make_literal_value(7),
+            )
+        return prop_expr
+
+
+@dataclass
+class NotNode(ExpressionNode):
+    """Node for inverting binary column operation"""
+
+    expr: ExpressionNode
+
+    @property
+    def sql(self) -> Expression:
+        return expressions.Not(this=self.expr.sql)
+
+
+@dataclass
 class BuildTileNode(TableNode):
     """Tile builder node
 
@@ -511,6 +714,7 @@ BINARY_OPERATION_NODE_TYPES = {
     NodeType.GE,
     NodeType.AND,
     NodeType.OR,
+    NodeType.CONCAT,
 }
 
 
@@ -572,6 +776,8 @@ def make_binary_operation_node(
         # Logical
         NodeType.AND: expressions.And,
         NodeType.OR: expressions.Or,
+        # String
+        NodeType.CONCAT: fb_expressions.Concat,
     }
     assert sorted(node_type_to_expression_cls.keys()) == sorted(BINARY_OPERATION_NODE_TYPES)
     expression_cls = node_type_to_expression_cls.get(node_type)
@@ -870,10 +1076,21 @@ def make_conditional_node(input_sql_nodes: list[SQLNode], node: Node) -> Conditi
 
 SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.IS_NULL,
+    NodeType.LENGTH,
+    NodeType.TRIM,
+    NodeType.REPLACE,
+    NodeType.PAD,
+    NodeType.STR_CASE,
+    NodeType.STR_CONTAINS,
+    NodeType.SUBSTRING,
+    NodeType.DT_EXTRACT,
+    NodeType.NOT,
 }
 
 
-def make_expression_node(input_sql_nodes: list[SQLNode], node_type: NodeType) -> ExpressionNode:
+def make_expression_node(
+    input_sql_nodes: list[SQLNode], node_type: NodeType, parameters: dict[str, Any]
+) -> ExpressionNode:
     """Create an Expression node
 
     Parameters
@@ -882,6 +1099,8 @@ def make_expression_node(input_sql_nodes: list[SQLNode], node_type: NodeType) ->
         Input SQL nodes
     node_type : NodeType
         Query graph node type
+    parameters: dict[str, Any]
+        Query node parameters
 
     Returns
     -------
@@ -895,8 +1114,61 @@ def make_expression_node(input_sql_nodes: list[SQLNode], node_type: NodeType) ->
     input_expr_node = input_sql_nodes[0]
     assert isinstance(input_expr_node, ExpressionNode)
     table_node = input_expr_node.table_node
+    sql_node: ExpressionNode
     if node_type == NodeType.IS_NULL:
         sql_node = IsNullNode(table_node=table_node, expr=input_expr_node)
+    elif node_type == NodeType.NOT:
+        sql_node = NotNode(table_node=table_node, expr=input_expr_node)
+    elif node_type == NodeType.LENGTH:
+        sql_node = LengthNode(table_node=table_node, expr=input_expr_node)
+    elif node_type == NodeType.STR_CASE:
+        sql_node = StringCaseNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            case=parameters["case"],
+        )
+    elif node_type == NodeType.TRIM:
+        sql_node = TrimNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            character=parameters["character"],
+            side=parameters["side"],
+        )
+    elif node_type == NodeType.REPLACE:
+        sql_node = ReplaceNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            pattern=parameters["pattern"],
+            replacement=parameters["replacement"],
+        )
+    elif node_type == NodeType.PAD:
+        sql_node = PadNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            side=parameters["side"],
+            length=parameters["length"],
+            pad=parameters["pad"],
+        )
+    elif node_type == NodeType.STR_CONTAINS:
+        sql_node = StringContains(
+            table_node=table_node,
+            expr=input_expr_node,
+            pattern=parameters["pattern"],
+            case=parameters["case"],
+        )
+    elif node_type == NodeType.SUBSTRING:
+        sql_node = SubStringNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            start=parameters["start"],
+            length=parameters["length"],
+        )
+    elif node_type == NodeType.DT_EXTRACT:
+        sql_node = DatetimeExtractNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            dt_property=parameters["property"],
+        )
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")
     return sql_node

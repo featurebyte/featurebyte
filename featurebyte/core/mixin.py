@@ -1,11 +1,12 @@
 """
 OpsMixin class
 """
+# pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Protocol
 
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, PrivateAttr, StrictStr
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -37,22 +38,6 @@ class OpsMixin:
             float: DBVarType.FLOAT,
             str: DBVarType.VARCHAR,
         }
-
-    def is_supported_scalar_pytype(self, item: Any) -> bool:
-        """
-        Check whether the input item is from the supported scalar types
-
-        Parameters
-        ----------
-        item: Any
-            input item
-
-        Returns
-        -------
-        bool
-            whether the specified item is from the supported scalar types
-        """
-        return isinstance(item, tuple(self.pytype_dbtype_map))
 
     @staticmethod
     def _add_filter_operation(
@@ -146,3 +131,34 @@ class ParentMixin(BaseModel):
             Parent which current series belongs to
         """
         self._parent = parent
+
+
+class HasColumnVarTypeMap(Protocol):
+    """
+    Class with column_var_type_map attribute / property
+    """
+
+    column_var_type_map: Dict[StrictStr, DBVarType]
+
+
+class GetAttrMixin:
+    """
+    GetAttrMixin contains some helper methods to access column in a frame like object
+    """
+
+    def __dir__(self: HasColumnVarTypeMap) -> Iterable[str]:
+        # provide column name lookup and completion for __getattr__
+        attrs = set(object.__dir__(self))
+        return attrs.union(self.column_var_type_map)
+
+    def _ipython_key_completions_(self: HasColumnVarTypeMap) -> set[str]:
+        # provide column name lookup and completion for __getitem__
+        return set(self.column_var_type_map)
+
+    def __getattr__(self, item: str) -> Any:
+        try:
+            return object.__getattribute__(self, item)
+        except AttributeError as exc:
+            if item in self.column_var_type_map:
+                return self.__getitem__(item)
+            raise exc

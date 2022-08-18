@@ -28,10 +28,10 @@ class TestFeatureStoreApi(BaseApiTestSuite):
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
-            {key: val for key, val in payload.items() if key != "_id"},
+            {key: val for key, val in payload.items() if key != "name"},
             [
                 {
-                    "loc": ["body", "_id"],
+                    "loc": ["body", "name"],
                     "msg": "field required",
                     "type": "value_error.missing",
                 }

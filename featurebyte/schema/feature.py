@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import List, Optional, Tuple
 
 from beanie import PydanticObjectId
+from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType
@@ -21,7 +22,7 @@ class FeatureCreate(FeatureByteBaseModel):
     Feature Creation schema
     """
 
-    id: PydanticObjectId = Field(alias="_id")
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     description: Optional[StrictStr]
     var_type: DBVarType
@@ -31,7 +32,7 @@ class FeatureCreate(FeatureByteBaseModel):
     tabular_source: TabularSource
     version: Optional[FeatureVersionIdentifier]
     event_data_ids: List[PydanticObjectId] = Field(min_items=1)
-    parent_id: Optional[PydanticObjectId]
+    feature_namespace_id: Optional[PydanticObjectId]
 
 
 class FeatureList(PaginationMixin):

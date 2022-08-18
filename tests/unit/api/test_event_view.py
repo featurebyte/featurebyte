@@ -29,6 +29,11 @@ def test_from_event_data(snowflake_event_data):
     """
     Test from_event_data
     """
+    with pytest.raises(TypeError) as exc:
+        EventView.from_event_data("hello")
+    expected_msg = 'type of argument "event_data" must be featurebyte.api.event_data.EventData; got str instead'
+    assert expected_msg in str(exc.value)
+
     event_view_first = EventView.from_event_data(snowflake_event_data)
     assert event_view_first.tabular_source == snowflake_event_data.tabular_source
     assert event_view_first.node == snowflake_event_data.node
@@ -252,7 +257,9 @@ def test_setting_column_as_entity__invalid_cases(snowflake_event_view):
 
     with pytest.raises(TypeError) as exc:
         cust_id.as_entity(1234)
-    assert 'Unsupported type "<class \'int\'>" for tag name "1234"!' in str(exc.value)
+    assert 'type of argument "entity_name" must be one of (str, NoneType); got int instead' in str(
+        exc.value
+    )
 
 
 def test_add_description(snowflake_event_view):
@@ -265,7 +272,7 @@ def test_add_description(snowflake_event_view):
 
     with pytest.raises(TypeError) as exc:
         snowflake_event_view.cust_id.add_description(1234)
-    assert 'Unsupported type "<class \'int\'>" for description "1234"!' in str(exc.value)
+    assert 'type of argument "description" must be str; got int instead' in str(exc.value)
 
 
 def test_unary_op_params(snowflake_event_view):

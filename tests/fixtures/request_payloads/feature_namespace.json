@@ -1,0 +1,11 @@
+{
+    "_id": "62f301e841b73757c7bf8746",
+    "default_version_id": "62f301e841b73757c7bf873d",
+    "default_version_mode": "AUTO",
+    "description": null,
+    "name": "sum_30m",
+    "readiness": "DRAFT",
+    "version_ids": [
+        "62f301e841b73757c7bf873d"
+    ]
+}

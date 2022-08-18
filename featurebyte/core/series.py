@@ -3,18 +3,22 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from pydantic import Field, StrictStr, root_validator
+from typeguard import typechecked
 
+from featurebyte.core.accessor.datetime import DtAccessorMixin
+from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin, ParentMixin
+from featurebyte.core.util import series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
 
-class Series(QueryObject, OpsMixin, ParentMixin):
+class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin):
     """
     Implement operations to manipulate database column
     """
@@ -30,20 +34,19 @@ class Series(QueryObject, OpsMixin, ParentMixin):
     def __str__(self) -> str:
         return repr(self)
 
+    @typechecked
     def __getitem__(self, item: Series) -> Series:
-        if isinstance(item, Series):
-            node = self._add_filter_operation(
-                item=self, mask=item, node_output_type=NodeOutputType.SERIES
-            )
-            return type(self)(
-                feature_store=self.feature_store,
-                tabular_source=self.tabular_source,
-                node=node,
-                name=self.name,
-                var_type=self.var_type,
-                row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
-            )
-        raise KeyError(f"Series indexing with value '{item}' not supported!")
+        node = self._add_filter_operation(
+            item=self, mask=item, node_output_type=NodeOutputType.SERIES
+        )
+        return type(self)(
+            feature_store=self.feature_store,
+            tabular_source=self.tabular_source,
+            node=node,
+            name=self.name,
+            var_type=self.var_type,
+            row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+        )
 
     def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
@@ -62,7 +65,14 @@ class Series(QueryObject, OpsMixin, ParentMixin):
         _ = other
         return {}
 
-    def _unary_op_series_params(self) -> dict[str, Any]:
+    def unary_op_series_params(self) -> dict[str, Any]:
+        """
+        Additional parameters that will be passed to unary operation output constructor
+
+        Returns
+        -------
+        dict[str, Any]
+        """
         return {}
 
     @staticmethod
@@ -82,7 +92,7 @@ class Series(QueryObject, OpsMixin, ParentMixin):
         bool
             whether the assignment operation is valid in terms of variable type
         """
-        valid_assignment_map = {
+        valid_assignment_map: dict[DBVarType, tuple[type[Any], ...]] = {
             DBVarType.BOOL: (bool,),
             DBVarType.INT: (int,),
             DBVarType.FLOAT: (int, float),
@@ -92,32 +102,30 @@ class Series(QueryObject, OpsMixin, ParentMixin):
         }
         return isinstance(right_value, valid_assignment_map[left_dbtype])
 
-    def __setitem__(self, key: Series, value: int | float | str | bool) -> None:
-        if isinstance(key, Series) and self.is_supported_scalar_pytype(value):
-            if self.row_index_lineage != key.row_index_lineage:
-                raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
-            if key.var_type != DBVarType.BOOL:
-                raise TypeError("Only boolean Series filtering is supported!")
-            if not self._is_assignment_valid(self.var_type, value):
-                raise ValueError(f"Setting key '{key}' with value '{value}' not supported!")
+    @typechecked
+    def __setitem__(self, key: Series, value: Union[int, float, str, bool]) -> None:
+        if self.row_index_lineage != key.row_index_lineage:
+            raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
+        if key.var_type != DBVarType.BOOL:
+            raise TypeError("Only boolean Series filtering is supported!")
+        if not self._is_assignment_valid(self.var_type, value):
+            raise ValueError(f"Setting key '{key}' with value '{value}' not supported!")
 
-            self.node = self.graph.add_operation(
-                node_type=NodeType.CONDITIONAL,
-                node_params={"value": value},
-                node_output_type=NodeOutputType.SERIES,
-                input_nodes=[self.node, key.node],
-            )
+        self.node = self.graph.add_operation(
+            node_type=NodeType.CONDITIONAL,
+            node_params={"value": value},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[self.node, key.node],
+        )
 
-            # For Series with a parent, apply the change to the parent (either an EventView or a
-            # FeatureGroup)
-            if self.parent is not None:
-                # Update the EventView column / Feature by doing an assign operation
-                self.parent[self.name] = self
-                # Update the current node as a PROJECT / ALIAS from the parent. This is to allow
-                # readable column name during series preview
-                self.node = self.parent[self.name].node
-        else:
-            raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
+        # For Series with a parent, apply the change to the parent (either an EventView or a
+        # FeatureGroup)
+        if self.parent is not None:
+            # Update the EventView column / Feature by doing an assign operation
+            self.parent[self.name] = self
+            # Update the current node as a PROJECT / ALIAS from the parent. This is to allow
+            # readable column name during series preview
+            self.node = self.parent[self.name].node
 
     @staticmethod
     def _is_a_series_of_var_type(item: Any, var_type: DBVarType) -> bool:
@@ -165,13 +173,12 @@ class Series(QueryObject, OpsMixin, ParentMixin):
             output of the binary operation
         """
         node_params: dict[str, Any] = {"right_op": right_op} if right_op else {}
-        if self.is_supported_scalar_pytype(other):
-            node_params["value"] = other
+        if isinstance(other, Series):
             node = self.graph.add_operation(
                 node_type=node_type,
-                node_params=node_params,
+                node_params={},
                 node_output_type=NodeOutputType.SERIES,
-                input_nodes=[self.node],
+                input_nodes=[self.node, other.node],
             )
             return type(self)(
                 feature_store=self.feature_store,
@@ -180,14 +187,14 @@ class Series(QueryObject, OpsMixin, ParentMixin):
                 name=None,
                 var_type=output_var_type,
                 row_index_lineage=self.row_index_lineage,
-                **self._binary_op_series_params(),
+                **self._binary_op_series_params(other),
             )
-
+        node_params["value"] = other
         node = self.graph.add_operation(
             node_type=node_type,
-            node_params={},
+            node_params=node_params,
             node_output_type=NodeOutputType.SERIES,
-            input_nodes=[self.node, other.node],  # type: ignore
+            input_nodes=[self.node],
         )
         return type(self)(
             feature_store=self.feature_store,
@@ -196,7 +203,7 @@ class Series(QueryObject, OpsMixin, ParentMixin):
             name=None,
             var_type=output_var_type,
             row_index_lineage=self.row_index_lineage,
-            **self._binary_op_series_params(other),  # type: ignore
+            **self._binary_op_series_params(),
         )
 
     def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:
@@ -220,18 +227,20 @@ class Series(QueryObject, OpsMixin, ParentMixin):
         TypeError
             if the left value or right value of the operator are not boolean
         """
-        if self.var_type == DBVarType.BOOL:
-            if isinstance(other, bool) or self._is_a_series_of_var_type(other, DBVarType.BOOL):
-                return self._binary_op(
-                    other=other, node_type=node_type, output_var_type=DBVarType.BOOL
-                )
+        if self.var_type != DBVarType.BOOL or (
+            isinstance(other, Series) and other.var_type != DBVarType.BOOL
+        ):
+            raise TypeError(
+                f"Not supported operation '{node_type}' between '{self}' and '{other}'!"
+            )
+        return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
-        raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
-
-    def __and__(self, other: bool | Series) -> Series:
+    @typechecked
+    def __and__(self, other: Union[bool, Series]) -> Series:
         return self._binary_logical_op(other, NodeType.AND)
 
-    def __or__(self, other: bool | Series) -> Series:
+    @typechecked
+    def __or__(self, other: Union[bool, Series]) -> Series:
         return self._binary_logical_op(other, NodeType.OR)
 
     def _binary_relational_op(
@@ -257,40 +266,47 @@ class Series(QueryObject, OpsMixin, ParentMixin):
         TypeError
             if the left value type of the operator is not consistent with the right value type
         """
-        if self._is_a_series_of_var_type(other, self.var_type) or (
-            self.pytype_dbtype_map.get(type(other)) == self.var_type
+        if not self._is_a_series_of_var_type(other, self.var_type) and (
+            self.pytype_dbtype_map.get(type(other)) != self.var_type
         ):
-            return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
+            raise TypeError(
+                f"Not supported operation '{node_type}' between '{self}' and '{other}'!"
+            )
+        return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
-        raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
-
-    def __eq__(self, other: int | float | str | bool | Series) -> Series:  # type: ignore
+    @typechecked
+    def __eq__(self, other: Union[int, float, str, bool, Series]) -> Series:  # type: ignore
         return self._binary_relational_op(other, NodeType.EQ)
 
-    def __ne__(self, other: int | float | str | bool | Series) -> Series:  # type: ignore
+    @typechecked
+    def __ne__(self, other: Union[int, float, str, bool, Series]) -> Series:  # type: ignore
         return self._binary_relational_op(other, NodeType.NE)
 
-    def __lt__(self, other: int | float | str | bool | Series) -> Series:
+    @typechecked
+    def __lt__(self, other: Union[int, float, str, bool, Series]) -> Series:  # type: ignore
         return self._binary_relational_op(other, NodeType.LT)
 
-    def __le__(self, other: int | float | str | bool | Series) -> Series:
+    @typechecked
+    def __le__(self, other: Union[int, float, str, bool, Series]) -> Series:  # type: ignore
         return self._binary_relational_op(other, NodeType.LE)
 
-    def __gt__(self, other: int | float | str | bool | Series) -> Series:
+    @typechecked
+    def __gt__(self, other: Union[int, float, str, bool, Series]) -> Series:
         return self._binary_relational_op(other, NodeType.GT)
 
-    def __ge__(self, other: int | float | str | bool | Series) -> Series:
+    @typechecked
+    def __ge__(self, other: Union[int, float, str, bool, Series]) -> Series:
         return self._binary_relational_op(other, NodeType.GE)
 
     def _binary_arithmetic_op(
-        self, other: int | float | Series, node_type: NodeType, right_op: bool = False
+        self, other: int | float | str | Series, node_type: NodeType, right_op: bool = False
     ) -> Series:
         """
         Apply binary arithmetic operation between self & other objects
 
         Parameters
         ----------
-        other: int | float | Series
+        other: int | float | str | Series
             right value of the binary arithmetic operator
         node_type: NodeType
             binary arithmetic operator node type
@@ -329,59 +345,60 @@ class Series(QueryObject, OpsMixin, ParentMixin):
 
         raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
-    def __add__(self, other: int | float | Series) -> Series:
+    @typechecked
+    def __add__(self, other: Union[int, float, str, Series]) -> Series:
+        is_other_string_like = isinstance(other, str)
+        is_other_string_like |= isinstance(other, Series) and other.var_type in DBVarType.VARCHAR
+        if self.var_type == DBVarType.VARCHAR and is_other_string_like:
+            return self._binary_op(
+                other=other, node_type=NodeType.CONCAT, output_var_type=DBVarType.VARCHAR
+            )
         return self._binary_arithmetic_op(other, NodeType.ADD)
 
-    def __radd__(self, other: int | float | Series) -> Series:
+    @typechecked
+    def __radd__(self, other: Union[int, float, str, Series]) -> Series:
+        is_other_string_like = isinstance(other, str)
+        is_other_string_like |= isinstance(other, Series) and other.var_type in DBVarType.VARCHAR
+        if self.var_type == DBVarType.VARCHAR and is_other_string_like:
+            return self._binary_op(
+                other=other,
+                node_type=NodeType.CONCAT,
+                output_var_type=DBVarType.VARCHAR,
+                right_op=True,
+            )
         return self._binary_arithmetic_op(other, NodeType.ADD, right_op=True)
 
-    def __sub__(self, other: int | float | Series) -> Series:
+    @typechecked
+    def __sub__(self, other: Union[int, float, Series]) -> Series:
         return self._binary_arithmetic_op(other, NodeType.SUB)
 
-    def __rsub__(self, other: int | float | Series) -> Series:
+    @typechecked
+    def __rsub__(self, other: Union[int, float, Series]) -> Series:
         return self._binary_arithmetic_op(other, NodeType.SUB, right_op=True)
 
-    def __mul__(self, other: int | float | Series) -> Series:
+    @typechecked
+    def __mul__(self, other: Union[int, float, Series]) -> Series:
         return self._binary_arithmetic_op(other, NodeType.MUL)
 
-    def __rmul__(self, other: int | float | Series) -> Series:
+    @typechecked
+    def __rmul__(self, other: Union[int, float, Series]) -> Series:
         return self._binary_arithmetic_op(other, NodeType.MUL, right_op=True)
 
-    def __truediv__(self, other: int | float | Series) -> Series:
+    @typechecked
+    def __truediv__(self, other: Union[int, float, Series]) -> Series:
         return self._binary_arithmetic_op(other, NodeType.DIV)
 
-    def __rtruediv__(self, other: int | float | Series) -> Series:
+    @typechecked
+    def __rtruediv__(self, other: Union[int, float, Series]) -> Series:
         return self._binary_arithmetic_op(other, NodeType.DIV, right_op=True)
 
-    def _unary_op(self, node_type: NodeType, output_var_type: DBVarType) -> Series:
-        """
-        Apply an operation on the Series itself and return another Series
-
-        Parameters
-        ----------
-        node_type : NodeType
-            Output node type
-        output_var_type : DBVarType
-            Output variable type
-
-        Returns
-        -------
-        Series
-        """
-        node = self.graph.add_operation(
-            node_type=node_type,
+    def __invert__(self) -> Series:
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.NOT,
+            output_var_type=DBVarType.BOOL,
             node_params={},
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=[self.node],
-        )
-        return type(self)(
-            feature_store=self.feature_store,
-            tabular_source=self.tabular_source,
-            node=node,
-            name=None,
-            var_type=output_var_type,
-            row_index_lineage=self.row_index_lineage,
-            **self._unary_op_series_params(),
+            **self.unary_op_series_params(),
         )
 
     def isnull(self) -> Series:
@@ -392,19 +409,37 @@ class Series(QueryObject, OpsMixin, ParentMixin):
         -------
         Series
         """
-        return self._unary_op(node_type=NodeType.IS_NULL, output_var_type=DBVarType.BOOL)
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.IS_NULL,
+            output_var_type=DBVarType.BOOL,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
 
-    def fillna(self, other: int | float | str | bool) -> None:
+    def notnull(self) -> Series:
+        """
+        Returns a boolean Series indicating whether each value is not null
+
+        Returns
+        -------
+        Series
+        """
+        return ~self.isnull()
+
+    @typechecked
+    def fillna(self, other: Union[int, float, str, bool]) -> None:
         """
         Replace missing values with the provided value in-place
 
         Parameters
         ----------
-        other : int | float | str | bool
+        other : Union[int, float, str, bool]
             Value to replace missing values
         """
         self[self.isnull()] = other
 
+    @typechecked
     def preview_sql(self, limit: int = 10) -> str:
         """
         Generate SQL query to preview the transformed column
@@ -416,7 +451,7 @@ class Series(QueryObject, OpsMixin, ParentMixin):
 
         Returns
         -------
-        pd.DataFrame | None
+        SQL query
         """
         columns = []
         if self.name:

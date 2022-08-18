@@ -138,7 +138,7 @@ class SQLOperationGraph:
             sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)
 
         elif node_type in SUPPORTED_EXPRESSION_NODE_TYPES:
-            sql_node = make_expression_node(input_sql_nodes, node_type)
+            sql_node = make_expression_node(input_sql_nodes, node_type, parameters)
 
         elif node_type == NodeType.FILTER:
             sql_node = make_filter_node(input_sql_nodes, output_type)

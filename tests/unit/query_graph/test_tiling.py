@@ -228,7 +228,7 @@ def test_tile_table_id__transformations(snowflake_event_view, aggregate_kwargs):
     tile_id, agg_id = run_groupby_and_get_tile_table_identifier(snowflake_event_view, kwargs)
     assert (tile_id, agg_id) == (
         "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
-        "sum_4d8e697a102c013b0e3327c1b67b9b731fcf0e50",
+        "sum_657dcf96c117cdfe5928aaff963eb1eeb6d11027",
     )
 
     # Note that this is different from above
@@ -239,5 +239,5 @@ def test_tile_table_id__transformations(snowflake_event_view, aggregate_kwargs):
     )
     assert (tile_id, agg_id) == (
         "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
-        "sum_af0872a1ec08217ad860361d7ae23f31afe5bc73",
+        "sum_81483c0c3e2b4a1dc86100ce26c99012aa937bd5",
     )

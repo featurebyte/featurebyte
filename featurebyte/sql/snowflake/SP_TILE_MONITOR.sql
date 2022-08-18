@@ -1,8 +1,8 @@
 CREATE OR REPLACE PROCEDURE SP_TILE_MONITOR(
     MONITOR_SQL varchar,
     TILE_START_DATE_COLUMN varchar,
-    TIME_MODULO_FREQUENCY_SECONDS float,
-    BLIND_SPOT_SECONDS float,
+    TIME_MODULO_FREQUENCY_SECOND float,
+    BLIND_SPOT_SECOND float,
     FREQUENCY_MINUTE float,
     ENTITY_COLUMN_NAMES varchar,
     VALUE_COLUMN_NAMES varchar,
@@ -20,17 +20,28 @@ $$
 
     var debug = "Debug"
 
-    var table_exist = true
+    var tile_exist = "Y"
     try {
         snowflake.execute({sqlText: `SELECT * FROM ${TILE_ID} LIMIT 1`})
     } catch (err)  {
-        table_exist = false
+        tile_exist = "N"
     }
-    debug = debug + " - online_tile_table_exist: " + table_exist
+    debug = debug + " - online_tile_table_exist: " + tile_exist
 
-
-    if (table_exist === false) {
+    if (tile_exist === "N") {
         // first-time execution that online tile table does not exist yet
+        return debug
+    }
+
+    var tile_sql = MONITOR_SQL.replaceAll("'", "''")
+    var result = snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TILE_ID}', '${TILE_ID}', 'Y')`})
+    result.next()
+    existing_value_columns = result.getColumnValue(1)
+    debug = debug + " - existing_value_columns: " + existing_value_columns
+
+    if (existing_value_columns === "") {
+        // all are new value columns
+        debug = debug + " - all value columns are new: " + VALUE_COLUMN_NAMES
         return debug
     }
 
@@ -42,7 +53,7 @@ $$
 
     value_filter_cols = []
     value_select_cols = []
-    for (const [i, element] of VALUE_COLUMN_NAMES.split(",").entries()) {
+    for (const [i, element] of existing_value_columns.split(",").entries()) {
         value_filter_cols.push(element + " != OLD_"+ element)
         value_filter_cols.push("(" + element + " IS NOT NULL AND OLD_" + element + " IS NULL)")
         value_select_cols.push("b." + element + " as OLD_" + element)
@@ -55,8 +66,8 @@ $$
     var new_tile_sql = `
         select
             ${TILE_START_DATE_COLUMN},
-            F_TIMESTAMP_TO_INDEX(${TILE_START_DATE_COLUMN}, ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}) as INDEX,
-            ${ENTITY_COLUMN_NAMES}, ${VALUE_COLUMN_NAMES}
+            F_TIMESTAMP_TO_INDEX(${TILE_START_DATE_COLUMN}, ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}) as INDEX,
+            ${ENTITY_COLUMN_NAMES}, ${existing_value_columns}
         from (${MONITOR_SQL})
     `
 
@@ -66,7 +77,7 @@ $$
                 a.*,
                 ${value_select_cols_str},
                 '${TILE_TYPE}'::VARCHAR(8) as TILE_TYPE,
-                DATEADD(SECOND, (${BLIND_SPOT_SECONDS}+${FREQUENCY_MINUTE}*60), a.${TILE_START_DATE_COLUMN}) as EXPECTED_CREATED_AT,
+                DATEADD(SECOND, (${BLIND_SPOT_SECOND}+${FREQUENCY_MINUTE}*60), a.${TILE_START_DATE_COLUMN}) as EXPECTED_CREATED_AT,
                 SYSDATE() as CREATED_AT
             from
                 (${new_tile_sql}) a left outer join ${TILE_ID} b
@@ -77,36 +88,31 @@ $$
     debug = debug + " - compare_sql: " + compare_sql
 
     var monitor_table_name = TILE_ID + '_MONITOR'
-    table_exist = true
+    table_exist = "Y"
     try {
         snowflake.execute({sqlText: `SELECT * FROM ${monitor_table_name} LIMIT 1`})
     } catch (err)  {
-        table_exist = false
+        table_exist = "N"
     }
     debug = debug + " - monitor_table_exist: " + table_exist
 
-    if (table_exist === false) {
-        // monitor table already exists, create table with new records
+    if (table_exist === "N") {
+        // monitor table not exists, create table with new records
         var create_sql = `create table ${monitor_table_name} as ${compare_sql}`
-        snowflake.execute(
-            {
-                sqlText: create_sql
-            }
-        )
+        snowflake.execute({sqlText: create_sql})
         debug = debug + " - inside create monitor table"
 
     } else {
+
+        snowflake.execute({sqlText: `CALL SP_TILE_REGISTRY('${tile_sql}', ${TIME_MODULO_FREQUENCY_SECOND}, ${BLIND_SPOT_SECOND}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${TILE_ID}', '${monitor_table_name}', 'Y')`})
+
         // monitor table already exists, insert new records
-
         var insert_sql = `
-            insert into ${monitor_table_name} ${compare_sql}
+            insert into ${monitor_table_name}
+                (${TILE_START_DATE_COLUMN}, INDEX, ${ENTITY_COLUMN_NAMES}, ${existing_value_columns}, EXPECTED_CREATED_AT, CREATED_AT)
+                ${compare_sql}
         `
-
-        snowflake.execute(
-            {
-                sqlText: insert_sql
-            }
-        )
+        snowflake.execute({sqlText: insert_sql})
         debug = debug + " - inside insert monitor records: " + insert_sql
     }
 

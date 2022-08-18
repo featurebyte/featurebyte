@@ -2,7 +2,7 @@
 Tests functions/methods in routes/common directory
 """
 from datetime import datetime
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np
 import pytest
@@ -263,4 +263,5 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
     ],
 )
 def test_field_path_value(doc, field_path, expected):
+    """Test field_path_value logic"""
     assert BaseController.get_field_path_value(doc_dict=doc, field_path=field_path) == expected

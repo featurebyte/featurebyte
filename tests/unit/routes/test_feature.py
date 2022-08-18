@@ -11,7 +11,7 @@ from fastapi import HTTPException
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.exception import DuplicatedRegistryError
-from featurebyte.models.feature import FeatureModel, FeatureReadiness
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature_store import SourceType, SQLiteDetails, TableDetails
 from featurebyte.routes.feature.controller import FeatureController
 from tests.unit.routes.base import BaseApiTestSuite
@@ -25,6 +25,9 @@ class TestFeatureApi(BaseApiTestSuite):
     class_name = "Feature"
     base_route = "/feature"
     payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+    namespace_payload = BaseApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/feature_namespace.json"
+    )
     object_id = str(ObjectId())
     create_conflict_payload_expected_detail_pairs = [
         (
@@ -38,27 +41,17 @@ class TestFeatureApi(BaseApiTestSuite):
             f'Get the existing object by `Feature.get_by_id(id="{payload["_id"]}")`.',
         ),
         (
-            {**payload, "_id": str(ObjectId()), "version": f'{payload["version"]}_1'},
-            'Feature (name: "sum_30m") already exists. '
-            f'Get the existing object by `Feature.get_by_id(id="{payload["_id"]}")`.',
-        ),
-        (
-            {**payload, "_id": object_id, "parent_id": payload["_id"], "name": "random_name"},
-            f'Feature (id: "{object_id}", name: "random_name") '
-            f'has invalid parent feature (id: "{payload["_id"]}", name: "sum_30m")!',
+            {
+                **payload,
+                "_id": str(ObjectId()),
+                "version": f'{payload["version"]}_1',
+                "feature_namespace_id": object_id,
+            },
+            'FeatureNamespace (name: "sum_30m") already exists. '
+            'Please rename object (name: "sum_30m") to something else.',
         ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
-        (
-            {
-                **payload,
-                "_id": object_id,
-                "parent_id": object_id,
-                "version": f'{payload["version"]}_1',
-            },
-            f'The original feature (id: "{object_id}") not found. '
-            f"Please save the Feature object first.",
-        ),
         (
             {**payload, "event_data_ids": []},
             [
@@ -73,6 +66,10 @@ class TestFeatureApi(BaseApiTestSuite):
         (
             {**payload, "_id": object_id, "name": "random_name", "event_data_ids": [object_id]},
             f'EventData (id: "{object_id}") not found. ' f"Please save the EventData object first.",
+        ),
+        (
+            {**payload, "_id": object_id, "name": "random_name"},
+            f'Feature (name: "random_name") has an inconsistent feature_namespace_id (name: "sum_30m").',
         ),
     ]
 
@@ -108,6 +105,7 @@ class TestFeatureApi(BaseApiTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
+            payload["feature_namespace_id"] = str(ObjectId())
             feature_store_id, table_details = payload["tabular_source"]
             payload["tabular_source"] = [
                 feature_store_id,
@@ -131,7 +129,6 @@ class TestFeatureApi(BaseApiTestSuite):
         assert match_count == 1
         assert feat_namespace_docs[0]["name"] == self.payload["name"]
         assert feat_namespace_docs[0]["description"] is None
-        assert feat_namespace_docs[0]["versions"] == [response_dict["version"]]
         assert feat_namespace_docs[0]["version_ids"] == [ObjectId(self.payload["_id"])]
         assert feat_namespace_docs[0]["readiness"] == "DRAFT"
         assert feat_namespace_docs[0]["default_version_id"] == ObjectId(self.payload["_id"])
@@ -145,7 +142,6 @@ class TestFeatureApi(BaseApiTestSuite):
         new_payload = self.payload.copy()
         new_payload["_id"] = str(ObjectId())
         new_payload["version"] = f'{self.payload["version"]}_1'
-        new_payload["parent_id"] = self.payload["_id"]
         new_response = test_api_client.post("/feature", json=new_payload)
         new_response_dict = new_response.json()
         assert new_response.status_code == HTTPStatus.CREATED
@@ -159,10 +155,6 @@ class TestFeatureApi(BaseApiTestSuite):
         assert match_count == 1
         assert feat_namespace_docs[0]["name"] == self.payload["name"]
         assert feat_namespace_docs[0]["description"] is None
-        assert feat_namespace_docs[0]["versions"] == [
-            response_dict["version"],
-            f"{response_dict['version']}_1",
-        ]
         assert feat_namespace_docs[0]["version_ids"] == [
             ObjectId(self.payload["_id"]),
             ObjectId(new_payload["_id"]),
@@ -193,91 +185,6 @@ def feature_model_dict_fixture(feature_model_dict):
     return feature_model_dict
 
 
-@pytest.mark.parametrize(
-    "version_ids,versions,readiness,default_version_mode,default_version,doc_id,doc_version,expected",
-    [
-        [
-            # for auto mode, update default version to the best readiness of the most recent version
-            # the best readiness before update is DRAFT, new version will replace the default version
-            ["feature_id1"],
-            ["V220710"],
-            FeatureReadiness.DRAFT,
-            "AUTO",
-            "feature_id1",
-            "feature_id2",
-            "V220711",
-            {
-                "versions": ["V220710", "V220711"],
-                "version_ids": ["feature_id1", "feature_id2"],
-                "readiness": "DRAFT",
-                "default_version_id": "feature_id2",
-            },
-        ],
-        [
-            # for manual mode, won't update default feature version
-            ["feature_id1"],
-            ["V220710"],
-            FeatureReadiness.DRAFT,
-            "MANUAL",
-            "feature_id1",
-            "feature_id2",
-            "V220710",
-            {
-                "versions": ["V220710", "V220710_1"],
-                "version_ids": ["feature_id1", "feature_id2"],
-                "readiness": "DRAFT",
-                "default_version_id": "feature_id1",
-            },
-        ],
-        [
-            # for auto mode, update default version to the best readiness of the most recent version
-            # the best readiness before update is PRODUCTION_READY, new version will not replace the default version
-            ["feature_id1"],
-            ["V220710"],
-            FeatureReadiness.PRODUCTION_READY,
-            "AUTO",
-            "feature_id1",
-            "feature_id2",
-            "V220710",
-            {
-                "versions": ["V220710", "V220710_1"],
-                "version_ids": ["feature_id1", "feature_id2"],
-                "readiness": "PRODUCTION_READY",
-                "default_version_id": "feature_id1",
-            },
-        ],
-    ],
-)
-def test_prepare_feature_namespace_payload(
-    version_ids,
-    versions,
-    readiness,
-    default_version_mode,
-    default_version,
-    doc_id,
-    doc_version,
-    expected,
-):
-    """
-    Test prepare_feature_namespace_payload function
-    """
-    feature_namespace = Mock()
-    feature_namespace.version_ids = version_ids
-    feature_namespace.versions = versions
-    feature_namespace.readiness = readiness
-    feature_namespace.default_version_mode = default_version_mode
-    feature_namespace.default_version_id = default_version
-    feature = Mock()
-    feature.id = doc_id
-    feature.version = doc_version
-    assert (
-        FeatureController.prepare_feature_namespace_payload(
-            document=feature, feature_namespace=feature_namespace
-        )
-        == expected
-    )
-
-
 @pytest.mark.asyncio
 @patch("featurebyte.session.base.BaseSession.execute_query")
 async def test_insert_feature_registry(
@@ -292,11 +199,10 @@ async def test_insert_feature_registry(
     """
     _ = snowflake_connector
     user = Mock()
-    feature = FeatureModel(**feature_model_dict)
+    feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
     await FeatureController._insert_feature_registry(
         user=user,
         document=feature,
-        feature_store=snowflake_feature_store,
         get_credential=get_credential,
     )
 
@@ -310,7 +216,7 @@ async def test_insert_feature_registry(
 
 @patch("featurebyte.session.base.BaseSession.execute_query")
 def test_insert_feature_registry__non_snowflake_feature_store(
-    mock_execute_query, feature_model_dict
+    mock_execute_query, feature_model_dict, snowflake_feature_store
 ):
     """
     Test insert_feature_registry function (when feature store is not snowflake)
@@ -321,10 +227,10 @@ def test_insert_feature_registry__non_snowflake_feature_store(
         details=SQLiteDetails(filename="some_filename"),
     )
     feature_model_dict["tabular_source"] = (feature_store.id, TableDetails(table_name="some_table"))
-    feature = FeatureModel(**feature_model_dict)
+    feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
     user, get_credential = Mock(), Mock()
     FeatureController._insert_feature_registry(
-        user=user, document=feature, feature_store=feature_store, get_credential=get_credential
+        user=user, document=feature, get_credential=get_credential
     )
     assert mock_execute_query.call_count == 0
 
@@ -343,14 +249,11 @@ async def test_insert_feature_registry__duplicated_feature_registry_exception(
     """
     _ = snowflake_connector
     mock_feature_manager.return_value.insert_feature_registry.side_effect = DuplicatedRegistryError
-    feature = FeatureModel(**feature_model_dict)
+    feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
     user = Mock()
     with pytest.raises(HTTPException) as exc:
         await FeatureController._insert_feature_registry(
-            user=user,
-            document=feature,
-            feature_store=snowflake_feature_store,
-            get_credential=get_credential,
+            user=user, document=feature, get_credential=get_credential
         )
     expected_msg = (
         'Feature (name: "sum_30m") has been registered by other feature '
@@ -374,13 +277,12 @@ async def test_insert_feature_registry__other_exception(
     """
     _ = snowflake_connector
     mock_feature_manager.return_value.insert_feature_registry.side_effect = ValueError
-    feature = FeatureModel(**feature_model_dict)
+    feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
     user = Mock()
     with pytest.raises(ValueError):
         await FeatureController._insert_feature_registry(
             user=user,
             document=feature,
-            feature_store=snowflake_feature_store,
             get_credential=get_credential,
         )
     assert mock_feature_manager.return_value.remove_feature_registry.called

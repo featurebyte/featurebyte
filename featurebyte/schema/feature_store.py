@@ -1,9 +1,10 @@
 """
 FeatureStore API payload schema
 """
-from typing import List
+from typing import List, Optional
 
 from beanie import PydanticObjectId
+from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import SourceType
@@ -17,7 +18,7 @@ class FeatureStoreCreate(FeatureByteBaseModel):
     Feature Store Creation Schema
     """
 
-    id: PydanticObjectId = Field(alias="_id")
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     type: SourceType
     details: DatabaseDetails

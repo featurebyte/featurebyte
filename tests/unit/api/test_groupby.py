@@ -50,15 +50,14 @@ def test_constructor__wrong_input_type(snowflake_event_view):
     """
     with pytest.raises(TypeError) as exc:
         EventViewGroupBy(obj=True, keys="whatever")
-    expected_msg = "Expect <class 'featurebyte.api.event_view.EventView'> object type!"
+    expected_msg = (
+        'type of argument "obj" must be featurebyte.api.event_view.EventView; got bool instead'
+    )
     assert expected_msg in str(exc.value)
 
     with pytest.raises(TypeError) as exc:
         EventViewGroupBy(snowflake_event_view, True)
-    expected_msg = (
-        f"Grouping EventView(node.name={snowflake_event_view.node.name}, timestamp_column=event_timestamp) "
-        f'by "True" is not supported!'
-    )
+    expected_msg = 'type of argument "keys" must be one of (str, List[str]); got bool instead'
     assert expected_msg in str(exc.value)
 
 
@@ -265,3 +264,38 @@ def test_groupby__count_features(snowflake_event_view, method, category):
         assert feature_dict["node"]["type"] == NodeType.ALIAS
     else:
         assert feature_dict["node"]["type"] == NodeType.PROJECT
+
+
+def test_groupby__prune(snowflake_event_view):
+    """
+    Test graph pruning works properly on groupby node using derived columns
+    """
+    Entity(name="customer", serving_names=["cust_id"]).save()
+    snowflake_event_view["derived_value_column"] = 10 * snowflake_event_view["col_float"]
+    snowflake_event_view["derived_category"] = 5 * snowflake_event_view["col_int"]
+    snowflake_event_view["derived_entity"] = 1 * snowflake_event_view["cust_id"]
+    snowflake_event_view.derived_entity.as_entity("customer")
+    feature_group = snowflake_event_view.groupby(
+        "derived_entity", category="derived_category"
+    ).aggregate(
+        value_column="derived_value_column",
+        method="sum",
+        windows=["30m", "1h", "2h"],
+        feature_names=["feat_30m", "feat_1h", "feat_2h"],
+        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+    )
+    feature = feature_group["feat_30m"]
+    feature_dict = feature.dict()
+    assert feature_dict["graph"]["edges"] == {
+        "assign_1": ["assign_2"],
+        "assign_2": ["assign_3"],
+        "assign_3": ["groupby_1"],
+        "groupby_1": ["project_4"],
+        "input_1": ["project_1", "assign_1", "project_2", "project_3"],
+        "mul_1": ["assign_1"],
+        "mul_2": ["assign_2"],
+        "mul_3": ["assign_3"],
+        "project_1": ["mul_1"],
+        "project_2": ["mul_2"],
+        "project_3": ["mul_3"],
+    }

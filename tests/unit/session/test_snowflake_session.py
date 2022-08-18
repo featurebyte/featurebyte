@@ -136,6 +136,7 @@ def test_snowflake_session__fetch_pandas_all(
 EXPECTED_FUNCTIONS = ["F_COMPUTE_TILE_INDICES", "F_INDEX_TO_TIMESTAMP", "F_TIMESTAMP_TO_INDEX"]
 
 EXPECTED_PROCEDURES = [
+    "SP_TILE_REGISTRY",
     "SP_TILE_GENERATE",
     "SP_TILE_GENERATE_SCHEDULE",
     "SP_TILE_MONITOR",
@@ -229,6 +230,7 @@ def test_schema_initializer__sql_objects():
         item["filename"] = os.path.basename(item["filename"])
         item["type"] = item["type"].value
     expected = [
+        {"filename": "SP_TILE_REGISTRY.sql", "identifier": "SP_TILE_REGISTRY", "type": "procedure"},
         {"filename": "SP_TILE_MONITOR.sql", "identifier": "SP_TILE_MONITOR", "type": "procedure"},
         {
             "filename": "F_TIMESTAMP_TO_INDEX.sql",

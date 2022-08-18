@@ -97,6 +97,7 @@ python = "^3.8"
 rich = "^12.3.0"
 snowflake-connector-python = "^2.7.7"
 sqlglot = "^2.3.2"
+typeguard = "^2.13.3"
 typer = {extras = ["all"], version = "^0.6.0"}
 
 [tool.poetry.group.dev.dependencies]
@@ -152,7 +153,7 @@ max-args = 10
 
 [tool.pylint.design]
 max-attributes = 8
-max-parents = 11
+max-parents = 15
 
 [tool.pylint.format]
 max-line-length = 150

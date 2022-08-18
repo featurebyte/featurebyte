@@ -3,15 +3,16 @@ Frame class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import copy
 
 import pandas as pd
 from pydantic import StrictStr, root_validator
+from typeguard import typechecked
 
 from featurebyte.core.generic import QueryObject
-from featurebyte.core.mixin import OpsMixin
+from featurebyte.core.mixin import GetAttrMixin, OpsMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -43,10 +44,11 @@ class BaseFrame(QueryObject):
 
         Returns
         -------
-        list
+        list of columns
         """
         return list(self.column_var_type_map)
 
+    @typechecked
     def preview_sql(self, limit: int = 10) -> str:
         """
         Generate SQL query to preview the transformed table
@@ -58,12 +60,12 @@ class BaseFrame(QueryObject):
 
         Returns
         -------
-        pd.DataFrame | None
+        SQL query
         """
         return self._preview_sql(columns=self.columns, limit=limit)
 
 
-class Frame(BaseFrame, OpsMixin):
+class Frame(BaseFrame, OpsMixin, GetAttrMixin):
     """
     Implement operations to manipulate database table
     """
@@ -116,55 +118,42 @@ class Frame(BaseFrame, OpsMixin):
             if not_found_columns:
                 raise KeyError(f"Columns {not_found_columns} not found!")
 
-    def __getitem__(self, item: str | list[str] | Series) -> Series | Frame:
+    @typechecked
+    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, Frame]:
         """
-        Extract column or perform row filtering on the table
-
-        When the item has a `str` or `list[str]` type, column(s) projection is expected. When single column
-        projection happens, the last node of the Series lineage (`self.column_lineage_map[item][-1]`) is used
-        rather than the DataFrame's last node (`self.node`). This is to prevent adding redundant project node
-        to the graph when the value of the column does not change. Consider the following case if `self.node`
-        is used:
-
-        >>> df["c"] = df["b"]     # doctest: +SKIP
-        >>> b = df["b"]           # doctest: +SKIP
-        >>> dict(df.graph.edges)  # doctest: +SKIP
-        {
-            "input_1": ["project_1", "assign_1"],
-            "project_1": ["assign_1"],
-            "assign_1": ["project_2"]
-        }
-
-        Current implementation uses the last node of each lineage, it results in a simpler graph:
-
-        >>> dict(df.graph.edges)  # doctest: +SKIP
-        {
-            "input_1": ["project_1", "assign_1"],
-            "project_1": ["assign_1"],
-        }
-
-        When the item has a boolean `Series` type, row filtering operation is expected.
+        Extract column or perform row filtering on the table. When the item has a `str` or `list[str]` type,
+        column(s) projection is expected. When the item has a boolean `Series` type, row filtering operation
+        is expected.
 
         Parameters
         ----------
-        item: str | list[str] | Series
+        item: Union[str, List[str], Series]
             input item used to perform column(s) projection or row filtering
 
         Returns
         -------
-        Series | Frame
-            output of the operation
-
-        Raises
-        ------
-        TypeError
-            When the item type does not support
+        Series or Frame
         """
         self._check_any_missing_column(item)
-
         if isinstance(item, str):
-            # when doing projection, use the last updated node of the column rather than using
-            # the last updated dataframe node to prevent adding redundant project node to the graph.
+            # When single column projection happens, the last node of the Series lineage
+            # (`self.column_lineage_map[item][-1]`) is used rather than the DataFrame's last node (`self.node`).
+            # This is to prevent adding redundant project node to the graph when the value of the column does
+            # not change. Consider the following case if `self.node` is used:
+            # >>> df["c"] = df["b"]
+            # >>> b = df["b"]
+            # >>> dict(df.graph.edges)
+            # {
+            #     "input_1": ["project_1", "assign_1"],
+            #     "project_1": ["assign_1"],
+            #     "assign_1": ["project_2"]
+            # }
+            # Current implementation uses the last node of each lineage, it results in a simpler graph:
+            # >>> dict(df.graph.edges)
+            # {
+            #     "input_1": ["project_1", "assign_1"],
+            #     "project_1": ["assign_1"],
+            # }
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
                 node_params={"columns": [item]},
@@ -182,7 +171,7 @@ class Frame(BaseFrame, OpsMixin):
             )
             output.set_parent(self)
             return output
-        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
+        if isinstance(item, list):
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
                 node_params={"columns": item},
@@ -206,30 +195,25 @@ class Frame(BaseFrame, OpsMixin):
                 row_index_lineage=self.row_index_lineage,
                 **self._getitem_frame_params,
             )
-        if isinstance(item, Series):
-            node = self._add_filter_operation(
-                item=self, mask=item, node_output_type=NodeOutputType.FRAME
-            )
-            column_lineage_map = {}
-            for col, lineage in self.column_lineage_map.items():
-                column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
-            return type(self)(
-                feature_store=self.feature_store,
-                tabular_source=self.tabular_source,
-                node=node,
-                column_var_type_map=copy.deepcopy(self.column_var_type_map),
-                column_lineage_map=column_lineage_map,
-                row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
-                **self._getitem_frame_params,
-            )
-        raise TypeError(f"Frame indexing with value '{item}' is not supported!")
+        # item must be Series type
+        node = self._add_filter_operation(
+            item=self, mask=item, node_output_type=NodeOutputType.FRAME
+        )
+        column_lineage_map = {}
+        for col, lineage in self.column_lineage_map.items():
+            column_lineage_map[col] = self._append_to_lineage(lineage, node.name)
+        return type(self)(
+            feature_store=self.feature_store,
+            tabular_source=self.tabular_source,
+            node=node,
+            column_var_type_map=copy.deepcopy(self.column_var_type_map),
+            column_lineage_map=column_lineage_map,
+            row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+            **self._getitem_frame_params,
+        )
 
-    def __getattr__(self, item: str) -> Any:
-        if item in self.columns:
-            return self.__getitem__(item)
-        return object.__getattribute__(self, item)
-
-    def __setitem__(self, key: str, value: int | float | str | bool | Series) -> None:
+    @typechecked
+    def __setitem__(self, key: str, value: Union[int, float, str, bool, Series]) -> None:
         """
         Assign a scalar value or Series object of the same `var_type` to the `Frame` object
 
@@ -237,28 +221,15 @@ class Frame(BaseFrame, OpsMixin):
         ----------
         key: str
             column name to store the item
-        value: int | float | str | bool | Series
+        value: Union[int, float, str, bool, Series]
             value to be assigned to the column
 
         Raises
         ------
         ValueError
             when the row indices between the Frame object & value object are not aligned
-        TypeError
-            when the key type & value type combination is not supported
         """
-        if isinstance(key, str) and self.is_supported_scalar_pytype(value):
-            self.node = self.graph.add_operation(
-                node_type=NodeType.ASSIGN,
-                node_params={"value": value, "name": key},
-                node_output_type=NodeOutputType.FRAME,
-                input_nodes=[self.node],
-            )
-            self.column_var_type_map[key] = self.pytype_dbtype_map[type(value)]
-            self.column_lineage_map[key] = self._append_to_lineage(
-                self.column_lineage_map.get(key, tuple()), self.node.name
-            )
-        elif isinstance(key, str) and isinstance(value, Series):
+        if isinstance(value, Series):
             if self.row_index_lineage != value.row_index_lineage:
                 raise ValueError(f"Row indices between '{self}' and '{value}' are not aligned!")
             self.node = self.graph.add_operation(
@@ -272,7 +243,16 @@ class Frame(BaseFrame, OpsMixin):
                 self.column_lineage_map.get(key, tuple()), self.node.name
             )
         else:
-            raise TypeError(f"Setting key '{key}' with value '{value}' not supported!")
+            self.node = self.graph.add_operation(
+                node_type=NodeType.ASSIGN,
+                node_params={"value": value, "name": key},
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=[self.node],
+            )
+            self.column_var_type_map[key] = self.pytype_dbtype_map[type(value)]
+            self.column_lineage_map[key] = self._append_to_lineage(
+                self.column_lineage_map.get(key, tuple()), self.node.name
+            )
 
     @root_validator()
     @classmethod

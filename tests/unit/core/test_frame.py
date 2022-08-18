@@ -104,6 +104,7 @@ def test__getitem__series_key(dataframe, bool_series):
         "PRODUCT_ACTION": ("input_1", "filter_1"),
         "VALUE": ("input_1", "filter_1"),
         "MASK": ("input_1", "filter_1"),
+        "TIMESTAMP": ("input_1", "filter_1"),
     }
     assert sub_dataframe_dict["row_index_lineage"] == ("input_1", "filter_1")
     assert dict(sub_dataframe_dict["graph"]["edges"]) == {
@@ -141,16 +142,17 @@ def test__getitem__type_not_supported(dataframe):
     """
     with pytest.raises(TypeError) as exc:
         _ = dataframe[True]
-    assert "Frame indexing with value 'True' is not supported!" in str(exc.value)
+    expected_msg = 'type of argument "item" must be one of (str, List[str], featurebyte.core.series.Series); got bool instead'
+    assert expected_msg in str(exc.value)
 
 
 @pytest.mark.parametrize(
     "key,value,expected_type,expected_column_count",
     [
-        ("PRODUCT_ACTION", 1, DBVarType.INT, 4),
-        ("VALUE", 1.23, DBVarType.FLOAT, 4),
-        ("string_col", "random_string", DBVarType.VARCHAR, 5),
-        ("bool_col", True, DBVarType.BOOL, 5),
+        ("PRODUCT_ACTION", 1, DBVarType.INT, 5),
+        ("VALUE", 1.23, DBVarType.FLOAT, 5),
+        ("string_col", "random_string", DBVarType.VARCHAR, 6),
+        ("bool_col", True, DBVarType.BOOL, 6),
     ],
 )
 def test__setitem__str_key_scalar_value(
@@ -177,10 +179,10 @@ def test__setitem__str_key_scalar_value(
 @pytest.mark.parametrize(
     "key,value_key,expected_type,expected_column_count",
     [
-        ("random", "CUST_ID", DBVarType.INT, 5),
-        ("CUST_ID", "PRODUCT_ACTION", DBVarType.VARCHAR, 4),
-        ("random", "VALUE", DBVarType.FLOAT, 5),
-        ("PRODUCT_ACTION", "MASK", DBVarType.BOOL, 4),
+        ("random", "CUST_ID", DBVarType.INT, 6),
+        ("CUST_ID", "PRODUCT_ACTION", DBVarType.VARCHAR, 5),
+        ("random", "VALUE", DBVarType.FLOAT, 6),
+        ("PRODUCT_ACTION", "MASK", DBVarType.BOOL, 5),
     ],
 )
 def test__setitem__str_key_series_value(
@@ -232,7 +234,7 @@ def test__setitem__type_not_supported(dataframe):
     """
     with pytest.raises(TypeError) as exc:
         dataframe[1.234] = True
-    assert "Setting key '1.234' with value 'True' not supported!" in str(exc.value)
+    assert 'type of argument "key" must be str; got float instead' in str(exc.value)
 
 
 def test_multiple_statements(dataframe):
@@ -261,6 +263,7 @@ def test_multiple_statements(dataframe):
         "PRODUCT_ACTION": DBVarType.VARCHAR,
         "VALUE": DBVarType.FLOAT,
         "MASK": DBVarType.BOOL,
+        "TIMESTAMP": DBVarType.TIMESTAMP,
         "amount": DBVarType.FLOAT,
         "vip_customer": DBVarType.BOOL,
     }
@@ -269,6 +272,7 @@ def test_multiple_statements(dataframe):
         "PRODUCT_ACTION",
         "VALUE",
         "MASK",
+        "TIMESTAMP",
         "amount",
         "vip_customer",
     ]
@@ -285,6 +289,7 @@ def test_multiple_statements(dataframe):
         "PRODUCT_ACTION": ("input_1", "filter_1"),
         "VALUE": ("input_1", "filter_1"),
         "MASK": ("input_1", "filter_1"),
+        "TIMESTAMP": ("input_1", "filter_1"),
         "amount": ("assign_1",),
         "vip_customer": ("assign_2",),
     }
@@ -308,7 +313,7 @@ def test_frame_column_order(dataframe):
     """
     Check columns are sorted by added order
     """
-    original_columns = ["CUST_ID", "PRODUCT_ACTION", "VALUE", "MASK"]
+    original_columns = ["CUST_ID", "PRODUCT_ACTION", "VALUE", "MASK", "TIMESTAMP"]
     assert dataframe.columns == original_columns
     dataframe["first_added_column"] = dataframe.CUST_ID * 10
     assert dataframe.columns == original_columns + ["first_added_column"]
@@ -371,3 +376,25 @@ def test_frame__getattr__method(dataframe):
     with pytest.raises(AttributeError):
         # expect to throw attribute error rather than KeyError due to column not exists
         dataframe.random_attribute
+
+    # check that "columns" column is set properly
+    dataframe["columns"] = dataframe["CUST_ID"] + 1
+    assert isinstance(dataframe["columns"], Series)
+
+    # when accessing the `columns` attribute, make sure we don't retrieve a Series object
+    assert set(dataframe.columns) == {
+        "CUST_ID",
+        "PRODUCT_ACTION",
+        "VALUE",
+        "TIMESTAMP",
+        "MASK",
+        "columns",
+    }
+
+
+def test_frame__autocompletion(dataframe):
+    """
+    Test Frame __dir__ and _ipython_key_completions_ methods
+    """
+    assert set(dataframe.columns).issubset(dir(dataframe))
+    assert dataframe._ipython_key_completions_() == set(dataframe.columns)

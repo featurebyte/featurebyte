@@ -77,11 +77,16 @@ def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
         record_creation_date_column="created_at",
         credentials=config.credentials,
     )
+
+    # check that event data columns for autocompletion
+    assert set(event_data.columns).issubset(dir(event_data))
+    assert event_data._ipython_key_completions_() == set(event_data.columns)
+
     event_data_dict["id"] = event_data.id
     assert event_data.dict() == event_data_dict
 
     # user input validation
-    with pytest.raises(ValidationError) as exc:
+    with pytest.raises(TypeError) as exc:
         EventData.from_tabular_source(
             tabular_source=snowflake_database_table,
             name=123,
@@ -89,16 +94,7 @@ def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
             record_creation_date_column=345,
             credentials=config.credentials,
         )
-
-    assert exc.value.errors() == [
-        {"loc": ("name",), "msg": "str type expected", "type": "type_error.str"},
-        {"loc": ("event_timestamp_column",), "msg": "str type expected", "type": "type_error.str"},
-        {
-            "loc": ("record_creation_date_column",),
-            "msg": "str type expected",
-            "type": "type_error.str",
-        },
-    ]
+    assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
 
 def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_database_table, config):
@@ -183,6 +179,26 @@ def test_event_data_column__not_exists(snowflake_event_data):
         _ = snowflake_event_data.non_exist_column
     assert "'EventData' object has no attribute 'non_exist_column'" in str(exc.value)
 
+    # check __getattr__ is working properly
+    assert isinstance(snowflake_event_data.col_int, EventDataColumn)
+
+    # add a key `columns` to `column_var_type_map` to pretend there is a column called `columns`
+    snowflake_event_data.column_var_type_map["columns"] = "whatever_type"
+
+    # when accessing the `columns` attribute, make sure we retrieve it properly
+    assert set(snowflake_event_data.columns) == {
+        "col_char",
+        "col_float",
+        "col_boolean",
+        "event_timestamp",
+        "col_text",
+        "created_at",
+        "columns",
+        "col_binary",
+        "col_int",
+        "cust_id",
+    }
+
 
 def test_event_data_column__as_entity(snowflake_event_data):
     """
@@ -201,7 +217,9 @@ def test_event_data_column__as_entity(snowflake_event_data):
 
     with pytest.raises(TypeError) as exc:
         snowflake_event_data.col_int.as_entity(1234)
-    assert 'Unsupported type "<class \'int\'>" for tag name "1234"!' in str(exc.value)
+    assert 'type of argument "entity_name" must be one of (str, NoneType); got int instead' in str(
+        exc.value
+    )
 
     with pytest.raises(RecordRetrievalException) as exc:
         snowflake_event_data.col_int.as_entity("some_random_entity")

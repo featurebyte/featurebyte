@@ -12,7 +12,7 @@ from featurebyte.models.feature import (
     FeatureListModel,
     FeatureListStatus,
     FeatureModel,
-    FeatureNameSpaceModel,
+    FeatureNamespaceModel,
     FeatureReadiness,
 )
 
@@ -41,7 +41,6 @@ def feature_name_space_dict_fixture():
         "name": "some_feature_name",
         "description": None,
         "version_ids": [version_id],
-        "versions": ["V220710"],
         "readiness": "DRAFT",
         "created_at": datetime.now(),
         "updated_at": datetime.now(),
@@ -71,7 +70,14 @@ def test_feature_model(snowflake_event_view, feature_model_dict):
     feature = feature_group["sum_30m"]
     feature_model_dict.pop("event_data_ids")
     assert (
-        feature.dict(exclude={"id": True, "event_data_ids": True, "tabular_source": True})
+        feature.dict(
+            exclude={
+                "id": True,
+                "event_data_ids": True,
+                "tabular_source": True,
+                "feature_namespace_id": True,
+            }
+        )
         == feature_model_dict
     )
     feature_json = feature.json(by_alias=True)
@@ -96,10 +102,10 @@ def test_feature_list_model(feature_list_model_dict):
 
 def test_feature_name_space(feature_name_space_dict):
     """Test feature name space model"""
-    feature_name_space = FeatureNameSpaceModel.parse_obj(feature_name_space_dict)
+    feature_name_space = FeatureNamespaceModel.parse_obj(feature_name_space_dict)
     feat_name_space_dict = feature_name_space.dict(exclude={"id": True})
     assert feat_name_space_dict == feature_name_space_dict
-    loaded_feature_name_space = FeatureNameSpaceModel.parse_raw(
+    loaded_feature_name_space = FeatureNamespaceModel.parse_raw(
         feature_name_space.json(by_alias=True)
     )
     assert loaded_feature_name_space == feature_name_space

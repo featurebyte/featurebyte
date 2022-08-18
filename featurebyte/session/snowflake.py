@@ -80,7 +80,6 @@ class SnowflakeSession(BaseSession):
         -------
         list[str]
         """
-        database_name = database_name or self.database
         schemas = self.execute_query(f'SHOW SCHEMAS IN DATABASE "{database_name}"')
         output = []
         if schemas is not None:
@@ -90,8 +89,6 @@ class SnowflakeSession(BaseSession):
     def list_tables(
         self, database_name: str | None = None, schema_name: str | None = None
     ) -> list[str]:
-        database_name = database_name or self.database
-        schema_name = schema_name or self.sf_schema
         tables = self.execute_query(f'SHOW TABLES IN SCHEMA "{database_name}"."{schema_name}"')
         views = self.execute_query(f'SHOW VIEWS IN SCHEMA "{database_name}"."{schema_name}"')
         output = []
@@ -168,8 +165,6 @@ class SnowflakeSession(BaseSession):
         database_name: str | None = None,
         schema_name: str | None = None,
     ) -> dict[str, DBVarType]:
-        database_name = database_name or self.database
-        schema_name = schema_name or self.sf_schema
         schema = self.execute_query(
             f'SHOW COLUMNS IN "{database_name}"."{schema_name}"."{table_name}"'
         )

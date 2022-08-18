@@ -145,11 +145,9 @@ def test_entity_update_name(entity):
     # create another entity
     Entity(name="product", serving_names=["product_id"]).save()
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(TypeError) as exc:
         entity.update_name(type)
-    assert exc.value.errors() == [
-        {"loc": ("name",), "msg": "str type expected", "type": "type_error.str"}
-    ]
+    assert 'type of argument "name" must be str; got type instead' in str(exc.value)
 
     with pytest.raises(DuplicatedRecordException) as exc:
         entity.update_name("product")

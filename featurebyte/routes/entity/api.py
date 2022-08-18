@@ -3,7 +3,7 @@ Entity API routes
 """
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 from http import HTTPStatus
 
@@ -12,6 +12,15 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.entity import EntityModel, EntityNameHistoryEntry
 from featurebyte.models.persistent import AuditDocumentList
+from featurebyte.routes.common.schema import (
+    AuditLogSortByQuery,
+    NameQuery,
+    PageQuery,
+    PageSizeQuery,
+    SearchQuery,
+    SortByQuery,
+    SortDirQuery,
+)
 from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
 
 router = APIRouter(prefix="/entity")
@@ -42,12 +51,12 @@ async def get_entity(request: Request, entity_id: str) -> EntityModel:
 @router.get("", response_model=EntityList)
 async def list_entities(
     request: Request,
-    page: int = 1,
-    page_size: int = 10,
-    sort_by: Optional[str] = "created_at",
-    sort_dir: Literal["asc", "desc"] = "desc",
-    search: Optional[str] = None,
-    name: Optional[str] = None,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = SortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
+    name: Optional[str] = NameQuery,
 ) -> EntityList:
     """
     List Entity
@@ -83,11 +92,11 @@ async def update_entity(request: Request, entity_id: str, data: EntityUpdate) ->
 async def list_entity_audit_logs(
     request: Request,
     entity_id: PydanticObjectId,
-    page: int = 1,
-    page_size: int = 10,
-    sort_by: Optional[str] = "_id",
-    sort_dir: Literal["asc", "desc"] = "desc",
-    search: Optional[str] = None,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = AuditLogSortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
     List Entity audit logs

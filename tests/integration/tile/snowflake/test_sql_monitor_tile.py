@@ -89,3 +89,44 @@ def test_monitor_tile_updated_tile(snowflake_session):
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
     result = snowflake_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 10
+
+
+def test_monitor_tile_updated_tile_new_column(snowflake_session):
+    """
+    Test monitoring with outdated tiles in which the tile value has been incremented by 1
+    """
+    entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
+    value_col_names = "VALUE"
+    table_name = "TEMP_TABLE"
+    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    tile_sql = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names} FROM {table_name} limit 10"
+
+    sql = (
+        f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
+        f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{tile_id}', 'ONLINE', null)"
+    )
+    result = snowflake_session.execute_query(sql)
+    assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
+
+    sql = f"UPDATE {table_name} SET VALUE = VALUE + 1"
+    snowflake_session.execute_query(sql)
+
+    value_col_names_2 = "VALUE,VALUE_2"
+    monitor_tile_sql_2 = f"SELECT {InternalName.TILE_START_DATE},{entity_col_names},{value_col_names_2} FROM {table_name} limit 10"
+    sql = (
+        f"call SP_TILE_MONITOR('{monitor_tile_sql_2}', '{InternalName.TILE_START_DATE}', 183, 3, 5, '{entity_col_names}', "
+        f"'{value_col_names_2}', '{tile_id}', 'ONLINE')"
+    )
+    result = snowflake_session.execute_query(sql)
+    assert "Debug" in result["SP_TILE_MONITOR"].iloc[0]
+
+    sql = f"SELECT * FROM {tile_id}_MONITOR"
+    result = snowflake_session.execute_query(sql)
+    assert len(result) == 10
+
+    assert pd.notna(result.iloc[0]["VALUE"])
+    assert pd.notna(result.iloc[0]["OLD_VALUE"])
+
+    sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
+    result = snowflake_session.execute_query(sql)
+    assert result["TILE_COUNT"].iloc[0] == 10
