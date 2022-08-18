@@ -74,3 +74,7 @@ def test_task_manager__not_found_task(task_manager, user_id):
 
     task_status = task_manager.get_task_status(task_status_id=task_status_id)
     assert task_status.status == "error"
+
+    # test retrieve random task_status_id
+    task_status_random = task_manager.get_task_status(task_status_id=ObjectId())
+    assert task_status_random is None

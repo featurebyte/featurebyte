@@ -113,3 +113,7 @@ def test_task_has_been_implemented(command_class):
         _ = ConflictTask
 
     assert 'Command "random_command" has been implemented.' in str(exc.value)
+
+    # initiate BaseTask without override payload_class will trigger NotImplementedError
+    with pytest.raises(NotImplementedError):
+        BaseTask(payload={})

@@ -22,8 +22,8 @@ class BaseTask:
 
     payload_class: type[BaseTaskPayload] = BaseTaskPayload
 
-    def __init__(self, payload: dict[str, Any], progress: Any):
-        if self.payload_class is None:
+    def __init__(self, payload: dict[str, Any], progress: Any = None):
+        if self.payload_class == BaseTaskPayload:
             raise NotImplementedError
         self.payload = self.payload_class(**payload)
         self.progress = progress
