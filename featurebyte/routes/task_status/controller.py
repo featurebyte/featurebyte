@@ -11,7 +11,7 @@ from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.schema.task_status import TaskStatus, TaskStatusList
-from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.task_manager import AbstractTaskManager, TaskManager
 
 
 class TaskStatusController:
@@ -19,7 +19,7 @@ class TaskStatusController:
     JobStatus controller
     """
 
-    task_manager_class: type[TaskManager] = TaskManager
+    task_manager_class: type[AbstractTaskManager] = TaskManager
 
     @classmethod
     async def get_task_status(cls, user: Any, task_status_id: ObjectId) -> TaskStatus:
