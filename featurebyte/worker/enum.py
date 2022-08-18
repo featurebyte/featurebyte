@@ -8,5 +8,3 @@ class Command(str, Enum):
     """
     Task command enum
     """
-
-    DEFAULT_JOB_SETTINGS_ANALYSIS = "DEFAULT_JOB_SETTINGS_ANALYSIS"

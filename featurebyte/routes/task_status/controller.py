@@ -16,7 +16,7 @@ from featurebyte.service.task_manager import AbstractTaskManager, TaskManager
 
 class TaskStatusController:
     """
-    JobStatus controller
+    TaskStatusController
     """
 
     task_manager_class: type[AbstractTaskManager] = TaskManager
