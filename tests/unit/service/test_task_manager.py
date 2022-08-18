@@ -1,8 +1,9 @@
 """
 Test for task manager service
 """
+import math
 import time
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -78,3 +79,38 @@ def test_task_manager__not_found_task(task_manager, user_id):
     # test retrieve random task_status_id
     task_status_random = task_manager.get_task_status(task_status_id=ObjectId())
     assert task_status_random is None
+
+
+@patch("featurebyte.service.task_manager.ProcessStore", wraps=ProcessStore)
+def test_task_manager__list_task_status(mock_process_store):
+    """Test task manager service -- list task status"""
+    _ = mock_process_store
+    user_id = ObjectId()
+    task_manager = TaskManager(user_id=user_id)
+
+    task_num = 10
+    task_status_ids = []
+    for _ in range(task_num):
+        task_status_ids.append(task_manager.submit(payload=LongRunningPayload(user_id=user_id)))
+
+    page_sizes = [1, 2, 5, 10, 20]
+    for page_size in page_sizes:
+        total_page = math.ceil(task_num / page_size)
+        ascending_list = []
+        descending_list = []
+        for page in range(1, total_page + 1):
+            items, total = task_manager.list_task_status(
+                page=page, page_size=page_size, ascending=True
+            )
+            assert total == task_num
+            ascending_list.extend(items)
+
+            items, total = task_manager.list_task_status(
+                page=page, page_size=page_size, ascending=False
+            )
+            assert total == task_num
+            descending_list.extend(items)
+
+        # check list order
+        assert [item.id for item in ascending_list] == sorted(task_status_ids)
+        assert [item.id for item in descending_list] == sorted(task_status_ids, reverse=True)

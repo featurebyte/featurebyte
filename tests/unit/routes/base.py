@@ -223,7 +223,7 @@ class BaseApiTestSuite:
         # test with default params
         test_api_client, _ = test_api_client_persistent
         _ = create_multiple_success_responses
-        response = test_api_client.get(f"{self.base_route}")
+        response = test_api_client.get(self.base_route)
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
         expected_paginated_info = {"page": 1, "page_size": 10, "total": 3}

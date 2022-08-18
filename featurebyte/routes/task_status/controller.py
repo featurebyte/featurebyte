@@ -43,7 +43,7 @@ class TaskStatusController:
             When the task status not found
         """
         task_manager = cls.task_manager_class(user_id=user.id)
-        task_status = task_manager.get_task_status(task_status_id=task_status_id)
+        task_status = task_manager.get_task_status(task_status_id=ObjectId(task_status_id))
         if task_status is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,

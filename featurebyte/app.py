@@ -17,6 +17,7 @@ import featurebyte.routes.feature.api as feature_api
 import featurebyte.routes.feature_list.api as feature_list_api
 import featurebyte.routes.feature_namespace.api as feature_namespace_api
 import featurebyte.routes.feature_store.api as feature_store_api
+import featurebyte.routes.task_status.api as task_status_api
 from featurebyte.config import Configurations
 from featurebyte.models.credential import Credential
 from featurebyte.persistent import GitDB, Persistent
@@ -27,6 +28,7 @@ from featurebyte.routes.feature.controller import FeatureController
 from featurebyte.routes.feature_list.controller import FeatureListController
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.feature_store.controller import FeatureStoreController
+from featurebyte.routes.task_status.controller import TaskStatusController
 
 app = FastAPI()
 PERSISTENT = None
@@ -125,12 +127,17 @@ resource_api_controller_pairs: list[tuple[Any, type[BaseController[Any, Any]]]] 
     (feature_list_api, FeatureListController),
     (feature_namespace_api, FeatureNamespaceController),
     (feature_store_api, FeatureStoreController),
+    (task_status_api, TaskStatusController),
 ]
 for resource_api, resource_controller in resource_api_controller_pairs:
+    tags = []
+    if hasattr(resource_controller, "collection_name"):
+        tags = [resource_controller.collection_name]
+
     app.include_router(
         resource_api.router,
         dependencies=[Depends(_get_api_deps(resource_controller))],
-        tags=[resource_controller.collection_name],
+        tags=tags,
     )
 
 
