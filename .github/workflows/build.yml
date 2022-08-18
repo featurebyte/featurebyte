@@ -24,6 +24,7 @@ permissions:
   pull-requests: write
 
 env:
+  # Snowflake
   SNOWFLAKE_USER: github
   SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
   SNOWFLAKE_ACCOUNT: "fm54506.us-central1.gcp"
@@ -31,17 +32,17 @@ env:
   SNOWFLAKE_DATABASE: FEATUREBYTE_TESTING
   SNOWFLAKE_SCHEMA: PUBLIC
   SNOWFLAKE_SCHEMA_FEATUREBYTE: FEATUREBYTE
-  GIT_SSH_KEY_PATH: "/tmp/git_key"
-
   # Python
   GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
   GCR_PYPI_REPO: featurebyte-pypi
   GCR_PYPI_LOCATION: us-central1
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64                           # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
-
+  # Slack
   SLACK_OAUTH: ${{ secrets.SLACK_OAUTH }}
+  # Testing
   MONGO_CONNECTION: mongodb://localhost:27021
+  GIT_SSH_KEY_PATH: "/tmp/git_key"
 
 jobs:
   build:
@@ -50,11 +51,6 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.8"]
-    env:
-      GCR_REPO_NAME: featurebyte-pypi
-      GCR_REPO_LOCATION: us-central1
-      GC_PROJECT_ID: vpc-host-nonprod-xa739-xz970
-
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
@@ -146,7 +142,7 @@ jobs:
       run: |
         export PACKAGE=$(poetry version --no-ansi | cut -d ' ' -f1)
         export VERSION=$(poetry version --no-ansi --short | grep -oP '\d+[.]\d+[.]\d+')
-        export DEV_VERSION=$(gcloud artifacts versions list --project ${GC_PROJECT_ID} --repository=${GCR_REPO_NAME} --location=${GCR_REPO_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' | \
+        export DEV_VERSION=$(gcloud artifacts versions list --project ${GCR_PYPI_PROJECT_ID} --repository=${GCR_PYPI_REPO} --location=${GCR_PYPI_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' | \
             sort --version-sort -r | \
             grep -P "${VERSION}.dev" | \
             head -n 1 | \
@@ -156,7 +152,7 @@ jobs:
         export PUBLISH_VERSION="${VERSION}.dev$((DEV_VERSION+=1))"
         sed -i -E "s|^version = \"[^\"]+\"|version = \"${PUBLISH_VERSION}\"|g" pyproject.toml
 
-        poetry config repositories.featurebyte_np https://$GCR_REPO_LOCATION-python.pkg.dev/$GC_PROJECT_ID/$GCR_REPO_NAME
+        poetry config repositories.featurebyte_np https://${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}
         poetry publish --build -r featurebyte_np | tee output.txt
 
         export OUTPUT=$(cat output.txt)
