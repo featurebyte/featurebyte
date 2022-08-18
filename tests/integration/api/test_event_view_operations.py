@@ -246,9 +246,9 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "COUNT_2h": 1,
-        "COUNT_BY_ACTION_24h": '{\n  "add": 2,\n  "purchase": 3,\n  "remove": 4\n}',
-        "NUM_PURCHASE_7d": 3,
+        "COUNT_2h": Decimal("1"),
+        "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 3,\n  "purchase": 2,\n  "remove": 7\n}',
+        "NUM_PURCHASE_7d": Decimal("2"),
     }
 
     run_and_test_get_historical_features(config, feature_group, feature_group_per_category)
