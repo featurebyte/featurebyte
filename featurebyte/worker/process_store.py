@@ -13,7 +13,7 @@ from cachetools import FIFOCache
 
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.worker.enum import Command
-from featurebyte.worker.task.base import TASK_PAYLOAD_MAP
+from featurebyte.worker.progress import GlobalProgress
 from featurebyte.worker.task_executor import TaskExecutor
 
 
@@ -40,10 +40,13 @@ class ProcessStore(metaclass=SingletonMeta):
         ObjectId
         """
         task_status_id = ObjectId()
-        payload_obj = TASK_PAYLOAD_MAP[self._command_class(payload["command"])](**payload)
-        process = Process(target=self._task_executor, args=(payload_obj.dict(),), daemon=True)
+        user_id = payload["user_id"]
+        progress_queue = GlobalProgress().get_progress(
+            user_id=user_id, task_status_id=task_status_id
+        )
+        process = Process(target=self._task_executor, args=(payload, progress_queue), daemon=True)
         process.start()
-        self._store[(payload_obj.user_id, task_status_id)] = process
+        self._store[(user_id, task_status_id)] = process
         return task_status_id
 
     def get(self, user_id: Optional[ObjectId], task_status_id: ObjectId) -> Optional[Process]:

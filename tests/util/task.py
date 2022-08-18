@@ -1,19 +1,21 @@
 """
 Tasks used for testing purpose
 """
+import asyncio
 import time
 from enum import Enum
 
-from featurebyte.worker.task.base import TASK_MAP, BaseTask, BaseTaskPayload
+from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.worker.task.base import TASK_MAP, BaseTask
 
 
 class TaskExecutor:
     """TaskExecutor class"""
 
-    def __init__(self, payload):
+    def __init__(self, payload, progress):
         command = payload["command"]
-        task = TASK_MAP[command](payload=payload)
-        task.execute()
+        task = TASK_MAP[command](payload=payload, progress=progress)
+        asyncio.run(task.execute())
 
 
 class Command(str, Enum):
@@ -21,6 +23,7 @@ class Command(str, Enum):
 
     LONG_RUNNING_COMMAND = "long_running_command"
     ERROR_COMMAND = "error_command"
+    UNKNOWN_TASK_COMMAND = "unknown_task_command"
 
 
 class LongRunningPayload(BaseTaskPayload):
@@ -35,9 +38,13 @@ class LongRunningTask(BaseTask):
 
     payload_class = LongRunningPayload
 
-    def execute(self) -> None:
+    async def execute(self) -> None:
         """Delay for 1 second to simulate long-running task"""
-        time.sleep(1)
+        step = 10
+        for i in range(step):
+            time.sleep(1.0 / step)
+            percent = int((i + 1) * (100.0 / step))
+            self.update_progress(percent=percent)
 
 
 class ErrorTaskPayload(BaseTaskPayload):
@@ -52,6 +59,6 @@ class ErrorTask(BaseTask):
 
     payload_class = ErrorTaskPayload
 
-    def execute(self) -> None:
+    async def execute(self) -> None:
         """Make it error"""
         assert 0

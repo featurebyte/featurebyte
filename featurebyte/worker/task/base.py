@@ -3,49 +3,14 @@ Base models for task and task payload
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional
+from typing import Any
 
 from abc import abstractmethod
-from enum import Enum
 
-from beanie import PydanticObjectId
-from pydantic import BaseModel
+from featurebyte.schema.worker.progress import ProgressModel
+from featurebyte.schema.worker.task.base import BaseTaskPayload
 
-# contains command to task class mapping
 TASK_MAP = {}
-TASK_PAYLOAD_MAP = {}
-
-
-class BaseTaskPayload(BaseModel):
-    """
-    Base class for Task payload
-    """
-
-    user_id: Optional[PydanticObjectId]
-    document_id: PydanticObjectId
-    collection_name: ClassVar[Optional[str]] = None
-    command: ClassVar[Optional[Enum]] = None
-
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        TASK_PAYLOAD_MAP[cls.command] = cls
-
-    @property
-    def task_output_path(self) -> Optional[str]:
-        """
-        Redirect route used to retrieve the task result
-
-        Returns
-        -------
-        Optional[str]
-        """
-        return f"{self.collection_name}/{self.document_id}" if self.collection_name else None
-
-    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
-        output: dict[str, Any] = super().dict(*args, **kwargs)
-        if self.command:
-            output["command"] = self.command.value
-        return output
 
 
 class BaseTask:
@@ -57,17 +22,36 @@ class BaseTask:
 
     payload_class: type[BaseTaskPayload] = BaseTaskPayload
 
-    def __init__(self, payload: dict[str, Any]):
+    def __init__(self, payload: dict[str, Any], progress: Any):
         if self.payload_class is None:
             raise NotImplementedError
         self.payload = self.payload_class(**payload)
+        self.progress = progress
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-        TASK_MAP[cls.payload_class.command] = cls
+        command = cls.payload_class.command
+        if command in TASK_MAP:
+            raise ValueError(f'Command "{command}" has been implemented.')
+        TASK_MAP[command] = cls
+
+    def update_progress(self, percent: int, message: str | None = None) -> None:
+        """
+        Update progress
+
+        Parameters
+        ----------
+        percent: int
+            Completed progress percentage
+        message: str | None
+            Optional message
+        """
+        if self.progress:
+            progress = ProgressModel(percent=percent, message=message)
+            self.progress.put(progress.dict(exclude_none=True))
 
     @abstractmethod
-    def execute(self) -> None:
+    async def execute(self) -> None:
         """
         Execute the task
         """

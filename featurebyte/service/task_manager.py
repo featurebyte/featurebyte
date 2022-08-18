@@ -3,14 +3,14 @@ TaskManager service is responsible to submit task message
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 from multiprocessing import Process
 
 from bson.objectid import ObjectId
 
-from featurebyte.schema.task_status import TaskStatus, TaskStatusList
-from featurebyte.worker.enum import Command
+from featurebyte.schema.task_status import TaskStatus
+from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.worker.process_store import ProcessStore
 
 
@@ -22,39 +22,23 @@ class TaskManager:
     def __init__(self, user_id: Optional[ObjectId]):
         self.user_id = user_id
 
-    def submit(
-        self,
-        command: Command,
-        payload: dict[str, Any],
-    ) -> tuple[ObjectId, ObjectId]:
+    def submit(self, payload: BaseTaskPayload) -> ObjectId:
         """
         Submit task request given task payload
 
         Parameters
         ----------
-        command: Command
-            Task command
-        payload: dict[str, Any]
-            Task payload
+        payload: BaseTaskPayload
+            Task payload object
 
         Returns
         -------
-        document_id
-            Identifier used to identify the task output
-        task_id
+        ObjectId
             Task identifier used to check task status
         """
-
-        document_id = ObjectId()
-        task_id = ProcessStore().submit(
-            payload={
-                **payload,
-                "command": command,
-                "document_id": document_id,
-                "user_id": self.user_id,
-            },
-        )
-        return document_id, task_id
+        assert self.user_id == payload.user_id
+        task_id = ProcessStore().submit(payload=payload.dict())
+        return task_id
 
     @staticmethod
     def _get_task_status(
@@ -68,9 +52,9 @@ class TaskManager:
             return TaskStatus(id=task_status_id, status="complete")
         return TaskStatus(id=task_status_id, status="error")
 
-    def check_status(self, task_status_id: ObjectId) -> Optional[TaskStatus]:
+    def get_task_status(self, task_status_id: ObjectId) -> Optional[TaskStatus]:
         """
-        Check task status given ID
+        Retrieve task status given ID
 
         Parameters
         ----------
@@ -87,17 +71,34 @@ class TaskManager:
             process=process_store.get(user_id=self.user_id, task_status_id=task_status_id),
         )
 
-    def list_status(self) -> TaskStatusList:
+    def list_task_status(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        ascending: bool = True,
+    ) -> tuple[list[TaskStatus], int]:
         """
         List task statuses of this user
 
+        Parameters
+        ----------
+        page: int
+            Page number
+        page_size: int
+            Page size
+        ascending: bool
+            Sorting order
+
         Returns
         -------
-        TaskStatusList
+        tuple[list[TaskStatus], int]
         """
-        task_status_list = []
+        output = []
         for task_status_id, process in ProcessStore().list(user_id=self.user_id):
             task_status = self._get_task_status(task_status_id, process)
             if task_status:
-                task_status_list.append(task_status)
-        return TaskStatusList(data=task_status_list)
+                output.append(task_status)
+
+        output = sorted(output, key=lambda ts: ts.id, reverse=not ascending)
+        start_idx = (page - 1) * page_size
+        return output[start_idx : (start_idx + page_size)], len(output)

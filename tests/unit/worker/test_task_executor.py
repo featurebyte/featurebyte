@@ -6,7 +6,8 @@ from enum import Enum
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.worker.task.base import TASK_MAP, BaseTask, BaseTaskPayload
+from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.worker.task.base import TASK_MAP, BaseTask
 from featurebyte.worker.task_executor import TaskExecutor
 
 
@@ -16,8 +17,6 @@ def command_class_fixture():
         """Command enum used for testing"""
 
         RANDOM_COMMAND = "random_command"
-        LONG_RUNNING_COMMAND = "long_running_command"
-        ERROR_COMMAND = "error_command"
 
     return Command
 
@@ -45,7 +44,7 @@ def random_task_class_store_fixture(random_task_payload_class):
 
         payload_class = random_task_payload_class
 
-        def execute(self) -> None:
+        async def execute(self) -> None:
             """Run some task"""
             store["new_item"] = {
                 "user_id": self.payload.user_id,
@@ -93,3 +92,24 @@ def test_task_executor(random_task_class_store):
 
     # check store
     assert store == {"new_item": {"user_id": user_id, "document_id": document_id}}
+
+
+def test_task_has_been_implemented(command_class):
+    """
+    Test implement a task whose command has been implemented before
+    """
+    with pytest.raises(ValueError) as exc:
+
+        class ConflictTaskPayload(BaseTaskPayload):
+            """Payload which going to cause conflict"""
+
+            command = command_class.RANDOM_COMMAND
+
+        class ConflictTask(BaseTask):
+            """RandomTask class"""
+
+            payload_class = ConflictTaskPayload
+
+        _ = ConflictTask
+
+    assert 'Command "random_command" has been implemented.' in str(exc.value)
