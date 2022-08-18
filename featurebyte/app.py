@@ -127,18 +127,18 @@ resource_api_controller_pairs: list[tuple[Any, type[BaseController[Any, Any]]]] 
     (feature_list_api, FeatureListController),
     (feature_namespace_api, FeatureNamespaceController),
     (feature_store_api, FeatureStoreController),
-    (task_status_api, TaskStatusController),
 ]
 for resource_api, resource_controller in resource_api_controller_pairs:
-    tags = []
-    if hasattr(resource_controller, "collection_name"):
-        tags = [resource_controller.collection_name]
-
     app.include_router(
         resource_api.router,
         dependencies=[Depends(_get_api_deps(resource_controller))],
-        tags=tags,
+        tags=[resource_controller.collection_name],
     )
+
+# add non-persistent-storage route
+app.include_router(
+    task_status_api.router, dependencies=[Depends(_get_api_deps(TaskStatusController))]
+)
 
 
 def _cleanup_persistent(signum, frame):  # type: ignore
