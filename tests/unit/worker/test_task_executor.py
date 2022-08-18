@@ -10,20 +10,49 @@ from featurebyte.worker.task.base import TASK_MAP, BaseTask, BaseTaskPayload
 from featurebyte.worker.task_executor import TaskExecutor
 
 
-@pytest.fixture(name="random_task_payload_class")
-def random_task_payload_class_fixture():
-    """RandomTaskPayload class"""
-
+@pytest.fixture(name="command_class")
+def command_class_fixture():
     class Command(str, Enum):
+        """Command enum used for testing"""
 
         RANDOM_COMMAND = "random_command"
+        LONG_RUNNING_COMMAND = "long_running_command"
+        ERROR_COMMAND = "error_command"
+
+    return Command
+
+
+@pytest.fixture(name="random_task_payload_class")
+def random_task_payload_class_fixture(command_class):
+    """RandomTaskPayload class"""
 
     class RandomTaskPayload(BaseTaskPayload):
+        """RandomTaskPayload class"""
 
         collection_name = "random_collection"
-        command = Command.RANDOM_COMMAND
+        command = command_class.RANDOM_COMMAND
 
     return RandomTaskPayload
+
+
+@pytest.fixture(name="random_task_class_store")
+def random_task_class_store_fixture(random_task_payload_class):
+    """RandomTask class"""
+    store = {}
+
+    class RandomTask(BaseTask):
+        """RandomTask class"""
+
+        payload_class = random_task_payload_class
+
+        def execute(self) -> None:
+            """Run some task"""
+            store["new_item"] = {
+                "user_id": self.payload.user_id,
+                "document_id": self.payload.document_id,
+            }
+
+    yield RandomTask, store
 
 
 def test_extend_base_task_payload(random_task_payload_class):
@@ -40,25 +69,13 @@ def test_extend_base_task_payload(random_task_payload_class):
     assert payload_obj.task_output_path == f"random_collection/{document_id}"
 
 
-def test_task_executor(random_task_payload_class):
+def test_task_executor(random_task_class_store):
     """Test task get loaded properly when extending BaseTask & BaskTaskPayload"""
-    store = {}
-
-    class RandomTask(BaseTask):
-
-        payload_class = random_task_payload_class
-        command = random_task_payload_class.command
-
-        def execute(self) -> None:
-            """Run some task"""
-            store["new_item"] = {
-                "user_id": self.payload.user_id,
-                "document_id": self.payload.document_id,
-            }
+    random_task_class, store = random_task_class_store
 
     # check task get loaded to TASK_MAP properly
     assert "random_command" in TASK_MAP
-    assert TASK_MAP["random_command"] == RandomTask
+    assert TASK_MAP["random_command"] == random_task_class
 
     # check store before running executor
     assert store == {}

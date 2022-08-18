@@ -3,8 +3,9 @@ This module contains ProcessStore class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Callable, Optional, Type
 
+from enum import Enum
 from multiprocessing import Process
 
 from bson.objectid import ObjectId
@@ -22,6 +23,8 @@ class ProcessStore(metaclass=SingletonMeta):
     """
 
     _store: FIFOCache[tuple[Optional[ObjectId], ObjectId], Process] = FIFOCache(maxsize=128)
+    _command_class: Type[Enum] = Command
+    _task_executor: Callable[..., Any] = TaskExecutor
 
     def submit(self, payload: dict[str, Any]) -> ObjectId:
         """
@@ -37,8 +40,8 @@ class ProcessStore(metaclass=SingletonMeta):
         ObjectId
         """
         task_status_id = ObjectId()
-        payload_obj = TASK_PAYLOAD_MAP[Command(payload["command"])](**payload)
-        process = Process(target=TaskExecutor, args=(payload_obj.dict(),), daemon=True)
+        payload_obj = TASK_PAYLOAD_MAP[self._command_class(payload["command"])](**payload)
+        process = Process(target=self._task_executor, args=(payload_obj.dict(),), daemon=True)
         process.start()
         self._store[(payload_obj.user_id, task_status_id)] = process
         return task_status_id
