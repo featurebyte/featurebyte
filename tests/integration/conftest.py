@@ -234,7 +234,7 @@ def snowflake_tile(snowflake_session):
     end = InternalName.TILE_END_DATE_SQL_PLACEHOLDER
 
     tile_sql = f"SELECT {col_names} FROM {table_name} WHERE {InternalName.TILE_START_DATE} >= {start} and {InternalName.TILE_START_DATE} < {end}"
-    tile_id = "tile_id1"
+    agg_id = "agg_id1"
 
     tile_spec = TileSpec(
         time_modulo_frequency_second=183,
@@ -245,14 +245,15 @@ def snowflake_tile(snowflake_session):
         entity_column_names=["PRODUCT_ACTION", "CUST_ID"],
         value_column_names=["VALUE"],
         tile_id="tile_id1",
+        aggregation_id="agg_id1",
     )
 
     yield tile_spec
 
     snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
-    snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
-    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
-    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+    snowflake_session.execute_query(f"DROP TABLE IF EXISTS {agg_id}")
+    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{agg_id}_ONLINE")
+    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{agg_id}_OFFLINE")
 
 
 @pytest.fixture

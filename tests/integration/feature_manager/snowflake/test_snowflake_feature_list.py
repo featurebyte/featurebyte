@@ -162,7 +162,7 @@ def test_generate_tiles_on_demand(snowflake_session, snowflake_tile, feature_lis
     result = snowflake_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 5
 
-    sql = f"SELECT * FROM {snowflake_tile.tile_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
+    sql = f"SELECT * FROM {snowflake_tile.aggregation_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
     result = snowflake_session.execute_query(sql)
     assert len(result) == 1
     assert result["PRODUCT_ACTION"].iloc[0] == "P1"

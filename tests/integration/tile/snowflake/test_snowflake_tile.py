@@ -132,7 +132,7 @@ def test_update_tile_entity_tracker(snowflake_tile, snowflake_session, tile_mana
         tile_spec=snowflake_tile, temp_entity_table=temp_entity_table
     )
 
-    sql = f"SELECT * FROM {snowflake_tile.tile_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
+    sql = f"SELECT * FROM {snowflake_tile.aggregation_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
     result = snowflake_session.execute_query(sql)
     assert len(result) == 2
     assert result["PRODUCT_ACTION"].iloc[0] == "P1"
@@ -161,7 +161,7 @@ def test_update_tile_entity_tracker(snowflake_tile, snowflake_session, tile_mana
         tile_spec=snowflake_tile, temp_entity_table=temp_entity_table
     )
 
-    sql = f"SELECT * FROM {snowflake_tile.tile_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
+    sql = f"SELECT * FROM {snowflake_tile.aggregation_id}_ENTITY_TRACKER ORDER BY PRODUCT_ACTION"
     result = snowflake_session.execute_query(sql)
     assert len(result) == 3
     assert result["PRODUCT_ACTION"].iloc[1] == "P2"
