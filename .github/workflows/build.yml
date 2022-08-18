@@ -85,9 +85,9 @@ jobs:
 
     - name: Install Poetry
       run: |
-        mkdir -p ~/.config/pip && printf "%s\n" "[global]" "extra-index-url = https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@$GCR_PYPI_LOCATION-python.pkg.dev/$GCR_PYPI_PROJECT_ID/$GCR_PYPI_REPO/simple/" > ~/.config/pip/pip.conf
+        mkdir -p ~/.config/pip && printf "%s\n" "[global]" "extra-index-url = https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" > ~/.config/pip/pip.conf
         python -m pip install poetry==1.2.0rc99
-        rm ~/.pypirc ~/.config/pip/pip.conf
+        rm ~/.config/pip/pip.conf
         poetry config virtualenvs.in-project true
 
     - name: Install dependencies
