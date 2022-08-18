@@ -7,7 +7,7 @@ from multiprocessing import Process
 from bson.objectid import ObjectId
 
 from featurebyte.worker.process_store import ProcessStore
-from tests.unit.worker.task import Command, TaskExecutor
+from tests.util.task import Command, TaskExecutor
 
 
 def test_process_store():
