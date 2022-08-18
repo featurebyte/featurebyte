@@ -234,6 +234,7 @@ def snowflake_tile(snowflake_session):
     end = InternalName.TILE_END_DATE_SQL_PLACEHOLDER
 
     tile_sql = f"SELECT {col_names} FROM {table_name} WHERE {InternalName.TILE_START_DATE} >= {start} and {InternalName.TILE_START_DATE} < {end}"
+    tile_id = "tile_id1"
     agg_id = "agg_id1"
 
     tile_spec = TileSpec(
@@ -251,7 +252,7 @@ def snowflake_tile(snowflake_session):
     yield tile_spec
 
     snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
-    snowflake_session.execute_query(f"DROP TABLE IF EXISTS {agg_id}")
+    snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
     snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{agg_id}_ONLINE")
     snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{agg_id}_OFFLINE")
 
@@ -287,14 +288,14 @@ def snowflake_feature(feature_model_dict, snowflake_session, snowflake_feature_s
         }
     )
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
-    tile_id = feature.tile_specs[0].tile_id
+    agg_id = feature.tile_specs[0].aggregation_id
 
     yield feature
 
     snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
     snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
-    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
-    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{agg_id}_ONLINE")
+    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{agg_id}_OFFLINE")
 
 
 @pytest.fixture(name="snowflake_feature_expected_tile_spec_dict")
@@ -307,7 +308,7 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 1800) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("col_float") AS value
+          SUM("col_float") AS value_sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512
         FROM (
             SELECT
               *,
@@ -339,9 +340,10 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
     expected_tile_spec = {
         "blind_spot_second": 600,
         "entity_column_names": ["cust_id"],
-        "value_column_names": ["value"],
+        "value_column_names": ["value_sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512"],
         "frequency_minute": 30,
-        "tile_id": "sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
+        "tile_id": "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
+        "aggregation_id": "sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
         "tile_sql": tile_sql,
         "time_modulo_frequency_second": 300,
         "category_column_name": None,
