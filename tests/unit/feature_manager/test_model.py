@@ -11,7 +11,7 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 1800) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("col_float") AS value
+          SUM("col_float") AS value_sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512
         FROM (
             SELECT
               *,
@@ -47,8 +47,9 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
             frequency_minute=30,
             tile_sql=expected_sql,
             entity_column_names=["cust_id"],
-            value_column_names=["value"],
-            tile_id="sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
+            value_column_names=["value_sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512"],
+            tile_id="sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
+            aggregation_id="sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
         )
     ]
     assert model.tile_specs == expected_tile_specs
