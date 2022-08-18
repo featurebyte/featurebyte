@@ -22,6 +22,7 @@ def agg_spec_template_fixture():
         blind_spot=120,
         time_modulo_frequency=1800,
         tile_table_id="some_tile_id",
+        aggregation_id="some_agg_id",
         keys=["CUST_ID"],
         serving_names=["CID"],
         value_by=None,
@@ -182,40 +183,46 @@ def test_feature_execution_planner(query_graph_with_groupby):
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     planner = FeatureExecutionPlanner(query_graph_with_groupby)
     plan = planner.generate_plan([groupby_node])
-    assert plan.aggregation_specs == {
-        ("avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f", 7200): AggregationSpec(
-            window=7200,
-            frequency=3600,
-            blind_spot=900,
-            time_modulo_frequency=1800,
-            tile_table_id="avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
-            keys=["cust_id"],
-            serving_names=["CUSTOMER_ID"],
-            value_by=None,
-            merge_expr="SUM(sum_value) / SUM(count_value)",
-            feature_name="a_2h_average",
-        ),
-        ("avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f", 172800): AggregationSpec(
-            window=172800,
-            frequency=3600,
-            blind_spot=900,
-            time_modulo_frequency=1800,
-            tile_table_id="avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
-            keys=["cust_id"],
-            serving_names=["CUSTOMER_ID"],
-            value_by=None,
-            merge_expr="SUM(sum_value) / SUM(count_value)",
-            feature_name="a_48h_average",
-        ),
-    }
+    assert list(plan.aggregation_spec_set.get_grouped_aggregation_specs()) == [
+        [
+            AggregationSpec(
+                window=7200,
+                frequency=3600,
+                blind_spot=900,
+                time_modulo_frequency=1800,
+                tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
+                aggregation_id="avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+                keys=["cust_id"],
+                serving_names=["CUSTOMER_ID"],
+                value_by=None,
+                merge_expr="SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f)",
+                feature_name="a_2h_average",
+            )
+        ],
+        [
+            AggregationSpec(
+                window=172800,
+                frequency=3600,
+                blind_spot=900,
+                time_modulo_frequency=1800,
+                tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
+                aggregation_id="avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+                keys=["cust_id"],
+                serving_names=["CUSTOMER_ID"],
+                value_by=None,
+                merge_expr="SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f)",
+                feature_name="a_48h_average",
+            )
+        ],
+    ]
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
-            feature_expr='"agg_w7200_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
+            feature_expr='"agg_w7200_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
-            feature_expr='"agg_w172800_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
+            feature_expr='"agg_w172800_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
         ),
     }
 
@@ -226,39 +233,45 @@ def test_feature_execution_planner__serving_names_mapping(query_graph_with_group
     mapping = {"CUSTOMER_ID": "NEW_CUST_ID"}
     planner = FeatureExecutionPlanner(query_graph_with_groupby, serving_names_mapping=mapping)
     plan = planner.generate_plan([groupby_node])
-    assert plan.aggregation_specs == {
-        ("avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f", 7200): AggregationSpec(
-            window=7200,
-            frequency=3600,
-            blind_spot=900,
-            time_modulo_frequency=1800,
-            tile_table_id="avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
-            keys=["cust_id"],
-            serving_names=["NEW_CUST_ID"],
-            value_by=None,
-            merge_expr="SUM(sum_value) / SUM(count_value)",
-            feature_name="a_2h_average",
-        ),
-        ("avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f", 172800): AggregationSpec(
-            window=172800,
-            frequency=3600,
-            blind_spot=900,
-            time_modulo_frequency=1800,
-            tile_table_id="avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
-            keys=["cust_id"],
-            serving_names=["NEW_CUST_ID"],
-            value_by=None,
-            merge_expr="SUM(sum_value) / SUM(count_value)",
-            feature_name="a_48h_average",
-        ),
-    }
+    assert list(plan.aggregation_spec_set.get_grouped_aggregation_specs()) == [
+        [
+            AggregationSpec(
+                window=7200,
+                frequency=3600,
+                blind_spot=900,
+                time_modulo_frequency=1800,
+                tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
+                aggregation_id="avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+                keys=["cust_id"],
+                serving_names=["NEW_CUST_ID"],
+                value_by=None,
+                merge_expr="SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f)",
+                feature_name="a_2h_average",
+            )
+        ],
+        [
+            AggregationSpec(
+                window=172800,
+                frequency=3600,
+                blind_spot=900,
+                time_modulo_frequency=1800,
+                tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
+                aggregation_id="avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+                keys=["cust_id"],
+                serving_names=["NEW_CUST_ID"],
+                value_by=None,
+                merge_expr="SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f)",
+                feature_name="a_48h_average",
+            )
+        ],
+    ]
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
-            feature_expr='"agg_w7200_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
+            feature_expr='"agg_w7200_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
-            feature_expr='"agg_w172800_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
+            feature_expr='"agg_w172800_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
         ),
     }
