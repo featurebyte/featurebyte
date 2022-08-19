@@ -3,7 +3,7 @@ Tests for FeatureList route
 """
 import json
 from http import HTTPStatus
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -229,8 +229,9 @@ async def test_insert_feature_list_registry(
     assert match_count > 0
 
 
+@pytest.mark.asyncio
 @patch("featurebyte.session.base.BaseSession.execute_query")
-def test_insert_feature_list_registry__non_snowflake_feature_store(
+async def test_insert_feature_list_registry__non_snowflake_feature_store(
     mock_execute_query, feature_list_model
 ):
     """
@@ -242,8 +243,8 @@ def test_insert_feature_list_registry__non_snowflake_feature_store(
         details=SQLiteDetails(filename="some_filename"),
     )
 
-    user, get_credential = Mock(), Mock()
-    FeatureListController._insert_feature_list_registry(
+    user, get_credential = Mock(), AsyncMock()
+    await FeatureListController._insert_feature_list_registry(
         user=user,
         document=feature_list_model,
         feature_store=feature_store,
