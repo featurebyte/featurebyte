@@ -45,7 +45,9 @@ def test_task_manager__long_running_tasks(task_manager, user_id):
 
     # check progress update
     for task_status in expected_task_statuses:
-        progress_queue = GlobalProgress.get_progress(user_id=user_id, task_status_id=task_status.id)
+        progress_queue = GlobalProgress().get_progress(
+            user_id=user_id, task_status_id=task_status.id
+        )
         progress_percents = [progress_queue.get()["percent"]]
         while progress_percents[-1] < 100:
             progress_percents.append(progress_queue.get()["percent"])
@@ -53,7 +55,9 @@ def test_task_manager__long_running_tasks(task_manager, user_id):
         assert progress_percents == [10 * (i + 1) for i in range(10)]
 
     # wait a bit to let the process finishes
-    time.sleep(0.1)
+    for task_status in task_statuses:
+        process = ProcessStore().get(user_id, task_status.id)
+        process.join()
 
     # check all task completed
     task_statuses, _ = task_manager.list_task_status()
@@ -65,7 +69,7 @@ def test_task_manager__not_found_task(task_manager, user_id):
     """Test task manager service on not found task"""
 
     class NewTaskPlayload(BaseTaskPayload):
-        collection_name = "random_collection"
+        output_collection_name = "random_collection"
         command = Command.UNKNOWN_TASK_COMMAND
 
     task_status_id = task_manager.submit(payload=NewTaskPlayload(user_id=user_id))

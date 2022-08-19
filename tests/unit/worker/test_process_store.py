@@ -22,19 +22,21 @@ def test_process_store():
         ObjectId(): {"command": Command.ERROR_COMMAND, "exitcode": 1},
     }
     user_task_status_pid_map = {}
+    processes = []
 
     for user_id, info in user_map.items():
         task_status_id = ProcessStore().submit(
             payload={
                 "command": info["command"],
-                "document_id": ObjectId(),
-                "collection_name": "some_collection",
+                "output_document_id": ObjectId(),
+                "output_collection_name": "some_collection",
                 "user_id": user_id,
             }
         )
 
         # test get
         process = ProcessStore().get(user_id=user_id, task_status_id=task_status_id)
+        processes.append(process)
         assert isinstance(process, Process)
         # check process is running
         assert process.exitcode is None
@@ -48,7 +50,8 @@ def test_process_store():
         assert task_status_id_process_pairs[0][1].pid == user_task_status_pid_map[user_id][1]
 
     # wait processes finish
-    time.sleep(2)
+    for proc in processes:
+        proc.join()
 
     # check process exitcode
     for user_id, (task_status_id, _) in user_task_status_pid_map.items():

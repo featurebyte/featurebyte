@@ -18,9 +18,19 @@ class BaseTaskPayload(BaseModel):
     """
 
     user_id: Optional[PydanticObjectId]
-    document_id: PydanticObjectId = Field(default_factory=ObjectId)
-    collection_name: ClassVar[Optional[str]] = None
+    output_document_id: PydanticObjectId = Field(default_factory=ObjectId)
+    output_collection_name: ClassVar[Optional[str]] = None
     command: ClassVar[Optional[Enum]] = None
+
+    class Config:
+        """
+        Configurations for BaseTaskPayload
+        """
+
+        # pylint: disable=too-few-public-methods
+
+        # With `frozen` flag enable, all the object attributes are immutable.
+        frozen = True
 
     @property
     def task_output_path(self) -> Optional[str]:
@@ -31,7 +41,9 @@ class BaseTaskPayload(BaseModel):
         -------
         Optional[str]
         """
-        return f"{self.collection_name}/{self.document_id}" if self.collection_name else None
+        if self.output_collection_name:
+            return f"{self.output_collection_name}/{self.output_document_id}"
+        return None
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         output: dict[str, Any] = super().dict(*args, **kwargs)

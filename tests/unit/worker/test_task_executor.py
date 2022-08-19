@@ -28,7 +28,7 @@ def random_task_payload_class_fixture(command_class):
     class RandomTaskPayload(BaseTaskPayload):
         """RandomTaskPayload class"""
 
-        collection_name = "random_collection"
+        output_collection_name = "random_collection"
         command = command_class.RANDOM_COMMAND
 
     return RandomTaskPayload
@@ -48,7 +48,7 @@ def random_task_class_store_fixture(random_task_payload_class):
             """Run some task"""
             store["new_item"] = {
                 "user_id": self.payload.user_id,
-                "document_id": self.payload.document_id,
+                "output_document_id": self.payload.output_document_id,
             }
 
     yield RandomTask, store
@@ -59,11 +59,11 @@ def test_extend_base_task_payload(random_task_payload_class):
 
     user_id = ObjectId()
     document_id = ObjectId()
-    payload_obj = random_task_payload_class(user_id=user_id, document_id=document_id)
+    payload_obj = random_task_payload_class(user_id=user_id, output_document_id=document_id)
     assert payload_obj.dict() == {
         "command": "random_command",
         "user_id": user_id,
-        "document_id": document_id,
+        "output_document_id": document_id,
     }
     assert payload_obj.task_output_path == f"random_collection/{document_id}"
 
@@ -86,12 +86,12 @@ def test_task_executor(random_task_class_store):
         payload={
             "command": "random_command",
             "user_id": user_id,
-            "document_id": document_id,
+            "output_document_id": document_id,
         }
     )
 
     # check store
-    assert store == {"new_item": {"user_id": user_id, "document_id": document_id}}
+    assert store == {"new_item": {"user_id": user_id, "output_document_id": document_id}}
 
 
 def test_task_has_been_implemented(command_class):

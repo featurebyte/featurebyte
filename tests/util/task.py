@@ -29,7 +29,7 @@ class Command(str, Enum):
 class LongRunningPayload(BaseTaskPayload):
     """LongRunningPayload class"""
 
-    collection_name = "long_running_result_collection"
+    output_collection_name = "long_running_result_collection"
     command = Command.LONG_RUNNING_COMMAND
 
 
@@ -48,14 +48,14 @@ class LongRunningTask(BaseTask):
 
 
 class ErrorTaskPayload(BaseTaskPayload):
-    """LongRunningPayload class"""
+    """ErrorTaskPayload class"""
 
-    collection_name = "anything"
+    output_collection_name = "anything"
     command = Command.ERROR_COMMAND
 
 
 class ErrorTask(BaseTask):
-    """LongRunningTask class"""
+    """ErrorTask class"""
 
     payload_class = ErrorTaskPayload
 
