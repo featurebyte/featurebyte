@@ -135,7 +135,6 @@ def test_feature_list_creation__success(production_ready_feature, config, mocked
     flist.get_historical_features(dataframe, credentials=config.credentials)
     assert flist.dict(exclude={"id": True}) == {
         "name": "my_feature_list",
-        "description": None,
         "feature_ids": [production_ready_feature.id],
         "readiness": "PRODUCTION_READY",
         "status": "DRAFT",
@@ -159,7 +158,6 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "description": None,
         "version": "V220501",
         "feature_ids": [
             production_ready_feature.id,
@@ -445,7 +443,6 @@ def test_get_feature_list(saved_feature_list):
         history_data[0]["current_values"].items()
         > {
             "name": "my_feature_list",
-            "description": None,
             "status": "DRAFT",
             "readiness": "DRAFT",
             "updated_at": None,

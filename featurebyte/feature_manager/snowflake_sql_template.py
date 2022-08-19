@@ -100,7 +100,7 @@ tm_update_feature_list_registry = Template(
     UPDATE FEATURE_LIST_REGISTRY
     SET
         READINESS = '{{feature_list.readiness}}',
-        STATUS = '{{feature_list.status}}',
+        STATUS = '{{feature_list.status}}'
     WHERE NAME = '{{feature_list.name}}'
     AND VERSION = '{{feature_list.version}}'
 """

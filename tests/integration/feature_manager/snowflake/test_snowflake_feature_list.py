@@ -123,11 +123,9 @@ def test_update_feature_list_registry(
     assert result.iloc[0]["VERSION"] == "v1"
     assert result.iloc[0]["READINESS"] == "DRAFT"
     assert result.iloc[0]["STATUS"] == "DRAFT"
-    assert result.iloc[0]["DESCRIPTION"] == "test_description1"
 
     snowflake_feature_list.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     snowflake_feature_list.__dict__["status"] = FeatureListStatus.PUBLISHED.value
-    snowflake_feature_list.description = "test_description2"
     feature_list_manager.update_feature_list_registry(snowflake_feature_list)
 
     result = snowflake_session.execute_query("SELECT * FROM FEATURE_LIST_REGISTRY")
@@ -136,7 +134,6 @@ def test_update_feature_list_registry(
     assert result.iloc[0]["VERSION"] == "v1"
     assert result.iloc[0]["READINESS"] == "PRODUCTION_READY"
     assert result.iloc[0]["STATUS"] == "PUBLISHED"
-    assert result.iloc[0]["DESCRIPTION"] == "test_description2"
 
 
 def test_generate_tiles_on_demand(snowflake_session, snowflake_tile, feature_list_manager):

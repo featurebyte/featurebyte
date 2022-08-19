@@ -22,7 +22,6 @@ def feature_list_model_dict_fixture():
     """Fixture for a FeatureList dict"""
     return {
         "name": "my_feature_list",
-        "description": None,
         "feature_ids": [],
         "readiness": "DRAFT",
         "status": None,
@@ -39,7 +38,6 @@ def feature_name_space_dict_fixture():
     version_id = ObjectId()
     return {
         "name": "some_feature_name",
-        "description": None,
         "version_ids": [version_id],
         "readiness": "DRAFT",
         "created_at": datetime.now(),
