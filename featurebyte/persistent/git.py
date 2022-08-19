@@ -28,6 +28,7 @@ from enum import Enum
 
 from bson import json_util
 from bson.objectid import ObjectId
+from cachetools import TTLCache, cached
 from git import GitCommandError
 from git.remote import Remote
 from git.repo.base import Repo
@@ -67,7 +68,7 @@ def _sync_push(func: Any) -> Any:
 
     @functools.wraps(func)
     async def wrapper_decorator(cls: GitDB, *args: int, **kwargs: str) -> Any:
-        cls._reset_branch()
+        cls._reset_branch(rate_limit_fetch=False)
         value = await func(cls, *args, **kwargs)
         cls._push()
         return value
@@ -222,6 +223,7 @@ class GitDB(Persistent):
         else:
             self.repo.git.commit("-m", message)
 
+    @cached(cache=TTLCache(maxsize=1, ttl=5))
     def _fetch(self) -> None:
         """
         Fetch latest changes from remote
@@ -230,13 +232,17 @@ class GitDB(Persistent):
         with self.repo.git.custom_environment(GIT_SSH_COMMAND=self._ssh_cmd):
             self.repo.git.fetch("--depth=1", "origin", self._branch)
 
-    def _reset_branch(self) -> None:
+    def _reset_branch(self, rate_limit_fetch=True) -> None:
         """
         Reset with latest changes from remote
         """
         # skip if no remote or within transaction
         if not self._origin or self._transaction_lock:
             return
+
+        if not rate_limit_fetch:
+            # clear the cache to make sure git fetch happens without affected by cache
+            self._fetch.cache.clear()
 
         logger.debug("Reset branch to remote", extra={"branch": self._branch})
         self._fetch()
@@ -1023,7 +1029,7 @@ class GitDB(Persistent):
         Exception
             When exception happens within context or during git commint/push
         """
-        self._reset_branch()
+        self._reset_branch(rate_limit_fetch=False)
         self._transaction_lock = True
         self._transaction_messages = []
         try:
@@ -1031,7 +1037,7 @@ class GitDB(Persistent):
         except Exception as exc:
             self._transaction_messages = []
             self._clean_stage_local()
-            self._reset_branch()
+            self._reset_branch(rate_limit_fetch=False)
             raise exc
         finally:
             self._transaction_lock = False
@@ -1042,7 +1048,7 @@ class GitDB(Persistent):
                     self._push()
                 except Exception as exc:
                     self._clean_stage_local()
-                    self._reset_branch()
+                    self._reset_branch(rate_limit_fetch=False)
                     raise exc
 
             self._transaction_messages = []
