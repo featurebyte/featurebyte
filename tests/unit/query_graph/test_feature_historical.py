@@ -16,7 +16,7 @@ from featurebyte.query_graph.feature_historical import (
     get_historical_features_sql,
     get_session_from_feature_objects,
 )
-from tests.helper.helper import assert_equal_with_expected_fixture
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture(name="mocked_session")

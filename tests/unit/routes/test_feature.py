@@ -9,6 +9,7 @@ import pytest
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.exception import DuplicatedRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -214,9 +215,22 @@ async def test_insert_feature_registry(
     assert match_count > 0
 
 
+@pytest.fixture(name="sqlite_feature_store")
+def sqlite_feature_store_fixture(mock_get_persistent):
+    """
+    Sqlite source fixture
+    """
+    return FeatureStore(
+        name="sqlite_datasource",
+        type="sqlite",
+        details=SQLiteDetails(filename="some_filename"),
+    )
+
+
+@pytest.mark.asyncio
 @patch("featurebyte.session.base.BaseSession.execute_query")
-def test_insert_feature_registry__non_snowflake_feature_store(
-    mock_execute_query, feature_model_dict, snowflake_feature_store
+async def test_insert_feature_registry__non_snowflake_feature_store(
+    mock_execute_query, feature_model_dict, get_credential, sqlite_feature_store
 ):
     """
     Test insert_feature_registry function (when feature store is not snowflake)
@@ -227,9 +241,9 @@ def test_insert_feature_registry__non_snowflake_feature_store(
         details=SQLiteDetails(filename="some_filename"),
     )
     feature_model_dict["tabular_source"] = (feature_store.id, TableDetails(table_name="some_table"))
-    feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
-    user, get_credential = Mock(), Mock()
-    FeatureController._insert_feature_registry(
+    feature = ExtendedFeatureModel(**feature_model_dict, feature_store=sqlite_feature_store)
+    user = Mock()
+    await FeatureController._insert_feature_registry(
         user=user, document=feature, get_credential=get_credential
     )
     assert mock_execute_query.call_count == 0
