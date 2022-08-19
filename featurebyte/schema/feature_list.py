@@ -26,7 +26,6 @@ class FeatureListCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    description: Optional[str]
     feature_ids: List[PydanticObjectId]
     readiness: Optional[FeatureReadiness]
     status: Optional[FeatureListStatus]

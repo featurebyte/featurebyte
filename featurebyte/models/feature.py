@@ -60,8 +60,6 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         Feature namespace id
     name: str
         Feature name
-    description: str
-        Feature namespace descriptions applied to all features with the same family
     version_ids: List[PydanticObjectId]
         List of feature version id
     readiness: FeatureReadiness
@@ -74,7 +72,6 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         Default feature version mode
     """
 
-    description: Optional[StrictStr]
     version_ids: List[PydanticObjectId]
     readiness: FeatureReadiness
     default_version_id: PydanticObjectId
@@ -108,8 +105,6 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Feature id of the object
     name: str
         Feature name
-    description: str
-        Feature description specific to this feature version
     var_type: DBVarType
         Variable type of the feature
     row_index_lineage: Tuple[str, ...]
@@ -136,7 +131,6 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Feature namespace id of the object
     """
 
-    description: Optional[StrictStr]
     var_type: DBVarType = Field(allow_mutation=False)
     row_index_lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
     graph: QueryGraph = Field(allow_mutation=False)
@@ -193,8 +187,6 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         FeatureList id of the object
     name: str
         Name of the feature list
-    description: Optional[str]
-        Description of the feature list
     feature_ids: List[PydanticObjectId]
         List of feature IDs
     readiness: FeatureReadiness
@@ -207,7 +199,6 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         Datetime when the FeatureList was first saved or published
     """
 
-    description: Optional[StrictStr]
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
     readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
     status: Optional[FeatureListStatus] = Field(allow_mutation=False)

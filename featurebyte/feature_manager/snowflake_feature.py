@@ -167,7 +167,7 @@ class FeatureManagerSnowflake(BaseModel):
         self, new_feature: ExtendedFeatureModel, to_online_enable: bool
     ) -> None:
         """
-        Update Feature Registry record. Only readiness, description and is_default might be updated
+        Update Feature Registry record. Only readiness, and is_default might be updated
 
         Parameters
         ----------
