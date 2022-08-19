@@ -1,7 +1,9 @@
 """
 TaskStatus API payload schema
 """
-from typing import List, Literal
+from typing import Any, List, Literal, Union
+
+from uuid import UUID
 
 from beanie import PydanticObjectId
 from pydantic import Field
@@ -15,8 +17,19 @@ class TaskStatus(FeatureByteBaseModel):
     TaskStatus retrieval schema
     """
 
-    id: PydanticObjectId = Field(allow_mutation=False)
-    status: Literal["running", "complete", "error", "not_found"] = Field(allow_mutation=False)
+    id: Union[PydanticObjectId, UUID] = Field(allow_mutation=False)
+    status: Literal[
+        "PENDING",
+        "RECEIVED",
+        "STARTED",
+        "SUCCESS",
+        "FAILURE",
+        "REVOKED",
+        "REJECTED",
+        "RETRY",
+        "IGNORED",
+    ] = Field(allow_mutation=False)
+    result: Any
 
 
 class TaskStatusList(PaginationMixin):

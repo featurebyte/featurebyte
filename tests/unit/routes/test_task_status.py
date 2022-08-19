@@ -43,7 +43,7 @@ class TestTaskStatusApi:
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.get(f"{self.base_route}/{task_status_id}")
         assert response.status_code == HTTPStatus.OK
-        assert response.json() == {"id": str(task_status_id), "status": "running"}
+        assert response.json() == {"id": str(task_status_id), "status": "STARTED", "result": None}
 
     def test_get_404(self, test_api_client_persistent):
         """Tset get (not found)"""

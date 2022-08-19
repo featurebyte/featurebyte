@@ -104,10 +104,10 @@ class TaskManager(AbstractTaskManager):
         if process is None:
             return None
         if process.exitcode is None:
-            return TaskStatus(id=task_status_id, status="running")
+            return TaskStatus(id=task_status_id, status="STARTED")
         if process.exitcode == 0:
-            return TaskStatus(id=task_status_id, status="complete")
-        return TaskStatus(id=task_status_id, status="error")
+            return TaskStatus(id=task_status_id, status="SUCCESS")
+        return TaskStatus(id=task_status_id, status="FAILURE")
 
     def get_task_status(self, task_status_id: ObjectId) -> Optional[TaskStatus]:
         process_store = ProcessStore()

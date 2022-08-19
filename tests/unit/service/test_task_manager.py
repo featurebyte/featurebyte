@@ -38,7 +38,7 @@ def test_task_manager__long_running_tasks(task_manager, user_id):
         task_status_id = task_manager.submit(payload=LongRunningPayload(user_id=user_id))
         task_status = task_manager.get_task_status(task_status_id=task_status_id)
         assert task_status.id == task_status_id
-        assert task_status.status == "running"
+        assert task_status.status == "STARTED"
         expected_task_statuses.append(task_status)
         task_statuses, _ = task_manager.list_task_status()
         assert task_statuses == expected_task_statuses
@@ -62,7 +62,7 @@ def test_task_manager__long_running_tasks(task_manager, user_id):
     # check all task completed
     task_statuses, _ = task_manager.list_task_status()
     for task_status in task_statuses:
-        assert task_status.status == "complete"
+        assert task_status.status == "SUCCESS"
 
 
 def test_task_manager__not_found_task(task_manager, user_id):
@@ -78,7 +78,7 @@ def test_task_manager__not_found_task(task_manager, user_id):
     time.sleep(1)
 
     task_status = task_manager.get_task_status(task_status_id=task_status_id)
-    assert task_status.status == "error"
+    assert task_status.status == "FAILURE"
 
     # test retrieve random task_status_id
     task_status_random = task_manager.get_task_status(task_status_id=ObjectId())
