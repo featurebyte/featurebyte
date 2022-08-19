@@ -23,6 +23,7 @@ def float_feature_dict_fixture(float_feature):
     Serialize float feature in dictionary format
     """
     # before serialization, global query graph is used
+    assert float_feature.saved is False
     assert isinstance(float_feature.graph, GlobalQueryGraph)
     feat_dict = float_feature.dict()
 
@@ -155,6 +156,7 @@ def test_feature_deserialization(
     float_feature_dict["_id"] = float_feature_dict.pop("id")
     float_feature_dict["feature_store"] = snowflake_feature_store
     deserialized_float_feature = Feature.parse_obj(float_feature_dict)
+    assert deserialized_float_feature.saved is False
     assert deserialized_float_feature.id == float_feature.id
     assert deserialized_float_feature.name == float_feature.name
     assert deserialized_float_feature.var_type == float_feature.var_type
@@ -232,9 +234,11 @@ def saved_feature_fixture(
     assert snowflake_event_data.id == event_data_id_before
     feature_id_before = float_feature.id
     assert float_feature.readiness is None
+    assert float_feature.saved is False
     float_feature.save()
     assert float_feature.id == feature_id_before
     assert float_feature.readiness == FeatureReadiness.DRAFT
+    assert float_feature.saved is True
 
     # test list features
     assert float_feature.name == "sum_1d"
@@ -260,6 +264,7 @@ def test_feature_save__exception_due_to_feature_saved_before(float_feature, save
     Test feature save failure due to event data not saved
     """
     _ = saved_feature
+    assert saved_feature.saved is True
     with pytest.raises(DuplicatedRecordException) as exc:
         float_feature.save()
     expected_msg = (
@@ -329,8 +334,11 @@ def test_get_feature(saved_feature):
     Test get feature using feature name
     """
     feature = Feature.get(name=saved_feature.name)
+    assert feature.saved is True
     assert feature.dict() == saved_feature.dict()
-    assert Feature.get_by_id(feature.id) == feature
+    get_by_id_feat = Feature.get_by_id(feature.id)
+    assert get_by_id_feat == feature
+    assert get_by_id_feat.saved is True
 
     # check audit history
     audit_history = saved_feature.audit()
@@ -391,3 +399,11 @@ def test_feature__default_version_info_retrieval(saved_feature):
 
     # check that feature becomes non-default
     assert feature.is_default is False
+
+
+def test_feature_derived_from_saved_feature_not_saved(saved_feature):
+    """
+    Test feature derived from saved feature is consider not saved
+    """
+    derived_feat = saved_feature + 1
+    assert derived_feat.saved is False

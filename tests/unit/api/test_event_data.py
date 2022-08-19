@@ -54,7 +54,9 @@ def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
     """
     snowflake_feature_store.save()
     previous_id = snowflake_event_data.id
+    assert snowflake_event_data.saved is False
     snowflake_event_data.save()
+    assert snowflake_event_data.saved is True
     assert snowflake_event_data.id == previous_id
     assert snowflake_event_data.status == EventDataStatus.DRAFT
     assert isinstance(snowflake_event_data.created_at, datetime)
@@ -241,6 +243,7 @@ def test_event_data_column__as_entity__saved_event_data(saved_event_data, config
     entity.save()
 
     saved_event_data.col_int.as_entity("customer")
+    assert saved_event_data.saved is True
     assert saved_event_data.column_entity_map == {"col_int": entity.id}
 
     # check that the column entity map is saved to persistent
@@ -357,6 +360,7 @@ def test_event_data__info__saved_event_data(snowflake_feature_store, saved_event
 
     # call info & check that all those modifications gone
     output = saved_event_data.info()
+    assert saved_event_data.saved is True
     assert (
         output
         == saved_event_data_dict
@@ -394,6 +398,7 @@ def test_update_default_job_setting(snowflake_event_data, config):
     client = config.get_client()
     response = client.get(url=f"/event_data/{snowflake_event_data.id}")
     assert response.status_code == 404
+    assert snowflake_event_data.saved is False
 
     assert snowflake_event_data.default_feature_job_setting is None
     snowflake_event_data.update_default_feature_job_setting(
@@ -401,6 +406,7 @@ def test_update_default_job_setting(snowflake_event_data, config):
         frequency="10m",
         time_modulo_frequency="2m",
     )
+    assert snowflake_event_data.saved is False
     assert snowflake_event_data.default_feature_job_setting == FeatureJobSetting(
         blind_spot="1m30s", frequency="10m", time_modulo_frequency="2m"
     )
@@ -418,6 +424,7 @@ def test_update_default_job_setting__saved_event_data(saved_event_data, config):
         frequency="6m",
         time_modulo_frequency="3m",
     )
+    assert saved_event_data.saved is True
 
     # check updated feature job settings stored at the persistent & memory
     assert saved_event_data.default_feature_job_setting == FeatureJobSetting(
@@ -458,6 +465,7 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
 
     # load the event data from the persistent
     loaded_event_data = EventData.get(snowflake_event_data.name)
+    assert loaded_event_data.saved is True
     assert loaded_event_data == snowflake_event_data
     assert EventData.get_by_id(id=snowflake_event_data.id) == snowflake_event_data
 

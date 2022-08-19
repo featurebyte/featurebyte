@@ -71,7 +71,7 @@ class Entity(EntityModel, ApiObject):
                 if response.status_code == HTTPStatus.CONFLICT:
                     raise DuplicatedRecordException(response=response)
                 raise RecordUpdateException(response=response)
-            super().__init__(**response.json())
+            super().__init__(**response.json(), saved=True)
 
     @property
     def name_history(self) -> list[dict[str, Any]]:

@@ -92,9 +92,11 @@ def saved_snowflake_feature_store_fixture(snowflake_feature_store, mock_get_pers
     persistent = mock_get_persistent.return_value
     docs, cnt = asyncio.run(persistent.find(collection_name="feature_store", query_filter={}))
     assert cnt == 0 and docs == []
+    assert snowflake_feature_store.saved is False
 
     # after save
     snowflake_feature_store.save()
+    assert snowflake_feature_store.saved is True
     assert snowflake_feature_store.id == feature_store_id
     assert snowflake_feature_store.created_at is not None
     docs, cnt = asyncio.run(persistent.find(collection_name="feature_store", query_filter={}))
@@ -150,6 +152,7 @@ def test_get(saved_snowflake_feature_store):
     Test feature store retrieval
     """
     loaded_feature_store = FeatureStore.get(saved_snowflake_feature_store.name)
+    assert loaded_feature_store.saved is True
     assert loaded_feature_store == saved_snowflake_feature_store
     assert FeatureStore.get_by_id(saved_snowflake_feature_store.id) == saved_snowflake_feature_store
 

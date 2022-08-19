@@ -8,6 +8,7 @@ from typing import Any
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
+from pydantic import Field
 
 from featurebyte.config import Configurations
 from featurebyte.exception import (
@@ -25,6 +26,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
 
     # class variables
     _route = ""
+    saved: bool = Field(default=False, allow_mutation=False, exclude=True)
 
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
@@ -63,7 +65,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             response_dict = response.json()
             if response_dict["data"]:
                 object_dict = response_dict["data"][0]
-                return cls(**object_dict, **cls._get_init_params())
+                return cls(**object_dict, **cls._get_init_params(), saved=True)
 
             class_name = cls.__name__
             raise RecordRetrievalException(
@@ -97,7 +99,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         client = Configurations().get_client()
         response = client.get(url=f"{cls._route}/{id}")
         if response.status_code == HTTPStatus.OK:
-            return cls(**response.json(), **cls._get_init_params())
+            return cls(**response.json(), **cls._get_init_params(), saved=True)
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
     @classmethod
@@ -196,4 +198,6 @@ class ApiObject(ApiGetObject):
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response=response)
             raise RecordCreationException(response=response)
-        type(self).__init__(self, **response.json(), **self._get_init_params_from_object())
+        type(self).__init__(
+            self, **response.json(), **self._get_init_params_from_object(), saved=True
+        )
