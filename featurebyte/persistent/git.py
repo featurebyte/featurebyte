@@ -232,9 +232,14 @@ class GitDB(Persistent):
         with self.repo.git.custom_environment(GIT_SSH_COMMAND=self._ssh_cmd):
             self.repo.git.fetch("--depth=1", "origin", self._branch)
 
-    def _reset_branch(self, rate_limit_fetch=True) -> None:
+    def _reset_branch(self, rate_limit_fetch: bool = True) -> None:
         """
         Reset with latest changes from remote
+
+        Parameters
+        ----------
+        rate_limit_fetch: bool
+            Whether to use cached version fetch or not
         """
         # skip if no remote or within transaction
         if not self._origin or self._transaction_lock:
@@ -242,7 +247,7 @@ class GitDB(Persistent):
 
         if not rate_limit_fetch:
             # clear the cache to make sure git fetch happens without affected by cache
-            self._fetch.cache.clear()
+            self._fetch.cache.clear()  # type: ignore # pylint: disable=no-member
 
         logger.debug("Reset branch to remote", extra={"branch": self._branch})
         self._fetch()
