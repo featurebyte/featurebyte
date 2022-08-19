@@ -28,6 +28,15 @@ class OnDemandTileComputePlan:
         self.processed_agg_ids = set()
 
     def process_node(self, graph: QueryGraph, node: Node) -> None:
+        """Update state given a query graph node
+
+        Parameters
+        ----------
+        graph : QueryGraph
+            Query graph
+        node : Node
+            Query graph node
+        """
         tile_gen_info_lst = get_tile_gen_info(graph, node)
 
         for tile_info in tile_gen_info_lst:
@@ -61,6 +70,7 @@ class OnDemandTileComputePlan:
             assert isinstance(tile_sql_expr, expressions.Subqueryable)
 
             if tile_table_id not in self.tile_sqls:
+                # New tile table - get the tile index column, entity columns and tile value columns
                 keys = [f"{agg_id}.{escape_column_name(key)}" for key in tile_info.entity_columns]
                 if tile_info.value_by_column is not None:
                     keys.append(f"{agg_id}.{escape_column_name(tile_info.value_by_column)}")
@@ -69,6 +79,8 @@ class OnDemandTileComputePlan:
                 )
                 self.tile_sqls[tile_table_id] = tile_sql
             else:
+                # Tile table already exist - get the new tile value columns by doing a join. Tile
+                # index column and entity columns exist already.
                 prev_alias = self.prev_aliases[tile_table_id]
                 join_conditions = [f"{prev_alias}.INDEX = {agg_id}.INDEX"]
                 for key in tile_info.entity_columns:
@@ -92,6 +104,12 @@ class OnDemandTileComputePlan:
             self.processed_agg_ids.add(agg_id)
 
     def construct_on_demand_tile_ctes(self) -> list[tuple[str, str]]:
+        """Construct the CTE statements that would compute all the required tiles
+
+        Returns
+        -------
+        list[tuple[str, str]]
+        """
         cte_statements = []
         for tile_table_id, tile_sql_expr in self.tile_sqls.items():
             cte_statements.append((tile_table_id, tile_sql_expr.sql(pretty=True)))

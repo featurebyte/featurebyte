@@ -129,6 +129,8 @@ class EventViewGroupBy(OpsMixin):
             Groupby node parameters
         tile_id: str | None
             Tile ID
+        aggregation_id: str | None
+            Aggregation ID
 
         Returns
         -------

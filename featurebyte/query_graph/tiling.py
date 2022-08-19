@@ -41,6 +41,10 @@ class TilingAggregator(ABC):
         ----------
         col : str
             Name of the column to be aggregated
+        agg_id : str
+            Aggregation id that uniquely identifies an aggregation (hash of any parameters that can
+            affect aggregation result). To be used to construct a unique column name in the tile
+            table
 
         Returns
         -------
@@ -50,7 +54,17 @@ class TilingAggregator(ABC):
     @staticmethod
     @abstractmethod
     def merge(agg_id: str) -> str:
-        """Construct the expressions required to merge tiles"""
+        """Construct the expressions required to merge tiles
+
+        Parameters
+        ----------
+        agg_id : str
+            Aggregation id. To be used to construct the tile column name.
+
+        Returns
+        -------
+        str
+        """
 
 
 class CountAggregator(TilingAggregator):

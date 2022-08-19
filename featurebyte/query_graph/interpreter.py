@@ -284,14 +284,13 @@ class TileSQLGenerator:
         time_modulo_frequency = groupby_node.parameters["time_modulo_frequency"]
         windows = groupby_node.parameters["windows"]
         tile_table_id = groupby_node.parameters["tile_id"]
-        aggregation_id = groupby_node.parameters["aggregation_id"]
         entity_columns = groupby_sql_node.keys
         serving_names = groupby_node.parameters["serving_names"]
         value_by_column = groupby_node.parameters["value_by"]
         tile_value_columns = [spec.tile_column_name for spec in groupby_sql_node.tile_specs]
         info = TileGenSql(
             tile_table_id=tile_table_id,
-            aggregation_id=aggregation_id,
+            aggregation_id=groupby_node.parameters["aggregation_id"],
             sql=sql.sql(pretty=True),
             columns=groupby_sql_node.columns,
             entity_columns=entity_columns,

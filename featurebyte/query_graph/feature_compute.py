@@ -412,10 +412,10 @@ class FeatureExecutionPlan(ABC):
             List of serving name columns
         value_by : str | None
             Optional category parameter for the groupby operation
-        merge_expr : str
-            SQL expression that aggregates intermediate values stored in tile table
-        agg_result_name : str
-            Column name of the aggregated result
+        merge_exprs : list[str]
+            SQL expressions that aggregates intermediate values stored in tile table
+        agg_result_names : list[str]
+            Column names of the aggregated results
 
         Returns
         -------
@@ -497,10 +497,10 @@ class FeatureExecutionPlan(ABC):
             List of serving name columns
         value_by : str | None
             Optional category parameter for the groupby operation
-        agg_result_name : str
-            Column name of the aggregated result
-        inner_agg_result_name : str
-            Column name of the intermediate aggregation result name (one value per category - this
+        agg_result_names : list[str]
+            Column names of the aggregated results
+        inner_agg_result_names : list[str]
+            Column names of the intermediate aggregation result names (one value per category - this
             is to be used as the values in the aggregated key-value pairs)
         inner_agg_expr : expressions.Subqueryable:
             Query that produces the intermediate aggregation result
@@ -527,8 +527,10 @@ class FeatureExecutionPlan(ABC):
             Index of the current left join
         point_in_time_column : str
             Point in time column
-        agg_spec : AggregationSpec
-            Aggregation specification
+        agg_result_names : list[str]
+            Column names of the aggregated results
+        serving_names : list[str]
+            List of serving name columns
         table_expr : expressions.Select
             Table to which the left join should be added to
         agg_expr : expressions.Select
