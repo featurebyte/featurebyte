@@ -15,7 +15,7 @@ from featurebyte.enum import SourceType
 from featurebyte.exception import DuplicatedRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureListModel, FeatureSignature
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
-from featurebyte.models.feature import FeatureListModel, FeatureModel
+from featurebyte.models.feature import FeatureListModel, FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseController
@@ -124,6 +124,7 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
             # check whether the feature(s) in the feature list saved to persistent or not
             feature_store_id: Optional[ObjectId] = None
             feature_signatures: List[FeatureSignature] = []
+            feature_list_readiness: FeatureReadiness = FeatureReadiness.PRODUCTION_READY
             for feature_id in document.feature_ids:
                 feature_dict = await cls.get_document(
                     user=user,
@@ -133,6 +134,9 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
                     exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                 )
                 feature = FeatureModel(**feature_dict)
+                feature_list_readiness = min(
+                    feature_list_readiness, FeatureReadiness(feature.readiness)
+                )
                 feature_signatures.append(
                     FeatureSignature(id=feature.id, name=feature.name, version=feature.version)
                 )
@@ -148,6 +152,10 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
                 # store previous feature store id
                 feature_store_id = feature.tabular_source[0]
 
+            # update document with readiness
+            document = FeatureListModel(
+                **{**document.dict(by_alias=True), "readiness": feature_list_readiness}
+            )
             feature_store_dict = await cls.get_document(
                 user=user,
                 persistent=session,

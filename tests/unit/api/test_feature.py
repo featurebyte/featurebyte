@@ -388,10 +388,12 @@ def test_feature__default_version_info_retrieval(saved_feature):
     assert feature.is_default is True
     assert feature.default_version_mode == DefaultVersionMode.AUTO
     assert feature.default_readiness == FeatureReadiness.DRAFT
+    assert feature.saved is True
 
     new_feature = feature.copy()
     new_feature.__dict__["_id"] = ObjectId()
     new_feature.__dict__["version"] = f"{new_feature.version}_1"
+    new_feature.__dict__["saved"] = False
     new_feature.save()
     assert new_feature.is_default is True
     assert new_feature.default_version_mode == DefaultVersionMode.AUTO

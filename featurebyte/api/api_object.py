@@ -26,6 +26,8 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
 
     # class variables
     _route = ""
+
+    # other ApiGetObject attributes
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)
 
     @classmethod
@@ -181,6 +183,12 @@ class ApiObject(ApiGetObject):
         """
         return {}
 
+    def _pre_save_operations(self) -> None:
+        """
+        Operations to be executed before saving the api object
+        """
+        return
+
     def save(self) -> None:
         """
         Save object to the persistent
@@ -192,6 +200,7 @@ class ApiObject(ApiGetObject):
         RecordCreationException
             When fail to save the event data (general failure)
         """
+        self._pre_save_operations()
         client = Configurations().get_client()
         response = client.post(url=self._route, json=self._get_create_payload())
         if response.status_code != HTTPStatus.CREATED:
