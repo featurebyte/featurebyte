@@ -208,7 +208,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         return {"items": []}
 
     def _pre_save_operations(self) -> None:
-        for name, feature in self.feature_objects.items():
+        for feature in self.feature_objects.values():
             if not feature.saved:
                 feature.save()
 

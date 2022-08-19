@@ -108,6 +108,7 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
         HTTPException
             When not all features share the same feature store
         """
+        # pylint: disable=too-many-locals
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
         document = FeatureListModel(
             **{**data.json_dict(), "feature_ids": sorted(data.feature_ids), "user_id": user.id}
