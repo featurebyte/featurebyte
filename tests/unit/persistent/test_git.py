@@ -3,6 +3,7 @@ Test MongoDB persistent backend
 """
 import os.path
 from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -25,7 +26,11 @@ async def test_insert_one(git_persistent, test_document):
     Test inserting one document
     """
     persistent, repo = git_persistent
-    inserted_id = await persistent.insert_one(collection_name="data", document=test_document)
+    with patch(
+        "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
+    ) as mock_reset:
+        inserted_id = await persistent.insert_one(collection_name="data", document=test_document)
+    assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
 
     # check document is inserted
     expected_doc_path = os.path.join(repo.working_tree_dir, "data", test_document["name"] + ".json")
@@ -89,7 +94,13 @@ async def test_insert_many(git_persistent, test_documents):
     Test inserting many documents
     """
     persistent, repo = git_persistent
-    inserted_ids = await persistent.insert_many(collection_name="data", documents=test_documents)
+    with patch(
+        "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
+    ) as mock_reset:
+        inserted_ids = await persistent.insert_many(
+            collection_name="data", documents=test_documents
+        )
+    assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
 
     # check documents are inserted
     assert [doc["_id"] for doc in test_documents] == inserted_ids
@@ -130,7 +141,11 @@ async def test_find_one(git_persistent, test_documents):
     """
     persistent, repo = git_persistent
     await persistent.insert_many(collection_name="data", documents=test_documents)
-    doc = await persistent.find_one(collection_name="data", query_filter={})
+    with patch(
+        "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
+    ) as mock_reset:
+        doc = await persistent.find_one(collection_name="data", query_filter={})
+    assert mock_reset.call_args[1] == {}
     assert doc == test_documents[0]
 
     # check no new audit record is inserted for find
@@ -168,9 +183,13 @@ async def test_find_many(git_persistent, test_documents):
     assert total == 3
 
     # test sort
-    docs, total = await persistent.find(
-        collection_name="data", query_filter={}, sort_by="_id", sort_dir="desc"
-    )
+    with patch(
+        "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
+    ) as mock_reset:
+        docs, total = await persistent.find(
+            collection_name="data", query_filter={}, sort_by="_id", sort_dir="desc"
+        )
+    assert mock_reset.call_args[1] == {}
     assert list(docs) == test_documents[-1::-1]
     assert total == 3
 
@@ -258,9 +277,14 @@ async def test_update_one(git_persistent, test_documents):
     """
     persistent, repo = git_persistent
     await persistent.insert_many(collection_name="data", documents=test_documents)
-    result = await persistent.update_one(
-        collection_name="data", query_filter={}, update={"$set": {"name": "apple"}}
-    )
+
+    with patch(
+        "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
+    ) as mock_reset:
+        result = await persistent.update_one(
+            collection_name="data", query_filter={}, update={"$set": {"name": "apple"}}
+        )
+    assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
 
     assert result == 1
     results, total = await persistent.find(collection_name="data", query_filter={})
@@ -334,9 +358,14 @@ async def test_update_many(git_persistent, test_documents):
     """
     persistent, repo = git_persistent
     await persistent.insert_many(collection_name="data", documents=test_documents)
-    result = await persistent.update_many(
-        collection_name="data", query_filter={}, update={"$set": {"value": 1}}
-    )
+    with patch(
+        "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
+    ) as mock_reset:
+        result = await persistent.update_many(
+            collection_name="data", query_filter={}, update={"$set": {"value": 1}}
+        )
+    assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
+
     # expect all documents to be updated
     assert result == 3
     results, _ = await persistent.find(collection_name="data", query_filter={})
@@ -412,9 +441,13 @@ async def test_replace_one(git_persistent, test_documents):
 
     before, _ = await persistent.find(collection_name="data", query_filter={})
 
-    result = await persistent.replace_one(
-        collection_name="data", query_filter={}, replacement={"name": "apple"}
-    )
+    with patch(
+        "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
+    ) as mock_reset:
+        result = await persistent.replace_one(
+            collection_name="data", query_filter={}, replacement={"name": "apple"}
+        )
+    assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
     assert result == 1
     after, total = await persistent.find(collection_name="data", query_filter={})
 
@@ -537,7 +570,12 @@ async def test_delete_one(git_persistent, test_documents):
     """
     persistent, repo = git_persistent
     await persistent.insert_many(collection_name="data", documents=test_documents)
-    result = await persistent.delete_one(collection_name="data", query_filter={})
+    with patch(
+        "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
+    ) as mock_reset:
+        result = await persistent.delete_one(collection_name="data", query_filter={})
+    assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
+
     # expect only one document to be deleted
     assert result == 1
     results, _ = await persistent.find(collection_name="data", query_filter={})
@@ -598,7 +636,11 @@ async def test_delete_many(git_persistent, test_documents):
     """
     persistent, repo = git_persistent
     await persistent.insert_many(collection_name="data", documents=test_documents)
-    result = await persistent.delete_many(collection_name="data", query_filter={})
+    with patch(
+        "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
+    ) as mock_reset:
+        result = await persistent.delete_many(collection_name="data", query_filter={})
+    assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
     # expect all documents to be deleted
     assert result == 3
     results, _ = await persistent.find(collection_name="data", query_filter={})
