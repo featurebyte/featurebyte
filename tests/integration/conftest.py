@@ -235,7 +235,6 @@ def snowflake_tile(snowflake_session):
 
     tile_sql = f"SELECT {col_names} FROM {table_name} WHERE {InternalName.TILE_START_DATE} >= {start} and {InternalName.TILE_START_DATE} < {end}"
     tile_id = "tile_id1"
-    agg_id = "agg_id1"
 
     tile_spec = TileSpec(
         time_modulo_frequency_second=183,
@@ -253,8 +252,8 @@ def snowflake_tile(snowflake_session):
 
     snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
     snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
-    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{agg_id}_ONLINE")
-    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{agg_id}_OFFLINE")
+    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
+    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
 
 
 @pytest.fixture
@@ -288,14 +287,14 @@ def snowflake_feature(feature_model_dict, snowflake_session, snowflake_feature_s
         }
     )
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
-    agg_id = feature.tile_specs[0].aggregation_id
+    tile_id = feature.tile_specs[0].tile_id
 
     yield feature
 
     snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
     snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
-    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{agg_id}_ONLINE")
-    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{agg_id}_OFFLINE")
+    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
+    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
 
 
 @pytest.fixture(name="snowflake_feature_expected_tile_spec_dict")

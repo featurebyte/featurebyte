@@ -251,7 +251,6 @@ def test_online_enable(
     tile_registry = snowflake_session.execute_query("SELECT * FROM TILE_REGISTRY")
     assert len(tile_registry) == 1
     expected_tile_id = snowflake_feature_expected_tile_spec_dict["tile_id"]
-    expected_aggregation_id = snowflake_feature_expected_tile_spec_dict["aggregation_id"]
     assert tile_registry.iloc[0]["TILE_ID"] == expected_tile_id
     assert (
         tile_registry.iloc[0]["TILE_SQL"] == snowflake_feature_expected_tile_spec_dict["tile_sql"]
@@ -266,10 +265,10 @@ def test_online_enable(
 
     tasks = snowflake_session.execute_query("SHOW TASKS")
     assert len(tasks) > 1
-    assert tasks["name"].iloc[0] == f"SHELL_TASK_{expected_aggregation_id.upper()}_OFFLINE"
+    assert tasks["name"].iloc[0] == f"SHELL_TASK_{expected_tile_id.upper()}_OFFLINE"
     assert tasks["schedule"].iloc[0] == "USING CRON 5 0 * * * UTC"
     assert tasks["state"].iloc[0] == "started"
-    assert tasks["name"].iloc[1] == f"SHELL_TASK_{expected_aggregation_id.upper()}_ONLINE"
+    assert tasks["name"].iloc[1] == f"SHELL_TASK_{expected_tile_id.upper()}_ONLINE"
     assert tasks["schedule"].iloc[1] == "USING CRON 5-59/30 * * * * UTC"
     assert tasks["state"].iloc[1] == "started"
 

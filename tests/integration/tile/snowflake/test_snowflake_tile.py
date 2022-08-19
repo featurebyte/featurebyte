@@ -27,7 +27,7 @@ def test_schedule_online_tile(snowflake_tile, snowflake_session, tile_manager):
     """
     tile_manager.schedule_online_tiles(tile_spec=snowflake_tile)
 
-    task_name = f"SHELL_TASK_{snowflake_tile.aggregation_id}_ONLINE".upper()
+    task_name = f"SHELL_TASK_{snowflake_tile.tile_id}_ONLINE".upper()
 
     result = snowflake_session.execute_query("SHOW TASKS")
     assert len(result) == 1
@@ -42,7 +42,7 @@ def test_schedule_offline_tile(snowflake_tile, snowflake_session, tile_manager):
     """
     tile_manager.schedule_offline_tiles(tile_spec=snowflake_tile)
 
-    task_name = f"SHELL_TASK_{snowflake_tile.aggregation_id}_OFFLINE".upper()
+    task_name = f"SHELL_TASK_{snowflake_tile.tile_id}_OFFLINE".upper()
 
     result = snowflake_session.execute_query("SHOW TASKS")
     assert len(result) == 1
