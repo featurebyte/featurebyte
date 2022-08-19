@@ -207,6 +207,11 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     def _get_init_params(cls) -> dict[str, Any]:
         return {"items": []}
 
+    def _pre_save_operations(self) -> None:
+        for feature in self.feature_objects.values():
+            if not feature.saved:
+                feature.save()
+
     @root_validator(pre=True)
     @classmethod
     def _initialize_feature_objects_and_items(cls, values: dict[str, Any]) -> dict[str, Any]:

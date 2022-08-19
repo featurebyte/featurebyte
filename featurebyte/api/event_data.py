@@ -67,6 +67,7 @@ class EventDataColumn:
                 **response.json(),
                 feature_store=self.event_data.feature_store,
                 credentials=self.event_data.credentials,
+                saved=True,
             )
         elif response.status_code == HTTPStatus.NOT_FOUND:
             self.event_data.column_entity_map = column_entity_map
@@ -214,6 +215,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
                 **response.json(),
                 feature_store=self.feature_store,
                 credentials=self.credentials,
+                saved=True,
             )
             return self.dict()
         if response.status_code == HTTPStatus.NOT_FOUND:
@@ -255,6 +257,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
                 **response.json(),
                 feature_store=self.feature_store,
                 credentials=self.credentials,
+                saved=True,
             )
         elif response.status_code == HTTPStatus.NOT_FOUND:
             self.default_feature_job_setting = data.default_feature_job_setting

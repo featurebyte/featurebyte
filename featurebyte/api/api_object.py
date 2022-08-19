@@ -8,10 +8,12 @@ from typing import Any
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
+from pydantic import Field
 
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DuplicatedRecordException,
+    ObjectHasBeenSavedError,
     RecordCreationException,
     RecordRetrievalException,
 )
@@ -25,6 +27,9 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
 
     # class variables
     _route = ""
+
+    # other ApiGetObject attributes
+    saved: bool = Field(default=False, allow_mutation=False, exclude=True)
 
     @classmethod
     def _get_init_params(cls) -> dict[str, Any]:
@@ -63,7 +68,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             response_dict = response.json()
             if response_dict["data"]:
                 object_dict = response_dict["data"][0]
-                return cls(**object_dict, **cls._get_init_params())
+                return cls(**object_dict, **cls._get_init_params(), saved=True)
 
             class_name = cls.__name__
             raise RecordRetrievalException(
@@ -97,7 +102,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         client = Configurations().get_client()
         response = client.get(url=f"{cls._route}/{id}")
         if response.status_code == HTTPStatus.OK:
-            return cls(**response.json(), **cls._get_init_params())
+            return cls(**response.json(), **cls._get_init_params(), saved=True)
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
     @classmethod
@@ -179,21 +184,37 @@ class ApiObject(ApiGetObject):
         """
         return {}
 
+    def _pre_save_operations(self) -> None:
+        """
+        Operations to be executed before saving the api object
+        """
+        return
+
     def save(self) -> None:
         """
         Save object to the persistent
 
         Raises
         ------
+        ObjectHasBeenSavedError
+            If the object has been saved before
         DuplicatedRecordException
             When record with the same key exists at the persistent
         RecordCreationException
             When fail to save the event data (general failure)
         """
+        if self.saved:
+            raise ObjectHasBeenSavedError(
+                f'{type(self).__name__} (id: "{self.id}") has been saved before.'
+            )
+
+        self._pre_save_operations()
         client = Configurations().get_client()
         response = client.post(url=self._route, json=self._get_create_payload())
         if response.status_code != HTTPStatus.CREATED:
             if response.status_code == HTTPStatus.CONFLICT:
                 raise DuplicatedRecordException(response=response)
             raise RecordCreationException(response=response)
-        type(self).__init__(self, **response.json(), **self._get_init_params_from_object())
+        type(self).__init__(
+            self, **response.json(), **self._get_init_params_from_object(), saved=True
+        )
