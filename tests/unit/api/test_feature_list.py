@@ -9,7 +9,6 @@ from freezegun import freeze_time
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, FeatureList
-from featurebyte.config import Credentials
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
