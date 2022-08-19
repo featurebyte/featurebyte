@@ -106,3 +106,9 @@ class InvalidFeatureRegistryOperationError(Exception):
     """
     Raised when the operation on the registry is invalid
     """
+
+
+class ObjectHasBeenSavedError(Exception):
+    """
+    Raise when the object has been saved before
+    """

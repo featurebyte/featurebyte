@@ -8,12 +8,12 @@ from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
-from pydantic.error_wrappers import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData, EventDataColumn
 from featurebyte.exception import (
     DuplicatedRecordException,
+    ObjectHasBeenSavedError,
     RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
@@ -290,19 +290,20 @@ def test_event_data__save__exceptions(saved_event_data):
     Test save event data failure due to conflict
     """
     # test duplicated record exception when record exists
-    with pytest.raises(DuplicatedRecordException) as exc:
+    with pytest.raises(ObjectHasBeenSavedError) as exc:
         saved_event_data.save()
-    assert exc.value.status_code == 409
-    expected_msg = (
-        f'EventData (id: "{saved_event_data.id}") already exists. '
-        'Get the existing object by `EventData.get(name="sf_event_data")`.'
-    )
-    assert exc.value.response.json()["detail"] == expected_msg
+    expected_msg = f'EventData (id: "{saved_event_data.id}") has been saved before.'
+    assert expected_msg in str(exc.value)
 
+
+def test_event_data__record_creation_exception(snowflake_event_data):
+    """
+    Test save event data failure due to conflict
+    """
     # check unhandled response status code
     with pytest.raises(RecordCreationException):
         with patch("featurebyte.api.api_object.Configurations"):
-            saved_event_data.save()
+            snowflake_event_data.save()
 
 
 def test_event_data__info__not_saved_event_data(snowflake_feature_store, snowflake_event_data):

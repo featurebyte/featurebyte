@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.exception import (
-    DuplicatedRecordException,
+    ObjectHasBeenSavedError,
     RecordCreationException,
     RecordRetrievalException,
 )
@@ -265,12 +265,9 @@ def test_feature_save__exception_due_to_feature_saved_before(float_feature, save
     """
     _ = saved_feature
     assert saved_feature.saved is True
-    with pytest.raises(DuplicatedRecordException) as exc:
+    with pytest.raises(ObjectHasBeenSavedError) as exc:
         float_feature.save()
-    expected_msg = (
-        f'Feature (id: "{float_feature.id}") already exists. '
-        f'Get the existing object by `Feature.get_by_id(id="{float_feature.id}")`.'
-    )
+    expected_msg = f'Feature (id: "{float_feature.id}") has been saved before.'
     assert expected_msg in str(exc.value)
 
 

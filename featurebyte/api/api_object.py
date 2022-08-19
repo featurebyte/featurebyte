@@ -13,6 +13,7 @@ from pydantic import Field
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DuplicatedRecordException,
+    ObjectHasBeenSavedError,
     RecordCreationException,
     RecordRetrievalException,
 )
@@ -195,11 +196,18 @@ class ApiObject(ApiGetObject):
 
         Raises
         ------
+        ObjectHasBeenSavedError
+            If the object has been saved before
         DuplicatedRecordException
             When record with the same key exists at the persistent
         RecordCreationException
             When fail to save the event data (general failure)
         """
+        if self.saved:
+            raise ObjectHasBeenSavedError(
+                f'{type(self).__name__} (id: "{self.id}") has been saved before.'
+            )
+
         self._pre_save_operations()
         client = Configurations().get_client()
         response = client.post(url=self._route, json=self._get_create_payload())

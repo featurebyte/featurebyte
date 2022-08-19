@@ -9,7 +9,7 @@ import pytest
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.exception import (
-    DuplicatedRecordException,
+    ObjectHasBeenSavedError,
     RecordCreationException,
     RecordRetrievalException,
 )
@@ -128,12 +128,9 @@ def test_save__duplicate_record_exception(saved_snowflake_feature_store):
     Test duplicated record exception
     """
     # check conflict
-    with pytest.raises(DuplicatedRecordException) as exc:
+    with pytest.raises(ObjectHasBeenSavedError) as exc:
         saved_snowflake_feature_store.save()
-    expected_msg = (
-        f'FeatureStore (id: "{saved_snowflake_feature_store.id}") already exists. '
-        f'Get the existing object by `FeatureStore.get(name="sf_featurestore")`.'
-    )
+    expected_msg = f'FeatureStore (id: "{saved_snowflake_feature_store.id}") has been saved before.'
     assert expected_msg in str(exc.value)
 
 
