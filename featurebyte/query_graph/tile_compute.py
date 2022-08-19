@@ -23,9 +23,9 @@ class OnDemandTileComputePlan:
 
     def __init__(self, point_in_time: str):
         self.point_in_time = point_in_time
-        self.tile_sqls = {}
-        self.prev_aliases = {}
-        self.processed_agg_ids = set()
+        self.tile_sqls: dict[str, expressions.Expression] = {}
+        self.prev_aliases: dict[str, str] = {}
+        self.processed_agg_ids: set[str] = set()
 
     def process_node(self, graph: QueryGraph, node: Node) -> None:
         """Update state given a query graph node

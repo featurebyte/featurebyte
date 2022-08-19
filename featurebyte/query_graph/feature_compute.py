@@ -33,6 +33,8 @@ BlindSpot = int
 TimeModuloFreq = int
 AggSpecEntityIDs = Tuple[str, ...]
 TileIndicesIdType = Tuple[Window, Frequency, BlindSpot, TimeModuloFreq, AggSpecEntityIDs]
+TileIdType = str
+AggregationSpecIdType = Tuple[TileIdType, Window, AggSpecEntityIDs]
 
 
 class RequestTablePlan(ABC):
@@ -240,9 +242,9 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
 class AggregationSpecSet:
     """Responsible for keeping track of AggregationSpec that arises from query graph nodes"""
 
-    def __init__(self):
-        self.aggregation_specs: dict[tuple[str, int], list[AggregationSpec]] = {}
-        self.processed_agg_specs: dict[tuple[str, int], set[str]] = {}
+    def __init__(self) -> None:
+        self.aggregation_specs: dict[AggregationSpecIdType, list[AggregationSpec]] = {}
+        self.processed_agg_specs: dict[AggregationSpecIdType, set[str]] = {}
 
     def add_aggregation_spec(self, aggregation_spec: AggregationSpec) -> None:
         """Update state given an AggregationSpec
@@ -259,8 +261,14 @@ class AggregationSpecSet:
             Aggregation_specification
         """
         # AggregationSpec is window size specific. Two AggregationSpec with different window sizes
-        # require two different groupbys and left joins in the resulting SQL
-        key = aggregation_spec.tile_table_id, aggregation_spec.window
+        # require two different groupbys and left joins in the resulting SQL. Include serving_names
+        # here because each group of AggregationSpecs will be joined with exactly one expanded
+        # request table, and an expanded request table is specific to serving names
+        key = (
+            aggregation_spec.tile_table_id,
+            aggregation_spec.window,
+            tuple(aggregation_spec.serving_names),
+        )
 
         # Initialize containers for new tile_table_id and window combination
         if key not in self.aggregation_specs:
@@ -271,9 +279,6 @@ class AggregationSpecSet:
         # Skip if the same AggregationSpec is already seen
         if agg_id in self.processed_agg_specs[key]:
             return
-
-        # Sanity check: if given the same tile table id, certain attributes should be identical
-        self._sanity_check(key, aggregation_spec)
 
         # Update containers
         self.aggregation_specs[key].append(aggregation_spec)
@@ -292,15 +297,6 @@ class AggregationSpecSet:
         """
         for agg_specs in self.aggregation_specs.values():
             yield agg_specs
-
-    def _sanity_check(self, key: tuple[str, int], aggregation_spec: AggregationSpec):
-        spec = self.aggregation_specs.get(key)
-        if not spec:
-            return
-        spec = self.aggregation_specs[key][0]
-        fields_expected_to_match = ["serving_names", "tile_table_id", "keys", "value_by"]
-        for k in fields_expected_to_match:
-            assert getattr(spec, k) == getattr(aggregation_spec, k), f"Field {k} does not match"
 
 
 class FeatureExecutionPlan(ABC):
