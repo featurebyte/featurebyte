@@ -130,12 +130,10 @@ def test_update_feature_registry(snowflake_session, snowflake_feature, feature_m
     assert result.iloc[0]["NAME"] == "sum_30m"
     assert result.iloc[0]["VERSION"] == "v1"
     assert result.iloc[0]["READINESS"] == "DRAFT"
-    assert result.iloc[0]["DESCRIPTION"] == "test_description_1"
     assert bool(result.iloc[0]["IS_DEFAULT"]) is True
 
     snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     snowflake_feature.__dict__["is_default"] = False
-    snowflake_feature.description = "test_description_2"
     feature_manager.update_feature_registry(
         new_feature=snowflake_feature, to_online_enable=snowflake_feature.online_enabled
     )
@@ -144,7 +142,6 @@ def test_update_feature_registry(snowflake_session, snowflake_feature, feature_m
     assert result.iloc[0]["NAME"] == "sum_30m"
     assert result.iloc[0]["VERSION"] == "v1"
     assert result.iloc[0]["READINESS"] == "PRODUCTION_READY"
-    assert result.iloc[0]["DESCRIPTION"] == "test_description_2"
     assert result.iloc[0]["ONLINE_ENABLED"] == snowflake_feature.online_enabled
     assert bool(result.iloc[0]["IS_DEFAULT"]) is False
 

@@ -355,7 +355,6 @@ def test_get_feature(saved_feature):
         history_data[0]["current_values"].items()
         > {
             "name": "sum_1d",
-            "description": None,
             "readiness": "DRAFT",
             "var_type": "FLOAT",
             "updated_at": None,

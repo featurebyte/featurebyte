@@ -129,7 +129,6 @@ class TestFeatureApi(BaseApiTestSuite):
         )
         assert match_count == 1
         assert feat_namespace_docs[0]["name"] == self.payload["name"]
-        assert feat_namespace_docs[0]["description"] is None
         assert feat_namespace_docs[0]["version_ids"] == [ObjectId(self.payload["_id"])]
         assert feat_namespace_docs[0]["readiness"] == "DRAFT"
         assert feat_namespace_docs[0]["default_version_id"] == ObjectId(self.payload["_id"])
@@ -155,7 +154,6 @@ class TestFeatureApi(BaseApiTestSuite):
         )
         assert match_count == 1
         assert feat_namespace_docs[0]["name"] == self.payload["name"]
-        assert feat_namespace_docs[0]["description"] is None
         assert feat_namespace_docs[0]["version_ids"] == [
             ObjectId(self.payload["_id"]),
             ObjectId(new_payload["_id"]),

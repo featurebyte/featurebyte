@@ -262,19 +262,6 @@ def test_setting_column_as_entity__invalid_cases(snowflake_event_view):
     )
 
 
-def test_add_description(snowflake_event_view):
-    """
-    Test add_description to event view's column
-    """
-    assert snowflake_event_view.column_description_map == {}
-    snowflake_event_view.cust_id.add_description("Customer ID column")
-    assert snowflake_event_view.column_description_map == {"cust_id": "Customer ID column"}
-
-    with pytest.raises(TypeError) as exc:
-        snowflake_event_view.cust_id.add_description(1234)
-    assert 'type of argument "description" must be str; got int instead' in str(exc.value)
-
-
 def test_unary_op_params(snowflake_event_view):
     """
     Test unary operation inherits event_data_id
