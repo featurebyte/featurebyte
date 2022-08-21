@@ -34,6 +34,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         ValueError
             Event data or feature store records not found
         """
+        self.update_progress(percent=0, message="Preparing data")
         payload = cast(FeatureJobSettingAnalysisTaskPayload, self.payload)
         persistent = self.get_persistent()
 
@@ -83,6 +84,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             sql_query_func=db_session.execute_query,
         )
 
+        self.update_progress(percent=5, message="Running Analysis")
         analysis = create_feature_job_settings_analysis(
             event_dataset=event_dataset,
             **payload.json_dict(),
@@ -99,6 +101,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             analysis_report=analysis.to_html(),
         )
 
+        self.update_progress(percent=95, message="Saving Analysis")
         insert_id = await persistent.insert_one(
             collection_name=FeatureJobSettingAnalysisModel.collection_name(),
             document=analysis_doc.dict(by_alias=True),
@@ -110,3 +113,4 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             "Completed feature job setting analysis",
             extra={"document_id": payload.output_document_id},
         )
+        self.update_progress(percent=100, message="Analysis Completed")

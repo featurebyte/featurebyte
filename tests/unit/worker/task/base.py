@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 
 import json
 from abc import abstractmethod
+from unittest.mock import Mock
 
 import pytest
 import pytest_asyncio
@@ -55,12 +56,20 @@ class BaseTaskTestSuite:
         persistent, _ = git_persistent
         await self.setup_persistent(persistent)
 
-    async def execute_task(self, payload, persistent):
+    @pytest.fixture(name="progress")
+    def mock_progress(self):
+        """
+        Mock progress
+        """
+        yield Mock()
+
+    async def execute_task(self, payload, persistent, progress):
         """
         Execute task with payload
         """
         task = self.task_class(
             payload,
+            progress=progress,
             get_persistent=lambda: persistent,
             get_credential=get_credential,
         )
@@ -68,9 +77,9 @@ class BaseTaskTestSuite:
         await task.execute()
 
     @pytest_asyncio.fixture()
-    async def task_completed(self, git_persistent):
+    async def task_completed(self, git_persistent, progress):
         """
         Test execution of the task
         """
         persistent, _ = git_persistent
-        await self.execute_task(self.payload, persistent)
+        await self.execute_task(payload=self.payload, persistent=persistent, progress=progress)

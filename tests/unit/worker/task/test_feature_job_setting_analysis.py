@@ -3,7 +3,7 @@ Test Feature Job Setting Analysis worker task
 """
 import copy
 import os
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 import pandas as pd
 import pytest
@@ -72,7 +72,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
                     yield
 
     @pytest.mark.asyncio
-    async def test_execute_success(self, task_completed, git_persistent):
+    async def test_execute_success(self, task_completed, git_persistent, progress):
         """
         Test successful task execution
         """
@@ -101,8 +101,16 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         assert result.analysis_result == expected.analysis_result
         assert result.analysis_report == expected.analysis_report
 
+        # check progress update records
+        assert progress.put.call_args_list == [
+            call({"percent": 0, "message": "Preparing data"}),
+            call({"percent": 5, "message": "Running Analysis"}),
+            call({"percent": 95, "message": "Saving Analysis"}),
+            call({"percent": 100, "message": "Analysis Completed"}),
+        ]
+
     @pytest.mark.asyncio
-    async def test_execute_fail(self, git_persistent):
+    async def test_execute_fail(self, git_persistent, progress):
         """
         Test failed task execution
         """
@@ -113,5 +121,10 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         payload["event_data_id"] = ObjectId()
 
         with pytest.raises(ValueError) as excinfo:
-            await self.execute_task(payload, persistent)
+            await self.execute_task(payload, persistent, progress)
         assert str(excinfo.value) == "Event Data not found"
+
+        # check progress update records
+        assert progress.put.call_args_list == [
+            call({"percent": 0, "message": "Preparing data"}),
+        ]
