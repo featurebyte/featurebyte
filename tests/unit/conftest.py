@@ -2,6 +2,7 @@
 Common test fixtures used across unit test directories
 """
 import json
+import os
 import tempfile
 from unittest import mock
 
@@ -74,8 +75,15 @@ def mock_config_path_env_fixture(config_file):
     """
     Mock FEATUREBYTE_CONFIG_PATH in featurebyte/config.py
     """
+    env = dict(os.environ)
+
+    def mock_env_side_effect(*args, **kwargs):
+        if args[0] == "FEATUREBYTE_CONFIG_PATH":
+            return config_file
+        return env.get(*args, **kwargs)
+
     with mock.patch("featurebyte.config.os.environ.get") as mock_env_get:
-        mock_env_get.return_value = config_file
+        mock_env_get.side_effect = mock_env_side_effect
         yield
 
 
@@ -103,7 +111,7 @@ def mock_get_persistent_function(git_persistent):
     """
     Mock GitDB in featurebyte.app
     """
-    with mock.patch("featurebyte.app._get_persistent") as mock_persistent:
+    with mock.patch("featurebyte.app.get_persistent") as mock_persistent:
         persistent, _ = git_persistent
         mock_persistent.return_value = persistent
         yield mock_persistent
@@ -383,17 +391,6 @@ def session_manager_fixture(config, snowflake_connector):
     _ = snowflake_connector
     get_session.cache_clear()
     yield SessionManager(credentials=config.credentials)
-
-
-@pytest.fixture(name="mock_get_persistent")
-def mock_get_persistent_fixture():
-    """
-    Mock _get_persistent for testing
-    """
-    with mock.patch("featurebyte.app._get_persistent") as mock_get_persistent:
-        gitdb = GitDB()
-        mock_get_persistent.return_value = gitdb
-        yield mock_get_persistent
 
 
 @pytest.fixture

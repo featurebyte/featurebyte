@@ -66,7 +66,7 @@ def mock_get_persistent_fixture(config):
     Mock get_persistent in featurebyte/app.py
     """
     git_db = GitDB(**config.git.dict())
-    with mock.patch("featurebyte.app._get_persistent") as mock_get_persistent:
+    with mock.patch("featurebyte.app.get_persistent") as mock_get_persistent:
         mock_get_persistent.return_value = git_db
         yield mock_get_persistent
 

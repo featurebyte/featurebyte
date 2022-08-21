@@ -26,7 +26,7 @@ class ProcessStore(metaclass=SingletonMeta):
     _command_class: Type[Enum] = Command
     _task_executor: Callable[..., Any] = TaskExecutor
 
-    def submit(self, payload: dict[str, Any]) -> ObjectId:
+    async def submit(self, payload: dict[str, Any]) -> ObjectId:
         """
         Submit payload to initiate a new process
 
@@ -49,7 +49,7 @@ class ProcessStore(metaclass=SingletonMeta):
         self._store[(user_id, task_status_id)] = process
         return task_status_id
 
-    def get(self, user_id: Optional[ObjectId], task_status_id: ObjectId) -> Optional[Process]:
+    async def get(self, user_id: Optional[ObjectId], task_status_id: ObjectId) -> Optional[Process]:
         """
         Retrieve process given user_id and task_status_id
 
@@ -67,7 +67,7 @@ class ProcessStore(metaclass=SingletonMeta):
         key_pair = (user_id, task_status_id)
         return self._store.get(key_pair)
 
-    def list(self, user_id: Optional[ObjectId]) -> list[tuple[ObjectId, Process]]:
+    async def list(self, user_id: Optional[ObjectId]) -> list[tuple[ObjectId, Process]]:
         """
         List process of the given user
 

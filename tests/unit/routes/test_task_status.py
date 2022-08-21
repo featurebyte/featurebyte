@@ -5,6 +5,7 @@ from http import HTTPStatus
 from unittest.mock import patch
 
 import pytest
+import pytest_asyncio
 from bson.objectid import ObjectId
 
 from featurebyte.service.task_manager import TaskManager
@@ -33,11 +34,12 @@ class TestTaskStatusApi:
             mock_task_manager.return_value = task_manager
             yield
 
-    @pytest.fixture
-    def task_status_id(self, user_id, task_manager):
+    @pytest_asyncio.fixture
+    async def task_status_id(self, user_id, task_manager):
         """Task status id"""
-        return task_manager.submit(payload=LongRunningPayload(user_id=user_id))
+        return await task_manager.submit(payload=LongRunningPayload(user_id=user_id))
 
+    @pytest.mark.no_mock_process_store
     def test_get_200(self, test_api_client_persistent, task_status_id):
         """Test get (success)"""
         test_api_client, _ = test_api_client_persistent
@@ -45,6 +47,7 @@ class TestTaskStatusApi:
         assert response.status_code == HTTPStatus.OK
         assert response.json() == {"id": str(task_status_id), "status": "STARTED", "result": None}
 
+    @pytest.mark.no_mock_process_store
     def test_get_404(self, test_api_client_persistent):
         """Tset get (not found)"""
         test_api_client, _ = test_api_client_persistent

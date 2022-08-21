@@ -11,8 +11,10 @@ from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field
 
+from featurebyte.models.base import FeatureByteBaseModel
 
-class BaseTaskPayload(BaseModel):
+
+class BaseTaskPayload(FeatureByteBaseModel):
     """
     Base class for Task payload
     """

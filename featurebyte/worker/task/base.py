@@ -22,10 +22,18 @@ class BaseTask:
 
     payload_class: type[BaseTaskPayload] = BaseTaskPayload
 
-    def __init__(self, payload: dict[str, Any], progress: Any = None):
+    def __init__(
+        self,
+        payload: dict[str, Any],
+        progress: Any = None,
+        get_persistent: Any = None,
+        get_credential: Any = None,
+    ):
         if self.payload_class == BaseTaskPayload:
             raise NotImplementedError
         self.payload = self.payload_class(**payload)
+        self.get_persistent = get_persistent
+        self.get_credential = get_credential
         self.progress = progress
 
     def __init_subclass__(cls, **kwargs: Any) -> None:

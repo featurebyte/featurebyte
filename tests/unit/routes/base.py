@@ -4,6 +4,7 @@ BaseApiTestSuite
 import json
 from datetime import datetime
 from http import HTTPStatus
+from time import sleep
 
 import pytest
 from bson.objectid import ObjectId
@@ -314,3 +315,57 @@ class BaseApiTestSuite:
         response = test_api_client.get(f"{self.base_route}", params={"search": "abc"})
         assert response.status_code == HTTPStatus.NOT_IMPLEMENTED
         assert response.json()["detail"] == "Query not supported."
+
+
+class BaseAsyncApiTestSuite(BaseApiTestSuite):
+    """
+    BaseAsyncApiTestSuite contains common api tests with async creation routes
+    """
+
+    time_limit = 10
+
+    @pytest.fixture()
+    def create_success_response(self, test_api_client_persistent):
+        """Post route success response object"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        id_before = self.payload["_id"]
+        response = test_api_client.post(f"{self.base_route}", json=self.payload)
+        task_submission = response.json()
+        task_id = task_submission["task_id"]
+        output_document_id = task_submission["output_document_id"]
+
+        start_time = datetime.now()
+        while (datetime.now() - start_time).seconds < self.time_limit:
+            response = test_api_client.get(f"/task_status/{task_id}")
+            task_status = response.json()
+            status = task_status["status"]
+            if status not in ["PENDING", "RECEIVED", "STARTED"]:
+                assert status == "SUCCESS"
+                break
+            sleep(1)
+
+        response = test_api_client.get(f"{self.base_route}/{output_document_id}")
+        response_dict = response.json()
+        assert response_dict["_id"] == id_before
+        return response
+
+    def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
+        """Test creation (success)"""
+        assert create_success_response.status_code == HTTPStatus.OK
+        result = create_success_response.json()
+
+        # check response
+        doc_id = ObjectId(result["_id"])
+        assert result["user_id"] == str(user_id)
+        assert datetime.fromisoformat(result["created_at"]) < datetime.utcnow()
+        assert result["updated_at"] is None
+
+        # test get audit record
+        test_api_client, persistent = test_api_client_persistent
+        response = test_api_client.get(f"{self.base_route}/audit/{doc_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+        assert response_dict["total"] == 1
+        assert [record["action_type"] for record in response_dict["data"]] == ["INSERT"]
+        assert [record["previous_values"] for record in response_dict["data"]] == [{}]

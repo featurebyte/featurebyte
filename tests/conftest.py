@@ -5,7 +5,11 @@ import os
 from unittest.mock import patch
 
 import pytest
-from bson.objectid import ObjectId
+
+
+def pytest_configure(config):
+    # register an additional marker
+    config.addinivalue_line("markers", "no_mock_process_store: mark test to not mock process store")
 
 
 def pytest_addoption(parser):
