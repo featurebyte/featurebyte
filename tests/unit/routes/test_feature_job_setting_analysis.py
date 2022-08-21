@@ -1,17 +1,12 @@
 """
 Tests for FeatureJobSettingAnalysis routes
 """
-import datetime
-import os
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
-import pandas as pd
 import pytest
 from bson import ObjectId
 
-from featurebyte.models.event_data import EventDataModel, EventDataStatus
-from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from tests.unit.routes.base import BaseAsyncApiTestSuite
 
 
@@ -50,6 +45,9 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
 
     @pytest.fixture(autouse=True)
     def mock_analysis(self):
+        """
+        Apply patch on call to analysis
+        """
         result = self.load_payload("tests/fixtures/feature_job_setting_analysis/result.json")
         record = Mock(**result, to_html=lambda: result["analysis_report"])
         with patch(
@@ -59,7 +57,10 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
             yield
 
     @pytest.fixture(autouse=True)
-    def mock_snowflake(self, persistent, snowflake_connector, snowflake_execute_query):
+    def mock_snowflake(self, snowflake_connector, snowflake_execute_query):
+        """
+        Apply patch on snowflake operations
+        """
         yield
 
     def setup_creation_route(self, api_client):
@@ -67,15 +68,13 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         Setup for post route
         """
         # save feature store
-        feature_store_payload = self.load_payload(
-            "tests/fixtures/request_payloads/feature_store.json"
-        )
-        response = api_client.post("/feature_store", json=feature_store_payload)
+        payload = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
+        response = api_client.post("/feature_store", json=payload)
         assert response.status_code == HTTPStatus.CREATED
 
         # save event data
-        feature_store_payload = self.load_payload("tests/fixtures/request_payloads/event_data.json")
-        response = api_client.post("/event_data", json=feature_store_payload)
+        payload = self.load_payload("tests/fixtures/request_payloads/event_data.json")
+        response = api_client.post("/event_data", json=payload)
         assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):

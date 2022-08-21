@@ -1,9 +1,18 @@
 """
 Base class for testing worker tasks
 """
+from __future__ import annotations
+
+from typing import Any, Dict, Optional
+
 import json
+from abc import abstractmethod
 
 import pytest
+import pytest_asyncio
+
+from featurebyte.utils.credential import get_credential
+from featurebyte.worker.task.base import BaseTask
 
 
 class BaseTaskTestSuite:
@@ -12,11 +21,56 @@ class BaseTaskTestSuite:
     """
 
     # class variables to be set at metaclass
-    task_class = None
-    payload_filename = None
+    task_class: BaseTask = None
+    payload: Optional[Dict[str, Any]] = None
 
     @staticmethod
     def load_payload(filename):
         """Load payload"""
         with open(filename) as fhandle:
             return json.loads(fhandle.read())
+
+    @abstractmethod
+    async def setup_persistent(self, persistent):
+        """
+        Setup records in persistent for testing
+        """
+
+    @pytest.fixture(autouse=True)
+    def mock_env(self, mock_config_path_env):
+        """
+        Apply patch on config path env
+        """
+        yield
+
+    @pytest.fixture(autouse=True)
+    def mock_snowflake(self, snowflake_connector, snowflake_execute_query):
+        """
+        Apply patch on snowflake operations
+        """
+        yield
+
+    @pytest_asyncio.fixture(autouse=True)
+    async def setup(self, git_persistent):
+        persistent, _ = git_persistent
+        await self.setup_persistent(persistent)
+
+    async def execute_task(self, payload, persistent):
+        """
+        Execute task with payload
+        """
+        task = self.task_class(
+            payload,
+            get_persistent=lambda: persistent,
+            get_credential=get_credential,
+        )
+
+        await task.execute()
+
+    @pytest_asyncio.fixture()
+    async def task_completed(self, git_persistent):
+        """
+        Test execution of the task
+        """
+        persistent, _ = git_persistent
+        await self.execute_task(self.payload, persistent)

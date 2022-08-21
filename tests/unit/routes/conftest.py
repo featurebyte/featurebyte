@@ -3,6 +3,7 @@ Fixture for API unit tests
 """
 from __future__ import annotations
 
+import json
 from contextlib import asynccontextmanager
 from unittest.mock import Mock, patch
 
@@ -19,7 +20,6 @@ from featurebyte.persistent import GitDB
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.utils.credential import get_credential
 from featurebyte.worker.task.base import TASK_MAP
-from featurebyte.worker.task_executor import TaskExecutor
 
 
 def pytest_generate_tests(metafunc):
@@ -88,8 +88,9 @@ def mock_process_store(request, persistent):
 
         async def submit(payload):
             print(payload)
-            task = TASK_MAP[payload["command"]](
-                payload=payload,
+            payload_dict = json.loads(payload)
+            task = TASK_MAP[payload_dict["command"]](
+                payload=payload_dict,
                 progress=Mock(),
                 get_credential=get_credential,
                 get_persistent=lambda: persistent,

@@ -94,7 +94,7 @@ class TaskManager(AbstractTaskManager):
 
     async def submit(self, payload: BaseTaskPayload) -> ObjectId:
         assert self.user_id == payload.user_id
-        task_id = await ProcessStore().submit(payload=payload.dict())
+        task_id = await ProcessStore().submit(payload=payload.json())
         return task_id
 
     @staticmethod
@@ -111,9 +111,10 @@ class TaskManager(AbstractTaskManager):
 
     async def get_task_status(self, task_status_id: ObjectId) -> Optional[TaskStatus]:
         process_store = ProcessStore()
+        process = await process_store.get(user_id=self.user_id, task_status_id=task_status_id)
         return self._get_task_status(
             task_status_id=task_status_id,
-            process=await process_store.get(user_id=self.user_id, task_status_id=task_status_id),
+            process=process,
         )
 
     async def list_task_status(

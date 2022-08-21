@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 from abc import abstractmethod
+from enum import Enum
 
 from featurebyte.schema.worker.progress import ProgressModel
 from featurebyte.schema.worker.task.base import BaseTaskPayload
@@ -38,7 +39,9 @@ class BaseTask:
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-        command = cls.payload_class.command
+
+        assert isinstance(cls.payload_class.command, Enum)
+        command = cls.payload_class.command.value
         if command in TASK_MAP:
             raise ValueError(f'Command "{command}" has been implemented.')
         TASK_MAP[command] = cls

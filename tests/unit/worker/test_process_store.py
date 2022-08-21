@@ -1,7 +1,7 @@
 """
 Tests for process store
 """
-import time
+import json
 from multiprocessing import Process
 
 import pytest
@@ -28,12 +28,14 @@ async def test_process_store():
 
     for user_id, info in user_map.items():
         task_status_id = await ProcessStore().submit(
-            payload={
-                "command": info["command"],
-                "output_document_id": ObjectId(),
-                "output_collection_name": "some_collection",
-                "user_id": user_id,
-            }
+            payload=json.dumps(
+                {
+                    "command": info["command"],
+                    "output_document_id": str(ObjectId()),
+                    "output_collection_name": "some_collection",
+                    "user_id": str(user_id),
+                }
+            )
         )
 
         # test get

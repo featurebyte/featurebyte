@@ -3,6 +3,8 @@ Feature Job Setting Analysis task
 """
 from __future__ import annotations
 
+from typing import cast
+
 from featurebyte_freeware.feature_job_analysis.analysis import create_feature_job_settings_analysis
 from featurebyte_freeware.feature_job_analysis.database import EventDataset
 
@@ -26,24 +28,40 @@ class FeatureJobSettingAnalysisTask(BaseTask):
     async def execute(self) -> None:
         """
         Execute the task
+
+        Raises
+        ------
+        ValueError
+            Event data or feature store records not found
         """
-        payload: FeatureJobSettingAnalysisTaskPayload = self.payload
+        payload = cast(FeatureJobSettingAnalysisTaskPayload, self.payload)
         persistent = self.get_persistent()
 
         # retrieve event data
+        query_filter = {"_id": payload.event_data_id}
         document = await persistent.find_one(
             collection_name=EventDataModel.collection_name(),
-            query_filter={"_id": payload.event_data_id},
+            query_filter=query_filter,
             user_id=payload.user_id,
         )
+        if not document:
+            message = "Event Data not found"
+            logger.error(message, extra={"query_filter": query_filter})
+            raise ValueError(message)
+
         event_data = EventDataModel(**document)
 
         # retrieve feature store
+        query_filter = {"_id": event_data.tabular_source[0]}
         document = await persistent.find_one(
             collection_name=ExtendedFeatureStoreModel.collection_name(),
-            query_filter={"_id": event_data.tabular_source[0]},
+            query_filter=query_filter,
             user_id=payload.user_id,
         )
+        if not document:
+            message = "Feature Store not found"
+            logger.error(message, extra={"query_filter": query_filter})
+            raise ValueError(message)
         feature_store = ExtendedFeatureStoreModel(**document)
 
         # establish database session
