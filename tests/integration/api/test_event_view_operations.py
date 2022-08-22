@@ -152,16 +152,11 @@ def test_query_object_operation_on_snowflake_source(
         windows=["24h"],
         feature_names=["COUNT_BY_ACTION_24h"],
     )
-
-    feature_group_per_category["ENTROPY_BY_ACTION_24h"] = feature_group_per_category[
-        "COUNT_BY_ACTION_24h"
-    ].cd.entropy()
-    feature_group_per_category["MOST_FREQUENT_ACTION_24h"] = feature_group_per_category[
-        "COUNT_BY_ACTION_24h"
-    ].cd.most_frequent()
-    feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_group_per_category[
-        "COUNT_BY_ACTION_24h"
-    ].cd.nunique()
+    # add features based on transformations on count per category
+    feature_counts_24h = feature_group_per_category["COUNT_BY_ACTION_24h"]
+    feature_group_per_category["ENTROPY_BY_ACTION_24h"] = feature_counts_24h.cd.entropy()
+    feature_group_per_category["MOST_FREQUENT_ACTION_24h"] = feature_counts_24h.cd.most_frequent()
+    feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_counts_24h.cd.nunique()
 
     # preview the features
     preview_param = {
