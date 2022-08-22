@@ -25,7 +25,7 @@ async def test_process_store():
         None: {"command": Command.LONG_RUNNING_COMMAND, "exitcode": 0},
     }
     user_task_status_pid_map = {}
-    processes = []
+    process_data_list = []
 
     for user_id, info in user_map.items():
         task_status_id = await ProcessStore().submit(
@@ -36,30 +36,32 @@ async def test_process_store():
                     "output_collection_name": "some_collection",
                     "user_id": str(user_id) if user_id else None,
                 }
-            )
+            ),
+            output_path="some_output_path",
         )
 
         # test get
-        process = await ProcessStore().get(user_id=user_id, task_status_id=task_status_id)
-        processes.append(process)
-        assert isinstance(process, Process)
+        process_data = await ProcessStore().get(user_id=user_id, task_status_id=task_status_id)
+        process_data_list.append(process_data)
         # check process is running
-        assert process.exitcode is None
-        user_task_status_pid_map[user_id] = (task_status_id, process.pid)
+        assert process_data["process"].exitcode is None
+        user_task_status_pid_map[user_id] = (task_status_id, process_data["process"].pid)
 
     # test list
     for user_id in user_map.keys():
         task_status_id_process_pairs = await ProcessStore().list(user_id)
         assert len(task_status_id_process_pairs) == 1
         assert task_status_id_process_pairs[0][0] == user_task_status_pid_map[user_id][0]
-        assert task_status_id_process_pairs[0][1].pid == user_task_status_pid_map[user_id][1]
+        assert (
+            task_status_id_process_pairs[0][1]["process"].pid
+            == user_task_status_pid_map[user_id][1]
+        )
 
     # wait processes finish
-    for proc in processes:
-        proc.join()
+    for proc_data in process_data_list:
+        proc_data["process"].join()
 
     # check process exitcode
     for user_id, (task_status_id, _) in user_task_status_pid_map.items():
-        process = await ProcessStore().get(user_id=user_id, task_status_id=task_status_id)
-        assert isinstance(process, Process)
-        assert process.exitcode == user_map[user_id]["exitcode"]
+        process_data = await ProcessStore().get(user_id=user_id, task_status_id=task_status_id)
+        assert process_data["process"].exitcode == user_map[user_id]["exitcode"]

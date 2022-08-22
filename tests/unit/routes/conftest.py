@@ -87,7 +87,8 @@ def mock_process_store(request, persistent):
 
     with patch("featurebyte.service.task_manager.ProcessStore.submit") as mock_submit:
 
-        async def submit(payload):
+        async def submit(payload, output_path):
+            _ = output_path
             payload_dict = json.loads(payload)
             command = WorkerCommand(payload_dict["command"])
             task = TASK_MAP[command](
@@ -104,7 +105,12 @@ def mock_process_store(request, persistent):
         with patch("featurebyte.service.task_manager.ProcessStore.get") as mock_get:
 
             async def get(user_id, task_status_id):
-                return Mock(exitcode=0)
+                _ = user_id, task_status_id
+                return {
+                    "process": Mock(exitcode=0),
+                    "output_path": "task_output_path",
+                    "payload": {"key": "some_value"},
+                }
 
             mock_get.side_effect = get
             yield

@@ -225,7 +225,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
 
     @typechecked
     def update_default_feature_job_setting(
-        self, feature_job_setting: Optional[Dict[str, Any]]
+        self, feature_job_setting: Optional[Dict[str, Any]] = None
     ) -> None:
         """
         Update default feature job setting
@@ -240,12 +240,21 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         RecordUpdateException
             When unexpected record update failure
         """
+        client = Configurations().get_client()
         if feature_job_setting:
             _ = validate_job_setting_parameters(**feature_job_setting)
+        else:
+            # create feature job setting analysis async task
+            data = client.post(
+                url="/feature_job_setting_analysis", json={"event_data_id": str(self.id)}
+            )
+
+        import pdb
+
+        pdb.set_trace()
 
         feature_job_setting = FeatureJobSetting(**feature_job_setting)
         data = EventDataUpdate(default_feature_job_setting=feature_job_setting)
-        client = Configurations().get_client()
         response = client.patch(url=f"/event_data/{self.id}", json=data.dict())
         if response.status_code == HTTPStatus.OK:
             type(self).__init__(

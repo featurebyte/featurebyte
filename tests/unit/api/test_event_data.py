@@ -422,6 +422,11 @@ def test_update_default_job_setting__saved_event_data(saved_event_data, config):
     Test update default job setting on saved event data
     """
     assert saved_event_data.default_feature_job_setting is None
+    saved_event_data.update_default_feature_job_setting()
+
+    import pdb
+
+    pdb.set_trace()
     saved_event_data.update_default_feature_job_setting(
         feature_job_setting={
             "blind_spot": "1m30s",

@@ -3,7 +3,7 @@ This module contains ProcessStore class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, Type
+from typing import Any, Callable, Dict, Optional, Type
 
 import json
 from enum import Enum
@@ -27,7 +27,7 @@ class ProcessStore(metaclass=SingletonMeta):
     _command_class: Type[Enum] = Command
     _task_executor: Callable[..., Any] = TaskExecutor
 
-    async def submit(self, payload: str) -> ObjectId:
+    async def submit(self, payload: str, output_path: Optional[str]) -> ObjectId:
         """
         Submit payload to initiate a new process
 
@@ -35,6 +35,8 @@ class ProcessStore(metaclass=SingletonMeta):
         ----------
         payload: str
             JSON payload used to initiate the process
+        output_path: str
+            Output path used to retrieve the result
 
         Returns
         -------
@@ -52,10 +54,16 @@ class ProcessStore(metaclass=SingletonMeta):
             target=self._task_executor, args=(payload_dict, progress_queue), daemon=True
         )
         process.start()
-        self._store[(user_id, task_status_id)] = process
+        self._store[(user_id, task_status_id)] = {
+            "process": process,
+            "payload": payload_dict,
+            "output_path": output_path,
+        }
         return task_status_id
 
-    async def get(self, user_id: Optional[ObjectId], task_status_id: ObjectId) -> Optional[Process]:
+    async def get(
+        self, user_id: Optional[ObjectId], task_status_id: ObjectId
+    ) -> Optional[Dict[str, Any]]:
         """
         Retrieve process given user_id and task_status_id
 
@@ -68,7 +76,7 @@ class ProcessStore(metaclass=SingletonMeta):
 
         Returns
         -------
-        Optional[Process]
+        Optional[Dict[str, Any]]
         """
         key_pair = (user_id, task_status_id)
         return self._store.get(key_pair)
@@ -87,7 +95,7 @@ class ProcessStore(metaclass=SingletonMeta):
         List of (task_status_id, process) tuples
         """
         output = []
-        for (user_id_key, task_status_id_key), process in self._store.items():
+        for (user_id_key, task_status_id_key), process_data in self._store.items():
             if user_id_key == user_id:
-                output.append((task_status_id_key, process))
+                output.append((task_status_id_key, process_data))
         return output

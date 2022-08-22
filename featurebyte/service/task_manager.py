@@ -3,10 +3,9 @@ TaskManager service is responsible to submit task message
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from abc import abstractmethod
-from multiprocessing import Process
 
 from bson.objectid import ObjectId
 
@@ -40,6 +39,8 @@ class AbstractTaskManager:
         ----------
         payload: BaseTaskPayload
             Task payload object
+        output_path: str
+            Task output path
 
         Returns
         -------
@@ -94,28 +95,34 @@ class TaskManager(AbstractTaskManager):
 
     async def submit(self, payload: BaseTaskPayload) -> ObjectId:
         assert self.user_id == payload.user_id
-        task_id = await ProcessStore().submit(payload=payload.json())
+        task_id = await ProcessStore().submit(
+            payload=payload.json(), output_path=payload.task_output_path
+        )
         return task_id
 
     @staticmethod
     def _get_task_status(
-        task_status_id: ObjectId, process: Optional[Process]
+        task_status_id: ObjectId, process_data: Optional[Dict[str, Any]]
     ) -> Optional[TaskStatus]:
-        if process is None:
+        if process_data is None:
             return None
-        if process.exitcode is None:
-            return TaskStatus(id=task_status_id, status="STARTED")
-        if process.exitcode == 0:
-            return TaskStatus(id=task_status_id, status="SUCCESS")
-        return TaskStatus(id=task_status_id, status="FAILURE")
+        if process_data["process"].exitcode is None:
+            status = "STARTED"
+        elif process_data["process"].exitcode == 0:
+            status = "SUCCESS"
+        else:
+            status = "FAILURE"
+        return TaskStatus(
+            id=task_status_id,
+            status=status,
+            output_path=process_data["output_path"],
+            payload=process_data["payload"],
+        )
 
     async def get_task_status(self, task_status_id: ObjectId) -> Optional[TaskStatus]:
         process_store = ProcessStore()
-        process = await process_store.get(user_id=self.user_id, task_status_id=task_status_id)
-        return self._get_task_status(
-            task_status_id=task_status_id,
-            process=process,
-        )
+        process_dict = await process_store.get(user_id=self.user_id, task_status_id=task_status_id)
+        return self._get_task_status(task_status_id=task_status_id, process_data=process_dict)
 
     async def list_task_status(
         self,
@@ -124,8 +131,8 @@ class TaskManager(AbstractTaskManager):
         ascending: bool = True,
     ) -> tuple[list[TaskStatus], int]:
         output = []
-        for task_status_id, process in await ProcessStore().list(user_id=self.user_id):
-            task_status = self._get_task_status(task_status_id, process)
+        for task_status_id, process_data in await ProcessStore().list(user_id=self.user_id):
+            task_status = self._get_task_status(task_status_id, process_data)
             if task_status:
                 output.append(task_status)
 

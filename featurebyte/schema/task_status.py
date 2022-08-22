@@ -1,7 +1,7 @@
 """
 TaskStatus API payload schema
 """
-from typing import Any, List, Literal, Union
+from typing import Any, Dict, List, Literal, Union
 
 from uuid import UUID
 
@@ -40,7 +40,8 @@ class TaskStatus(FeatureByteBaseModel):
         "RETRY",
         "IGNORED",
     ] = Field(allow_mutation=False)
-    result: Any
+    output_path: str
+    payload: Dict[str, Any]
 
 
 class TaskStatusList(PaginationMixin):

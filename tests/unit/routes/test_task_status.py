@@ -40,12 +40,21 @@ class TestTaskStatusApi:
         return await task_manager.submit(payload=LongRunningPayload(user_id=user_id))
 
     @pytest.mark.no_mock_process_store
-    def test_get_200(self, test_api_client_persistent, task_status_id):
+    def test_get_200(self, test_api_client_persistent, task_status_id, user_id):
         """Test get (success)"""
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.get(f"{self.base_route}/{task_status_id}")
         assert response.status_code == HTTPStatus.OK
-        assert response.json() == {"id": str(task_status_id), "status": "STARTED", "result": None}
+        response_dict = response.json()
+        assert response_dict.items() > {"id": str(task_status_id), "status": "STARTED"}.items()
+        assert (
+            response_dict["payload"].items()
+            > {
+                "command": "long_running_command",
+                "output_collection_name": "long_running_result_collection",
+                "user_id": str(user_id),
+            }.items()
+        )
 
     @pytest.mark.no_mock_process_store
     def test_get_404(self, test_api_client_persistent):
