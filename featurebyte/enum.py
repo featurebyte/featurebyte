@@ -83,6 +83,7 @@ class DBVarType(str, Enum):
     TIME = "TIME"
     TIMESTAMP = "TIMESTAMP"
     VARCHAR = "VARCHAR"
+    OBJECT = "OBJECT"
 
 
 class AggFunc(str, Enum):
