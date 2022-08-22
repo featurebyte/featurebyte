@@ -22,6 +22,13 @@ class CdAccessorMixin:
 
     @property
     def cd(self: Feature) -> CountDictAccessor:  # type: ignore # pylint: disable=invalid-name
+        """
+        Accessor object that provides transformations on count dictionary features
+
+        Returns
+        -------
+        CountDictAccessor
+        """
         return CountDictAccessor(self)
 
 
@@ -35,7 +42,7 @@ class CountDictAccessor:
             raise AttributeError("Can only use .cd accessor with count per category features")
         self._obj = obj
 
-    def _make_operation(self, transform_type, output_var_type) -> Feature:
+    def _make_operation(self, transform_type: str, output_var_type: DBVarType) -> Feature:
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.COUNT_DICT_TRANSFORM,
@@ -47,17 +54,29 @@ class CountDictAccessor:
     def entropy(self) -> Feature:
         """
         Compute the entropy of the count dictionary
+
+        Returns
+        -------
+        Feature
         """
         return self._make_operation("entropy", DBVarType.FLOAT)
 
     def most_frequent(self) -> Feature:
         """
         Compute the most frequent key in the dictionary
+
+        Returns
+        -------
+        Feature
         """
         return self._make_operation("most_frequent", DBVarType.VARCHAR)
 
     def nunique(self) -> Feature:
         """
         Compute number of distinct keys in the dictionary
+
+        Returns
+        -------
+        Feature
         """
         return self._make_operation("num_unique", DBVarType.FLOAT)
