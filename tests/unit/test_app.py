@@ -6,8 +6,9 @@ from unittest.mock import patch
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.app import _get_credential, _get_persistent
 from featurebyte.config import Configurations
+from featurebyte.utils.credential import get_credential
+from featurebyte.utils.persistent import get_persistent
 
 
 async def test_get_credential():
@@ -17,11 +18,9 @@ async def test_get_credential():
     config = Configurations("tests/fixtures/config_git_persistent.yaml")
     feature_store_name = list(config.credentials.keys())[0]
 
-    with patch("featurebyte.app.Configurations") as mock_config:
+    with patch("featurebyte.utils.credential.Configurations") as mock_config:
         mock_config.return_value = config
-        credential = await _get_credential(
-            user_id=ObjectId(), feature_store_name=feature_store_name
-        )
+        credential = await get_credential(user_id=ObjectId(), feature_store_name=feature_store_name)
     assert credential == config.credentials[feature_store_name]
 
 
@@ -31,10 +30,10 @@ def test_get_persistent():
     """
     config = Configurations("tests/fixtures/config_git_persistent.yaml")
 
-    with patch("featurebyte.app.Configurations") as mock_config:
+    with patch("featurebyte.utils.persistent.Configurations") as mock_config:
         mock_config.return_value = config
-        with patch("featurebyte.app.GitDB") as mock_git:
+        with patch("featurebyte.utils.persistent.GitDB") as mock_git:
             with pytest.raises(ValueError):
                 mock_git.side_effect = ValueError()
-                _get_persistent()
+                get_persistent()
     mock_git.assert_called_once_with(**config.git.dict())

@@ -5,14 +5,17 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Optional
 
+import json
 from enum import Enum
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from featurebyte.models.base import FeatureByteBaseModel
 
 
-class BaseTaskPayload(BaseModel):
+class BaseTaskPayload(FeatureByteBaseModel):
     """
     Base class for Task payload
     """
@@ -50,3 +53,13 @@ class BaseTaskPayload(BaseModel):
         if self.command:
             output["command"] = self.command.value
         return output
+
+    def json(self, *args: Any, **kwargs: Any) -> str:
+        json_string = super().json(*args, **kwargs)
+        json_dict = json.loads(json_string)
+
+        # include class variables
+        json_dict.update(
+            {"command": self.command, "output_collection_name": self.output_collection_name}
+        )
+        return json.dumps(json_dict)

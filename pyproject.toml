@@ -86,6 +86,7 @@ PyYAML = "^6.0"
 beanie = "^1.11.4"
 cachetools = "^5.2.0"
 fastapi = "^0.79.0"
+featurebyte-freeware = { version = "^0.1.0*", allow-prereleases = true, source = "featurebyte_np" }
 importlib_metadata = {version = "^4.5.0", python = "^3.8"}
 jinja2 = "^3.1.2"
 loguru = "^0.6.0"
@@ -93,7 +94,7 @@ pandas = "^1.4.2"
 pyarrow = "^8.0.0"
 pydantic = "^1.9.1"
 pymongo = "^4.1.1"
-python = "^3.8"
+python = ">=3.8,<3.11"
 rich = "^12.3.0"
 snowflake-connector-python = "^2.7.7"
 sqlglot = "^2.3.2"
@@ -147,6 +148,11 @@ types-urllib3 = "^1.26.16"
 
 [tool.poetry.scripts]
 featurebyte = "featurebyte.__main__:app"
+
+[[tool.poetry.source]]
+name = "featurebyte_np"
+secondary = true
+url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi/simple/"
 
 [tool.pylint.classes]  # https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml
 max-args = 10

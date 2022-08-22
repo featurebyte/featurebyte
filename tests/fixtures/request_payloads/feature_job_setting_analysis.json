@@ -1,0 +1,13 @@
+{
+  "_id": "62f301e841b73757c9ff879a",
+  "user_id": "62f302f841b73757c9ff876b",
+  "name": "sample_analysis",
+  "event_data_id": "62f301e841b73757c7bf873a",
+  "analysis_date": null,
+  "analysis_length": 2419200,
+  "min_featurejob_period": 60,
+  "exclude_late_job": false,
+  "blind_spot_buffer_setting": 5,
+  "job_time_buffer_setting": "auto",
+  "late_data_allowance": 5e-05
+}

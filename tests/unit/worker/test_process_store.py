@@ -1,16 +1,18 @@
 """
 Tests for process store
 """
-import time
+import json
 from multiprocessing import Process
 
+import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.worker.process_store import ProcessStore
 from tests.util.task import Command, TaskExecutor
 
 
-def test_process_store():
+@pytest.mark.asyncio
+async def test_process_store():
     """Test process store"""
     # set class variable to use test command & test task executor
     ProcessStore._command_class = Command
@@ -25,17 +27,19 @@ def test_process_store():
     processes = []
 
     for user_id, info in user_map.items():
-        task_status_id = ProcessStore().submit(
-            payload={
-                "command": info["command"],
-                "output_document_id": ObjectId(),
-                "output_collection_name": "some_collection",
-                "user_id": user_id,
-            }
+        task_status_id = await ProcessStore().submit(
+            payload=json.dumps(
+                {
+                    "command": info["command"],
+                    "output_document_id": str(ObjectId()),
+                    "output_collection_name": "some_collection",
+                    "user_id": str(user_id),
+                }
+            )
         )
 
         # test get
-        process = ProcessStore().get(user_id=user_id, task_status_id=task_status_id)
+        process = await ProcessStore().get(user_id=user_id, task_status_id=task_status_id)
         processes.append(process)
         assert isinstance(process, Process)
         # check process is running
@@ -44,7 +48,7 @@ def test_process_store():
 
     # test list
     for user_id in user_map.keys():
-        task_status_id_process_pairs = ProcessStore().list(user_id)
+        task_status_id_process_pairs = await ProcessStore().list(user_id)
         assert len(task_status_id_process_pairs) == 1
         assert task_status_id_process_pairs[0][0] == user_task_status_pid_map[user_id][0]
         assert task_status_id_process_pairs[0][1].pid == user_task_status_pid_map[user_id][1]
@@ -55,6 +59,6 @@ def test_process_store():
 
     # check process exitcode
     for user_id, (task_status_id, _) in user_task_status_pid_map.items():
-        process = ProcessStore().get(user_id=user_id, task_status_id=task_status_id)
+        process = await ProcessStore().get(user_id=user_id, task_status_id=task_status_id)
         assert isinstance(process, Process)
         assert process.exitcode == user_map[user_id]["exitcode"]

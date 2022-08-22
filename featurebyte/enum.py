@@ -142,3 +142,11 @@ class InternalName(str, Enum):
     ENTITY_TABLE_NAME = "__FB_ENTITY_TABLE_NAME"
     ENTITY_TABLE_START_DATE = "__FB_ENTITY_TABLE_START_DATE"
     ENTITY_TABLE_END_DATE = "__FB_ENTITY_TABLE_END_DATE"
+
+
+class WorkerCommand(str, Enum):
+    """
+    Command names for worker tasks
+    """
+
+    FEATURE_JOB_SETTING_ANALYSIS_CREATE = "FEATURE_JOB_SETTING_ANALYSIS_CREATE"

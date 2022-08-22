@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Optional, Type
 
+import json
 from enum import Enum
 from multiprocessing import Process
 
@@ -26,30 +27,33 @@ class ProcessStore(metaclass=SingletonMeta):
     _command_class: Type[Enum] = Command
     _task_executor: Callable[..., Any] = TaskExecutor
 
-    def submit(self, payload: dict[str, Any]) -> ObjectId:
+    async def submit(self, payload: str) -> ObjectId:
         """
         Submit payload to initiate a new process
 
         Parameters
         ----------
-        payload: dict[str, Any]
-            Payload used to initiate the process
+        payload: str
+            JSON payload used to initiate the process
 
         Returns
         -------
         ObjectId
         """
         task_status_id = ObjectId()
-        user_id = payload["user_id"]
+        payload_dict = json.loads(payload)
+        user_id = ObjectId(payload_dict["user_id"])
         progress_queue = GlobalProgress().get_progress(
             user_id=user_id, task_status_id=task_status_id
         )
-        process = Process(target=self._task_executor, args=(payload, progress_queue), daemon=True)
+        process = Process(
+            target=self._task_executor, args=(payload_dict, progress_queue), daemon=True
+        )
         process.start()
         self._store[(user_id, task_status_id)] = process
         return task_status_id
 
-    def get(self, user_id: Optional[ObjectId], task_status_id: ObjectId) -> Optional[Process]:
+    async def get(self, user_id: Optional[ObjectId], task_status_id: ObjectId) -> Optional[Process]:
         """
         Retrieve process given user_id and task_status_id
 
@@ -67,7 +71,7 @@ class ProcessStore(metaclass=SingletonMeta):
         key_pair = (user_id, task_status_id)
         return self._store.get(key_pair)
 
-    def list(self, user_id: Optional[ObjectId]) -> list[tuple[ObjectId, Process]]:
+    async def list(self, user_id: Optional[ObjectId]) -> list[tuple[ObjectId, Process]]:
         """
         List process of the given user
 

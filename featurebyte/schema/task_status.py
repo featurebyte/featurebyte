@@ -11,13 +11,24 @@ from pydantic import Field
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.routes.common.schema import PaginationMixin
 
+TaskId = Union[PydanticObjectId, UUID]
+
+
+class TaskSubmission(FeatureByteBaseModel):
+    """
+    Task Submission schema
+    """
+
+    task_id: TaskId = Field(allow_mutation=False)
+    output_document_id: PydanticObjectId = Field(allow_mutation=False)
+
 
 class TaskStatus(FeatureByteBaseModel):
     """
     TaskStatus retrieval schema
     """
 
-    id: Union[PydanticObjectId, UUID] = Field(allow_mutation=False)
+    id: TaskId = Field(allow_mutation=False)
     status: Literal[
         "PENDING",
         "RECEIVED",
