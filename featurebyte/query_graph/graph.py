@@ -10,24 +10,11 @@ from collections import defaultdict
 
 from pydantic import Field, validator
 
+from featurebyte.common.singleton import SingletonMeta
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.util import hash_node
-
-
-class SingletonMeta(type):
-    """
-    Singleton Metaclass for Singleton construction
-    """
-
-    _instances: dict[Any, Any] = {}
-
-    def __call__(cls, *args: Any, **kwargs: Any) -> Any:
-        if cls not in cls._instances:
-            instance = super().__call__(*args, **kwargs)
-            cls._instances[cls] = instance
-        return cls._instances[cls]
 
 
 class Node(FeatureByteBaseModel):

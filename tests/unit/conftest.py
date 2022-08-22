@@ -492,7 +492,6 @@ def mock_snowflake_feature_list_model(
 
     mock_feature_list = ExtendedFeatureListModel(
         name="feature_list1",
-        description="test_description1",
         feature_ids=[feature.id],
         features=[{"id": feature.id, "name": feature.name, "version": feature.version}],
         readiness=FeatureReadiness.DRAFT,

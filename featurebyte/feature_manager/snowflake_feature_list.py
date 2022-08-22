@@ -101,7 +101,7 @@ class FeatureListManagerSnowflake(BaseModel):
         Returns
         -------
             dataframe of the FEATURE_REGISTRY rows with the following columns:
-                NAME, VERSION, DESCRIPTION, READINESS, STATUS, FEATURE_VERSIONS, CREATED_AT
+                NAME, VERSION, READINESS, STATUS, FEATURE_VERSIONS, CREATED_AT
         """
         sql = tm_select_feature_list_registry.render(feature_list_name=feature_list.name)
         if version:
@@ -111,7 +111,7 @@ class FeatureListManagerSnowflake(BaseModel):
 
     def update_feature_list_registry(self, new_feature_list: FeatureListModel) -> None:
         """
-        Update Feature List Registry record. Only readiness, description and status might be updated
+        Update Feature List Registry record. Only readiness and status might be updated
 
         Parameters
         ----------

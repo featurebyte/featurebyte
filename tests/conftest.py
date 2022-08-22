@@ -29,7 +29,6 @@ def feature_model_dict_feature():
     """Fixture for a Feature dict"""
     return {
         "name": "sum_30m",
-        "description": None,
         "var_type": "FLOAT",
         "row_index_lineage": ("groupby_1",),
         "graph": {

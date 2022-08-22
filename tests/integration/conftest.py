@@ -283,7 +283,6 @@ def snowflake_feature(feature_model_dict, snowflake_session, snowflake_feature_s
                 ObjectId("626bccb9697a12204fb22ea3"),
                 ObjectId("726bccb9697a12204fb22ea3"),
             ],
-            "description": "test_description_1",
         }
     )
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
@@ -378,7 +377,6 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config, snowfl
 
     feature_list = ExtendedFeatureListModel(
         name="feature_list1",
-        description="test_description1",
         feature_ids=[feature.id],
         features=[{"id": feature.id, "name": feature.name, "version": feature.version}],
         readiness=FeatureReadiness.DRAFT,

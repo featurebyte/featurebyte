@@ -23,7 +23,9 @@ def entity_fixture():
     """
     entity = Entity(name="customer", serving_names=["cust_id"])
     previous_id = entity.id
+    assert entity.saved is False
     entity.save()
+    assert entity.saved is True
     assert entity.id == previous_id
     yield entity
 
@@ -53,6 +55,7 @@ def test_entity__update_name(entity):
     assert entity.name == "customer"
     entity.update_name("Customer")
     assert entity.name == "Customer"
+    assert entity.saved is True
 
     # test update name (non-saved object)
     another_entity = Entity(name="AnotherCustomer", serving_names=["cust"])
@@ -65,6 +68,7 @@ def test_entity__update_name(entity):
     assert another_entity.name == "AnotherCustomer"
     another_entity.update_name("another_customer")
     assert another_entity.name == "another_customer"
+    assert another_entity.saved is False
 
 
 def test_entity_creation(entity):
@@ -177,7 +181,9 @@ def test_get_entity():
 
     # load the entities from the persistent
     exclude = {"created_at": True, "updated_at": True}
-    assert Entity.get("customer").dict(exclude=exclude) == cust_entity.dict(exclude=exclude)
+    get_cust_entity = Entity.get("customer")
+    assert get_cust_entity.saved is True
+    assert get_cust_entity.dict(exclude=exclude) == cust_entity.dict(exclude=exclude)
     assert Entity.get("product").dict(exclude=exclude) == prod_entity.dict(exclude=exclude)
     assert Entity.get("region").dict(exclude=exclude) == region_entity.dict(exclude=exclude)
     assert Entity.get_by_id(id=cust_entity.id) == cust_entity

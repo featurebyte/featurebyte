@@ -229,9 +229,10 @@ async def test_insert_feature_list_registry(
     assert match_count > 0
 
 
+@pytest.mark.asyncio
 @patch("featurebyte.session.base.BaseSession.execute_query")
-def test_insert_feature_list_registry__non_snowflake_feature_store(
-    mock_execute_query, feature_list_model
+async def test_insert_feature_list_registry__non_snowflake_feature_store(
+    mock_execute_query, feature_list_model, get_credential
 ):
     """
     Test insert_feature_registry function (when feature store is not snowflake)
@@ -242,8 +243,8 @@ def test_insert_feature_list_registry__non_snowflake_feature_store(
         details=SQLiteDetails(filename="some_filename"),
     )
 
-    user, get_credential = Mock(), Mock()
-    FeatureListController._insert_feature_list_registry(
+    user = Mock()
+    await FeatureListController._insert_feature_list_registry(
         user=user,
         document=feature_list_model,
         feature_store=feature_store,

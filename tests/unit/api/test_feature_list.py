@@ -9,7 +9,6 @@ from freezegun import freeze_time
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, FeatureList
-from featurebyte.config import Credentials
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
@@ -136,7 +135,6 @@ def test_feature_list_creation__success(production_ready_feature, config, mocked
     flist.get_historical_features(dataframe, credentials=config.credentials)
     assert flist.dict(exclude={"id": True}) == {
         "name": "my_feature_list",
-        "description": None,
         "feature_ids": [production_ready_feature.id],
         "readiness": "PRODUCTION_READY",
         "status": "DRAFT",
@@ -160,7 +158,6 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "description": None,
         "version": "V220501",
         "feature_ids": [
             production_ready_feature.id,
@@ -350,6 +347,7 @@ def test_feature_list__construction(production_ready_feature, draft_feature):
     Test FeatureList creation
     """
     feature_list = FeatureList([production_ready_feature, draft_feature], name="my_feature_list")
+    assert feature_list.saved is False
     assert feature_list.readiness == FeatureReadiness.DRAFT
     assert feature_list.feature_ids == [production_ready_feature.id, draft_feature.id]
     assert feature_list.feature_names == ["production_ready_feature", "draft_feature"]
@@ -390,11 +388,12 @@ def saved_feature_list_fixture(
     _ = mock_insert_feature_list_registry, mock_insert_feature_registry
     snowflake_feature_store.save()
     snowflake_event_data.save()
-    float_feature.save()
     assert float_feature.tabular_source[0] == snowflake_feature_store.id
     feature_list = FeatureList([float_feature], name="my_feature_list")
+    assert feature_list.saved is False
     feature_list_id_before = feature_list.id
     feature_list.save()
+    assert feature_list.saved is True
     assert feature_list.id == feature_list_id_before
     assert feature_list.readiness == FeatureReadiness.DRAFT
     assert feature_list.name == "my_feature_list"
@@ -410,12 +409,14 @@ def test_get_feature_list(saved_feature_list):
     assert loaded_feature_list_by_name == saved_feature_list
     assert loaded_feature_list_by_name.feature_objects == saved_feature_list.feature_objects
     assert loaded_feature_list_by_name.items == saved_feature_list.items
+    assert loaded_feature_list_by_name.saved is True
 
     loaded_feature_list_by_id = FeatureList.get_by_id(saved_feature_list.id)
     assert loaded_feature_list_by_id.dict() == saved_feature_list.dict()
     assert loaded_feature_list_by_id == saved_feature_list
     assert loaded_feature_list_by_id.feature_objects == saved_feature_list.feature_objects
     assert loaded_feature_list_by_id.items == saved_feature_list.items
+    assert loaded_feature_list_by_id.saved is True
 
     # check unexpected exception in get
     with pytest.raises(RecordRetrievalException) as exc:
@@ -442,7 +443,6 @@ def test_get_feature_list(saved_feature_list):
         history_data[0]["current_values"].items()
         > {
             "name": "my_feature_list",
-            "description": None,
             "status": "DRAFT",
             "readiness": "DRAFT",
             "updated_at": None,

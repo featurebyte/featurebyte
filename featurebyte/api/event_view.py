@@ -85,19 +85,6 @@ class EventViewColumn(Series):
             column_entity_map[self.name] = entity_dict["_id"]
             self.parent.column_entity_map = column_entity_map
 
-    @typechecked
-    def add_description(self, description: str) -> None:
-        """
-        Add description to the column at parent frame
-
-        Parameters
-        ----------
-        description: str
-            Description for current series
-        """
-        self._validate_series_to_set_parent_attribute()
-        self.parent.column_description_map[self.name] = description
-
 
 class EventView(ProtectedColumnsQueryObject, Frame):
     """
@@ -107,7 +94,6 @@ class EventView(ProtectedColumnsQueryObject, Frame):
     _series_class = EventViewColumn
 
     column_entity_map: Optional[Dict[StrictStr, PydanticObjectId]] = Field(default=None)
-    column_description_map: Dict[StrictStr, StrictStr] = Field(default_factory=dict)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
     event_data_id: PydanticObjectId = Field(allow_mutation=False)
 

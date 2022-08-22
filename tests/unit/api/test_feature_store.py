@@ -9,7 +9,7 @@ import pytest
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.exception import (
-    DuplicatedRecordException,
+    ObjectHasBeenSavedError,
     RecordCreationException,
     RecordRetrievalException,
 )
@@ -92,9 +92,11 @@ def saved_snowflake_feature_store_fixture(snowflake_feature_store, mock_get_pers
     persistent = mock_get_persistent.return_value
     docs, cnt = asyncio.run(persistent.find(collection_name="feature_store", query_filter={}))
     assert cnt == 0 and docs == []
+    assert snowflake_feature_store.saved is False
 
     # after save
     snowflake_feature_store.save()
+    assert snowflake_feature_store.saved is True
     assert snowflake_feature_store.id == feature_store_id
     assert snowflake_feature_store.created_at is not None
     docs, cnt = asyncio.run(persistent.find(collection_name="feature_store", query_filter={}))
@@ -126,12 +128,9 @@ def test_save__duplicate_record_exception(saved_snowflake_feature_store):
     Test duplicated record exception
     """
     # check conflict
-    with pytest.raises(DuplicatedRecordException) as exc:
+    with pytest.raises(ObjectHasBeenSavedError) as exc:
         saved_snowflake_feature_store.save()
-    expected_msg = (
-        f'FeatureStore (id: "{saved_snowflake_feature_store.id}") already exists. '
-        f'Get the existing object by `FeatureStore.get(name="sf_featurestore")`.'
-    )
+    expected_msg = f'FeatureStore (id: "{saved_snowflake_feature_store.id}") has been saved before.'
     assert expected_msg in str(exc.value)
 
 
@@ -150,6 +149,7 @@ def test_get(saved_snowflake_feature_store):
     Test feature store retrieval
     """
     loaded_feature_store = FeatureStore.get(saved_snowflake_feature_store.name)
+    assert loaded_feature_store.saved is True
     assert loaded_feature_store == saved_snowflake_feature_store
     assert FeatureStore.get_by_id(saved_snowflake_feature_store.id) == saved_snowflake_feature_store
 

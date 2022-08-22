@@ -50,7 +50,6 @@ def test_retrieve_feature_list(
         {
             "NAME": ["feature_list1"],
             "VERSION": ["v1"],
-            "DESCRIPTION": ["test_description1"],
             "READINESS": ["DRAFT"],
             "STATUS": ["DRAFT"],
             "FEATURE_VERSIONS": [[]],

@@ -2,7 +2,7 @@
 Tests for feature preview SQL generation
 """
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
-from tests.helper.helper import assert_equal_with_expected_fixture
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 def test_get_feature_preview_sql(query_graph_with_groupby, update_fixtures):
