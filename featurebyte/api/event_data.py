@@ -3,7 +3,7 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from http import HTTPStatus
 
@@ -14,6 +14,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.util import get_entity
+from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import GetAttrMixin
 from featurebyte.exception import (
@@ -224,30 +225,25 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
 
     @typechecked
     def update_default_feature_job_setting(
-        self, blind_spot: str, frequency: str, time_modulo_frequency: str
+        self, feature_job_setting: Optional[Dict[str, Any]]
     ) -> None:
         """
         Update default feature job setting
 
         Parameters
         ----------
-        blind_spot: str
-            Blind spot parameter
-        frequency: str
-            Frequency parameter
-        time_modulo_frequency: str
-            Time modulo frequency
+        feature_job_setting: Optional[Dict[str, Any]]
+            Feature job setting dictionary contains blind_spot, frequency & time_modulo_frequency keys
 
         Raises
         ------
         RecordUpdateException
             When unexpected record update failure
         """
-        feature_job_setting = FeatureJobSetting(
-            blind_spot=blind_spot,
-            frequency=frequency,
-            time_modulo_frequency=time_modulo_frequency,
-        )
+        if feature_job_setting:
+            _ = validate_job_setting_parameters(**feature_job_setting)
+
+        feature_job_setting = FeatureJobSetting(**feature_job_setting)
         data = EventDataUpdate(default_feature_job_setting=feature_job_setting)
         client = Configurations().get_client()
         response = client.patch(url=f"/event_data/{self.id}", json=data.dict())

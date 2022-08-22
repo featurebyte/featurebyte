@@ -19,7 +19,11 @@ def snowflake_event_view_fixture(snowflake_event_data, config):
     """
     _ = config
     snowflake_event_data.update_default_feature_job_setting(
-        blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        feature_job_setting={
+            "blind_spot": "1m30s",
+            "frequency": "6m",
+            "time_modulo_frequency": "3m",
+        }
     )
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
     yield event_view
@@ -45,7 +49,11 @@ def test_from_event_data(snowflake_event_data):
     entity.save()
     snowflake_event_data.cust_id.as_entity("customer")
     snowflake_event_data.update_default_feature_job_setting(
-        blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        feature_job_setting={
+            "blind_spot": "1m30s",
+            "frequency": "6m",
+            "time_modulo_frequency": "3m",
+        }
     )
     event_view_second = EventView.from_event_data(snowflake_event_data)
     assert event_view_second.column_entity_map == snowflake_event_data.column_entity_map
