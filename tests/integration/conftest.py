@@ -245,6 +245,7 @@ def snowflake_tile(snowflake_session):
         entity_column_names=["PRODUCT_ACTION", "CUST_ID"],
         value_column_names=["VALUE"],
         tile_id="tile_id1",
+        aggregation_id="agg_id1",
     )
 
     yield tile_spec
@@ -305,7 +306,7 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 1800) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("col_float") AS value
+          SUM("col_float") AS value_sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512
         FROM (
             SELECT
               *,
@@ -337,9 +338,10 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
     expected_tile_spec = {
         "blind_spot_second": 600,
         "entity_column_names": ["cust_id"],
-        "value_column_names": ["value"],
+        "value_column_names": ["value_sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512"],
         "frequency_minute": 30,
-        "tile_id": "sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
+        "tile_id": "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
+        "aggregation_id": "sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
         "tile_sql": tile_sql,
         "time_modulo_frequency_second": 300,
         "category_column_name": None,

@@ -4,58 +4,116 @@ On-demand tile computation for feature preview
 from __future__ import annotations
 
 import pandas as pd
+from sqlglot import expressions, parse_one, select
 
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter, TileGenSql
+from featurebyte.query_graph.sql import escape_column_name
 
 
-def construct_on_demand_tile_ctes(
-    graph: QueryGraph,
-    node: Node,
-    point_in_time: str,
-) -> list[tuple[str, str]]:
-    """Construct SQL that computes tiles required for feature preview
+class OnDemandTileComputePlan:
+    """Responsible for generating SQL to compute tiles for preview purpose
 
     Parameters
     ----------
-    graph : QueryGraph
-        Query graph
-    node : Node
-        Query graph node
     point_in_time : str
-        Point in time
-
-    Returns
-    -------
-    list[tuple[str, str]]
+        Point in time value specified when calling preview
     """
-    tile_gen_info_lst = get_tile_gen_info(graph, node)
-    cte_statements = []
 
-    for tile_info in tile_gen_info_lst:
-        # Convert template SQL with concrete start and end timestamps, based on the requested
-        # point-in-time and feature window sizes
-        tile_sql_with_start_end = get_tile_sql_from_point_in_time(
-            sql_template=tile_info.sql,
-            point_in_time=point_in_time,
-            frequency=tile_info.frequency,
-            time_modulo_frequency=tile_info.time_modulo_frequency,
-            blind_spot=tile_info.blind_spot,
-            windows=tile_info.windows,
-        )
-        # Include global tile index that would have been computed by F_TIMESTAMP_TO_INDEX UDF during
-        # scheduled tile jobs
-        final_tile_sql = get_tile_sql_parameterized_by_job_settings(
-            tile_sql_with_start_end,
-            frequency=tile_info.frequency,
-            time_modulo_frequency=tile_info.time_modulo_frequency,
-            blind_spot=tile_info.blind_spot,
-        )
-        tile_table_id = tile_info.tile_table_id
-        cte_statements.append((tile_table_id, final_tile_sql))
+    def __init__(self, point_in_time: str):
+        self.point_in_time = point_in_time
+        self.tile_sqls: dict[str, expressions.Expression] = {}
+        self.prev_aliases: dict[str, str] = {}
+        self.processed_agg_ids: set[str] = set()
 
-    return cte_statements
+    def process_node(self, graph: QueryGraph, node: Node) -> None:
+        """Update state given a query graph node
+
+        Parameters
+        ----------
+        graph : QueryGraph
+            Query graph
+        node : Node
+            Query graph node
+        """
+        tile_gen_info_lst = get_tile_gen_info(graph, node)
+
+        for tile_info in tile_gen_info_lst:
+
+            if tile_info.aggregation_id in self.processed_agg_ids:
+                continue
+
+            # Convert template SQL with concrete start and end timestamps, based on the requested
+            # point-in-time and feature window sizes
+            tile_sql_with_start_end = get_tile_sql_from_point_in_time(
+                sql_template=tile_info.sql,
+                point_in_time=self.point_in_time,
+                frequency=tile_info.frequency,
+                time_modulo_frequency=tile_info.time_modulo_frequency,
+                blind_spot=tile_info.blind_spot,
+                windows=tile_info.windows,
+            )
+            # Include global tile index that would have been computed by F_TIMESTAMP_TO_INDEX UDF
+            # during scheduled tile jobs
+            final_tile_sql = get_tile_sql_parameterized_by_job_settings(
+                tile_sql_with_start_end,
+                frequency=tile_info.frequency,
+                time_modulo_frequency=tile_info.time_modulo_frequency,
+                blind_spot=tile_info.blind_spot,
+            )
+
+            # Build wide tile table by joining tile sqls with the same tile_table_id
+            tile_table_id = tile_info.tile_table_id
+            agg_id = tile_info.aggregation_id
+            tile_sql_expr = parse_one(final_tile_sql)
+            assert isinstance(tile_sql_expr, expressions.Subqueryable)
+
+            if tile_table_id not in self.tile_sqls:
+                # New tile table - get the tile index column, entity columns and tile value columns
+                keys = [f"{agg_id}.{escape_column_name(key)}" for key in tile_info.entity_columns]
+                if tile_info.value_by_column is not None:
+                    keys.append(f"{agg_id}.{escape_column_name(tile_info.value_by_column)}")
+                tile_sql = select(f"{agg_id}.INDEX", *keys, *tile_info.tile_value_columns).from_(
+                    tile_sql_expr.subquery(alias=agg_id)
+                )
+                self.tile_sqls[tile_table_id] = tile_sql
+            else:
+                # Tile table already exist - get the new tile value columns by doing a join. Tile
+                # index column and entity columns exist already.
+                prev_alias = self.prev_aliases[tile_table_id]
+                join_conditions = [f"{prev_alias}.INDEX = {agg_id}.INDEX"]
+                for key in tile_info.entity_columns:
+                    join_conditions.append(f"{prev_alias}.{key} = {agg_id}.{key}")
+                # Tile sqls with the same tile_table_id should generate output with identical set of
+                # tile indices and entity columns (they are derived from the same event data using
+                # the same entity columns and feature job settings). Hence, any join_type will work
+                # and "inner" is used for simplicity.
+                self.tile_sqls[tile_table_id] = (
+                    self.tile_sqls[tile_table_id]
+                    .join(
+                        tile_sql_expr.subquery(),
+                        join_type="inner",
+                        join_alias=agg_id,
+                        on=expressions.and_(*join_conditions),
+                    )
+                    .select(*tile_info.tile_value_columns)
+                )
+
+            self.prev_aliases[tile_table_id] = agg_id
+            self.processed_agg_ids.add(agg_id)
+
+    def construct_on_demand_tile_ctes(self) -> list[tuple[str, str]]:
+        """Construct the CTE statements that would compute all the required tiles
+
+        Returns
+        -------
+        list[tuple[str, str]]
+        """
+        cte_statements = []
+        for tile_table_id, tile_sql_expr in self.tile_sqls.items():
+            cte_statements.append((tile_table_id, tile_sql_expr.sql(pretty=True)))
+        return cte_statements
 
 
 def get_tile_gen_info(graph: QueryGraph, node: Node) -> list[TileGenSql]:

@@ -46,6 +46,7 @@ class TileSpec(FeatureByteBaseModel):
     entity_column_names: List[str]
     value_column_names: List[str]
     tile_id: str
+    aggregation_id: str
     category_column_name: Optional[str]
 
     @validator("tile_id")

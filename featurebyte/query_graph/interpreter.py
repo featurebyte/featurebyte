@@ -186,6 +186,7 @@ class TileGenSql:
 
     # pylint: disable=too-many-instance-attributes
     tile_table_id: str
+    aggregation_id: str
     sql: str
     columns: list[str]
     entity_columns: list[str]
@@ -289,6 +290,7 @@ class TileSQLGenerator:
         tile_value_columns = [spec.tile_column_name for spec in groupby_sql_node.tile_specs]
         info = TileGenSql(
             tile_table_id=tile_table_id,
+            aggregation_id=groupby_node.parameters["aggregation_id"],
             sql=sql.sql(pretty=True),
             columns=groupby_sql_node.columns,
             entity_columns=entity_columns,

@@ -1,64 +1,78 @@
-WITH avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f AS (
-    SELECT *, F_TIMESTAMP_TO_INDEX(  __FB_TILE_START_DATE_COLUMN,  1800,  900,  60) AS "INDEX" FROM (
-        SELECT
-  TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
-  "cust_id",
-  SUM("a") AS sum_value,
-  COUNT("a") AS count_value
+WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d AS (SELECT
+  avg_53307fe1790a553cf1ca703e44b92619ad86dc8f.INDEX,
+  avg_53307fe1790a553cf1ca703e44b92619ad86dc8f."cust_id",
+  sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f,
+  count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f,
+  value_max_5280d439982d66d99334dae59da8226d6b786fb6
 FROM (
     SELECT
       *,
-      FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMP))) / 3600) AS tile_index
+      F_TIMESTAMP_TO_INDEX(__FB_TILE_START_DATE_COLUMN, 1800, 900, 60) AS "INDEX"
     FROM (
         SELECT
-          "ts" AS "ts",
-          "cust_id" AS "cust_id",
-          "a" AS "a",
-          "b" AS "b",
-          ("a" + "b") AS "c"
-        FROM "db"."public"."event_table"
-        WHERE
-          "ts" >= CAST('2022-04-18 09:15:00' AS TIMESTAMP)
-          AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          "cust_id",
+          SUM("a") AS sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f,
+          COUNT("a") AS count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMP))) / 3600) AS tile_index
+            FROM (
+                SELECT
+                  "ts" AS "ts",
+                  "cust_id" AS "cust_id",
+                  "a" AS "a",
+                  "b" AS "b",
+                  ("a" + "b") AS "c"
+                FROM "db"."public"."event_table"
+                WHERE
+                  "ts" >= CAST('2022-04-18 09:15:00' AS TIMESTAMP)
+                  AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
+            )
+        )
+        GROUP BY
+          tile_index,
+          "cust_id"
+        ORDER BY
+          tile_index
     )
-)
-GROUP BY
-  tile_index,
-  "cust_id"
-ORDER BY
-  tile_index
-    )
-    ),
-max_f3600_m1800_b900_5280d439982d66d99334dae59da8226d6b786fb6 AS (
-    SELECT *, F_TIMESTAMP_TO_INDEX(  __FB_TILE_START_DATE_COLUMN,  1800,  900,  60) AS "INDEX" FROM (
-        SELECT
-  TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST('2022-04-18 21:15:00' AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
-  "cust_id",
-  MAX("a") AS value
-FROM (
+) AS avg_53307fe1790a553cf1ca703e44b92619ad86dc8f
+INNER JOIN (
     SELECT
       *,
-      FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 21:15:00' AS TIMESTAMP))) / 3600) AS tile_index
+      F_TIMESTAMP_TO_INDEX(__FB_TILE_START_DATE_COLUMN, 1800, 900, 60) AS "INDEX"
     FROM (
         SELECT
-          "ts" AS "ts",
-          "cust_id" AS "cust_id",
-          "a" AS "a",
-          "b" AS "b",
-          ("a" + "b") AS "c"
-        FROM "db"."public"."event_table"
-        WHERE
-          "ts" >= CAST('2022-04-18 21:15:00' AS TIMESTAMP)
-          AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST('2022-04-18 21:15:00' AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          "cust_id",
+          MAX("a") AS value_max_5280d439982d66d99334dae59da8226d6b786fb6
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 21:15:00' AS TIMESTAMP))) / 3600) AS tile_index
+            FROM (
+                SELECT
+                  "ts" AS "ts",
+                  "cust_id" AS "cust_id",
+                  "a" AS "a",
+                  "b" AS "b",
+                  ("a" + "b") AS "c"
+                FROM "db"."public"."event_table"
+                WHERE
+                  "ts" >= CAST('2022-04-18 21:15:00' AS TIMESTAMP)
+                  AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
+            )
+        )
+        GROUP BY
+          tile_index,
+          "cust_id"
+        ORDER BY
+          tile_index
     )
-)
-GROUP BY
-  tile_index,
-  "cust_id"
-ORDER BY
-  tile_index
-    )
-    ),
+) AS max_5280d439982d66d99334dae59da8226d6b786fb6
+  ON avg_53307fe1790a553cf1ca703e44b92619ad86dc8f.INDEX = max_5280d439982d66d99334dae59da8226d6b786fb6.INDEX
+  AND avg_53307fe1790a553cf1ca703e44b92619ad86dc8f.cust_id = max_5280d439982d66d99334dae59da8226d6b786fb6.cust_id),
 REQUEST_TABLE AS (SELECT
   CAST('2022-04-20 10:00:00' AS TIMESTAMP) AS "POINT_IN_TIME",
   'C1' AS "CUSTOMER_ID"),
@@ -125,18 +139,19 @@ REQUEST_TABLE_W129600_F3600_BS900_M1800_CUSTOMER_ID AS (
 _FB_AGGREGATED AS (SELECT
   REQ."POINT_IN_TIME",
   REQ."CUSTOMER_ID",
-  "T0"."agg_w7200_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f" AS "agg_w7200_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
-  "T1"."agg_w172800_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f" AS "agg_w172800_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f",
-  "T2"."agg_w7200_max_f3600_m1800_b900_5280d439982d66d99334dae59da8226d6b786fb6" AS "agg_w7200_max_f3600_m1800_b900_5280d439982d66d99334dae59da8226d6b786fb6",
-  "T3"."agg_w129600_max_f3600_m1800_b900_5280d439982d66d99334dae59da8226d6b786fb6" AS "agg_w129600_max_f3600_m1800_b900_5280d439982d66d99334dae59da8226d6b786fb6"
+  "T0"."agg_w7200_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f" AS "agg_w7200_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+  "T0"."agg_w7200_max_5280d439982d66d99334dae59da8226d6b786fb6" AS "agg_w7200_max_5280d439982d66d99334dae59da8226d6b786fb6",
+  "T1"."agg_w172800_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f" AS "agg_w172800_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+  "T2"."agg_w129600_max_5280d439982d66d99334dae59da8226d6b786fb6" AS "agg_w129600_max_5280d439982d66d99334dae59da8226d6b786fb6"
 FROM REQUEST_TABLE AS REQ
 LEFT JOIN (
     SELECT
       REQ.POINT_IN_TIME,
       REQ."CUSTOMER_ID",
-      SUM(sum_value) / SUM(count_value) AS "agg_w7200_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f"
+      SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) AS "agg_w7200_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+      MAX(value_max_5280d439982d66d99334dae59da8226d6b786fb6) AS "agg_w7200_max_5280d439982d66d99334dae59da8226d6b786fb6"
     FROM REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID AS REQ
-    INNER JOIN avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f AS TILE
+    INNER JOIN fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d AS TILE
       ON REQ.REQ_TILE_INDEX = TILE.INDEX
       AND REQ."CUSTOMER_ID" = TILE."cust_id"
     GROUP BY
@@ -149,9 +164,9 @@ LEFT JOIN (
     SELECT
       REQ.POINT_IN_TIME,
       REQ."CUSTOMER_ID",
-      SUM(sum_value) / SUM(count_value) AS "agg_w172800_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f"
+      SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) AS "agg_w172800_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f"
     FROM REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID AS REQ
-    INNER JOIN avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f AS TILE
+    INNER JOIN fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d AS TILE
       ON REQ.REQ_TILE_INDEX = TILE.INDEX
       AND REQ."CUSTOMER_ID" = TILE."cust_id"
     GROUP BY
@@ -164,9 +179,9 @@ LEFT JOIN (
     SELECT
       REQ.POINT_IN_TIME,
       REQ."CUSTOMER_ID",
-      MAX(value) AS "agg_w7200_max_f3600_m1800_b900_5280d439982d66d99334dae59da8226d6b786fb6"
-    FROM REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID AS REQ
-    INNER JOIN max_f3600_m1800_b900_5280d439982d66d99334dae59da8226d6b786fb6 AS TILE
+      MAX(value_max_5280d439982d66d99334dae59da8226d6b786fb6) AS "agg_w129600_max_5280d439982d66d99334dae59da8226d6b786fb6"
+    FROM REQUEST_TABLE_W129600_F3600_BS900_M1800_CUSTOMER_ID AS REQ
+    INNER JOIN fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d AS TILE
       ON REQ.REQ_TILE_INDEX = TILE.INDEX
       AND REQ."CUSTOMER_ID" = TILE."cust_id"
     GROUP BY
@@ -174,27 +189,12 @@ LEFT JOIN (
       REQ."CUSTOMER_ID"
 ) AS T2
   ON REQ.POINT_IN_TIME = T2.POINT_IN_TIME
-  AND REQ."CUSTOMER_ID" = T2."CUSTOMER_ID"
-LEFT JOIN (
-    SELECT
-      REQ.POINT_IN_TIME,
-      REQ."CUSTOMER_ID",
-      MAX(value) AS "agg_w129600_max_f3600_m1800_b900_5280d439982d66d99334dae59da8226d6b786fb6"
-    FROM REQUEST_TABLE_W129600_F3600_BS900_M1800_CUSTOMER_ID AS REQ
-    INNER JOIN max_f3600_m1800_b900_5280d439982d66d99334dae59da8226d6b786fb6 AS TILE
-      ON REQ.REQ_TILE_INDEX = TILE.INDEX
-      AND REQ."CUSTOMER_ID" = TILE."cust_id"
-    GROUP BY
-      REQ.POINT_IN_TIME,
-      REQ."CUSTOMER_ID"
-) AS T3
-  ON REQ.POINT_IN_TIME = T3.POINT_IN_TIME
-  AND REQ."CUSTOMER_ID" = T3."CUSTOMER_ID")
+  AND REQ."CUSTOMER_ID" = T2."CUSTOMER_ID")
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "agg_w7200_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f" AS "a_2h_average",
-  "agg_w172800_avg_f3600_m1800_b900_53307fe1790a553cf1ca703e44b92619ad86dc8f" AS "a_48h_average",
-  "agg_w7200_max_f3600_m1800_b900_5280d439982d66d99334dae59da8226d6b786fb6" AS "a_2h_max",
-  "agg_w129600_max_f3600_m1800_b900_5280d439982d66d99334dae59da8226d6b786fb6" AS "a_36h_max"
+  "agg_w7200_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f" AS "a_2h_average",
+  "agg_w172800_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f" AS "a_48h_average",
+  "agg_w7200_max_5280d439982d66d99334dae59da8226d6b786fb6" AS "a_2h_max",
+  "agg_w129600_max_5280d439982d66d99334dae59da8226d6b786fb6" AS "a_36h_max"
 FROM _FB_AGGREGATED AS AGG

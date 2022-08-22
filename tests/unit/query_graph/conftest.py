@@ -7,7 +7,7 @@ from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
-from featurebyte.query_graph.util import get_tile_table_identifier
+from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
 
 @pytest.fixture(name="global_graph")
@@ -123,6 +123,9 @@ def query_graph_with_groupby_fixture(query_graph_and_assign_node, groupby_node_p
         node_params={
             **node_params,
             "tile_id": get_tile_table_identifier(
+                {"table_name": "fake_transactions_table"}, node_params
+            ),
+            "aggregation_id": get_aggregation_identifier(
                 graph.node_name_to_ref[assign_node.name], node_params
             ),
         },
@@ -143,6 +146,9 @@ def query_graph_with_category_groupby_fixture(query_graph_and_assign_node, group
         node_params={
             **node_params,
             "tile_id": get_tile_table_identifier(
+                {"table_name": "fake_transactions_table"}, node_params
+            ),
+            "aggregation_id": get_aggregation_identifier(
                 graph.node_name_to_ref[assign_node.name], node_params
             ),
         },
@@ -165,6 +171,9 @@ def query_graph_with_similar_groupby_nodes(
         node_params={
             **groupby_node_params,
             "tile_id": get_tile_table_identifier(
+                {"table_name": "fake_transactions_table"}, groupby_node_params
+            ),
+            "aggregation_id": get_aggregation_identifier(
                 graph.node_name_to_ref[assign_node.name], groupby_node_params
             ),
         },
@@ -176,6 +185,9 @@ def query_graph_with_similar_groupby_nodes(
         node_params={
             **groupby_node_params_sum_agg,
             "tile_id": get_tile_table_identifier(
+                {"table_name": "fake_transactions_table"}, groupby_node_params_sum_agg
+            ),
+            "aggregation_id": get_aggregation_identifier(
                 graph.node_name_to_ref[assign_node.name], groupby_node_params_sum_agg
             ),
         },
@@ -209,6 +221,9 @@ def complex_feature_query_graph_fixture(query_graph_with_groupby):
         node_params={
             **node_params,
             "tile_id": get_tile_table_identifier(
+                {"table_name": "fake_transactions_table"}, node_params
+            ),
+            "aggregation_id": get_aggregation_identifier(
                 graph.node_name_to_ref[assign_node.name], node_params
             ),
         },

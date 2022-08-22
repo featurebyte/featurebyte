@@ -16,7 +16,7 @@ from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
-from featurebyte.query_graph.util import get_tile_table_identifier
+from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
 
 class EventViewGroupBy(OpsMixin):
@@ -118,7 +118,7 @@ class EventViewGroupBy(OpsMixin):
         }
 
     def _prepare_node_and_column_metadata(
-        self, node_params: dict[str, Any], tile_id: str | None
+        self, node_params: dict[str, Any], tile_id: str | None, aggregation_id: str | None
     ) -> tuple[Node, dict[str, DBVarType], dict[str, tuple[str, ...]]]:
         """
         Insert a groupby node into global graph & return the node and some column metadata
@@ -129,6 +129,8 @@ class EventViewGroupBy(OpsMixin):
             Groupby node parameters
         tile_id: str | None
             Tile ID
+        aggregation_id: str | None
+            Aggregation ID
 
         Returns
         -------
@@ -141,7 +143,7 @@ class EventViewGroupBy(OpsMixin):
         """
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,
-            node_params={**node_params, "tile_id": tile_id},
+            node_params={**node_params, "tile_id": tile_id, "aggregation_id": aggregation_id},
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[self.obj.node],
         )
@@ -203,14 +205,19 @@ class EventViewGroupBy(OpsMixin):
         # generate updated tile id. Finally, insert a new groupby node into the graph (actual
         # groupby node to be used).
         temp_groupby_node, column_var_type_map, _ = self._prepare_node_and_column_metadata(
-            node_params, None
+            node_params, None, None
         )
         pruned_graph, node_name_map = GlobalQueryGraph().prune(
             target_node=temp_groupby_node,
             target_columns=set(column_var_type_map.keys()),
         )
         input_nodes = pruned_graph.backward_edges[node_name_map[temp_groupby_node.name]]
+        table_details_dict = self.obj.tabular_source[1].dict()
         tile_id = get_tile_table_identifier(
+            table_details_dict=table_details_dict,
+            parameters=node_params,
+        )
+        aggregation_id = get_aggregation_identifier(
             transformations_hash=pruned_graph.node_name_to_ref[input_nodes[0]],
             parameters=node_params,
         )
@@ -218,7 +225,7 @@ class EventViewGroupBy(OpsMixin):
             groupby_node,
             column_var_type_map,
             column_lineage_map,
-        ) = self._prepare_node_and_column_metadata(node_params, tile_id)
+        ) = self._prepare_node_and_column_metadata(node_params, tile_id, aggregation_id)
 
         items: list[Feature | BaseFeatureGroup] = []
         for feature_name in feature_names:

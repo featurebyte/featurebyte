@@ -85,6 +85,7 @@ class AggregationSpec:
     blind_spot: int
     time_modulo_frequency: int
     tile_table_id: str
+    aggregation_id: str
     keys: list[str]
     serving_names: list[str]
     value_by: str | None
@@ -100,7 +101,7 @@ class AggregationSpec:
         str
             Column name of the aggregated result
         """
-        return f"agg_w{self.window}_{self.tile_table_id}"
+        return f"agg_w{self.window}_{self.aggregation_id}"
 
     @classmethod
     def from_groupby_query_node(
@@ -123,6 +124,7 @@ class AggregationSpec:
             List of AggregationSpec
         """
         tile_table_id = groupby_node.parameters["tile_id"]
+        aggregation_id = groupby_node.parameters["aggregation_id"]
         params = groupby_node.parameters
 
         serving_names = params["serving_names"]
@@ -139,10 +141,11 @@ class AggregationSpec:
                 time_modulo_frequency=params["time_modulo_frequency"],
                 blind_spot=params["blind_spot"],
                 tile_table_id=tile_table_id,
+                aggregation_id=aggregation_id,
                 keys=params["keys"],
                 serving_names=serving_names,
                 value_by=params["value_by"],
-                merge_expr=get_aggregator(params["agg_func"]).merge(),
+                merge_expr=get_aggregator(params["agg_func"]).merge(aggregation_id),
                 feature_name=feature_name,
             )
             aggregation_specs.append(agg_spec)

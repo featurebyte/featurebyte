@@ -3,7 +3,7 @@ Module with logic related to feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Iterable, Optional, Tuple
 
 from abc import ABC, abstractmethod
 
@@ -33,6 +33,8 @@ BlindSpot = int
 TimeModuloFreq = int
 AggSpecEntityIDs = Tuple[str, ...]
 TileIndicesIdType = Tuple[Window, Frequency, BlindSpot, TimeModuloFreq, AggSpecEntityIDs]
+TileIdType = str
+AggregationSpecIdType = Tuple[TileIdType, Window, AggSpecEntityIDs]
 
 
 class RequestTablePlan(ABC):
@@ -237,13 +239,73 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
         return sql
 
 
+class AggregationSpecSet:
+    """Responsible for keeping track of AggregationSpec that arises from query graph nodes"""
+
+    def __init__(self) -> None:
+        self.aggregation_specs: dict[AggregationSpecIdType, list[AggregationSpec]] = {}
+        self.processed_agg_specs: dict[AggregationSpecIdType, set[str]] = {}
+
+    def add_aggregation_spec(self, aggregation_spec: AggregationSpec) -> None:
+        """Update state given an AggregationSpec
+
+        Some aggregations can be shared by different features, e.g. "transaction_type (7 day
+        entropy)" and "transaction_type (7 day most frequent)" can both reuse the aggregated result
+        of "transaction (7 day category count by transaction_type)". This information is tracked
+        using the aggregation_id attribute of AggregationSpec - the AggregationSpec for all of these
+        three features will have the same aggregation_id.
+
+        Parameters
+        ----------
+        aggregation_spec : AggregationSpec
+            Aggregation_specification
+        """
+        # AggregationSpec is window size specific. Two AggregationSpec with different window sizes
+        # require two different groupbys and left joins in the resulting SQL. Include serving_names
+        # here because each group of AggregationSpecs will be joined with exactly one expanded
+        # request table, and an expanded request table is specific to serving names
+        key = (
+            aggregation_spec.tile_table_id,
+            aggregation_spec.window,
+            tuple(aggregation_spec.serving_names),
+        )
+
+        # Initialize containers for new tile_table_id and window combination
+        if key not in self.aggregation_specs:
+            self.aggregation_specs[key] = []
+            self.processed_agg_specs[key] = set()
+
+        agg_id = aggregation_spec.aggregation_id
+        # Skip if the same AggregationSpec is already seen
+        if agg_id in self.processed_agg_specs[key]:
+            return
+
+        # Update containers
+        self.aggregation_specs[key].append(aggregation_spec)
+        self.processed_agg_specs[key].add(agg_id)
+
+    def get_grouped_aggregation_specs(self) -> Iterable[list[AggregationSpec]]:
+        """Yields groups of AggregationSpec
+
+        Each group of AggregationSpec has the same tile_table_id. Their tile values can be
+        aggregated in a single GROUP BY clause.
+
+        Yields
+        ------
+        list[AggregationSpec]
+            Group of AggregationSpec
+        """
+        for agg_specs in self.aggregation_specs.values():
+            yield agg_specs
+
+
 class FeatureExecutionPlan(ABC):
     """Responsible for constructing the SQL to compute features by aggregating tiles"""
 
     AGGREGATION_TABLE_NAME = "_FB_AGGREGATED"
 
     def __init__(self) -> None:
-        self.aggregation_specs: dict[tuple[str, int], AggregationSpec] = {}
+        self.aggregation_spec_set = AggregationSpecSet()
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.request_table_plan: RequestTablePlan = SnowflakeRequestTablePlan()
 
@@ -256,8 +318,9 @@ class FeatureExecutionPlan(ABC):
         set[str]
         """
         out = set()
-        for agg_spec in self.aggregation_specs.values():
-            out.update(agg_spec.serving_names)
+        for agg_specs in self.aggregation_spec_set.get_grouped_aggregation_specs():
+            for agg_spec in agg_specs:
+                out.update(agg_spec.serving_names)
         return out
 
     def add_aggregation_spec(self, aggregation_spec: AggregationSpec) -> None:
@@ -268,8 +331,7 @@ class FeatureExecutionPlan(ABC):
         aggregation_spec : AggregationSpec
             Aggregation specification
         """
-        key = self.get_aggregation_spec_key(aggregation_spec)
-        self.aggregation_specs[key] = aggregation_spec
+        self.aggregation_spec_set.add_aggregation_spec(aggregation_spec)
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
 
     def add_feature_spec(self, feature_spec: FeatureSpec) -> None:
@@ -290,30 +352,6 @@ class FeatureExecutionPlan(ABC):
             raise ValueError(f"Duplicated feature name: {key}")
         self.feature_specs[key] = feature_spec
 
-    @staticmethod
-    def get_aggregation_spec_key(aggregation_spec: AggregationSpec) -> tuple[str, int]:
-        """Get a key for a AggregationSpec that determines whether it can be shared
-
-        Some aggregations can be shared by different features, e.g. "transaction_type (7 day
-        entropy)" and "transaction_type (7 day most frequent)" can both reuse the aggregated result
-        of "transaction (7 day category count by transaction_type)".
-
-        Note that this is different from tile table reuse. Tile table reuse depends on
-        tile_table_id and does not consider feature window size.
-
-        Parameters
-        ----------
-        aggregation_spec : AggregationSpec
-            Aggregation_specification
-
-        Returns
-        -------
-        tuple
-        """
-        tile_table_id = aggregation_spec.tile_table_id
-        window = aggregation_spec.window
-        return tile_table_id, window
-
     @classmethod
     def construct_aggregation_sql(
         cls,
@@ -323,8 +361,8 @@ class FeatureExecutionPlan(ABC):
         keys: list[str],
         serving_names: list[str],
         value_by: str | None,
-        merge_expr: str,
-        agg_result_name: str,
+        merge_exprs: list[str],
+        agg_result_names: list[str],
     ) -> expressions.Select:
         """Construct SQL code for one specific aggregation
 
@@ -370,10 +408,10 @@ class FeatureExecutionPlan(ABC):
             List of serving name columns
         value_by : str | None
             Optional category parameter for the groupby operation
-        merge_expr : str
-            SQL expression that aggregates intermediate values stored in tile table
-        agg_result_name : str
-            Column name of the aggregated result
+        merge_exprs : list[str]
+            SQL expressions that aggregates intermediate values stored in tile table
+        agg_result_names : list[str]
+            Column names of the aggregated results
 
         Returns
         -------
@@ -390,16 +428,23 @@ class FeatureExecutionPlan(ABC):
             group_by_keys.append(f"REQ.{serving_name}")
 
         if value_by is None:
-            inner_agg_result_name = agg_result_name
+            inner_agg_result_names = agg_result_names
             inner_group_by_keys = group_by_keys
         else:
-            inner_agg_result_name = f"inner_{agg_result_name}"
+            inner_agg_result_names = [
+                f"inner_{agg_result_name}" for agg_result_name in agg_result_names
+            ]
             inner_group_by_keys = group_by_keys + [f"TILE.{escape_column_name(value_by)}"]
 
         inner_agg_expr = (
             select(
                 *inner_group_by_keys,
-                f'{merge_expr} AS "{inner_agg_result_name}"',
+                *[
+                    f'{merge_expr} AS "{inner_agg_result_name}"'
+                    for merge_expr, inner_agg_result_name in zip(
+                        merge_exprs, inner_agg_result_names
+                    )
+                ],
             )
             .from_(f"{expanded_request_table_name} AS REQ")
             .join(
@@ -418,8 +463,8 @@ class FeatureExecutionPlan(ABC):
                 point_in_time_column=point_in_time_column,
                 serving_names=serving_names,
                 value_by=value_by,
-                agg_result_name=agg_result_name,
-                inner_agg_result_name=inner_agg_result_name,
+                agg_result_names=agg_result_names,
+                inner_agg_result_names=inner_agg_result_names,
                 inner_agg_expr=inner_agg_expr,
             )
 
@@ -432,8 +477,8 @@ class FeatureExecutionPlan(ABC):
         point_in_time_column: str,
         serving_names: list[str],
         value_by: str,
-        agg_result_name: str,
-        inner_agg_result_name: str,
+        agg_result_names: list[str],
+        inner_agg_result_names: list[str],
         inner_agg_expr: expressions.Select,
     ) -> expressions.Select:
         """Aggregate per category values into key value pairs
@@ -448,10 +493,10 @@ class FeatureExecutionPlan(ABC):
             List of serving name columns
         value_by : str | None
             Optional category parameter for the groupby operation
-        agg_result_name : str
-            Column name of the aggregated result
-        inner_agg_result_name : str
-            Column name of the intermediate aggregation result name (one value per category - this
+        agg_result_names : list[str]
+            Column names of the aggregated results
+        inner_agg_result_names : list[str]
+            Column names of the intermediate aggregation result names (one value per category - this
             is to be used as the values in the aggregated key-value pairs)
         inner_agg_expr : expressions.Subqueryable:
             Query that produces the intermediate aggregation result
@@ -465,10 +510,11 @@ class FeatureExecutionPlan(ABC):
     def construct_left_join_sql(
         index: int,
         point_in_time_column: str,
-        agg_spec: AggregationSpec,
+        agg_result_names: list[str],
+        serving_names: list[str],
         table_expr: expressions.Select,
         agg_expr: expressions.Select,
-    ) -> tuple[expressions.Select, str]:
+    ) -> tuple[expressions.Select, list[str]]:
         """Construct SQL that left join aggregated result back to request table
 
         Parameters
@@ -477,8 +523,10 @@ class FeatureExecutionPlan(ABC):
             Index of the current left join
         point_in_time_column : str
             Point in time column
-        agg_spec : AggregationSpec
-            Aggregation specification
+        agg_result_names : list[str]
+            Column names of the aggregated results
+        serving_names : list[str]
+            List of serving name columns
         table_expr : expressions.Select
             Table to which the left join should be added to
         agg_expr : expressions.Select
@@ -490,12 +538,14 @@ class FeatureExecutionPlan(ABC):
             Tuple of updated table expression and alias name for the aggregated column
         """
         agg_table_alias = f"T{index}"
-        agg_result_name = agg_spec.agg_result_name
-        agg_result_name_alias = f'"{agg_table_alias}"."{agg_result_name}" AS "{agg_result_name}"'
+        agg_result_name_aliases = [
+            f'"{agg_table_alias}"."{agg_result_name}" AS "{agg_result_name}"'
+            for agg_result_name in agg_result_names
+        ]
         join_conditions_lst = [
             f"REQ.{point_in_time_column} = {agg_table_alias}.{point_in_time_column}",
         ]
-        for serving_name in agg_spec.serving_names:
+        for serving_name in serving_names:
             join_conditions_lst += [
                 f"REQ.{escape_column_name(serving_name)} = {agg_table_alias}.{escape_column_name(serving_name)}"
             ]
@@ -505,7 +555,7 @@ class FeatureExecutionPlan(ABC):
             join_alias=agg_table_alias,
             on=expressions.and_(*join_conditions_lst),
         )
-        return updated_table_expr, agg_result_name_alias
+        return updated_table_expr, agg_result_name_aliases
 
     def construct_combined_aggregation_cte(
         self, point_in_time_column: str, request_table_columns: list[str]
@@ -526,11 +576,16 @@ class FeatureExecutionPlan(ABC):
         """
         table_expr = select().from_(f"{REQUEST_TABLE_NAME} AS REQ")
         qualified_aggregation_names = []
-        for i, agg_spec in enumerate(self.aggregation_specs.values()):
+
+        for i, agg_specs in enumerate(self.aggregation_spec_set.get_grouped_aggregation_specs()):
+            # All AggregationSpec in agg_specs share common attributes such as tile_table_id, keys,
+            # etc. Get the first one to access them.
+            agg_spec = agg_specs[0]
             expanded_request_table_name = self.request_table_plan.get_expanded_request_table_name(
                 agg_spec
             )
-            agg_result_name = agg_spec.agg_result_name
+            merge_exprs = [agg_spec.merge_expr for agg_spec in agg_specs]
+            agg_result_names = [agg_spec.agg_result_name for agg_spec in agg_specs]
             agg_expr = self.construct_aggregation_sql(
                 expanded_request_table_name=expanded_request_table_name,
                 tile_table_id=agg_spec.tile_table_id,
@@ -538,20 +593,23 @@ class FeatureExecutionPlan(ABC):
                 keys=agg_spec.keys,
                 serving_names=agg_spec.serving_names,
                 value_by=agg_spec.value_by,
-                merge_expr=agg_spec.merge_expr,
-                agg_result_name=agg_result_name,
+                merge_exprs=merge_exprs,
+                agg_result_names=agg_result_names,
             )
-            table_expr, agg_result_name_alias = self.construct_left_join_sql(
+            table_expr, agg_result_name_aliases = self.construct_left_join_sql(
                 index=i,
                 point_in_time_column=point_in_time_column,
-                agg_spec=agg_spec,
+                agg_result_names=agg_result_names,
+                serving_names=agg_spec.serving_names,
                 table_expr=table_expr,
                 agg_expr=agg_expr,
             )
-            qualified_aggregation_names.append(agg_result_name_alias)
+            qualified_aggregation_names.extend(agg_result_name_aliases)
+
         request_table_columns = [f"REQ.{escape_column_name(c)}" for c in request_table_columns]
         table_expr = table_expr.select(*request_table_columns, *qualified_aggregation_names)
         combined_sql = table_expr.sql(pretty=True)
+
         return self.AGGREGATION_TABLE_NAME, combined_sql
 
     def construct_post_aggregation_sql(self, request_table_columns: list[str]) -> str:
@@ -635,8 +693,8 @@ class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
         point_in_time_column: str,
         serving_names: list[str],
         value_by: str,
-        agg_result_name: str,
-        inner_agg_result_name: str,
+        agg_result_names: list[str],
+        inner_agg_result_names: list[str],
         inner_agg_expr: expressions.Select,
     ) -> expressions.Select:
 
@@ -651,13 +709,15 @@ class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
         category_filled_null = (
             f"CASE WHEN {category_col} IS NULL THEN '__MISSING__' ELSE {category_col} END"
         )
-
-        agg_expr = (
-            select(
-                *outer_group_by_keys,
-                f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'
-                f' AS "{agg_result_name}"',
+        object_agg_exprs = [
+            f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'
+            f' AS "{agg_result_name}"'
+            for inner_agg_result_name, agg_result_name in zip(
+                inner_agg_result_names, agg_result_names
             )
+        ]
+        agg_expr = (
+            select(*outer_group_by_keys, *object_agg_exprs)
             .from_(inner_agg_expr.subquery(alias=inner_alias))
             .group_by(*outer_group_by_keys)
         )

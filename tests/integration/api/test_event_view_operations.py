@@ -226,9 +226,30 @@ def test_query_object_operation_on_snowflake_source(
         "COUNT_24h": 15,
         "COUNT_2h / COUNT_24h": Decimal("0.066667"),
     }
+
     special_feature = create_feature_with_filtered_event_view(event_view)
     special_feature.save()  # pylint: disable=no-member
     check_feature_and_remove_registry(special_feature, feature_manager)
+
+    # preview a more complex feature group (multiple group by, some have the same tile_id)
+    feature_group_combined = FeatureList(
+        [
+            feature_group["COUNT_2h"],
+            feature_group_per_category["COUNT_BY_ACTION_24h"],
+            special_feature,
+        ],
+        name="My FeatureList",
+    )[["COUNT_2h", "COUNT_BY_ACTION_24h", "NUM_PURCHASE_7d"]]
+    df_feature_preview = feature_group_combined.preview(
+        preview_param, credentials=config.credentials
+    )
+    assert df_feature_preview.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "uid": 1,
+        "COUNT_2h": Decimal("1"),
+        "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 3,\n  "purchase": 2,\n  "remove": 7\n}',
+        "NUM_PURCHASE_7d": Decimal("2"),
+    }
 
     run_and_test_get_historical_features(config, feature_group, feature_group_per_category)
 
