@@ -635,7 +635,7 @@ class CountDictTransformNode(ExpressionNode):
     """Node for count dict transform operation (eg. entropy)"""
 
     expr: ExpressionNode
-    cd_transform: Literal["entropy", "most_frequent", "num_unique"]
+    transform_type: Literal["entropy", "most_frequent", "num_unique"]
 
     @property
     def sql(self) -> Expression:
@@ -643,9 +643,9 @@ class CountDictTransformNode(ExpressionNode):
             "entropy": "F_COUNT_DICT_ENTROPY",
             "most_frequent": "F_COUNT_DICT_MOST_FREQUENT",
             "num_unique": "F_COUNT_DICT_NUM_UNIQUE",
-        }[self.cd_transform]
+        }[self.transform_type]
         output_expr = expressions.Anonymous(this=function_name, expressions=[self.expr.sql])
-        if self.cd_transform == "most_frequent":
+        if self.transform_type == "most_frequent":
             # The F_COUNT_DICT_MOST_FREQUENT UDF produces a VARIANT type. Cast to string to prevent
             # double quoting in the feature output ('remove' vs '"remove"')
             output_expr = expressions.Cast(this=output_expr, to=parse_one("VARCHAR"))
@@ -1194,7 +1194,7 @@ def make_expression_node(
         )
     elif node_type == NodeType.COUNT_DICT_TRANSFORM:
         sql_node = CountDictTransformNode(
-            table_node=table_node, expr=input_expr_node, cd_transform=parameters["cd_transform"]
+            table_node=table_node, expr=input_expr_node, transform_type=parameters["transform_type"]
         )
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")

@@ -10,7 +10,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 
 if TYPE_CHECKING:
-    from featurebyte.core.series import Series
+    from featurebyte.api.feature import Feature
 
 
 class CdAccessorMixin:
@@ -21,7 +21,7 @@ class CdAccessorMixin:
     # pylint: disable=too-few-public-methods
 
     @property
-    def cd(self: Series) -> CountDictAccessor:  # type: ignore # pylint: disable=invalid-name
+    def cd(self: Feature) -> CountDictAccessor:  # type: ignore # pylint: disable=invalid-name
         return CountDictAccessor(self)
 
 
@@ -30,33 +30,33 @@ class CountDictAccessor:
     CountDictAccessor used to manipulate dict-like type Series object
     """
 
-    def __init__(self, obj: Series):
+    def __init__(self, obj: Feature):
         if obj.var_type != DBVarType.OBJECT:
             raise AttributeError("Can only use .cd accessor with count per category features")
         self._obj = obj
 
-    def _make_operation(self, cd_transform, output_var_type) -> Series:
+    def _make_operation(self, transform_type, output_var_type) -> Feature:
         return series_unary_operation(
             input_series=self._obj,
             node_type=NodeType.COUNT_DICT_TRANSFORM,
             output_var_type=output_var_type,
-            node_params={"cd_transform": cd_transform},
+            node_params={"transform_type": transform_type},
             **self._obj.unary_op_series_params(),
         )
 
-    def entropy(self) -> Series:
+    def entropy(self) -> Feature:
         """
         Compute the entropy of the count dictionary
         """
         return self._make_operation("entropy", DBVarType.FLOAT)
 
-    def most_frequent(self) -> Series:
+    def most_frequent(self) -> Feature:
         """
         Compute the most frequent key in the dictionary
         """
         return self._make_operation("most_frequent", DBVarType.VARCHAR)
 
-    def nunique(self) -> Series:
+    def nunique(self) -> Feature:
         """
         Compute number of distinct keys in the dictionary
         """
