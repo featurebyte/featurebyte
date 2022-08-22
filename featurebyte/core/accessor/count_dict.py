@@ -34,7 +34,7 @@ class CdAccessorMixin:
 
 class CountDictAccessor:
     """
-    CountDictAccessor used to manipulate dict-like type Series object
+    CountDictAccessor used to manipulate dict-like type Feature object
     """
 
     def __init__(self, obj: Feature):
