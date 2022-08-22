@@ -99,7 +99,7 @@ yaml = ["pyyaml"]
 
 [[package]]
 name = "beanie"
-version = "1.11.8"
+version = "1.11.9"
 description = "Asynchronous Python ODM for MongoDB"
 category = "main"
 optional = false
@@ -171,7 +171,7 @@ python-versions = ">=3.6.1"
 
 [[package]]
 name = "charset-normalizer"
-version = "2.1.0"
+version = "2.1.1"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
 category = "main"
 optional = false
@@ -330,7 +330,7 @@ all = ["uvicorn[standard] (>=0.12.0,<0.18.0)", "email_validator (>=1.1.1,<2.0.0)
 
 [[package]]
 name = "featurebyte-freeware"
-version = "0.1.0.dev3"
+version = "0.1.0.dev5"
 description = "Free utilities from FeatureByte"
 category = "main"
 optional = false
@@ -1119,7 +1119,7 @@ python-versions = "*"
 
 [[package]]
 name = "setuptools"
-version = "65.1.0"
+version = "65.2.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 category = "main"
 optional = false
@@ -1518,7 +1518,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-redis"
-version = "4.3.14"
+version = "4.3.16"
 description = "Typing stubs for redis"
 category = "dev"
 optional = false
@@ -1715,8 +1715,8 @@ bandit = [
     {file = "bandit-1.7.4.tar.gz", hash = "sha256:2d63a8c573417bae338962d4b9b06fbc6080f74ecd955a092849e1e65c717bd2"},
 ]
 beanie = [
-    {file = "beanie-1.11.8-py3-none-any.whl", hash = "sha256:716f74df83ad76525e4db15a1b39bc99f5074efeb211b40082886c128b68d919"},
-    {file = "beanie-1.11.8.tar.gz", hash = "sha256:dada69e80e9ef353a3952adfd8fd79bde5e0b77d7d91bfd0da632619c0df626b"},
+    {file = "beanie-1.11.9-py3-none-any.whl", hash = "sha256:4b502229ddac849f5f3355bd5c998cbbdc5c010c4b4a3208d9c41383eb40a2ce"},
+    {file = "beanie-1.11.9.tar.gz", hash = "sha256:3875f3b71760fedd6d44dae983efa4c8e2daac72d2bda7410d7f03cb3b12275e"},
 ]
 black = [
     {file = "black-22.6.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:f586c26118bc6e714ec58c09df0157fe2d9ee195c764f630eb0d8e7ccce72e69"},
@@ -1822,8 +1822,8 @@ cfgv = [
     {file = "cfgv-3.3.1.tar.gz", hash = "sha256:f5a830efb9ce7a445376bb66ec94c638a9787422f96264c98edc6bdeed8ab736"},
 ]
 charset-normalizer = [
-    {file = "charset-normalizer-2.1.0.tar.gz", hash = "sha256:575e708016ff3a5e3681541cb9d79312c416835686d054a23accb873b254f413"},
-    {file = "charset_normalizer-2.1.0-py3-none-any.whl", hash = "sha256:5189b6f22b01957427f35b6a08d9a0bc45b46d3788ef5a92e978433c7a35f8a5"},
+    {file = "charset-normalizer-2.1.1.tar.gz", hash = "sha256:5a3d016c7c547f69d6f81fb0db9449ce888b418b5b9952cc5e6e66843e9dd845"},
+    {file = "charset_normalizer-2.1.1-py3-none-any.whl", hash = "sha256:83e9a75d1911279afd89352c68b45348559d1fc0506b054b346651b5e7fee29f"},
 ]
 click = [
     {file = "click-8.1.3-py3-none-any.whl", hash = "sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"},
@@ -1979,8 +1979,8 @@ fastapi = [
     {file = "fastapi-0.79.1.tar.gz", hash = "sha256:006862dec0f0f5683ac21fb0864af2ff12a931e7ba18920f28cc8eceed51896b"},
 ]
 featurebyte-freeware = [
-    {file = "featurebyte_freeware-0.1.0.dev3-py3-none-any.whl", hash = "sha256:22abc5fccbc632db523ae2e2ca5e841a84a1af6228f80fd3e82273d697c8618d"},
-    {file = "featurebyte_freeware-0.1.0.dev3.tar.gz", hash = "sha256:707c752902ac7afa2491ee2b84f1b20a751e2d94c379df6a4577b4ef0b84d9b6"},
+    {file = "featurebyte_freeware-0.1.0.dev5-py3-none-any.whl", hash = "sha256:d7f1f58805a62c57c0117f458aa4b8973a3bb99ed18165f2c73a5529a7ca178f"},
+    {file = "featurebyte_freeware-0.1.0.dev5.tar.gz", hash = "sha256:bf7784fc253fc3dcf459a9d2acba1415009dc65b096a7f9c1eb831d606350e31"},
 ]
 filelock = [
     {file = "filelock-3.8.0-py3-none-any.whl", hash = "sha256:617eb4e5eedc82fc5f47b6d61e4d11cb837c56cb4544e39081099fa17ad109d4"},
@@ -2777,8 +2777,8 @@ sentinels = [
     {file = "sentinels-1.0.0.tar.gz", hash = "sha256:7be0704d7fe1925e397e92d18669ace2f619c92b5d4eb21a89f31e026f9ff4b1"},
 ]
 setuptools = [
-    {file = "setuptools-65.1.0-py3-none-any.whl", hash = "sha256:10602cd0a6f5feab6656e9587f9075292ab777c5200f3bf00293ecd23d9f2788"},
-    {file = "setuptools-65.1.0.tar.gz", hash = "sha256:d2e010624c781b26ad6629a8de9832327cf853dea93894487979e55f9ad06857"},
+    {file = "setuptools-65.2.0-py3-none-any.whl", hash = "sha256:a3ca5857c89f82f5c9410e8508cb32f4872a3bafd4aa7ae122a24ca33bccc750"},
+    {file = "setuptools-65.2.0.tar.gz", hash = "sha256:7f4bc85450898a09f76ebf28b72fa25bc7111f6c7d665d514a60bba9c75ef2a9"},
 ]
 setuptools-scm = [
     {file = "setuptools_scm-6.4.2-py3-none-any.whl", hash = "sha256:acea13255093849de7ccb11af9e1fb8bde7067783450cee9ef7a93139bddf6d4"},
@@ -2928,8 +2928,8 @@ types-pyyaml = [
     {file = "types_PyYAML-6.0.11-py3-none-any.whl", hash = "sha256:8f890028123607379c63550179ddaec4517dc751f4c527a52bb61934bf495989"},
 ]
 types-redis = [
-    {file = "types-redis-4.3.14.tar.gz", hash = "sha256:aa5955ff5f10b87a9021c031eb002a544a41a0a6280084ec0758a8a812a375c4"},
-    {file = "types_redis-4.3.14-py3-none-any.whl", hash = "sha256:c5518f14df81f2070bb075b292309331b1be283f1927adf3f04983eeb05e2f98"},
+    {file = "types-redis-4.3.16.tar.gz", hash = "sha256:ed53e35eac4303ef70cf7f5c205e210f2238b7fdd9306b7f8676669c1070943e"},
+    {file = "types_redis-4.3.16-py3-none-any.whl", hash = "sha256:41da87dc80f39573a71873e4265f181d9628b0a2a862e850ecc896a0cd6cacd2"},
 ]
 types-requests = [
     {file = "types-requests-2.28.9.tar.gz", hash = "sha256:feaf581bd580497a47fe845d506fa3b91b484cf706ff27774e87659837de9962"},
