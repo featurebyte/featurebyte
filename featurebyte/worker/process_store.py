@@ -42,7 +42,9 @@ class ProcessStore(metaclass=SingletonMeta):
         """
         task_status_id = ObjectId()
         payload_dict = json.loads(payload)
-        user_id = ObjectId(payload_dict["user_id"])
+        user_id = None
+        if payload_dict["user_id"]:
+            user_id = ObjectId(payload_dict["user_id"])
         progress_queue = GlobalProgress().get_progress(
             user_id=user_id, task_status_id=task_status_id
         )

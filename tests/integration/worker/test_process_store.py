@@ -22,6 +22,7 @@ async def test_process_store():
     user_map = {
         ObjectId(): {"command": Command.LONG_RUNNING_COMMAND, "exitcode": 0},
         ObjectId(): {"command": Command.ERROR_COMMAND, "exitcode": 1},
+        None: {"command": Command.LONG_RUNNING_COMMAND, "exitcode": 0},
     }
     user_task_status_pid_map = {}
     processes = []
@@ -33,7 +34,7 @@ async def test_process_store():
                     "command": info["command"],
                     "output_document_id": str(ObjectId()),
                     "output_collection_name": "some_collection",
-                    "user_id": str(user_id),
+                    "user_id": str(user_id) if user_id else None,
                 }
             )
         )
