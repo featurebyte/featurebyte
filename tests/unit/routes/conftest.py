@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 
 from featurebyte.app import app
+from featurebyte.enum import WorkerCommand
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.persistent import GitDB
 from featurebyte.persistent.mongo import MongoDB
@@ -87,9 +88,9 @@ def mock_process_store(request, persistent):
     with patch("featurebyte.service.task_manager.ProcessStore.submit") as mock_submit:
 
         async def submit(payload):
-            print(payload)
             payload_dict = json.loads(payload)
-            task = TASK_MAP[payload_dict["command"]](
+            command = WorkerCommand(payload_dict["command"])
+            task = TASK_MAP[command](
                 payload=payload_dict,
                 progress=Mock(),
                 get_credential=get_credential,

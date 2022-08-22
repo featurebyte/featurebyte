@@ -41,7 +41,7 @@ class BaseTask:
         super().__init_subclass__(**kwargs)
 
         assert isinstance(cls.payload_class.command, Enum)
-        command = cls.payload_class.command.value
+        command = cls.payload_class.command
         if command in TASK_MAP:
             raise ValueError(f'Command "{command}" has been implemented.')
         TASK_MAP[command] = cls

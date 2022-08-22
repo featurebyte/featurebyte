@@ -8,7 +8,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.worker.task.base import TASK_MAP, BaseTask
-from featurebyte.worker.task_executor import TaskExecutor
+from tests.util.task import TaskExecutor
 
 
 @pytest.fixture(name="command_class")
@@ -87,7 +87,8 @@ def test_task_executor(random_task_class_store):
             "command": "random_command",
             "user_id": user_id,
             "output_document_id": document_id,
-        }
+        },
+        progress=None,
     )
 
     # check store

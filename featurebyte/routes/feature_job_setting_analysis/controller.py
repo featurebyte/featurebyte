@@ -78,7 +78,7 @@ class FeatureJobSettingAnalysisController(
         )
 
         payload = FeatureJobSettingAnalysisTaskPayload(
-            **data.json_dict(), user_id=user.id, output_document_id=output_document_id
+            **data.dict(), user_id=user.id, output_document_id=output_document_id
         )
 
         # run analysis

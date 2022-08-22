@@ -84,3 +84,15 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             yield payload
+
+    def test_create_event_data_not_found(self, test_api_client_persistent):
+        """
+        Create request for non-existent event data
+        """
+        test_api_client, _ = test_api_client_persistent
+        payload = self.payload.copy()
+        payload["event_data_id"] = str(ObjectId("63030c9eb9150a577ebb61fb"))
+        response = test_api_client.post(f"{self.base_route}", json=payload)
+        print(response.json())
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == "Event data not found"

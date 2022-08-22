@@ -343,7 +343,7 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
             if status not in ["PENDING", "RECEIVED", "STARTED"]:
                 assert status == "SUCCESS"
                 break
-            sleep(1)
+            sleep(0.1)
 
         response = test_api_client.get(f"{self.base_route}/{output_document_id}")
         response_dict = response.json()
