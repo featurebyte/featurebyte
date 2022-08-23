@@ -17,14 +17,12 @@ class MockLogHandler(logging.Handler):
         self.records.append(record.getMessage())
 
 
-mock_handler = MockLogHandler()
-logger.add(mock_handler)
-
-
 def test_logging():
     """
     Test basic logging works
     """
+    mock_handler = MockLogHandler()
+    logger.add(mock_handler)
     mock_handler.records.clear()
     logger.debug("Test Message", extra={"a": 1})
 
@@ -33,5 +31,5 @@ def test_logging():
     assert len(mock_handler.records) == 1
     parts = mock_handler.records[0].split("|")
     assert (
-        "|".join(parts[1:]) == " DEBUG    | tests.unit.test_logger:test_logging:29 - Test Message"
+        "|".join(parts[1:]) == " DEBUG    | tests.unit.test_logger:test_logging:27 - Test Message"
     )

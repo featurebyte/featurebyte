@@ -11,6 +11,7 @@ from featurebyte.utils.credential import get_credential
 from featurebyte.utils.persistent import get_persistent
 
 
+@pytest.mark.asyncio
 async def test_get_credential():
     """
     Test get_credential works as expected
