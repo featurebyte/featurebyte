@@ -149,6 +149,7 @@ class GetAttrMixin:
     def __dir__(self: HasColumnVarTypeMap) -> Iterable[str]:
         # provide column name lookup and completion for __getattr__
         attrs = set(object.__dir__(self))
+        attrs.difference_update(dir(BaseModel))
         return attrs.union(self.column_var_type_map)
 
     def _ipython_key_completions_(self: HasColumnVarTypeMap) -> set[str]:
