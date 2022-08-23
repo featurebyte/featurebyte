@@ -1,7 +1,7 @@
 """
 Read configurations from ini file
 """
-from typing import Any, Dict, Literal, Optional, Pattern, Union
+from typing import Any, Dict, Optional, Pattern, Union
 
 import os
 import re
@@ -185,18 +185,21 @@ class Configurations:
             Path to read configurations from
         """
         self._config_file_path = Path(
-            str(config_file_path or os.environ.get("FEATUREBYTE_CONFIG_PATH", DEFAULT_CONFIG_PATH))
+            str(
+                config_file_path
+                or os.environ.get("FEATUREBYTE_CONFIG_PATH", str(DEFAULT_CONFIG_PATH))
+            )
         )
 
         # create config file if it does not exist
         if not self._config_file_path.exists() and self._config_file_path == DEFAULT_CONFIG_PATH:
             self._config_file_path.parent.mkdir(parents=True, exist_ok=True)
             self._config_file_path.write_text(
-                "# featurebyte configurations\n\n" "logging:\n" "  level: INFO\n"
+                "# featurebyte configurations\n\nlogging:\n  level: INFO\n"
             )
 
         self.git: Optional[GitSettings] = None
-        self.storage: Optional[LocalStorageSettings] = LocalStorageSettings()
+        self.storage: LocalStorageSettings = LocalStorageSettings()
         self.featurebyte: Optional[FeatureByteSettings] = None
         self.settings: Dict[str, Any] = {}
         self.credentials: Credentials = {}
