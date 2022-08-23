@@ -49,7 +49,7 @@ class ProcessStore(metaclass=SingletonMeta):
         if payload_dict["user_id"]:
             user_id = ObjectId(payload_dict["user_id"])
         progress_queue = GlobalProgress().get_progress(user_id=user_id, task_id=task_id)
-        queue = Queue()
+        queue: Any = Queue()
         process = Process(
             target=self._task_executor, args=(payload_dict, queue, progress_queue), daemon=True
         )
@@ -62,7 +62,7 @@ class ProcessStore(metaclass=SingletonMeta):
         }
         return task_id
 
-    async def get(self, user_id: Optional[ObjectId], task_id: ObjectId) -> Optional[Dict[str, Any]]:
+    async def get(self, user_id: Optional[ObjectId], task_id: ObjectId) -> Optional[dict[str, Any]]:
         """
         Retrieve process given user_id and task_id
 
@@ -75,7 +75,7 @@ class ProcessStore(metaclass=SingletonMeta):
 
         Returns
         -------
-        Optional[Dict[str, Any]]
+        Optional[dict[str, Any]]
         """
         key_pair = (user_id, task_id)
         process_data = self._store.get(key_pair)
@@ -98,7 +98,9 @@ class ProcessStore(metaclass=SingletonMeta):
             return {**process_data, "id": task_id, "status": status, "traceback": traceback}
         return process_data
 
-    async def list(self, user_id: Optional[ObjectId]) -> list[tuple[ObjectId, Dict[str, Any]]]:
+    async def list(
+        self, user_id: Optional[ObjectId]
+    ) -> list[tuple[ObjectId, Optional[Dict[str, Any]]]]:
         """
         List process of the given user
 

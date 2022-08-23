@@ -111,7 +111,7 @@ class TaskManager(AbstractTaskManager):
     ) -> tuple[list[Task], int]:
         output = []
         process_store = ProcessStore()
-        for task_status_id, process_data_dict in await process_store.list(user_id=self.user_id):
+        for _, process_data_dict in await process_store.list(user_id=self.user_id):
             if process_data_dict:
                 output.append(Task(**process_data_dict))
 

@@ -3,12 +3,13 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 import time
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
+from fastapi.testclient import TestClient
 from pydantic import validator
 from typeguard import typechecked
 
@@ -16,7 +17,7 @@ from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.util import get_entity
 from featurebyte.common.model_util import validate_job_setting_parameters
-from featurebyte.config import Configurations, Credentials
+from featurebyte.config import APIClient, Configurations, Credentials
 from featurebyte.core.mixin import GetAttrMixin
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -226,6 +227,61 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
             return self.dict()
         raise RecordRetrievalException(response)
 
+    def _initiate_feature_job_analysis(self, client: APIClient | TestClient) -> dict[str, Any]:
+        """
+        Initiate feature job analysis task
+
+        Parameters
+        ----------
+        client: APIClient | TestClient
+            APIClient or test client
+
+        Returns
+        -------
+        dict[str, Any]
+            feature job setting
+
+        Raises
+        ------
+        RecordCreationException
+            When failed to generate feature job setting analysis task
+        RecordRetrievalException
+            When failed to retrieve feature job setting analysis result
+        """
+        # run feature job setting analysis to get recommendation
+        task_create_response = client.post(
+            url="/feature_job_setting_analysis", json={"event_data_id": str(self.id)}
+        )
+        if task_create_response.status_code == HTTPStatus.CREATED:
+            task_create_response_dict = task_create_response.json()
+            status = task_create_response_dict["status"]
+
+            task_get_response = None
+            while status == TaskStatus.STARTED:
+                task_get_response = client.get(url=f'/task/{task_create_response_dict["id"]}')
+                if task_get_response.status_code == HTTPStatus.OK:
+                    task_get_response_dict = task_get_response.json()
+                    status = task_get_response_dict["status"]
+                    time.sleep(0.1)
+                else:
+                    raise RecordRetrievalException(task_get_response)
+
+            task_response = task_get_response or task_create_response
+            if status != TaskStatus.SUCCESS:
+                raise RecordCreationException(
+                    task_response, "Failed to generate feature job setting analysis."
+                )
+
+            analysis_response = client.get(task_response.json()["output_path"])
+            if analysis_response.status_code == HTTPStatus.OK:
+                analysis_response_dict = analysis_response.json()
+                analysis_result = analysis_response_dict["analysis_result"]
+                recommended_setting = analysis_result["recommended_feature_job_setting"]
+                return cast(Dict[str, Any], recommended_setting)
+
+            raise RecordRetrievalException(response=analysis_response)
+        raise RecordCreationException(response=task_create_response)
+
     @typechecked
     def update_default_feature_job_setting(
         self, feature_job_setting: Optional[Dict[str, Any]] = None
@@ -247,42 +303,9 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         if feature_job_setting:
             _ = validate_job_setting_parameters(**feature_job_setting)
         else:
-            # run feature job setting analysis to get recommendation
-            task_create_response = client.post(
-                url="/feature_job_setting_analysis", json={"event_data_id": str(self.id)}
-            )
-            if task_create_response.status_code == HTTPStatus.CREATED:
-                task_create_response_dict = task_create_response.json()
-                task_id = task_create_response_dict["id"]
-                status = task_create_response_dict["status"]
+            feature_job_setting = self._initiate_feature_job_analysis(client)
 
-                task_get_response = None
-                while status == TaskStatus.STARTED:
-                    task_get_response = client.get(url=f"/task/{task_id}")
-                    if task_get_response.status_code == HTTPStatus.OK:
-                        task_get_response_dict = task_get_response.json()
-                        status = task_get_response_dict["status"]
-                        time.sleep(0.1)
-                    else:
-                        raise RecordRetrievalException(task_get_response)
-
-                task_response = task_get_response or task_create_response
-                if status != TaskStatus.SUCCESS:
-                    raise RecordCreationException(
-                        task_response, "Failed to generate feature job setting analysis."
-                    )
-                else:
-                    task_response_dict = task_response.json()
-                    analysis_response = client.get(task_response_dict["output_path"])
-                    if analysis_response.status_code == HTTPStatus.OK:
-                        analysis_response_dict = analysis_response.json()
-                        analysis_result = analysis_response_dict["analysis_result"]
-                        feature_job_setting = analysis_result["recommended_feature_job_setting"]
-            else:
-                raise RecordCreationException(response=task_create_response)
-
-        feature_job_setting = FeatureJobSetting(**feature_job_setting)
-        data = EventDataUpdate(default_feature_job_setting=feature_job_setting)
+        data = EventDataUpdate(default_feature_job_setting=FeatureJobSetting(**feature_job_setting))
         response = client.patch(url=f"/event_data/{self.id}", json=data.dict())
         if response.status_code == HTTPStatus.OK:
             type(self).__init__(
