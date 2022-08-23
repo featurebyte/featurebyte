@@ -53,6 +53,9 @@ class NodeType(str, Enum):
     # datetime related operations
     DT_EXTRACT = "dt_extract"
 
+    # count dict related operations
+    COUNT_DICT_TRANSFORM = "count_dict_transform"
+
     # operations with side effect
     INPUT = "input"
 

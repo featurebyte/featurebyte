@@ -133,7 +133,14 @@ def test_snowflake_session__fetch_pandas_all(
         pd.testing.assert_frame_equal(result, expected_result)
 
 
-EXPECTED_FUNCTIONS = ["F_COMPUTE_TILE_INDICES", "F_INDEX_TO_TIMESTAMP", "F_TIMESTAMP_TO_INDEX"]
+EXPECTED_FUNCTIONS = [
+    "F_COMPUTE_TILE_INDICES",
+    "F_INDEX_TO_TIMESTAMP",
+    "F_TIMESTAMP_TO_INDEX",
+    "F_COUNT_DICT_ENTROPY",
+    "F_COUNT_DICT_MOST_FREQUENT",
+    "F_COUNT_DICT_NUM_UNIQUE",
+]
 
 EXPECTED_PROCEDURES = [
     "SP_TILE_REGISTRY",
@@ -251,6 +258,21 @@ def test_schema_initializer__sql_objects():
         {
             "filename": "F_INDEX_TO_TIMESTAMP.sql",
             "identifier": "F_INDEX_TO_TIMESTAMP",
+            "type": "function",
+        },
+        {
+            "filename": "F_COUNT_DICT_ENTROPY.sql",
+            "identifier": "F_COUNT_DICT_ENTROPY",
+            "type": "function",
+        },
+        {
+            "filename": "F_COUNT_DICT_MOST_FREQUENT.sql",
+            "identifier": "F_COUNT_DICT_MOST_FREQUENT",
+            "type": "function",
+        },
+        {
+            "filename": "F_COUNT_DICT_NUM_UNIQUE.sql",
+            "identifier": "F_COUNT_DICT_NUM_UNIQUE",
             "type": "function",
         },
         {"filename": "T_TILE_REGISTRY.sql", "identifier": "TILE_REGISTRY", "type": "table"},

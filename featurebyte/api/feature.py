@@ -14,6 +14,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiGetObject, ApiObject
 from featurebyte.config import Configurations, Credentials
+from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.enum import SpecialColumnName
@@ -38,7 +39,7 @@ class FeatureNamespace(FeatureNamespaceModel, ApiGetObject):
     _route = "/feature_namespace"
 
 
-class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject):
+class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAccessorMixin):
     """
     Feature class
     """

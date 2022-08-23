@@ -152,6 +152,11 @@ def test_query_object_operation_on_snowflake_source(
         windows=["24h"],
         feature_names=["COUNT_BY_ACTION_24h"],
     )
+    # add features based on transformations on count per category
+    feature_counts_24h = feature_group_per_category["COUNT_BY_ACTION_24h"]
+    feature_group_per_category["ENTROPY_BY_ACTION_24h"] = feature_counts_24h.cd.entropy()
+    feature_group_per_category["MOST_FREQUENT_ACTION_24h"] = feature_counts_24h.cd.most_frequent()
+    feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_counts_24h.cd.nunique()
 
     # preview the features
     preview_param = {
@@ -184,6 +189,9 @@ def test_query_object_operation_on_snowflake_source(
         "COUNT_BY_ACTION_24h": (
             '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 3,\n  "purchase": 2,\n  "remove": 7\n}'
         ),
+        "ENTROPY_BY_ACTION_24h": 1.3953970923267898,
+        "MOST_FREQUENT_ACTION_24h": "remove",
+        "NUM_UNIQUE_ACTION_24h": 5,
     }
 
     # preview one feature only
@@ -328,6 +336,9 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
             feature_group["COUNT_2h"],
             feature_group["COUNT_24h"],
             feature_group_per_category["COUNT_BY_ACTION_24h"],
+            feature_group_per_category["ENTROPY_BY_ACTION_24h"],
+            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
+            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
             feature_group["COUNT_2h / COUNT_24h"],
         ],
         name="My FeatureList",
@@ -350,6 +361,31 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
                 '{\n  "__MISSING__": 4,\n  "add": 3,\n  "detail": 2,\n  "purchase": 3,\n  "remove": 1\n}',
                 None,
             ],
+            "ENTROPY_BY_ACTION_24h": [
+                1.3953970923267898,
+                1.4735023850806486,
+                1.5808185358593017,
+                1.492547746309338,
+                1.310783678099714,
+                0.9743147528693494,
+                1.5012834639366595,
+                1.4985690796770055,
+                1.5247073930301436,
+                np.nan,
+            ],
+            "MOST_FREQUENT_ACTION_24h": [
+                "remove",
+                "detail",
+                "detail",
+                "detail",
+                "__MISSING__",
+                "add",
+                "remove",
+                "purchase",
+                "__MISSING__",
+                None,
+            ],
+            "NUM_UNIQUE_ACTION_24h": [5.0, 5.0, 5.0, 5.0, 4.0, 3.0, 5.0, 5.0, 5.0, 0.0],
             "COUNT_2h / COUNT_24h": [
                 0.066667,
                 0.000000,

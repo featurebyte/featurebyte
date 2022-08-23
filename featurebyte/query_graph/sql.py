@@ -631,6 +631,28 @@ class NotNode(ExpressionNode):
 
 
 @dataclass
+class CountDictTransformNode(ExpressionNode):
+    """Node for count dict transform operation (eg. entropy)"""
+
+    expr: ExpressionNode
+    transform_type: Literal["entropy", "most_frequent", "num_unique"]
+
+    @property
+    def sql(self) -> Expression:
+        function_name = {
+            "entropy": "F_COUNT_DICT_ENTROPY",
+            "most_frequent": "F_COUNT_DICT_MOST_FREQUENT",
+            "num_unique": "F_COUNT_DICT_NUM_UNIQUE",
+        }[self.transform_type]
+        output_expr = expressions.Anonymous(this=function_name, expressions=[self.expr.sql])
+        if self.transform_type == "most_frequent":
+            # The F_COUNT_DICT_MOST_FREQUENT UDF produces a VARIANT type. Cast to string to prevent
+            # double quoting in the feature output ('remove' vs '"remove"')
+            output_expr = expressions.Cast(this=output_expr, to=parse_one("VARCHAR"))
+        return output_expr
+
+
+@dataclass
 class BuildTileNode(TableNode):
     """Tile builder node
 
@@ -1085,6 +1107,7 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.SUBSTRING,
     NodeType.DT_EXTRACT,
     NodeType.NOT,
+    NodeType.COUNT_DICT_TRANSFORM,
 }
 
 
@@ -1168,6 +1191,10 @@ def make_expression_node(
             table_node=table_node,
             expr=input_expr_node,
             dt_property=parameters["property"],
+        )
+    elif node_type == NodeType.COUNT_DICT_TRANSFORM:
+        sql_node = CountDictTransformNode(
+            table_node=table_node, expr=input_expr_node, transform_type=parameters["transform_type"]
         )
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")

@@ -382,6 +382,28 @@ def agg_per_category_feature_fixture(snowflake_event_view):
     yield features["sum_1d"]
 
 
+@pytest.fixture(name="count_per_category_feature")
+def count_per_category_feature_fixture(snowflake_event_view):
+    """
+    Aggregation per category feature fixture
+    """
+    Entity(name="customer", serving_names=["cust_id"]).save()
+    snowflake_event_view.cust_id.as_entity("customer")
+    grouped = snowflake_event_view.groupby("cust_id", category="col_int")
+    features = grouped.aggregate(
+        value_column="col_float",
+        method="count",
+        windows=["30m", "2h", "1d"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
+        feature_names=["counts_30m", "counts_2h", "counts_1d"],
+    )
+    yield features["counts_1d"]
+
+
 @pytest.fixture(name="session_manager")
 def session_manager_fixture(config, snowflake_connector):
     """

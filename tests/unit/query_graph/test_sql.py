@@ -130,3 +130,25 @@ def test_make_input_node_escape_special_characters():
         """
     ).strip()
     assert node.sql.sql(pretty=True) == expected
+
+
+@pytest.mark.parametrize(
+    "parameters, expected",
+    [
+        ({"transform_type": "entropy"}, "F_COUNT_DICT_ENTROPY(cd_val)"),
+        (
+            {"transform_type": "most_frequent"},
+            "CAST(F_COUNT_DICT_MOST_FREQUENT(cd_val) AS VARCHAR)",
+        ),
+        ({"transform_type": "num_unique"}, "F_COUNT_DICT_NUM_UNIQUE(cd_val)"),
+    ],
+)
+def test_count_dict_transform(parameters, expected, input_node):
+    """Test binary operation node when another side is Series"""
+    column = sql.StrExpressionNode(table_node=input_node, expr="cd_val")
+    node = sql.make_expression_node(
+        input_sql_nodes=[column],
+        node_type=NodeType.COUNT_DICT_TRANSFORM,
+        parameters=parameters,
+    )
+    assert node.sql.sql() == expected

@@ -6,6 +6,7 @@ import pytest
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.groupby import EventViewGroupBy
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 
 
@@ -262,8 +263,11 @@ def test_groupby__count_features(snowflake_event_view, method, category):
     if category is None:
         # node type changes to ALIAS because of fillna
         assert feature_dict["node"]["type"] == NodeType.ALIAS
+        assert feature_dict["var_type"] == DBVarType.FLOAT
     else:
         assert feature_dict["node"]["type"] == NodeType.PROJECT
+        # count with category has dict like output type
+        assert feature_dict["var_type"] == DBVarType.OBJECT
 
 
 def test_groupby__prune(snowflake_event_view):

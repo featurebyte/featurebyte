@@ -235,12 +235,16 @@ class EventViewGroupBy(OpsMixin):
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[groupby_node],
             )
+            if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.category is not None:
+                var_type = DBVarType.OBJECT
+            else:
+                var_type = column_var_type_map[feature_name]
             feature = Feature(
                 name=feature_name,
                 feature_store=self.obj.feature_store,
                 tabular_source=self.obj.tabular_source,
                 node=feature_node,
-                var_type=column_var_type_map[feature_name],
+                var_type=var_type,
                 lineage=self._append_to_lineage(
                     column_lineage_map[feature_name], feature_node.name
                 ),
