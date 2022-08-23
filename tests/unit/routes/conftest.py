@@ -86,6 +86,7 @@ def mock_process_store(request, persistent):
         return
 
     with patch("featurebyte.service.task_manager.ProcessStore.submit") as mock_submit:
+        process_store = {}
 
         async def submit(payload, output_path):
             _ = output_path
@@ -98,18 +99,26 @@ def mock_process_store(request, persistent):
                 get_persistent=lambda: persistent,
             )
             await task.execute()
-            return ObjectId()
+            task_id = ObjectId()
+            process_store[task_id] = {
+                "output_path": output_path,
+                "payload": payload_dict,
+            }
+            return task_id
 
         mock_submit.side_effect = submit
 
         with patch("featurebyte.service.task_manager.ProcessStore.get") as mock_get:
 
-            async def get(user_id, task_status_id):
-                _ = user_id, task_status_id
+            async def get(user_id, task_id):
+                _ = user_id
+                process_data = process_store.get(task_id, {})
                 return {
+                    "id": task_id,
                     "process": Mock(exitcode=0),
-                    "output_path": "task_output_path",
-                    "payload": {"key": "some_value"},
+                    "output_path": process_data.get("output_path", "some_path"),
+                    "payload": process_data.get("payload", {"key": "value"}),
+                    "status": "SUCCESS",
                 }
 
             mock_get.side_effect = get

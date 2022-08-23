@@ -20,9 +20,9 @@ async def test_process_store():
 
     # {user_id: {command: <command>, exitcode: <expected_exitcode>}}
     user_map = {
-        ObjectId(): {"command": Command.LONG_RUNNING_COMMAND, "exitcode": 0},
-        ObjectId(): {"command": Command.ERROR_COMMAND, "exitcode": 1},
-        None: {"command": Command.LONG_RUNNING_COMMAND, "exitcode": 0},
+        ObjectId(): {"command": Command.LONG_RUNNING_COMMAND, "exitcode": 0, "status": "SUCCESS"},
+        ObjectId(): {"command": Command.ERROR_COMMAND, "exitcode": 0, "status": "FAILURE"},
+        None: {"command": Command.LONG_RUNNING_COMMAND, "exitcode": 0, "status": "SUCCESS"},
     }
     user_task_status_pid_map = {}
     process_data_list = []
@@ -62,6 +62,13 @@ async def test_process_store():
         proc_data["process"].join()
 
     # check process exitcode
+    process_store = ProcessStore()
     for user_id, (task_status_id, _) in user_task_status_pid_map.items():
-        process_data = await ProcessStore().get(user_id=user_id, task_status_id=task_status_id)
+        process_data = await process_store.get(user_id=user_id, task_status_id=task_status_id)
         assert process_data["process"].exitcode == user_map[user_id]["exitcode"]
+        assert process_data["status"] == user_map[user_id]["status"]
+        assert process_data["output_path"] == "some_output_path"
+
+        process_list = await process_store.list(user_id=user_id)
+        assert len(process_list) == 1
+        assert process_list[0][0] == task_status_id

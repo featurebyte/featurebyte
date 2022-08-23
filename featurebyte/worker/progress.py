@@ -20,7 +20,7 @@ class AbstractProgress:
     """
 
     @abstractmethod
-    def get_progress(self, user_id: ObjectId, task_status_id: ObjectId) -> Any:
+    def get_progress(self, user_id: ObjectId, task_id: ObjectId) -> Any:
         """
         Get progress queue
 
@@ -28,8 +28,8 @@ class AbstractProgress:
         ----------
         user_id: ObjectId
             User ID
-        task_status_id: ObjectId
-            Task Status ID
+        task_id: ObjectId
+            Task ID
 
         Returns
         -------
@@ -44,8 +44,8 @@ class GlobalProgress(AbstractProgress, metaclass=SingletonMeta):
 
     _queue_map: dict[tuple[ObjectId, ObjectId], Any] = {}
 
-    def get_progress(self, user_id: ObjectId, task_status_id: ObjectId) -> Any:
-        key_pair = (user_id, task_status_id)
+    def get_progress(self, user_id: ObjectId, task_id: ObjectId) -> Any:
+        key_pair = (user_id, task_id)
         if key_pair not in self._queue_map:
             self._queue_map[key_pair] = Queue()
         return self._queue_map[key_pair]

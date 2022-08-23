@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+import time
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
@@ -19,11 +20,13 @@ from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import GetAttrMixin
 from featurebyte.exception import (
     DuplicatedRecordException,
+    RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
 )
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
+from featurebyte.schema.task_status import TaskStatus
 
 
 class EventDataColumn:
@@ -244,14 +247,39 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         if feature_job_setting:
             _ = validate_job_setting_parameters(**feature_job_setting)
         else:
-            # create feature job setting analysis async task
-            data = client.post(
+            # run feature job setting analysis to get recommendation
+            task_create_response = client.post(
                 url="/feature_job_setting_analysis", json={"event_data_id": str(self.id)}
             )
+            if task_create_response.status_code == HTTPStatus.CREATED:
+                task_create_response_dict = task_create_response.json()
+                task_id = task_create_response_dict["id"]
+                status = task_create_response_dict["status"]
 
-        import pdb
+                task_get_response = None
+                while status == TaskStatus.STARTED:
+                    task_get_response = client.get(url=f"/task/{task_id}")
+                    if task_get_response.status_code == HTTPStatus.OK:
+                        task_get_response_dict = task_get_response.json()
+                        status = task_get_response_dict["status"]
+                        time.sleep(0.1)
+                    else:
+                        raise RecordRetrievalException(task_get_response)
 
-        pdb.set_trace()
+                task_response = task_get_response or task_create_response
+                if status != TaskStatus.SUCCESS:
+                    raise RecordCreationException(
+                        task_response, "Failed to generate feature job setting analysis."
+                    )
+                else:
+                    task_response_dict = task_response.json()
+                    analysis_response = client.get(task_response_dict["output_path"])
+                    if analysis_response.status_code == HTTPStatus.OK:
+                        analysis_response_dict = analysis_response.json()
+                        analysis_result = analysis_response_dict["analysis_result"]
+                        feature_job_setting = analysis_result["recommended_feature_job_setting"]
+            else:
+                raise RecordCreationException(response=task_create_response)
 
         feature_job_setting = FeatureJobSetting(**feature_job_setting)
         data = EventDataUpdate(default_feature_job_setting=feature_job_setting)

@@ -3,13 +3,13 @@ TaskManager service is responsible to submit task message
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from abc import abstractmethod
 
 from bson.objectid import ObjectId
 
-from featurebyte.schema.task_status import TaskStatus
+from featurebyte.schema.task_status import Task
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.worker.process_store import ProcessStore
 
@@ -39,8 +39,6 @@ class AbstractTaskManager:
         ----------
         payload: BaseTaskPayload
             Task payload object
-        output_path: str
-            Task output path
 
         Returns
         -------
@@ -49,27 +47,27 @@ class AbstractTaskManager:
         """
 
     @abstractmethod
-    async def get_task_status(self, task_status_id: ObjectId) -> Optional[TaskStatus]:
+    async def get_task(self, task_id: ObjectId) -> Optional[Task]:
         """
         Retrieve task status given ID
 
         Parameters
         ----------
-        task_status_id: ObjectId
-            Task status ID
+        task_id: ObjectId
+            Task ID
 
         Returns
         -------
-        TaskStatus
+        Task
         """
 
     @abstractmethod
-    async def list_task_status(
+    async def list_tasks(
         self,
         page: int = 1,
         page_size: int = 10,
         ascending: bool = True,
-    ) -> tuple[list[TaskStatus], int]:
+    ) -> tuple[list[Task], int]:
         """
         List task statuses of this user
 
@@ -84,7 +82,7 @@ class AbstractTaskManager:
 
         Returns
         -------
-        tuple[list[TaskStatus], int]
+        tuple[list[Task], int]
         """
 
 
@@ -100,41 +98,22 @@ class TaskManager(AbstractTaskManager):
         )
         return task_id
 
-    @staticmethod
-    def _get_task_status(
-        task_status_id: ObjectId, process_data: Optional[Dict[str, Any]]
-    ) -> Optional[TaskStatus]:
-        if process_data is None:
-            return None
-        if process_data["process"].exitcode is None:
-            status = "STARTED"
-        elif process_data["process"].exitcode == 0:
-            status = "SUCCESS"
-        else:
-            status = "FAILURE"
-        return TaskStatus(
-            id=task_status_id,
-            status=status,
-            output_path=process_data["output_path"],
-            payload=process_data["payload"],
-        )
-
-    async def get_task_status(self, task_status_id: ObjectId) -> Optional[TaskStatus]:
+    async def get_task(self, task_id: ObjectId) -> Optional[Task]:
         process_store = ProcessStore()
-        process_dict = await process_store.get(user_id=self.user_id, task_status_id=task_status_id)
-        return self._get_task_status(task_status_id=task_status_id, process_data=process_dict)
+        process_dict = await process_store.get(user_id=self.user_id, task_id=task_id)
+        return Task(**process_dict) if process_dict else None
 
-    async def list_task_status(
+    async def list_tasks(
         self,
         page: int = 1,
         page_size: int = 10,
         ascending: bool = True,
-    ) -> tuple[list[TaskStatus], int]:
+    ) -> tuple[list[Task], int]:
         output = []
-        for task_status_id, process_data in await ProcessStore().list(user_id=self.user_id):
-            task_status = self._get_task_status(task_status_id, process_data)
-            if task_status:
-                output.append(task_status)
+        process_store = ProcessStore()
+        for task_status_id, process_data_dict in await process_store.list(user_id=self.user_id):
+            if process_data_dict:
+                output.append(Task(**process_data_dict))
 
         output = sorted(output, key=lambda ts: ts.id, reverse=not ascending)
         start_idx = (page - 1) * page_size

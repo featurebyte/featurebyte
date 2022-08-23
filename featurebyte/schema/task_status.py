@@ -1,8 +1,9 @@
 """
 TaskStatus API payload schema
 """
-from typing import Any, Dict, List, Literal, Union
+from typing import Any, Dict, List, Optional, Union
 
+from enum import Enum
 from uuid import UUID
 
 from beanie import PydanticObjectId
@@ -14,39 +15,37 @@ from featurebyte.routes.common.schema import PaginationMixin
 TaskId = Union[PydanticObjectId, UUID]
 
 
-class TaskSubmission(FeatureByteBaseModel):
+class TaskStatus(str, Enum):
     """
-    Task Submission schema
+    TaskStatus enum
     """
 
-    task_id: TaskId = Field(allow_mutation=False)
-    output_document_id: PydanticObjectId = Field(allow_mutation=False)
+    PENDING = ("PENDING",)
+    RECEIVED = ("RECEIVED",)
+    STARTED = ("STARTED",)
+    SUCCESS = ("SUCCESS",)
+    FAILURE = ("FAILURE",)
+    REVOKED = ("REVOKED",)
+    REJECTED = ("REJECTED",)
+    RETRY = ("RETRY",)
+    IGNORED = ("IGNORED",)
 
 
-class TaskStatus(FeatureByteBaseModel):
+class Task(FeatureByteBaseModel):
     """
     TaskStatus retrieval schema
     """
 
     id: TaskId = Field(allow_mutation=False)
-    status: Literal[
-        "PENDING",
-        "RECEIVED",
-        "STARTED",
-        "SUCCESS",
-        "FAILURE",
-        "REVOKED",
-        "REJECTED",
-        "RETRY",
-        "IGNORED",
-    ] = Field(allow_mutation=False)
+    status: TaskStatus = Field(allow_mutation=False)
     output_path: str
     payload: Dict[str, Any]
+    traceback: Optional[str]
 
 
-class TaskStatusList(PaginationMixin):
+class TaskList(PaginationMixin):
     """
     Paginated list of TaskStatus
     """
 
-    data: List[TaskStatus]
+    data: List[Task]

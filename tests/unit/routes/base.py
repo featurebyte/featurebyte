@@ -332,12 +332,12 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
         id_before = self.payload["_id"]
         response = test_api_client.post(f"{self.base_route}", json=self.payload)
         task_submission = response.json()
-        task_id = task_submission["task_id"]
-        output_document_id = task_submission["output_document_id"]
+        task_id = task_submission["id"]
+        output_path = task_submission["output_path"]
 
         start_time = datetime.now()
         while (datetime.now() - start_time).seconds < self.time_limit:
-            response = test_api_client.get(f"/task_status/{task_id}")
+            response = test_api_client.get(f"/task/{task_id}")
             task_status = response.json()
             status = task_status["status"]
             if status not in ["PENDING", "RECEIVED", "STARTED"]:
@@ -345,7 +345,7 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
                 break
             sleep(0.1)
 
-        response = test_api_client.get(f"{self.base_route}/{output_document_id}")
+        response = test_api_client.get(output_path)
         response_dict = response.json()
         assert response_dict["_id"] == id_before
         return response

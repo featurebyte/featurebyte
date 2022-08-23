@@ -4,7 +4,7 @@ Unit test for EventData class
 from __future__ import annotations
 
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -422,11 +422,6 @@ def test_update_default_job_setting__saved_event_data(saved_event_data, config):
     Test update default job setting on saved event data
     """
     assert saved_event_data.default_feature_job_setting is None
-    saved_event_data.update_default_feature_job_setting()
-
-    import pdb
-
-    pdb.set_trace()
     saved_event_data.update_default_feature_job_setting(
         feature_job_setting={
             "blind_spot": "1m30s",
@@ -463,6 +458,50 @@ def test_update_default_job_setting__record_update_exception(snowflake_event_dat
                     "time_modulo_frequency": "1m",
                 }
             )
+
+
+def test_update_default_job_setting__feature_job_setting_analysis_failure__event_data_not_saved(
+    snowflake_event_data, config
+):
+    """
+    Test update failure due to event data not saved
+    """
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_event_data.update_default_feature_job_setting()
+    expected_msg = f'EventData (id: "{snowflake_event_data.id}") not found. Please save the EventData object first.'
+    assert expected_msg in str(exc)
+
+
+@pytest.fixture(name="mock_process_store")
+def mock_process_store_fixture():
+    with patch("featurebyte.service.task_manager.ProcessStore") as mock:
+        task_id = ObjectId()
+        mock.return_value.submit = AsyncMock()
+        mock.return_value.submit.return_value = task_id
+        yield mock
+
+
+def test_update_default_job_setting__feature_job_setting_analysis_failure(
+    mock_process_store,
+    saved_event_data,
+    config,
+):
+    """
+    Test feature job setting task failure
+    """
+    get_return = {
+        "id": ObjectId(),
+        "process": Mock(),
+        "output_path": "some_output_path",
+        "payload": {},
+        "status": "FAILURE",
+        "traceback": "ValueError: Event Data not found",
+    }
+    mock_process_store.return_value.get = AsyncMock()
+    mock_process_store.return_value.get.return_value = get_return
+    with pytest.raises(RecordCreationException) as exc:
+        saved_event_data.update_default_feature_job_setting()
+    assert "ValueError: Event Data not found" in str(exc.value)
 
 
 def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_config_path_env):

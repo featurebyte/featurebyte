@@ -10,19 +10,19 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.schema.task_status import TaskStatus, TaskStatusList
+from featurebyte.schema.task_status import Task, TaskList
 from featurebyte.service.task_manager import AbstractTaskManager, TaskManager
 
 
-class TaskStatusController:
+class TaskController:
     """
-    TaskStatusController
+    TaskController
     """
 
     task_manager_class: type[AbstractTaskManager] = TaskManager
 
     @classmethod
-    async def get_task_status(cls, user: Any, task_status_id: ObjectId) -> TaskStatus:
+    async def get_task(cls, user: Any, task_id: ObjectId) -> Task:
         """
         Check task status
 
@@ -30,12 +30,12 @@ class TaskStatusController:
         ----------
         user: Any
             User class to provide user identifier
-        task_status_id: ObjectId
-            Task status ID
+        task_id: ObjectId
+            Task ID
 
         Returns
         -------
-        TaskStatus
+        Task
 
         Raises
         ------
@@ -43,22 +43,22 @@ class TaskStatusController:
             When the task status not found
         """
         task_manager = cls.task_manager_class(user_id=user.id)
-        task_status = await task_manager.get_task_status(task_status_id=ObjectId(task_status_id))
+        task_status = await task_manager.get_task(task_id=ObjectId(task_id))
         if task_status is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
-                detail=f'TaskStatus (id: "{task_status_id}") not found.',
+                detail=f'Task (id: "{task_id}") not found.',
             )
         return task_status
 
     @classmethod
-    async def list_task_status(
+    async def list_tasks(
         cls,
         user: Any,
         page: int = 1,
         page_size: int = 10,
         sort_dir: Literal["asc", "desc"] = "desc",
-    ) -> TaskStatusList:
+    ) -> TaskList:
         """
         List task statuses of the given user
 
@@ -75,10 +75,10 @@ class TaskStatusController:
 
         Returns
         -------
-        TaskStatusList
+        TaskList
         """
         task_manager = cls.task_manager_class(user_id=user.id)
-        task_statuses, total = await task_manager.list_task_status(
+        task_statuses, total = await task_manager.list_tasks(
             page=page, page_size=page_size, ascending=(sort_dir == "asc")
         )
-        return TaskStatusList(page=page, page_size=page_size, total=total, data=task_statuses)
+        return TaskList(page=page, page_size=page_size, total=total, data=task_statuses)

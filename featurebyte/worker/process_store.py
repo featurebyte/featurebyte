@@ -7,12 +7,13 @@ from typing import Any, Callable, Dict, Optional, Type
 
 import json
 from enum import Enum
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 
 from bson.objectid import ObjectId
 from cachetools import FIFOCache
 
 from featurebyte.common.singleton import SingletonMeta
+from featurebyte.schema.task_status import TaskStatus
 from featurebyte.worker.enum import Command
 from featurebyte.worker.progress import GlobalProgress
 from featurebyte.worker.task_executor import TaskExecutor
@@ -23,7 +24,7 @@ class ProcessStore(metaclass=SingletonMeta):
     ProcessStore class is responsible to store process temporary
     """
 
-    _store: FIFOCache[tuple[Optional[ObjectId], ObjectId], Process] = FIFOCache(maxsize=128)
+    _store: FIFOCache[tuple[Optional[ObjectId], ObjectId], Dict[str, Any]] = FIFOCache(maxsize=128)
     _command_class: Type[Enum] = Command
     _task_executor: Callable[..., Any] = TaskExecutor
 
@@ -42,46 +43,62 @@ class ProcessStore(metaclass=SingletonMeta):
         -------
         ObjectId
         """
-        task_status_id = ObjectId()
+        task_id = ObjectId()
         payload_dict = json.loads(payload)
         user_id = None
         if payload_dict["user_id"]:
             user_id = ObjectId(payload_dict["user_id"])
-        progress_queue = GlobalProgress().get_progress(
-            user_id=user_id, task_status_id=task_status_id
-        )
+        progress_queue = GlobalProgress().get_progress(user_id=user_id, task_id=task_id)
+        queue = Queue()
         process = Process(
-            target=self._task_executor, args=(payload_dict, progress_queue), daemon=True
+            target=self._task_executor, args=(payload_dict, queue, progress_queue), daemon=True
         )
         process.start()
-        self._store[(user_id, task_status_id)] = {
+        self._store[(user_id, task_id)] = {
             "process": process,
             "payload": payload_dict,
             "output_path": output_path,
+            "queue": queue,
         }
-        return task_status_id
+        return task_id
 
-    async def get(
-        self, user_id: Optional[ObjectId], task_status_id: ObjectId
-    ) -> Optional[Dict[str, Any]]:
+    async def get(self, user_id: Optional[ObjectId], task_id: ObjectId) -> Optional[Dict[str, Any]]:
         """
-        Retrieve process given user_id and task_status_id
+        Retrieve process given user_id and task_id
 
         Parameters
         ----------
         user_id: Optional[ObjectId]
             User ID
-        task_status_id: ObjectId
-            Task status ID
+        task_id: ObjectId
+            Task ID
 
         Returns
         -------
         Optional[Dict[str, Any]]
         """
-        key_pair = (user_id, task_status_id)
-        return self._store.get(key_pair)
+        key_pair = (user_id, task_id)
+        process_data = self._store.get(key_pair)
+        if process_data:
+            process = process_data["process"]
+            traceback = None
+            if process.exitcode is None:
+                status = TaskStatus.STARTED
+            elif process.exitcode == 0:
+                output = process_data["queue"].get()
+                output_dict = json.loads(output)
+                process_data["queue"].put(output)
+                if "output" in output_dict:
+                    status = TaskStatus.SUCCESS
+                else:
+                    status = TaskStatus.FAILURE
+                    traceback = output_dict["traceback"]
+            else:
+                status = TaskStatus.FAILURE
+            return {**process_data, "id": task_id, "status": status, "traceback": traceback}
+        return process_data
 
-    async def list(self, user_id: Optional[ObjectId]) -> list[tuple[ObjectId, Process]]:
+    async def list(self, user_id: Optional[ObjectId]) -> list[tuple[ObjectId, Dict[str, Any]]]:
         """
         List process of the given user
 
@@ -92,10 +109,11 @@ class ProcessStore(metaclass=SingletonMeta):
 
         Returns
         -------
-        List of (task_status_id, process) tuples
+        List of (task_id, process_data_dict) tuples
         """
         output = []
-        for (user_id_key, task_status_id_key), process_data in self._store.items():
+        for user_id_key, task_id_key in self._store.keys():
             if user_id_key == user_id:
-                output.append((task_status_id_key, process_data))
+                process_data_dict = await self.get(user_id=user_id_key, task_id=task_id_key)
+                output.append((task_id_key, process_data_dict))
         return output

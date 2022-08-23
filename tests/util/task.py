@@ -1,21 +1,18 @@
 """
 Tasks used for testing purpose
 """
-import asyncio
 import time
 from enum import Enum
 
 from featurebyte.schema.worker.task.base import BaseTaskPayload
-from featurebyte.worker.task.base import TASK_MAP, BaseTask
+from featurebyte.worker.task.base import BaseTask
+from featurebyte.worker.task_executor import TaskExecutor as WorkerTaskExecutor
 
 
-class TaskExecutor:
+class TaskExecutor(WorkerTaskExecutor):
     """TaskExecutor class"""
 
-    def __init__(self, payload, progress):
-        command = payload["command"]
-        task = TASK_MAP[command](payload=payload, progress=progress)
-        asyncio.run(task.execute())
+    command_type = str
 
 
 class Command(str, Enum):

@@ -19,7 +19,7 @@ ProcessStore._task_executor = TaskExecutor
 class TestTaskStatusApi:
 
     # class variables to be set at metaclass
-    base_route = "/task_status"
+    base_route = "/task"
 
     @pytest.fixture
     def task_manager(self, user_id):
@@ -30,7 +30,7 @@ class TestTaskStatusApi:
     @pytest.fixture(autouse=True)
     def patch_controller_task_manager(self, task_manager):
         """Patch task manager in task status controller"""
-        with patch("featurebyte.routes.task_status.controller.TaskManager") as mock_task_manager:
+        with patch("featurebyte.routes.task.controller.TaskManager") as mock_task_manager:
             mock_task_manager.return_value = task_manager
             yield
 
@@ -58,12 +58,12 @@ class TestTaskStatusApi:
 
     @pytest.mark.no_mock_process_store
     def test_get_404(self, test_api_client_persistent):
-        """Tset get (not found)"""
+        """Test get (not found)"""
         test_api_client, _ = test_api_client_persistent
         unknown_id = ObjectId()
         response = test_api_client.get(f"{self.base_route}/{unknown_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
-        assert response.json()["detail"] == f'TaskStatus (id: "{unknown_id}") not found.'
+        assert response.json()["detail"] == f'Task (id: "{unknown_id}") not found.'
 
     @pytest.mark.parametrize("sort_dir, reverse", [("desc", True), ("asc", False)])
     def test_list_200(self, test_api_client_persistent, sort_dir, reverse):
