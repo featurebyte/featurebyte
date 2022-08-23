@@ -49,3 +49,16 @@ def test_accessor__getattr__(timestamp_series):
 
     # check that able to access builtin attribute
     assert timestamp_series.dt.__class__ == DatetimeAccessor
+
+    # check __dir__ magic method
+    assert set(dir(timestamp_series.dt)) == {
+        "year",
+        "quarter",
+        "month",
+        "week",
+        "day",
+        "day_of_week",
+        "hour",
+        "minute",
+        "second",
+    }
