@@ -13,7 +13,7 @@ from bson.objectid import ObjectId
 from cachetools import FIFOCache
 
 from featurebyte.common.singleton import SingletonMeta
-from featurebyte.schema.task_status import TaskStatus
+from featurebyte.schema.task import TaskStatus
 from featurebyte.worker.enum import Command
 from featurebyte.worker.progress import GlobalProgress
 from featurebyte.worker.task_executor import TaskExecutor

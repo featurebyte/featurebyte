@@ -9,7 +9,7 @@ from abc import abstractmethod
 
 from bson.objectid import ObjectId
 
-from featurebyte.schema.task_status import Task
+from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.worker.process_store import ProcessStore
 

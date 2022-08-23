@@ -25,7 +25,7 @@ from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisCreate,
     FeatureJobSettingAnalysisList,
 )
-from featurebyte.schema.task_status import Task
+from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/feature_job_setting_analysis")
 

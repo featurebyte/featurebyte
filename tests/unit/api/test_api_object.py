@@ -8,7 +8,7 @@ import pytest
 
 from featurebyte.api.api_object import ApiGetObject, ApiObject
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
-from featurebyte.schema.task_status import TaskStatus
+from featurebyte.schema.task import TaskStatus
 
 
 @pytest.fixture(name="mock_configuration")

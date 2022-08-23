@@ -17,7 +17,7 @@ from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisCreate,
     FeatureJobSettingAnalysisList,
 )
-from featurebyte.schema.task_status import Task
+from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisTaskPayload,
 )

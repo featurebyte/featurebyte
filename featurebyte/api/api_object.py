@@ -19,7 +19,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.models.base import FeatureByteBaseDocumentModel
-from featurebyte.schema.task_status import TaskStatus
+from featurebyte.schema.task import TaskStatus
 
 
 class ApiGetObject(FeatureByteBaseDocumentModel):

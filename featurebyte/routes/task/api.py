@@ -8,7 +8,7 @@ from typing import Optional
 from fastapi import APIRouter, Request
 
 from featurebyte.routes.common.schema import PageQuery, PageSizeQuery, SortDirQuery
-from featurebyte.schema.task_status import Task, TaskList
+from featurebyte.schema.task import Task, TaskList
 
 router = APIRouter(prefix="/task")
 
