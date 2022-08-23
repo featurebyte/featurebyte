@@ -62,7 +62,7 @@ class BaseTask:
             self.progress.put(progress.dict(exclude_none=True))
 
     @abstractmethod
-    async def execute(self) -> None:
+    async def execute(self) -> Any:
         """
         Execute the task
         """

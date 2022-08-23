@@ -436,9 +436,11 @@ def event_data_fixture(config, snowflake_session, snowflake_feature_store, mock_
         credentials=config.credentials,
     )
     event_data.update_default_feature_job_setting(
-        blind_spot="30m",
-        frequency="1h",
-        time_modulo_frequency="30m",
+        feature_job_setting={
+            "blind_spot": "30m",
+            "frequency": "1h",
+            "time_modulo_frequency": "30m",
+        }
     )
 
     # create entity & event data

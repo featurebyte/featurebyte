@@ -4,7 +4,7 @@ Unit test for EventData class
 from __future__ import annotations
 
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -403,9 +403,11 @@ def test_update_default_job_setting(snowflake_event_data, config):
 
     assert snowflake_event_data.default_feature_job_setting is None
     snowflake_event_data.update_default_feature_job_setting(
-        blind_spot="1m30s",
-        frequency="10m",
-        time_modulo_frequency="2m",
+        feature_job_setting={
+            "blind_spot": "1m30s",
+            "frequency": "10m",
+            "time_modulo_frequency": "2m",
+        }
     )
     assert snowflake_event_data.saved is False
     assert snowflake_event_data.default_feature_job_setting == FeatureJobSetting(
@@ -421,9 +423,11 @@ def test_update_default_job_setting__saved_event_data(saved_event_data, config):
     """
     assert saved_event_data.default_feature_job_setting is None
     saved_event_data.update_default_feature_job_setting(
-        blind_spot="1m30s",
-        frequency="6m",
-        time_modulo_frequency="3m",
+        feature_job_setting={
+            "blind_spot": "1m30s",
+            "frequency": "6m",
+            "time_modulo_frequency": "3m",
+        }
     )
     assert saved_event_data.saved is True
 
@@ -440,6 +444,25 @@ def test_update_default_job_setting__saved_event_data(saved_event_data, config):
         "time_modulo_frequency": "3m",
     }
 
+    # test update default feature job setting by using feature job analysis
+    with patch("featurebyte.api.event_data.EventData.post_async_task") as mock:
+        mock.return_value = {
+            "analysis_result": {
+                "recommended_feature_job_setting": {
+                    "frequency": 180,
+                    "job_time_modulo_frequency": 61,
+                    "blind_spot": 395,
+                    "feature_cutoff_modulo_frequency": 26,
+                }
+            }
+        }
+        saved_event_data.update_default_feature_job_setting()
+        assert saved_event_data.default_feature_job_setting == FeatureJobSetting(
+            blind_spot="395s",
+            frequency="180s",
+            time_modulo_frequency="61s",
+        )
+
 
 def test_update_default_job_setting__record_update_exception(snowflake_event_data):
     """
@@ -448,10 +471,56 @@ def test_update_default_job_setting__record_update_exception(snowflake_event_dat
     with pytest.raises(RecordUpdateException):
         with patch("featurebyte.api.event_data.Configurations"):
             snowflake_event_data.update_default_feature_job_setting(
-                blind_spot="1m",
-                frequency="2m",
-                time_modulo_frequency="1m",
+                feature_job_setting={
+                    "blind_spot": "1m",
+                    "frequency": "2m",
+                    "time_modulo_frequency": "1m",
+                }
             )
+
+
+def test_update_default_job_setting__feature_job_setting_analysis_failure__event_data_not_saved(
+    snowflake_event_data, config
+):
+    """
+    Test update failure due to event data not saved
+    """
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_event_data.update_default_feature_job_setting()
+    expected_msg = f'EventData (id: "{snowflake_event_data.id}") not found. Please save the EventData object first.'
+    assert expected_msg in str(exc)
+
+
+@pytest.fixture(name="mock_process_store")
+def mock_process_store_fixture():
+    with patch("featurebyte.service.task_manager.ProcessStore") as mock:
+        task_id = ObjectId()
+        mock.return_value.submit = AsyncMock()
+        mock.return_value.submit.return_value = task_id
+        yield mock
+
+
+def test_update_default_job_setting__feature_job_setting_analysis_failure(
+    mock_process_store,
+    saved_event_data,
+    config,
+):
+    """
+    Test feature job setting task failure
+    """
+    get_return = {
+        "id": ObjectId(),
+        "process": Mock(),
+        "output_path": "some_output_path",
+        "payload": {},
+        "status": "FAILURE",
+        "traceback": "ValueError: Event Data not found",
+    }
+    mock_process_store.return_value.get = AsyncMock()
+    mock_process_store.return_value.get.return_value = get_return
+    with pytest.raises(RecordCreationException) as exc:
+        saved_event_data.update_default_feature_job_setting()
+    assert "ValueError: Event Data not found" in str(exc.value)
 
 
 def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_config_path_env):
@@ -489,9 +558,11 @@ def test_default_feature_job_setting_history(saved_event_data):
     assert setting_history[0].items() > {"setting": None}.items()
     t1 = datetime.utcnow()
     saved_event_data.update_default_feature_job_setting(
-        blind_spot="1m30s",
-        frequency="10m",
-        time_modulo_frequency="2m",
+        feature_job_setting={
+            "blind_spot": "1m30s",
+            "frequency": "10m",
+            "time_modulo_frequency": "2m",
+        }
     )
     t2 = datetime.utcnow()
 
@@ -504,9 +575,11 @@ def test_default_feature_job_setting_history(saved_event_data):
     assert t2 >= datetime.fromisoformat(history[0]["created_at"]) >= t1
 
     saved_event_data.update_default_feature_job_setting(
-        blind_spot="1m",
-        frequency="5m",
-        time_modulo_frequency="2m",
+        feature_job_setting={
+            "blind_spot": "1m",
+            "frequency": "5m",
+            "time_modulo_frequency": "2m",
+        }
     )
     t3 = datetime.utcnow()
 

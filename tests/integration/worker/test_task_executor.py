@@ -2,6 +2,7 @@
 Tests for task executor
 """
 from enum import Enum
+from unittest.mock import Mock
 
 import pytest
 from bson.objectid import ObjectId
@@ -88,6 +89,7 @@ def test_task_executor(random_task_class_store):
             "user_id": user_id,
             "output_document_id": document_id,
         },
+        queue=Mock(),
         progress=None,
     )
 

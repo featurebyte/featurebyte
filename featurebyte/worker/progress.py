@@ -4,7 +4,7 @@ This module contains Progress class which is used for tracking progress update
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from abc import abstractmethod
 from multiprocessing import Queue
@@ -20,7 +20,7 @@ class AbstractProgress:
     """
 
     @abstractmethod
-    def get_progress(self, user_id: ObjectId, task_status_id: ObjectId) -> Any:
+    def get_progress(self, user_id: ObjectId, task_id: ObjectId) -> Any:
         """
         Get progress queue
 
@@ -28,8 +28,8 @@ class AbstractProgress:
         ----------
         user_id: ObjectId
             User ID
-        task_status_id: ObjectId
-            Task Status ID
+        task_id: ObjectId
+            Task ID
 
         Returns
         -------
@@ -42,10 +42,10 @@ class GlobalProgress(AbstractProgress, metaclass=SingletonMeta):
     ProgressSink class
     """
 
-    _queue_map: dict[tuple[ObjectId, ObjectId], Any] = {}
+    _queue_map: dict[tuple[Optional[ObjectId], ObjectId], Any] = {}
 
-    def get_progress(self, user_id: ObjectId, task_status_id: ObjectId) -> Any:
-        key_pair = (user_id, task_status_id)
+    def get_progress(self, user_id: Optional[ObjectId], task_id: ObjectId) -> Any:
+        key_pair = (user_id, task_id)
         if key_pair not in self._queue_map:
             self._queue_map[key_pair] = Queue()
         return self._queue_map[key_pair]

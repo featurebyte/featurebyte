@@ -12,11 +12,12 @@ from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisCreate,
     FeatureJobSettingAnalysisList,
 )
-from featurebyte.schema.task_status import TaskSubmission
+from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisTaskPayload,
 )
@@ -41,7 +42,7 @@ class FeatureJobSettingAnalysisController(
         persistent: Persistent,
         task_manager: AbstractTaskManager,
         data: FeatureJobSettingAnalysisCreate,
-    ) -> TaskSubmission:
+    ) -> Task:
         """
         Create Feature JobSetting Analysis and store in persisten
 
@@ -58,8 +59,8 @@ class FeatureJobSettingAnalysisController(
 
         Returns
         -------
-        TaskSubmission
-            TaskSubmission object for the submitted task
+        Task
+            Task object for the submitted task
         """
         # check any conflict with existing documents
         output_document_id = data.id or ObjectId()
@@ -83,8 +84,4 @@ class FeatureJobSettingAnalysisController(
 
         # run analysis
         task_id = await task_manager.submit(payload=payload)
-
-        return TaskSubmission(
-            task_id=task_id,
-            output_document_id=payload.output_document_id,
-        )
+        return await TaskController.get_task(user=user, task_id=task_id)

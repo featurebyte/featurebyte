@@ -16,8 +16,14 @@ class ResponseException(Exception):
     def __init__(self, response: Response, *args: Any, **kwargs: Any) -> None:
         self.response = response
         response_dict = response.json()
-        if "detail" in response_dict:
-            super().__init__(response_dict["detail"], *args, **kwargs)
+        exc_info = None
+        for field in ["detail", "traceback"]:
+            if field in response_dict:
+                exc_info = response_dict[field]
+                break
+
+        if exc_info:
+            super().__init__(exc_info, *args, **kwargs)
         else:
             super().__init__(*args, **kwargs)
 

@@ -3,7 +3,7 @@ EventData class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from http import HTTPStatus
 
@@ -14,6 +14,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.util import get_entity
+from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import GetAttrMixin
 from featurebyte.exception import (
@@ -224,32 +225,38 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
 
     @typechecked
     def update_default_feature_job_setting(
-        self, blind_spot: str, frequency: str, time_modulo_frequency: str
+        self, feature_job_setting: Optional[Dict[str, Any]] = None
     ) -> None:
         """
         Update default feature job setting
 
         Parameters
         ----------
-        blind_spot: str
-            Blind spot parameter
-        frequency: str
-            Frequency parameter
-        time_modulo_frequency: str
-            Time modulo frequency
+        feature_job_setting: Optional[Dict[str, Any]]
+            Feature job setting dictionary contains blind_spot, frequency & time_modulo_frequency keys
 
         Raises
         ------
         RecordUpdateException
             When unexpected record update failure
         """
-        feature_job_setting = FeatureJobSetting(
-            blind_spot=blind_spot,
-            frequency=frequency,
-            time_modulo_frequency=time_modulo_frequency,
-        )
-        data = EventDataUpdate(default_feature_job_setting=feature_job_setting)
         client = Configurations().get_client()
+        if feature_job_setting:
+            _ = validate_job_setting_parameters(**feature_job_setting)
+        else:
+            job_setting_analysis = self.post_async_task(
+                route="/feature_job_setting_analysis", payload={"event_data_id": str(self.id)}
+            )
+            recommended_setting = job_setting_analysis["analysis_result"][
+                "recommended_feature_job_setting"
+            ]
+            feature_job_setting = {
+                "blind_spot": f'{recommended_setting["blind_spot"]}s',
+                "time_modulo_frequency": f'{recommended_setting["job_time_modulo_frequency"]}s',
+                "frequency": f'{recommended_setting["frequency"]}s',
+            }
+
+        data = EventDataUpdate(default_feature_job_setting=FeatureJobSetting(**feature_job_setting))
         response = client.patch(url=f"/event_data/{self.id}", json=data.dict())
         if response.status_code == HTTPStatus.OK:
             type(self).__init__(

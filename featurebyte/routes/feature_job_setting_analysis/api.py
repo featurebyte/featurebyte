@@ -25,26 +25,24 @@ from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisCreate,
     FeatureJobSettingAnalysisList,
 )
-from featurebyte.schema.task_status import TaskSubmission
+from featurebyte.schema.task import Task
 
 router = APIRouter(prefix="/feature_job_setting_analysis")
 
 
-@router.post("", response_model=TaskSubmission, status_code=HTTPStatus.CREATED)
+@router.post("", response_model=Task, status_code=HTTPStatus.CREATED)
 async def create_feature_job_setting_analysis(
     request: Request,
     data: FeatureJobSettingAnalysisCreate,
-) -> TaskSubmission:
+) -> Task:
     """
     Create Feature Job Setting Analysis
     """
-    task_submit: TaskSubmission = (
-        await request.state.controller.create_feature_job_setting_analysis(
-            user=request.state.user,
-            persistent=request.state.persistent,
-            task_manager=request.state.task_manager,
-            data=data,
-        )
+    task_submit: Task = await request.state.controller.create_feature_job_setting_analysis(
+        user=request.state.user,
+        persistent=request.state.persistent,
+        task_manager=request.state.task_manager,
+        data=data,
     )
     return task_submit
 

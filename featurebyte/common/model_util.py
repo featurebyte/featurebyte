@@ -3,9 +3,12 @@ This module contains the implementation of feature job setting validation
 """
 from __future__ import annotations
 
+from typing import Tuple
+
 from datetime import datetime
 
 import pandas as pd
+from typeguard import typechecked
 
 
 def parse_duration_string(duration_string: str, minimum_seconds: int = 0) -> int:
@@ -35,9 +38,10 @@ def parse_duration_string(duration_string: str, minimum_seconds: int = 0) -> int
     return duration_total_seconds
 
 
+@typechecked
 def validate_job_setting_parameters(
     frequency: str, time_modulo_frequency: str, blind_spot: str
-) -> tuple[int, int, int]:
+) -> Tuple[int, int, int]:
     """Validate that job setting parameters are correct
 
     Parameters

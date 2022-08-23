@@ -173,7 +173,11 @@ def test_groupby__default_feature_job_setting(snowflake_event_data):
     Test default job setting from event data is used
     """
     snowflake_event_data.update_default_feature_job_setting(
-        blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        feature_job_setting={
+            "blind_spot": "1m30s",
+            "frequency": "6m",
+            "time_modulo_frequency": "3m",
+        }
     )
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
 
