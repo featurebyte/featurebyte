@@ -3,8 +3,9 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, cast
 
+import time
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
@@ -18,6 +19,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.models.base import FeatureByteBaseDocumentModel
+from featurebyte.schema.task_status import TaskStatus
 
 
 class ApiGetObject(FeatureByteBaseDocumentModel):
@@ -218,3 +220,56 @@ class ApiObject(ApiGetObject):
         type(self).__init__(
             self, **response.json(), **self._get_init_params_from_object(), saved=True
         )
+
+    @staticmethod
+    def post_async_task(route: str, payload: dict[str, Any], delay: float = 0.1) -> dict[str, Any]:
+        """
+        Post async task to the worker & retrieve the results (blocking)
+
+        Parameters
+        ----------
+        route: str
+            Async task route
+        payload: dict[str, Any]
+            Task payload
+        delay: float
+            Delay used in polling the task
+
+        Returns
+        -------
+        dict[str, Any]
+            Response data
+
+        Raises
+        ------
+        RecordCreationException
+            When failed to generate feature job setting analysis task
+        RecordRetrievalException
+            When failed to retrieve feature job setting analysis result
+        """
+        client = Configurations().get_client()
+        create_response = client.post(url=route, json=payload)
+        if create_response.status_code == HTTPStatus.CREATED:
+            create_response_dict = create_response.json()
+            status = create_response_dict["status"]
+
+            # poll the task route (if the task is still running)
+            task_get_response = None
+            while status == TaskStatus.STARTED:
+                task_get_response = client.get(url=f'/task/{create_response_dict["id"]}')
+                if task_get_response.status_code == HTTPStatus.OK:
+                    status = task_get_response.json()["status"]
+                    time.sleep(delay)
+                else:
+                    raise RecordRetrievalException(task_get_response)
+
+            # check the task status
+            if status != TaskStatus.SUCCESS:
+                raise RecordCreationException(response=task_get_response or create_response)
+
+            # retrieve task result
+            result_response = client.get(url=create_response_dict["output_path"])
+            if result_response.status_code == HTTPStatus.OK:
+                return cast(Dict[str, Any], result_response.json())
+            raise RecordRetrievalException(response=result_response)
+        raise RecordCreationException(response=create_response)

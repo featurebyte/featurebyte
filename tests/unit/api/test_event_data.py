@@ -444,6 +444,25 @@ def test_update_default_job_setting__saved_event_data(saved_event_data, config):
         "time_modulo_frequency": "3m",
     }
 
+    # test update default feature job setting by using feature job analysis
+    with patch("featurebyte.api.event_data.EventData.post_async_task") as mock:
+        mock.return_value = {
+            "analysis_result": {
+                "recommended_feature_job_setting": {
+                    "frequency": 180,
+                    "job_time_modulo_frequency": 61,
+                    "blind_spot": 395,
+                    "feature_cutoff_modulo_frequency": 26,
+                }
+            }
+        }
+        saved_event_data.update_default_feature_job_setting()
+        assert saved_event_data.default_feature_job_setting == FeatureJobSetting(
+            blind_spot="395s",
+            frequency="180s",
+            time_modulo_frequency="61s",
+        )
+
 
 def test_update_default_job_setting__record_update_exception(snowflake_event_data):
     """
