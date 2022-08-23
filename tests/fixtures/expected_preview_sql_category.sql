@@ -95,7 +95,7 @@ LEFT JOIN (
       INNER_."CUSTOMER_ID",
       OBJECT_AGG(CASE
         WHEN INNER_."product_type" IS NULL THEN '__MISSING__'
-        ELSE INNER_."product_type"
+        ELSE CAST(INNER_."product_type" AS VARCHAR)
       END, INNER_."inner_agg_w7200_avg_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2") AS "agg_w7200_avg_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2"
     FROM (
         SELECT
@@ -124,7 +124,7 @@ LEFT JOIN (
       INNER_."CUSTOMER_ID",
       OBJECT_AGG(CASE
         WHEN INNER_."product_type" IS NULL THEN '__MISSING__'
-        ELSE INNER_."product_type"
+        ELSE CAST(INNER_."product_type" AS VARCHAR)
       END, INNER_."inner_agg_w172800_avg_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2") AS "agg_w172800_avg_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2"
     FROM (
         SELECT
