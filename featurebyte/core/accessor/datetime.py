@@ -3,7 +3,7 @@ This module contains datetime accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Iterable
 
 from featurebyte.core.util import series_unary_operation
 from featurebyte.enum import DBVarType
@@ -55,6 +55,10 @@ class DatetimeAccessor:
         if obj.var_type != DBVarType.TIMESTAMP:
             raise AttributeError("Can only use .dt accessor with TIMESTAMP values!")
         self._obj = obj
+
+    def __dir__(self) -> Iterable[str]:
+        # provide datetime extraction lookup and completion for __getattr__
+        return self._property_node_params_map.keys()
 
     def _extract_datetime_properties(self, node_params: Dict[str, Any]) -> Series:
         return series_unary_operation(
