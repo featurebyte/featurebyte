@@ -83,7 +83,7 @@ def user_id():
 
 
 @pytest.fixture(autouse=True, scope="function")
-def mock_process_store(request, persistent):
+def mock_process_store(request, persistent, storage, temp_storage):
     """
     Mock process store to avoid running task in subprocess for testing
     """
@@ -103,6 +103,8 @@ def mock_process_store(request, persistent):
                 progress=Mock(),
                 get_credential=get_credential,
                 get_persistent=lambda: persistent,
+                get_storage=lambda: storage,
+                get_temp_storage=lambda: temp_storage,
             )
             await task.execute()
             task_id = ObjectId()

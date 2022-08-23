@@ -3,10 +3,15 @@ Storage base class
 """
 from __future__ import annotations
 
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 
+import pickle
+import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
+
+import pandas as pd
+from pandas import DataFrame
 
 
 class Storage(ABC):
@@ -15,7 +20,7 @@ class Storage(ABC):
     """
 
     @abstractmethod
-    async def put(self, local_path: Path, remote_path: str) -> None:
+    async def put(self, local_path: Path, remote_path: Path) -> None:
         """
         Upload local file to storage
 
@@ -23,7 +28,7 @@ class Storage(ABC):
         ----------
         local_path: Path
             Path to local file to be uploaded
-        remote_path: str
+        remote_path: Path
             Path of remote file to be stored
         """
 
@@ -34,7 +39,7 @@ class Storage(ABC):
 
         Parameters
         ----------
-        remote_path: str
+        remote_path: Path
             Path of remote file to be downloaded
         local_path: Path
             Path to stored downloaded file
@@ -42,16 +47,102 @@ class Storage(ABC):
 
     @abstractmethod
     async def get_file_stream(
-        self, remote_path: str, chunk_size: int = 255 * 1024
+        self, remote_path: Path, chunk_size: int = 255 * 1024
     ) -> AsyncGenerator[bytes, None]:
         """
         Stream file from storage to local path
 
         Parameters
         ----------
-        remote_path: str
+        remote_path: Path
             Path of remote file to be downloaded
         chunk_size: int
             Size of each chunk in the stream
         """
         yield bytes()
+
+    async def put_object(self, data: Any, remote_path: Path) -> None:
+        """
+        Upload python object to storage as pickle file
+
+        Parameters
+        ----------
+        data: Any
+            Python object that can be pickled
+        remote_path: Path
+            Path of remote file to upload to
+        """
+        with tempfile.NamedTemporaryFile() as file_obj:
+            pickle.dump(data, file_obj)
+            file_obj.flush()
+            await self.put(file_obj.name, remote_path)
+
+    async def get_object(self, remote_path: Path) -> Any:
+        """
+        Download python object from stored pickle file
+
+        Parameters
+        ----------
+        remote_path: Path
+            Path of remote file to be downloaded
+        """
+        with tempfile.NamedTemporaryFile() as file_obj:
+            await self.get(remote_path, file_obj.name)
+            return pickle.load(file_obj)
+
+    async def put_text(self, text: str, remote_path: Path) -> None:
+        """
+        Upload text content to storage as text file
+
+        Parameters
+        ----------
+        text: str
+            Text value to be stored
+        remote_path: Path
+            Path of remote file to upload to
+        """
+        with tempfile.NamedTemporaryFile(mode="w") as file_obj:
+            file_obj.write(text)
+            file_obj.flush()
+            await self.put(file_obj.name, remote_path)
+
+    async def get_text(self, remote_path: Path) -> None:
+        """
+        Download text content from storage text file
+
+        Parameters
+        ----------
+        remote_path: Path
+            Path of remote file to be downloaded
+        """
+        with tempfile.NamedTemporaryFile(mode="r") as file_obj:
+            await self.get(remote_path, file_obj.name)
+            return file_obj.read()
+
+    async def put_dataframe(self, dataframe: DataFrame, remote_path: Path) -> None:
+        """
+        Upload dataframe to storage as parquet file
+
+        Parameters
+        ----------
+        dataframe: DataFrame
+            Pandas DataFrame to be stored
+        remote_path: Path
+            Path of remote file to upload to
+        """
+        with tempfile.NamedTemporaryFile() as file_obj:
+            dataframe.to_parquet(file_obj.name)
+            await self.put(file_obj.name, remote_path)
+
+    async def get_dataframe(self, remote_path: Path) -> None:
+        """
+        Download dataframe from storage parquet file
+
+        Parameters
+        ----------
+        remote_path: Path
+            Path of remote file to be downloaded
+        """
+        with tempfile.NamedTemporaryFile(mode="r") as file_obj:
+            await self.get(remote_path, file_obj.name)
+            return pd.read_parquet(file_obj.name)

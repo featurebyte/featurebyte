@@ -37,3 +37,15 @@ class FeatureJobSettingAnalysisList(PaginationMixin):
     """
 
     data: List[FeatureJobSettingAnalysisModel]
+
+
+class FeatureJobSettingAnalysisBacktest(FeatureByteBaseModel):
+    """
+    Feature Job Setting Analysis Backtest Schema
+    """
+
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    feature_job_setting_analysis_id: PydanticObjectId
+    frequency: int = Field(ge=60, le=3600 * 24 * 28)
+    job_time_modulo_frequency: int = Field(ge=0, le=3600 * 24 * 28)
+    blind_spot: int = Field(ge=0, le=3600 * 24 * 28)

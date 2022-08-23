@@ -419,6 +419,26 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
 
     time_limit = 10
 
+    def wait_for_results(self, api_client, create_response):
+        """
+        Wait for async job to complete
+        """
+        task_submission = create_response.json()
+        task_id = task_submission["id"]
+        output_path = task_submission["output_path"]
+
+        start_time = datetime.now()
+        while (datetime.now() - start_time).seconds < self.time_limit:
+            response = api_client.get(f"/task/{task_id}")
+            task_status = response.json()
+            status = task_status["status"]
+            if status not in ["PENDING", "RECEIVED", "STARTED"]:
+                assert status == "SUCCESS"
+                break
+            sleep(0.1)
+
+        return output_path
+
     @pytest.fixture()
     def create_success_response(self, test_api_client_persistent):
         """Post route success response object"""
@@ -426,19 +446,8 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
         self.setup_creation_route(test_api_client)
         id_before = self.payload["_id"]
         response = test_api_client.post(f"{self.base_route}", json=self.payload)
-        task_submission = response.json()
-        task_id = task_submission["id"]
-        output_path = task_submission["output_path"]
 
-        start_time = datetime.now()
-        while (datetime.now() - start_time).seconds < self.time_limit:
-            response = test_api_client.get(f"/task/{task_id}")
-            task_status = response.json()
-            status = task_status["status"]
-            if status not in ["PENDING", "RECEIVED", "STARTED"]:
-                assert status == "SUCCESS"
-                break
-            sleep(0.1)
+        output_path = self.wait_for_results(test_api_client, response)
 
         response = test_api_client.get(output_path)
         response_dict = response.json()

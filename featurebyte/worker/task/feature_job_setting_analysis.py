@@ -5,14 +5,19 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from featurebyte_freeware.feature_job_analysis.analysis import create_feature_job_settings_analysis
+from featurebyte_freeware.feature_job_analysis.analysis import (
+    FeatureJobSettingsAnalysisResult,
+    create_feature_job_settings_analysis,
+)
 from featurebyte_freeware.feature_job_analysis.database import EventDataset
+from featurebyte_freeware.feature_job_analysis.schema import FeatureJobSetting
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.logger import logger
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.schema.worker.task.feature_job_setting_analysis import (
+    FeatureJobSettingAnalysisBackTestTaskPayload,
     FeatureJobSettingAnalysisTaskPayload,
 )
 from featurebyte.worker.task.base import BaseTask
@@ -90,6 +95,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             **payload.json_dict(),
         )
 
+        # store analysis doc in persistent
         analysis_doc = FeatureJobSettingAnalysisModel(
             _id=payload.output_document_id,
             user_id=payload.user_id,
@@ -109,8 +115,91 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         )
         assert insert_id == payload.output_document_id
 
+        # store analysis data in storage
+        analysis_data = {
+            "analysis_plots": analysis.analysis_plots,
+            "analysis_data": analysis.analysis_data,
+            "analysis_result": {
+                "backtest_result": analysis.analysis_result.backtest_result,
+                "blind_spot_search_result": analysis.analysis_result.blind_spot_search_result,
+                "event_landing_time_result": analysis.analysis_result.event_landing_time_result,
+            },
+        }
+        await self.get_storage().put_object(
+            analysis_data, f"feature_job_setting_analysis/{payload.output_document_id}/data.pkl"
+        )
+
         logger.debug(
             "Completed feature job setting analysis",
+            extra={"document_id": payload.output_document_id},
+        )
+        self.update_progress(percent=100, message="Analysis Completed")
+
+
+class FeatureJobSettingAnalysisBacktestTask(BaseTask):
+    """
+    Feature Job Setting Analysis Task
+    """
+
+    payload_class = FeatureJobSettingAnalysisBackTestTaskPayload
+
+    async def execute(self) -> None:
+        """
+        Execute the task
+
+        Raises
+        ------
+        ValueError
+            Event data or feature store records not found
+        """
+        self.update_progress(percent=0, message="Preparing data")
+        payload = cast(FeatureJobSettingAnalysisBackTestTaskPayload, self.payload)
+        persistent = self.get_persistent()
+
+        # retrieve analysis doc from persistent
+        query_filter = {"_id": payload.feature_job_setting_analysis_id}
+        document = await persistent.find_one(
+            collection_name=FeatureJobSettingAnalysisModel.collection_name(),
+            query_filter=query_filter,
+            user_id=payload.user_id,
+        )
+        if not document:
+            message = "Feature Job Setting Analysis not found"
+            logger.error(message, extra={"query_filter": query_filter})
+            raise ValueError(message)
+
+        # retrieve analysis data from storage
+        storage = self.get_storage()
+        analysis_data = await storage.get_object(
+            f"feature_job_setting_analysis/{payload.feature_job_setting_analysis_id}/data.pkl",
+        )
+
+        # reconstruct analysis object
+        analysis_result = analysis_data.pop("analysis_result")
+        document.update(**analysis_data)
+        document["analysis_result"].update(analysis_result)
+        analysis = FeatureJobSettingsAnalysisResult(**document)
+
+        # run backtest
+        self.update_progress(percent=5, message="Running Analysis")
+        backtest_result, backtest_report = analysis.backtest(
+            FeatureJobSetting(
+                frequency=payload.frequency,
+                blind_spot=payload.blind_spot,
+                job_time_modulo_frequency=payload.job_time_modulo_frequency,
+                feature_cutoff_modulo_frequency=0,
+            )
+        )
+
+        # store results in temp storage
+        self.update_progress(percent=95, message="Saving Analysis")
+        temp_storage = self.get_temp_storage()
+        prefix = f"feature_job_setting_analysis/backtest/{payload.output_document_id}"
+        await temp_storage.put_text(backtest_report, f"{prefix}.html")
+        await temp_storage.put_dataframe(backtest_result.results, f"{prefix}.parquet")
+
+        logger.debug(
+            "Completed feature job setting analysis backtest",
             extra={"document_id": payload.output_document_id},
         )
         self.update_progress(percent=100, message="Analysis Completed")
