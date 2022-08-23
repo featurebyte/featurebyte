@@ -1,6 +1,8 @@
 """
 Logging formatting
 """
+from typing import Any
+
 import sys
 
 from loguru import logger
@@ -14,14 +16,31 @@ LOGGER_FORMAT = (
 )
 
 config = Configurations()
-logger.remove()
-logger.add(
-    sys.stderr,
-    level=config.logging.level,
-    format=LOGGER_FORMAT,
-    serialize=config.logging.serialize,
-    enqueue=True,  # process logs in background
-    diagnose=False,  # hide variable values in log backtrace
-)
 
-__all__ = ["logger"]
+
+def configure_logger(logger_instance: Any, configurations: Configurations) -> None:
+    """
+    Update logger
+
+    Parameters
+    ----------
+    logger_instance: Any
+        Logger object to update
+    configurations: Configurations
+        configurations used to update logger
+    """
+    logger_instance.remove()
+    logger_instance.add(
+        sys.stderr,
+        level=configurations.logging.level,
+        format=LOGGER_FORMAT,
+        serialize=configurations.logging.serialize,
+        enqueue=True,  # process logs in background
+        diagnose=False,  # hide variable values in log backtrace
+    )
+
+
+configure_logger(logger, config)
+
+
+__all__ = ["logger", "configure_logger"]
