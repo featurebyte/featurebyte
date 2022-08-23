@@ -138,7 +138,7 @@ def assert_dict_equal(s1, s2):
     def _json_normalize(x):
         if x is None:
             return None
-        return json.dumps(json.loads(x), sort_keys=True)
+        return json.loads(x)
 
     s1 = s1.apply(_json_normalize)
     s2 = s2.apply(_json_normalize)
