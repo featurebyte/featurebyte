@@ -1,7 +1,7 @@
 """
 Read configurations from ini file
 """
-from typing import Any, Dict, Optional, Pattern, Union
+from typing import Any, Dict, Literal, Optional, Pattern, Union
 
 import os
 import re
@@ -13,7 +13,7 @@ from pathlib import Path
 import requests
 import yaml
 from fastapi.testclient import TestClient
-from pydantic import BaseSettings, ConstrainedStr, HttpUrl
+from pydantic import BaseSettings, ConstrainedStr, Field, HttpUrl, validator
 from pydantic.error_wrappers import ValidationError
 from requests import Response
 
@@ -22,6 +22,10 @@ from featurebyte.models.credential import Credential
 
 # data source to credential mapping
 Credentials = Dict[str, Optional[Credential]]
+
+# default local location
+DEFAULT_LOCAL_PATH = Path.home().joinpath(".featurebyte")
+DEFAULT_CONFIG_PATH = DEFAULT_LOCAL_PATH.joinpath("config.yaml")
 
 
 class LogLevel(str, Enum):
@@ -64,6 +68,30 @@ class GitSettings(BaseSettings):
     remote_url: GitRepoUrl
     key_path: Optional[Path]
     branch: str
+
+
+class LocalStorageSettings(BaseSettings):
+    """
+    Settings for local file storage
+    """
+
+    local_path: Path = Field(default=os.path.join(DEFAULT_LOCAL_PATH, "data"))
+
+    @validator("local_path")
+    @classmethod
+    def expand_path(cls, value: Path) -> Path:
+        """
+        Parameters
+        ----------
+        value: Path
+            Path to be expanded
+
+        Returns
+        -------
+        Path
+            Expanded path
+        """
+        return value.expanduser()
 
 
 class FeatureByteSettings(BaseSettings):
@@ -157,14 +185,18 @@ class Configurations:
             Path to read configurations from
         """
         self._config_file_path = Path(
-            str(
-                config_file_path
-                or os.environ.get(
-                    "FEATUREBYTE_CONFIG_PATH", os.path.join(os.environ["HOME"], ".featurebyte.yaml")
-                )
-            )
+            str(config_file_path or os.environ.get("FEATUREBYTE_CONFIG_PATH", DEFAULT_CONFIG_PATH))
         )
+
+        # create config file if it does not exist
+        if not self._config_file_path.exists() and self._config_file_path == DEFAULT_CONFIG_PATH:
+            self._config_file_path.parent.mkdir(parents=True, exist_ok=True)
+            self._config_file_path.write_text(
+                "# featurebyte configurations\n\n" "logging:\n" "  level: INFO\n"
+            )
+
         self.git: Optional[GitSettings] = None
+        self.storage: Optional[LocalStorageSettings] = LocalStorageSettings()
         self.featurebyte: Optional[FeatureByteSettings] = None
         self.settings: Dict[str, Any] = {}
         self.credentials: Credentials = {}
@@ -230,6 +262,11 @@ class Configurations:
         if git_settings:
             # parse git settings
             self.git = GitSettings(**git_settings)
+
+        storage_settings = self.settings.pop("storage", None)
+        if storage_settings:
+            # parse storage settings
+            self.storage = LocalStorageSettings(**storage_settings)
 
         featurebyte_settings = self.settings.pop("featurebyte", None)
         if featurebyte_settings:
