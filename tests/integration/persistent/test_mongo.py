@@ -60,7 +60,7 @@ async def test_start_transaction__exception_within_transaction(mongo_persistent)
         async with persistent.start_transaction() as session:
             await session.insert_one(collection_name=col, document={"key1": "value1"})
             await session.insert_one(collection_name=col, document={"key2": "value2"})
-            session.find(collection_name="data4", query_filter={})[0]
+            await session.find(collection_name="data4", query_filter={})[0]
 
     # ensure persistent is working after failed transaction
     await persistent.find(collection_name="data4", query_filter={})

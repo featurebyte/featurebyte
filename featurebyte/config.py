@@ -252,7 +252,10 @@ class Configurations:
         """
         # pylint: disable=import-outside-toplevel,cyclic-import
         from featurebyte.app import app
-        from featurebyte.logger import logger
+        from featurebyte.logger import configure_logger, logger
+
+        # configure logger
+        configure_logger(logger, self)
 
         client: Union[TestClient, APIClient]
 

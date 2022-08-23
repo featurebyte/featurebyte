@@ -13,8 +13,8 @@ from featurebyte.config import (
     GitSettings,
     LoggingSettings,
 )
-from featurebyte.enum import SourceType
 from featurebyte.exception import InvalidSettingsError
+from featurebyte.logger import logger
 from featurebyte.models.credential import CredentialType
 
 
@@ -105,3 +105,18 @@ def test_get_client_featurebyte_persistent_settings__invalid_token():
             mock_requests_get.return_value.status_code = 401
             Configurations("tests/fixtures/config_featurebyte_persistent.yaml").get_client()
     assert str(exc_info.value) == "Authentication failed"
+
+
+def test_logging_level_change():
+    """
+    Test logging level is consistent after local logging import in Configurations class
+    """
+    # fix core log level to 10
+    logger._core.min_level = 10
+
+    config = Configurations()
+    config.logging.level = 20
+
+    # expect logging to adopt logging level specified in the config
+    config.get_client()
+    assert logger._core.min_level == 20
