@@ -704,10 +704,13 @@ class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
         for serving_name in serving_names:
             outer_group_by_keys.append(f"{inner_alias}.{escape_column_name(serving_name)}")
 
-        # Replace missing category values since OBJECT_AGG ignores keys that are null
         category_col = f"{inner_alias}.{escape_column_name(value_by)}"
+        # Cast type to string first so that integer can be represented nicely ('{"0": 7}' vs
+        # '{"0.00000": 7}')
+        category_col_casted = f"CAST({category_col} AS VARCHAR)"
+        # Replace missing category values since OBJECT_AGG ignores keys that are null
         category_filled_null = (
-            f"CASE WHEN {category_col} IS NULL THEN '__MISSING__' ELSE {category_col} END"
+            f"CASE WHEN {category_col} IS NULL THEN '__MISSING__' ELSE {category_col_casted} END"
         )
         object_agg_exprs = [
             f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'

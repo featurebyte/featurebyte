@@ -259,6 +259,9 @@ def test_query_object_operation_on_snowflake_source(
         "NUM_PURCHASE_7d": Decimal("2"),
     }
 
+    # Check using a derived numeric column as category
+    check_day_of_week_counts(event_view, preview_param, config)
+
     run_and_test_get_historical_features(config, feature_group, feature_group_per_category)
 
 
@@ -519,3 +522,28 @@ def check_datetime_operations(event_view, column_name, limit=100):
             check_names=False,
             check_dtype=False,
         )
+
+
+def check_day_of_week_counts(event_view, preview_param, config):
+    """Check using derived numeric column as category"""
+    event_view["event_day_of_week"] = event_view["EVENT_TIMESTAMP"].dt.day_of_week
+    day_of_week_counts = event_view.groupby("USER_ID", category="event_day_of_week").aggregate(
+        "USER_ID",
+        "count",
+        windows=["24h"],
+        feature_names=["DAY_OF_WEEK_COUNTS_24h"],
+    )
+    day_of_week_counts["DAY_OF_WEEK_ENTROPY_24h"] = day_of_week_counts[
+        "DAY_OF_WEEK_COUNTS_24h"
+    ].cd.entropy()
+    df_feature_preview = day_of_week_counts.preview(
+        preview_param,
+        credentials=config.credentials,
+    )
+    assert df_feature_preview.shape[0] == 1
+    assert df_feature_preview.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "uid": 1,
+        "DAY_OF_WEEK_COUNTS_24h": '{\n  "0": 7,\n  "1": 8\n}',
+        "DAY_OF_WEEK_ENTROPY_24h": 0.6909233093138181,
+    }
