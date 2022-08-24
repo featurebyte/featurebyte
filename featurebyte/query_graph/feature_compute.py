@@ -19,6 +19,7 @@ from featurebyte.query_graph.feature_common import (
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.interpreter import SQLOperationGraph, find_parent_groupby_nodes
 from featurebyte.query_graph.sql import (
+    MISSING_VALUE_REPLACEMENT,
     AliasNode,
     Project,
     SQLType,
@@ -710,7 +711,8 @@ class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
         category_col_casted = f"CAST({category_col} AS VARCHAR)"
         # Replace missing category values since OBJECT_AGG ignores keys that are null
         category_filled_null = (
-            f"CASE WHEN {category_col} IS NULL THEN '__MISSING__' ELSE {category_col_casted} END"
+            f"CASE WHEN {category_col} IS NULL THEN '{MISSING_VALUE_REPLACEMENT}' ELSE "
+            f"{category_col_casted} END"
         )
         object_agg_exprs = [
             f'OBJECT_AGG({category_filled_null}, {inner_alias}."{inner_agg_result_name}")'

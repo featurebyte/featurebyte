@@ -79,7 +79,7 @@ class CountDictAccessor:
         """
         return self._make_operation("most_frequent", DBVarType.VARCHAR)
 
-    def unique_count(self, include_missing=True) -> Feature:
+    def unique_count(self, include_missing: bool = True) -> Feature:
         """
         Compute number of distinct keys in the dictionary
 

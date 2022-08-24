@@ -20,6 +20,8 @@ from featurebyte.query_graph.feature_common import AggregationSpec
 from featurebyte.query_graph.graph import Node
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 
+MISSING_VALUE_REPLACEMENT = "__MISSING__"
+
 
 class SQLType(Enum):
     """Type of SQL code corresponding to different operations"""
@@ -649,7 +651,8 @@ class CountDictTransformNode(ExpressionNode):
             counts_expr = self.expr.sql
         else:
             counts_expr = expressions.Anonymous(
-                this="OBJECT_DELETE", expressions=[self.expr.sql, make_literal_value("__MISSING__")]
+                this="OBJECT_DELETE",
+                expressions=[self.expr.sql, make_literal_value(MISSING_VALUE_REPLACEMENT)],
             )
         output_expr = expressions.Anonymous(this=function_name, expressions=[counts_expr])
         if self.transform_type == "most_frequent":
