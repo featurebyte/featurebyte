@@ -297,9 +297,11 @@ def test_relational_operators__series_other(bool_series, int_series, float_serie
     series_bool_eq = bool_series == bool_series
     series_int_ne = int_series != int_series
     series_float_lt = float_series < float_series
+    series_float_lt_int = float_series < int_series
     series_varchar_le = varchar_series <= varchar_series
     series_bool_gt = bool_series > bool_series
     series_int_ge = int_series >= int_series
+    series_int_ge_float = int_series >= float_series
     assert series_bool_eq.var_type == DBVarType.BOOL
     assert series_int_ne.var_type == DBVarType.BOOL
     assert series_float_lt.var_type == DBVarType.BOOL
@@ -318,6 +320,11 @@ def test_relational_operators__series_other(bool_series, int_series, float_serie
         series_float_lt.node, Node(name="lt_1", type=NodeType.LT, **node_kwargs), exclude=exclude
     )
     _check_node_equality(
+        series_float_lt_int.node,
+        Node(name="lt_2", type=NodeType.LT, **node_kwargs),
+        exclude=exclude,
+    )
+    _check_node_equality(
         series_varchar_le.node, Node(name="le_1", type=NodeType.LE, **node_kwargs), exclude=exclude
     )
     _check_node_equality(
@@ -325,6 +332,11 @@ def test_relational_operators__series_other(bool_series, int_series, float_serie
     )
     _check_node_equality(
         series_int_ge.node, Node(name="ge_1", type=NodeType.GE, **node_kwargs), exclude=exclude
+    )
+    _check_node_equality(
+        series_int_ge_float.node,
+        Node(name="ge_2", type=NodeType.GE, **node_kwargs),
+        exclude=exclude,
     )
 
 
@@ -336,7 +348,9 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
     scalar_varchar_ne = varchar_series != "hello"
     scalar_bool_lt = bool_series < True
     scalar_int_le = int_series <= 100
+    scalar_int_le_float = int_series <= 100.0
     scalar_float_gt = float_series > 1.234
+    scalar_float_gt_int = float_series > 1
     scalar_varchar_ge = varchar_series >= "world"
     assert scalar_float_eq.var_type == DBVarType.BOOL
     assert scalar_varchar_ne.var_type == DBVarType.BOOL
@@ -367,8 +381,18 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
         exclude=exclude,
     )
     _check_node_equality(
+        scalar_int_le_float.node,
+        Node(name="le_2", type=NodeType.LE, parameters={"value": 100.0}, **kwargs),
+        exclude=exclude,
+    )
+    _check_node_equality(
         scalar_float_gt.node,
         Node(name="gt_1", type=NodeType.GT, parameters={"value": 1.234}, **kwargs),
+        exclude=exclude,
+    )
+    _check_node_equality(
+        scalar_float_gt_int.node,
+        Node(name="gt_2", type=NodeType.GT, parameters={"value": 1}, **kwargs),
         exclude=exclude,
     )
     _check_node_equality(
