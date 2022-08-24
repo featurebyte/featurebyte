@@ -2,7 +2,7 @@
 Tests for task executor
 """
 from enum import Enum
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
@@ -69,7 +69,8 @@ def test_extend_base_task_payload(random_task_payload_class):
     assert payload_obj.task_output_path == f"random_collection/{document_id}"
 
 
-def test_task_executor(random_task_class_store):
+@patch("featurebyte.worker.task_executor.configure_logger")
+def test_task_executor(mock_configure_logger, random_task_class_store):
     """Test task get loaded properly when extending BaseTask & BaskTaskPayload"""
     random_task_class, store = random_task_class_store
 
@@ -83,6 +84,7 @@ def test_task_executor(random_task_class_store):
     # run executor
     user_id = ObjectId()
     document_id = ObjectId()
+    assert mock_configure_logger.call_count == 0
     TaskExecutor(
         payload={
             "command": "random_command",
@@ -92,6 +94,7 @@ def test_task_executor(random_task_class_store):
         queue=Mock(),
         progress=None,
     )
+    assert mock_configure_logger.call_count == 1
 
     # check store
     assert store == {"new_item": {"user_id": user_id, "output_document_id": document_id}}
