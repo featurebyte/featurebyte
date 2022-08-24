@@ -663,6 +663,27 @@ class CountDictTransformNode(ExpressionNode):
 
 
 @dataclass
+class CastNode(ExpressionNode):
+    """Node for casting operation"""
+
+    expr: ExpressionNode
+    new_type: Literal["int", "float", "str"]
+
+    @property
+    def sql(self) -> Expression:
+        if self.new_type == "int":
+            # Casting to integer performs rounding. Use TRUNCATE to mimic pandas astype(int)
+            output_expr = expressions.Anonymous(this="TRUNCATE", expressions=[self.expr.sql])
+        else:
+            type_expr = {
+                "float": parse_one("FLOAT"),
+                "str": parse_one("VARCHAR"),
+            }[self.new_type]
+            output_expr = expressions.Cast(this=self.expr.sql, to=type_expr)
+        return output_expr
+
+
+@dataclass
 class BuildTileNode(TableNode):
     """Tile builder node
 
@@ -1118,6 +1139,7 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.DT_EXTRACT,
     NodeType.NOT,
     NodeType.COUNT_DICT_TRANSFORM,
+    NodeType.CAST,
 }
 
 
@@ -1144,6 +1166,7 @@ def make_expression_node(
     NotImplementedError
         if the query graph node type is not supported
     """
+    # pylint: disable=too-many-branches
     input_expr_node = input_sql_nodes[0]
     assert isinstance(input_expr_node, ExpressionNode)
     table_node = input_expr_node.table_node
@@ -1208,6 +1231,12 @@ def make_expression_node(
             expr=input_expr_node,
             transform_type=parameters["transform_type"],
             include_missing=parameters.get("include_missing", True),
+        )
+    elif node_type == NodeType.CAST:
+        sql_node = CastNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            new_type=parameters["type"],
         )
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")

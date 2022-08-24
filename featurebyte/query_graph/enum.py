@@ -39,6 +39,7 @@ class NodeType(str, Enum):
     CONDITIONAL = "conditional"
     ALIAS = "alias"
     IS_NULL = "is_null"
+    CAST = "cast"
 
     # string operations
     LENGTH = "length"

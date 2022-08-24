@@ -647,3 +647,50 @@ def test_varchar_series_concat(varchar_series):
         """
         ).strip()
     )
+
+
+@pytest.mark.parametrize(
+    "series_fixture_name", ["float_series", "int_series", "bool_series", "varchar_series"]
+)
+def test_astype__expected_parameters(series_fixture_name, request):
+    """
+    Test series astype method
+    """
+    series = request.getfixturevalue(series_fixture_name)
+
+    def _check_converted_series(converted_series, expected_type_in_params):
+        assert converted_series.node.type == NodeType.CAST
+        assert converted_series.node.parameters == {"type": expected_type_in_params}
+        input_node_names = converted_series.graph.backward_edges[converted_series.node.name]
+        assert input_node_names == [series.node.name]
+
+    _check_converted_series(series.astype(int), "int")
+    _check_converted_series(series.astype("int"), "int")
+    _check_converted_series(series.astype(float), "float")
+    _check_converted_series(series.astype("float"), "float")
+    _check_converted_series(series.astype(str), "str")
+    _check_converted_series(series.astype("str"), "str")
+
+
+def test_astype__invalid_type_str(float_series):
+    """
+    Test series astype with invalid type specification
+    """
+    with pytest.raises(TypeError) as exc:
+        float_series.astype("number")
+    assert str(exc.value) == (
+        'type of argument "new_type" must be one of (Type[int], Type[float], Type[str],'
+        " Literal[int, float, str]); got str instead"
+    )
+
+
+def test_astype__invalid_type_cls(float_series):
+    """
+    Test series astype with invalid type specification
+    """
+    with pytest.raises(TypeError) as exc:
+        float_series.astype(dict)
+    assert str(exc.value) == (
+        'type of argument "new_type" must be one of (Type[int], Type[float], Type[str],'
+        " Literal[int, float, str]); got dict instead"
+    )

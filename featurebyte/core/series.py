@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Union
+from typing import Any, Literal, Optional, Type, Union
 
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
@@ -438,6 +438,51 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             Value to replace missing values
         """
         self[self.isnull()] = other
+
+    @typechecked
+    def astype(
+        self, new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]]
+    ) -> Series:
+        """
+        Convert Series to have a new type
+
+        Parameters
+        ----------
+        new_type : Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]])
+            Desired type after conversion. Type can be provided directly or as a string
+
+        Returns
+        -------
+        Series
+            A new Series with converted variable type
+        """
+        known_str_to_type = {
+            "int": int,
+            "float": float,
+            "str": str,
+        }
+        if isinstance(new_type, str):
+            # new_type is typechecked and must be a valid key
+            new_type = known_str_to_type[new_type]
+
+        if new_type is int:
+            type_name = "int"
+            output_var_type = DBVarType.INT
+        elif new_type is float:
+            type_name = "float"
+            output_var_type = DBVarType.FLOAT
+        else:
+            type_name = "str"
+            output_var_type = DBVarType.VARCHAR
+
+        node_params = {"type": type_name}
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.CAST,
+            output_var_type=output_var_type,
+            node_params=node_params,
+            **self.unary_op_series_params(),
+        )
 
     @typechecked
     def preview_sql(self, limit: int = 10) -> str:
