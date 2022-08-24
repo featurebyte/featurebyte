@@ -664,7 +664,7 @@ class CountDictTransformNode(ExpressionNode):
 
 @dataclass
 class CastNode(ExpressionNode):
-    """Node for count dict transform operation (eg. entropy)"""
+    """Node for casting operation"""
 
     expr: ExpressionNode
     new_type: Literal["int", "float", "str"]
