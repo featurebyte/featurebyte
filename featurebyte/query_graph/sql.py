@@ -1166,6 +1166,7 @@ def make_expression_node(
     NotImplementedError
         if the query graph node type is not supported
     """
+    # pylint: disable=too-many-branches
     input_expr_node = input_sql_nodes[0]
     assert isinstance(input_expr_node, ExpressionNode)
     table_node = input_expr_node.table_node

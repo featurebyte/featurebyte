@@ -447,6 +447,16 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         ----------
         new_type : Union[int, float, str, bool]
             Desired type after conversion
+
+        Returns
+        -------
+        Series
+            A new Series with converted variable type
+
+        Raises
+        ------
+        TypeError
+            If the provided type is invalid
         """
         known_str_to_type = {
             "int": int,

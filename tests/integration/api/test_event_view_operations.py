@@ -532,6 +532,7 @@ def check_datetime_operations(event_view, column_name, limit=100):
 
 
 def check_cast_operations(event_view, limit=100):
+    """Check casting operations"""
     event_view = event_view.copy()
     event_view["AMOUNT_INT"] = event_view["AMOUNT"].astype(int)
     event_view["AMOUNT_STR"] = event_view["AMOUNT"].astype(str)
