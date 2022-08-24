@@ -156,7 +156,10 @@ def test_query_object_operation_on_snowflake_source(
     feature_counts_24h = feature_group_per_category["COUNT_BY_ACTION_24h"]
     feature_group_per_category["ENTROPY_BY_ACTION_24h"] = feature_counts_24h.cd.entropy()
     feature_group_per_category["MOST_FREQUENT_ACTION_24h"] = feature_counts_24h.cd.most_frequent()
-    feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_counts_24h.cd.nunique()
+    feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_counts_24h.cd.unique_count()
+    feature_group_per_category[
+        "NUM_UNIQUE_ACTION_24h_exclude_missing"
+    ] = feature_counts_24h.cd.unique_count(include_missing=False)
 
     # preview the features
     preview_param = {
@@ -192,6 +195,7 @@ def test_query_object_operation_on_snowflake_source(
         "ENTROPY_BY_ACTION_24h": 1.3953970923267898,
         "MOST_FREQUENT_ACTION_24h": "remove",
         "NUM_UNIQUE_ACTION_24h": 5,
+        "NUM_UNIQUE_ACTION_24h_exclude_missing": 4,
     }
 
     # preview one feature only

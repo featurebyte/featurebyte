@@ -12,7 +12,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
     [
         ("entropy", DBVarType.FLOAT, {"transform_type": "entropy"}),
         ("most_frequent", DBVarType.VARCHAR, {"transform_type": "most_frequent"}),
-        ("nunique", DBVarType.FLOAT, {"transform_type": "num_unique"}),
+        ("nunique", DBVarType.FLOAT, {"transform_type": "unique_count"}),
     ],
 )
 def test_transformation(count_per_category_feature, method, expected_var_type, expected_parameters):
