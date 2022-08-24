@@ -14,6 +14,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.util import get_entity
+from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import GetAttrMixin
@@ -255,6 +256,12 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
                 "time_modulo_frequency": f'{recommended_setting["job_time_modulo_frequency"]}s',
                 "frequency": f'{recommended_setting["frequency"]}s',
             }
+
+            if is_notebook():
+                # pylint: disable=import-outside-toplevel
+                from IPython.display import HTML, display  # pylint: disable=import-error
+
+                display(HTML(job_setting_analysis["analysis_report"]))
 
         data = EventDataUpdate(default_feature_job_setting=FeatureJobSetting(**feature_job_setting))
         response = client.patch(url=f"/event_data/{self.id}", json=data.dict())

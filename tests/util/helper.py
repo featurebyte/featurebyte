@@ -1,3 +1,11 @@
+"""
+This module contains utility functions used in tests
+"""
+import sys
+from contextlib import contextmanager
+from unittest.mock import Mock
+
+
 def assert_equal_with_expected_fixture(actual, fixture_filename, update_fixture=False):
     """Utility to check that actual is the same as the pre-generated fixture
 
@@ -15,3 +23,20 @@ def assert_equal_with_expected_fixture(actual, fixture_filename, update_fixture=
         expected = f_handle.read()
 
     assert actual.strip() == expected.strip()
+
+
+@contextmanager
+def patch_import_package(package_path):
+    """
+    Mock import statement
+    """
+    mock_package = Mock()
+    original_module = sys.modules.get(package_path)
+    sys.modules[package_path] = mock_package
+    try:
+        yield mock_package
+    finally:
+        if original_module:
+            sys.modules[package_path] = original_module
+        else:
+            sys.modules.pop(package_path)

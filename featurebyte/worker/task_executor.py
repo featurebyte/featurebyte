@@ -9,7 +9,9 @@ import asyncio
 import json
 import traceback
 
+from featurebyte.config import Configurations
 from featurebyte.enum import WorkerCommand
+from featurebyte.logger import configure_logger, logger
 from featurebyte.utils.credential import get_credential
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.worker.task.base import TASK_MAP, BaseTask
@@ -25,6 +27,9 @@ class TaskExecutor:
     command_type = WorkerCommand
 
     def __init__(self, payload: dict[str, Any], queue: Any, progress: Any = None) -> None:
+        # reload logger to make sure the latest logging level in the config get loaded
+        configure_logger(logger, Configurations())
+
         command = self.command_type(payload["command"])
         task = TASK_MAP[command](
             payload=payload,
