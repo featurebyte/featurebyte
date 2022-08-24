@@ -554,11 +554,17 @@ def check_cast_operations(event_view, limit=100):
     event_view["AMOUNT_STR"] = event_view["AMOUNT"].astype(str)
     event_view["AMOUNT_FLOAT"] = event_view["AMOUNT"].astype(float)
     df = event_view.preview(limit=limit)
-    assert df["AMOUNT_INT"].tolist() == df["AMOUNT"].astype(int).tolist()
+
+    # compare string representation to make sure that the values are converted to int rather than
+    # just being floored ("2" instead of "2.0")
+    expected = df["AMOUNT"].astype(int).astype(str).tolist()
+    assert df["AMOUNT_INT"].astype(str).tolist() == expected
+
     assert (
         df["AMOUNT_STR"].tolist()
         == df["AMOUNT"].astype(str).apply(lambda x: "0" if x == "0.0" else x).tolist()
     )
+
     assert df["AMOUNT_FLOAT"].tolist() == df["AMOUNT"].astype(float).tolist()
 
 
