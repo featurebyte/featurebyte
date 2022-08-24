@@ -19,6 +19,7 @@ from featurebyte.exception import (
     RecordUpdateException,
 )
 from featurebyte.models.event_data import EventDataStatus, FeatureJobSetting
+from tests.util.helper import patch_import_package
 
 
 @pytest.fixture(name="event_data_dict")
@@ -444,24 +445,50 @@ def test_update_default_job_setting__saved_event_data(saved_event_data, config):
         "time_modulo_frequency": "3m",
     }
 
+
+@patch("featurebyte.api.event_data.is_notebook")
+@patch("featurebyte.api.event_data.EventData.post_async_task")
+def test_update_default_feature_job_setting__using_feature_job_analysis(
+    mock_post_async_task,
+    mock_is_notebook,
+    saved_event_data,
+    config,
+):
+    """
+    Update default feature job setting using feature job analysis
+    """
     # test update default feature job setting by using feature job analysis
-    with patch("featurebyte.api.event_data.EventData.post_async_task") as mock:
-        mock.return_value = {
-            "analysis_result": {
-                "recommended_feature_job_setting": {
-                    "frequency": 180,
-                    "job_time_modulo_frequency": 61,
-                    "blind_spot": 395,
-                    "feature_cutoff_modulo_frequency": 26,
-                }
+    mock_post_async_task.return_value = {
+        "analysis_result": {
+            "recommended_feature_job_setting": {
+                "frequency": 180,
+                "job_time_modulo_frequency": 61,
+                "blind_spot": 395,
+                "feature_cutoff_modulo_frequency": 26,
             }
-        }
+        },
+        "analysis_report": "<html>This is analysis report!</html>",
+    }
+
+    with patch_import_package("IPython.display") as mock_mod:
+        mock_is_notebook.return_value = False
         saved_event_data.update_default_feature_job_setting()
         assert saved_event_data.default_feature_job_setting == FeatureJobSetting(
             blind_spot="395s",
             frequency="180s",
             time_modulo_frequency="61s",
         )
+        # check that ipython display not get called
+        assert mock_mod.display.call_count == 0
+        assert mock_mod.HTML.call_count == 0
+
+    with patch_import_package("IPython.display") as mock_mod:
+        mock_is_notebook.return_value = True
+        saved_event_data.update_default_feature_job_setting()
+
+        # check that ipython display get called
+        assert mock_mod.display.call_count == 1
+        assert mock_mod.HTML.call_count == 1
 
 
 def test_update_default_job_setting__record_update_exception(snowflake_event_data):
