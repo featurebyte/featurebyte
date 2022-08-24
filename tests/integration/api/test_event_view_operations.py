@@ -242,6 +242,22 @@ def test_query_object_operation_on_snowflake_source(
         "COUNT_2h / COUNT_24h": Decimal("0.066667"),
     }
 
+    # check casting on feature
+    df_feature_preview = (
+        (feature_group["COUNT_2h"].astype(int) + 1)
+        .astype(float)
+        .preview(
+            preview_param,
+            credentials=config.credentials,
+        )
+    )
+    assert df_feature_preview.shape[0] == 1
+    assert df_feature_preview.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "uid": 1,
+        "Unnamed": 2.0,
+    }
+
     special_feature = create_feature_with_filtered_event_view(event_view)
     special_feature.save()  # pylint: disable=no-member
     check_feature_and_remove_registry(special_feature, feature_manager)
