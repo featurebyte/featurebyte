@@ -259,7 +259,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
 
             if is_notebook():
                 # pylint: disable=import-outside-toplevel
-                from IPython.display import HTML, display
+                from IPython.display import HTML, display  # pylint: disable=import-error
 
                 display(HTML(job_setting_analysis["analysis_report"]))
 
