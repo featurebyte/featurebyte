@@ -211,14 +211,16 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     def _pre_save_operations(self) -> None:
         with alive_bar(
             total=len(self.feature_objects), dual_line=True, title="Saving Feature(s)"
-        ) as bar:
+        ) as progress_bar:
             for feature in self.feature_objects.values():
+                text = f'Feature "{feature.name}" has been saved before.'
                 if not feature.saved:
                     feature.save()
-                    bar.text = f'Feature "{feature.name}" is saved.'
-                else:
-                    bar.text = f'Feature "{feature.name}" has been saved before.'
-                bar()
+                    text = f'Feature "{feature.name}" is saved.'
+
+                # update progress bar
+                progress_bar.text = text
+                progress_bar()  # pylint: disable=not-callable
 
     @root_validator(pre=True)
     @classmethod
