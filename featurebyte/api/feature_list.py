@@ -9,6 +9,7 @@ import collections
 import time
 
 import pandas as pd
+from alive_progress import alive_bar
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
@@ -208,9 +209,16 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         return {"items": []}
 
     def _pre_save_operations(self) -> None:
-        for feature in self.feature_objects.values():
-            if not feature.saved:
-                feature.save()
+        with alive_bar(
+            total=len(self.feature_objects), dual_line=True, title="Saving Feature(s)"
+        ) as bar:
+            for feature in self.feature_objects.values():
+                if not feature.saved:
+                    feature.save()
+                    bar.text = f'Feature "{feature.name}" is saved.'
+                else:
+                    bar.text = f'Feature "{feature.name}" has been saved before.'
+                bar()
 
     @root_validator(pre=True)
     @classmethod
