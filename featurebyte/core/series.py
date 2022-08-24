@@ -439,14 +439,15 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         """
         self[self.isnull()] = other
 
+    @typechecked
     def astype(self, new_type: Union[Type[int], Type[float], Type[str], str]) -> Series:
         """
         Convert Series to have a new type
 
         Parameters
         ----------
-        new_type : Union[int, float, str, bool]
-            Desired type after conversion
+        new_type : Union[Type[int], Type[float], Type[str], str])
+            Desired type after conversion. Type can be provided directly or as a string
 
         Returns
         -------
@@ -475,11 +476,9 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         elif new_type is float:
             type_name = "float"
             output_var_type = DBVarType.FLOAT
-        elif new_type is str:
+        else:
             type_name = "str"
             output_var_type = DBVarType.VARCHAR
-        else:
-            raise TypeError(f"Type conversion not supported for {new_type}")
 
         node_params = {"type": type_name}
         return series_unary_operation(
