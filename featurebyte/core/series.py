@@ -3,7 +3,7 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Type, Union
+from typing import Any, Literal, Optional, Type, Union
 
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
@@ -440,13 +440,15 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         self[self.isnull()] = other
 
     @typechecked
-    def astype(self, new_type: Union[Type[int], Type[float], Type[str], str]) -> Series:
+    def astype(
+        self, new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]]
+    ) -> Series:
         """
         Convert Series to have a new type
 
         Parameters
         ----------
-        new_type : Union[Type[int], Type[float], Type[str], str])
+        new_type : Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]])
             Desired type after conversion. Type can be provided directly or as a string
 
         Returns
@@ -465,10 +467,8 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             "str": str,
         }
         if isinstance(new_type, str):
-            if new_type in known_str_to_type:
-                new_type = known_str_to_type[new_type]
-            else:
-                raise TypeError(f"Type conversion not supported for {new_type}")
+            # new_type is typechecked and must be a valid key
+            new_type = known_str_to_type[new_type]
 
         if new_type is int:
             type_name = "int"

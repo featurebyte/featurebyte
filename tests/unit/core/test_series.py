@@ -678,7 +678,10 @@ def test_astype__invalid_type_str(float_series):
     """
     with pytest.raises(TypeError) as exc:
         float_series.astype("number")
-    assert str(exc.value) == "Type conversion not supported for number"
+    assert str(exc.value) == (
+        'type of argument "new_type" must be one of (Type[int], Type[float], Type[str],'
+        " Literal[int, float, str]); got str instead"
+    )
 
 
 def test_astype__invalid_type_cls(float_series):
@@ -688,6 +691,6 @@ def test_astype__invalid_type_cls(float_series):
     with pytest.raises(TypeError) as exc:
         float_series.astype(dict)
     assert str(exc.value) == (
-        'type of argument "new_type" must be one of (Type[int], Type[float], Type[str], str);'
-        " got dict instead"
+        'type of argument "new_type" must be one of (Type[int], Type[float], Type[str],'
+        " Literal[int, float, str]); got dict instead"
     )
