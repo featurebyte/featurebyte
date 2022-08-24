@@ -670,8 +670,6 @@ def test_astype__expected_parameters(series_fixture_name, request):
     _check_converted_series(series.astype("float"), "float")
     _check_converted_series(series.astype(str), "str")
     _check_converted_series(series.astype("str"), "str")
-    _check_converted_series(series.astype(bool), "bool")
-    _check_converted_series(series.astype("bool"), "bool")
 
 
 def test_astype__invalid_type_str(float_series):
@@ -680,7 +678,7 @@ def test_astype__invalid_type_str(float_series):
     """
     with pytest.raises(TypeError) as exc:
         float_series.astype("number")
-    assert str(exc.value) == "Unknown type: number"
+    assert str(exc.value) == "Type conversion not supported for number"
 
 
 def test_astype__invalid_type_cls(float_series):
@@ -689,4 +687,4 @@ def test_astype__invalid_type_cls(float_series):
     """
     with pytest.raises(TypeError) as exc:
         float_series.astype(dict)
-    assert str(exc.value) == "Unknown type: <class 'dict'>"
+    assert str(exc.value) == "Type conversion not supported for <class 'dict'>"

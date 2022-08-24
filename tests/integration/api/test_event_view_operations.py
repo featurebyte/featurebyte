@@ -122,6 +122,9 @@ def test_query_object_operation_on_snowflake_source(
     check_string_operations(event_view, "PRODUCT_ACTION")
     check_datetime_operations(event_view, "EVENT_TIMESTAMP")
 
+    # check casting operations
+    check_cast_operations(event_view)
+
     # construct expected results
     expected = transaction_data_upper_case.copy()
     expected["CUST_ID_X_SESSION_ID"] = (expected["CUST_ID"] * expected["SESSION_ID"]) / 1000.0
@@ -526,6 +529,20 @@ def check_datetime_operations(event_view, column_name, limit=100):
             check_names=False,
             check_dtype=False,
         )
+
+
+def check_cast_operations(event_view, limit=100):
+    event_view = event_view.copy()
+    event_view["AMOUNT_INT"] = event_view["AMOUNT"].astype(int)
+    event_view["AMOUNT_STR"] = event_view["AMOUNT"].astype(str)
+    event_view["AMOUNT_FLOAT"] = event_view["AMOUNT"].astype(float)
+    df = event_view.preview(limit=limit)
+    assert df["AMOUNT_INT"].tolist() == df["AMOUNT"].astype(int).tolist()
+    assert (
+        df["AMOUNT_STR"].tolist()
+        == df["AMOUNT"].astype(str).apply(lambda x: "0" if x == "0.0" else x).tolist()
+    )
+    assert df["AMOUNT_FLOAT"].tolist() == df["AMOUNT"].astype(float).tolist()
 
 
 def check_day_of_week_counts(event_view, preview_param, config):

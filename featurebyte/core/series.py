@@ -439,7 +439,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         """
         self[self.isnull()] = other
 
-    def astype(self, new_type: Union[Type[int], Type[float], Type[str], Type[bool], str]) -> Series:
+    def astype(self, new_type: Union[Type[int], Type[float], Type[str], str]) -> Series:
         """
         Convert Series to have a new type
 
@@ -452,13 +452,12 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             "int": int,
             "float": float,
             "str": str,
-            "bool": bool,
         }
         if isinstance(new_type, str):
             if new_type in known_str_to_type:
                 new_type = known_str_to_type[new_type]
             else:
-                raise TypeError(f"Unknown type: {new_type}")
+                raise TypeError(f"Type conversion not supported for {new_type}")
 
         if new_type is int:
             type_name = "int"
@@ -469,11 +468,8 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         elif new_type is str:
             type_name = "str"
             output_var_type = DBVarType.VARCHAR
-        elif new_type is bool:
-            type_name = "bool"
-            output_var_type = DBVarType.BOOL
         else:
-            raise TypeError(f"Unknown type: {new_type}")
+            raise TypeError(f"Type conversion not supported for {new_type}")
 
         node_params = {"type": type_name}
         return series_unary_operation(

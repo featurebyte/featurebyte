@@ -148,11 +148,30 @@ def test_make_input_node_escape_special_characters():
     ],
 )
 def test_count_dict_transform(parameters, expected, input_node):
-    """Test binary operation node when another side is Series"""
+    """Test count dict transformation node"""
     column = sql.StrExpressionNode(table_node=input_node, expr="cd_val")
     node = sql.make_expression_node(
         input_sql_nodes=[column],
         node_type=NodeType.COUNT_DICT_TRANSFORM,
+        parameters=parameters,
+    )
+    assert node.sql.sql() == expected
+
+
+@pytest.mark.parametrize(
+    "parameters, expected",
+    [
+        ({"type": "int"}, "TRUNCATE(val)"),
+        ({"type": "float"}, "CAST(val AS FLOAT)"),
+        ({"type": "str"}, "CAST(val AS VARCHAR)"),
+    ],
+)
+def test_cast(parameters, expected, input_node):
+    """Test cast node for type conversion"""
+    column = sql.StrExpressionNode(table_node=input_node, expr="val")
+    node = sql.make_expression_node(
+        input_sql_nodes=[column],
+        node_type=NodeType.CAST,
         parameters=parameters,
     )
     assert node.sql.sql() == expected
