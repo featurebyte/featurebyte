@@ -140,7 +140,11 @@ def test_make_input_node_escape_special_characters():
             {"transform_type": "most_frequent"},
             "CAST(F_COUNT_DICT_MOST_FREQUENT(cd_val) AS VARCHAR)",
         ),
-        ({"transform_type": "num_unique"}, "F_COUNT_DICT_NUM_UNIQUE(cd_val)"),
+        ({"transform_type": "unique_count"}, "F_COUNT_DICT_NUM_UNIQUE(cd_val)"),
+        (
+            {"transform_type": "unique_count", "include_missing": False},
+            "F_COUNT_DICT_NUM_UNIQUE(OBJECT_DELETE(cd_val, '__MISSING__'))",
+        ),
     ],
 )
 def test_count_dict_transform(parameters, expected, input_node):

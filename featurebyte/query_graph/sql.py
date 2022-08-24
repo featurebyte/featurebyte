@@ -20,6 +20,8 @@ from featurebyte.query_graph.feature_common import AggregationSpec
 from featurebyte.query_graph.graph import Node
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 
+MISSING_VALUE_REPLACEMENT = "__MISSING__"
+
 
 class SQLType(Enum):
     """Type of SQL code corresponding to different operations"""
@@ -635,16 +637,24 @@ class CountDictTransformNode(ExpressionNode):
     """Node for count dict transform operation (eg. entropy)"""
 
     expr: ExpressionNode
-    transform_type: Literal["entropy", "most_frequent", "num_unique"]
+    transform_type: Literal["entropy", "most_frequent", "unique_count"]
+    include_missing: bool
 
     @property
     def sql(self) -> Expression:
         function_name = {
             "entropy": "F_COUNT_DICT_ENTROPY",
             "most_frequent": "F_COUNT_DICT_MOST_FREQUENT",
-            "num_unique": "F_COUNT_DICT_NUM_UNIQUE",
+            "unique_count": "F_COUNT_DICT_NUM_UNIQUE",
         }[self.transform_type]
-        output_expr = expressions.Anonymous(this=function_name, expressions=[self.expr.sql])
+        if self.include_missing:
+            counts_expr = self.expr.sql
+        else:
+            counts_expr = expressions.Anonymous(
+                this="OBJECT_DELETE",
+                expressions=[self.expr.sql, make_literal_value(MISSING_VALUE_REPLACEMENT)],
+            )
+        output_expr = expressions.Anonymous(this=function_name, expressions=[counts_expr])
         if self.transform_type == "most_frequent":
             # The F_COUNT_DICT_MOST_FREQUENT UDF produces a VARIANT type. Cast to string to prevent
             # double quoting in the feature output ('remove' vs '"remove"')
@@ -1194,7 +1204,10 @@ def make_expression_node(
         )
     elif node_type == NodeType.COUNT_DICT_TRANSFORM:
         sql_node = CountDictTransformNode(
-            table_node=table_node, expr=input_expr_node, transform_type=parameters["transform_type"]
+            table_node=table_node,
+            expr=input_expr_node,
+            transform_type=parameters["transform_type"],
+            include_missing=parameters.get("include_missing", True),
         )
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")
