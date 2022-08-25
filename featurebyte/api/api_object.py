@@ -334,6 +334,11 @@ class ApiObject(ApiGetObject):
         Returns
         -------
         List of history
+
+        Raises
+        ------
+        RecordRetrievalException
+            When unexpected retrieval failure
         """
         client = Configurations().get_client()
         response = client.get(url=f"{self._route}/history/{field_name}/{self.id}")
