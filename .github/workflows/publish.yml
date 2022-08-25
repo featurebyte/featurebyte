@@ -26,6 +26,7 @@ env:
   SLACK_OAUTH: ${{ secrets.SLACK_OAUTH }}
 jobs:
   publish:
+    if: false == contains(github.event.pull_request.labels.*.name, 'bump-false')
     strategy:
       matrix:
         python-version: ["3.8"]
@@ -72,7 +73,7 @@ jobs:
           git config --global user.name "Featurebyte Admin"
           git add pyproject.toml
           git commit --amend --no-edit
-          git push origin master -f
+          git push origin main -f
           git tag $(poetry version -s)
           git push origin --tag
 
