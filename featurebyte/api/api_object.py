@@ -3,7 +3,7 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Optional, cast
+from typing import Any, ClassVar, Dict, Optional, Type, cast
 
 import time
 from http import HTTPStatus
@@ -30,7 +30,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
     """
 
     # class variables
-    _route: ClassVar[Optional[str]] = ""
+    _route: ClassVar[str] = ""
 
     # other ApiGetObject attributes
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)
@@ -168,7 +168,7 @@ class ApiObject(ApiGetObject):
     """
 
     # class variables
-    _update_schema: ClassVar[Optional[FeatureByteBaseModel]] = None
+    _update_schema: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
     def _get_create_payload(self) -> dict[str, Any]:
         """
@@ -211,13 +211,17 @@ class ApiObject(ApiGetObject):
         ------
         NotImplementedError
             If there _update_schema is not set
+        DuplicatedRecordException
+            If the update causes record conflict
         RecordUpdateException
             When unexpected record update failure
         """
         if self._update_schema is None:
             raise NotImplementedError
 
-        data = self._update_schema(**{**self.dict(), **update_payload})
+        data = self._update_schema(  # pylint: disable=not-callable
+            **{**self.dict(), **update_payload}
+        )
         client = Configurations().get_client()
         response = client.patch(url=f"{self._route}/{self.id}", json=data.json_dict())
         if response.status_code == HTTPStatus.OK:

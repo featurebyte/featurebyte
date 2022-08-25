@@ -144,6 +144,7 @@ class TestEventDataApi(BaseApiTestSuite):
                 "time_modulo_frequency": "5m",
             },
             "status": "DRAFT",
+            "record_creation_date_column": "created_at",
         }
 
     @pytest.fixture(name="event_data_response")

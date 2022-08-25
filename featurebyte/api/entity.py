@@ -11,11 +11,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.config import Configurations
-from featurebyte.exception import (
-    DuplicatedRecordException,
-    RecordRetrievalException,
-    RecordUpdateException,
-)
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.entity import EntityModel
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 

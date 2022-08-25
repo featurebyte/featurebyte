@@ -19,7 +19,7 @@ from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import GetAttrMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
-from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.models.event_data import EventDataModel
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 
 
@@ -201,6 +201,20 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         if response.status_code == HTTPStatus.NOT_FOUND:
             return self.dict()
         raise RecordRetrievalException(response)
+
+    @typechecked
+    def update_record_creation_date_column(self, record_creation_date_column: str) -> None:
+        """
+        Update record creation date column
+
+        Parameters
+        ----------
+        record_creation_date_column: str
+            Record creation date column used to perform feature job setting analysis
+        """
+        # test it locally to trigger record creation date column validation check
+        self.record_creation_date_column = record_creation_date_column
+        self.update({"record_creation_date_column": record_creation_date_column})
 
     @typechecked
     def update_default_feature_job_setting(
