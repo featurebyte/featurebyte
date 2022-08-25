@@ -242,6 +242,22 @@ def test_query_object_operation_on_snowflake_source(
         "COUNT_2h / COUNT_24h": Decimal("0.066667"),
     }
 
+    # check casting on feature
+    df_feature_preview = (
+        (feature_group["COUNT_2h"].astype(int) + 1)
+        .astype(float)
+        .preview(
+            preview_param,
+            credentials=config.credentials,
+        )
+    )
+    assert df_feature_preview.shape[0] == 1
+    assert df_feature_preview.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "uid": 1,
+        "Unnamed": 2.0,
+    }
+
     special_feature = create_feature_with_filtered_event_view(event_view)
     special_feature.save()  # pylint: disable=no-member
     check_feature_and_remove_registry(special_feature, feature_manager)
@@ -538,11 +554,17 @@ def check_cast_operations(event_view, limit=100):
     event_view["AMOUNT_STR"] = event_view["AMOUNT"].astype(str)
     event_view["AMOUNT_FLOAT"] = event_view["AMOUNT"].astype(float)
     df = event_view.preview(limit=limit)
-    assert df["AMOUNT_INT"].tolist() == df["AMOUNT"].astype(int).tolist()
+
+    # compare string representation to make sure that the values are converted to int rather than
+    # just being floored ("2" instead of "2.0")
+    expected = df["AMOUNT"].astype(int).astype(str).tolist()
+    assert df["AMOUNT_INT"].astype(str).tolist() == expected
+
     assert (
         df["AMOUNT_STR"].tolist()
         == df["AMOUNT"].astype(str).apply(lambda x: "0" if x == "0.0" else x).tolist()
     )
+
     assert df["AMOUNT_FLOAT"].tolist() == df["AMOUNT"].astype(float).tolist()
 
 

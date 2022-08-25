@@ -672,14 +672,17 @@ class CastNode(ExpressionNode):
     @property
     def sql(self) -> Expression:
         if self.new_type == "int":
-            # Casting to integer performs rounding. Use TRUNCATE to mimic pandas astype(int)
-            output_expr = expressions.Anonymous(this="TRUNCATE", expressions=[self.expr.sql])
+            # Casting to INTEGER performs rounding (could be up or down). Hence, apply FLOOR first
+            # to mimic pandas astype(int)
+            expr = expressions.Floor(this=self.expr.sql)
         else:
-            type_expr = {
-                "float": parse_one("FLOAT"),
-                "str": parse_one("VARCHAR"),
-            }[self.new_type]
-            output_expr = expressions.Cast(this=self.expr.sql, to=type_expr)
+            expr = self.expr.sql
+        type_expr = {
+            "int": parse_one("INTEGER"),
+            "float": parse_one("FLOAT"),
+            "str": parse_one("VARCHAR"),
+        }[self.new_type]
+        output_expr = expressions.Cast(this=expr, to=type_expr)
         return output_expr
 
 

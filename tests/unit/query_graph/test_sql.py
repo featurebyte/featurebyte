@@ -161,7 +161,7 @@ def test_count_dict_transform(parameters, expected, input_node):
 @pytest.mark.parametrize(
     "parameters, expected",
     [
-        ({"type": "int"}, "TRUNCATE(val)"),
+        ({"type": "int"}, "CAST(FLOOR(val) AS INT)"),
         ({"type": "float"}, "CAST(val AS FLOAT)"),
         ({"type": "str"}, "CAST(val AS VARCHAR)"),
     ],
