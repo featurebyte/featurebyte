@@ -18,7 +18,9 @@ async def get_task(request: Request, task_id: str) -> Task:
     """
     Retrieve TaskStatus
     """
-    task: Task = await request.state.controller.get_task(user=request.state.user, task_id=task_id)
+    task: Task = await request.state.controller.get_task(
+        task_manager=request.state.task_manager, task_id=task_id
+    )
     return task
 
 
@@ -32,7 +34,7 @@ async def list_tasks(
     """
     List TaskStatus"""
     task_list: TaskList = await request.state.controller.list_tasks(
-        user=request.state.user,
+        task_manager=request.state.task_manager,
         page=page,
         page_size=page_size,
         sort_dir=sort_dir,

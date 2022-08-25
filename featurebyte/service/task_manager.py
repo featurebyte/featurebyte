@@ -3,15 +3,18 @@ TaskManager service is responsible to submit task message
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Union
 
 from abc import abstractmethod
+from uuid import UUID
 
 from bson.objectid import ObjectId
 
 from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.worker.process_store import ProcessStore
+
+TaskId = Union[ObjectId, UUID]
 
 
 class AbstractTaskManager:
@@ -31,7 +34,7 @@ class AbstractTaskManager:
         self.user_id = user_id
 
     @abstractmethod
-    async def submit(self, payload: BaseTaskPayload) -> ObjectId:
+    async def submit(self, payload: BaseTaskPayload) -> TaskId:
         """
         Submit task request given task payload
 
@@ -42,18 +45,18 @@ class AbstractTaskManager:
 
         Returns
         -------
-        ObjectId
+        TaskId
             Task identifier used to check task status
         """
 
     @abstractmethod
-    async def get_task(self, task_id: ObjectId) -> Optional[Task]:
+    async def get_task(self, task_id: str) -> Optional[Task]:
         """
         Retrieve task status given ID
 
         Parameters
         ----------
-        task_id: ObjectId
+        task_id: str
             Task ID
 
         Returns
@@ -91,16 +94,16 @@ class TaskManager(AbstractTaskManager):
     TaskManager class is responsible for submitting task request & task status retrieval
     """
 
-    async def submit(self, payload: BaseTaskPayload) -> ObjectId:
+    async def submit(self, payload: BaseTaskPayload) -> TaskId:
         assert self.user_id == payload.user_id
         task_id = await ProcessStore().submit(
             payload=payload.json(), output_path=payload.task_output_path
         )
         return task_id
 
-    async def get_task(self, task_id: ObjectId) -> Optional[Task]:
+    async def get_task(self, task_id: str) -> Optional[Task]:
         process_store = ProcessStore()
-        process_dict = await process_store.get(user_id=self.user_id, task_id=task_id)
+        process_dict = await process_store.get(user_id=self.user_id, task_id=ObjectId(task_id))
         return Task(**process_dict) if process_dict else None
 
     async def list_tasks(
