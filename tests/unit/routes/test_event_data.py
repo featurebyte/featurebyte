@@ -2,6 +2,7 @@
 Tests for EventData routes
 """
 import datetime
+import pdb
 from http import HTTPStatus
 
 import pytest
@@ -216,6 +217,33 @@ class TestEventDataApi(BaseApiTestSuite):
             {"blind_spot": "12m", "frequency": "30m", "time_modulo_frequency": "5m"},
             {"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"},
         ]
+
+    def test_update_record_creation_date(
+        self,
+        test_api_client_persistent,
+        event_data_response,
+        event_data_update_dict,
+    ):
+        """
+        Update Event Data record creation date column
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = event_data_response.json()
+        insert_id = response_dict["_id"]
+
+        update_response = test_api_client.patch(
+            f"/event_data/{insert_id}",
+            json={**event_data_update_dict, "record_creation_date_column": "some_date_col"},
+        )
+        update_response_dict = update_response.json()
+        expected_response = {
+            **response_dict,
+            **event_data_update_dict,
+            "record_creation_date_column": "some_date_col",
+        }
+        expected_response.pop("updated_at")
+        assert update_response_dict.items() > expected_response.items()
+        assert update_response_dict["updated_at"] is not None
 
     def test_update_fails_table_not_found(self, test_api_client_persistent, event_data_update_dict):
         """

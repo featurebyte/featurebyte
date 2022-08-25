@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
+from pydantic import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData, EventDataColumn
@@ -548,6 +549,29 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure(
     with pytest.raises(RecordCreationException) as exc:
         saved_event_data.update_default_feature_job_setting()
     assert "ValueError: Event Data not found" in str(exc.value)
+
+
+def test_update_record_creation_date_column__unsaved_object(snowflake_database_table, config):
+    """Test update record creation date column (unsaved event data)"""
+    event_data = EventData.from_tabular_source(
+        tabular_source=snowflake_database_table,
+        name="event_data",
+        event_timestamp_column="event_timestamp",
+        credentials=config.credentials,
+    )
+    assert event_data.record_creation_date_column is None
+    event_data.update_record_creation_date_column("created_at")
+    assert event_data.record_creation_date_column == "created_at"
+
+
+def test_update_record_creation_date_column__saved_object(saved_event_data):
+    """Test update record creation date column (saved event data)"""
+    saved_event_data.update_record_creation_date_column("col_float")
+    assert saved_event_data.record_creation_date_column == "col_float"
+
+    # check that validation logic works
+    with pytest.raises(ValidationError):
+        saved_event_data.update_record_creation_date_column("random_column_name")
 
 
 def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_config_path_env):
