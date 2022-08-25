@@ -128,23 +128,31 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             self.node = self.parent[self.name].node
 
     @staticmethod
-    def _is_a_series_of_var_type(item: Any, var_type: DBVarType) -> bool:
+    def _is_a_series_of_var_type(
+        item: Any, var_type: Union[DBVarType, tuple[DBVarType, ...]]
+    ) -> bool:
         """
-        Check whether the input item is Series type and has the specified variable type
+        Check whether the input item is Series type and has any of the specified variable types
 
         Parameters
         ----------
         item: Any
             input item
-        var_type: DBVarType
-            specified database variable type
+        var_type: DBVarType | tuple[DBVarType, ...]
+            specified database variable type(s)
 
         Returns
         -------
         bool
             whether the input item is a Series with the specified database variable type
         """
-        return isinstance(item, Series) and item.var_type == var_type
+        if isinstance(var_type, tuple):
+            var_type_lst = list(var_type)
+        else:
+            var_type_lst = [var_type]
+        return isinstance(item, Series) and any(
+            item.var_type == var_type for var_type in var_type_lst
+        )
 
     def _binary_op(
         self,
@@ -266,8 +274,14 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         TypeError
             if the left value type of the operator is not consistent with the right value type
         """
-        if not self._is_a_series_of_var_type(other, self.var_type) and (
-            self.pytype_dbtype_map.get(type(other)) != self.var_type
+        # some types can be compared directly
+        supported_var_types_map = {
+            DBVarType.INT: (DBVarType.INT, DBVarType.FLOAT),
+            DBVarType.FLOAT: (DBVarType.INT, DBVarType.FLOAT),
+        }
+        supported_var_types = supported_var_types_map.get(self.var_type, (self.var_type,))
+        if not self._is_a_series_of_var_type(other, supported_var_types) and (
+            self.pytype_dbtype_map.get(type(other)) not in supported_var_types
         ):
             raise TypeError(
                 f"Not supported operation '{node_type}' between '{self}' and '{other}'!"
