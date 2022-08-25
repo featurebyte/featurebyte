@@ -9,11 +9,13 @@ import collections
 import time
 
 import pandas as pd
+from alive_progress import alive_bar
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.feature import Feature
+from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
@@ -208,9 +210,23 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         return {"items": []}
 
     def _pre_save_operations(self) -> None:
-        for feature in self.feature_objects.values():
-            if not feature.saved:
-                feature.save()
+        if is_notebook():
+            other_kwargs = {"force_tty": True}
+        else:
+            other_kwargs = {"dual_line": True}
+
+        with alive_bar(
+            total=len(self.feature_objects), title="Saving Feature(s)", **other_kwargs
+        ) as progress_bar:
+            for feature in self.feature_objects.values():
+                text = f'Feature "{feature.name}" has been saved before.'
+                if not feature.saved:
+                    feature.save()
+                    text = f'Feature "{feature.name}" is saved.'
+
+                # update progress bar
+                progress_bar.text = text
+                progress_bar()  # pylint: disable=not-callable
 
     @root_validator(pre=True)
     @classmethod
