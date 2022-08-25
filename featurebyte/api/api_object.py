@@ -3,13 +3,14 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, cast
+from typing import Any, ClassVar, Dict, List, Optional, Type, cast
 
 import time
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
 from pydantic import Field
+from typeguard import typechecked
 
 from featurebyte.config import Configurations
 from featurebyte.exception import (
@@ -17,8 +18,9 @@ from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
     RecordRetrievalException,
+    RecordUpdateException,
 )
-from featurebyte.models.base import FeatureByteBaseDocumentModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.schema.task import TaskStatus
 
 
@@ -28,7 +30,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
     """
 
     # class variables
-    _route = ""
+    _route: ClassVar[str] = ""
 
     # other ApiGetObject attributes
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)
@@ -165,6 +167,9 @@ class ApiObject(ApiGetObject):
     ApiObject contains common methods used to interact with API routes
     """
 
+    # class variables
+    _update_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
+
     def _get_create_payload(self) -> dict[str, Any]:
         """
         Construct payload used for post route
@@ -191,6 +196,48 @@ class ApiObject(ApiGetObject):
         Operations to be executed before saving the api object
         """
         return
+
+    @typechecked
+    def update(self, update_payload: Dict[str, Any]) -> None:
+        """
+        Update object in the persistent
+
+        Parameters
+        ----------
+        update_payload: dict[str, Any]
+            Fields to update in dictionary format
+
+        Raises
+        ------
+        NotImplementedError
+            If there _update_schema is not set
+        DuplicatedRecordException
+            If the update causes record conflict
+        RecordUpdateException
+            When unexpected record update failure
+        """
+        if self._update_schema_class is None:
+            raise NotImplementedError
+
+        data = self._update_schema_class(  # pylint: disable=not-callable
+            **{**self.dict(), **update_payload}
+        )
+        client = Configurations().get_client()
+        response = client.patch(url=f"{self._route}/{self.id}", json=data.json_dict())
+        if response.status_code == HTTPStatus.OK:
+            type(self).__init__(
+                self,
+                **response.json(),
+                **self._get_init_params_from_object(),
+                saved=True,
+            )
+        elif response.status_code == HTTPStatus.NOT_FOUND:
+            for key, value in update_payload.items():
+                setattr(self, key, value)
+        elif response.status_code == HTTPStatus.CONFLICT:
+            raise DuplicatedRecordException(response=response)
+        else:
+            raise RecordUpdateException(response=response)
 
     def save(self) -> None:
         """
@@ -273,3 +320,29 @@ class ApiObject(ApiGetObject):
                 return cast(Dict[str, Any], result_response.json())
             raise RecordRetrievalException(response=result_response)
         raise RecordCreationException(response=create_response)
+
+    @typechecked
+    def _get_audit_history(self, field_name: str) -> List[Dict[str, Any]]:
+        """
+        Retrieve field audit history
+
+        Parameters
+        ----------
+        field_name: str
+            Field name
+
+        Returns
+        -------
+        List of history
+
+        Raises
+        ------
+        RecordRetrievalException
+            When unexpected retrieval failure
+        """
+        client = Configurations().get_client()
+        response = client.get(url=f"{self._route}/history/{field_name}/{self.id}")
+        if response.status_code == HTTPStatus.OK:
+            history: list[dict[str, Any]] = response.json()
+            return history
+        raise RecordRetrievalException(response)

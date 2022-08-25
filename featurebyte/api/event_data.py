@@ -18,12 +18,8 @@ from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import GetAttrMixin
-from featurebyte.exception import (
-    DuplicatedRecordException,
-    RecordRetrievalException,
-    RecordUpdateException,
-)
-from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
+from featurebyte.models.event_data import EventDataModel
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 
 
@@ -47,11 +43,6 @@ class EventDataColumn:
         ----------
         entity_name: Optional[str]
             Associate column name to the entity, remove association if entity name is None
-
-        Raises
-        ------
-        RecordUpdateException
-            When unexpected record update failure
         """
         column_entity_map = self.event_data.column_entity_map or {}
         if entity_name is None:
@@ -60,21 +51,7 @@ class EventDataColumn:
             entity_dict = get_entity(entity_name)
             column_entity_map[self.column_name] = entity_dict["_id"]
 
-        data = EventDataUpdate(column_entity_map=column_entity_map)
-        client = Configurations().get_client()
-        response = client.patch(url=f"/event_data/{self.event_data.id}", json=data.json_dict())
-        if response.status_code == HTTPStatus.OK:
-            EventData.__init__(
-                self.event_data,
-                **response.json(),
-                feature_store=self.event_data.feature_store,
-                credentials=self.event_data.credentials,
-                saved=True,
-            )
-        elif response.status_code == HTTPStatus.NOT_FOUND:
-            self.event_data.column_entity_map = column_entity_map
-        else:
-            raise RecordUpdateException(response)
+        self.event_data.update({"column_entity_map": column_entity_map})
 
 
 class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
@@ -84,6 +61,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
 
     # class variables
     _route = "/event_data"
+    _update_schema_class = EventDataUpdate
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store, "credentials": self.credentials}
@@ -225,6 +203,21 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         raise RecordRetrievalException(response)
 
     @typechecked
+    def update_record_creation_date_column(self, record_creation_date_column: str) -> None:
+        """
+        Update record creation date column
+
+        Parameters
+        ----------
+        record_creation_date_column: str
+            Record creation date column used to perform feature job setting analysis
+        """
+        # perform record creation datetime column assignment first to
+        # trigger record creation date column validation check
+        self.record_creation_date_column = record_creation_date_column
+        self.update({"record_creation_date_column": record_creation_date_column})
+
+    @typechecked
     def update_default_feature_job_setting(
         self, feature_job_setting: Optional[Dict[str, Any]] = None
     ) -> None:
@@ -235,13 +228,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         ----------
         feature_job_setting: Optional[Dict[str, Any]]
             Feature job setting dictionary contains blind_spot, frequency & time_modulo_frequency keys
-
-        Raises
-        ------
-        RecordUpdateException
-            When unexpected record update failure
         """
-        client = Configurations().get_client()
         if feature_job_setting:
             _ = validate_job_setting_parameters(**feature_job_setting)
         else:
@@ -263,20 +250,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
 
                 display(HTML(job_setting_analysis["analysis_report"]))
 
-        data = EventDataUpdate(default_feature_job_setting=FeatureJobSetting(**feature_job_setting))
-        response = client.patch(url=f"/event_data/{self.id}", json=data.dict())
-        if response.status_code == HTTPStatus.OK:
-            type(self).__init__(
-                self,
-                **response.json(),
-                feature_store=self.feature_store,
-                credentials=self.credentials,
-                saved=True,
-            )
-        elif response.status_code == HTTPStatus.NOT_FOUND:
-            self.default_feature_job_setting = data.default_feature_job_setting
-        else:
-            raise RecordUpdateException(response)
+        self.update({"default_feature_job_setting": feature_job_setting})
 
     @property
     def default_feature_job_setting_history(self) -> list[dict[str, Any]]:
@@ -286,15 +260,5 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         Returns
         -------
         list[dict[str, Any]]
-
-        Raises
-        ------
-        RecordRetrievalException
-            When unexpected retrieval failure
         """
-        client = Configurations().get_client()
-        response = client.get(url=f"/event_data/history/default_feature_job_setting/{self.id}")
-        if response.status_code == HTTPStatus.OK:
-            history: list[dict[str, Any]] = response.json()
-            return history
-        raise RecordRetrievalException(response)
+        return self._get_audit_history(field_name="default_feature_job_setting")

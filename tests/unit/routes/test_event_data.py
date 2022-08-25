@@ -2,6 +2,7 @@
 Tests for EventData routes
 """
 import datetime
+import pdb
 from http import HTTPStatus
 
 import pytest
@@ -142,7 +143,9 @@ class TestEventDataApi(BaseApiTestSuite):
                 "blind_spot": "12m",
                 "frequency": "30m",
                 "time_modulo_frequency": "5m",
-            }
+            },
+            "status": "DRAFT",
+            "record_creation_date_column": "created_at",
         }
 
     @pytest.fixture(name="event_data_response")
@@ -215,6 +218,33 @@ class TestEventDataApi(BaseApiTestSuite):
             {"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"},
         ]
 
+    def test_update_record_creation_date(
+        self,
+        test_api_client_persistent,
+        event_data_response,
+        event_data_update_dict,
+    ):
+        """
+        Update Event Data record creation date column
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = event_data_response.json()
+        insert_id = response_dict["_id"]
+
+        update_response = test_api_client.patch(
+            f"/event_data/{insert_id}",
+            json={**event_data_update_dict, "record_creation_date_column": "some_date_col"},
+        )
+        update_response_dict = update_response.json()
+        expected_response = {
+            **response_dict,
+            **event_data_update_dict,
+            "record_creation_date_column": "some_date_col",
+        }
+        expected_response.pop("updated_at")
+        assert update_response_dict.items() > expected_response.items()
+        assert update_response_dict["updated_at"] is not None
+
     def test_update_fails_table_not_found(self, test_api_client_persistent, event_data_update_dict):
         """
         Update Event Data fails if table not found
@@ -276,12 +306,12 @@ class TestEventDataApi(BaseApiTestSuite):
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = event_data_response.json()
-        event_data_update_dict["status"] = EventDataStatus.DRAFT.value
+        event_data_update_dict["status"] = EventDataStatus.DEPRECATED.value
         response = test_api_client.patch(
             f"/event_data/{response_dict['_id']}", json=event_data_update_dict
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {"detail": "Invalid status transition from DRAFT to DRAFT."}
+        assert response.json() == {"detail": "Invalid status transition from DRAFT to DEPRECATED."}
 
     def test_update_status_only(self, test_api_client_persistent, event_data_response):
         """
@@ -294,7 +324,8 @@ class TestEventDataApi(BaseApiTestSuite):
         assert current_data.pop("updated_at") is None
 
         response = test_api_client.patch(
-            f"/event_data/{current_data['_id']}", json={"status": EventDataStatus.PUBLISHED.value}
+            f"/event_data/{current_data['_id']}",
+            json={**current_data, "status": EventDataStatus.PUBLISHED.value},
         )
         assert response.status_code == HTTPStatus.OK
         updated_data = response.json()
@@ -342,7 +373,8 @@ class TestEventDataApi(BaseApiTestSuite):
                         "blind_spot": blind_spot,
                         "frequency": "30m",
                         "time_modulo_frequency": "5m",
-                    }
+                    },
+                    "status": "DRAFT",
                 },
             )
             assert response.status_code == HTTPStatus.OK

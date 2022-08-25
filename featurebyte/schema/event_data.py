@@ -40,6 +40,7 @@ class EventDataUpdate(FeatureByteBaseModel):
     Event Data Update Schema
     """
 
-    column_entity_map: Optional[Dict[StrictStr, str]] = Field(default=None)
+    column_entity_map: Optional[Dict[StrictStr, PydanticObjectId]]
     default_feature_job_setting: Optional[FeatureJobSetting]
+    record_creation_date_column: Optional[StrictStr]
     status: Optional[EventDataStatus]
