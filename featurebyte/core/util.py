@@ -60,7 +60,7 @@ def series_unary_operation(
 
 def series_binary_operation(
     input_series: SeriesT,
-    other: int | float | str | bool | Series,
+    other: int | float | str | bool | SeriesT,
     node_type: NodeType,
     output_var_type: DBVarType,
     right_op: bool = False,
@@ -73,7 +73,7 @@ def series_binary_operation(
     ----------
     input_series : SeriesT
         Series like input object
-    other: int | float | str | bool | Series
+    other: int | float | str | bool | SeriesT
         right value of the binary operator
     node_type: NodeType
         binary operator node type
