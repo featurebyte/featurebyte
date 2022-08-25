@@ -9,7 +9,7 @@ from http import HTTPStatus
 
 from fastapi import HTTPException
 
-from featurebyte.schema.task import Task, TaskId, TaskList
+from featurebyte.schema.task import Task, TaskList
 from featurebyte.service.task_manager import AbstractTaskManager
 
 
