@@ -30,7 +30,7 @@ class TestTaskStatusApi:
     @pytest.fixture(autouse=True)
     def patch_controller_task_manager(self, task_manager):
         """Patch task manager in task status controller"""
-        with patch("featurebyte.routes.task.controller.TaskManager") as mock_task_manager:
+        with patch("featurebyte.app.TaskManager") as mock_task_manager:
             mock_task_manager.return_value = task_manager
             yield
 

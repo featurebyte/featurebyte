@@ -84,4 +84,4 @@ class FeatureJobSettingAnalysisController(
 
         # run analysis
         task_id = await task_manager.submit(payload=payload)
-        return await TaskController.get_task(user=user, task_id=task_id)
+        return await TaskController.get_task(task_manager=task_manager, task_id=str(task_id))
