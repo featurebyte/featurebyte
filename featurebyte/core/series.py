@@ -12,7 +12,7 @@ from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin, ParentMixin
-from featurebyte.core.util import series_unary_operation
+from featurebyte.core.util import series_binary_operation, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -180,38 +180,17 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         Series
             output of the binary operation
         """
-        node_params: dict[str, Any] = {"right_op": right_op} if right_op else {}
         if isinstance(other, Series):
-            node = self.graph.add_operation(
-                node_type=node_type,
-                node_params={},
-                node_output_type=NodeOutputType.SERIES,
-                input_nodes=[self.node, other.node],
-            )
-            return type(self)(
-                feature_store=self.feature_store,
-                tabular_source=self.tabular_source,
-                node=node,
-                name=None,
-                var_type=output_var_type,
-                row_index_lineage=self.row_index_lineage,
-                **self._binary_op_series_params(other),
-            )
-        node_params["value"] = other
-        node = self.graph.add_operation(
+            binary_op_series_params = self._binary_op_series_params(other)
+        else:
+            binary_op_series_params = self._binary_op_series_params()
+        return series_binary_operation(
+            input_series=self,
+            other=other,
             node_type=node_type,
-            node_params=node_params,
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=[self.node],
-        )
-        return type(self)(
-            feature_store=self.feature_store,
-            tabular_source=self.tabular_source,
-            node=node,
-            name=None,
-            var_type=output_var_type,
-            row_index_lineage=self.row_index_lineage,
-            **self._binary_op_series_params(),
+            output_var_type=output_var_type,
+            right_op=right_op,
+            **binary_op_series_params,
         )
 
     def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:
@@ -496,39 +475,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             output_var_type=output_var_type,
             node_params=node_params,
             **self.unary_op_series_params(),
-        )
-
-    @typechecked
-    def cosine_similarity(self, other: Series) -> Series:
-        """
-        Calculates the cosine similarity with another dictionary Series
-
-        Parameters
-        ----------
-        other : Series
-            Another series
-
-        Returns
-        -------
-        Series
-
-        Raises
-        ------
-        TypeError
-            If the the current or the other Series is not of dictionary type
-        """
-        if self.var_type != DBVarType.OBJECT:
-            raise TypeError(
-                f"cosine_similarity is only available for dictionary type; got {self.var_type}"
-            )
-        if not self._is_a_series_of_var_type(other, DBVarType.OBJECT):
-            raise TypeError(
-                f"cosine_similarity is only available for dictionary type; got {other.var_type}"
-            )
-        return self._binary_op(
-            other=other,
-            node_type=NodeType.COSINE_SIMILARITY,
-            output_var_type=DBVarType.FLOAT,
         )
 
     @typechecked

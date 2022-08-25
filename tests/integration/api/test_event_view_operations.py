@@ -165,9 +165,9 @@ def test_query_object_operation_on_snowflake_source(
     ] = feature_counts_24h.cd.unique_count(include_missing=False)
 
     feature_counts_2h = feature_group_per_category["COUNT_BY_ACTION_2h"]
-    feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"] = feature_counts_2h.cosine_similarity(
-        feature_counts_24h
-    )
+    feature_group_per_category[
+        "ACTION_SIMILARITY_2h_to_24h"
+    ] = feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
 
     # preview the features
     preview_param = {
