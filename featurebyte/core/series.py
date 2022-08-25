@@ -523,7 +523,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             )
         if not self._is_a_series_of_var_type(other, DBVarType.OBJECT):
             raise TypeError(
-                f"cosine_similarity is only available for dictionary type, got {other.var_type}"
+                f"cosine_similarity is only available for dictionary type; got {other.var_type}"
             )
         return self._binary_op(
             other=other,

@@ -718,3 +718,45 @@ def test_astype__invalid_type_cls(float_series):
         'type of argument "new_type" must be one of (Type[int], Type[float], Type[str],'
         " Literal[int, float, str]); got dict instead"
     )
+
+
+def test_cosine_similarity(count_per_category_feature, count_per_category_feature_2h):
+    """
+    Test cosine_similarity operation
+    """
+    result = count_per_category_feature.cosine_similarity(count_per_category_feature_2h)
+    pruned_graph = result.dict()["graph"]
+    assert (
+        pruned_graph["backward_edges"]
+        == pruned_graph["backward_edges"]
+        == {
+            "groupby_1": ["input_1"],
+            "project_1": ["groupby_1"],
+            "project_2": ["groupby_1"],
+            "cosine_similarity_1": ["project_1", "project_2"],
+        }
+    )
+    assert pruned_graph["nodes"]["cosine_similarity_1"] == {
+        "name": "cosine_similarity_1",
+        "type": NodeType.COSINE_SIMILARITY,
+        "parameters": {},
+        "output_type": "series",
+    }
+
+
+def test_cosine_similarity__self_not_dict(float_feature, count_per_category_feature):
+    """
+    Test cosine_similarity operation on non-dict feature (invalid)
+    """
+    with pytest.raises(TypeError) as exc:
+        float_feature.cosine_similarity(count_per_category_feature)
+    assert str(exc.value) == "cosine_similarity is only available for dictionary type; got FLOAT"
+
+
+def test_cosine_similarity__other_not_dict(float_feature, count_per_category_feature):
+    """
+    Test cosine_similarity operation on non-dict feature (invalid)
+    """
+    with pytest.raises(TypeError) as exc:
+        count_per_category_feature.cosine_similarity(float_feature)
+    assert str(exc.value) == "cosine_similarity is only available for dictionary type; got FLOAT"

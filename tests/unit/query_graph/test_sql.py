@@ -175,3 +175,12 @@ def test_cast(parameters, expected, input_node):
         parameters=parameters,
     )
     assert node.sql.sql() == expected
+
+
+def test_cosine_similarity(input_node):
+    column1 = sql.StrExpressionNode(table_node=input_node, expr="a")
+    column2 = sql.StrExpressionNode(table_node=input_node, expr="b")
+    input_nodes = [column1, column2]
+    parameters = {}
+    node = sql.make_binary_operation_node(NodeType.COSINE_SIMILARITY, input_nodes, parameters)
+    assert node.sql.sql() == "(F_COUNT_DICT_COSINE_SIMILARITY(a, b))"
