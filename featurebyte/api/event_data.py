@@ -61,7 +61,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
 
     # class variables
     _route = "/event_data"
-    _update_schema = EventDataUpdate
+    _update_schema_class = EventDataUpdate
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store, "credentials": self.credentials}
@@ -212,7 +212,8 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         record_creation_date_column: str
             Record creation date column used to perform feature job setting analysis
         """
-        # test it locally to trigger record creation date column validation check
+        # perform record creation datetime column assignment first to
+        # trigger record creation date column validation check
         self.record_creation_date_column = record_creation_date_column
         self.update({"record_creation_date_column": record_creation_date_column})
 

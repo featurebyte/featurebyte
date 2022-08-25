@@ -19,7 +19,7 @@ class Entity(EntityModel, ApiObject):
 
     # class variables
     _route = "/entity"
-    _update_schema = EntityUpdate
+    _update_schema_class = EntityUpdate
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = EntityCreate(serving_name=self.serving_names[0], **self.json_dict())

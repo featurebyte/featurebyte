@@ -168,7 +168,7 @@ class ApiObject(ApiGetObject):
     """
 
     # class variables
-    _update_schema: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
+    _update_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
     def _get_create_payload(self) -> dict[str, Any]:
         """
@@ -216,10 +216,10 @@ class ApiObject(ApiGetObject):
         RecordUpdateException
             When unexpected record update failure
         """
-        if self._update_schema is None:
+        if self._update_schema_class is None:
             raise NotImplementedError
 
-        data = self._update_schema(  # pylint: disable=not-callable
+        data = self._update_schema_class(  # pylint: disable=not-callable
             **{**self.dict(), **update_payload}
         )
         client = Configurations().get_client()
