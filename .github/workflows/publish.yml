@@ -1,0 +1,105 @@
+name: publish
+
+# SECRETS NAME                   | Description                     | PERMISSIONS
+# ------------------------------ | ------------------------------- | ----------------------------------------------------
+## GCR_PYPI_CREDENTIALS_R_B64    | GCloud ServiceAccount JSON      | [Artifact Registry | Python     ] read
+## GCR_PYPI_CREDENTIALS_RW_B64   | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Python     ] read write
+## SLACK_OAUTH                   | Slack App OAUTH Token           | [Slack                          ] write message
+
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions: write-all
+
+env:
+  # Python
+  GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
+  GCR_PYPI_REPO: featurebyte-pypi
+  GCR_PYPI_LOCATION: us-central1
+  POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64                           # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
+  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
+  POETRY_HTTP_BASIC_TESTPYPI_USERNAME: '__token__'
+  POETRY_HTTP_BASIC_TESTPYPI_PASSWORD: ${{ secrets.PYPI_TEST_TOKEN }}
+  # Slack
+  SLACK_OAUTH: ${{ secrets.SLACK_OAUTH }}
+jobs:
+  publish:
+    strategy:
+      matrix:
+        python-version: ["3.8"]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 3
+
+      - name: 'Setup python'
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 'Install dependencies'
+        run: |
+          mkdir -p ~/.config/pip && printf "%s\n" "[global]" "extra-index-url = https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}@$GCR_PYPI_LOCATION-python.pkg.dev/$GCR_PYPI_PROJECT_ID/$GCR_PYPI_REPO/simple/" > ~/.config/pip/pip.conf
+          python -m pip install poetry==1.2.0rc99
+          rm -rf ~/.config/pip
+
+      - name: Bump Patch
+        if: contains(github.event.pull_request.labels.*.name, 'bump-patch')
+        run: poetry version patch
+
+      - name: Bump Minor
+        if: contains(github.event.pull_request.labels.*.name, 'bump-minor')
+        run: poetry version minor
+
+      - name: Bump Major
+        if: contains(github.event.pull_request.labels.*.name, 'bump-major')
+        run: poetry version major
+
+      - name: Bump PreRelease
+        if: false == (contains(github.event.pull_request.labels.*.name, 'bump-major') || contains(github.event.pull_request.labels.*.name, 'bump-minor') || contains(github.event.pull_request.labels.*.name, 'bump-patch'))
+        run: poetry version prerelease
+
+      #  Only add tags if bumping major | minor
+      - name: Tag and push for minor and major
+        if: contains(github.event.pull_request.labels.*.name, 'bump-minor') || contains(github.event.pull_request.labels.*.name, 'bump-major')
+        run: |
+          git config --global user.email "it-admin@featurebyte.com"
+          git config --global user.name "Featurebyte Admin"
+          git add pyproject.toml
+          git commit --amend --no-edit
+          git push origin master -f
+          git tag $(poetry version -s)
+          git push origin --tag
+
+#      - name: Publish Package (Test PYPI)
+#        if: contains(github.event.pull_request.labels.*.name, 'bump-major') || contains(github.event.pull_request.labels.*.name, 'bump-minor') || contains(github.event.pull_request.labels.*.name, 'bump-patch')
+#        run: |
+#          poetry config repositories.testpypi https://test.pypi.org/legacy/
+#          poetry publish --build -r testpypi    # Use POETRY_HTTP_BASIC_TEST_PYPI_  to authenticate
+
+      - name: Publish Package (NP GCloud) & slack message
+        run: |
+          poetry config repositories.featurebyte_np https://${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}
+          poetry publish --build -r featurebyte_np | tee output.txt
+
+          export OUTPUT=$(cat output.txt)
+
+          # Sending Slack Message
+          export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
+          export GITHUB_BASE_REF=MERGE
+          git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+          export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+          echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
+
+          # Lookup email address and export to AUTHOR_ID
+          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+
+          cat .github/slack-template-PUSH.json | envsubst | curl -X POST \
+            -H "Authorization: Bearer ${SLACK_OAUTH}" \
+            -H 'Content-type: application/json; charset=utf-8' \
+            --data-binary @- https://slack.com/api/chat.postMessage
