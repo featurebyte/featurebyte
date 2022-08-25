@@ -6,6 +6,9 @@ $$
   if (!COUNTS1 || !COUNTS2) {
     return 0;
   }
+  if (Object.keys(COUNTS1).length == 0 || Object.keys(COUNTS2).length == 0) {
+    return 0;
+  }
   var counts;
   var counts_other;
   if (Object.keys(COUNTS1).length < Object.keys(COUNTS2).length) {

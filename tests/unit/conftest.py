@@ -296,6 +296,9 @@ def snowflake_event_view_fixture(snowflake_event_data):
 
 @pytest.fixture(name="snowflake_event_view_entity")
 def snowflake_event_view_entity_fixture(snowflake_event_view):
+    """
+    Entity fixture that sets cust_id in snowflake_event_view as an Entity
+    """
     Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
     yield
