@@ -49,6 +49,11 @@ jobs:
           python -m pip install poetry==1.2.0rc99
           rm -rf ~/.config/pip
 
+      - name: Setup Git
+        run: |
+          git config --global user.email "it-admin@featurebyte.com"
+          git config --global user.name "Featurebyte Admin"
+
       - name: Bump Patch
         if: contains(github.event.pull_request.labels.*.name, 'bump-patch')
         run: poetry version patch
@@ -65,15 +70,16 @@ jobs:
         if: false == (contains(github.event.pull_request.labels.*.name, 'bump-major') || contains(github.event.pull_request.labels.*.name, 'bump-minor') || contains(github.event.pull_request.labels.*.name, 'bump-patch'))
         run: poetry version prerelease
 
+      - name: Push Version Changes
+        run: |
+          git add pyproject.toml
+          git commit --amend --no-edit
+          git push origin main -f
+
       #  Only add tags if bumping major | minor
       - name: Tag and push for minor and major
         if: contains(github.event.pull_request.labels.*.name, 'bump-minor') || contains(github.event.pull_request.labels.*.name, 'bump-major')
         run: |
-          git config --global user.email "it-admin@featurebyte.com"
-          git config --global user.name "Featurebyte Admin"
-          git add pyproject.toml
-          git commit --amend --no-edit
-          git push origin main -f
           git tag $(poetry version -s)
           git push origin --tag
 
