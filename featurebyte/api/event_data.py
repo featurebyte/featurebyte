@@ -259,15 +259,5 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         Returns
         -------
         list[dict[str, Any]]
-
-        Raises
-        ------
-        RecordRetrievalException
-            When unexpected retrieval failure
         """
-        client = Configurations().get_client()
-        response = client.get(url=f"/event_data/history/default_feature_job_setting/{self.id}")
-        if response.status_code == HTTPStatus.OK:
-            history: list[dict[str, Any]] = response.json()
-            return history
-        raise RecordRetrievalException(response)
+        return self._get_audit_history(field_name="default_feature_job_setting")

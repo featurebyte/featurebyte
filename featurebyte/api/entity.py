@@ -5,13 +5,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from http import HTTPStatus
-
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
-from featurebyte.config import Configurations
-from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.entity import EntityModel
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
@@ -60,15 +56,5 @@ class Entity(EntityModel, ApiObject):
         Returns
         -------
         list[dict[str, Any]]
-
-        Raises
-        ------
-        RecordRetrievalException
-            When unexpected retrieval failure
         """
-        client = Configurations().get_client()
-        response = client.get(url=f"/entity/history/name/{self.id}")
-        if response.status_code == HTTPStatus.OK:
-            history: list[dict[str, Any]] = response.json()
-            return history
-        raise RecordRetrievalException(response)
+        return self._get_audit_history(field_name="name")

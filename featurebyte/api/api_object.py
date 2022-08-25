@@ -3,7 +3,7 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Optional, Type, cast
+from typing import Any, ClassVar, Dict, List, Optional, Type, cast
 
 import time
 from http import HTTPStatus
@@ -320,3 +320,24 @@ class ApiObject(ApiGetObject):
                 return cast(Dict[str, Any], result_response.json())
             raise RecordRetrievalException(response=result_response)
         raise RecordCreationException(response=create_response)
+
+    @typechecked
+    def _get_audit_history(self, field_name: str) -> List[Dict[str, Any]]:
+        """
+        Retrieve field audit history
+
+        Parameters
+        ----------
+        field_name: str
+            Field name
+
+        Returns
+        -------
+        List of history
+        """
+        client = Configurations().get_client()
+        response = client.get(url=f"{self._route}/history/{field_name}/{self.id}")
+        if response.status_code == HTTPStatus.OK:
+            history: list[dict[str, Any]] = response.json()
+            return history
+        raise RecordRetrievalException(response)
