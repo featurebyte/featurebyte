@@ -56,6 +56,7 @@ class NodeType(str, Enum):
 
     # count dict related operations
     COUNT_DICT_TRANSFORM = "count_dict_transform"
+    COSINE_SIMILARITY = "cosine_similarity"
 
     # operations with side effect
     INPUT = "input"

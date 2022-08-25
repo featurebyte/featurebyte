@@ -499,6 +499,39 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @typechecked
+    def cosine_similarity(self, other: Series) -> Series:
+        """
+        Calculates the cosine similarity with another dictionary Series
+
+        Parameters
+        ----------
+        other : Series
+            Another series
+
+        Returns
+        -------
+        Series
+
+        Raises
+        ------
+        TypeError
+            If the the current or the other Series is not of dictionary type
+        """
+        if self.var_type != DBVarType.OBJECT:
+            raise TypeError(
+                f"cosine_similarity is only available for dictionary type; got {self.var_type}"
+            )
+        if not self._is_a_series_of_var_type(other, DBVarType.OBJECT):
+            raise TypeError(
+                f"cosine_similarity is only available for dictionary type, got {other.var_type}"
+            )
+        return self._binary_op(
+            other=other,
+            node_type=NodeType.COSINE_SIMILARITY,
+            output_var_type=DBVarType.FLOAT,
+        )
+
+    @typechecked
     def preview_sql(self, limit: int = 10) -> str:
         """
         Generate SQL query to preview the transformed column

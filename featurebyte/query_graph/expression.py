@@ -55,3 +55,10 @@ class Concat(Func):
 
     arg_types = {"expressions": False}
     is_var_len_args = True
+
+
+class CosineSim(Func):
+    """Cosine similarity function"""
+
+    _sql_names = ["F_COUNT_DICT_COSINE_SIMILARITY"]
+    arg_types = {"this": True, "expression": True}

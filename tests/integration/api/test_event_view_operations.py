@@ -152,8 +152,8 @@ def test_query_object_operation_on_snowflake_source(
     feature_group_per_category = event_view.groupby("USER_ID", category="PRODUCT_ACTION").aggregate(
         "derived_value_column",
         "count",
-        windows=["24h"],
-        feature_names=["COUNT_BY_ACTION_24h"],
+        windows=["2h", "24h"],
+        feature_names=["COUNT_BY_ACTION_2h", "COUNT_BY_ACTION_24h"],
     )
     # add features based on transformations on count per category
     feature_counts_24h = feature_group_per_category["COUNT_BY_ACTION_24h"]
@@ -163,6 +163,11 @@ def test_query_object_operation_on_snowflake_source(
     feature_group_per_category[
         "NUM_UNIQUE_ACTION_24h_exclude_missing"
     ] = feature_counts_24h.cd.unique_count(include_missing=False)
+
+    feature_counts_2h = feature_group_per_category["COUNT_BY_ACTION_2h"]
+    feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"] = feature_counts_2h.cosine_similarity(
+        feature_counts_24h
+    )
 
     # preview the features
     preview_param = {
@@ -192,6 +197,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
+        "COUNT_BY_ACTION_2h": '{\n  "purchase": 1\n}',
         "COUNT_BY_ACTION_24h": (
             '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 3,\n  "purchase": 2,\n  "remove": 7\n}'
         ),
@@ -199,6 +205,7 @@ def test_query_object_operation_on_snowflake_source(
         "MOST_FREQUENT_ACTION_24h": "remove",
         "NUM_UNIQUE_ACTION_24h": 5,
         "NUM_UNIQUE_ACTION_24h_exclude_missing": 4,
+        "ACTION_SIMILARITY_2h_to_24h": 0.24433888871261045,
     }
 
     # preview one feature only
@@ -366,6 +373,7 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
             feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
             feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
             feature_group["COUNT_2h / COUNT_24h"],
+            feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
         ],
         name="My FeatureList",
     )
@@ -423,6 +431,18 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
                 0.230769,
                 0.000000,
                 np.nan,  # Note: zero divide by zero
+            ],
+            "ACTION_SIMILARITY_2h_to_24h": [
+                0.24433888871261045,
+                0.0,
+                0.769800358919501,
+                0.5855400437691199,
+                0.0,
+                0.7844645405527362,
+                0.7662610281769211,
+                0.9016696346674324,
+                0.0,
+                0.0,
             ],
         }
     )
