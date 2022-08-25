@@ -178,6 +178,7 @@ def test_cast(parameters, expected, input_node):
 
 
 def test_cosine_similarity(input_node):
+    """Test cosine similarity node"""
     column1 = sql.StrExpressionNode(table_node=input_node, expr="a")
     column2 = sql.StrExpressionNode(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
