@@ -267,7 +267,7 @@ def test_event_data_column__as_entity__saved_event_data__record_update_exception
 
     # test unexpected exception
     with pytest.raises(RecordUpdateException):
-        with patch("featurebyte.api.event_data.Configurations"):
+        with patch("featurebyte.api.api_object.Configurations"):
             saved_event_data.col_int.as_entity("customer")
 
 
@@ -496,7 +496,7 @@ def test_update_default_job_setting__record_update_exception(snowflake_event_dat
     Test unexpected exception during record update
     """
     with pytest.raises(RecordUpdateException):
-        with patch("featurebyte.api.event_data.Configurations"):
+        with patch("featurebyte.api.api_object.Configurations"):
             snowflake_event_data.update_default_feature_job_setting(
                 feature_job_setting={
                     "blind_spot": "1m",

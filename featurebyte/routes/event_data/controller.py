@@ -123,29 +123,22 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
 
         # prepare update payload
         update_payload = data.dict()
-        if not data.default_feature_job_setting:
-            update_payload.pop("default_feature_job_setting")
 
-        if data.column_entity_map is not None:
-            update_payload["column_entity_map"] = data.column_entity_map
-        else:
-            update_payload.pop("column_entity_map")
-
-        if data.status:
-            # check eligibility of status transition
-            eligible_transitions = {
-                EventDataStatus.DRAFT: {EventDataStatus.PUBLISHED},
-                EventDataStatus.PUBLISHED: {EventDataStatus.DEPRECATED},
-                EventDataStatus.DEPRECATED: {},
-            }
-            current_status = event_data["status"]
-            if data.status not in eligible_transitions[current_status]:
-                raise HTTPException(
-                    status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-                    detail=f"Invalid status transition from {current_status} to {data.status}.",
-                )
-        else:
-            update_payload.pop("status")
+        # check eligibility of status transition
+        eligible_transitions = {
+            EventDataStatus.DRAFT: {EventDataStatus.PUBLISHED},
+            EventDataStatus.PUBLISHED: {EventDataStatus.DEPRECATED},
+            EventDataStatus.DEPRECATED: {},
+        }
+        current_status = event_data["status"]
+        if (
+            current_status != data.status
+            and data.status not in eligible_transitions[current_status]
+        ):
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+                detail=f"Invalid status transition from {current_status} to {data.status}.",
+            )
 
         await persistent.update_one(
             collection_name=cls.collection_name,

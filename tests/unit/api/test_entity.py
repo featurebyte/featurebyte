@@ -162,7 +162,7 @@ def test_entity_update_name(entity):
         )
     }
 
-    with mock.patch("featurebyte.api.entity.Configurations"):
+    with mock.patch("featurebyte.api.api_object.Configurations"):
         with pytest.raises(RecordUpdateException):
             entity.update_name("hello")
 
