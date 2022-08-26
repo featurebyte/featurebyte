@@ -20,8 +20,8 @@ def to_object(obj_dict):
     "counts1, counts2, expected",
     [
         ({}, {}, 0),
-        (None, None, 0),
-        ({"a": 1}, None, 0),
+        (None, None, np.nan),
+        ({"a": 1}, None, np.nan),
         ({"a": 1}, {}, 0),
         ({"a": 1, "b": 2, "c": 3}, {"x": 1}, 0),
         ({"a": 1, "b": 2, "c": 3}, {"a": 1, "x": 1}, 0.188982),

@@ -434,15 +434,15 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
             ],
             "ACTION_SIMILARITY_2h_to_24h": [
                 0.24433888871261045,
-                0.0,
+                np.nan,
                 0.769800358919501,
                 0.5855400437691199,
-                0.0,
+                np.nan,
                 0.7844645405527362,
                 0.7662610281769211,
                 0.9016696346674324,
-                0.0,
-                0.0,
+                np.nan,
+                np.nan,
             ],
         }
     )

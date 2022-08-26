@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION F_COUNT_DICT_COSINE_SIMILARITY(counts1 variant, count
 AS
 $$
   if (!COUNTS1 || !COUNTS2) {
-    return 0;
+    return null;
   }
   if (Object.keys(COUNTS1).length == 0 || Object.keys(COUNTS2).length == 0) {
     return 0;
