@@ -3,7 +3,9 @@ This module contains count_dict accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
+
+from typeguard import typechecked
 
 from featurebyte.core.util import series_binary_operation, series_unary_operation
 from featurebyte.enum import DBVarType
@@ -11,6 +13,8 @@ from featurebyte.query_graph.enum import NodeType
 
 if TYPE_CHECKING:
     from featurebyte.api.feature import Feature
+else:
+    Feature = TypeVar("Feature")
 
 
 class CdAccessorMixin:
@@ -79,6 +83,7 @@ class CountDictAccessor:
         """
         return self._make_operation("most_frequent", DBVarType.VARCHAR)
 
+    @typechecked()
     def unique_count(self, include_missing: bool = True) -> Feature:
         """
         Compute number of distinct keys in the dictionary
