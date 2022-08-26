@@ -25,6 +25,7 @@ from featurebyte.models.feature import (
     FeatureNamespaceModel,
     FeatureReadiness,
 )
+from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 from featurebyte.schema.feature import FeatureCreate
@@ -61,9 +62,10 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
     def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:
         if "feature_store" not in values:
             tabular_source = values.get("tabular_source")
-            if tabular_source and isinstance(tabular_source, (list, tuple)) and len(tabular_source):
+            if isinstance(tabular_source, dict):
+                tabular_source_obj = TabularSource(**tabular_source)
                 client = Configurations().get_client()
-                feature_store_id = tabular_source[0]
+                feature_store_id = tabular_source_obj.feature_store_id
                 feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
                 if feature_store_response.status_code == HTTPStatus.OK:
                     values["feature_store"] = ExtendedFeatureStoreModel(

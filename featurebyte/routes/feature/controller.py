@@ -182,12 +182,11 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
                     raise exc
 
             # insert feature registry into feature store
-            feature_store_id, _ = data.tabular_source
             feature_store_dict = await cls.get_document(
                 user=user,
                 persistent=session,
                 collection_name=FeatureStoreModel.collection_name(),
-                document_id=feature_store_id,
+                document_id=data.tabular_source.feature_store_id,
                 exception_status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
             )
             feature_store = ExtendedFeatureStoreModel(**feature_store_dict)

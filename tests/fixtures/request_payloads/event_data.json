@@ -1,16 +1,62 @@
 {
-    "_id": "62f301e841b73757c7bf873a",
-    "column_entity_map": null,
+    "_id": "63086e98f9b740de42f23fbb",
+    "column_info": [
+        {
+            "entity_id": null,
+            "name": "col_int",
+            "var_type": "INT"
+        },
+        {
+            "entity_id": null,
+            "name": "col_float",
+            "var_type": "FLOAT"
+        },
+        {
+            "entity_id": null,
+            "name": "col_char",
+            "var_type": "CHAR"
+        },
+        {
+            "entity_id": null,
+            "name": "col_text",
+            "var_type": "VARCHAR"
+        },
+        {
+            "entity_id": null,
+            "name": "col_binary",
+            "var_type": "BINARY"
+        },
+        {
+            "entity_id": null,
+            "name": "col_boolean",
+            "var_type": "BOOL"
+        },
+        {
+            "entity_id": null,
+            "name": "event_timestamp",
+            "var_type": "TIMESTAMP"
+        },
+        {
+            "entity_id": null,
+            "name": "created_at",
+            "var_type": "TIMESTAMP"
+        },
+        {
+            "entity_id": "63086e98f9b740de42f23fbc",
+            "name": "cust_id",
+            "var_type": "INT"
+        }
+    ],
     "default_feature_job_setting": null,
     "event_timestamp_column": "event_timestamp",
     "name": "sf_event_data",
     "record_creation_date_column": "created_at",
-    "tabular_source": [
-        "62f301e841b73757c7bf8738",
-        {
+    "tabular_source": {
+        "feature_store_id": "63086e98f9b740de42f23fb9",
+        "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "sf_table"
         }
-    ]
+    }
 }

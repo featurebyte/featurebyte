@@ -10,7 +10,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import ApiObject
 from featurebyte.config import Credentials
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.models.feature_store import TableDetails
+from featurebyte.models.feature_store import TableDetails, TabularSource
 from featurebyte.schema.feature_store import FeatureStoreCreate
 
 if TYPE_CHECKING:
@@ -126,9 +126,9 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
 
         return DatabaseTable(
             feature_store=self,
-            tabular_source=(
-                self.id,
-                TableDetails(
+            tabular_source=TabularSource(
+                feature_store_id=self.id,
+                table_details=TableDetails(
                     database_name=database_name,
                     schema_name=schema_name,
                     table_name=table_name,

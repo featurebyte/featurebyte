@@ -3,16 +3,15 @@ DatabaseTable class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, root_validator
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.frame import BaseFrame
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.enum import DBVarType
-from featurebyte.models.feature_store import DatabaseTableModel, TableDetails
+from featurebyte.models.feature_store import ColumnInfo, DatabaseTableModel, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
@@ -24,7 +23,6 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
 
     # pylint: disable=too-few-public-methods
 
-    column_var_type_map: Dict[StrictStr, DBVarType]
     credentials: Optional[Credentials] = Field(default=None, allow_mutation=False, exclude=True)
     feature_store: ExtendedFeatureStoreModel = Field(allow_mutation=False, exclude=True)
 
@@ -37,7 +35,6 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             "graph": {"exclude": True},
             "node": {"exclude": True},
             "row_index_lineage": {"exclude": True},
-            "column_var_type_map": {"exclude": True},
         }
 
     @classmethod
@@ -77,10 +74,11 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         if credentials is None:
             credentials = config.credentials
 
-        feature_store_id, table_details = values["tabular_source"]
+        tabular_source = dict(values["tabular_source"])
+        table_details = tabular_source["table_details"]
         if "feature_store" not in values:
             # attempt to set feature_store object if it does not exist
-            values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
+            values["feature_store"] = FeatureStore.get_by_id(id=tabular_source["feature_store_id"])
 
         feature_store = values["feature_store"]
         if isinstance(table_details, dict):
@@ -93,10 +91,19 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             table_name=table_details.table_name,
         )
 
+        if "column_info" in values:
+            column_info = [ColumnInfo(**dict(col)) for col in values["column_info"]]
+            assert table_schema == {col.name: col.var_type for col in column_info}
+        else:
+            column_info = [
+                ColumnInfo(name=name, var_type=var_type) for name, var_type in table_schema.items()
+            ]
+            values["column_info"] = column_info
+
         node = GlobalQueryGraph().add_operation(
             node_type=NodeType.INPUT,
             node_params={
-                "columns": list(table_schema.keys()),
+                "columns": [col.name for col in column_info],
                 "dbtable": table_details.dict(),
                 "feature_store": feature_store.dict(include={"type": True, "details": True}),
                 **cls._get_other_input_node_parameters(values),
@@ -106,5 +113,4 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         )
         values["node"] = node
         values["row_index_lineage"] = (node.name,)
-        values["column_var_type_map"] = table_schema
         return values

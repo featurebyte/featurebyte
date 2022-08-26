@@ -25,22 +25,30 @@ from tests.util.helper import patch_import_package
 
 @pytest.fixture(name="event_data_dict")
 def event_data_dict_fixture(snowflake_database_table):
-    """
-    EventData in serialized dictionary format
-    """
+    """EventData in serialized dictionary format"""
     return {
         "name": "sf_event_data",
-        "tabular_source": (
-            snowflake_database_table.feature_store.id,
-            {
+        "tabular_source": {
+            "feature_store_id": snowflake_database_table.feature_store.id,
+            "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
                 "table_name": "sf_table",
             },
-        ),
+        },
+        "column_info": [
+            {"entity_id": None, "name": "col_int", "var_type": "INT"},
+            {"entity_id": None, "name": "col_float", "var_type": "FLOAT"},
+            {"entity_id": None, "name": "col_char", "var_type": "CHAR"},
+            {"entity_id": None, "name": "col_text", "var_type": "VARCHAR"},
+            {"entity_id": None, "name": "col_binary", "var_type": "BINARY"},
+            {"entity_id": None, "name": "col_boolean", "var_type": "BOOL"},
+            {"entity_id": None, "name": "event_timestamp", "var_type": "TIMESTAMP"},
+            {"entity_id": None, "name": "created_at", "var_type": "TIMESTAMP"},
+            {"entity_id": None, "name": "cust_id", "var_type": "INT"},
+        ],
         "event_timestamp_column": "event_timestamp",
         "record_creation_date_column": "created_at",
-        "column_entity_map": None,
         "default_feature_job_setting": None,
         "created_at": None,
         "updated_at": None,
@@ -62,8 +70,7 @@ def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
     assert snowflake_event_data.id == previous_id
     assert snowflake_event_data.status == EventDataStatus.DRAFT
     assert isinstance(snowflake_event_data.created_at, datetime)
-    feature_store, _ = snowflake_event_data.tabular_source
-    assert isinstance(feature_store, ObjectId)
+    assert isinstance(snowflake_event_data.tabular_source.feature_store_id, ObjectId)
 
     # test list event data
     assert EventData.list() == ["sf_event_data"]
@@ -186,9 +193,6 @@ def test_event_data_column__not_exists(snowflake_event_data):
     # check __getattr__ is working properly
     assert isinstance(snowflake_event_data.col_int, EventDataColumn)
 
-    # add a key `columns` to `column_var_type_map` to pretend there is a column called `columns`
-    snowflake_event_data.column_var_type_map["columns"] = "whatever_type"
-
     # when accessing the `columns` attribute, make sure we retrieve it properly
     assert set(snowflake_event_data.columns) == {
         "col_char",
@@ -197,7 +201,6 @@ def test_event_data_column__not_exists(snowflake_event_data):
         "event_timestamp",
         "col_text",
         "created_at",
-        "columns",
         "col_binary",
         "col_int",
         "cust_id",
@@ -208,7 +211,8 @@ def test_event_data_column__as_entity(snowflake_event_data):
     """
     Test setting a column in the event data as entity
     """
-    assert snowflake_event_data.column_entity_map is None
+    # check no column associate with any entity
+    assert all([col.entity_id is None for col in snowflake_event_data.column_info])
 
     # create entity
     entity = Entity(name="customer", serving_names=["cust_id"])
@@ -217,7 +221,7 @@ def test_event_data_column__as_entity(snowflake_event_data):
     col_int = snowflake_event_data.col_int
     assert isinstance(col_int, EventDataColumn)
     snowflake_event_data.col_int.as_entity("customer")
-    assert snowflake_event_data.column_entity_map == {"col_int": entity.id}
+    assert snowflake_event_data.col_int.info.entity_id == entity.id
 
     with pytest.raises(TypeError) as exc:
         snowflake_event_data.col_int.as_entity(1234)
@@ -231,14 +235,15 @@ def test_event_data_column__as_entity(snowflake_event_data):
 
     # remove entity association
     snowflake_event_data.col_int.as_entity(None)
-    assert snowflake_event_data.column_entity_map == {}
+    assert snowflake_event_data.col_int.info.entity_id is None
 
 
 def test_event_data_column__as_entity__saved_event_data(saved_event_data, config):
     """
     Test setting a column in the event data as entity (saved event data)
     """
-    assert saved_event_data.column_entity_map is None
+    # check no column associate with any entity
+    assert all([col.entity_id is None for col in saved_event_data.column_info])
 
     # create entity
     entity = Entity(name="customer", serving_names=["cust_id"])
@@ -246,13 +251,15 @@ def test_event_data_column__as_entity__saved_event_data(saved_event_data, config
 
     saved_event_data.col_int.as_entity("customer")
     assert saved_event_data.saved is True
-    assert saved_event_data.column_entity_map == {"col_int": entity.id}
+    assert saved_event_data.col_int.info.entity_id == entity.id
 
     # check that the column entity map is saved to persistent
     client = config.get_client()
     response = client.get(url=f"/event_data/{saved_event_data.id}")
     response_dict = response.json()
-    assert response_dict["column_entity_map"] == {"col_int": str(entity.id)}
+    for col in response_dict["column_info"]:
+        if col["name"] == "col_int":
+            assert col["entity_id"] == str(entity.id)
 
 
 def test_event_data_column__as_entity__saved_event_data__record_update_exception(
@@ -308,7 +315,9 @@ def test_event_data__record_creation_exception(snowflake_event_data):
             snowflake_event_data.save()
 
 
-def test_event_data__info__not_saved_event_data(snowflake_feature_store, snowflake_event_data):
+def test_event_data__info__not_saved_event_data(
+    snowflake_feature_store, snowflake_event_data, event_data_dict
+):
     """
     Test info on not-saved event data
     """
@@ -320,23 +329,15 @@ def test_event_data__info__not_saved_event_data(snowflake_feature_store, snowfla
         "user_id": None,
         "name": "sf_event_data",
         "record_creation_date_column": "col_text",
-        "column_entity_map": None,
         "created_at": None,
         "updated_at": None,
         "default_feature_job_setting": None,
         "event_timestamp_column": "col_int",
         "status": None,
-        "tabular_source": (
-            snowflake_feature_store.id,
-            {
-                "database_name": "sf_database",
-                "schema_name": "sf_schema",
-                "table_name": "sf_table",
-            },
-        ),
+        "tabular_source": event_data_dict["tabular_source"],
+        "column_info": event_data_dict["column_info"],
     }
-    feature_store_id, _ = snowflake_event_data.tabular_source
-    assert isinstance(feature_store_id, ObjectId)
+    assert isinstance(snowflake_event_data.tabular_source.feature_store_id, ObjectId)
 
     # check unhandled response status code
     with pytest.raises(RecordRetrievalException):
@@ -344,7 +345,9 @@ def test_event_data__info__not_saved_event_data(snowflake_feature_store, snowfla
             snowflake_event_data.info()
 
 
-def test_event_data__info__saved_event_data(snowflake_feature_store, saved_event_data):
+def test_event_data__info__saved_event_data(
+    snowflake_feature_store, saved_event_data, event_data_dict
+):
     """
     Test info on saved event data
     """
@@ -372,23 +375,16 @@ def test_event_data__info__saved_event_data(snowflake_feature_store, saved_event
             "user_id": None,
             "name": "sf_event_data",
             "record_creation_date_column": "created_at",
-            "column_entity_map": None,
             "created_at": saved_event_data.created_at,
             "updated_at": None,
             "default_feature_job_setting": None,
             "event_timestamp_column": "event_timestamp",
             "status": "DRAFT",
-            "tabular_source": (
-                snowflake_feature_store.id,
-                {
-                    "database_name": "sf_database",
-                    "schema_name": "sf_schema",
-                    "table_name": "sf_table",
-                },
-            ),
+            "tabular_source": event_data_dict["tabular_source"],
+            "column_info": event_data_dict["column_info"],
         }
     )
-    feature_store_id, _ = saved_event_data.tabular_source
+    feature_store_id = saved_event_data.tabular_source.feature_store_id
     assert isinstance(feature_store_id, ObjectId)
 
 
@@ -415,7 +411,7 @@ def test_update_default_job_setting(snowflake_event_data, config):
     assert snowflake_event_data.default_feature_job_setting == FeatureJobSetting(
         blind_spot="1m30s", frequency="10m", time_modulo_frequency="2m"
     )
-    feature_store_id, _ = snowflake_event_data.tabular_source
+    feature_store_id = snowflake_event_data.tabular_source.feature_store_id
     assert isinstance(feature_store_id, ObjectId)
 
 
@@ -708,7 +704,6 @@ def test_default_feature_job_setting_history(saved_event_data):
             "name": "sf_event_data",
             "event_timestamp_column": "event_timestamp",
             "record_creation_date_column": "created_at",
-            "column_entity_map": None,
             "default_feature_job_setting": None,
             "status": "DRAFT",
         }.items()

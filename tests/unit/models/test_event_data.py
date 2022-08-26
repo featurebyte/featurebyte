@@ -25,10 +25,13 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
     """Test creation, serialization and deserialization of an EventData"""
     event_data = EventDataModel(
         name="my_event_data",
-        tabular_source=(
-            snowflake_feature_store.id,
-            TableDetails(database_name="database", schema_name="schema", table_name="table"),
-        ),
+        tabular_source={
+            "feature_store_id": snowflake_feature_store.id,
+            "table_details": TableDetails(
+                database_name="database", schema_name="schema", table_name="table"
+            ),
+        },
+        column_info=[{"name": "col", "var_type": "INT", "entity_id": None}],
         event_timestamp_column="event_date",
         record_creation_date_column="created_at",
         default_feature_job_setting=feature_job_setting,
@@ -36,7 +39,6 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
         status=EventDataStatus.PUBLISHED,
     )
     expected_event_data_dict = {
-        "column_entity_map": None,
         "user_id": None,
         "created_at": datetime.datetime(2022, 2, 1, 0, 0),
         "updated_at": None,
@@ -45,15 +47,20 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
             "frequency": "30m",
             "time_modulo_frequency": "5m",
         },
+        "column_info": [{"name": "col", "var_type": "INT", "entity_id": None}],
         "event_timestamp_column": "event_date",
         "id": event_data.id,
         "name": "my_event_data",
         "record_creation_date_column": "created_at",
         "status": "PUBLISHED",
-        "tabular_source": (
-            event_data.tabular_source[0],
-            {"database_name": "database", "schema_name": "schema", "table_name": "table"},
-        ),
+        "tabular_source": {
+            "feature_store_id": event_data.tabular_source.feature_store_id,
+            "table_details": {
+                "database_name": "database",
+                "schema_name": "schema",
+                "table_name": "table",
+            },
+        },
     }
     assert event_data.dict() == expected_event_data_dict
     event_data_json = event_data.json(by_alias=True)

@@ -17,22 +17,20 @@ from featurebyte.api.util import get_entity
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.config import Configurations, Credentials
-from featurebyte.core.mixin import GetAttrMixin
+from featurebyte.core.mixin import GetAttrMixin, ParentMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel
+from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 
 
-class EventDataColumn:
+class EventDataColumn(FeatureByteBaseModel, ParentMixin):
     """
     EventDataColumn class to set metadata like entity
     """
 
-    # pylint: disable=too-few-public-methods
-
-    def __init__(self, event_data: EventData, column_name: str) -> None:
-        self.event_data = event_data
-        self.column_name = column_name
+    info: ColumnInfo
 
     @typechecked
     def as_entity(self, entity_name: Optional[str]) -> None:
@@ -44,14 +42,21 @@ class EventDataColumn:
         entity_name: Optional[str]
             Associate column name to the entity, remove association if entity name is None
         """
-        column_entity_map = self.event_data.column_entity_map or {}
         if entity_name is None:
-            column_entity_map.pop(self.column_name, None)
+            entity_id = None
         else:
             entity_dict = get_entity(entity_name)
-            column_entity_map[self.column_name] = entity_dict["_id"]
+            entity_id = entity_dict["_id"]
 
-        self.event_data.update({"column_entity_map": column_entity_map})
+        column_info = []
+        for col in self.parent.column_info:
+            if col.name == self.info.name:
+                self.info = ColumnInfo(**{**col.dict(), "entity_id": entity_id})
+                column_info.append(self.info)
+            else:
+                column_info.append(col)
+
+        self.parent.update({"column_info": column_info})
 
 
 class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
@@ -115,6 +120,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
             _id=ObjectId(),
             name=name,
             tabular_source=tabular_source.tabular_source,
+            column_info=tabular_source.column_info,
             event_timestamp_column=event_timestamp_column,
             record_creation_date_column=record_creation_date_column,
         )
@@ -136,14 +142,16 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
     @validator("event_timestamp_column")
     @classmethod
     def _check_event_timestamp_column_exists(cls, value: str, values: dict[str, Any]) -> str:
-        if value not in values["column_var_type_map"]:
+        columns = {dict(col)["name"] for col in values["column_info"]}
+        if value not in columns:
             raise ValueError(f'Column "{value}" not found in the table!')
         return value
 
     @validator("record_creation_date_column")
     @classmethod
     def _check_record_creation_date_column_exists(cls, value: str, values: dict[str, Any]) -> str:
-        if value and value not in values["column_var_type_map"]:
+        columns = {dict(col)["name"] for col in values["column_info"]}
+        if value and value not in columns:
             raise ValueError(f'Column "{value}" not found in the table!')
         return value
 
@@ -166,9 +174,15 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         KeyError
             when accessing non-exist column
         """
-        if item not in self.column_var_type_map:
+        info = None
+        for col in self.column_info:
+            if col.name == item:
+                info = col
+        if info is None:
             raise KeyError(f'Column "{item}" does not exist!')
-        return EventDataColumn(event_data=self, column_name=item)
+        output = EventDataColumn(info=info)
+        output.set_parent(self)
+        return output
 
     def info(self) -> dict[str, Any]:
         """

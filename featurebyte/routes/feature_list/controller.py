@@ -141,7 +141,9 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
                 feature_signatures.append(
                     FeatureSignature(id=feature.id, name=feature.name, version=feature.version)
                 )
-                if feature_store_id and (feature_store_id != feature.tabular_source[0]):
+                if feature_store_id and (
+                    feature_store_id != feature.tabular_source.feature_store_id
+                ):
                     raise HTTPException(
                         status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                         detail=(
@@ -151,7 +153,7 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
                     )
 
                 # store previous feature store id
-                feature_store_id = feature.tabular_source[0]
+                feature_store_id = feature.tabular_source.feature_store_id
 
             # update document with readiness
             document = FeatureListModel(

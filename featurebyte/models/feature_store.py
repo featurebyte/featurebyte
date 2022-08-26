@@ -4,12 +4,12 @@ This module contains DatabaseSource related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 
 from beanie import PydanticObjectId
-from pydantic import StrictStr
+from pydantic import Field, StrictStr
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -76,11 +76,31 @@ class TableDetails(FeatureByteBaseModel):
     table_name: StrictStr
 
 
-FeatureStoreIdentifier = PydanticObjectId
-TabularSource = Tuple[FeatureStoreIdentifier, TableDetails]
+class TabularSource(FeatureByteBaseModel):
+    """Model for tabular source"""
+
+    feature_store_id: PydanticObjectId
+    table_details: TableDetails
 
 
 class DatabaseTableModel(FeatureByteBaseModel):
     """Model for a database table used in a feature store"""
 
     tabular_source: TabularSource
+
+
+class ColumnInfo(FeatureByteBaseModel):
+    """
+    ColumnInfo for storing column information
+
+    name: str
+        Column name
+    var_type: DBVarType
+        Variable type of the column
+    entity_id: Optional[PydanticObjectId]
+        Entity id associated with the column
+    """
+
+    name: StrictStr
+    var_type: DBVarType
+    entity_id: Optional[PydanticObjectId] = Field(default=None)

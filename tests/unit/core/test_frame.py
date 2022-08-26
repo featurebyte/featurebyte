@@ -54,10 +54,10 @@ def test__getitem__list_of_str_key(dataframe):
     sub_dataframe = dataframe[["CUST_ID", "VALUE"]]
     assert isinstance(sub_dataframe, Frame)
     sub_dataframe_dict = sub_dataframe.dict()
-    assert sub_dataframe_dict["column_var_type_map"] == {
-        "CUST_ID": DBVarType.INT,
-        "VALUE": DBVarType.FLOAT,
-    }
+    assert sub_dataframe_dict["column_info"] == [
+        {"name": "CUST_ID", "var_type": DBVarType.INT, "entity_id": None},
+        {"name": "VALUE", "var_type": DBVarType.FLOAT, "entity_id": None},
+    ]
     assert (
         sub_dataframe_dict["node"].items()
         >= {
@@ -88,9 +88,9 @@ def test__getitem__series_key(dataframe, bool_series):
     Test filtering using boolean Series
     """
     sub_dataframe = dataframe[bool_series]
+    assert sub_dataframe.column_info == dataframe.column_info
     assert isinstance(sub_dataframe, Frame)
     sub_dataframe_dict = sub_dataframe.dict()
-    assert sub_dataframe_dict["column_var_type_map"] == dataframe.column_var_type_map
     assert (
         sub_dataframe_dict["node"].items()
         >= {
@@ -163,7 +163,7 @@ def test__setitem__str_key_scalar_value(
     """
     dataframe[key] = value
     dataframe_dict = dataframe.dict()
-    assert dataframe_dict["column_var_type_map"][key] == expected_type
+    assert dataframe.column_var_type_map[key] == expected_type
     assert (
         dataframe_dict["node"].items()
         >= {
@@ -172,7 +172,7 @@ def test__setitem__str_key_scalar_value(
             "output_type": NodeOutputType.FRAME,
         }.items()
     )
-    assert len(dataframe_dict["column_var_type_map"].keys()) == expected_column_count
+    assert len(dataframe.column_var_type_map.keys()) == expected_column_count
     assert dict(dataframe_dict["graph"]["edges"]) == {"input_1": ["assign_1"]}
 
 
@@ -195,7 +195,7 @@ def test__setitem__str_key_series_value(
     assert isinstance(value, Series)
     dataframe[key] = value
     dataframe_dict = dataframe.dict()
-    assert dataframe_dict["column_var_type_map"][key] == expected_type
+    assert dataframe.column_var_type_map[key] == expected_type
     assert (
         dataframe_dict["node"].items()
         >= {
@@ -204,7 +204,7 @@ def test__setitem__str_key_series_value(
             "output_type": NodeOutputType.FRAME,
         }.items()
     )
-    assert len(dataframe_dict["column_var_type_map"].keys()) == expected_column_count
+    assert len(dataframe.column_var_type_map.keys()) == expected_column_count
     assert dict(dataframe_dict["graph"]["edges"]) == {
         "input_1": ["project_1", "assign_1"],
         "project_1": ["assign_1"],
@@ -258,15 +258,15 @@ def test_multiple_statements(dataframe):
         }.items()
     )
     assert cust_id_dict["row_index_lineage"] == ("input_1", "filter_1")
-    assert dataframe_dict["column_var_type_map"] == {
-        "CUST_ID": DBVarType.INT,
-        "PRODUCT_ACTION": DBVarType.VARCHAR,
-        "VALUE": DBVarType.FLOAT,
-        "MASK": DBVarType.BOOL,
-        "TIMESTAMP": DBVarType.TIMESTAMP,
-        "amount": DBVarType.FLOAT,
-        "vip_customer": DBVarType.BOOL,
-    }
+    assert dataframe_dict["column_info"] == [
+        {"name": "CUST_ID", "var_type": DBVarType.INT, "entity_id": None},
+        {"name": "PRODUCT_ACTION", "var_type": DBVarType.VARCHAR, "entity_id": None},
+        {"name": "VALUE", "var_type": DBVarType.FLOAT, "entity_id": None},
+        {"name": "MASK", "var_type": DBVarType.BOOL, "entity_id": None},
+        {"name": "TIMESTAMP", "var_type": DBVarType.TIMESTAMP, "entity_id": None},
+        {"name": "amount", "var_type": DBVarType.FLOAT, "entity_id": None},
+        {"name": "vip_customer", "var_type": DBVarType.BOOL, "entity_id": None},
+    ]
     assert dataframe.columns == [
         "CUST_ID",
         "PRODUCT_ACTION",
