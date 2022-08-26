@@ -2,6 +2,7 @@
 Test Feature Job Setting Analysis worker task
 """
 import copy
+import json
 import os
 from unittest.mock import call, patch
 
@@ -72,7 +73,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
                     yield
 
     @pytest.mark.asyncio
-    async def test_execute_success(self, task_completed, git_persistent, progress):
+    async def test_execute_success(self, task_completed, git_persistent, progress, update_fixtures):
         """
         Test successful task execution
         """
@@ -88,9 +89,12 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         result = FeatureJobSettingAnalysisModel(**document)
 
         # check document output
-        persistent_fixture = BaseTaskTestSuite.load_payload(
-            "tests/fixtures/feature_job_setting_analysis/result.json"
-        )
+        fixture_path = "tests/fixtures/feature_job_setting_analysis/result.json"
+        if update_fixtures:
+            with open(fixture_path, "w") as file_obj:
+                json.dump(result.json_dict(), file_obj, indent=4)
+
+        persistent_fixture = BaseTaskTestSuite.load_payload(fixture_path)
         expected = FeatureJobSettingAnalysisModel(**persistent_fixture)
 
         payload = FeatureJobSettingAnalysisTask.payload_class(**self.payload)
