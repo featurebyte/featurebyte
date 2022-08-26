@@ -49,12 +49,10 @@ def feature_name_space_dict_fixture():
 
 
 @freezegun.freeze_time("2022-07-10")
-def test_feature_model(snowflake_event_view, feature_model_dict):
+def test_feature_model(snowflake_event_view_with_entity, feature_model_dict):
     """Test feature model serialize & deserialize"""
     # pylint: disable=duplicate-code
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
-    feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
+    feature_group = snowflake_event_view_with_entity.groupby(by_keys="cust_id").aggregate(
         value_column="col_float",
         method="sum",
         windows=["30m"],

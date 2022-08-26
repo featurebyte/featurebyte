@@ -17,7 +17,7 @@ from featurebyte.query_graph.enum import NodeType
         (["cust_id", "col_text"], ["cust_id", "col_text"]),
     ],
 )
-def test_constructor(snowflake_event_view, keys, expected_keys):
+def test_constructor(snowflake_event_data, keys, expected_keys):
     """
     Test constructor
     """
@@ -29,8 +29,9 @@ def test_constructor(snowflake_event_view, keys, expected_keys):
         Entity(name=column, serving_names=[serving_name]).save()
 
         # mark the column as entity
-        snowflake_event_view[column].as_entity(column)
+        snowflake_event_data[column].as_entity(column)
 
+    snowflake_event_view = EventView.from_event_data(event_data=snowflake_event_data)
     grouped = EventViewGroupBy(obj=snowflake_event_view, keys=keys)
     assert grouped.keys == expected_keys
     assert grouped.serving_names == expected_serving_names
@@ -62,67 +63,59 @@ def test_constructor__wrong_input_type(snowflake_event_view):
     assert expected_msg in str(exc.value)
 
 
-def test_constructor__keys_column_not_found(snowflake_event_view):
+def test_constructor__keys_column_not_found(snowflake_event_view_with_entity):
     """
     Test case when column of the keys not found in the EventView
     """
     with pytest.raises(KeyError) as exc:
-        EventViewGroupBy(obj=snowflake_event_view, keys="random_column")
+        EventViewGroupBy(obj=snowflake_event_view_with_entity, keys="random_column")
     assert 'Column "random_column" not found!' in str(exc.value)
 
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
     with pytest.raises(KeyError) as exc:
-        EventViewGroupBy(obj=snowflake_event_view, keys=["cust_id", "random_column"])
+        EventViewGroupBy(obj=snowflake_event_view_with_entity, keys=["cust_id", "random_column"])
     assert 'Column "random_column" not found!' in str(exc.value)
 
 
-def test_groupby__value_column_not_found(snowflake_event_view):
+def test_groupby__value_column_not_found(snowflake_event_view_with_entity):
     """
     Test case when value column not found in the EventView
     """
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
-    grouped = EventViewGroupBy(obj=snowflake_event_view, keys="cust_id")
+    grouped = EventViewGroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
     with pytest.raises(KeyError) as exc:
         grouped.aggregate("non_existing_column", "count", ["1d"], ["feature_name"])
     expected_msg = 'Column "non_existing_column" not found'
     assert expected_msg in str(exc.value)
 
 
-def test_groupby__category_column_not_found(snowflake_event_view):
+def test_groupby__category_column_not_found(snowflake_event_view_with_entity):
     """
     Test case when category column not found in the EventView
     """
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
     with pytest.raises(KeyError) as exc:
-        EventViewGroupBy(obj=snowflake_event_view, keys="cust_id", category="non_existing_category")
+        EventViewGroupBy(
+            obj=snowflake_event_view_with_entity, keys="cust_id", category="non_existing_category"
+        )
     expected_msg = 'Column "non_existing_category" not found'
     assert expected_msg in str(exc.value)
 
 
-def test_groupby__wrong_method(snowflake_event_view):
+def test_groupby__wrong_method(snowflake_event_view_with_entity):
     """
     Test not valid aggregation method passed to groupby
     """
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
-    grouped = EventViewGroupBy(obj=snowflake_event_view, keys="cust_id")
+    grouped = EventViewGroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
     with pytest.raises(ValueError) as exc:
         grouped.aggregate("a", "unknown_method", ["1d"], ["feature_name"])
     expected_message = "Aggregation method not supported: unknown_method"
     assert expected_message in str(exc.value)
 
 
-def test_groupby__not_able_to_infer_feature_job_setting(snowflake_event_view):
+def test_groupby__not_able_to_infer_feature_job_setting(snowflake_event_view_with_entity):
     """
     Test groupby not able to infer feature job setting
     """
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
     with pytest.raises(ValueError) as exc:
-        snowflake_event_view.groupby("cust_id").aggregate(
+        snowflake_event_view_with_entity.groupby("cust_id").aggregate(
             value_column="col_float",
             method="sum",
             windows=["30m", "1h", "2h"],
@@ -133,14 +126,12 @@ def test_groupby__not_able_to_infer_feature_job_setting(snowflake_event_view):
     )
 
 
-def test_groupby__window_sizes_issue(snowflake_event_view):
+def test_groupby__window_sizes_issue(snowflake_event_view_with_entity):
     """
     Test groupby not able to infer feature job setting
     """
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
     with pytest.raises(ValueError) as exc:
-        snowflake_event_view.groupby("cust_id").aggregate(
+        snowflake_event_view_with_entity.groupby("cust_id").aggregate(
             value_column="col_float",
             method="sum",
             windows=["30m", "1h", "2h"],
@@ -149,7 +140,7 @@ def test_groupby__window_sizes_issue(snowflake_event_view):
     assert "Window length must be the same as the number of output feature names." in str(exc.value)
 
     with pytest.raises(ValueError) as exc:
-        snowflake_event_view.groupby("cust_id").aggregate(
+        snowflake_event_view_with_entity.groupby("cust_id").aggregate(
             value_column="col_float",
             method="sum",
             windows=["30m", "1h", "2h"],
@@ -159,7 +150,7 @@ def test_groupby__window_sizes_issue(snowflake_event_view):
     assert expected_msg in str(exc.value)
 
     with pytest.raises(ValueError) as exc:
-        snowflake_event_view.groupby("cust_id").aggregate(
+        snowflake_event_view_with_entity.groupby("cust_id").aggregate(
             value_column="col_float",
             method="sum",
             windows=["30m", "1h", "1h"],
@@ -168,7 +159,7 @@ def test_groupby__window_sizes_issue(snowflake_event_view):
     assert expected_msg in str(exc.value)
 
 
-def test_groupby__default_feature_job_setting(snowflake_event_data):
+def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_entity):
     """
     Test default job setting from event data is used
     """
@@ -179,10 +170,9 @@ def test_groupby__default_feature_job_setting(snowflake_event_data):
             "time_modulo_frequency": "3m",
         }
     )
+    snowflake_event_data.cust_id.as_entity("customer")
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
 
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    event_view.cust_id.as_entity("customer")
     feature_group = event_view.groupby("cust_id").aggregate(
         value_column="col_float",
         method="sum",
@@ -212,13 +202,13 @@ def test_groupby__default_feature_job_setting(snowflake_event_data):
     }
 
 
-def test_groupby__category(snowflake_event_view):
+def test_groupby__category(snowflake_event_view_with_entity):
     """
     Test category parameter is captured properly
     """
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
-    feature_group = snowflake_event_view.groupby("cust_id", category="col_int").aggregate(
+    feature_group = snowflake_event_view_with_entity.groupby(
+        "cust_id", category="col_int"
+    ).aggregate(
         value_column="col_float",
         method="sum",
         windows=["30m", "1h", "2h"],
@@ -249,13 +239,13 @@ def test_groupby__category(snowflake_event_view):
 
 @pytest.mark.parametrize("method", ["count", "na_count"])
 @pytest.mark.parametrize("category", [None, "col_int"])
-def test_groupby__count_features(snowflake_event_view, method, category):
+def test_groupby__count_features(snowflake_event_view_with_entity, method, category):
     """
     Test count features have fillna transform applied
     """
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
-    feature_group = snowflake_event_view.groupby("cust_id", category=category).aggregate(
+    feature_group = snowflake_event_view_with_entity.groupby(
+        "cust_id", category=category
+    ).aggregate(
         value_column="col_float",
         method=method,
         windows=["30m", "1h", "2h"],
@@ -274,17 +264,18 @@ def test_groupby__count_features(snowflake_event_view, method, category):
         assert feature_dict["var_type"] == DBVarType.OBJECT
 
 
-def test_groupby__prune(snowflake_event_view):
+def test_groupby__prune(snowflake_event_view_with_entity):
     """
     Test graph pruning works properly on groupby node using derived columns
     """
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view["derived_value_column"] = 10 * snowflake_event_view["col_float"]
-    snowflake_event_view["derived_category"] = 5 * snowflake_event_view["col_int"]
-    snowflake_event_view["derived_entity"] = 1 * snowflake_event_view["cust_id"]
-    snowflake_event_view.derived_entity.as_entity("customer")
-    feature_group = snowflake_event_view.groupby(
-        "derived_entity", category="derived_category"
+    snowflake_event_view_with_entity["derived_value_column"] = (
+        10 * snowflake_event_view_with_entity["col_float"]
+    )
+    snowflake_event_view_with_entity["derived_category"] = (
+        5 * snowflake_event_view_with_entity["col_int"]
+    )
+    feature_group = snowflake_event_view_with_entity.groupby(
+        "cust_id", category="derived_category"
     ).aggregate(
         value_column="derived_value_column",
         method="sum",
@@ -296,14 +287,11 @@ def test_groupby__prune(snowflake_event_view):
     feature_dict = feature.dict()
     assert feature_dict["graph"]["edges"] == {
         "assign_1": ["assign_2"],
-        "assign_2": ["assign_3"],
-        "assign_3": ["groupby_1"],
-        "groupby_1": ["project_4"],
-        "input_1": ["project_1", "assign_1", "project_2", "project_3"],
+        "assign_2": ["groupby_1"],
+        "groupby_1": ["project_3"],
+        "input_1": ["project_1", "assign_1", "project_2"],
         "mul_1": ["assign_1"],
         "mul_2": ["assign_2"],
-        "mul_3": ["assign_3"],
         "project_1": ["mul_1"],
         "project_2": ["mul_2"],
-        "project_3": ["mul_3"],
     }

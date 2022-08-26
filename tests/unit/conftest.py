@@ -246,6 +246,25 @@ def snowflake_event_data_fixture(snowflake_database_table, config):
     )
 
 
+@pytest.fixture(name="cust_id_entity")
+def cust_id_entity_fixture():
+    """
+    Customer ID entity fixture
+    """
+    entity = Entity(name="customer", serving_names=["cust_id"])
+    entity.save()
+    yield entity
+
+
+@pytest.fixture(name="snowflake_event_data_with_entity")
+def snowflake_event_data_with_entity_fixture(snowflake_event_data, cust_id_entity):
+    """
+    Entity fixture that sets cust_id in snowflake_event_data as an Entity
+    """
+    snowflake_event_data.cust_id.as_entity("customer")
+    yield snowflake_event_data
+
+
 @pytest.fixture(name="snowflake_event_view")
 def snowflake_event_view_fixture(snowflake_event_data):
     """
@@ -287,31 +306,31 @@ def snowflake_event_view_fixture(snowflake_event_data):
         output_type=NodeOutputType.FRAME,
     ).dict(exclude={"name": True})
     assert event_view.inception_node.dict(exclude={"name": True}) == expected_inception_node
-    assert event_view.protected_columns == {"event_timestamp"}
+    assert event_view.protected_columns == {"event_timestamp"}.union(
+        snowflake_event_data.column_entity_map or {}
+    )
     assert event_view.inherited_columns == {"event_timestamp"}
     assert event_view.timestamp_column == "event_timestamp"
     assert event_view.event_data_id == snowflake_event_data.id
     yield event_view
 
 
-@pytest.fixture(name="snowflake_event_view_entity")
-def snowflake_event_view_entity_fixture(snowflake_event_view):
+@pytest.fixture(name="snowflake_event_view_with_entity")
+def snowflake_event_view_entity_fixture(snowflake_event_data_with_entity):
     """
-    Entity fixture that sets cust_id in snowflake_event_view as an Entity
+    Snowflake event view with entity
     """
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
-    yield
+    yield EventView.from_event_data(event_data=snowflake_event_data_with_entity)
 
 
 @pytest.fixture(name="grouped_event_view")
-def grouped_event_view_fixture(snowflake_event_view, snowflake_event_view_entity):
+def grouped_event_view_fixture(snowflake_event_view_with_entity):
     """
     EventViewGroupBy fixture
     """
-    grouped = snowflake_event_view.groupby("cust_id")
+    grouped = snowflake_event_view_with_entity.groupby("cust_id")
     assert isinstance(grouped, EventViewGroupBy)
-    assert snowflake_event_view.event_data_id == grouped.obj.event_data_id
+    assert snowflake_event_view_with_entity.event_data_id == grouped.obj.event_data_id
     yield grouped
 
 
@@ -369,12 +388,11 @@ def bool_feature_fixture(float_feature):
 
 
 @pytest.fixture(name="agg_per_category_feature")
-def agg_per_category_feature_fixture(snowflake_event_view, snowflake_event_view_entity):
+def agg_per_category_feature_fixture(snowflake_event_view_with_entity):
     """
     Aggregation per category feature fixture
     """
-    _ = snowflake_event_view_entity
-    grouped = snowflake_event_view.groupby("cust_id", category="col_int")
+    grouped = snowflake_event_view_with_entity.groupby("cust_id", category="col_int")
     features = grouped.aggregate(
         value_column="col_float",
         method="sum",
@@ -390,9 +408,8 @@ def agg_per_category_feature_fixture(snowflake_event_view, snowflake_event_view_
 
 
 @pytest.fixture(name="count_per_category_feature_group")
-def count_per_category_feature_group_fixture(snowflake_event_view, snowflake_event_view_entity):
-    _ = snowflake_event_view_entity
-    grouped = snowflake_event_view.groupby("cust_id", category="col_int")
+def count_per_category_feature_group_fixture(snowflake_event_view_with_entity):
+    grouped = snowflake_event_view_with_entity.groupby("cust_id", category="col_int")
     features = grouped.aggregate(
         value_column="col_float",
         method="count",
@@ -471,14 +488,14 @@ def tile_manager(mock_execute_query, session_manager, snowflake_feature_store):
 
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def mock_snowflake_feature(mock_execute_query, snowflake_connector, snowflake_event_view):
+def mock_snowflake_feature(
+    mock_execute_query, snowflake_connector, snowflake_event_view_with_entity
+):
     """Fixture for a Feature object"""
     mock_execute_query.size_effect = None
     _ = snowflake_connector
 
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
-    feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
+    feature_group = snowflake_event_view_with_entity.groupby(by_keys="cust_id").aggregate(
         value_column="col_float",
         method="sum",
         windows=["30m"],
@@ -507,15 +524,13 @@ def feature_manager(mock_execute_query, session_manager, snowflake_feature_store
 @pytest.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 def mock_snowflake_feature_list_model(
-    mock_execute_query, snowflake_connector, snowflake_event_view
+    mock_execute_query, snowflake_connector, snowflake_event_view_with_entity
 ):
     """Fixture for a FeatureListModel"""
     mock_execute_query.size_effect = None
     _ = snowflake_connector
 
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
-    feature_group = snowflake_event_view.groupby(by_keys="cust_id").aggregate(
+    feature_group = snowflake_event_view_with_entity.groupby(by_keys="cust_id").aggregate(
         value_column="col_float",
         method="sum",
         windows=["30m"],
