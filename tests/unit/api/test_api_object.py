@@ -61,10 +61,18 @@ def mock_client_fixture():
         """Post side effect"""
         _ = json
         return {
-            "/success_task_started": FakeResponse(
+            "/success_task_pending": FakeResponse(
                 status_code=HTTPStatus.CREATED,
                 response_dict={
                     "status": TaskStatus.PENDING,
+                    "output_path": None,
+                    "id": "success_id",
+                },
+            ),
+            "/success_task_started": FakeResponse(
+                status_code=HTTPStatus.CREATED,
+                response_dict={
+                    "status": TaskStatus.STARTED,
                     "output_path": None,
                     "id": "success_id",
                 },
@@ -127,7 +135,9 @@ def mock_client_fixture():
         yield mock_client
 
 
-@pytest.mark.parametrize("route", ["/success_task_started", "/success_task_success"])
+@pytest.mark.parametrize(
+    "route", ["/success_task_pending", "/success_task_started", "/success_task_success"]
+)
 def test_post_async_task__success(mock_client, route):
     """Test post async task (success)"""
     output = ApiObject.post_async_task(route=route, payload={})
