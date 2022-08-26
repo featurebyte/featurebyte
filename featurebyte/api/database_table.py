@@ -69,6 +69,11 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         Returns
         -------
         dict[str, Any]
+
+        Raises
+        ------
+        TableSchemaHasBeenChangedError
+            When table schema has been changed
         """
         credentials = values.get("credentials")
         config = Configurations()
