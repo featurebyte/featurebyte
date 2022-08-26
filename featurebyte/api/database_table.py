@@ -11,6 +11,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.frame import BaseFrame
 from featurebyte.core.generic import ExtendedFeatureStoreModel
+from featurebyte.exception import TableSchemaHasBeenChangedError
 from featurebyte.models.feature_store import ColumnInfo, DatabaseTableModel, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -85,7 +86,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             table_details = TableDetails(**table_details)
 
         session = feature_store.get_session(credentials=credentials)
-        table_schema = session.list_table_schema(
+        recent_schema = session.list_table_schema(
             database_name=table_details.database_name,
             schema_name=table_details.schema_name,
             table_name=table_details.table_name,
@@ -93,10 +94,12 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
 
         if "column_info" in values:
             column_info = [ColumnInfo(**dict(col)) for col in values["column_info"]]
-            assert table_schema == {col.name: col.var_type for col in column_info}
+            schema = {col.name: col.var_type for col in column_info}
+            if schema != recent_schema:
+                raise TableSchemaHasBeenChangedError("Table schema has been changed.")
         else:
             column_info = [
-                ColumnInfo(name=name, var_type=var_type) for name, var_type in table_schema.items()
+                ColumnInfo(name=name, var_type=var_type) for name, var_type in recent_schema.items()
             ]
             values["column_info"] = column_info
 

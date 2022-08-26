@@ -118,3 +118,9 @@ class ObjectHasBeenSavedError(Exception):
     """
     Raise when the object has been saved before
     """
+
+
+class TableSchemaHasBeenChangedError(Exception):
+    """
+    Raise when the table schema has been changed (different from the time EventData object is saved)
+    """

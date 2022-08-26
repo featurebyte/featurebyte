@@ -18,6 +18,7 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
+    TableSchemaHasBeenChangedError,
 )
 from featurebyte.models.event_data import EventDataStatus, FeatureJobSetting
 from tests.util.helper import patch_import_package
@@ -593,6 +594,19 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
         "Please save the EventData object first."
     )
     assert expected_msg in str(exc.value)
+
+
+@patch("featurebyte.api.database_table.FeatureStore")
+def test_get_event_data__schema_has_been_changed(mock_feature_store_class, saved_event_data):
+    """
+    Test retrieving event data after table schema has been changed
+    """
+    recent_schema = {"column": "INT"}
+    mock_session = mock_feature_store_class.get_by_id.return_value.get_session.return_value
+    mock_session.list_table_schema.return_value = recent_schema
+    with pytest.raises(TableSchemaHasBeenChangedError) as exc:
+        EventData.get_by_id(saved_event_data.id)
+    assert "Table schema has been changed." in str(exc.value)
 
 
 def test_default_feature_job_setting_history(saved_event_data):
