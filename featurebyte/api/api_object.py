@@ -316,9 +316,15 @@ class ApiObject(ApiGetObject):
                 raise RecordCreationException(response=task_get_response or create_response)
 
             # retrieve task result
-            output_url = task_get_response.json()["output_path"]
+            output_url = create_response_dict.get("output_path")
+            if output_url is None:
+                if task_get_response:
+                    output_url = task_get_response.json().get("output_path")
+            if output_url is None:
+                raise RecordRetrievalException(response=task_get_response or create_response)
+
             logger.debug("Retrieving task result", extra={"output_url": output_url})
-            result_response = client.get(url=f"/{output_url}")
+            result_response = client.get(url=output_url)
             if result_response.status_code == HTTPStatus.OK:
                 return cast(Dict[str, Any], result_response.json())
             raise RecordRetrievalException(response=result_response)

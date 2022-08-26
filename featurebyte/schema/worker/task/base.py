@@ -45,7 +45,7 @@ class BaseTaskPayload(FeatureByteBaseModel):
         Optional[str]
         """
         if self.output_collection_name:
-            return f"{self.output_collection_name}/{self.output_document_id}"
+            return f"/{self.output_collection_name}/{self.output_document_id}"
         return None
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:

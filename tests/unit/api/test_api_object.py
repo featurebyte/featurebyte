@@ -61,39 +61,39 @@ def mock_client_fixture():
         """Post side effect"""
         _ = json
         return {
-            "success_task_started": FakeResponse(
+            "/success_task_started": FakeResponse(
                 status_code=HTTPStatus.CREATED,
                 response_dict={
-                    "status": TaskStatus.STARTED,
-                    "output_path": "get_result_success",
+                    "status": TaskStatus.PENDING,
+                    "output_path": None,
                     "id": "success_id",
                 },
             ),
-            "success_task_success": FakeResponse(
+            "/success_task_success": FakeResponse(
                 status_code=HTTPStatus.CREATED,
                 response_dict={
                     "status": TaskStatus.SUCCESS,
-                    "output_path": "get_result_success",
+                    "output_path": "/get_result_success",
                     "id": "success_id",
                 },
             ),
-            "post_failure": FakeResponse(
+            "/post_failure": FakeResponse(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, response_dict={}
             ),
-            "post_success_task_started": FakeResponse(
+            "/post_success_task_started": FakeResponse(
                 status_code=HTTPStatus.CREATED,
                 response_dict={"status": TaskStatus.STARTED, "id": "failure_id"},
             ),
-            "post_success_task_failure": FakeResponse(
+            "/post_success_task_failure": FakeResponse(
                 status_code=HTTPStatus.CREATED, response_dict={"status": TaskStatus.FAILURE}
             ),
-            "post_success_get_task_failure": FakeResponse(
+            "/post_success_get_task_failure": FakeResponse(
                 status_code=HTTPStatus.CREATED,
                 response_dict={"status": TaskStatus.STARTED, "id": "get_failure_id"},
             ),
-            "post_success_get_result_failure": FakeResponse(
+            "/post_success_get_result_failure": FakeResponse(
                 status_code=HTTPStatus.CREATED,
-                response_dict={"status": TaskStatus.SUCCESS, "output_path": "get_result_failure"},
+                response_dict={"status": TaskStatus.SUCCESS, "output_path": "/get_result_failure"},
             ),
         }[url]
 
@@ -101,7 +101,12 @@ def mock_client_fixture():
         """Get side effect"""
         return {
             "/task/success_id": FakeResponse(
-                status_code=HTTPStatus.OK, response_dict={"status": TaskStatus.SUCCESS}
+                status_code=HTTPStatus.OK,
+                response_dict={
+                    "status": TaskStatus.SUCCESS,
+                    "output_path": "/get_result_success",
+                    "id": "success_id",
+                },
             ),
             "/task/failure_id": FakeResponse(
                 status_code=HTTPStatus.OK, response_dict={"status": TaskStatus.FAILURE}
@@ -109,10 +114,10 @@ def mock_client_fixture():
             "/task/get_failure_id": FakeResponse(
                 status_code=HTTPStatus.NOT_FOUND, response_dict={}
             ),
-            "get_result_success": FakeResponse(
+            "/get_result_success": FakeResponse(
                 status_code=HTTPStatus.OK, response_dict={"result": "some_value"}
             ),
-            "get_result_failure": FakeResponse(status_code=HTTPStatus.NOT_FOUND, response_dict={}),
+            "/get_result_failure": FakeResponse(status_code=HTTPStatus.NOT_FOUND, response_dict={}),
         }[url]
 
     with patch("featurebyte.api.api_object.Configurations") as mock_config:
@@ -122,7 +127,7 @@ def mock_client_fixture():
         yield mock_client
 
 
-@pytest.mark.parametrize("route", ["success_task_started", "success_task_success"])
+@pytest.mark.parametrize("route", ["/success_task_started", "/success_task_success"])
 def test_post_async_task__success(mock_client, route):
     """Test post async task (success)"""
     output = ApiObject.post_async_task(route=route, payload={})
@@ -130,7 +135,7 @@ def test_post_async_task__success(mock_client, route):
 
 
 @pytest.mark.parametrize(
-    "route", ["post_failure", "post_success_task_started", "post_success_task_failure"]
+    "route", ["/post_failure", "/post_success_task_started", "/post_success_task_failure"]
 )
 def test_post_async_task__record_creation_exception(mock_client, route):
     """Test post async task (success)"""
@@ -139,7 +144,7 @@ def test_post_async_task__record_creation_exception(mock_client, route):
 
 
 @pytest.mark.parametrize(
-    "route", ["post_success_get_task_failure", "post_success_get_result_failure"]
+    "route", ["/post_success_get_task_failure", "/post_success_get_result_failure"]
 )
 def test_post_async_task__record_retrieval_exception(mock_client, route):
     """Test post async task (success)"""
