@@ -342,7 +342,7 @@ all = ["uvicorn[standard] (>=0.12.0,<0.18.0)", "email_validator (>=1.1.1,<2.0.0)
 
 [[package]]
 name = "featurebyte-freeware"
-version = "0.1.0"
+version = "0.1.2"
 description = "Free utilities from FeatureByte"
 category = "main"
 optional = false
@@ -1968,8 +1968,8 @@ fastapi = [
     {file = "fastapi-0.79.1.tar.gz", hash = "sha256:006862dec0f0f5683ac21fb0864af2ff12a931e7ba18920f28cc8eceed51896b"},
 ]
 featurebyte-freeware = [
-    {file = "featurebyte_freeware-0.1.0-py3-none-any.whl", hash = "sha256:2953aac2074d4d299e797ac3f91ecafa62ba913bfe3f08a4200516248d489257"},
-    {file = "featurebyte_freeware-0.1.0.tar.gz", hash = "sha256:f9ad49d73f5a6dc345568babd257832f0797dfccb12780fb196b6f27d4ede73b"},
+    {file = "featurebyte_freeware-0.1.2-py3-none-any.whl", hash = "sha256:24527290dbe444e390981fade69eb359af070e5cb8bcfaa2a422d2e7cd80d9ac"},
+    {file = "featurebyte_freeware-0.1.2.tar.gz", hash = "sha256:a4a2e9523027717a7e2d6e9b122f5ca7da9c968f741434186bd3b7e648906341"},
 ]
 filelock = [
     {file = "filelock-3.8.0-py3-none-any.whl", hash = "sha256:617eb4e5eedc82fc5f47b6d61e4d11cb837c56cb4544e39081099fa17ad109d4"},

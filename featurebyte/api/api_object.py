@@ -20,6 +20,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
+from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.schema.task import TaskStatus
 
@@ -269,7 +270,7 @@ class ApiObject(ApiGetObject):
         )
 
     @staticmethod
-    def post_async_task(route: str, payload: dict[str, Any], delay: float = 0.1) -> dict[str, Any]:
+    def post_async_task(route: str, payload: dict[str, Any], delay: float = 3.0) -> dict[str, Any]:
         """
         Post async task to the worker & retrieve the results (blocking)
 
@@ -302,7 +303,7 @@ class ApiObject(ApiGetObject):
 
             # poll the task route (if the task is still running)
             task_get_response = None
-            while status == TaskStatus.STARTED:
+            while status in [TaskStatus.STARTED, TaskStatus.PENDING]:
                 task_get_response = client.get(url=f'/task/{create_response_dict["id"]}')
                 if task_get_response.status_code == HTTPStatus.OK:
                     status = task_get_response.json()["status"]
@@ -315,7 +316,15 @@ class ApiObject(ApiGetObject):
                 raise RecordCreationException(response=task_get_response or create_response)
 
             # retrieve task result
-            result_response = client.get(url=create_response_dict["output_path"])
+            output_url = create_response_dict.get("output_path")
+            if output_url is None:
+                if task_get_response:
+                    output_url = task_get_response.json().get("output_path")
+            if output_url is None:
+                raise RecordRetrievalException(response=task_get_response or create_response)
+
+            logger.debug("Retrieving task result", extra={"output_url": output_url})
+            result_response = client.get(url=output_url)
             if result_response.status_code == HTTPStatus.OK:
                 return cast(Dict[str, Any], result_response.json())
             raise RecordRetrievalException(response=result_response)

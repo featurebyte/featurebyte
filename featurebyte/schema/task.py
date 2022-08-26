@@ -38,7 +38,7 @@ class Task(FeatureByteBaseModel):
 
     id: TaskId = Field(allow_mutation=False)
     status: TaskStatus = Field(allow_mutation=False)
-    output_path: str
+    output_path: Optional[str]
     payload: Dict[str, Any]
     traceback: Optional[str]
 

@@ -95,7 +95,9 @@ for resource_api, resource_controller in resource_api_controller_pairs:
     )
 
 # add non-persistent-storage route
-app.include_router(task_api.router, dependencies=[Depends(_get_api_deps(TaskController))])
+app.include_router(
+    task_api.router, dependencies=[Depends(_get_api_deps(TaskController))], tags=["task"]
+)
 
 
 def _sigint_handler(signum, frame):  # type: ignore

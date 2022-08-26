@@ -66,7 +66,7 @@ def test_extend_base_task_payload(random_task_payload_class):
         "user_id": user_id,
         "output_document_id": document_id,
     }
-    assert payload_obj.task_output_path == f"random_collection/{document_id}"
+    assert payload_obj.task_output_path == f"/random_collection/{document_id}"
 
 
 @patch("featurebyte.worker.task_executor.configure_logger")
