@@ -3,14 +3,18 @@ This module contains count_dict accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
-from featurebyte.core.util import series_unary_operation
+from typeguard import typechecked
+
+from featurebyte.core.util import series_binary_operation, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 
 if TYPE_CHECKING:
     from featurebyte.api.feature import Feature
+else:
+    Feature = TypeVar("Feature")
 
 
 class CdAccessorMixin:
@@ -79,6 +83,7 @@ class CountDictAccessor:
         """
         return self._make_operation("most_frequent", DBVarType.VARCHAR)
 
+    @typechecked()
     def unique_count(self, include_missing: bool = True) -> Feature:
         """
         Compute number of distinct keys in the dictionary
@@ -96,4 +101,36 @@ class CountDictAccessor:
             "unique_count",
             DBVarType.FLOAT,
             additional_params={"include_missing": include_missing},
+        )
+
+    def cosine_similarity(self, other: Feature) -> Feature:
+        """
+        Compute the cosine similarity with another dictionary Feature
+
+        Parameters
+        ----------
+        other : Feature
+            Another dictionary feature
+
+        Returns
+        -------
+        Feature
+
+        Raises
+        ------
+        TypeError
+            If the the current or the other Feature is not of dictionary type
+        """
+        if not isinstance(other, type(self._obj)):
+            raise TypeError(f"cosine_similarity is only available for Feature; got {other}")
+        if other.var_type != DBVarType.OBJECT:
+            raise TypeError(
+                f"cosine_similarity is only available for Feature of dictionary type; got "
+                f"{other.var_type}"
+            )
+        return series_binary_operation(
+            input_series=self._obj,
+            other=other,
+            node_type=NodeType.COSINE_SIMILARITY,
+            output_var_type=DBVarType.FLOAT,
         )

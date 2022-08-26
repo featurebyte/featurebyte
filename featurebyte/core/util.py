@@ -56,3 +56,68 @@ def series_unary_operation(
         row_index_lineage=input_series.row_index_lineage,
         **kwargs,
     )
+
+
+def series_binary_operation(
+    input_series: SeriesT,
+    other: int | float | str | bool | SeriesT,
+    node_type: NodeType,
+    output_var_type: DBVarType,
+    right_op: bool = False,
+    **kwargs: Any,
+) -> SeriesT:
+    """
+    Apply binary operation between a Series and another object
+
+    Parameters
+    ----------
+    input_series : SeriesT
+        Series like input object
+    other: int | float | str | bool | SeriesT
+        right value of the binary operator
+    node_type: NodeType
+        binary operator node type
+    output_var_type: DBVarType
+        output of the variable type
+    right_op: bool
+        whether the binary operation is from right object or not
+    kwargs : Any
+        Other series parameters
+
+    Returns
+    -------
+    SeriesT
+    """
+    node_params: dict[str, Any] = {"right_op": right_op} if right_op else {}
+    if isinstance(other, type(input_series)):
+        node = input_series.graph.add_operation(
+            node_type=node_type,
+            node_params={},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[input_series.node, other.node],
+        )
+        return type(input_series)(
+            feature_store=input_series.feature_store,
+            tabular_source=input_series.tabular_source,
+            node=node,
+            name=None,
+            var_type=output_var_type,
+            row_index_lineage=input_series.row_index_lineage,
+            **kwargs,
+        )
+    node_params["value"] = other
+    node = input_series.graph.add_operation(
+        node_type=node_type,
+        node_params=node_params,
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_series.node],
+    )
+    return type(input_series)(
+        feature_store=input_series.feature_store,
+        tabular_source=input_series.tabular_source,
+        node=node,
+        name=None,
+        var_type=output_var_type,
+        row_index_lineage=input_series.row_index_lineage,
+        **kwargs,
+    )

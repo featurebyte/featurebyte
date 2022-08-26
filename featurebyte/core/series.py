@@ -12,7 +12,7 @@ from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin, ParentMixin
-from featurebyte.core.util import series_unary_operation
+from featurebyte.core.util import series_binary_operation, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -180,38 +180,17 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         Series
             output of the binary operation
         """
-        node_params: dict[str, Any] = {"right_op": right_op} if right_op else {}
         if isinstance(other, Series):
-            node = self.graph.add_operation(
-                node_type=node_type,
-                node_params={},
-                node_output_type=NodeOutputType.SERIES,
-                input_nodes=[self.node, other.node],
-            )
-            return type(self)(
-                feature_store=self.feature_store,
-                tabular_source=self.tabular_source,
-                node=node,
-                name=None,
-                var_type=output_var_type,
-                row_index_lineage=self.row_index_lineage,
-                **self._binary_op_series_params(other),
-            )
-        node_params["value"] = other
-        node = self.graph.add_operation(
+            binary_op_series_params = self._binary_op_series_params(other)
+        else:
+            binary_op_series_params = self._binary_op_series_params()
+        return series_binary_operation(
+            input_series=self,
+            other=other,
             node_type=node_type,
-            node_params=node_params,
-            node_output_type=NodeOutputType.SERIES,
-            input_nodes=[self.node],
-        )
-        return type(self)(
-            feature_store=self.feature_store,
-            tabular_source=self.tabular_source,
-            node=node,
-            name=None,
-            var_type=output_var_type,
-            row_index_lineage=self.row_index_lineage,
-            **self._binary_op_series_params(),
+            output_var_type=output_var_type,
+            right_op=right_op,
+            **binary_op_series_params,
         )
 
     def _binary_logical_op(self, other: bool | Series, node_type: NodeType) -> Series:

@@ -771,6 +771,7 @@ BINARY_OPERATION_NODE_TYPES = {
     NodeType.AND,
     NodeType.OR,
     NodeType.CONCAT,
+    NodeType.COSINE_SIMILARITY,
 }
 
 
@@ -834,6 +835,7 @@ def make_binary_operation_node(
         NodeType.OR: expressions.Or,
         # String
         NodeType.CONCAT: fb_expressions.Concat,
+        NodeType.COSINE_SIMILARITY: fb_expressions.CosineSim,
     }
     assert sorted(node_type_to_expression_cls.keys()) == sorted(BINARY_OPERATION_NODE_TYPES)
     expression_cls = node_type_to_expression_cls.get(node_type)

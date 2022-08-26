@@ -140,6 +140,7 @@ EXPECTED_FUNCTIONS = [
     "F_COUNT_DICT_ENTROPY",
     "F_COUNT_DICT_MOST_FREQUENT",
     "F_COUNT_DICT_NUM_UNIQUE",
+    "F_COUNT_DICT_COSINE_SIMILARITY",
 ]
 
 EXPECTED_PROCEDURES = [
@@ -273,6 +274,11 @@ def test_schema_initializer__sql_objects():
         {
             "filename": "F_COUNT_DICT_NUM_UNIQUE.sql",
             "identifier": "F_COUNT_DICT_NUM_UNIQUE",
+            "type": "function",
+        },
+        {
+            "filename": "F_COUNT_DICT_COSINE_SIMILARITY.sql",
+            "identifier": "F_COUNT_DICT_COSINE_SIMILARITY",
             "type": "function",
         },
         {"filename": "T_TILE_REGISTRY.sql", "identifier": "TILE_REGISTRY", "type": "table"},

@@ -294,13 +294,21 @@ def snowflake_event_view_fixture(snowflake_event_data):
     yield event_view
 
 
-@pytest.fixture(name="grouped_event_view")
-def grouped_event_view_fixture(snowflake_event_view):
+@pytest.fixture(name="snowflake_event_view_entity")
+def snowflake_event_view_entity_fixture(snowflake_event_view):
     """
-    EventViewGroupBy fixture
+    Entity fixture that sets cust_id in snowflake_event_view as an Entity
     """
     Entity(name="customer", serving_names=["cust_id"]).save()
     snowflake_event_view.cust_id.as_entity("customer")
+    yield
+
+
+@pytest.fixture(name="grouped_event_view")
+def grouped_event_view_fixture(snowflake_event_view, snowflake_event_view_entity):
+    """
+    EventViewGroupBy fixture
+    """
     grouped = snowflake_event_view.groupby("cust_id")
     assert isinstance(grouped, EventViewGroupBy)
     assert snowflake_event_view.event_data_id == grouped.obj.event_data_id
@@ -361,12 +369,11 @@ def bool_feature_fixture(float_feature):
 
 
 @pytest.fixture(name="agg_per_category_feature")
-def agg_per_category_feature_fixture(snowflake_event_view):
+def agg_per_category_feature_fixture(snowflake_event_view, snowflake_event_view_entity):
     """
     Aggregation per category feature fixture
     """
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
+    _ = snowflake_event_view_entity
     grouped = snowflake_event_view.groupby("cust_id", category="col_int")
     features = grouped.aggregate(
         value_column="col_float",
@@ -382,13 +389,9 @@ def agg_per_category_feature_fixture(snowflake_event_view):
     yield features["sum_1d"]
 
 
-@pytest.fixture(name="count_per_category_feature")
-def count_per_category_feature_fixture(snowflake_event_view):
-    """
-    Aggregation per category feature fixture
-    """
-    Entity(name="customer", serving_names=["cust_id"]).save()
-    snowflake_event_view.cust_id.as_entity("customer")
+@pytest.fixture(name="count_per_category_feature_group")
+def count_per_category_feature_group_fixture(snowflake_event_view, snowflake_event_view_entity):
+    _ = snowflake_event_view_entity
     grouped = snowflake_event_view.groupby("cust_id", category="col_int")
     features = grouped.aggregate(
         value_column="col_float",
@@ -401,7 +404,23 @@ def count_per_category_feature_fixture(snowflake_event_view):
         },
         feature_names=["counts_30m", "counts_2h", "counts_1d"],
     )
-    yield features["counts_1d"]
+    yield features
+
+
+@pytest.fixture(name="count_per_category_feature")
+def count_per_category_feature_fixture(count_per_category_feature_group):
+    """
+    Aggregation per category feature fixture (1d window)
+    """
+    yield count_per_category_feature_group["counts_1d"]
+
+
+@pytest.fixture(name="count_per_category_feature_2h")
+def count_per_category_feature_2h_fixture(count_per_category_feature_group):
+    """
+    Aggregation per category feature fixture (2h window)
+    """
+    yield count_per_category_feature_group["counts_2h"]
 
 
 @pytest.fixture(name="session_manager")
