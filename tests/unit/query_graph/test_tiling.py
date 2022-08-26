@@ -6,6 +6,8 @@ import copy
 import pytest
 
 from featurebyte.api.entity import Entity
+from featurebyte.api.event_data import EventData
+from featurebyte.api.event_view import EventView
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.tiling import AggFunc, TileSpec, get_aggregator
 
@@ -89,7 +91,7 @@ def get_parent_nodes(query_graph, node):
 
 
 def run_groupby_and_get_tile_table_identifier(
-    event_view, aggregate_kwargs, groupby_kwargs=None, create_entity=True
+    event_data_or_event_view, aggregate_kwargs, groupby_kwargs=None, create_entity=True
 ):
     """Helper function to run groupby().aggregate() on an EventView and retrieve the tile ID
 
@@ -102,11 +104,15 @@ def run_groupby_and_get_tile_table_identifier(
         if isinstance(groupby_kwargs["by_keys"], str)
         else groupby_kwargs["by_keys"]
     )
+    event_view = event_data_or_event_view
     for by_key in by_keys:
         assert isinstance(by_key, str)
         if create_entity:
             Entity(name=by_key, serving_names=[by_key]).save()
-        event_view[by_key].as_entity(by_key)
+        if isinstance(event_data_or_event_view, EventData):
+            event_data_or_event_view[by_key].as_entity(by_key)
+            event_view = EventView.from_event_data(event_data=event_data_or_event_view)
+
     feature_names = set(aggregate_kwargs["feature_names"])
     features = event_view.groupby(**groupby_kwargs).aggregate(**aggregate_kwargs)
     groupby_node = get_parent_nodes(event_view.graph, features[list(feature_names)[0]].node)[0]
@@ -163,7 +169,7 @@ def run_groupby_and_get_tile_table_identifier(
     ],
 )
 def test_tile_table_id__agg_parameters(
-    snowflake_event_view, aggregate_kwargs, overrides, expected_tile_id, expected_agg_id
+    snowflake_event_data, aggregate_kwargs, overrides, expected_tile_id, expected_agg_id
 ):
     """Test tile table IDs are expected given different aggregate() parameters"""
     feature_job_setting_params = {"frequency", "blind_spot", "time_modulo_frequency"}
@@ -174,7 +180,7 @@ def test_tile_table_id__agg_parameters(
         {key: val for key, val in overrides.items() if key not in feature_job_setting_params}
     )
     tile_id, agg_id = run_groupby_and_get_tile_table_identifier(
-        snowflake_event_view, aggregate_kwargs
+        snowflake_event_data, aggregate_kwargs
     )
     assert (tile_id, agg_id) == (expected_tile_id, expected_agg_id)
 
@@ -208,24 +214,30 @@ def test_tile_table_id__agg_parameters(
     ],
 )
 def test_tile_table_id__groupby_parameters(
-    snowflake_event_view, aggregate_kwargs, groupby_kwargs, expected_tile_id, expected_agg_id
+    snowflake_event_data, aggregate_kwargs, groupby_kwargs, expected_tile_id, expected_agg_id
 ):
     """Test tile table IDs are expected given different groupby() parameters"""
     tile_id, agg_id = run_groupby_and_get_tile_table_identifier(
-        snowflake_event_view, aggregate_kwargs, groupby_kwargs
+        snowflake_event_data, aggregate_kwargs, groupby_kwargs
     )
     assert (tile_id, agg_id) == (expected_tile_id, expected_agg_id)
 
 
-def test_tile_table_id__transformations(snowflake_event_view, aggregate_kwargs):
+def test_tile_table_id__transformations(snowflake_event_view_with_entity, aggregate_kwargs):
     """Test different transformations produce different aggregation IDs, but same tile ID"""
-    snowflake_event_view["value_10"] = snowflake_event_view["col_float"] * 10
-    snowflake_event_view["value_100"] = snowflake_event_view["col_float"] * 100
+    snowflake_event_view_with_entity["value_10"] = (
+        snowflake_event_view_with_entity["col_float"] * 10
+    )
+    snowflake_event_view_with_entity["value_100"] = (
+        snowflake_event_view_with_entity["col_float"] * 100
+    )
 
     # Tile table id based on value_10
     kwargs = copy.deepcopy(aggregate_kwargs)
     kwargs["value_column"] = "value_10"
-    tile_id, agg_id = run_groupby_and_get_tile_table_identifier(snowflake_event_view, kwargs)
+    tile_id, agg_id = run_groupby_and_get_tile_table_identifier(
+        snowflake_event_view_with_entity, kwargs, create_entity=False
+    )
     assert (tile_id, agg_id) == (
         "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
         "sum_657dcf96c117cdfe5928aaff963eb1eeb6d11027",
@@ -235,7 +247,7 @@ def test_tile_table_id__transformations(snowflake_event_view, aggregate_kwargs):
     kwargs = copy.deepcopy(aggregate_kwargs)
     kwargs["value_column"] = "value_100"
     tile_id, agg_id = run_groupby_and_get_tile_table_identifier(
-        snowflake_event_view, kwargs, create_entity=False
+        snowflake_event_view_with_entity, kwargs, create_entity=False
     )
     assert (tile_id, agg_id) == (
         "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",

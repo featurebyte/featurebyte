@@ -146,7 +146,7 @@ def test_feature__preview_not_a_dict(float_feature):
 
 
 def test_feature_deserialization(
-    float_feature, float_feature_dict, snowflake_feature_store, snowflake_event_view
+    float_feature, float_feature_dict, snowflake_feature_store, snowflake_event_view_with_entity
 ):
     """
     Test feature deserialization
@@ -170,9 +170,10 @@ def test_feature_deserialization(
 
     # construct another identical float feature with an additional unused column,
     # check that the tile_ids are different before serialization, serialized object are the same
-    snowflake_event_view["unused_feat"] = 10.0 * snowflake_event_view["cust_id"]
-    snowflake_event_view.cust_id.as_entity("customer")
-    grouped = snowflake_event_view.groupby("cust_id")
+    snowflake_event_view_with_entity["unused_feat"] = (
+        10.0 * snowflake_event_view_with_entity["cust_id"]
+    )
+    grouped = snowflake_event_view_with_entity.groupby("cust_id")
     feature_group = grouped.aggregate(
         value_column="col_float",
         method="sum",
