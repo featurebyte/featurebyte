@@ -10,7 +10,6 @@ from pydantic import Field, PrivateAttr, StrictStr
 from typeguard import typechecked
 
 from featurebyte.api.event_data import EventData
-from featurebyte.api.util import get_entity
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
@@ -49,41 +48,6 @@ class EventViewColumn(Series):
 
     def unary_op_series_params(self) -> dict[str, Any]:
         return {"event_data_id": self.event_data_id}
-
-    def _validate_series_to_set_parent_attribute(self) -> None:
-        """
-        Check whether the current series has right to set parent frame
-
-        Raises
-        ------
-        ValueError
-            When the name or parent frame is missing
-        """
-        if self.name is None:
-            raise ValueError("Series object does not have name!")
-        if self.parent is None:
-            raise ValueError("Series object does not have parent frame object!")
-
-    @typechecked
-    def as_entity(self, entity_name: Optional[str]) -> None:
-        """
-        Set the column as the specified entity
-
-        Parameters
-        ----------
-        entity_name: Optional[str]
-            Associate column name to the entity, remove association if entity name is None
-        """
-        self._validate_series_to_set_parent_attribute()
-        if entity_name is None:
-            column_entity_map = self.parent.column_entity_map or {}
-            column_entity_map.pop(self.name)
-            self.parent.column_entity_map = column_entity_map
-        else:
-            entity_dict = get_entity(entity_name)
-            column_entity_map = self.parent.column_entity_map or {}
-            column_entity_map[self.name] = entity_dict["_id"]
-            self.parent.column_entity_map = column_entity_map
 
 
 class EventView(ProtectedColumnsQueryObject, Frame):
