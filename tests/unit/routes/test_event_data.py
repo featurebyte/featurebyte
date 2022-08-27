@@ -2,7 +2,6 @@
 Tests for EventData routes
 """
 import datetime
-import pdb
 from http import HTTPStatus
 
 import pytest

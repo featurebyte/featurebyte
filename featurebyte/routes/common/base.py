@@ -24,6 +24,7 @@ from featurebyte.models.persistent import (
     QueryFilter,
 )
 from featurebyte.persistent.base import Persistent
+from featurebyte.routes.common.operation import DictProject, DictTransform
 from featurebyte.routes.common.schema import PaginationMixin
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
@@ -38,6 +39,16 @@ class BaseController(Generic[Document, PaginatedDocument]):
     collection_name: str = ""
     document_class: Type[FeatureByteBaseDocumentModel] = FeatureByteBaseDocumentModel
     paginated_document_class: Type[PaginationMixin] = PaginationMixin
+
+    # base transform rule for document model
+    base_info_transform_rule = {
+        "name": DictProject(rule="name"),
+        "created_at": DictProject(rule="created_at", verbose_only=True),
+        "updated_at": DictProject(rule="updated_at", verbose_only=True),
+    }
+
+    # dictionary used to construct document info output
+    info_transform: DictTransform = DictTransform(rule=base_info_transform_rule)
 
     @classmethod
     def to_class_name(cls, collection_name: str | None = None) -> str:
@@ -604,3 +615,46 @@ class BaseController(Generic[Document, PaginatedDocument]):
             raise HTTPException(
                 status_code=HTTPStatus.NOT_IMPLEMENTED, detail="Query not supported."
             ) from exc
+
+    @classmethod
+    def _populate_document(cls, document: dict[str, Any]) -> dict[str, Any]:
+        """
+        Populate document by converting reference id value(s) to dictionary
+
+        Parameters
+        ----------
+        document: dict[str, Any]
+            Document dictionary
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return document
+
+    @classmethod
+    async def get_info(
+        cls, user: Any, persistent: Persistent, document_id: ObjectId, verbose: bool = True
+    ) -> dict[str, Any]:
+        """
+        Construct info based on the given document_id
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Persistent to retrieve audit docs from
+        document_id: ObjectId
+            ID of document to retrieve
+        verbose: bool
+            Control verbose level of the info
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        document = await cls.get(user=user, persistent=persistent, document_id=document_id)
+        return cls.info_transform.transform(
+            cls._populate_document(document.dict()), verbose=verbose
+        )

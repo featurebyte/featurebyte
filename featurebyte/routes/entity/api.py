@@ -3,7 +3,7 @@ Entity API routes
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from http import HTTPStatus
 
@@ -139,3 +139,17 @@ async def list_name_history(
         )
         for record in history_values
     ]
+
+
+@router.get("/{entity_id}/info")
+async def get_entity_info(request: Request, entity_id: str, verbose: bool = True) -> dict[str, Any]:
+    """
+    Retrieve EventData info
+    """
+    info = await request.state.controller.get_info(
+        user=request.state.user,
+        persistent=request.state.persistent,
+        document_id=entity_id,
+        verbose=bool(verbose),
+    )
+    return cast(Dict[str, Any], info)

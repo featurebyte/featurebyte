@@ -3,7 +3,7 @@ Feature API routes
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Dict, Optional, cast
 
 from http import HTTPStatus
 
@@ -101,3 +101,19 @@ async def list_feature_audit_logs(
         search=search,
     )
     return audit_doc_list
+
+
+@router.get("/{feature_id}/info")
+async def get_feature_info(
+    request: Request, feature_id: str, verbose: bool = True
+) -> dict[str, Any]:
+    """
+    Retrieve Feature info
+    """
+    info = await request.state.controller.get_info(
+        user=request.state.user,
+        persistent=request.state.persistent,
+        document_id=feature_id,
+        verbose=bool(verbose),
+    )
+    return cast(Dict[str, Any], info)

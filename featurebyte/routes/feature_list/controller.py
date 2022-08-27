@@ -19,6 +19,7 @@ from featurebyte.models.feature import FeatureListModel, FeatureModel, FeatureRe
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.common.operation import DictProject, DictTransform
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListPaginatedList
 
 
@@ -30,6 +31,13 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
     collection_name = FeatureListModel.collection_name()
     document_class = FeatureListModel
     paginated_document_class = FeatureListPaginatedList
+    info_transform = DictTransform(
+        rule={
+            **BaseController.base_info_transform_rule,
+            "__root__": DictProject(rule=["readiness", "status"]),
+            "features": DictProject(rule="features"),
+        }
+    )
 
     @classmethod
     async def _insert_feature_list_registry(

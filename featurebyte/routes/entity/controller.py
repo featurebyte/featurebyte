@@ -14,6 +14,7 @@ from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.entity import EntityModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.common.operation import DictProject, DictTransform
 from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
 
 
@@ -25,6 +26,12 @@ class EntityController(BaseController[EntityModel, EntityList]):
     collection_name = EntityModel.collection_name()
     document_class = EntityModel
     paginated_document_class = EntityList
+    info_transform = DictTransform(
+        rule={
+            **BaseController.base_info_transform_rule,
+            "__root__": DictProject(rule=["serving_names"]),
+        }
+    )
 
     @classmethod
     async def create_entity(

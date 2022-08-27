@@ -19,6 +19,7 @@ from featurebyte.models.feature import DefaultVersionMode, FeatureModel, Feature
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.common.operation import DictProject, DictTransform
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.schema.feature import FeatureCreate, FeatureList
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate, FeatureNamespaceUpdate
@@ -32,6 +33,17 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
     collection_name = FeatureModel.collection_name()
     document_class = FeatureModel
     paginated_document_class = FeatureList
+    info_transform = DictTransform(
+        rule={
+            **BaseController.base_info_transform_rule,
+            "__root__": DictProject(
+                rule=["var_type", "readiness", "version", "is_default", "online_enabled"]
+            ),
+            "tabular_source": DictProject(rule="tabular_source", verbose_only=True),
+            "event_data": DictProject(rule="event_data", verbose_only=True),
+            "feature_namespace": DictProject(rule="feature_namespace", verbose_only=True),
+        }
+    )
 
     @classmethod
     async def _insert_feature_registry(
