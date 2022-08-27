@@ -48,15 +48,15 @@ class EventDataColumn(FeatureByteBaseModel, ParentMixin):
             entity_dict = get_entity(entity_name)
             entity_id = entity_dict["_id"]
 
-        column_info = []
-        for col in self.parent.column_info:
+        columns_info = []
+        for col in self.parent.columns_info:
             if col.name == self.info.name:
                 self.info = ColumnInfo(**{**col.dict(), "entity_id": entity_id})
-                column_info.append(self.info)
+                columns_info.append(self.info)
             else:
-                column_info.append(col)
+                columns_info.append(col)
 
-        self.parent.update({"column_info": column_info})
+        self.parent.update({"columns_info": columns_info})
 
 
 class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
@@ -120,7 +120,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
             _id=ObjectId(),
             name=name,
             tabular_source=tabular_source.tabular_source,
-            column_info=tabular_source.column_info,
+            columns_info=tabular_source.columns_info,
             event_timestamp_column=event_timestamp_column,
             record_creation_date_column=record_creation_date_column,
         )
@@ -142,7 +142,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
     @validator("event_timestamp_column")
     @classmethod
     def _check_event_timestamp_column_exists(cls, value: str, values: dict[str, Any]) -> str:
-        columns = {dict(col)["name"] for col in values["column_info"]}
+        columns = {dict(col)["name"] for col in values["columns_info"]}
         if value not in columns:
             raise ValueError(f'Column "{value}" not found in the table!')
         return value
@@ -150,7 +150,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
     @validator("record_creation_date_column")
     @classmethod
     def _check_record_creation_date_column_exists(cls, value: str, values: dict[str, Any]) -> str:
-        columns = {dict(col)["name"] for col in values["column_info"]}
+        columns = {dict(col)["name"] for col in values["columns_info"]}
         if value and value not in columns:
             raise ValueError(f'Column "{value}" not found in the table!')
         return value
@@ -175,7 +175,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
             when accessing non-exist column
         """
         info = None
-        for col in self.column_info:
+        for col in self.columns_info:
             if col.name == item:
                 info = col
         if info is None:

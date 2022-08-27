@@ -21,7 +21,7 @@ class EventDataCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     tabular_source: TabularSource
-    column_info: List[ColumnInfo]
+    columns_info: List[ColumnInfo]
     event_timestamp_column: StrictStr
     record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]
@@ -40,7 +40,7 @@ class EventDataUpdate(FeatureByteBaseModel):
     Event Data Update Schema
     """
 
-    column_info: List[ColumnInfo]
+    columns_info: List[ColumnInfo]
     default_feature_job_setting: Optional[FeatureJobSetting]
     record_creation_date_column: Optional[StrictStr]
     status: Optional[EventDataStatus]

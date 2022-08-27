@@ -37,10 +37,10 @@ class EventViewGroupBy(OpsMixin):
         # construct column name entity mapping
         try:
             event_data = cast(EventData, EventData.get_by_id(obj.event_data_id))
-            column_info = event_data.column_info
+            columns_info = event_data.columns_info
         except RecordRetrievalException:
-            column_info = obj.column_info
-        column_entity_map = {col.name: col.entity_id for col in column_info if col.entity_id}
+            columns_info = obj.columns_info
+        column_entity_map = {col.name: col.entity_id for col in columns_info if col.entity_id}
 
         # construct serving_names
         serving_names = []

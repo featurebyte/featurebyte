@@ -37,7 +37,7 @@ def event_data_dict_fixture(snowflake_database_table):
                 "table_name": "sf_table",
             },
         },
-        "column_info": [
+        "columns_info": [
             {"entity_id": None, "name": "col_int", "var_type": "INT"},
             {"entity_id": None, "name": "col_float", "var_type": "FLOAT"},
             {"entity_id": None, "name": "col_char", "var_type": "CHAR"},
@@ -213,7 +213,7 @@ def test_event_data_column__as_entity(snowflake_event_data):
     Test setting a column in the event data as entity
     """
     # check no column associate with any entity
-    assert all([col.entity_id is None for col in snowflake_event_data.column_info])
+    assert all([col.entity_id is None for col in snowflake_event_data.columns_info])
 
     # create entity
     entity = Entity(name="customer", serving_names=["cust_id"])
@@ -244,7 +244,7 @@ def test_event_data_column__as_entity__saved_event_data(saved_event_data, config
     Test setting a column in the event data as entity (saved event data)
     """
     # check no column associate with any entity
-    assert all([col.entity_id is None for col in saved_event_data.column_info])
+    assert all([col.entity_id is None for col in saved_event_data.columns_info])
 
     # create entity
     entity = Entity(name="customer", serving_names=["cust_id"])
@@ -258,7 +258,7 @@ def test_event_data_column__as_entity__saved_event_data(saved_event_data, config
     client = config.get_client()
     response = client.get(url=f"/event_data/{saved_event_data.id}")
     response_dict = response.json()
-    for col in response_dict["column_info"]:
+    for col in response_dict["columns_info"]:
         if col["name"] == "col_int":
             assert col["entity_id"] == str(entity.id)
 
@@ -336,7 +336,7 @@ def test_event_data__info__not_saved_event_data(
         "event_timestamp_column": "col_int",
         "status": None,
         "tabular_source": event_data_dict["tabular_source"],
-        "column_info": event_data_dict["column_info"],
+        "columns_info": event_data_dict["columns_info"],
     }
     assert isinstance(snowflake_event_data.tabular_source.feature_store_id, ObjectId)
 
@@ -382,7 +382,7 @@ def test_event_data__info__saved_event_data(
             "event_timestamp_column": "event_timestamp",
             "status": "DRAFT",
             "tabular_source": event_data_dict["tabular_source"],
-            "column_info": event_data_dict["column_info"],
+            "columns_info": event_data_dict["columns_info"],
         }
     )
     feature_store_id = saved_event_data.tabular_source.feature_store_id

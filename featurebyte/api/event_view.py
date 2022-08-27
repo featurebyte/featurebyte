@@ -86,7 +86,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         -------
         list[str]
         """
-        return [col.name for col in self.column_info if col.entity_id]
+        return [col.name for col in self.columns_info if col.entity_id]
 
     @property
     def timestamp_column(self) -> str:
@@ -131,10 +131,10 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         return EventView(
             feature_store=event_data.feature_store,
             tabular_source=event_data.tabular_source,
-            column_info=event_data.column_info,
+            columns_info=event_data.columns_info,
             node=event_data.node,
             column_lineage_map={
-                col.name: (event_data.node.name,) for col in event_data.column_info
+                col.name: (event_data.node.name,) for col in event_data.columns_info
             },
             row_index_lineage=tuple(event_data.row_index_lineage),
             default_feature_job_setting=event_data.default_feature_job_setting,

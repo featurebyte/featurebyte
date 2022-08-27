@@ -83,7 +83,7 @@ class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
         Name of the EventData
     tabular_source : TabularSource
         Data warehouse connection information & table name tuple
-    column_info: List[ColumnInfo]
+    columns_info: List[ColumnInfo]
         List of event data columns
     event_timestamp_column: str
         Event timestamp column name
@@ -97,7 +97,7 @@ class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
         Status of the EventData
     """
 
-    column_info: List[ColumnInfo]
+    columns_info: List[ColumnInfo]
     event_timestamp_column: StrictStr
     record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]

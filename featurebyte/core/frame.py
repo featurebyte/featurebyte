@@ -23,7 +23,7 @@ class BaseFrame(QueryObject):
     BaseFrame class
     """
 
-    column_info: List[ColumnInfo]
+    columns_info: List[ColumnInfo]
 
     @property
     def column_var_type_map(self) -> dict[str, DBVarType]:
@@ -34,7 +34,7 @@ class BaseFrame(QueryObject):
         -------
         dict[str, DBVarType]
         """
-        return {col.name: col.var_type for col in self.column_info}
+        return {col.name: col.var_type for col in self.columns_info}
 
     @property
     def dtypes(self) -> pd.Series:
@@ -196,7 +196,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             return type(self)(
                 feature_store=self.feature_store,
                 tabular_source=self.tabular_source,
-                column_info=[col for col in self.column_info if col.name in item],
+                columns_info=[col for col in self.columns_info if col.name in item],
                 node=node,
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self.row_index_lineage,
@@ -212,7 +212,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         return type(self)(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
-            column_info=self.column_info,
+            columns_info=self.columns_info,
             node=node,
             column_lineage_map=column_lineage_map,
             row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
@@ -245,7 +245,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node, value.node],
             )
-            self.column_info.append(ColumnInfo(name=key, var_type=value.var_type))
+            self.columns_info.append(ColumnInfo(name=key, var_type=value.var_type))
             self.column_lineage_map[key] = self._append_to_lineage(
                 self.column_lineage_map.get(key, tuple()), self.node.name
             )
@@ -256,7 +256,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node],
             )
-            self.column_info.append(
+            self.columns_info.append(
                 ColumnInfo(name=key, var_type=self.pytype_dbtype_map[type(value)])
             )
             self.column_lineage_map[key] = self._append_to_lineage(

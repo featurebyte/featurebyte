@@ -31,7 +31,7 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
                 database_name="database", schema_name="schema", table_name="table"
             ),
         },
-        column_info=[{"name": "col", "var_type": "INT", "entity_id": None}],
+        columns_info=[{"name": "col", "var_type": "INT", "entity_id": None}],
         event_timestamp_column="event_date",
         record_creation_date_column="created_at",
         default_feature_job_setting=feature_job_setting,
@@ -47,7 +47,7 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
             "frequency": "30m",
             "time_modulo_frequency": "5m",
         },
-        "column_info": [{"name": "col", "var_type": "INT", "entity_id": None}],
+        "columns_info": [{"name": "col", "var_type": "INT", "entity_id": None}],
         "event_timestamp_column": "event_date",
         "id": event_data.id,
         "name": "my_event_data",

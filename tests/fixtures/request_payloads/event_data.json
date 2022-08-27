@@ -1,6 +1,6 @@
 {
     "_id": "63086e98f9b740de42f23fbb",
-    "column_info": [
+    "columns_info": [
         {
             "entity_id": null,
             "name": "col_int",

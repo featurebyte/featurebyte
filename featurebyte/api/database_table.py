@@ -97,21 +97,21 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             table_name=table_details.table_name,
         )
 
-        if "column_info" in values:
-            column_info = [ColumnInfo(**dict(col)) for col in values["column_info"]]
-            schema = {col.name: col.var_type for col in column_info}
+        if "columns_info" in values:
+            columns_info = [ColumnInfo(**dict(col)) for col in values["columns_info"]]
+            schema = {col.name: col.var_type for col in columns_info}
             if schema != recent_schema:
                 raise TableSchemaHasBeenChangedError("Table schema has been changed.")
         else:
-            column_info = [
+            columns_info = [
                 ColumnInfo(name=name, var_type=var_type) for name, var_type in recent_schema.items()
             ]
-            values["column_info"] = column_info
+            values["columns_info"] = columns_info
 
         node = GlobalQueryGraph().add_operation(
             node_type=NodeType.INPUT,
             node_params={
-                "columns": [col.name for col in column_info],
+                "columns": [col.name for col in columns_info],
                 "dbtable": table_details.dict(),
                 "feature_store": feature_store.dict(include={"type": True, "details": True}),
                 **cls._get_other_input_node_parameters(values),

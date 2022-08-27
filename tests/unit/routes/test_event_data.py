@@ -97,7 +97,7 @@ class TestEventDataApi(BaseApiTestSuite):
                     "table_name": "table",
                 },
             },
-            "column_info": [
+            "columns_info": [
                 {"name": "created_at", "var_type": "TIMESTAMP", "entity_id": None},
                 {"name": "event_date", "var_type": "TIMESTAMP", "entity_id": None},
             ],
@@ -140,7 +140,7 @@ class TestEventDataApi(BaseApiTestSuite):
         Table Event update dict object
         """
         return {
-            "column_info": [
+            "columns_info": [
                 {"name": "created_at", "var_type": "TIMESTAMP", "entity_id": None},
                 {"name": "event_date", "var_type": "TIMESTAMP", "entity_id": None},
             ],
@@ -374,7 +374,7 @@ class TestEventDataApi(BaseApiTestSuite):
             response = test_api_client.patch(
                 f"/event_data/{document_id}",
                 json={
-                    "column_info": [
+                    "columns_info": [
                         {"name": "created_at", "var_type": "TIMESTAMP", "entity_id": None},
                         {"name": "event_date", "var_type": "TIMESTAMP", "entity_id": None},
                     ],

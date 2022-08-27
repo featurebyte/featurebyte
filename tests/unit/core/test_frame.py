@@ -54,7 +54,7 @@ def test__getitem__list_of_str_key(dataframe):
     sub_dataframe = dataframe[["CUST_ID", "VALUE"]]
     assert isinstance(sub_dataframe, Frame)
     sub_dataframe_dict = sub_dataframe.dict()
-    assert sub_dataframe_dict["column_info"] == [
+    assert sub_dataframe_dict["columns_info"] == [
         {"name": "CUST_ID", "var_type": DBVarType.INT, "entity_id": None},
         {"name": "VALUE", "var_type": DBVarType.FLOAT, "entity_id": None},
     ]
@@ -88,7 +88,7 @@ def test__getitem__series_key(dataframe, bool_series):
     Test filtering using boolean Series
     """
     sub_dataframe = dataframe[bool_series]
-    assert sub_dataframe.column_info == dataframe.column_info
+    assert sub_dataframe.columns_info == dataframe.columns_info
     assert isinstance(sub_dataframe, Frame)
     sub_dataframe_dict = sub_dataframe.dict()
     assert (
@@ -258,7 +258,7 @@ def test_multiple_statements(dataframe):
         }.items()
     )
     assert cust_id_dict["row_index_lineage"] == ("input_1", "filter_1")
-    assert dataframe_dict["column_info"] == [
+    assert dataframe_dict["columns_info"] == [
         {"name": "CUST_ID", "var_type": DBVarType.INT, "entity_id": None},
         {"name": "PRODUCT_ACTION", "var_type": DBVarType.VARCHAR, "entity_id": None},
         {"name": "VALUE", "var_type": DBVarType.FLOAT, "entity_id": None},

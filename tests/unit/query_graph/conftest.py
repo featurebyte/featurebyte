@@ -392,7 +392,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
     """
     Frame test fixture
     """
-    column_info = [
+    columns_info = [
         {"name": "CUST_ID", "var_type": DBVarType.INT},
         {"name": "PRODUCT_ACTION", "var_type": DBVarType.VARCHAR},
         {"name": "VALUE", "var_type": DBVarType.FLOAT},
@@ -401,7 +401,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
     node = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
-            "columns": [col["name"] for col in column_info],
+            "columns": [col["name"] for col in columns_info],
             "timestamp": "VALUE",
             "dbtable": {
                 "database_name": "db",
@@ -429,8 +429,8 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
                 "table_name": "some_table_name",
             },
         },
-        column_info=column_info,
+        columns_info=columns_info,
         node=node,
-        column_lineage_map={col["name"]: (node.name,) for col in column_info},
+        column_lineage_map={col["name"]: (node.name,) for col in columns_info},
         row_index_lineage=(node.name,),
     )
