@@ -221,6 +221,21 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
         """
         return self.feature_namespace.readiness
 
+    def info(self, verbose: bool = True) -> Dict[str, Any]:
+        """
+        Construct summary info of the API object
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        return self.feature_namespace.info(verbose=verbose)
+
     def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method

@@ -162,6 +162,57 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             return response.json()
         raise RecordRetrievalException(response, "Failed to list object audit log.")
 
+    @typechecked
+    def _get_audit_history(self, field_name: str) -> List[Dict[str, Any]]:
+        """
+        Retrieve field audit history
+
+        Parameters
+        ----------
+        field_name: str
+            Field name
+
+        Returns
+        -------
+        List of history
+
+        Raises
+        ------
+        RecordRetrievalException
+            When unexpected retrieval failure
+        """
+        client = Configurations().get_client()
+        response = client.get(url=f"{self._route}/history/{field_name}/{self.id}")
+        if response.status_code == HTTPStatus.OK:
+            history: list[dict[str, Any]] = response.json()
+            return history
+        raise RecordRetrievalException(response)
+
+    @typechecked
+    def info(self, verbose: bool = True) -> Dict[str, Any]:
+        """
+        Construct summary info of the API object
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary
+
+        Returns
+        -------
+        Dict[str, Any]
+
+        Raises
+        ------
+        RecordRetrievalException
+            When the object not found
+        """
+        client = Configurations().get_client()
+        response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})
+        if response.status_code == HTTPStatus.OK:
+            return response.json()
+        raise RecordRetrievalException(response, "Failed to retrieve specified object.")
+
 
 class ApiObject(ApiGetObject):
     """
@@ -329,29 +380,3 @@ class ApiObject(ApiGetObject):
                 return cast(Dict[str, Any], result_response.json())
             raise RecordRetrievalException(response=result_response)
         raise RecordCreationException(response=create_response)
-
-    @typechecked
-    def _get_audit_history(self, field_name: str) -> List[Dict[str, Any]]:
-        """
-        Retrieve field audit history
-
-        Parameters
-        ----------
-        field_name: str
-            Field name
-
-        Returns
-        -------
-        List of history
-
-        Raises
-        ------
-        RecordRetrievalException
-            When unexpected retrieval failure
-        """
-        client = Configurations().get_client()
-        response = client.get(url=f"{self._route}/history/{field_name}/{self.id}")
-        if response.status_code == HTTPStatus.OK:
-            history: list[dict[str, Any]] = response.json()
-            return history
-        raise RecordRetrievalException(response)
