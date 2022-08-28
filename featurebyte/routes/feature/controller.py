@@ -39,11 +39,18 @@ class FeatureController(BaseController[FeatureModel, FeatureList]):
             "__root__": DictProject(
                 rule=["var_type", "readiness", "version", "is_default", "online_enabled"]
             ),
-            "tabular_source": DictProject(rule="tabular_source", verbose_only=True),
+            "tabular_source": DictProject(
+                rule=("tabular_source", ["feature_store", "table_details"]),
+                verbose_only=True,
+            ),
             "event_data": DictProject(rule="event_data", verbose_only=True),
             "feature_namespace": DictProject(rule="feature_namespace", verbose_only=True),
         }
     )
+    foreign_key_map = {
+        "event_data_ids": EventDataModel.collection_name(),
+        "feature_store_id": FeatureStoreModel.collection_name(),
+    }
 
     @classmethod
     async def _insert_feature_registry(

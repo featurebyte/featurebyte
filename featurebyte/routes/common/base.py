@@ -7,6 +7,7 @@ from typing import Any, Dict, Generic, Iterator, List, Literal, Optional, Type, 
 
 import copy
 from http import HTTPStatus
+from importlib import import_module
 
 import numpy as np
 import pandas as pd
@@ -40,15 +41,14 @@ class BaseController(Generic[Document, PaginatedDocument]):
     document_class: Type[FeatureByteBaseDocumentModel] = FeatureByteBaseDocumentModel
     paginated_document_class: Type[PaginationMixin] = PaginationMixin
 
-    # base transform rule for document model
+    # variables used to construct document info output
     base_info_transform_rule = {
         "name": DictProject(rule="name"),
         "created_at": DictProject(rule="created_at", verbose_only=True),
         "updated_at": DictProject(rule="updated_at", verbose_only=True),
     }
-
-    # dictionary used to construct document info output
     info_transform: DictTransform = DictTransform(rule=base_info_transform_rule)
+    foreign_key_map: Dict[str, str] = {}
 
     @classmethod
     def to_class_name(cls, collection_name: str | None = None) -> str:
@@ -617,12 +617,77 @@ class BaseController(Generic[Document, PaginatedDocument]):
             ) from exc
 
     @classmethod
-    def _populate_document(cls, document: dict[str, Any]) -> dict[str, Any]:
+    async def _retrieve_reference(
+        cls,
+        user: Any,
+        persistent: Persistent,
+        collection_name: str,
+        foreign_key_value: list[ObjectId] | ObjectId,
+    ) -> Any:
+        controller_mod = import_module(f"featurebyte.routes.{collection_name}.controller")
+        controller_class: type[BaseController] = next(
+            getattr(controller_mod, attr)
+            for attr in dir(controller_mod)
+            if getattr(getattr(controller_mod, attr, object), "collection_name", None)
+            == collection_name
+        )
+        if isinstance(foreign_key_value, list):
+            return [
+                await controller_class.get_info(
+                    user=user, persistent=persistent, document_id=doc_id, verbose=False
+                )
+                for doc_id in foreign_key_value
+            ]
+        else:
+            return await controller_class.get_info(
+                user=user, persistent=persistent, document_id=foreign_key_value, verbose=False
+            )
+
+    @classmethod
+    async def _populate_document(
+        cls, user: Any, persistent: Persistent, document: dict[str, Any]
+    ) -> dict[str, Any]:
+        output = {}
+        for key, value in document.items():
+            if key in cls.foreign_key_map and value is not None:
+                # example: foreign_key_map = {"event_data_ids": "event_data"}
+                # document contains "event_data_ids" key (list of event_data reference ids)
+                # a new key called "event_data" will be inserted into the dictionary
+                object_key = key.rsplit("_", 1)[0]
+                output[object_key] = await cls._retrieve_reference(
+                    user=user,
+                    persistent=persistent,
+                    collection_name=cls.foreign_key_map[key],
+                    foreign_key_value=value,
+                )
+            if isinstance(value, dict):
+                output[key] = await cls._populate_document(
+                    user=user, persistent=persistent, document=value
+                )
+            elif isinstance(value, list):
+                output[key] = [
+                    await cls._populate_document(user=user, persistent=persistent, document=val)
+                    if isinstance(val, dict)
+                    else val
+                    for val in value
+                ]
+            else:
+                output[key] = value
+        return output
+
+    @classmethod
+    async def populate_document(
+        cls, user: Any, persistent: Persistent, document: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Populate document by converting reference id value(s) to dictionary
 
         Parameters
         ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Persistent to retrieve docs from
         document: dict[str, Any]
             Document dictionary
 
@@ -630,7 +695,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         -------
         dict[str, Any]
         """
-        return document
+        return await cls._populate_document(user=user, persistent=persistent, document=document)
 
     @classmethod
     async def get_info(
@@ -656,5 +721,10 @@ class BaseController(Generic[Document, PaginatedDocument]):
         """
         document = await cls.get(user=user, persistent=persistent, document_id=document_id)
         return cls.info_transform.transform(
-            cls._populate_document(document.dict()), verbose=verbose
+            input_value=await cls.populate_document(
+                user=user,
+                persistent=persistent,
+                document=document.dict(),
+            ),
+            verbose=verbose,
         )

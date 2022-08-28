@@ -10,6 +10,7 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
+from featurebyte.models.entity import EntityModel
 from featurebyte.models.event_data import EventDataModel, EventDataStatus
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
@@ -40,6 +41,7 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
             ),
         }
     )
+    foreign_key_map = {"entity_id": EntityModel.collection_name()}
 
     @classmethod
     async def create_event_data(

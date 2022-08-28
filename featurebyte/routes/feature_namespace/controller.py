@@ -37,9 +37,14 @@ class FeatureNamespaceController(BaseController[FeatureNamespaceModel, FeatureNa
     info_transform = DictTransform(
         rule={
             **BaseController.base_info_transform_rule,
-            "__root__": DictProject(rule=["default_version_mode", "default_version", "versions"]),
+            "__root__": DictProject(rule=["default_version_mode", "default_version"]),
+            "versions": DictProject(rule="version"),
         }
     )
+    foreign_key_map = {
+        "version_ids": FeatureModel.collection_name(),
+        "default_version_id": FeatureModel.collection_name(),
+    }
 
     @classmethod
     async def create_feature_namespace(

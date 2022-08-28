@@ -35,9 +35,10 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
         rule={
             **BaseController.base_info_transform_rule,
             "__root__": DictProject(rule=["readiness", "status"]),
-            "features": DictProject(rule="features"),
+            "features": DictProject(rule="feature"),
         }
     )
+    foreign_key_map = {"feature_ids": FeatureModel.collection_name()}
 
     @classmethod
     async def _insert_feature_list_registry(
