@@ -5,16 +5,15 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple, Union
 
-import copy
-
 import pandas as pd
-from pydantic import StrictStr, root_validator
+from pydantic import root_validator
 from typeguard import typechecked
 
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import GetAttrMixin, OpsMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
+from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 
@@ -24,7 +23,18 @@ class BaseFrame(QueryObject):
     BaseFrame class
     """
 
-    column_var_type_map: Dict[StrictStr, DBVarType]
+    columns_info: List[ColumnInfo]
+
+    @property
+    def column_var_type_map(self) -> dict[str, DBVarType]:
+        """
+        Column name to DB var type mapping
+
+        Returns
+        -------
+        dict[str, DBVarType]
+        """
+        return {col.name: col.var_type for col in self.columns_info}
 
     @property
     def dtypes(self) -> pd.Series:
@@ -178,9 +188,6 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node],
             )
-            column_var_type_map = {
-                col: var_type for col, var_type in self.column_var_type_map.items() if col in item
-            }
             column_lineage_map = {}
             for col in item:
                 column_lineage_map[col] = self._append_to_lineage(
@@ -189,8 +196,8 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             return type(self)(
                 feature_store=self.feature_store,
                 tabular_source=self.tabular_source,
+                columns_info=[col for col in self.columns_info if col.name in item],
                 node=node,
-                column_var_type_map=column_var_type_map,
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self.row_index_lineage,
                 **self._getitem_frame_params,
@@ -205,8 +212,8 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         return type(self)(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
+            columns_info=self.columns_info,
             node=node,
-            column_var_type_map=copy.deepcopy(self.column_var_type_map),
             column_lineage_map=column_lineage_map,
             row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
             **self._getitem_frame_params,
@@ -238,7 +245,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node, value.node],
             )
-            self.column_var_type_map[key] = value.var_type
+            self.columns_info.append(ColumnInfo(name=key, var_type=value.var_type))
             self.column_lineage_map[key] = self._append_to_lineage(
                 self.column_lineage_map.get(key, tuple()), self.node.name
             )
@@ -249,7 +256,9 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node],
             )
-            self.column_var_type_map[key] = self.pytype_dbtype_map[type(value)]
+            self.columns_info.append(
+                ColumnInfo(name=key, var_type=self.pytype_dbtype_map[type(value)])
+            )
             self.column_lineage_map[key] = self._append_to_lineage(
                 self.column_lineage_map.get(key, tuple()), self.node.name
             )

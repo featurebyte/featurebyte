@@ -51,12 +51,11 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
             Newly created event data object
         """
         # check the existence of the feature store at persistent
-        feature_store_id, _ = data.tabular_source
         _ = await cls.get_document(
             user=user,
             persistent=persistent,
             collection_name=FeatureStoreModel.collection_name(),
-            document_id=feature_store_id,
+            document_id=data.tabular_source.feature_store_id,
         )
 
         document = EventDataModel(

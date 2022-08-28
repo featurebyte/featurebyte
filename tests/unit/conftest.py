@@ -306,9 +306,7 @@ def snowflake_event_view_fixture(snowflake_event_data):
         output_type=NodeOutputType.FRAME,
     ).dict(exclude={"name": True})
     assert event_view.inception_node.dict(exclude={"name": True}) == expected_inception_node
-    assert event_view.protected_columns == {"event_timestamp"}.union(
-        snowflake_event_data.column_entity_map or {}
-    )
+    assert event_view.protected_columns == {"event_timestamp"}
     assert event_view.inherited_columns == {"event_timestamp"}
     assert event_view.timestamp_column == "event_timestamp"
     assert event_view.event_data_id == snowflake_event_data.id

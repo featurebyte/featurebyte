@@ -1,5 +1,5 @@
 """
-OpsMixin class
+Mixin classes used by core objects
 """
 # pylint: disable=too-few-public-methods
 from __future__ import annotations

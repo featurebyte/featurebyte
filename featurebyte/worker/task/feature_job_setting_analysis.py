@@ -53,7 +53,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         event_data = EventDataModel(**document)
 
         # retrieve feature store
-        query_filter = {"_id": event_data.tabular_source[0]}
+        query_filter = {"_id": event_data.tabular_source.feature_store_id}
         document = await persistent.find_one(
             collection_name=ExtendedFeatureStoreModel.collection_name(),
             query_filter=query_filter,
@@ -78,7 +78,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         event_dataset = EventDataset(
             database_type=feature_store.type,
             event_data_name=event_data.name,
-            table_details=event_data.tabular_source[1].dict(),
+            table_details=event_data.tabular_source.table_details.dict(),
             creation_date_column=event_data.record_creation_date_column,
             event_timestamp_column=event_data.event_timestamp_column,
             sql_query_func=db_session.execute_query,

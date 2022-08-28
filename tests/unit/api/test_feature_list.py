@@ -388,7 +388,7 @@ def saved_feature_list_fixture(
     _ = mock_insert_feature_list_registry, mock_insert_feature_registry
     snowflake_feature_store.save()
     snowflake_event_data.save()
-    assert float_feature.tabular_source[0] == snowflake_feature_store.id
+    assert float_feature.tabular_source.feature_store_id == snowflake_feature_store.id
     feature_list = FeatureList([float_feature], name="my_feature_list")
     assert feature_list.saved is False
     feature_list_id_before = feature_list.id

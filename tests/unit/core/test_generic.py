@@ -40,10 +40,14 @@ def feature_store_tabular_source_fixture():
             database="sf_database",
         ),
     )
-    tabular_source = (
-        feature_store.id,
-        {"database_name": "db", "schema_name": "public", "table_name": "some_table_name"},
-    )
+    tabular_source = {
+        "feature_store_id": feature_store.id,
+        "table_details": {
+            "database_name": "db",
+            "schema_name": "public",
+            "table_name": "some_table_name",
+        },
+    }
     return feature_store, tabular_source
 
 
