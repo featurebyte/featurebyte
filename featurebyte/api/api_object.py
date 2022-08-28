@@ -210,7 +210,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         client = Configurations().get_client()
         response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})
         if response.status_code == HTTPStatus.OK:
-            return response.json()
+            return cast(Dict[str, Any], response.json())
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
 

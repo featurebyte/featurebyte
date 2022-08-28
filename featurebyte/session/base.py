@@ -3,7 +3,7 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, OrderedDict
 
 from abc import abstractmethod
 
@@ -82,7 +82,7 @@ class BaseSession(BaseModel):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-    ) -> dict[str, DBVarType]:
+    ) -> OrderedDict[str, DBVarType]:
         """
         Execute SQL query to retrieve table schema of a given table name and convert the
         schema type to internal variable type
@@ -98,7 +98,7 @@ class BaseSession(BaseModel):
 
         Returns
         -------
-        dict[str, DBVarType]
+        OrderedDict[str, DBVarType]
         """
 
     def execute_query(self, query: str) -> pd.DataFrame | None:

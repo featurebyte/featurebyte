@@ -264,9 +264,6 @@ def test_feature_save__exception_due_to_feature_saved_before(float_feature, save
     """
     Test feature save failure due to event data not saved
     """
-    import pdb
-
-    pdb.set_trace()
     _ = saved_feature
     assert saved_feature.saved is True
     with pytest.raises(ObjectHasBeenSavedError) as exc:

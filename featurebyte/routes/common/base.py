@@ -622,10 +622,10 @@ class BaseController(Generic[Document, PaginatedDocument]):
         user: Any,
         persistent: Persistent,
         collection_name: str,
-        foreign_key_value: list[ObjectId] | ObjectId,
+        foreign_key_value: List[ObjectId] | ObjectId,
     ) -> Any:
         controller_mod = import_module(f"featurebyte.routes.{collection_name}.controller")
-        controller_class: type[BaseController] = next(
+        controller_class = next(
             getattr(controller_mod, attr)
             for attr in dir(controller_mod)
             if getattr(getattr(controller_mod, attr, object), "collection_name", None)
@@ -638,10 +638,9 @@ class BaseController(Generic[Document, PaginatedDocument]):
                 )
                 for doc_id in foreign_key_value
             ]
-        else:
-            return await controller_class.get_info(
-                user=user, persistent=persistent, document_id=foreign_key_value, verbose=False
-            )
+        return await controller_class.get_info(
+            user=user, persistent=persistent, document_id=foreign_key_value, verbose=False
+        )
 
     @classmethod
     async def _populate_document(

@@ -311,10 +311,16 @@ class BaseApiTestSuite:
         assert response.status_code == HTTPStatus.NOT_IMPLEMENTED
         assert response.json()["detail"] == "Query not supported."
 
-    def test_get_info_200(self, test_api_client_persistent, create_success_response):
+    async def setup_get_info(self, api_client, persistent, user_id):
+        """Setup for get_info route testing"""
+        pass
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
         """Test retrieve info"""
-        test_api_client, _ = test_api_client_persistent
+        test_api_client, persistent = test_api_client_persistent
         create_response_dict = create_success_response.json()
+        await self.setup_get_info(test_api_client, persistent, user_id)
         doc_id = create_response_dict["_id"]
         verbose_response = test_api_client.get(
             f"{self.base_route}/{doc_id}/info", params={"verbose": True}
