@@ -400,6 +400,27 @@ def saved_feature_list_fixture(
     return feature_list
 
 
+def test_info(saved_feature_list):
+    """
+    Test info
+    """
+    verbose_info = saved_feature_list.info(verbose=True)
+    non_verbose_info = saved_feature_list.info(verbose=False)
+    expected_info = {"name": "my_feature_list", "readiness": "DRAFT", "status": "DRAFT"}
+    expected_feature = {
+        "is_default": None,
+        "name": "sum_1d",
+        "online_enabled": None,
+        "readiness": "DRAFT",
+        "var_type": "FLOAT",
+    }
+    assert non_verbose_info.items() > expected_info.items()
+    assert verbose_info.items() > expected_info.items()
+    assert verbose_info["features"] == non_verbose_info["features"]
+    assert len(verbose_info["features"]) == 1
+    assert verbose_info["features"][0].items() > expected_feature.items()
+
+
 def test_get_feature_list(saved_feature_list):
     """
     Test get feature list using feature list name

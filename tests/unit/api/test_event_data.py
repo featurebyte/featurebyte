@@ -296,6 +296,36 @@ def test_event_data__save__feature_store_not_saved_exception(snowflake_event_dat
     assert expect_msg in str(exc.value)
 
 
+def test_info(saved_event_data):
+    """
+    Test info
+    """
+    verbose_info = saved_event_data.info(verbose=True)
+    non_verbose_info = saved_event_data.info(verbose=False)
+    expected_non_verbose_info = {
+        "name": "sf_event_data",
+        "event_timestamp_column": "event_timestamp",
+        "record_creation_date_column": "created_at",
+    }
+    expected_verbose_info = {
+        **expected_non_verbose_info,
+        "columns": [
+            {"entity": None, "name": "col_int", "var_type": "INT"},
+            {"entity": None, "name": "col_float", "var_type": "FLOAT"},
+            {"entity": None, "name": "col_char", "var_type": "CHAR"},
+            {"entity": None, "name": "col_text", "var_type": "VARCHAR"},
+            {"entity": None, "name": "col_binary", "var_type": "BINARY"},
+            {"entity": None, "name": "col_boolean", "var_type": "BOOL"},
+            {"entity": None, "name": "event_timestamp", "var_type": "TIMESTAMP"},
+            {"entity": None, "name": "created_at", "var_type": "TIMESTAMP"},
+            {"entity": None, "name": "cust_id", "var_type": "INT"},
+        ],
+    }
+    assert non_verbose_info == expected_non_verbose_info
+    assert verbose_info.items() > expected_verbose_info.items()
+    assert set(verbose_info).difference(expected_verbose_info) == {"created_at", "updated_at"}
+
+
 def test_event_data__save__exceptions(saved_event_data):
     """
     Test save event data failure due to conflict

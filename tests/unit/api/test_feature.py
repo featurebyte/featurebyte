@@ -247,6 +247,30 @@ def saved_feature_fixture(
     return float_feature
 
 
+def test_info(saved_feature):
+    """
+    Test info
+    """
+    verbose_info = saved_feature.info(verbose=True)
+    non_verbose_info = saved_feature.info(verbose=False)
+    expected_version = {
+        "is_default": None,
+        "name": "sum_1d",
+        "online_enabled": None,
+        "readiness": "DRAFT",
+        "var_type": "FLOAT",
+    }
+    expected_info = {"default_version_mode": "AUTO", "name": "sum_1d"}
+    assert non_verbose_info.items() > expected_info.items()
+    assert verbose_info.items() > expected_info.items()
+    assert verbose_info["default_version"] == non_verbose_info["default_version"]
+    assert verbose_info["default_version"].items() > expected_version.items()
+    assert verbose_info["versions"] == non_verbose_info["versions"]
+    assert len(verbose_info["versions"]) == 1
+    assert verbose_info["versions"][0].items() > expected_version.items()
+    assert set(verbose_info).difference(non_verbose_info) == {"created_at", "updated_at"}
+
+
 def test_feature_save__exception_due_to_event_data_not_saved(float_feature, snowflake_event_data):
     """
     Test feature save failure due to event data not saved
