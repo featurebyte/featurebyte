@@ -176,6 +176,28 @@ def fb_assert_frame_equal(df, df_expected, dict_like_columns=None):
             assert_dict_equal(df[col], df_expected[col])
 
 
+def add_inter_events_derived_columns(df, event_view):
+    """
+    Add inter-events columns such as lags
+    """
+
+    df = df.copy()
+    df["original_index"] = df.index
+    df_sorted = df.sort_values("EVENT_TIMESTAMP")
+    by_column = "CUST_ID"
+
+    df_sorted[f"PREV_AMOUNT_BY_{by_column}"] = df_sorted.groupby(by_column)["AMOUNT"].shift(1)
+    event_view[f"PREV_AMOUNT_BY_{by_column}"] = event_view["AMOUNT"].lag(by_column)
+
+    df_sorted.set_index("original_index", inplace=True)
+    df[f"PREV_AMOUNT_BY_{by_column}"] = df["original_index"].map(
+        df_sorted[f"PREV_AMOUNT_BY_{by_column}"]
+    )
+
+    del df["original_index"]
+    return df
+
+
 def test_aggregation(
     transaction_data_upper_case,
     training_events,
@@ -189,13 +211,14 @@ def test_aggregation(
     # Test cases listed here. This is written this way instead of parametrized test is so that all
     # features can be retrieved in one historical request
     feature_parameters = [
-        ("avg", "avg_24h", lambda x: x.mean(), None),
-        ("min", "min_24h", lambda x: x.min(), None),
-        ("max", "max_24h", lambda x: x.max(), None),
-        ("sum", "sum_24h", sum_func, None),
-        ("count", "count_24h", lambda x: len(x), None),
-        ("na_count", "na_count_24h", lambda x: x.isnull().sum(), None),
-        ("count", "count_by_action_24h", lambda x: len(x), "PRODUCT_ACTION"),
+        ("AMOUNT", "avg", "avg_24h", lambda x: x.mean(), None),
+        ("AMOUNT", "min", "min_24h", lambda x: x.min(), None),
+        ("AMOUNT", "max", "max_24h", lambda x: x.max(), None),
+        ("AMOUNT", "sum", "sum_24h", sum_func, None),
+        ("AMOUNT", "count", "count_24h", lambda x: len(x), None),
+        ("AMOUNT", "na_count", "na_count_24h", lambda x: x.isnull().sum(), None),
+        ("AMOUNT", "count", "count_by_action_24h", lambda x: len(x), "PRODUCT_ACTION"),
+        ("PREV_AMOUNT_BY_CUST_ID", "avg", "prev_amount_avg_24h", lambda x: x.mean(), None),
     ]
 
     event_view = EventView.from_event_data(event_data)
@@ -207,16 +230,26 @@ def test_aggregation(
     )
 
     # Some fixed parameters
-    variable_column_name = "AMOUNT"
     entity_column_name = "USER_ID"
     window_size = 3600 * 24
     event_timestamp_column_name = "EVENT_TIMESTAMP"
+
+    # Add inter-event derived columns
+    transaction_data_upper_case = add_inter_events_derived_columns(
+        transaction_data_upper_case, event_view
+    )
 
     features = []
     df_expected_all = [training_events]
 
     elapsed_time_ref = 0
-    for agg_name, feature_name, agg_func_callable, category in feature_parameters:
+    for (
+        variable_column_name,
+        agg_name,
+        feature_name,
+        agg_func_callable,
+        category,
+    ) in feature_parameters:
 
         feature_group = event_view.groupby(entity_column_name, category=category).aggregate(
             variable_column_name,
