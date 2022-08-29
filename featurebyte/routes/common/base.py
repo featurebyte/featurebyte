@@ -627,7 +627,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         Dict[str, Any]
             Collection name to controller mapping
         """
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel,cyclic-import
         from featurebyte.routes.entity.controller import EntityController
         from featurebyte.routes.event_data.controller import EventDataController
         from featurebyte.routes.feature.controller import FeatureController
