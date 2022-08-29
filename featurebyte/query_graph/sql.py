@@ -687,6 +687,35 @@ class CastNode(ExpressionNode):
 
 
 @dataclass
+class LagNode(ExpressionNode):
+    """Node for lag operation"""
+
+    expr: ExpressionNode
+    entity_columns: list[str]
+    timestamp_column: str
+
+    @property
+    def sql(self) -> Expression:
+        partition_by = [
+            expressions.Column(this=expressions.Identifier(this=col, quoted=True))
+            for col in self.entity_columns
+        ]
+        order = expressions.Order(
+            expressions=[
+                expressions.Ordered(
+                    this=expressions.Identifier(this=self.timestamp_column, quoted=True)
+                )
+            ]
+        )
+        output_expr = expressions.Window(
+            this=expressions.Anonymous(this="LAG", expressions=[self.expr.sql]),
+            partition_by=partition_by,
+            order=order,
+        )
+        return output_expr
+
+
+@dataclass
 class BuildTileNode(TableNode):
     """Tile builder node
 
@@ -1145,6 +1174,7 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.NOT,
     NodeType.COUNT_DICT_TRANSFORM,
     NodeType.CAST,
+    NodeType.LAG,
 }
 
 
@@ -1242,6 +1272,13 @@ def make_expression_node(
             table_node=table_node,
             expr=input_expr_node,
             new_type=parameters["type"],
+        )
+    elif node_type == NodeType.LAG:
+        sql_node = LagNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            entity_columns=parameters["entity_columns"],
+            timestamp_column=parameters["timestamp_column"],
         )
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")

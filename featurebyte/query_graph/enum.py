@@ -58,6 +58,9 @@ class NodeType(str, Enum):
     COUNT_DICT_TRANSFORM = "count_dict_transform"
     COSINE_SIMILARITY = "cosine_similarity"
 
+    # window functions related operations
+    LAG = "lag"
+
     # operations with side effect
     INPUT = "input"
 

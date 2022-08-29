@@ -13,7 +13,9 @@ from featurebyte.api.event_data import EventData
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.core.util import series_unary_operation
 from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.query_graph.enum import NodeType
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import EventViewGroupBy
@@ -33,7 +35,6 @@ class EventViewColumn(Series):
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
-
         Parameters
         ----------
         other: Series
@@ -48,6 +49,29 @@ class EventViewColumn(Series):
 
     def unary_op_series_params(self) -> dict[str, Any]:
         return {"event_data_id": self.event_data_id}
+
+    @typechecked
+    def lag(self, entity_columns: Union[str, list[str]]) -> EventViewColumn:
+        """
+        Lag operation
+
+        Parameters
+        ----------
+        entity_columns : str | list[str]
+            Entity columns used when retrieving the lag value
+        """
+        if not isinstance(entity_columns, list):
+            entity_columns = [entity_columns]
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.LAG,
+            output_var_type=self.var_type,
+            node_params={
+                "entity_columns": entity_columns,
+                "timestamp_column": self._parent.timestamp_column,
+            },
+            **self.unary_op_series_params(),
+        )
 
 
 class EventView(ProtectedColumnsQueryObject, Frame):
