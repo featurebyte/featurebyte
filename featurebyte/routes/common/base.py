@@ -7,7 +7,6 @@ from typing import Any, Dict, Generic, Iterator, List, Literal, Optional, Type, 
 
 import copy
 from http import HTTPStatus
-from importlib import import_module
 
 import numpy as np
 import pandas as pd
@@ -617,6 +616,40 @@ class BaseController(Generic[Document, PaginatedDocument]):
             ) from exc
 
     @classmethod
+    def collection_to_controller_class_map(
+        cls,
+    ) -> Dict[str, Any]:
+        """
+        Collection name to controller mapping
+
+        Returns
+        -------
+        Dict[str, Any]
+            Collection name to controller mapping
+        """
+        # pylint: disable=import-outside-toplevel
+        from featurebyte.routes.entity.controller import EntityController
+        from featurebyte.routes.event_data.controller import EventDataController
+        from featurebyte.routes.feature.controller import FeatureController
+        from featurebyte.routes.feature_job_setting_analysis.controller import (
+            FeatureJobSettingAnalysisController,
+        )
+        from featurebyte.routes.feature_list.controller import FeatureListController
+        from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
+        from featurebyte.routes.feature_store.controller import FeatureStoreController
+
+        controllers = [
+            EntityController,
+            EventDataController,
+            FeatureController,
+            FeatureJobSettingAnalysisController,
+            FeatureListController,
+            FeatureNamespaceController,
+            FeatureStoreController,
+        ]
+        return {controller.collection_name: controller for controller in controllers}  # type: ignore
+
+    @classmethod
     async def _retrieve_reference(
         cls,
         user: Any,
@@ -624,13 +657,7 @@ class BaseController(Generic[Document, PaginatedDocument]):
         collection_name: str,
         foreign_key_value: List[ObjectId] | ObjectId,
     ) -> Any:
-        controller_mod = import_module(f"featurebyte.routes.{collection_name}.controller")
-        controller_class = next(
-            getattr(controller_mod, attr)
-            for attr in dir(controller_mod)
-            if getattr(getattr(controller_mod, attr, object), "collection_name", None)
-            == collection_name
-        )
+        controller_class = cls.collection_to_controller_class_map()[collection_name]
         if isinstance(foreign_key_value, list):
             return [
                 await controller_class.get_info(
