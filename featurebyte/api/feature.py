@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional
 
 import time
 from http import HTTPStatus
@@ -185,8 +185,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
         -------
         FeatureNamespace
         """
-        feature_namespace = FeatureNamespace.get_by_id(id=self.feature_namespace_id)
-        return cast(FeatureNamespace, feature_namespace)
+        return FeatureNamespace.get_by_id(id=self.feature_namespace_id)
 
     @property
     def is_default(self) -> bool:

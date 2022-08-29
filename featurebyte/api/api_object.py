@@ -3,7 +3,7 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Type, cast
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 
 import time
 from http import HTTPStatus
@@ -23,6 +23,8 @@ from featurebyte.exception import (
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.schema.task import TaskStatus
+
+ApiObjectT = TypeVar("ApiObjectT", bound="ApiGetObject")
 
 
 class ApiGetObject(FeatureByteBaseDocumentModel):
@@ -48,7 +50,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         return {}
 
     @classmethod
-    def get(cls, name: str) -> ApiGetObject:
+    def get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
         """
         Retrieve object dictionary from the persistent given object name
 
@@ -59,7 +61,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
 
         Returns
         -------
-        ApiGetObject
+        ApiObjectT
             ApiObject object of the given event data name
 
         Raises
@@ -84,8 +86,8 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
 
     @classmethod
     def get_by_id(
-        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
-    ) -> ApiGetObject:
+        cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> ApiObjectT:
         """
         Get the API object by specifying the object ID
 
@@ -96,7 +98,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
 
         Returns
         -------
-        ApiGetObject
+        ApiObjectT
             ApiGetObject object of the given object ID
 
         Raises
@@ -142,7 +144,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
                 raise RecordRetrievalException(response, "Failed to list object names.")
         return output
 
-    def audit(self) -> Any:
+    def audit(self) -> dict[str, Any]:
         """
         Get list of persistent audit logs which records the object update history
 
@@ -159,7 +161,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         client = Configurations().get_client()
         response = client.get(url=f"{self._route}/audit/{self.id}")
         if response.status_code == HTTPStatus.OK:
-            return response.json()
+            return dict(response.json())
         raise RecordRetrievalException(response, "Failed to list object audit log.")
 
     @typechecked
@@ -210,7 +212,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         client = Configurations().get_client()
         response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})
         if response.status_code == HTTPStatus.OK:
-            return cast(Dict[str, Any], response.json())
+            return dict(response.json())
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
 
@@ -377,6 +379,6 @@ class ApiObject(ApiGetObject):
             logger.debug("Retrieving task result", extra={"output_url": output_url})
             result_response = client.get(url=output_url)
             if result_response.status_code == HTTPStatus.OK:
-                return cast(Dict[str, Any], result_response.json())
+                return dict(result_response.json())
             raise RecordRetrievalException(response=result_response)
         raise RecordCreationException(response=create_response)
