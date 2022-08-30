@@ -65,11 +65,13 @@ def test_feature_model(snowflake_event_view_with_entity, feature_model_dict):
     )
     feature = feature_group["sum_30m"]
     feature_model_dict.pop("event_data_ids")
+    feature_model_dict.pop("entity_ids")
     assert (
         feature.dict(
             exclude={
                 "id": True,
                 "event_data_ids": True,
+                "entity_ids": True,
                 "tabular_source": True,
                 "feature_namespace_id": True,
             }

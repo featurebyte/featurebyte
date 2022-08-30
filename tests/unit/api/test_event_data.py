@@ -12,7 +12,6 @@ from pydantic import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData, EventDataColumn
-from featurebyte.api.feature_store import FeatureStore
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
@@ -233,7 +232,10 @@ def test_event_data_column__as_entity(snowflake_event_data):
 
     with pytest.raises(RecordRetrievalException) as exc:
         snowflake_event_data.col_int.as_entity("some_random_entity")
-    assert 'Entity name "some_random_entity" not found!' in str(exc.value)
+    expected_msg = (
+        'Entity (name: "some_random_entity") not found. Please save the Entity object first.'
+    )
+    assert expected_msg in str(exc.value)
 
     # remove entity association
     snowflake_event_data.col_int.as_entity(None)
@@ -268,7 +270,7 @@ def test_event_data_column__as_entity__saved_event_data__record_update_exception
     saved_event_data, config
 ):
     """
-    Test setting a column in the event data as entity (record update exception)
+    Test setting a column in the event data as entity (record retrieve exception)
     """
     _ = config
 
@@ -276,7 +278,7 @@ def test_event_data_column__as_entity__saved_event_data__record_update_exception
     entity.save()
 
     # test unexpected exception
-    with pytest.raises(RecordUpdateException):
+    with pytest.raises(RecordRetrievalException):
         with patch("featurebyte.api.api_object.Configurations"):
             saved_event_data.col_int.as_entity("customer")
 

@@ -1,9 +1,12 @@
 {
-    "_id": "63086e98f9b740de42f23fbe",
-    "event_data_ids": [
-        "63086e98f9b740de42f23fbb"
+    "_id": "630d7fa8f1275c864fde8495",
+    "entity_ids": [
+        "630d7fa8f1275c864fde8493"
     ],
-    "feature_namespace_id": "63086e98f9b740de42f23fbf",
+    "event_data_ids": [
+        "630d7fa8f1275c864fde8492"
+    ],
+    "feature_namespace_id": "630d7fa8f1275c864fde8496",
     "graph": {
         "backward_edges": {
             "groupby_1": [
@@ -114,7 +117,7 @@
         "groupby_1"
     ],
     "tabular_source": {
-        "feature_store_id": "63086e98f9b740de42f23fb9",
+        "feature_store_id": "630d7fa8f1275c864fde8490",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
@@ -122,5 +125,5 @@
         }
     },
     "var_type": "FLOAT",
-    "version": "V220826"
+    "version": "V220830"
 }

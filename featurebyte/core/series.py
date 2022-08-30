@@ -48,7 +48,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
         )
 
-    def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
+    def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
@@ -181,9 +181,9 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             output of the binary operation
         """
         if isinstance(other, Series):
-            binary_op_series_params = self._binary_op_series_params(other)
+            binary_op_series_params = self.binary_op_series_params(other)
         else:
-            binary_op_series_params = self._binary_op_series_params()
+            binary_op_series_params = self.binary_op_series_params()
         return series_binary_operation(
             input_series=self,
             other=other,

@@ -31,6 +31,7 @@ class FeatureCreate(FeatureByteBaseModel):
     tabular_source: TabularSource
     version: Optional[FeatureVersionIdentifier]
     event_data_ids: List[PydanticObjectId] = Field(min_items=1)
+    entity_ids: List[PydanticObjectId] = Field(min_items=1)
     feature_namespace_id: Optional[PydanticObjectId]
 
 

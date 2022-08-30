@@ -133,4 +133,5 @@ class CountDictAccessor:
             other=other,
             node_type=NodeType.COSINE_SIMILARITY,
             output_var_type=DBVarType.FLOAT,
+            **self._obj.binary_op_series_params(),
         )
