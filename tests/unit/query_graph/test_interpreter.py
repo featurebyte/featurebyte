@@ -123,13 +123,17 @@ def test_graph_interpreter_multi_assign(graph, node_input):
     expected = textwrap.dedent(
         """
         SELECT
-          "ts" AS "ts",
-          "cust_id" AS "cust_id",
-          "a" AS "a",
-          "b" AS "b",
-          ("a" + "b") AS "c",
-          ("a" + "b") AS "c2"
-        FROM "db"."public"."event_table"
+          *
+        FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b",
+              ("a" + "b") AS "c",
+              ("a" + "b") AS "c2"
+            FROM "db"."public"."event_table"
+        )
         WHERE
           "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
           AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
@@ -180,12 +184,16 @@ def test_graph_interpreter_binary_operations(graph, node_input, node_type, expec
     expected = textwrap.dedent(
         f"""
         SELECT
-          "ts" AS "ts",
-          "cust_id" AS "cust_id",
-          "a" AS "a",
-          "b" AS "b",
-          ({expected_expr}) AS "a2"
-        FROM "db"."public"."event_table"
+          *
+        FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b",
+              ({expected_expr}) AS "a2"
+            FROM "db"."public"."event_table"
+        )
         WHERE
           "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
           AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
@@ -353,12 +361,16 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
               FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
                 SELECT
-                  "ts" AS "ts",
-                  "cust_id" AS "cust_id",
-                  "a" AS "a",
-                  "b" AS "b",
-                  ("a" + "b") AS "c"
-                FROM "db"."public"."event_table"
+                  *
+                FROM (
+                    SELECT
+                      "ts" AS "ts",
+                      "cust_id" AS "cust_id",
+                      "a" AS "a",
+                      "b" AS "b",
+                      ("a" + "b") AS "c"
+                    FROM "db"."public"."event_table"
+                )
                 WHERE
                   "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
                   AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
@@ -600,9 +612,13 @@ def test_graph_interpreter_snowflake(graph):
               FLOOR((DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
                 SELECT
-                  "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
-                  "CUST_ID" AS "CUST_ID"
-                FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
+                  *
+                FROM (
+                    SELECT
+                      "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
+                      "CUST_ID" AS "CUST_ID"
+                    FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
+                )
                 WHERE
                   "SERVER_TIMESTAMP" >= CAST(__FB_START_DATE AS TIMESTAMP)
                   AND "SERVER_TIMESTAMP" < CAST(__FB_END_DATE AS TIMESTAMP)

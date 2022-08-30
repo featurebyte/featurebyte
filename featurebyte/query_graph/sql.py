@@ -247,8 +247,9 @@ class BuildTileInputNode(GenericInputNode):
         Expression
             A sqlglot Expression object
         """
-        select_expr = super().sql
-        assert isinstance(select_expr, expressions.Select)
+        table_expr = super().sql
+        assert isinstance(table_expr, expressions.Select)
+        select_expr = select("*").from_(table_expr.subquery())
         timestamp = escape_column_name(self.timestamp)
         start_cond = (
             f"{timestamp} >= CAST({InternalName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
