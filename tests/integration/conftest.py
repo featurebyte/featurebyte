@@ -149,12 +149,14 @@ def transaction_dataframe():
             ),
         ]
     )
+    # make timestamps unique (avoid ties when getting lags, for convenience of writing tests)
+    event_timestamps += rng.rand(event_timestamps.shape[0]) * pd.Timedelta("1ms")
 
     data = pd.DataFrame(
         {
             "event_timestamp": event_timestamps,
             "created_at": pd.date_range("2001-01-01", freq="1min", periods=row_number),
-            "cust_id": rng.randint(1, 10, row_number),
+            "cust_id": rng.randint(1, 1000, row_number),
             "user_id": rng.randint(1, 10, row_number),
             "product_action": rng.choice(product_actions, row_number),
             "session_id": rng.randint(100, 1000, row_number),
@@ -165,8 +167,6 @@ def transaction_dataframe():
     data["amount"] = amount
     data["created_at"] += rng.randint(1, 100, row_number).cumsum() * pd.Timedelta(seconds=1)
     data["created_at"] = data["created_at"].astype(int)
-    data["cust_id"] = data["cust_id"].cumsum()
-    data["cust_id"] = data["cust_id"].sample(frac=1.0).reset_index(drop=True)
     data["session_id"] = data["session_id"].sample(frac=1.0).reset_index(drop=True)
     yield data
 

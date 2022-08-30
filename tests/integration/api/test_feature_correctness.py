@@ -1,6 +1,7 @@
 import json
 import time
 from collections import defaultdict
+from decimal import Decimal
 
 import numpy as np
 import pandas as pd
@@ -167,6 +168,9 @@ def fb_assert_frame_equal(df, df_expected, dict_like_columns=None):
         regular_columns = [col for col in regular_columns if col not in dict_like_columns]
 
     if regular_columns:
+        for col in regular_columns:
+            if isinstance(df[col].iloc[0], Decimal):
+                df[col] = df[col].astype(int)
         pd.testing.assert_frame_equal(
             df[regular_columns], df_expected[regular_columns], check_dtype=False
         )
@@ -196,6 +200,27 @@ def add_inter_events_derived_columns(df, event_view):
 
     del df["original_index"]
     return df
+
+
+def check_feature_preview(feature_list, df_expected, credentials, dict_like_columns, n_points=10):
+    """
+    Check correctness of feature preview result
+    """
+    tic = time.time()
+    sampled_points = df_expected.sample(n=n_points, random_state=0)
+    for _, preview_time_point in sampled_points.iterrows():
+        preview_param = {
+            "POINT_IN_TIME": preview_time_point["POINT_IN_TIME"],
+            "uid": preview_time_point["USER_ID"],
+        }
+        output = feature_list[feature_list.feature_names].preview(
+            preview_param, credentials=credentials
+        )
+        output.rename({"uid": "USER_ID"}, axis=1, inplace=True)
+        df_expected = pd.DataFrame([preview_time_point], index=output.index)
+        fb_assert_frame_equal(output, df_expected, dict_like_columns)
+    elapsed = time.time() - tic
+    print(f"elapsed check_feature_preview: {elapsed:.2f}s")
 
 
 def test_aggregation(
@@ -280,6 +305,10 @@ def test_aggregation(
 
     df_expected = pd.concat(df_expected_all, axis=1)
     feature_list = FeatureList(features)
+
+    dict_like_columns = ["count_by_action_24h"]
+    check_feature_preview(feature_list, df_expected, config.credentials, dict_like_columns)
+
     tic = time.time()
     df_historical_features = feature_list.get_historical_features(
         training_events, credentials=config.credentials, serving_names_mapping={"uid": "USER_ID"}
@@ -295,4 +324,4 @@ def test_aggregation(
         ["POINT_IN_TIME", entity_column_name]
     ).reset_index(drop=True)
 
-    fb_assert_frame_equal(df_historical_features, df_expected, ["count_by_action_24h"])
+    fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)
