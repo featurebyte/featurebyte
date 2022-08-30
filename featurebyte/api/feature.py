@@ -235,7 +235,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
         """
         return self.feature_namespace.info(verbose=verbose)
 
-    def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
+    def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
@@ -249,13 +249,15 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
         -------
         dict[str, Any]
         """
-        event_data_ids = list(self.event_data_ids)
+        event_data_ids = set(self.event_data_ids)
+        entity_ids = set(self.entity_ids)
         if other is not None:
-            event_data_ids.extend(getattr(other, "event_data_ids", []))
-        return {"event_data_ids": list(set(event_data_ids))}
+            event_data_ids = event_data_ids.union(getattr(other, "event_data_ids", []))
+            entity_ids = entity_ids.union(getattr(other, "entity_ids", []))
+        return {"event_data_ids": sorted(event_data_ids), "entity_ids": sorted(entity_ids)}
 
     def unary_op_series_params(self) -> dict[str, Any]:
-        return {"event_data_ids": list(self.event_data_ids)}
+        return {"event_data_ids": self.event_data_ids, "entity_ids": self.entity_ids}
 
     def _validate_point_in_time_and_serving_name(
         self, point_in_time_and_serving_name: dict[str, Any]

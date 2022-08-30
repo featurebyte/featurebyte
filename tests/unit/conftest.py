@@ -577,11 +577,11 @@ def test_save_payload_fixtures(
     snowflake_feature_store,
     snowflake_event_data,
     feature_group,
+    cust_id_entity,
 ):
     """
     Write request payload for testing api route
     """
-    entity = Entity(name="customer", serving_names=["cust_id"])
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_2h = feature_group["sum_2h"]
     feature_list = FeatureList([feature_sum_30m], name="sf_feature_list")
@@ -591,7 +591,7 @@ def test_save_payload_fixtures(
 
     if update_fixtures:
         api_object_name_pairs = [
-            (entity, "entity"),
+            (cust_id_entity, "entity"),
             (snowflake_feature_store, "feature_store"),
             (snowflake_event_data, "event_data"),
             (feature_sum_30m, "feature_sum_30m"),

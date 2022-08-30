@@ -13,7 +13,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
-from featurebyte.api.util import get_entity
+from featurebyte.api.entity import Entity
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.config import Configurations, Credentials
@@ -45,8 +45,8 @@ class EventDataColumn(FeatureByteBaseModel, ParentMixin):
         if entity_name is None:
             entity_id = None
         else:
-            entity_dict = get_entity(entity_name)
-            entity_id = entity_dict["_id"]
+            entity = Entity.get(entity_name)
+            entity_id = entity.id
 
         columns_info = []
         for col in self.parent.columns_info:

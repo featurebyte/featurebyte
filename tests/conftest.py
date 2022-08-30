@@ -5,6 +5,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+from bson.objectid import ObjectId
 
 
 def pytest_configure(config):
@@ -115,7 +116,8 @@ def feature_model_dict_feature():
         "readiness": None,
         "version": "V220710",
         "online_enabled": None,
-        "event_data_ids": [],
+        "event_data_ids": [ObjectId()],
+        "entity_ids": [ObjectId()],
         "created_at": None,
         "updated_at": None,
         "user_id": None,

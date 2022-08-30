@@ -29,7 +29,7 @@ class EventViewColumn(Series):
     _parent: Optional[EventView] = PrivateAttr(default=None)
     event_data_id: PydanticObjectId = Field(allow_mutation=False)
 
-    def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
+    def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 

@@ -1,10 +1,10 @@
 {
-    "_id": "63086e98f9b740de42f23fc7",
-    "default_version_id": "63086e98f9b740de42f23fbe",
+    "_id": "630d7fa8f1275c864fde849e",
+    "default_version_id": "630d7fa8f1275c864fde8495",
     "default_version_mode": "AUTO",
     "name": "sum_30m",
     "readiness": "DRAFT",
     "version_ids": [
-        "63086e98f9b740de42f23fbe"
+        "630d7fa8f1275c864fde8495"
     ]
 }
