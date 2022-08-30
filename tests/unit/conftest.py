@@ -333,7 +333,7 @@ def grouped_event_view_fixture(snowflake_event_view_with_entity):
 
 
 @pytest.fixture(name="feature_group")
-def feature_group_fixture(grouped_event_view):
+def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_data_with_entity):
     """
     FeatureList fixture
     """
@@ -354,6 +354,8 @@ def feature_group_fixture(grouped_event_view):
     for feature in feature_group.feature_objects.values():
         assert grouped_event_view.obj.event_data_id in feature.event_data_ids
         assert id(feature.graph.nodes) == id(global_graph.nodes)
+        assert feature.event_data_ids == [snowflake_event_data_with_entity.id]
+        assert feature.entity_ids == [cust_id_entity.id]
     yield feature_group
 
 
