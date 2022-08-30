@@ -3,7 +3,7 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union
 
 from typeguard import typechecked
 
@@ -36,7 +36,7 @@ class EventViewGroupBy(OpsMixin):
 
         # construct column name entity mapping
         try:
-            event_data = cast(EventData, EventData.get_by_id(obj.event_data_id))
+            event_data = EventData.get_by_id(obj.event_data_id)
             columns_info = event_data.columns_info
         except RecordRetrievalException:
             columns_info = obj.columns_info

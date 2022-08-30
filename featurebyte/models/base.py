@@ -147,10 +147,14 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
 
     id: PydanticObjectId
         Identity value of the child class document model object
+    user_id: PydanticObjectId
+        Identity value of the user created this document
     name: Optional[StrictStr]
         Name of the child class document model object (value is None when name has not been set)
     created_at: Optional[datetime]
         Record creation datetime when the document get stored at the persistent
+    updated_at: Optional[datetime]
+        Record update datetime when the document get updated at the persistent
     """
 
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)

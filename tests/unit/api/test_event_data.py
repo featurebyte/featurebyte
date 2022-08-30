@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData, EventDataColumn
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
@@ -295,6 +296,36 @@ def test_event_data__save__feature_store_not_saved_exception(snowflake_event_dat
     assert expect_msg in str(exc.value)
 
 
+def test_info(saved_event_data):
+    """
+    Test info
+    """
+    verbose_info = saved_event_data.info(verbose=True)
+    non_verbose_info = saved_event_data.info(verbose=False)
+    expected_non_verbose_info = {
+        "name": "sf_event_data",
+        "event_timestamp_column": "event_timestamp",
+        "record_creation_date_column": "created_at",
+    }
+    expected_verbose_info = {
+        **expected_non_verbose_info,
+        "columns": [
+            {"entity": None, "name": "col_int", "var_type": "INT"},
+            {"entity": None, "name": "col_float", "var_type": "FLOAT"},
+            {"entity": None, "name": "col_char", "var_type": "CHAR"},
+            {"entity": None, "name": "col_text", "var_type": "VARCHAR"},
+            {"entity": None, "name": "col_binary", "var_type": "BINARY"},
+            {"entity": None, "name": "col_boolean", "var_type": "BOOL"},
+            {"entity": None, "name": "event_timestamp", "var_type": "TIMESTAMP"},
+            {"entity": None, "name": "created_at", "var_type": "TIMESTAMP"},
+            {"entity": None, "name": "cust_id", "var_type": "INT"},
+        ],
+    }
+    assert non_verbose_info == expected_non_verbose_info
+    assert verbose_info.items() > expected_verbose_info.items()
+    assert set(verbose_info).difference(expected_verbose_info) == {"created_at", "updated_at"}
+
+
 def test_event_data__save__exceptions(saved_event_data):
     """
     Test save event data failure due to conflict
@@ -314,79 +345,6 @@ def test_event_data__record_creation_exception(snowflake_event_data):
     with pytest.raises(RecordCreationException):
         with patch("featurebyte.api.api_object.Configurations"):
             snowflake_event_data.save()
-
-
-def test_event_data__info__not_saved_event_data(
-    snowflake_feature_store, snowflake_event_data, event_data_dict
-):
-    """
-    Test info on not-saved event data
-    """
-    snowflake_event_data.event_timestamp_column = "col_int"
-    snowflake_event_data.record_creation_date_column = "col_text"
-    output = snowflake_event_data.info()
-    assert output == {
-        "id": snowflake_event_data.id,
-        "user_id": None,
-        "name": "sf_event_data",
-        "record_creation_date_column": "col_text",
-        "created_at": None,
-        "updated_at": None,
-        "default_feature_job_setting": None,
-        "event_timestamp_column": "col_int",
-        "status": None,
-        "tabular_source": event_data_dict["tabular_source"],
-        "columns_info": event_data_dict["columns_info"],
-    }
-    assert isinstance(snowflake_event_data.tabular_source.feature_store_id, ObjectId)
-
-    # check unhandled response status code
-    with pytest.raises(RecordRetrievalException):
-        with patch("featurebyte.api.event_data.Configurations"):
-            snowflake_event_data.info()
-
-
-def test_event_data__info__saved_event_data(
-    snowflake_feature_store, saved_event_data, event_data_dict
-):
-    """
-    Test info on saved event data
-    """
-    saved_event_data_dict = saved_event_data.dict()
-
-    # perform some modifications
-    saved_event_data.event_timestamp_column = "col_int"
-    saved_event_data.record_creation_date_column = "col_text"
-    assert (
-        saved_event_data.event_timestamp_column != saved_event_data_dict["event_timestamp_column"]
-    )
-    assert (
-        saved_event_data.record_creation_date_column
-        != saved_event_data_dict["record_creation_date_column"]
-    )
-
-    # call info & check that all those modifications gone
-    output = saved_event_data.info()
-    assert saved_event_data.saved is True
-    assert (
-        output
-        == saved_event_data_dict
-        == {
-            "id": saved_event_data.id,
-            "user_id": None,
-            "name": "sf_event_data",
-            "record_creation_date_column": "created_at",
-            "created_at": saved_event_data.created_at,
-            "updated_at": None,
-            "default_feature_job_setting": None,
-            "event_timestamp_column": "event_timestamp",
-            "status": "DRAFT",
-            "tabular_source": event_data_dict["tabular_source"],
-            "columns_info": event_data_dict["columns_info"],
-        }
-    )
-    feature_store_id = saved_event_data.tabular_source.feature_store_id
-    assert isinstance(feature_store_id, ObjectId)
 
 
 def test_update_default_job_setting(snowflake_event_data, config):
@@ -596,17 +554,32 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
     assert expected_msg in str(exc.value)
 
 
-@patch("featurebyte.api.database_table.FeatureStore")
-def test_get_event_data__schema_has_been_changed(mock_feature_store_class, saved_event_data):
+@patch("featurebyte.api.database_table.FeatureStore.get_session")
+def test_get_event_data__schema_has_been_changed(mock_get_session, saved_event_data):
     """
     Test retrieving event data after table schema has been changed
     """
     recent_schema = {"column": "INT"}
-    mock_session = mock_feature_store_class.get_by_id.return_value.get_session.return_value
-    mock_session.list_table_schema.return_value = recent_schema
+    mock_get_session.return_value.list_table_schema.return_value = recent_schema
     with pytest.raises(TableSchemaHasBeenChangedError) as exc:
         EventData.get_by_id(saved_event_data.id)
     assert "Table schema has been changed." in str(exc.value)
+
+    # this is ok as additional column should not break backward compatibility
+    recent_schema = {
+        "col_binary": "BINARY",
+        "col_boolean": "BOOL",
+        "col_char": "CHAR",
+        "col_float": "FLOAT",
+        "col_int": "INT",
+        "col_text": "VARCHAR",
+        "created_at": "TIMESTAMP",
+        "cust_id": "INT",
+        "event_timestamp": "TIMESTAMP",
+        "additional_column": "INT",
+    }
+    mock_get_session.return_value.list_table_schema.return_value = recent_schema
+    _ = EventData.get_by_id(saved_event_data.id)
 
 
 def test_default_feature_job_setting_history(saved_event_data):

@@ -3,8 +3,9 @@ SnowflakeSession class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, OrderedDict
 
+import collections
 import json
 import os
 from enum import Enum
@@ -164,16 +165,16 @@ class SnowflakeSession(BaseSession):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-    ) -> dict[str, DBVarType]:
+    ) -> OrderedDict[str, DBVarType]:
         schema = self.execute_query(
             f'SHOW COLUMNS IN "{database_name}"."{schema_name}"."{table_name}"'
         )
-        column_name_type_map = {}
+        column_name_type_map = collections.OrderedDict()
         if schema is not None:
-            column_name_type_map = {
-                column_name: self._convert_to_internal_variable_type(json.loads(var_info))
-                for _, (column_name, var_info) in schema[["column_name", "data_type"]].iterrows()
-            }
+            for _, (column_name, var_info) in schema[["column_name", "data_type"]].iterrows():
+                column_name_type_map[column_name] = self._convert_to_internal_variable_type(
+                    json.loads(var_info)
+                )
         return column_name_type_map
 
     @staticmethod

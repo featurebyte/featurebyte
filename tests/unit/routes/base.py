@@ -301,13 +301,8 @@ class BaseApiTestSuite:
         response = test_api_client.get(
             f"{self.base_route}/audit/{ObjectId()}", params=unprocessable_params
         )
-        try:
-            assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-            assert response.json()["detail"] == expected_detail
-        except:
-            import pdb
-
-            pdb.set_trace()
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == expected_detail
 
     def test_list_501(self, test_api_client_persistent, create_success_response):
         """Test list (not implemented)"""
@@ -315,6 +310,32 @@ class BaseApiTestSuite:
         response = test_api_client.get(f"{self.base_route}", params={"search": "abc"})
         assert response.status_code == HTTPStatus.NOT_IMPLEMENTED
         assert response.json()["detail"] == "Query not supported."
+
+    async def setup_get_info(self, api_client, persistent, user_id):
+        """Setup for get_info route testing"""
+        pass
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
+        """Test retrieve info"""
+        test_api_client, persistent = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        await self.setup_get_info(test_api_client, persistent, user_id)
+        doc_id = create_response_dict["_id"]
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
+        verbose_response_dict = verbose_response.json()
+        assert verbose_response.status_code == HTTPStatus.OK
+        assert {"name", "created_at", "updated_at"}.issubset(verbose_response_dict)
+
+        non_verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
+        non_verbose_response_dict = non_verbose_response.json()
+        assert non_verbose_response.status_code == HTTPStatus.OK
+        assert {"name"}.issubset(non_verbose_response_dict)
+        assert {"created_at", "updated_at"}.intersection(non_verbose_response_dict) == set()
 
 
 class BaseAsyncApiTestSuite(BaseApiTestSuite):

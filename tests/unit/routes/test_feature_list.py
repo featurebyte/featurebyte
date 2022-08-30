@@ -86,6 +86,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         """
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
+            ("entity", "entity"),
             ("event_data", "event_data"),
             ("feature", "feature_sum_30m"),
         ]

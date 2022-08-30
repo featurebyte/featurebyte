@@ -7,6 +7,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
+from featurebyte.schema.feature import FeatureCreate
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -44,6 +45,25 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             yield payload
+
+    async def setup_get_info(self, api_client, persistent, user_id):
+        """Setup for get_info route testing"""
+        api_object_filename_pairs = [
+            ("feature_store", "feature_store"),
+            ("entity", "entity"),
+            ("event_data", "event_data"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
+
+        payload = self.load_payload(f"tests/fixtures/request_payloads/feature_sum_30m.json")
+        await persistent.insert_one(
+            collection_name="feature",
+            document=FeatureCreate(**payload).dict(by_alias=True),
+            user_id=user_id,
+        )
 
     @pytest.mark.asyncio
     async def test_update_200(self, test_api_client_persistent, create_success_response):

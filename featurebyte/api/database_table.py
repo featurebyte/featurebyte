@@ -100,7 +100,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         if "columns_info" in values:
             columns_info = [ColumnInfo(**dict(col)) for col in values["columns_info"]]
             schema = {col.name: col.var_type for col in columns_info}
-            if schema != recent_schema:
+            if not recent_schema.items() >= schema.items():
                 raise TableSchemaHasBeenChangedError("Table schema has been changed.")
         else:
             columns_info = [

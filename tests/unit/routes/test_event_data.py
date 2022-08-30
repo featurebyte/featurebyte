@@ -2,7 +2,6 @@
 Tests for EventData routes
 """
 import datetime
-import pdb
 from http import HTTPStatus
 
 import pytest
@@ -57,12 +56,14 @@ class TestEventDataApi(BaseApiTestSuite):
         """
         Setup for post route
         """
-        # save feature store
-        feature_store_payload = self.load_payload(
-            "tests/fixtures/request_payloads/feature_store.json"
-        )
-        response = api_client.post("/feature_store", json=feature_store_payload)
-        assert response.status_code == HTTPStatus.CREATED
+        api_object_filename_pairs = [
+            ("feature_store", "feature_store"),
+            ("entity", "entity"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""

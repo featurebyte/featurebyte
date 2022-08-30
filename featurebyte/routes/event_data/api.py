@@ -3,7 +3,7 @@ EventData API routes
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from http import HTTPStatus
 
@@ -151,3 +151,19 @@ async def list_default_feature_job_setting_history(
         )
         for record in history_values
     ]
+
+
+@router.get("/{event_data_id}/info")
+async def get_event_data_info(
+    request: Request, event_data_id: str, verbose: bool = True
+) -> dict[str, Any]:
+    """
+    Retrieve EventData info
+    """
+    info = await request.state.controller.get_info(
+        user=request.state.user,
+        persistent=request.state.persistent,
+        document_id=event_data_id,
+        verbose=bool(verbose),
+    )
+    return cast(Dict[str, Any], info)

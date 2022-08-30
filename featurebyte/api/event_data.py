@@ -184,38 +184,6 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         output.set_parent(self)
         return output
 
-    def info(self) -> dict[str, Any]:
-        """
-        Retrieve object info
-
-        If the object is not saved at persistent layer, object at memory info is retrieved.
-        Otherwise, object info at persistent layer is retrieved (local object will be overridden).
-
-        Returns
-        -------
-        dict[str, Any]
-            Saved object stored at persistent layer
-
-        Raises
-        ------
-        RecordRetrievalException
-            When unexpected retrieval failure
-        """
-        client = Configurations().get_client()
-        response = client.get(url=f"/event_data/{self.id}")
-        if response.status_code == HTTPStatus.OK:
-            type(self).__init__(
-                self,
-                **response.json(),
-                feature_store=self.feature_store,
-                credentials=self.credentials,
-                saved=True,
-            )
-            return self.dict()
-        if response.status_code == HTTPStatus.NOT_FOUND:
-            return self.dict()
-        raise RecordRetrievalException(response)
-
     @typechecked
     def update_record_creation_date_column(self, record_creation_date_column: str) -> None:
         """

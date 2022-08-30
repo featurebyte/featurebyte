@@ -24,6 +24,7 @@ from featurebyte.models.persistent import (
     QueryFilter,
 )
 from featurebyte.persistent.base import Persistent
+from featurebyte.routes.common.operation import DictProject, DictTransform
 from featurebyte.routes.common.schema import PaginationMixin
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
@@ -38,6 +39,15 @@ class BaseController(Generic[Document, PaginatedDocument]):
     collection_name: str = ""
     document_class: Type[FeatureByteBaseDocumentModel] = FeatureByteBaseDocumentModel
     paginated_document_class: Type[PaginationMixin] = PaginationMixin
+
+    # variables used to construct document info output
+    base_info_transform_rule = {
+        "name": DictProject(rule="name"),
+        "created_at": DictProject(rule="created_at", verbose_only=True),
+        "updated_at": DictProject(rule="updated_at", verbose_only=True),
+    }
+    info_transform: DictTransform = DictTransform(rule=base_info_transform_rule)
+    foreign_key_map: Dict[str, str] = {}
 
     @classmethod
     def to_class_name(cls, collection_name: str | None = None) -> str:
@@ -604,3 +614,143 @@ class BaseController(Generic[Document, PaginatedDocument]):
             raise HTTPException(
                 status_code=HTTPStatus.NOT_IMPLEMENTED, detail="Query not supported."
             ) from exc
+
+    @classmethod
+    def collection_to_controller_class_map(
+        cls,
+    ) -> Dict[str, Any]:
+        """
+        Collection name to controller mapping
+
+        Returns
+        -------
+        Dict[str, Any]
+            Collection name to controller mapping
+        """
+        # pylint: disable=import-outside-toplevel,cyclic-import
+        from featurebyte.routes.entity.controller import EntityController
+        from featurebyte.routes.event_data.controller import EventDataController
+        from featurebyte.routes.feature.controller import FeatureController
+        from featurebyte.routes.feature_job_setting_analysis.controller import (
+            FeatureJobSettingAnalysisController,
+        )
+        from featurebyte.routes.feature_list.controller import FeatureListController
+        from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
+        from featurebyte.routes.feature_store.controller import FeatureStoreController
+
+        controllers = [
+            EntityController,
+            EventDataController,
+            FeatureController,
+            FeatureJobSettingAnalysisController,
+            FeatureListController,
+            FeatureNamespaceController,
+            FeatureStoreController,
+        ]
+        return {controller.collection_name: controller for controller in controllers}  # type: ignore
+
+    @classmethod
+    async def _retrieve_reference(
+        cls,
+        user: Any,
+        persistent: Persistent,
+        collection_name: str,
+        foreign_key_value: List[ObjectId] | ObjectId,
+    ) -> Any:
+        controller_class = cls.collection_to_controller_class_map()[collection_name]
+        if isinstance(foreign_key_value, list):
+            return [
+                await controller_class.get_info(
+                    user=user, persistent=persistent, document_id=doc_id, verbose=False
+                )
+                for doc_id in foreign_key_value
+            ]
+        return await controller_class.get_info(
+            user=user, persistent=persistent, document_id=foreign_key_value, verbose=False
+        )
+
+    @classmethod
+    async def _populate_document(
+        cls, user: Any, persistent: Persistent, document: dict[str, Any]
+    ) -> dict[str, Any]:
+        output = {}
+        for key, value in document.items():
+            if key in cls.foreign_key_map and value is not None:
+                # example: foreign_key_map = {"event_data_ids": "event_data"}
+                # document contains "event_data_ids" key (list of event_data reference ids)
+                # a new key called "event_data" will be inserted into the dictionary
+                object_key = key.rsplit("_", 1)[0]
+                output[object_key] = await cls._retrieve_reference(
+                    user=user,
+                    persistent=persistent,
+                    collection_name=cls.foreign_key_map[key],
+                    foreign_key_value=value,
+                )
+            if isinstance(value, dict):
+                output[key] = await cls._populate_document(
+                    user=user, persistent=persistent, document=value
+                )
+            elif isinstance(value, list):
+                output[key] = [
+                    await cls._populate_document(user=user, persistent=persistent, document=val)
+                    if isinstance(val, dict)
+                    else val
+                    for val in value
+                ]
+            else:
+                output[key] = value
+        return output
+
+    @classmethod
+    async def populate_document(
+        cls, user: Any, persistent: Persistent, document: dict[str, Any]
+    ) -> dict[str, Any]:
+        """
+        Populate document by converting reference id value(s) to dictionary
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Persistent to retrieve docs from
+        document: dict[str, Any]
+            Document dictionary
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return await cls._populate_document(user=user, persistent=persistent, document=document)
+
+    @classmethod
+    async def get_info(
+        cls, user: Any, persistent: Persistent, document_id: ObjectId, verbose: bool = True
+    ) -> dict[str, Any]:
+        """
+        Construct info based on the given document_id
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Persistent to retrieve audit docs from
+        document_id: ObjectId
+            ID of document to retrieve
+        verbose: bool
+            Control verbose level of the info
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        document = await cls.get(user=user, persistent=persistent, document_id=document_id)
+        return cls.info_transform.transform(
+            input_value=await cls.populate_document(
+                user=user,
+                persistent=persistent,
+                document=document.dict(),
+            ),
+            verbose=verbose,
+        )

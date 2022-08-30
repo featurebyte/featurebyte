@@ -81,6 +81,27 @@ def test__getitem__retrieve_database_table(
     assert isinstance(database_table, DatabaseTable)
 
 
+def test_info(saved_snowflake_feature_store):
+    """
+    Test info
+    """
+    verbose_info = saved_snowflake_feature_store.info(verbose=True)
+    non_verbose_info = saved_snowflake_feature_store.info(verbose=False)
+    expected_info = {
+        "name": "sf_featurestore",
+        "type": "snowflake",
+        "details": {
+            "account": "sf_account",
+            "database": "sf_database",
+            "sf_schema": "sf_schema",
+            "warehouse": "sf_warehouse",
+        },
+    }
+    assert non_verbose_info == expected_info
+    assert verbose_info.items() > expected_info.items()
+    assert set(verbose_info).difference(expected_info) == {"created_at", "updated_at"}
+
+
 @pytest.fixture(name="saved_snowflake_feature_store")
 def saved_snowflake_feature_store_fixture(snowflake_feature_store, mock_get_persistent):
     """
