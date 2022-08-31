@@ -259,6 +259,16 @@ def test_aggregation(
     window_size = 3600 * 24
     event_timestamp_column_name = "EVENT_TIMESTAMP"
 
+    # Apply a filter condition
+    def _get_filtered_data(event_view_or_dataframe):
+        cond1 = event_view_or_dataframe["AMOUNT"] > 20
+        cond2 = event_view_or_dataframe["AMOUNT"].isnull()
+        mask = cond1 | cond2
+        return event_view_or_dataframe[mask]
+
+    event_view = _get_filtered_data(event_view)
+    transaction_data_upper_case = _get_filtered_data(transaction_data_upper_case)
+
     # Add inter-event derived columns
     transaction_data_upper_case = add_inter_events_derived_columns(
         transaction_data_upper_case, event_view
