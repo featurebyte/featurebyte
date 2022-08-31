@@ -209,7 +209,7 @@ def test_event_view_column_lag__invalid(snowflake_event_view):
     snowflake_event_view["prev_col_float"] = snowflake_event_view["col_float"].lag("cust_id")
     with pytest.raises(ValueError) as exc:
         (snowflake_event_view["prev_col_float"] + 123).lag("cust_id")
-    assert "lag() can only be applied once per column" in str(exc.value)
+    assert "lag can only be applied once per column" in str(exc.value)
 
 
 def test_event_view_copy(snowflake_event_view):

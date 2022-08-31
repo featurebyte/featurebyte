@@ -185,3 +185,14 @@ def test_cosine_similarity(input_node):
     parameters = {}
     node = sql.make_binary_operation_node(NodeType.COSINE_SIMILARITY, input_nodes, parameters)
     assert node.sql.sql() == "(F_COUNT_DICT_COSINE_SIMILARITY(a, b))"
+
+
+def test_lag(input_node):
+    """Test lag node"""
+    column = sql.StrExpressionNode(table_node=input_node, expr="val")
+    node = sql.make_expression_node(
+        input_sql_nodes=[column],
+        node_type=NodeType.LAG,
+        parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"]},
+    )
+    assert node.sql.sql() == 'LAG(val) OVER(PARTITION BY "cust_id" ORDER BY "ts")'
