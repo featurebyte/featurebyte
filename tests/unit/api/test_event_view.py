@@ -179,6 +179,29 @@ def test_unary_op_params(snowflake_event_view):
     assert output.event_data_id == column.event_data_id
 
 
+@pytest.mark.parametrize(
+    "column, expected_var_type",
+    [
+        ("event_timestamp", DBVarType.TIMESTAMP),
+        ("col_float", DBVarType.FLOAT),
+        ("col_text", DBVarType.VARCHAR),
+    ],
+)
+def test_event_view_column_lag(snowflake_event_view, column, expected_var_type):
+    """
+    Test EventViewColumn lag operation
+    """
+    lagged_column = snowflake_event_view[column].lag("cust_id")
+    assert lagged_column.node.output_type == NodeOutputType.SERIES
+    assert lagged_column.var_type == expected_var_type
+    assert lagged_column.node.type == NodeType.LAG
+    assert lagged_column.node.parameters == {
+        "timestamp_column": "event_timestamp",
+        "entity_columns": ["cust_id"],
+    }
+    assert lagged_column.event_data_id == snowflake_event_view[column].event_data_id
+
+
 def test_event_view_copy(snowflake_event_view):
     """
     Test event view copy

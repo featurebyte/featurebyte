@@ -59,6 +59,10 @@ class EventViewColumn(Series):
         ----------
         entity_columns : str | list[str]
             Entity columns used when retrieving the lag value
+
+        Returns
+        -------
+        EventViewColumn
         """
         if not isinstance(entity_columns, list):
             entity_columns = [entity_columns]
