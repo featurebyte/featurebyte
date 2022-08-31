@@ -54,7 +54,7 @@ def event_data_dict_fixture(snowflake_database_table):
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "status": None,
+        "status": "DRAFT",
     }
 
 

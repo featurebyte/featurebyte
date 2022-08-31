@@ -33,6 +33,9 @@ from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.session.manager import SessionManager, get_session
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
+# register tests.unit.routes.base so that API stacktrace display properly
+pytest.register_assert_rewrite("tests.unit.routes.base")
+
 
 @pytest.fixture(name="config_file")
 def config_file_fixture():
