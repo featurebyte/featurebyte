@@ -51,7 +51,7 @@ class EventViewColumn(Series):
         return {"event_data_id": self.event_data_id}
 
     @typechecked
-    def lag(self, entity_columns: Union[str, list[str]]) -> EventViewColumn:
+    def lag(self, entity_columns: Union[str, List[str]]) -> EventViewColumn:
         """
         Lag operation
 
