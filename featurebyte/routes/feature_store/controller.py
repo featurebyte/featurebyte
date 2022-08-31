@@ -8,6 +8,7 @@ from typing import Any
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.common.operation import DictProject, DictTransform
 from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreList
 
 
@@ -19,6 +20,12 @@ class FeatureStoreController(BaseController[FeatureStoreModel, FeatureStoreList]
     collection_name = FeatureStoreModel.collection_name()
     document_class = FeatureStoreModel
     paginated_document_class = FeatureStoreList
+    info_transform = DictTransform(
+        rule={
+            **BaseController.base_info_transform_rule,
+            "__root__": DictProject(rule=["type", "details"]),
+        }
+    )
 
     @classmethod
     async def create_feature_store(

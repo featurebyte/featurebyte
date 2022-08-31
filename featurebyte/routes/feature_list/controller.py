@@ -19,6 +19,7 @@ from featurebyte.models.feature import FeatureListModel, FeatureModel, FeatureRe
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.common.operation import DictProject, DictTransform
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListPaginatedList
 
 
@@ -30,6 +31,14 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
     collection_name = FeatureListModel.collection_name()
     document_class = FeatureListModel
     paginated_document_class = FeatureListPaginatedList
+    info_transform = DictTransform(
+        rule={
+            **BaseController.base_info_transform_rule,
+            "__root__": DictProject(rule=["readiness", "status"]),
+            "features": DictProject(rule="feature"),
+        }
+    )
+    foreign_key_map = {"feature_ids": FeatureModel.collection_name()}
 
     @classmethod
     async def _insert_feature_list_registry(
@@ -141,7 +150,9 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
                 feature_signatures.append(
                     FeatureSignature(id=feature.id, name=feature.name, version=feature.version)
                 )
-                if feature_store_id and (feature_store_id != feature.tabular_source[0]):
+                if feature_store_id and (
+                    feature_store_id != feature.tabular_source.feature_store_id
+                ):
                     raise HTTPException(
                         status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
                         detail=(
@@ -151,7 +162,7 @@ class FeatureListController(BaseController[FeatureListModel, FeatureListPaginate
                     )
 
                 # store previous feature store id
-                feature_store_id = feature.tabular_source[0]
+                feature_store_id = feature.tabular_source.feature_store_id
 
             # update document with readiness
             document = FeatureListModel(

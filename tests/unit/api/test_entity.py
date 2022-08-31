@@ -71,6 +71,18 @@ def test_entity__update_name(entity):
     assert another_entity.saved is False
 
 
+def test_info(entity):
+    """
+    Test info
+    """
+    verbose_info = entity.info(verbose=True)
+    non_verbose_info = entity.info(verbose=False)
+    expected_info = {"name": "customer", "serving_names": ["cust_id"]}
+    assert non_verbose_info == expected_info
+    assert verbose_info.items() > expected_info.items()
+    assert set(verbose_info).difference(expected_info) == {"created_at", "updated_at"}
+
+
 def test_entity_creation(entity):
     """
     Test entity creation

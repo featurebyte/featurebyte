@@ -18,6 +18,7 @@ from featurebyte.models.feature import (
 )
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.common.operation import DictProject, DictTransform
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceList,
@@ -33,6 +34,17 @@ class FeatureNamespaceController(BaseController[FeatureNamespaceModel, FeatureNa
     collection_name = FeatureNamespaceModel.collection_name()
     document_class = FeatureNamespaceModel
     paginated_document_class = FeatureNamespaceList
+    info_transform = DictTransform(
+        rule={
+            **BaseController.base_info_transform_rule,
+            "__root__": DictProject(rule=["default_version_mode", "default_version"]),
+            "versions": DictProject(rule="version"),
+        }
+    )
+    foreign_key_map = {
+        "version_ids": FeatureModel.collection_name(),
+        "default_version_id": FeatureModel.collection_name(),
+    }
 
     @classmethod
     async def create_feature_namespace(

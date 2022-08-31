@@ -68,7 +68,8 @@ def persistent_data_fixture():
     origin = repo.remotes.origin
     if origin:
         with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
-            origin.push(refspec=(f":{branch}"))
+            # add kill_after_timeout to avoid process blocking which causes timeout exception
+            origin.push(refspec=f":{branch}", kill_after_timeout=30)
 
 
 def _get_commit_messages(repo, branch, max_count=5):

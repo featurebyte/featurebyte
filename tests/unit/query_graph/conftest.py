@@ -392,16 +392,16 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
     """
     Frame test fixture
     """
-    column_var_type_map = {
-        "CUST_ID": DBVarType.INT,
-        "PRODUCT_ACTION": DBVarType.VARCHAR,
-        "VALUE": DBVarType.FLOAT,
-        "MASK": DBVarType.BOOL,
-    }
+    columns_info = [
+        {"name": "CUST_ID", "var_type": DBVarType.INT},
+        {"name": "PRODUCT_ACTION", "var_type": DBVarType.VARCHAR},
+        {"name": "VALUE", "var_type": DBVarType.FLOAT},
+        {"name": "MASK", "var_type": DBVarType.BOOL},
+    ]
     node = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
-            "columns": list(column_var_type_map.keys()),
+            "columns": [col["name"] for col in columns_info],
             "timestamp": "VALUE",
             "dbtable": {
                 "database_name": "db",
@@ -421,12 +421,16 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
     )
     yield Frame(
         feature_store=snowflake_feature_store,
-        tabular_source=(
-            snowflake_feature_store.id,
-            {"database_name": "db", "schema_name": "public", "table_name": "some_table_name"},
-        ),
+        tabular_source={
+            "feature_store_id": snowflake_feature_store.id,
+            "table_details": {
+                "database_name": "db",
+                "schema_name": "public",
+                "table_name": "some_table_name",
+            },
+        },
+        columns_info=columns_info,
         node=node,
-        column_var_type_map=column_var_type_map,
-        column_lineage_map={col: (node.name,) for col in column_var_type_map},
+        column_lineage_map={col["name"]: (node.name,) for col in columns_info},
         row_index_lineage=(node.name,),
     )

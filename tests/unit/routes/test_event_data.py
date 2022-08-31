@@ -2,7 +2,6 @@
 Tests for EventData routes
 """
 import datetime
-import pdb
 from http import HTTPStatus
 
 import pytest
@@ -33,8 +32,9 @@ class TestEventDataApi(BaseApiTestSuite):
         ),
         (
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
-            f'EventData (tabular_source: "(ObjectId(\'{payload["tabular_source"][0]}\'), '
-            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_table'})\") "
+            f"EventData (tabular_source: \"{{'feature_store_id': "
+            f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
+            "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_table'}}\") "
             'already exists. Get the existing object by `EventData.get(name="sf_event_data")`.',
         ),
     ]
@@ -43,16 +43,11 @@ class TestEventDataApi(BaseApiTestSuite):
             {**payload, "tabular_source": ("Some other source", "other table")},
             [
                 {
-                    "loc": ["body", "tabular_source", 0],
-                    "msg": "Id must be of type PydanticObjectId",
-                    "type": "type_error",
-                },
-                {
-                    "ctx": {"object_type": "TableDetails"},
-                    "loc": ["body", "tabular_source", 1],
-                    "msg": "value is not a valid TableDetails type",
+                    "ctx": {"object_type": "TabularSource"},
+                    "loc": ["body", "tabular_source"],
+                    "msg": "value is not a valid TabularSource type",
                     "type": "type_error.featurebytetype",
-                },
+                }
             ],
         )
     ]
@@ -61,12 +56,14 @@ class TestEventDataApi(BaseApiTestSuite):
         """
         Setup for post route
         """
-        # save feature store
-        feature_store_payload = self.load_payload(
-            "tests/fixtures/request_payloads/feature_store.json"
-        )
-        response = api_client.post("/feature_store", json=feature_store_payload)
-        assert response.status_code == HTTPStatus.CREATED
+        api_object_filename_pairs = [
+            ("feature_store", "feature_store"),
+            ("entity", "entity"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
@@ -74,11 +71,13 @@ class TestEventDataApi(BaseApiTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
-            feature_store_id, table_details = payload["tabular_source"]
-            payload["tabular_source"] = [
-                feature_store_id,
-                {key: f"{value}_{i}" for key, value in table_details.items()},
-            ]
+            tabular_source = payload["tabular_source"]
+            payload["tabular_source"] = {
+                "feature_store_id": tabular_source["feature_store_id"],
+                "table_details": {
+                    key: f"{value}_{i}" for key, value in tabular_source["table_details"].items()
+                },
+            }
             yield payload
 
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
@@ -91,17 +90,20 @@ class TestEventDataApi(BaseApiTestSuite):
         """Fixture for a Event Data dict"""
         event_data_dict = {
             "name": "订单表",
-            "tabular_source": [
-                str(snowflake_feature_store.id),
-                {
+            "tabular_source": {
+                "feature_store_id": str(snowflake_feature_store.id),
+                "table_details": {
                     "database_name": "database",
                     "schema_name": "schema",
                     "table_name": "table",
                 },
+            },
+            "columns_info": [
+                {"name": "created_at", "var_type": "TIMESTAMP", "entity_id": None},
+                {"name": "event_date", "var_type": "TIMESTAMP", "entity_id": None},
             ],
             "event_timestamp_column": "event_date",
             "record_creation_date_column": "created_at",
-            "column_entity_map": None,
             "default_feature_job_setting": {
                 "blind_spot": "10m",
                 "frequency": "30m",
@@ -139,6 +141,10 @@ class TestEventDataApi(BaseApiTestSuite):
         Table Event update dict object
         """
         return {
+            "columns_info": [
+                {"name": "created_at", "var_type": "TIMESTAMP", "entity_id": None},
+                {"name": "event_date", "var_type": "TIMESTAMP", "entity_id": None},
+            ],
             "default_feature_job_setting": {
                 "blind_spot": "12m",
                 "frequency": "30m",
@@ -369,6 +375,10 @@ class TestEventDataApi(BaseApiTestSuite):
             response = test_api_client.patch(
                 f"/event_data/{document_id}",
                 json={
+                    "columns_info": [
+                        {"name": "created_at", "var_type": "TIMESTAMP", "entity_id": None},
+                        {"name": "event_date", "var_type": "TIMESTAMP", "entity_id": None},
+                    ],
                     "default_feature_job_setting": {
                         "blind_spot": blind_spot,
                         "frequency": "30m",

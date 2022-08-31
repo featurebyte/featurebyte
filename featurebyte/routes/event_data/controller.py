@@ -10,10 +10,12 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
+from featurebyte.models.entity import EntityModel
 from featurebyte.models.event_data import EventDataModel, EventDataStatus
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.common.operation import DictProject, DictTransform
 from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
 
 
@@ -25,6 +27,21 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
     collection_name = EventDataModel.collection_name()
     document_class = EventDataModel
     paginated_document_class = EventDataList
+    info_transform = DictTransform(
+        rule={
+            **BaseController.base_info_transform_rule,
+            "__root__": DictProject(
+                rule=[
+                    "event_timestamp_column",
+                    "record_creation_date_column",
+                ]
+            ),
+            "columns": DictProject(
+                rule=("columns_info", ["name", "var_type", "entity"]), verbose_only=True
+            ),
+        }
+    )
+    foreign_key_map = {"entity_id": EntityModel.collection_name()}
 
     @classmethod
     async def create_event_data(
@@ -51,12 +68,11 @@ class EventDataController(BaseController[EventDataModel, EventDataList]):
             Newly created event data object
         """
         # check the existence of the feature store at persistent
-        feature_store_id, _ = data.tabular_source
         _ = await cls.get_document(
             user=user,
             persistent=persistent,
             collection_name=FeatureStoreModel.collection_name(),
-            document_id=feature_store_id,
+            document_id=data.tabular_source.feature_store_id,
         )
 
         document = EventDataModel(

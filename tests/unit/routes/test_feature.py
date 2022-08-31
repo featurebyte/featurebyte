@@ -88,17 +88,15 @@ class TestFeatureApi(BaseApiTestSuite):
         """
         Setup for post route
         """
-        # save feature store
-        feature_store_payload = self.load_payload(
-            "tests/fixtures/request_payloads/feature_store.json"
-        )
-        response = api_client.post("/feature_store", json=feature_store_payload)
-        assert response.status_code == HTTPStatus.CREATED
-
-        # save event data
-        feature_store_payload = self.load_payload("tests/fixtures/request_payloads/event_data.json")
-        response = api_client.post("/event_data", json=feature_store_payload)
-        assert response.status_code == HTTPStatus.CREATED
+        api_object_filename_pairs = [
+            ("feature_store", "feature_store"),
+            ("entity", "entity"),
+            ("event_data", "event_data"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
@@ -107,11 +105,13 @@ class TestFeatureApi(BaseApiTestSuite):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["feature_namespace_id"] = str(ObjectId())
-            feature_store_id, table_details = payload["tabular_source"]
-            payload["tabular_source"] = [
-                feature_store_id,
-                {key: f"{value}_{i}" for key, value in table_details.items()},
-            ]
+            tabular_source = payload["tabular_source"]
+            payload["tabular_source"] = {
+                "feature_store_id": tabular_source["feature_store_id"],
+                "table_details": {
+                    key: f"{value}_{i}" for key, value in tabular_source["table_details"].items()
+                },
+            }
             yield payload
 
     @pytest.mark.asyncio
@@ -173,14 +173,14 @@ def feature_model_dict_fixture(feature_model_dict):
     Feature model dict fixture
     """
     feature_model_dict["_id"] = str(ObjectId())
-    feature_model_dict["tabular_source"] = (
-        str(ObjectId()),
-        {
+    feature_model_dict["tabular_source"] = {
+        "feature_store_id": str(ObjectId()),
+        "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "sf_table",
         },
-    )
+    }
     return feature_model_dict
 
 
@@ -238,7 +238,10 @@ async def test_insert_feature_registry__non_snowflake_feature_store(
         type=SourceType.SQLITE,
         details=SQLiteDetails(filename="some_filename"),
     )
-    feature_model_dict["tabular_source"] = (feature_store.id, TableDetails(table_name="some_table"))
+    feature_model_dict["tabular_source"] = {
+        "feature_store_id": feature_store.id,
+        "table_details": TableDetails(table_name="some_table"),
+    }
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=sqlite_feature_store)
     user = Mock()
     await FeatureController._insert_feature_registry(

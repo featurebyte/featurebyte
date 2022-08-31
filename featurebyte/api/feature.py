@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional
 
 import time
 from http import HTTPStatus
@@ -25,6 +25,7 @@ from featurebyte.models.feature import (
     FeatureNamespaceModel,
     FeatureReadiness,
 )
+from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 from featurebyte.schema.feature import FeatureCreate
@@ -61,9 +62,10 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
     def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:
         if "feature_store" not in values:
             tabular_source = values.get("tabular_source")
-            if tabular_source and isinstance(tabular_source, (list, tuple)) and len(tabular_source):
+            if isinstance(tabular_source, dict):
+                tabular_source_obj = TabularSource(**tabular_source)
                 client = Configurations().get_client()
-                feature_store_id = tabular_source[0]
+                feature_store_id = tabular_source_obj.feature_store_id
                 feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
                 if feature_store_response.status_code == HTTPStatus.OK:
                     values["feature_store"] = ExtendedFeatureStoreModel(
@@ -183,8 +185,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
         -------
         FeatureNamespace
         """
-        feature_namespace = FeatureNamespace.get_by_id(id=self.feature_namespace_id)
-        return cast(FeatureNamespace, feature_namespace)
+        return FeatureNamespace.get_by_id(id=self.feature_namespace_id)
 
     @property
     def is_default(self) -> bool:
@@ -219,7 +220,22 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
         """
         return self.feature_namespace.readiness
 
-    def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
+    def info(self, verbose: bool = True) -> Dict[str, Any]:
+        """
+        Construct summary info of the API object
+
+        Parameters
+        ----------
+        verbose: bool
+            Control verbose level of the summary
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        return self.feature_namespace.info(verbose=verbose)
+
+    def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
@@ -233,13 +249,15 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
         -------
         dict[str, Any]
         """
-        event_data_ids = list(self.event_data_ids)
+        event_data_ids = set(self.event_data_ids)
+        entity_ids = set(self.entity_ids)
         if other is not None:
-            event_data_ids.extend(getattr(other, "event_data_ids", []))
-        return {"event_data_ids": list(set(event_data_ids))}
+            event_data_ids = event_data_ids.union(getattr(other, "event_data_ids", []))
+            entity_ids = entity_ids.union(getattr(other, "entity_ids", []))
+        return {"event_data_ids": sorted(event_data_ids), "entity_ids": sorted(entity_ids)}
 
     def unary_op_series_params(self) -> dict[str, Any]:
-        return {"event_data_ids": list(self.event_data_ids)}
+        return {"event_data_ids": self.event_data_ids, "entity_ids": self.entity_ids}
 
     def _validate_point_in_time_and_serving_name(
         self, point_in_time_and_serving_name: dict[str, Any]

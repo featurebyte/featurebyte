@@ -1,9 +1,12 @@
 {
-    "_id": "62f301e841b73757c7bf873d",
-    "event_data_ids": [
-        "62f301e841b73757c7bf873a"
+    "_id": "630d7fa8f1275c864fde8495",
+    "entity_ids": [
+        "630d7fa8f1275c864fde8493"
     ],
-    "feature_namespace_id": "62f301e841b73757c7bf873e",
+    "event_data_ids": [
+        "630d7fa8f1275c864fde8492"
+    ],
+    "feature_namespace_id": "630d7fa8f1275c864fde8496",
     "graph": {
         "backward_edges": {
             "groupby_1": [
@@ -27,6 +30,7 @@
                 "output_type": "frame",
                 "parameters": {
                     "agg_func": "sum",
+                    "aggregation_id": "sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
                     "blind_spot": 600,
                     "frequency": 1800,
                     "keys": [
@@ -41,7 +45,7 @@
                     "serving_names": [
                         "cust_id"
                     ],
-                    "tile_id": "sum_f1800_m300_b600_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
+                    "tile_id": "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
                     "time_modulo_frequency": 300,
                     "timestamp": "event_timestamp",
                     "value_by": null,
@@ -112,14 +116,14 @@
     "row_index_lineage": [
         "groupby_1"
     ],
-    "tabular_source": [
-        "62f301e841b73757c7bf8738",
-        {
+    "tabular_source": {
+        "feature_store_id": "630d7fa8f1275c864fde8490",
+        "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "sf_table"
         }
-    ],
+    },
     "var_type": "FLOAT",
-    "version": "V220810"
+    "version": "V220830"
 }

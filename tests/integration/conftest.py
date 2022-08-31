@@ -271,10 +271,10 @@ def snowflake_feature(feature_model_dict, snowflake_session, snowflake_feature_s
     """
     feature_model_dict.update(
         {
-            "tabular_source": (
-                snowflake_feature_store.id,
-                TableDetails(table_name="some_random_table"),
-            ),
+            "tabular_source": {
+                "feature_store_id": snowflake_feature_store.id,
+                "table_details": TableDetails(table_name="some_random_table"),
+            },
             "version": "v1",
             "readiness": FeatureReadiness.DRAFT,
             "is_default": True,
@@ -364,10 +364,10 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config, snowfl
     """
     feature_model_dict.update(
         {
-            "tabular_source": (
-                snowflake_feature_store.id,
-                TableDetails(table_name="some_random_table"),
-            ),
+            "tabular_source": {
+                "feature_store_id": snowflake_feature_store.id,
+                "table_details": TableDetails(table_name="some_random_table"),
+            },
             "version": "v1",
             "readiness": FeatureReadiness.DRAFT,
             "is_default": True,

@@ -1,14 +1,14 @@
 {
-    "_id": "62f301e841b73757c7bf8745",
+    "_id": "630d7fa8f1275c864fde849d",
     "created_at": null,
     "feature_ids": [
-        "62f301e841b73757c7bf873d",
-        "62f301e841b73757c7bf873f"
+        "630d7fa8f1275c864fde8495",
+        "630d7fa8f1275c864fde8497"
     ],
     "name": "sf_feature_list_multiple",
     "readiness": null,
     "status": "DRAFT",
     "updated_at": null,
     "user_id": null,
-    "version": "V220810"
+    "version": "V220830"
 }

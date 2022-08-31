@@ -18,6 +18,7 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
     RecordUpdateException,
+    TableSchemaHasBeenChangedError,
 )
 from featurebyte.models.event_data import EventDataStatus, FeatureJobSetting
 from tests.util.helper import patch_import_package
@@ -25,22 +26,30 @@ from tests.util.helper import patch_import_package
 
 @pytest.fixture(name="event_data_dict")
 def event_data_dict_fixture(snowflake_database_table):
-    """
-    EventData in serialized dictionary format
-    """
+    """EventData in serialized dictionary format"""
     return {
         "name": "sf_event_data",
-        "tabular_source": (
-            snowflake_database_table.feature_store.id,
-            {
+        "tabular_source": {
+            "feature_store_id": snowflake_database_table.feature_store.id,
+            "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
                 "table_name": "sf_table",
             },
-        ),
+        },
+        "columns_info": [
+            {"entity_id": None, "name": "col_int", "var_type": "INT"},
+            {"entity_id": None, "name": "col_float", "var_type": "FLOAT"},
+            {"entity_id": None, "name": "col_char", "var_type": "CHAR"},
+            {"entity_id": None, "name": "col_text", "var_type": "VARCHAR"},
+            {"entity_id": None, "name": "col_binary", "var_type": "BINARY"},
+            {"entity_id": None, "name": "col_boolean", "var_type": "BOOL"},
+            {"entity_id": None, "name": "event_timestamp", "var_type": "TIMESTAMP"},
+            {"entity_id": None, "name": "created_at", "var_type": "TIMESTAMP"},
+            {"entity_id": None, "name": "cust_id", "var_type": "INT"},
+        ],
         "event_timestamp_column": "event_timestamp",
         "record_creation_date_column": "created_at",
-        "column_entity_map": None,
         "default_feature_job_setting": None,
         "created_at": None,
         "updated_at": None,
@@ -62,8 +71,7 @@ def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
     assert snowflake_event_data.id == previous_id
     assert snowflake_event_data.status == EventDataStatus.DRAFT
     assert isinstance(snowflake_event_data.created_at, datetime)
-    feature_store, _ = snowflake_event_data.tabular_source
-    assert isinstance(feature_store, ObjectId)
+    assert isinstance(snowflake_event_data.tabular_source.feature_store_id, ObjectId)
 
     # test list event data
     assert EventData.list() == ["sf_event_data"]
@@ -186,9 +194,6 @@ def test_event_data_column__not_exists(snowflake_event_data):
     # check __getattr__ is working properly
     assert isinstance(snowflake_event_data.col_int, EventDataColumn)
 
-    # add a key `columns` to `column_var_type_map` to pretend there is a column called `columns`
-    snowflake_event_data.column_var_type_map["columns"] = "whatever_type"
-
     # when accessing the `columns` attribute, make sure we retrieve it properly
     assert set(snowflake_event_data.columns) == {
         "col_char",
@@ -197,7 +202,6 @@ def test_event_data_column__not_exists(snowflake_event_data):
         "event_timestamp",
         "col_text",
         "created_at",
-        "columns",
         "col_binary",
         "col_int",
         "cust_id",
@@ -208,7 +212,8 @@ def test_event_data_column__as_entity(snowflake_event_data):
     """
     Test setting a column in the event data as entity
     """
-    assert snowflake_event_data.column_entity_map is None
+    # check no column associate with any entity
+    assert all([col.entity_id is None for col in snowflake_event_data.columns_info])
 
     # create entity
     entity = Entity(name="customer", serving_names=["cust_id"])
@@ -217,7 +222,7 @@ def test_event_data_column__as_entity(snowflake_event_data):
     col_int = snowflake_event_data.col_int
     assert isinstance(col_int, EventDataColumn)
     snowflake_event_data.col_int.as_entity("customer")
-    assert snowflake_event_data.column_entity_map == {"col_int": entity.id}
+    assert snowflake_event_data.col_int.info.entity_id == entity.id
 
     with pytest.raises(TypeError) as exc:
         snowflake_event_data.col_int.as_entity(1234)
@@ -227,18 +232,22 @@ def test_event_data_column__as_entity(snowflake_event_data):
 
     with pytest.raises(RecordRetrievalException) as exc:
         snowflake_event_data.col_int.as_entity("some_random_entity")
-    assert 'Entity name "some_random_entity" not found!' in str(exc.value)
+    expected_msg = (
+        'Entity (name: "some_random_entity") not found. Please save the Entity object first.'
+    )
+    assert expected_msg in str(exc.value)
 
     # remove entity association
     snowflake_event_data.col_int.as_entity(None)
-    assert snowflake_event_data.column_entity_map == {}
+    assert snowflake_event_data.col_int.info.entity_id is None
 
 
 def test_event_data_column__as_entity__saved_event_data(saved_event_data, config):
     """
     Test setting a column in the event data as entity (saved event data)
     """
-    assert saved_event_data.column_entity_map is None
+    # check no column associate with any entity
+    assert all([col.entity_id is None for col in saved_event_data.columns_info])
 
     # create entity
     entity = Entity(name="customer", serving_names=["cust_id"])
@@ -246,20 +255,22 @@ def test_event_data_column__as_entity__saved_event_data(saved_event_data, config
 
     saved_event_data.col_int.as_entity("customer")
     assert saved_event_data.saved is True
-    assert saved_event_data.column_entity_map == {"col_int": entity.id}
+    assert saved_event_data.col_int.info.entity_id == entity.id
 
     # check that the column entity map is saved to persistent
     client = config.get_client()
     response = client.get(url=f"/event_data/{saved_event_data.id}")
     response_dict = response.json()
-    assert response_dict["column_entity_map"] == {"col_int": str(entity.id)}
+    for col in response_dict["columns_info"]:
+        if col["name"] == "col_int":
+            assert col["entity_id"] == str(entity.id)
 
 
 def test_event_data_column__as_entity__saved_event_data__record_update_exception(
     saved_event_data, config
 ):
     """
-    Test setting a column in the event data as entity (record update exception)
+    Test setting a column in the event data as entity (record retrieve exception)
     """
     _ = config
 
@@ -267,7 +278,7 @@ def test_event_data_column__as_entity__saved_event_data__record_update_exception
     entity.save()
 
     # test unexpected exception
-    with pytest.raises(RecordUpdateException):
+    with pytest.raises(RecordRetrievalException):
         with patch("featurebyte.api.api_object.Configurations"):
             saved_event_data.col_int.as_entity("customer")
 
@@ -285,6 +296,36 @@ def test_event_data__save__feature_store_not_saved_exception(snowflake_event_dat
         f"Please save the FeatureStore object first."
     )
     assert expect_msg in str(exc.value)
+
+
+def test_info(saved_event_data):
+    """
+    Test info
+    """
+    verbose_info = saved_event_data.info(verbose=True)
+    non_verbose_info = saved_event_data.info(verbose=False)
+    expected_non_verbose_info = {
+        "name": "sf_event_data",
+        "event_timestamp_column": "event_timestamp",
+        "record_creation_date_column": "created_at",
+    }
+    expected_verbose_info = {
+        **expected_non_verbose_info,
+        "columns": [
+            {"entity": None, "name": "col_int", "var_type": "INT"},
+            {"entity": None, "name": "col_float", "var_type": "FLOAT"},
+            {"entity": None, "name": "col_char", "var_type": "CHAR"},
+            {"entity": None, "name": "col_text", "var_type": "VARCHAR"},
+            {"entity": None, "name": "col_binary", "var_type": "BINARY"},
+            {"entity": None, "name": "col_boolean", "var_type": "BOOL"},
+            {"entity": None, "name": "event_timestamp", "var_type": "TIMESTAMP"},
+            {"entity": None, "name": "created_at", "var_type": "TIMESTAMP"},
+            {"entity": None, "name": "cust_id", "var_type": "INT"},
+        ],
+    }
+    assert non_verbose_info == expected_non_verbose_info
+    assert verbose_info.items() > expected_verbose_info.items()
+    assert set(verbose_info).difference(expected_verbose_info) == {"created_at", "updated_at"}
 
 
 def test_event_data__save__exceptions(saved_event_data):
@@ -306,90 +347,6 @@ def test_event_data__record_creation_exception(snowflake_event_data):
     with pytest.raises(RecordCreationException):
         with patch("featurebyte.api.api_object.Configurations"):
             snowflake_event_data.save()
-
-
-def test_event_data__info__not_saved_event_data(snowflake_feature_store, snowflake_event_data):
-    """
-    Test info on not-saved event data
-    """
-    snowflake_event_data.event_timestamp_column = "col_int"
-    snowflake_event_data.record_creation_date_column = "col_text"
-    output = snowflake_event_data.info()
-    assert output == {
-        "id": snowflake_event_data.id,
-        "user_id": None,
-        "name": "sf_event_data",
-        "record_creation_date_column": "col_text",
-        "column_entity_map": None,
-        "created_at": None,
-        "updated_at": None,
-        "default_feature_job_setting": None,
-        "event_timestamp_column": "col_int",
-        "status": None,
-        "tabular_source": (
-            snowflake_feature_store.id,
-            {
-                "database_name": "sf_database",
-                "schema_name": "sf_schema",
-                "table_name": "sf_table",
-            },
-        ),
-    }
-    feature_store_id, _ = snowflake_event_data.tabular_source
-    assert isinstance(feature_store_id, ObjectId)
-
-    # check unhandled response status code
-    with pytest.raises(RecordRetrievalException):
-        with patch("featurebyte.api.event_data.Configurations"):
-            snowflake_event_data.info()
-
-
-def test_event_data__info__saved_event_data(snowflake_feature_store, saved_event_data):
-    """
-    Test info on saved event data
-    """
-    saved_event_data_dict = saved_event_data.dict()
-
-    # perform some modifications
-    saved_event_data.event_timestamp_column = "col_int"
-    saved_event_data.record_creation_date_column = "col_text"
-    assert (
-        saved_event_data.event_timestamp_column != saved_event_data_dict["event_timestamp_column"]
-    )
-    assert (
-        saved_event_data.record_creation_date_column
-        != saved_event_data_dict["record_creation_date_column"]
-    )
-
-    # call info & check that all those modifications gone
-    output = saved_event_data.info()
-    assert saved_event_data.saved is True
-    assert (
-        output
-        == saved_event_data_dict
-        == {
-            "id": saved_event_data.id,
-            "user_id": None,
-            "name": "sf_event_data",
-            "record_creation_date_column": "created_at",
-            "column_entity_map": None,
-            "created_at": saved_event_data.created_at,
-            "updated_at": None,
-            "default_feature_job_setting": None,
-            "event_timestamp_column": "event_timestamp",
-            "status": "DRAFT",
-            "tabular_source": (
-                snowflake_feature_store.id,
-                {
-                    "database_name": "sf_database",
-                    "schema_name": "sf_schema",
-                    "table_name": "sf_table",
-                },
-            ),
-        }
-    )
-    feature_store_id, _ = saved_event_data.tabular_source
-    assert isinstance(feature_store_id, ObjectId)
 
 
 def test_update_default_job_setting(snowflake_event_data, config):
@@ -415,7 +372,7 @@ def test_update_default_job_setting(snowflake_event_data, config):
     assert snowflake_event_data.default_feature_job_setting == FeatureJobSetting(
         blind_spot="1m30s", frequency="10m", time_modulo_frequency="2m"
     )
-    feature_store_id, _ = snowflake_event_data.tabular_source
+    feature_store_id = snowflake_event_data.tabular_source.feature_store_id
     assert isinstance(feature_store_id, ObjectId)
 
 
@@ -599,6 +556,34 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
     assert expected_msg in str(exc.value)
 
 
+@patch("featurebyte.api.database_table.FeatureStore.get_session")
+def test_get_event_data__schema_has_been_changed(mock_get_session, saved_event_data):
+    """
+    Test retrieving event data after table schema has been changed
+    """
+    recent_schema = {"column": "INT"}
+    mock_get_session.return_value.list_table_schema.return_value = recent_schema
+    with pytest.raises(TableSchemaHasBeenChangedError) as exc:
+        EventData.get_by_id(saved_event_data.id)
+    assert "Table schema has been changed." in str(exc.value)
+
+    # this is ok as additional column should not break backward compatibility
+    recent_schema = {
+        "col_binary": "BINARY",
+        "col_boolean": "BOOL",
+        "col_char": "CHAR",
+        "col_float": "FLOAT",
+        "col_int": "INT",
+        "col_text": "VARCHAR",
+        "created_at": "TIMESTAMP",
+        "cust_id": "INT",
+        "event_timestamp": "TIMESTAMP",
+        "additional_column": "INT",
+    }
+    mock_get_session.return_value.list_table_schema.return_value = recent_schema
+    _ = EventData.get_by_id(saved_event_data.id)
+
+
 def test_default_feature_job_setting_history(saved_event_data):
     """
     Test default_feature_job_setting_history on saved event data
@@ -708,7 +693,6 @@ def test_default_feature_job_setting_history(saved_event_data):
             "name": "sf_event_data",
             "event_timestamp_column": "event_timestamp",
             "record_creation_date_column": "created_at",
-            "column_entity_map": None,
             "default_feature_job_setting": None,
             "status": "DRAFT",
         }.items()

@@ -3,10 +3,10 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, List, Optional, TypeVar, Union
 
 from beanie import PydanticObjectId
-from pydantic import Field, PrivateAttr, StrictStr
+from pydantic import Field, PrivateAttr
 from typeguard import typechecked
 
 from featurebyte.api.event_data import EventData
@@ -31,7 +31,7 @@ class EventViewColumn(Series):
     _parent: Optional[EventView] = PrivateAttr(default=None)
     event_data_id: PydanticObjectId = Field(allow_mutation=False)
 
-    def _binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
+    def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
         Parameters that will be passed to series-like constructor in _binary_op method
 
@@ -81,7 +81,6 @@ class EventView(ProtectedColumnsQueryObject, Frame):
 
     _series_class = EventViewColumn
 
-    column_entity_map: Optional[Dict[StrictStr, PydanticObjectId]] = Field(default=None)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
     event_data_id: PydanticObjectId = Field(allow_mutation=False)
 
@@ -111,8 +110,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         -------
         list[str]
         """
-        column_entity_map = self.column_entity_map or {}
-        return list(column_entity_map.keys())
+        return [col.name for col in self.columns_info if col.entity_id]
 
     @property
     def timestamp_column(self) -> str:
@@ -157,13 +155,12 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         return EventView(
             feature_store=event_data.feature_store,
             tabular_source=event_data.tabular_source,
+            columns_info=event_data.columns_info,
             node=event_data.node,
-            column_var_type_map=event_data.column_var_type_map.copy(),
             column_lineage_map={
-                col: (event_data.node.name,) for col in event_data.column_var_type_map
+                col.name: (event_data.node.name,) for col in event_data.columns_info
             },
             row_index_lineage=tuple(event_data.row_index_lineage),
-            column_entity_map=event_data.column_entity_map,
             default_feature_job_setting=event_data.default_feature_job_setting,
             event_data_id=event_data.id,
         )
@@ -198,13 +195,6 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.inherited_columns.union(item))
         output = super().__getitem__(item)
-        if isinstance(output, EventView):
-            if self.column_entity_map:
-                output.column_entity_map = {
-                    col: name
-                    for col, name in self.column_entity_map.items()
-                    if col in output.columns
-                }
         return output
 
     @typechecked

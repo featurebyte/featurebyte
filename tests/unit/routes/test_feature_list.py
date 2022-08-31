@@ -45,7 +45,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         ),
         (
             {**payload, "_id": object_id, "name": "other_name"},
-            "FeatureList (feature_ids: \"[ObjectId('62f301e841b73757c7bf873d')]\") already exists. "
+            "FeatureList (feature_ids: \"[ObjectId('630d7fa8f1275c864fde8495')]\") already exists. "
             'Get the existing object by `FeatureList.get(name="sf_feature_list")`.',
         ),
     ]
@@ -56,7 +56,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         ),
         (
             payload_multi,
-            'Feature (id: "62f301e841b73757c7bf873f") not found. Please save the Feature object first.',
+            'Feature (id: "630d7fa8f1275c864fde8497") not found. Please save the Feature object first.',
         ),
     ]
 
@@ -86,6 +86,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         """
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
+            ("entity", "entity"),
             ("event_data", "event_data"),
             ("feature", "feature_sum_30m"),
         ]
@@ -156,8 +157,10 @@ class TestFeatureListApi(BaseApiTestSuite):
         event_data = self.load_payload("tests/fixtures/request_payloads/event_data.json")
         event_data["_id"] = str(ObjectId())
         event_data["name"] = f'new_{event_data["name"]}'
-        _, table_detail = event_data["tabular_source"]
-        tabular_source = [feature_store["_id"], table_detail]
+        tabular_source = {
+            "feature_store_id": feature_store["_id"],
+            "table_details": event_data["tabular_source"]["table_details"],
+        }
         event_data["tabular_source"] = tabular_source
 
         feature = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")

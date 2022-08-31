@@ -306,9 +306,7 @@ def snowflake_event_view_fixture(snowflake_event_data):
         output_type=NodeOutputType.FRAME,
     ).dict(exclude={"name": True})
     assert event_view.inception_node.dict(exclude={"name": True}) == expected_inception_node
-    assert event_view.protected_columns == {"event_timestamp"}.union(
-        snowflake_event_data.column_entity_map or {}
-    )
+    assert event_view.protected_columns == {"event_timestamp"}
     assert event_view.inherited_columns == {"event_timestamp"}
     assert event_view.timestamp_column == "event_timestamp"
     assert event_view.event_data_id == snowflake_event_data.id
@@ -335,7 +333,7 @@ def grouped_event_view_fixture(snowflake_event_view_with_entity):
 
 
 @pytest.fixture(name="feature_group")
-def feature_group_fixture(grouped_event_view):
+def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_data_with_entity):
     """
     FeatureList fixture
     """
@@ -356,6 +354,8 @@ def feature_group_fixture(grouped_event_view):
     for feature in feature_group.feature_objects.values():
         assert grouped_event_view.obj.event_data_id in feature.event_data_ids
         assert id(feature.graph.nodes) == id(global_graph.nodes)
+        assert feature.event_data_ids == [snowflake_event_data_with_entity.id]
+        assert feature.entity_ids == [cust_id_entity.id]
     yield feature_group
 
 
@@ -579,11 +579,11 @@ def test_save_payload_fixtures(
     snowflake_feature_store,
     snowflake_event_data,
     feature_group,
+    cust_id_entity,
 ):
     """
     Write request payload for testing api route
     """
-    entity = Entity(name="customer", serving_names=["cust_id"])
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_2h = feature_group["sum_2h"]
     feature_list = FeatureList([feature_sum_30m], name="sf_feature_list")
@@ -593,7 +593,7 @@ def test_save_payload_fixtures(
 
     if update_fixtures:
         api_object_name_pairs = [
-            (entity, "entity"),
+            (cust_id_entity, "entity"),
             (snowflake_feature_store, "feature_store"),
             (snowflake_event_data, "event_data"),
             (feature_sum_30m, "feature_sum_30m"),

@@ -3,8 +3,9 @@ SQLiteSession class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, OrderedDict
 
+import collections
 import os
 import sqlite3
 
@@ -72,14 +73,14 @@ class SQLiteSession(BaseSession):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-    ) -> dict[str, DBVarType]:
+    ) -> OrderedDict[str, DBVarType]:
         schema = self.execute_query(f'PRAGMA table_info("{table_name}")')
-        column_name_type_map = {}
+        column_name_type_map = collections.OrderedDict()
         if schema is not None:
-            column_name_type_map = {
-                column_name: self._convert_to_internal_variable_type(data_type)
-                for _, (column_name, data_type) in schema[["name", "type"]].iterrows()
-            }
+            for _, (column_name, data_type) in schema[["name", "type"]].iterrows():
+                column_name_type_map[column_name] = self._convert_to_internal_variable_type(
+                    data_type
+                )
         return column_name_type_map
 
     def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:

@@ -7,13 +7,15 @@ from typing import Any, Dict, List, Optional, Union
 
 from typeguard import typechecked
 
+from featurebyte.api.entity import Entity
+from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup
-from featurebyte.api.util import get_entity_by_id
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
@@ -32,16 +34,26 @@ class EventViewGroupBy(OpsMixin):
         elif isinstance(keys, list):
             keys_value = keys
 
+        # construct column name entity mapping
+        try:
+            event_data = EventData.get_by_id(obj.event_data_id)
+            columns_info = event_data.columns_info
+        except RecordRetrievalException:
+            columns_info = obj.columns_info
+        column_entity_map = {col.name: col.entity_id for col in columns_info if col.entity_id}
+
+        # construct serving_names
         serving_names = []
+        entity_ids = []
         for key in keys_value:
             if key not in obj.columns:
                 raise KeyError(f'Column "{key}" not found!')
-            if key not in (obj.column_entity_map or {}):
+            if key not in column_entity_map:
                 raise ValueError(f'Column "{key}" is not an entity!')
-            assert obj.column_entity_map is not None
-            entity_id = obj.column_entity_map[key]
-            entity = get_entity_by_id(str(entity_id))
-            serving_names.append(entity["serving_names"][0])
+
+            entity = Entity.get_by_id(column_entity_map[key])
+            serving_names.append(entity.serving_name)
+            entity_ids.append(entity.id)
 
         if category is not None and category not in obj.columns:
             raise KeyError(f'Column "{category}" not found!')
@@ -50,6 +62,7 @@ class EventViewGroupBy(OpsMixin):
         self.keys = keys_value
         self.category = category
         self.serving_names = serving_names
+        self.entity_ids = entity_ids
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.obj}, keys={self.keys})"
@@ -212,7 +225,7 @@ class EventViewGroupBy(OpsMixin):
             target_columns=set(column_var_type_map.keys()),
         )
         input_nodes = pruned_graph.backward_edges[node_name_map[temp_groupby_node.name]]
-        table_details_dict = self.obj.tabular_source[1].dict()
+        table_details_dict = self.obj.tabular_source.table_details.dict()
         tile_id = get_tile_table_identifier(
             table_details_dict=table_details_dict,
             parameters=node_params,
@@ -250,6 +263,7 @@ class EventViewGroupBy(OpsMixin):
                 ),
                 row_index_lineage=(groupby_node.name,),
                 event_data_ids=[self.obj.event_data_id],
+                entity_ids=self.entity_ids,
             )
             # Count features should be 0 instead of NaN when there are no records
             if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.category is None:
