@@ -608,10 +608,21 @@ class DateDiffNode(ExpressionNode):
         )
         return output_expr
 
-    def apply_unit(
+    def with_unit(
         self,
         unit: Literal["hour", "minute", "second", "millisecond", "microsecond", "nanosecond"],
     ) -> DateDiffNode:
+        """Creates a new DateDiffNode with a new unit applied
+
+        Parameters
+        ----------
+        unit : Literal
+            The unit of time for the date difference
+
+        Returns
+        -------
+        DateDiffNode
+        """
         return DateDiffNode(
             table_node=self.table_node,
             left_node=self.left_node,
@@ -1276,7 +1287,7 @@ def make_expression_node(
         )
     elif node_type == NodeType.DATE_DIFF_UNIT:
         assert isinstance(input_expr_node, DateDiffNode)
-        sql_node = input_expr_node.apply_unit(parameters["property"])
+        sql_node = input_expr_node.with_unit(parameters["unit"])
     elif node_type == NodeType.COUNT_DICT_TRANSFORM:
         sql_node = CountDictTransformNode(
             table_node=table_node,

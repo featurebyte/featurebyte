@@ -365,7 +365,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_type=NodeType.DATE_DIFF,
             output_var_type=DBVarType.TIMEDELTA,
             right_op=right_op,
-            additional_node_params={"property": "second"},
+            additional_node_params={"unit": "second"},
         )
 
     @typechecked
