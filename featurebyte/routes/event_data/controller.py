@@ -5,12 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Type
 
-from http import HTTPStatus
-
 from bson.objectid import ObjectId
-from fastapi import HTTPException
 
-from featurebyte.exception import DocumentConflictError, DocumentNotFoundError, DocumentUpdateError
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController
@@ -49,23 +45,12 @@ class EventDataController(BaseDocumentController[EventDataModel, EventDataList])
         -------
         EventDataModel
             Newly created event data object
-
-        Raises
-        ------
-        HTTPException
-            If some referenced object not found or there exists conflicting value
         """
-        try:
+        async with cls._creation_context():
             document = await cls.document_service_class(
                 user=user, persistent=persistent
             ).create_document(data)
             return document
-        except DocumentNotFoundError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
-            ) from exc
-        except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc
 
     @classmethod
     async def update_event_data(
@@ -93,20 +78,9 @@ class EventDataController(BaseDocumentController[EventDataModel, EventDataList])
         -------
         EventDataModel
             EventData object with updated attribute(s)
-
-        Raises
-        ------
-        HTTPException
-            Invalid event data status transition
         """
-        try:
+        async with cls._update_context():
             document = await cls.document_service_class(
                 user=user, persistent=persistent
             ).update_document(document_id=event_data_id, data=data)
             return document
-        except DocumentNotFoundError as exc:
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)) from exc
-        except DocumentUpdateError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
-            ) from exc

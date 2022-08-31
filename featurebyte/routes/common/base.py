@@ -3,14 +3,20 @@ BaseController for API routes
 """
 from __future__ import annotations
 
-from typing import Any, Generic, List, Literal, Optional, Type, TypeVar, cast
+from typing import Any, AsyncIterator, Generic, List, Literal, Optional, Type, TypeVar, cast
 
+from contextlib import asynccontextmanager
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.exception import DocumentNotFoundError
+from featurebyte.exception import (
+    DocumentConflictError,
+    DocumentInconsistencyError,
+    DocumentNotFoundError,
+    DocumentUpdateError,
+)
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
@@ -28,6 +34,32 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
 
     paginated_document_class: Type[PaginationMixin] = PaginationMixin
     document_service_class: Type[BaseDocumentService[FeatureByteBaseDocumentModel]]
+
+    @classmethod
+    @asynccontextmanager
+    async def _creation_context(cls) -> AsyncIterator[None]:
+        try:
+            yield
+        except (DocumentNotFoundError, DocumentInconsistencyError, DocumentUpdateError) as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
+        except DocumentConflictError as exc:
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc
+
+    @classmethod
+    @asynccontextmanager
+    async def _update_context(cls) -> AsyncIterator[None]:
+        try:
+            yield
+        except DocumentNotFoundError as exc:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)) from exc
+        except DocumentUpdateError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
+        except DocumentConflictError as exc:
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc
 
     @classmethod
     async def get(

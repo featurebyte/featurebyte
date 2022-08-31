@@ -5,15 +5,6 @@ from __future__ import annotations
 
 from typing import Any, Type
 
-from http import HTTPStatus
-
-from fastapi import HTTPException
-
-from featurebyte.exception import (
-    DocumentConflictError,
-    DocumentInconsistencyError,
-    DocumentNotFoundError,
-)
 from featurebyte.models.feature import FeatureListModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController
@@ -51,20 +42,9 @@ class FeatureListController(BaseDocumentController[FeatureListModel, FeatureList
         -------
         FeatureListModel
             Newly created feature list object
-
-        Raises
-        ------
-        HTTPException
-            If some referenced object not found or there exists conflicting value
         """
-        try:
+        async with cls._creation_context():
             document = await cls.document_service_class(
                 user=user, persistent=persistent
             ).create_document(data=data, get_credential=get_credential)
             return document
-        except (DocumentNotFoundError, DocumentInconsistencyError) as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
-            ) from exc
-        except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc

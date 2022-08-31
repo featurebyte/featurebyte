@@ -5,12 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Type
 
-from http import HTTPStatus
-
 from bson.objectid import ObjectId
-from fastapi import HTTPException
 
-from featurebyte.exception import DocumentConflictError, DocumentNotFoundError
 from featurebyte.models.entity import EntityModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.routes.common.base import BaseDocumentController
@@ -49,23 +45,12 @@ class EntityController(BaseDocumentController[EntityModel, EntityList]):
         -------
         EntityModel
             Newly created entity object
-
-        Raises
-        ------
-        HTTPException
-            If some referenced object not found or there exists conflicting value
         """
-        try:
+        async with cls._creation_context():
             document = await cls.document_service_class(
                 user=user, persistent=persistent
             ).create_document(data)
             return document
-        except DocumentNotFoundError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
-            ) from exc
-        except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc
 
     @classmethod
     async def update_entity(
@@ -89,18 +74,9 @@ class EntityController(BaseDocumentController[EntityModel, EntityList]):
         -------
         EntityModel
             Entity object with updated attribute(s)
-
-        Raises
-        ------
-        HTTPException
-            If the entity name already exists in persistent
         """
-        try:
+        async with cls._update_context():
             document = await cls.document_service_class(
                 user=user, persistent=persistent
             ).update_document(document_id=entity_id, data=data)
             return document
-        except DocumentNotFoundError as exc:
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)) from exc
-        except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc
