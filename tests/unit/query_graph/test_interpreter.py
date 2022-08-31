@@ -975,3 +975,46 @@ def test_isnull(graph, node_input):
         """
     ).strip()
     assert sql_code == expected
+
+
+def test_window_function(graph, node_input):
+    """Test tile sql when window function is involved"""
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    lagged_a = graph.add_operation(
+        node_type=NodeType.LAG,
+        node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a],
+    )
+    assign_node = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "prev_a"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, lagged_a],
+    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE)
+    sql_tree = sql_graph.build(assign_node).sql
+    expected = textwrap.dedent(
+        """
+        SELECT
+          *
+        FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b",
+              LAG("a") OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
+            FROM "db"."public"."event_table"
+        )
+        WHERE
+          "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+          AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
