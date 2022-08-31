@@ -313,16 +313,20 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
               FLOOR((DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 1800) AS tile_index
             FROM (
                 SELECT
-                  "col_int" AS "col_int",
-                  "col_float" AS "col_float",
-                  "col_char" AS "col_char",
-                  "col_text" AS "col_text",
-                  "col_binary" AS "col_binary",
-                  "col_boolean" AS "col_boolean",
-                  "event_timestamp" AS "event_timestamp",
-                  "created_at" AS "created_at",
-                  "cust_id" AS "cust_id"
-                FROM "sf_database"."sf_schema"."sf_table"
+                  *
+                FROM (
+                    SELECT
+                      "col_int" AS "col_int",
+                      "col_float" AS "col_float",
+                      "col_char" AS "col_char",
+                      "col_text" AS "col_text",
+                      "col_binary" AS "col_binary",
+                      "col_boolean" AS "col_boolean",
+                      "event_timestamp" AS "event_timestamp",
+                      "created_at" AS "created_at",
+                      "cust_id" AS "cust_id"
+                    FROM "sf_database"."sf_schema"."sf_table"
+                )
                 WHERE
                   "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
                   AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
