@@ -250,7 +250,7 @@ class BuildTileInputNode(GenericInputNode):
         table_expr = super().sql
         assert isinstance(table_expr, expressions.Select)
         # Apply tile start and end date filters on a nested subquery to avoid filtering out data
-        # required by window functions
+        # required by window function
         select_expr = select("*").from_(table_expr.subquery())
         timestamp = escape_column_name(self.timestamp)
         start_cond = (

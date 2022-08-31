@@ -990,6 +990,24 @@ def test_window_function(graph, node_input):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
+    binary_node = graph.add_operation(
+        node_type=NodeType.EQ,
+        node_params={"value": 123},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a],
+    )
+    filtered_input_node = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, binary_node],
+    )
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[filtered_input_node],
+    )
     lagged_a = graph.add_operation(
         node_type=NodeType.LAG,
         node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"]},
@@ -1000,7 +1018,7 @@ def test_window_function(graph, node_input):
         node_type=NodeType.ASSIGN,
         node_params={"name": "prev_a"},
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[node_input, lagged_a],
+        input_nodes=[filtered_input_node, lagged_a],
     )
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE)
     sql_tree = sql_graph.build(assign_node).sql
@@ -1016,6 +1034,7 @@ def test_window_function(graph, node_input):
               "b" AS "b",
               LAG("a") OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
             FROM "db"."public"."event_table"
+            WHERE ("a" = 123)
         )
         WHERE
           "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
