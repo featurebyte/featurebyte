@@ -978,7 +978,12 @@ def test_isnull(graph, node_input):
 
 
 def test_window_function(graph, node_input):
-    """Test tile sql when window function is involved"""
+    """Test tile sql when window function is involved
+
+    Note that the tile start and end date filters are applied on a nested subquery containing the
+    window expression, not on the same select statement. This is so that the data required by
+    the window expression is not filtered prematurely.
+    """
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
