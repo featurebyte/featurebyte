@@ -5,35 +5,33 @@ from __future__ import annotations
 
 from typing import Any
 
-from bson.objectid import ObjectId
+from http import HTTPStatus
 
-from featurebyte.models.base import FeatureByteBaseDocumentModel
-from featurebyte.models.event_data import EventDataModel
+from fastapi import HTTPException
+
+from featurebyte.exception import DocumentConflictError, DocumentNotFoundError
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisCreate,
     FeatureJobSettingAnalysisList,
 )
 from featurebyte.schema.task import Task
-from featurebyte.schema.worker.task.feature_job_setting_analysis import (
-    FeatureJobSettingAnalysisTaskPayload,
-)
+from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.task_manager import AbstractTaskManager
 
 
 class FeatureJobSettingAnalysisController(
-    BaseController[FeatureJobSettingAnalysisModel, FeatureJobSettingAnalysisList]
+    BaseDocumentController[FeatureJobSettingAnalysisModel, FeatureJobSettingAnalysisList]
 ):
     """
     FeatureJobSettingAnalysis controller
     """
 
-    collection_name = FeatureJobSettingAnalysisModel.collection_name()
-    document_class = FeatureJobSettingAnalysisModel
     paginated_document_class = FeatureJobSettingAnalysisList
+    document_service_class = FeatureJobSettingAnalysisService
 
     @classmethod
     async def create_feature_job_setting_analysis(
@@ -62,26 +60,12 @@ class FeatureJobSettingAnalysisController(
         Task
             Task object for the submitted task
         """
-        # check any conflict with existing documents
-        output_document_id = data.id or ObjectId()
-        await cls.check_document_unique_constraints(
-            persistent=persistent,
-            user_id=user.id,
-            document=FeatureByteBaseDocumentModel(_id=output_document_id),
-        )
-
-        # check that event data exists
-        _ = await cls.get_document(
-            user=user,
-            persistent=persistent,
-            collection_name=EventDataModel.collection_name(),
-            document_id=data.event_data_id,
-        )
-
-        payload = FeatureJobSettingAnalysisTaskPayload(
-            **data.dict(), user_id=user.id, output_document_id=output_document_id
-        )
-
-        # run analysis
-        task_id = await task_manager.submit(payload=payload)
-        return await TaskController.get_task(task_manager=task_manager, task_id=str(task_id))
+        try:
+            task_id = await cls.document_service_class(
+                user=user, persistent=persistent
+            ).create_document_creation_task(data=data, task_manager=task_manager)
+            return await TaskController.get_task(task_manager=task_manager, task_id=str(task_id))
+        except DocumentNotFoundError as exc:
+            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc))
+        except DocumentConflictError as exc:
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc))

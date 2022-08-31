@@ -7,14 +7,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
-from fastapi import HTTPException
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import SourceType
-from featurebyte.exception import DuplicatedRegistryError
+from featurebyte.exception import DocumentConflictError, DuplicatedRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
-from featurebyte.models.feature_store import SQLiteDetails, TableDetails
-from featurebyte.routes.feature_list.controller import FeatureListController
+from featurebyte.models.feature_store import SQLiteDetails
+from featurebyte.service.feature_list import FeatureListService
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -65,9 +64,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         """
         Mock insert feature registry at the controller level
         """
-        with patch(
-            "featurebyte.routes.feature.controller.FeatureController._insert_feature_registry"
-        ) as mock:
+        with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
             yield mock
 
     @pytest.fixture(autouse=True)
@@ -76,7 +73,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         Mock insert feature registry at the controller level
         """
         with patch(
-            "featurebyte.routes.feature_list.controller.FeatureListController._insert_feature_list_registry"
+            "featurebyte.service.feature_list.FeatureListService._insert_feature_list_registry"
         ) as mock:
             yield mock
 
@@ -215,10 +212,7 @@ async def test_insert_feature_list_registry(
     Test insert_feature_list_registry
     """
     _ = snowflake_connector
-    user = Mock()
-
-    await FeatureListController._insert_feature_list_registry(
-        user=user,
+    await FeatureListService(user=Mock(), persistent=Mock())._insert_feature_list_registry(
         document=feature_list_model,
         feature_store=snowflake_feature_store,
         get_credential=get_credential,
@@ -245,10 +239,7 @@ async def test_insert_feature_list_registry__non_snowflake_feature_store(
         type=SourceType.SQLITE,
         details=SQLiteDetails(filename="some_filename"),
     )
-
-    user = Mock()
-    await FeatureListController._insert_feature_list_registry(
-        user=user,
+    await FeatureListService(user=Mock(), persistent=Mock())._insert_feature_list_registry(
         document=feature_list_model,
         feature_store=feature_store,
         get_credential=get_credential,
@@ -257,7 +248,7 @@ async def test_insert_feature_list_registry__non_snowflake_feature_store(
 
 
 @pytest.mark.asyncio
-@patch("featurebyte.routes.feature_list.controller.FeatureListManagerSnowflake")
+@patch("featurebyte.service.feature_list.FeatureListManagerSnowflake")
 async def test_insert_feature_registry__duplicated_feature_registry_exception(
     mock_feature_list_manager,
     feature_list_model,
@@ -272,10 +263,8 @@ async def test_insert_feature_registry__duplicated_feature_registry_exception(
     mock_feature_list_manager.return_value.insert_feature_list_registry.side_effect = (
         DuplicatedRegistryError
     )
-    user = Mock()
-    with pytest.raises(HTTPException) as exc:
-        await FeatureListController._insert_feature_list_registry(
-            user=user,
+    with pytest.raises(DocumentConflictError) as exc:
+        await FeatureListService(user=Mock(), persistent=Mock())._insert_feature_list_registry(
             document=feature_list_model,
             feature_store=snowflake_feature_store,
             get_credential=get_credential,
@@ -284,4 +273,4 @@ async def test_insert_feature_registry__duplicated_feature_registry_exception(
         'FeatureList (name: "sf_feature_list") has been registered by other feature list '
         "at Snowflake feature list store."
     )
-    assert expected_msg in str(exc.value.detail)
+    assert expected_msg in str(exc.value)

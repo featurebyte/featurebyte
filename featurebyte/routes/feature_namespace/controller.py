@@ -10,41 +10,27 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.models.feature import (
-    DefaultVersionMode,
-    FeatureModel,
-    FeatureNamespaceModel,
-    FeatureReadiness,
-)
+from featurebyte.exception import DocumentConflictError, DocumentNotFoundError, DocumentUpdateError
+from featurebyte.models.feature import FeatureNamespaceModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.common.base import BaseController
-from featurebyte.routes.common.operation import DictProject, DictTransform
+from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceList,
     FeatureNamespaceUpdate,
 )
+from featurebyte.service.feature_namespace import FeatureNamespaceService
 
 
-class FeatureNamespaceController(BaseController[FeatureNamespaceModel, FeatureNamespaceList]):
+class FeatureNamespaceController(
+    BaseDocumentController[FeatureNamespaceModel, FeatureNamespaceList]
+):
     """
     FeatureName controller
     """
 
-    collection_name = FeatureNamespaceModel.collection_name()
-    document_class = FeatureNamespaceModel
     paginated_document_class = FeatureNamespaceList
-    info_transform = DictTransform(
-        rule={
-            **BaseController.base_info_transform_rule,
-            "__root__": DictProject(rule=["default_version_mode", "default_version"]),
-            "versions": DictProject(rule="version"),
-        }
-    )
-    foreign_key_map = {
-        "version_ids": FeatureModel.collection_name(),
-        "default_version_id": FeatureModel.collection_name(),
-    }
+    document_service_class = FeatureNamespaceService
 
     @classmethod
     async def create_feature_namespace(
@@ -67,20 +53,15 @@ class FeatureNamespaceController(BaseController[FeatureNamespaceModel, FeatureNa
         FeatureNamespaceModel
             Newly created feature store document
         """
-        document = FeatureNamespaceModel(**data.json_dict(), user_id=user.id)
-        # check any conflict with existing documents
-        await cls.check_document_unique_constraints(
-            persistent=persistent,
-            user_id=user.id,
-            document=document,
-        )
-        insert_id = await persistent.insert_one(
-            collection_name=cls.collection_name,
-            document=document.dict(by_alias=True),
-            user_id=user.id,
-        )
-        assert insert_id == document.id
-        return await cls.get(user=user, persistent=persistent, document_id=insert_id)
+        try:
+            document = await cls.document_service_class(
+                user=user, persistent=persistent
+            ).create_document(data)
+            return document
+        except DocumentNotFoundError as exc:
+            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc))
+        except DocumentConflictError as exc:
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc))
 
     @classmethod
     async def update_feature_namespace(
@@ -114,60 +95,14 @@ class FeatureNamespaceController(BaseController[FeatureNamespaceModel, FeatureNa
         HTTPException
             When the feature namespace has different name from the feature name
         """
-
-        feature_namespace = await cls.get(
-            user=user,
-            persistent=persistent,
-            document_id=feature_namespace_id,
-            exception_detail=f'FeatureNamespace (id: "{feature_namespace_id}") not found.',
-        )
-
-        version_ids = list(feature_namespace.version_ids)
-        default_version_id = feature_namespace.default_version_id
-        readiness = FeatureReadiness(feature_namespace.readiness)
-        default_version_mode = DefaultVersionMode(feature_namespace.default_version_mode)
-
-        if data.default_version_mode:
-            default_version_mode = DefaultVersionMode(data.default_version_mode)
-
-        if data.version_id:
-            # check whether the feature is saved to persistent or not
-            feature = await cls.get_document(
-                user=user,
-                persistent=persistent,
-                collection_name=FeatureModel.collection_name(),
-                document_id=data.version_id,
-            )
-            if feature["name"] != feature_namespace.name:
-                # sanity check that the feature namespace id has consistent name with feature name
-                raise HTTPException(
-                    status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
-                    detail=(
-                        f'Feature (name: "{feature["name"]}") has an inconsistent '
-                        f'feature_namespace_id (name: "{feature_namespace.name}").'
-                    ),
-                )
-
-            version_ids.append(feature["_id"])
-            readiness = max(readiness, FeatureReadiness(feature["readiness"]))
-            if (
-                feature_namespace.default_version_mode == DefaultVersionMode.AUTO
-                and feature["readiness"] >= feature_namespace.readiness
-            ):
-                # if default version mode is AUTO, use the latest best readiness feature as default feature
-                default_version_id = feature["_id"]
-
-        update_count = await persistent.update_one(
-            collection_name=cls.collection_name,
-            query_filter={"_id": ObjectId(feature_namespace_id)},
-            update={
-                "$set": {
-                    "version_ids": version_ids,
-                    "readiness": readiness.value,
-                    "default_version_id": default_version_id,
-                    "default_version_mode": default_version_mode.value,
-                }
-            },
-        )
-        assert update_count == 1
-        return await cls.get(user=user, persistent=persistent, document_id=feature_namespace_id)
+        try:
+            document = await cls.document_service_class(
+                user=user, persistent=persistent
+            ).update_document(document_id=feature_namespace_id, data=data)
+            return document
+        except DocumentNotFoundError as exc:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)) from exc
+        except DocumentUpdateError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
