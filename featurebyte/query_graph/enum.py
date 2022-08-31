@@ -53,6 +53,8 @@ class NodeType(str, Enum):
 
     # datetime related operations
     DT_EXTRACT = "dt_extract"
+    DATE_DIFF = "date_diff"
+    DATE_DIFF_UNIT = "date_diff_unit"
 
     # count dict related operations
     COUNT_DICT_TRANSFORM = "count_dict_transform"

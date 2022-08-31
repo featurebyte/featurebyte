@@ -84,6 +84,7 @@ class DBVarType(str, Enum):
     TIMESTAMP = "TIMESTAMP"
     VARCHAR = "VARCHAR"
     OBJECT = "OBJECT"
+    TIMEDELTA = "TIMEDELTA"
 
 
 class AggFunc(str, Enum):

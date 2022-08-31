@@ -589,6 +589,38 @@ class DatetimeExtractNode(ExpressionNode):
 
 
 @dataclass
+class DateDiffNode(ExpressionNode):
+    """Node for date difference operation"""
+
+    left_node: ExpressionNode
+    right_node: ExpressionNode
+    unit: Literal["hour", "minute", "second", "millisecond", "microsecond", "nanosecond"]
+
+    @property
+    def sql(self) -> Expression:
+        output_expr = expressions.Anonymous(
+            this="DATEDIFF",
+            expressions=[
+                expressions.Identifier(this=self.unit),
+                self.right_node.sql,
+                self.left_node.sql,
+            ],
+        )
+        return output_expr
+
+    def apply_unit(
+        self,
+        unit: Literal["hour", "minute", "second", "millisecond", "microsecond", "nanosecond"],
+    ) -> DateDiffNode:
+        return DateDiffNode(
+            table_node=self.table_node,
+            left_node=self.left_node,
+            right_node=self.right_node,
+            unit=unit,
+        )
+
+
+@dataclass
 class NotNode(ExpressionNode):
     """Node for inverting binary column operation"""
 
@@ -771,6 +803,7 @@ BINARY_OPERATION_NODE_TYPES = {
     NodeType.OR,
     NodeType.CONCAT,
     NodeType.COSINE_SIMILARITY,
+    NodeType.DATE_DIFF,
 }
 
 
@@ -816,6 +849,22 @@ def make_binary_operation_node(
     NotImplementedError
         For incompatible node types
     """
+    left_node = input_sql_nodes[0]
+    assert isinstance(left_node, ExpressionNode)
+    table_node = left_node.table_node
+    right_node: Any
+    if len(input_sql_nodes) == 1:
+        # When the other value is a scalar
+        literal_value = make_literal_value(parameters["value"])
+        right_node = ParsedExpressionNode(table_node=table_node, expr=literal_value)
+    else:
+        # When the other value is a Series
+        right_node = input_sql_nodes[1]
+
+    if isinstance(right_node, ExpressionNode) and parameters.get("right_op"):
+        # Swap left & right objects if the operation from the right object
+        left_node, right_node = right_node, left_node
+
     node_type_to_expression_cls = {
         # Arithmetic
         NodeType.ADD: expressions.Add,
@@ -836,34 +885,25 @@ def make_binary_operation_node(
         NodeType.CONCAT: fb_expressions.Concat,
         NodeType.COSINE_SIMILARITY: fb_expressions.CosineSim,
     }
-    assert sorted(node_type_to_expression_cls.keys()) == sorted(BINARY_OPERATION_NODE_TYPES)
-    expression_cls = node_type_to_expression_cls.get(node_type)
 
-    if expression_cls is None:
+    if node_type in node_type_to_expression_cls:
+        expression_cls = node_type_to_expression_cls.get(node_type)
+        output_node = BinaryOp(
+            table_node=table_node,
+            left_node=left_node,
+            right_node=right_node,
+            operation=expression_cls,
+        )
+    elif node_type == NodeType.DATE_DIFF:
+        output_node = DateDiffNode(
+            table_node=table_node,
+            left_node=left_node,
+            right_node=right_node,
+            unit="second",
+        )
+    else:
         raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
 
-    left_node = input_sql_nodes[0]
-    assert isinstance(left_node, ExpressionNode)
-    table_node = left_node.table_node
-    right_node: Any
-    if len(input_sql_nodes) == 1:
-        # When the other value is a scalar
-        literal_value = make_literal_value(parameters["value"])
-        right_node = ParsedExpressionNode(table_node=table_node, expr=literal_value)
-    else:
-        # When the other value is a Series
-        right_node = input_sql_nodes[1]
-
-    if isinstance(right_node, ExpressionNode) and parameters.get("right_op"):
-        # Swap left & right objects if the operation from the right object
-        left_node, right_node = right_node, left_node
-
-    output_node = BinaryOp(
-        table_node=table_node,
-        left_node=left_node,
-        right_node=right_node,
-        operation=expression_cls,
-    )
     return output_node
 
 
@@ -1148,6 +1188,7 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.COUNT_DICT_TRANSFORM,
     NodeType.CAST,
     NodeType.LAG,
+    NodeType.DATE_DIFF_UNIT,
 }
 
 
@@ -1233,6 +1274,9 @@ def make_expression_node(
             expr=input_expr_node,
             dt_property=parameters["property"],
         )
+    elif node_type == NodeType.DATE_DIFF_UNIT:
+        assert isinstance(input_expr_node, DateDiffNode)
+        sql_node = input_expr_node.apply_unit(parameters["property"])
     elif node_type == NodeType.COUNT_DICT_TRANSFORM:
         sql_node = CountDictTransformNode(
             table_node=table_node,

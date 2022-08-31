@@ -340,6 +340,30 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         raise TypeError(f"Not supported operation '{node_type}' between '{self}' and '{other}'!")
 
     @typechecked
+    def _date_diff_op(self, other: Series, right_op: bool = False) -> Series:
+        """
+        Apply date difference operation between two date Series
+
+        Parameters
+        ----------
+        other : Series
+            right value of the operation
+        right_op: bool
+            whether the binary operation is from right object or not
+
+        Returns
+        -------
+        Series
+            output of the date difference operation
+        """
+        return self._binary_op(
+            other=other,
+            node_type=NodeType.DATE_DIFF,
+            output_var_type=DBVarType.TIMEDELTA,
+            right_op=right_op,
+        )
+
+    @typechecked
     def __add__(self, other: Union[int, float, str, Series]) -> Series:
         is_other_string_like = isinstance(other, str)
         is_other_string_like |= isinstance(other, Series) and other.var_type in DBVarType.VARCHAR
@@ -364,10 +388,14 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
     @typechecked
     def __sub__(self, other: Union[int, float, Series]) -> Series:
+        if self.is_datetime and isinstance(other, Series) and other.is_datetime:
+            return self._date_diff_op(other)
         return self._binary_arithmetic_op(other, NodeType.SUB)
 
     @typechecked
     def __rsub__(self, other: Union[int, float, Series]) -> Series:
+        if self.is_datetime and isinstance(other, Series) and other.is_datetime:
+            return self._date_diff_op(other, right_op=True)
         return self._binary_arithmetic_op(other, NodeType.SUB, right_op=True)
 
     @typechecked
@@ -394,6 +422,17 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_params={},
             **self.unary_op_series_params(),
         )
+
+    @property
+    def is_datetime(self) -> bool:
+        """
+        Returns whether Series has a datetime like variable type
+
+        Returns
+        -------
+        bool
+        """
+        return self.var_type in (DBVarType.TIMESTAMP, DBVarType.TIME, DBVarType.DATE)
 
     def isnull(self) -> Series:
         """
