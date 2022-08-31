@@ -20,12 +20,16 @@ FROM (
               FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 09:15:00' AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
                 SELECT
-                  "ts" AS "ts",
-                  "cust_id" AS "cust_id",
-                  "a" AS "a",
-                  "b" AS "b",
-                  ("a" + "b") AS "c"
-                FROM "db"."public"."event_table"
+                  *
+                FROM (
+                    SELECT
+                      "ts" AS "ts",
+                      "cust_id" AS "cust_id",
+                      "a" AS "a",
+                      "b" AS "b",
+                      ("a" + "b") AS "c"
+                    FROM "db"."public"."event_table"
+                )
                 WHERE
                   "ts" >= CAST('2022-04-18 09:15:00' AS TIMESTAMP)
                   AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
@@ -53,12 +57,16 @@ INNER JOIN (
               FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 21:15:00' AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
                 SELECT
-                  "ts" AS "ts",
-                  "cust_id" AS "cust_id",
-                  "a" AS "a",
-                  "b" AS "b",
-                  ("a" + "b") AS "c"
-                FROM "db"."public"."event_table"
+                  *
+                FROM (
+                    SELECT
+                      "ts" AS "ts",
+                      "cust_id" AS "cust_id",
+                      "a" AS "a",
+                      "b" AS "b",
+                      ("a" + "b") AS "c"
+                    FROM "db"."public"."event_table"
+                )
                 WHERE
                   "ts" >= CAST('2022-04-18 21:15:00' AS TIMESTAMP)
                   AND "ts" < CAST('2022-04-20 09:15:00' AS TIMESTAMP)
