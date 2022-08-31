@@ -899,7 +899,7 @@ def make_binary_operation_node(
             table_node=table_node,
             left_node=left_node,
             right_node=right_node,
-            unit="second",
+            unit=parameters["property"],
         )
     else:
         raise NotImplementedError(f"{node_type} cannot be converted to binary operation")

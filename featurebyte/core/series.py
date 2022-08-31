@@ -161,6 +161,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         node_type: NodeType,
         output_var_type: DBVarType,
         right_op: bool = False,
+        additional_node_params: dict[str, Any] | None = None,
     ) -> Series:
         """
         Apply binary operation between self & other objects
@@ -175,6 +176,8 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             output of the variable type
         right_op: bool
             whether the binary operation is from right object or not
+        additional_node_params : dict[str, Any] | None
+            additional parameters to include as node parameters
 
         Returns
         -------
@@ -191,6 +194,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_type=node_type,
             output_var_type=output_var_type,
             right_op=right_op,
+            additional_node_params=additional_node_params,
             **binary_op_series_params,
         )
 
@@ -361,6 +365,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_type=NodeType.DATE_DIFF,
             output_var_type=DBVarType.TIMEDELTA,
             right_op=right_op,
+            additional_node_params={"property": "second"},
         )
 
     @typechecked
