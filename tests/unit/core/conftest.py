@@ -34,6 +34,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
         {"name": "VALUE", "var_type": DBVarType.FLOAT},
         {"name": "MASK", "var_type": DBVarType.BOOL},
         {"name": "TIMESTAMP", "var_type": DBVarType.TIMESTAMP},
+        {"name": "PROMOTION_START_DATE", "var_type": DBVarType.DATE},
     ]
     node = global_graph.add_operation(
         node_type=NodeType.INPUT,
@@ -130,4 +131,27 @@ def timestamp_series(dataframe):
     assert isinstance(series, Series)
     assert series.name == "TIMESTAMP"
     assert series.var_type == DBVarType.TIMESTAMP
+    yield series
+
+
+@pytest.fixture()
+def timestamp_series_2(dataframe):
+    """
+    Another series with timestamp var type
+    """
+    series = dataframe["PROMOTION_START_DATE"]
+    assert isinstance(series, Series)
+    assert series.name == "PROMOTION_START_DATE"
+    assert series.var_type == DBVarType.DATE
+    yield series
+
+
+@pytest.fixture()
+def timedelta_series(timestamp_series, timestamp_series_2):
+    """
+    Series with timedelta var type
+    """
+    series = timestamp_series - timestamp_series_2
+    assert isinstance(series, Series)
+    assert series.var_type == DBVarType.TIMEDELTA
     yield series

@@ -61,7 +61,6 @@ class DatetimeAccessor:
                 "second": "second",
                 "millisecond": "millisecond",
                 "microsecond": "microsecond",
-                "nanosecond": "nanosecond",
             }
         else:
             raise AttributeError(

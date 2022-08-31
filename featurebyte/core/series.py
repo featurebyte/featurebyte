@@ -399,8 +399,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
 
     @typechecked
     def __rsub__(self, other: Union[int, float, Series]) -> Series:
-        if self.is_datetime and isinstance(other, Series) and other.is_datetime:
-            return self._date_diff_op(other, right_op=True)
         return self._binary_arithmetic_op(other, NodeType.SUB, right_op=True)
 
     @typechecked
@@ -437,7 +435,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         -------
         bool
         """
-        return self.var_type in (DBVarType.TIMESTAMP, DBVarType.TIME, DBVarType.DATE)
+        return self.var_type in (DBVarType.TIMESTAMP, DBVarType.DATE)
 
     def isnull(self) -> Series:
         """

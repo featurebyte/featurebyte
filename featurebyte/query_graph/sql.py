@@ -594,7 +594,7 @@ class DateDiffNode(ExpressionNode):
 
     left_node: ExpressionNode
     right_node: ExpressionNode
-    unit: Literal["hour", "minute", "second", "millisecond", "microsecond", "nanosecond"]
+    unit: Literal["hour", "minute", "second", "millisecond", "microsecond"]
 
     @property
     def sql(self) -> Expression:
@@ -610,7 +610,7 @@ class DateDiffNode(ExpressionNode):
 
     def with_unit(
         self,
-        unit: Literal["hour", "minute", "second", "millisecond", "microsecond", "nanosecond"],
+        unit: Literal["hour", "minute", "second", "millisecond", "microsecond"],
     ) -> DateDiffNode:
         """Creates a new DateDiffNode with a new unit applied
 
@@ -910,7 +910,7 @@ def make_binary_operation_node(
             table_node=table_node,
             left_node=left_node,
             right_node=right_node,
-            unit=parameters["property"],
+            unit=parameters["unit"],
         )
     else:
         raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
@@ -1287,7 +1287,7 @@ def make_expression_node(
         )
     elif node_type == NodeType.DATE_DIFF_UNIT:
         assert isinstance(input_expr_node, DateDiffNode)
-        sql_node = input_expr_node.with_unit(parameters["unit"])
+        sql_node = input_expr_node.with_unit(parameters["property"])
     elif node_type == NodeType.COUNT_DICT_TRANSFORM:
         sql_node = CountDictTransformNode(
             table_node=table_node,

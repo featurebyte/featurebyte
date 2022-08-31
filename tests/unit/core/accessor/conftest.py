@@ -18,7 +18,8 @@ def expression_sql_template_fixture():
           "PRODUCT_ACTION" AS "PRODUCT_ACTION",
           "VALUE" AS "VALUE",
           "MASK" AS "MASK",
-          "TIMESTAMP" AS "TIMESTAMP"
+          "TIMESTAMP" AS "TIMESTAMP",
+          "PROMOTION_START_DATE" AS "PROMOTION_START_DATE"
         FROM "db"."public"."transaction"
     )
     LIMIT 10
