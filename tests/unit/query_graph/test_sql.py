@@ -18,8 +18,9 @@ def input_node_fixture():
         "col_2": sqlglot.parse_one("col_2"),
         "col_3": sqlglot.parse_one("col_3"),
     }
-    return sql.GenericInputNode(
+    return sql.InputNode(
         columns_map=columns_map,
+        where_condition=None,
         column_names=["col_1", "col_2", "col_3"],
         dbtable={
             "database_name": "my_database",

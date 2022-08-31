@@ -777,9 +777,60 @@ def test_filter_node(graph, node_input):
               "a" AS "a",
               "b" AS "b"
             FROM "db"."public"."event_table"
+            WHERE
+              ("b" = 123)
         )
+        LIMIT 10
+        """
+    ).strip()
+    assert sql_code == expected
+
+
+def test_multiple_filters(graph, node_input):
+    """Test graph with filter operation"""
+    proj_b = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["b"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    binary_node_1 = graph.add_operation(
+        node_type=NodeType.GE,
+        node_params={"value": 1000},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_b],
+    )
+    binary_node_2 = graph.add_operation(
+        node_type=NodeType.LE,
+        node_params={"value": 5000},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_b],
+    )
+    filter_node_1 = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, binary_node_1],
+    )
+    filter_node_2 = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[filter_node_1, binary_node_2],
+    )
+    interpreter = GraphInterpreter(graph)
+    sql_code = interpreter.construct_preview_sql(filter_node_2.name)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b"
+        FROM "db"."public"."event_table"
         WHERE
-          ("b" = 123)
+          ("b" >= 1000)
+          AND ("b" <= 5000)
         LIMIT 10
         """
     ).strip()
@@ -991,8 +1042,8 @@ def test_window_function(graph, node_input):
         input_nodes=[node_input],
     )
     binary_node = graph.add_operation(
-        node_type=NodeType.EQ,
-        node_params={"value": 123},
+        node_type=NodeType.GT,
+        node_params={"value": 1000},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a],
     )
@@ -1034,7 +1085,8 @@ def test_window_function(graph, node_input):
               "b" AS "b",
               LAG("a") OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
             FROM "db"."public"."event_table"
-            WHERE ("a" = 123)
+            WHERE
+              ("a" > 1000)
         )
         WHERE
           "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
