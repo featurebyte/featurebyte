@@ -64,7 +64,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
 
         Raises
         ------
-        HTTPException
+        DocumentConflictError
             When the feature registry already exists at the feature store
         """
         if feature_store.type == SourceType.SNOWFLAKE:
@@ -86,7 +86,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                     f"other feature list at Snowflake feature list store."
                 ) from exc
 
-    async def create_document(
+    async def create_document(  # type: ignore[override]
         self, data: FeatureListCreate, get_credential: Any = None
     ) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check

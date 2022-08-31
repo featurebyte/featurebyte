@@ -21,7 +21,6 @@ from featurebyte.models.base import (
 from featurebyte.models.persistent import AuditActionType, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.common.operation import DictProject, DictTransform
-from featurebyte.service.task_manager import AbstractTaskManager, TaskId
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
 
@@ -31,7 +30,7 @@ class BaseDocumentService(Generic[Document]):
     BaseService class
     """
 
-    document_class: Type[Document] = FeatureByteBaseDocumentModel
+    document_class: Type[Document]
 
     # variables used to construct document info output
     base_info_transform_rule = {
@@ -128,11 +127,6 @@ class BaseDocumentService(Generic[Document]):
         Returns
         -------
         Document
-
-        Raises
-        ------
-        DocumentNotFoundError
-            If the specified document does not exist
         """
         document_dict = await self._get_document(
             document_id=document_id, exception_detail=exception_detail
@@ -469,9 +463,10 @@ class BaseDocumentService(Generic[Document]):
         document: FeatureByteBaseDocumentModel
             Document contains information to construct query filter & conflict signature
 
-        Returns
-        -------
+        Yields
+        ------
         Iterator[dict[str, Any], dict[str, Any], Optional[UniqueConstraintResolutionSignature]]
+            List of tuples used to construct unique constraint validations
         """
         doc_dict = document.dict(by_alias=True)
         for constraint in cls.document_class.Settings.unique_constraints:
@@ -519,24 +514,6 @@ class BaseDocumentService(Generic[Document]):
         Returns
         -------
         Document
-        """
-
-    async def create_document_creation_task(
-        self, data: FeatureByteBaseModel, task_manager: AbstractTaskManager
-    ) -> TaskId:
-        """
-        Create document creation task (submit a task to task manager to generate the document)
-
-        Parameters
-        ----------
-        data: FeatureByteBaseModel
-            Document creation payload object
-        task_manager: AbstractTaskManager
-            Task manager
-
-        Returns
-        -------
-        TaskId
         """
 
     @abstractmethod

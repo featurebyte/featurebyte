@@ -101,7 +101,7 @@ class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
     event_timestamp_column: StrictStr
     record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]
-    status: Optional[EventDataStatus] = Field(default=None, allow_mutation=False)
+    status: EventDataStatus = Field(default=EventDataStatus.DRAFT, allow_mutation=False)
 
     class Settings:
         """

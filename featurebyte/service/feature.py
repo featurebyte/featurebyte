@@ -67,7 +67,7 @@ class FeatureService(BaseDocumentService[FeatureModel]):
 
         Raises
         ------
-        HTTPException
+        DocumentConflictError
             When the feature registry already exists at the feature store
         Exception
             Other errors during registry insertion / removal
@@ -96,7 +96,7 @@ class FeatureService(BaseDocumentService[FeatureModel]):
                 feature_manager.remove_feature_registry(document)
                 raise exc
 
-    async def create_document(
+    async def create_document(  # type: ignore[override]
         self, data: FeatureCreate, get_credential: Any = None
     ) -> FeatureModel:
         async with self.persistent.start_transaction() as session:

@@ -3,7 +3,7 @@ FeatureStore API route controller
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Type
 
 from http import HTTPStatus
 
@@ -23,7 +23,7 @@ class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureSt
     """
 
     paginated_document_class = FeatureStoreList
-    document_service_class = FeatureStoreService
+    document_service_class: Type[FeatureStoreService] = FeatureStoreService  # type: ignore[assignment]
 
     @classmethod
     async def create_feature_store(
@@ -48,6 +48,11 @@ class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureSt
         -------
         FeatureStoreModel
             Newly created feature store document
+
+        Raises
+        ------
+        HTTPException
+            If some referenced object not found or there exists conflicting value
         """
         try:
             document = await cls.document_service_class(
@@ -55,6 +60,8 @@ class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureSt
             ).create_document(data)
             return document
         except DocumentNotFoundError as exc:
-            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc))
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
         except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc))
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc

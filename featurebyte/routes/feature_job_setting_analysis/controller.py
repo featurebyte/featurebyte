@@ -3,7 +3,7 @@ FeatureJobSettingAnalysis API route controller
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Type
 
 from http import HTTPStatus
 
@@ -31,7 +31,9 @@ class FeatureJobSettingAnalysisController(
     """
 
     paginated_document_class = FeatureJobSettingAnalysisList
-    document_service_class = FeatureJobSettingAnalysisService
+    document_service_class: Type[
+        FeatureJobSettingAnalysisService
+    ] = FeatureJobSettingAnalysisService  # type: ignore[assignment]
 
     @classmethod
     async def create_feature_job_setting_analysis(
@@ -59,6 +61,11 @@ class FeatureJobSettingAnalysisController(
         -------
         Task
             Task object for the submitted task
+
+        Raises
+        ------
+        HTTPException
+            If some referenced object not found or there exists conflicting value
         """
         try:
             task_id = await cls.document_service_class(
@@ -66,6 +73,8 @@ class FeatureJobSettingAnalysisController(
             ).create_document_creation_task(data=data, task_manager=task_manager)
             return await TaskController.get_task(task_manager=task_manager, task_id=str(task_id))
         except DocumentNotFoundError as exc:
-            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc))
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
         except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc))
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc

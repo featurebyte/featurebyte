@@ -3,7 +3,7 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Type
 
 from http import HTTPStatus
 
@@ -27,7 +27,7 @@ class FeatureListController(BaseDocumentController[FeatureListModel, FeatureList
     """
 
     paginated_document_class = FeatureListPaginatedList
-    document_service_class = FeatureListService
+    document_service_class: Type[FeatureListService] = FeatureListService  # type: ignore[assignment]
 
     @classmethod
     async def create_feature_list(
@@ -55,7 +55,7 @@ class FeatureListController(BaseDocumentController[FeatureListModel, FeatureList
         Raises
         ------
         HTTPException
-            When not all features share the same feature store
+            If some referenced object not found or there exists conflicting value
         """
         try:
             document = await cls.document_service_class(
@@ -63,6 +63,8 @@ class FeatureListController(BaseDocumentController[FeatureListModel, FeatureList
             ).create_document(data=data, get_credential=get_credential)
             return document
         except (DocumentNotFoundError, DocumentInconsistencyError) as exc:
-            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc))
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
         except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc))
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc

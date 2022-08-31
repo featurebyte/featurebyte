@@ -3,10 +3,11 @@ DocumentInfoService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Type
+from typing import Any, Dict, List, Type
 
 from bson.objectid import ObjectId
 
+from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.entity import EntityService
@@ -28,7 +29,9 @@ class DocumentInfoService:
         self.persistent = persistent
 
     @property
-    def document_service_map(self) -> Dict[str, Type[BaseDocumentService]]:
+    def document_service_map(
+        self,
+    ) -> Dict[str, Type[BaseDocumentService[FeatureByteBaseDocumentModel]]]:
         """
         Collection name to service class mapping
 
@@ -36,14 +39,14 @@ class DocumentInfoService:
         -------
         Collection name key to service class value mapping
         """
-        document_services = [
-            EntityService,
-            EventDataService,
-            FeatureService,
-            FeatureJobSettingAnalysisService,
-            FeatureListService,
-            FeatureNamespaceService,
-            FeatureStoreService,
+        document_services: List[Type[BaseDocumentService[FeatureByteBaseDocumentModel]]] = [
+            EntityService,  # type: ignore
+            EventDataService,  # type: ignore
+            FeatureService,  # type: ignore
+            FeatureJobSettingAnalysisService,  # type: ignore
+            FeatureListService,  # type: ignore
+            FeatureNamespaceService,  # type: ignore
+            FeatureStoreService,  # type: ignore
         ]
         return {
             document_service.document_class.collection_name(): document_service
@@ -71,7 +74,7 @@ class DocumentInfoService:
     async def _populate_document(
         self,
         document: dict[str, Any],
-        document_service: BaseDocumentService,
+        document_service: BaseDocumentService[FeatureByteBaseDocumentModel],
     ) -> dict[str, Any]:
         output = {}
         for key, value in document.items():

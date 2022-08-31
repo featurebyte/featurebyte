@@ -11,6 +11,7 @@ from bson.objectid import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.exception import DocumentNotFoundError
+from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.routes.common.schema import PaginationMixin
@@ -26,7 +27,7 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
     """
 
     paginated_document_class: Type[PaginationMixin] = PaginationMixin
-    document_service_class: Type[BaseDocumentService] = BaseDocumentService
+    document_service_class: Type[BaseDocumentService[FeatureByteBaseDocumentModel]]
 
     @classmethod
     async def get(
@@ -66,9 +67,9 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
                 document_id=document_id,
                 exception_detail=exception_detail,
             )
-            return document
+            return cast(Document, document)
         except DocumentNotFoundError as exc:
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc))
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)) from exc
 
     @classmethod
     async def list(

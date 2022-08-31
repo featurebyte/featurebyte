@@ -38,7 +38,7 @@ class EventDataService(BaseDocumentService[EventDataModel]):
     )
     foreign_key_map = {"entity_id": EntityModel.collection_name()}
 
-    async def create_document(
+    async def create_document(  # type: ignore[override]
         self, data: EventDataCreate, get_credential: Any = None
     ) -> EventDataModel:
         _ = get_credential
@@ -59,7 +59,9 @@ class EventDataService(BaseDocumentService[EventDataModel]):
         assert insert_id == document.id
         return await self.get_document(document_id=insert_id)
 
-    async def update_document(self, document_id: ObjectId, data: EventDataUpdate) -> EventDataModel:
+    async def update_document(  # type: ignore[override]
+        self, document_id: ObjectId, data: EventDataUpdate
+    ) -> EventDataModel:
         document = await self.get_document(document_id=document_id)
 
         # prepare update payload

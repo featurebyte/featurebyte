@@ -3,7 +3,7 @@ Entity API routes
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Type
 
 from http import HTTPStatus
 
@@ -24,7 +24,7 @@ class EntityController(BaseDocumentController[EntityModel, EntityList]):
     """
 
     paginated_document_class = EntityList
-    document_service_class = EntityService
+    document_service_class: Type[EntityService] = EntityService  # type: ignore[assignment]
 
     @classmethod
     async def create_entity(
@@ -49,14 +49,23 @@ class EntityController(BaseDocumentController[EntityModel, EntityList]):
         -------
         EntityModel
             Newly created entity object
+
+        Raises
+        ------
+        HTTPException
+            If some referenced object not found or there exists conflicting value
         """
         try:
             document = await cls.document_service_class(
                 user=user, persistent=persistent
             ).create_document(data)
             return document
+        except DocumentNotFoundError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
         except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc))
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc
 
     @classmethod
     async def update_entity(

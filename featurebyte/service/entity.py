@@ -27,7 +27,9 @@ class EntityService(BaseDocumentService[EntityModel]):
         }
     )
 
-    async def create_document(self, data: EntityCreate, get_credential: Any = None) -> EntityModel:
+    async def create_document(  # type: ignore[override]
+        self, data: EntityCreate, get_credential: Any = None
+    ) -> EntityModel:
         _ = get_credential
         document = EntityModel(
             **data.json_dict(), user_id=self.user.id, serving_names=[data.serving_name]
@@ -43,7 +45,9 @@ class EntityService(BaseDocumentService[EntityModel]):
         assert insert_id == document.id
         return await self.get_document(document_id=insert_id)
 
-    async def update_document(self, document_id: ObjectId, data: EntityUpdate) -> EntityModel:
+    async def update_document(  # type: ignore[override]
+        self, document_id: ObjectId, data: EntityUpdate
+    ) -> EntityModel:
         # check any conflict with existing documents
         await self._check_document_unique_constraint(
             query_filter={"name": data.name},

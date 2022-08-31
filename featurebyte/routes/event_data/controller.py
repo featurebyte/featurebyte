@@ -3,7 +3,7 @@ EventData API route controller
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Type
 
 from http import HTTPStatus
 
@@ -24,7 +24,7 @@ class EventDataController(BaseDocumentController[EventDataModel, EventDataList])
     """
 
     paginated_document_class = EventDataList
-    document_service_class = EventDataService
+    document_service_class: Type[EventDataService] = EventDataService  # type: ignore[assignment]
 
     @classmethod
     async def create_event_data(
@@ -49,6 +49,11 @@ class EventDataController(BaseDocumentController[EventDataModel, EventDataList])
         -------
         EventDataModel
             Newly created event data object
+
+        Raises
+        ------
+        HTTPException
+            If some referenced object not found or there exists conflicting value
         """
         try:
             document = await cls.document_service_class(
@@ -56,9 +61,11 @@ class EventDataController(BaseDocumentController[EventDataModel, EventDataList])
             ).create_document(data)
             return document
         except DocumentNotFoundError as exc:
-            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc))
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
         except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc))
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc
 
     @classmethod
     async def update_event_data(

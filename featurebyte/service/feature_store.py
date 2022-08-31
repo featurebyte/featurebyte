@@ -3,7 +3,7 @@ FeatureStoreService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Type
 
 from bson.objectid import ObjectId
 
@@ -19,7 +19,7 @@ class FeatureStoreService(BaseDocumentService[FeatureStoreModel]):
     FeatureStoreService class
     """
 
-    document_class = FeatureStoreModel
+    document_class: Type[FeatureStoreModel] = FeatureStoreModel
     info_transform = DictTransform(
         rule={
             **BaseDocumentService.base_info_transform_rule,
@@ -27,7 +27,7 @@ class FeatureStoreService(BaseDocumentService[FeatureStoreModel]):
         }
     )
 
-    async def create_document(
+    async def create_document(  # type: ignore[override]
         self, data: FeatureStoreCreate, get_credential: Any = None
     ) -> FeatureStoreModel:
         _ = get_credential

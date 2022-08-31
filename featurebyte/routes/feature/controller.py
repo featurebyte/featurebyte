@@ -3,7 +3,7 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Type
 
 from http import HTTPStatus
 
@@ -23,7 +23,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureList]):
     """
 
     paginated_document_class = FeatureList
-    document_service_class = FeatureService
+    document_service_class: Type[FeatureService] = FeatureService  # type: ignore[assignment]
 
     @classmethod
     async def create_feature(
@@ -61,6 +61,8 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureList]):
             ).create_document(data=data, get_credential=get_credential)
             return document
         except (DocumentNotFoundError, DocumentUpdateError) as exc:
-            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc))
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
         except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc))
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc

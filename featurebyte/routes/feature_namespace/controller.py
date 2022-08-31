@@ -3,7 +3,7 @@ FeatureNamespace API route controller
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Type
 
 from http import HTTPStatus
 
@@ -30,7 +30,7 @@ class FeatureNamespaceController(
     """
 
     paginated_document_class = FeatureNamespaceList
-    document_service_class = FeatureNamespaceService
+    document_service_class: Type[FeatureNamespaceService] = FeatureNamespaceService  # type: ignore[assignment]
 
     @classmethod
     async def create_feature_namespace(
@@ -52,6 +52,11 @@ class FeatureNamespaceController(
         -------
         FeatureNamespaceModel
             Newly created feature store document
+
+        Raises
+        ------
+        HTTPException
+            If some referenced object not found or there exists conflicting value
         """
         try:
             document = await cls.document_service_class(
@@ -59,9 +64,11 @@ class FeatureNamespaceController(
             ).create_document(data)
             return document
         except DocumentNotFoundError as exc:
-            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc))
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
         except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc))
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc
 
     @classmethod
     async def update_feature_namespace(

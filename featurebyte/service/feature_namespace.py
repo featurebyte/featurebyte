@@ -37,7 +37,7 @@ class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
         "default_version_id": FeatureModel.collection_name(),
     }
 
-    async def create_document(
+    async def create_document(  # type: ignore[override]
         self, data: FeatureNamespaceCreate, get_credential: Any = None
     ) -> FeatureNamespaceModel:
         _ = get_credential
@@ -52,7 +52,7 @@ class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
         assert insert_id == document.id
         return await self.get_document(document_id=insert_id)
 
-    async def update_document(
+    async def update_document(  # type: ignore[override]
         self, document_id: ObjectId, data: FeatureNamespaceUpdate
     ) -> FeatureNamespaceModel:
         document = await self.get_document(
