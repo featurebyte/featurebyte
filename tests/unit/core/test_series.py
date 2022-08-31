@@ -718,3 +718,11 @@ def test_astype__invalid_type_cls(float_series):
         'type of argument "new_type" must be one of (Type[int], Type[float], Type[str],'
         " Literal[int, float, str]); got dict instead"
     )
+
+
+def test_node_types_lineage(float_series):
+    """
+    Test node_types_lineage attribute
+    """
+    assert float_series.node_types_lineage == ["project", "input"]
+    assert (float_series + 1).astype(str).node_types_lineage == ["cast", "add", "project", "input"]

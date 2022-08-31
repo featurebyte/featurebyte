@@ -66,6 +66,8 @@ class EventViewColumn(Series):
         """
         if not isinstance(entity_columns, list):
             entity_columns = [entity_columns]
+        if NodeType.LAG in self.node_types_lineage:
+            raise ValueError("lag() can only be applied once per column")
         return series_unary_operation(
             input_series=self,
             node_type=NodeType.LAG,
