@@ -174,6 +174,34 @@ class TableNode(SQLNode, ABC):
         """
         self.columns_map = columns_map
 
+    def subset_columns(self, columns: list[str]) -> TableNode:
+        """Create a new TableNode with subset of columns
+
+        Parameters
+        ----------
+        columns : list[str]
+            Selected column names
+
+        Returns
+        -------
+        TableNode
+        """
+        columns_set = set(columns)
+        subset_columns_map = {
+            column_name: expr
+            for (column_name, expr) in self.columns_map.items()
+            if column_name in columns_set
+        }
+        subset_columns_node = {
+            column_name: node
+            for (column_name, node) in self.columns_node.items()
+            if column_name in columns_set
+        }
+        subset_table = deepcopy(self)
+        subset_table.columns_map = subset_columns_map
+        subset_table.columns_node = subset_columns_node
+        return subset_table
+
 
 @dataclass  # type: ignore
 class ExpressionNode(SQLNode, ABC):
@@ -965,15 +993,7 @@ def make_project_node(
     if output_type == NodeOutputType.SERIES:
         sql_node = Project(table_node=table_node, column_name=columns[0])
     else:
-        columns_set = set(columns)
-        columns_map = {
-            column_name: expr
-            for (column_name, expr) in table_node.columns_map.items()
-            if column_name in columns_set
-        }
-        subset_table = deepcopy(table_node)
-        subset_table.set_columns_map(columns_map)
-        sql_node = subset_table
+        sql_node = table_node.subset_columns(columns)
     return sql_node
 
 
