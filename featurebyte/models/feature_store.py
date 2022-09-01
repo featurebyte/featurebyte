@@ -89,18 +89,25 @@ class DatabaseTableModel(FeatureByteBaseModel):
     tabular_source: TabularSource
 
 
-class ColumnInfo(FeatureByteBaseModel):
+class ColumnSpec(FeatureByteBaseModel):
+    """
+    Schema for columns retrieval
+    """
+
+    name: StrictStr
+    dtype: DBVarType
+
+
+class ColumnInfo(ColumnSpec):
     """
     ColumnInfo for storing column information
 
     name: str
         Column name
-    var_type: DBVarType
+    dtype: DBVarType
         Variable type of the column
     entity_id: Optional[PydanticObjectId]
         Entity id associated with the column
     """
 
-    name: StrictStr
-    var_type: DBVarType
     entity_id: Optional[PydanticObjectId] = Field(default=None)

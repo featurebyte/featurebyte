@@ -29,11 +29,11 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
     Frame test fixture
     """
     columns_info = [
-        {"name": "CUST_ID", "var_type": DBVarType.INT},
-        {"name": "PRODUCT_ACTION", "var_type": DBVarType.VARCHAR},
-        {"name": "VALUE", "var_type": DBVarType.FLOAT},
-        {"name": "MASK", "var_type": DBVarType.BOOL},
-        {"name": "TIMESTAMP", "var_type": DBVarType.TIMESTAMP},
+        {"name": "CUST_ID", "dtype": DBVarType.INT},
+        {"name": "PRODUCT_ACTION", "dtype": DBVarType.VARCHAR},
+        {"name": "VALUE", "dtype": DBVarType.FLOAT},
+        {"name": "MASK", "dtype": DBVarType.BOOL},
+        {"name": "TIMESTAMP", "dtype": DBVarType.TIMESTAMP},
     ]
     node = global_graph.add_operation(
         node_type=NodeType.INPUT,

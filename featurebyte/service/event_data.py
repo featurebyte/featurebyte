@@ -32,7 +32,7 @@ class EventDataService(BaseDocumentService[EventDataModel]):
                 ]
             ),
             "columns": DictProject(
-                rule=("columns_info", ["name", "var_type", "entity"]), verbose_only=True
+                rule=("columns_info", ["name", "dtype", "entity"]), verbose_only=True
             ),
         }
     )

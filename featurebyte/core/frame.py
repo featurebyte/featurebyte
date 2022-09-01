@@ -34,7 +34,7 @@ class BaseFrame(QueryObject):
         -------
         dict[str, DBVarType]
         """
-        return {col.name: col.var_type for col in self.columns_info}
+        return {col.name: col.dtype for col in self.columns_info}
 
     @property
     def dtypes(self) -> pd.Series:
@@ -245,7 +245,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node, value.node],
             )
-            self.columns_info.append(ColumnInfo(name=key, var_type=value.var_type))
+            self.columns_info.append(ColumnInfo(name=key, dtype=value.var_type))
             self.column_lineage_map[key] = self._append_to_lineage(
                 self.column_lineage_map.get(key, tuple()), self.node.name
             )
@@ -257,7 +257,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 input_nodes=[self.node],
             )
             self.columns_info.append(
-                ColumnInfo(name=key, var_type=self.pytype_dbtype_map[type(value)])
+                ColumnInfo(name=key, dtype=self.pytype_dbtype_map[type(value)])
             )
             self.column_lineage_map[key] = self._append_to_lineage(
                 self.column_lineage_map.get(key, tuple()), self.node.name
