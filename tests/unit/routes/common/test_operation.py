@@ -3,7 +3,7 @@ Unit tests for DictTransform class
 """
 import pytest
 
-from featurebyte.routes.common.operation import DictProject, DictTransform
+from featurebyte.service.common.operation import DictProject, DictTransform
 
 
 @pytest.mark.parametrize(

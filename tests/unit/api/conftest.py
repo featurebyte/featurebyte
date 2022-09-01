@@ -124,7 +124,5 @@ def mock_insert_feature_registry_fixture():
     """
     Mock insert feature registry at the controller level
     """
-    with patch(
-        "featurebyte.routes.feature.controller.FeatureController._insert_feature_registry"
-    ) as mock:
+    with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
         yield mock

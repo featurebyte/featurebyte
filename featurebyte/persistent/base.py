@@ -1,5 +1,5 @@
 """
-Persistent persistent base class
+Persistent base class
 """
 from __future__ import annotations
 

@@ -124,3 +124,27 @@ class TableSchemaHasBeenChangedError(Exception):
     """
     Raise when the table schema has been changed (different from the time EventData object is saved)
     """
+
+
+class DocumentNotFoundError(Exception):
+    """
+    Raise when the persistent query return emtpy result
+    """
+
+
+class DocumentConflictError(Exception):
+    """
+    Raise when there exists a conflicting document at the persistent
+    """
+
+
+class DocumentUpdateError(Exception):
+    """
+    Raise when the document invalid update happens
+    """
+
+
+class DocumentInconsistencyError(Exception):
+    """
+    Raise when the document consistency issue is detected
+    """

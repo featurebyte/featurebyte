@@ -18,7 +18,7 @@ import featurebyte.routes.feature_list.api as feature_list_api
 import featurebyte.routes.feature_namespace.api as feature_namespace_api
 import featurebyte.routes.feature_store.api as feature_store_api
 import featurebyte.routes.task.api as task_api
-from featurebyte.routes.common.base import BaseController
+from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_data.controller import EventDataController
 from featurebyte.routes.feature.controller import FeatureController
@@ -78,7 +78,7 @@ def _get_api_deps(controller: type) -> Callable[[Request], None]:
 
 
 # add routers into the app
-resource_api_controller_pairs: list[tuple[Any, type[BaseController[Any, Any]]]] = [
+resource_api_controller_pairs: list[tuple[Any, type[BaseDocumentController[Any, Any]]]] = [
     (event_data_api, EventDataController),
     (entity_api, EntityController),
     (feature_api, FeatureController),
@@ -91,7 +91,7 @@ for resource_api, resource_controller in resource_api_controller_pairs:
     app.include_router(
         resource_api.router,
         dependencies=[Depends(_get_api_deps(resource_controller))],
-        tags=[resource_controller.collection_name],
+        tags=[resource_controller.document_service_class.document_class.collection_name()],
     )
 
 # add non-persistent-storage route

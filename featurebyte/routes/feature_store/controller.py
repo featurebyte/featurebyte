@@ -3,29 +3,22 @@ FeatureStore API route controller
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Type
 
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent.base import Persistent
-from featurebyte.routes.common.base import BaseController
-from featurebyte.routes.common.operation import DictProject, DictTransform
+from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreList
+from featurebyte.service.feature_store import FeatureStoreService
 
 
-class FeatureStoreController(BaseController[FeatureStoreModel, FeatureStoreList]):
+class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureStoreList]):
     """
     FeatureStore controller
     """
 
-    collection_name = FeatureStoreModel.collection_name()
-    document_class = FeatureStoreModel
     paginated_document_class = FeatureStoreList
-    info_transform = DictTransform(
-        rule={
-            **BaseController.base_info_transform_rule,
-            "__root__": DictProject(rule=["type", "details"]),
-        }
-    )
+    document_service_class: Type[FeatureStoreService] = FeatureStoreService  # type: ignore[assignment]
 
     @classmethod
     async def create_feature_store(
@@ -51,20 +44,8 @@ class FeatureStoreController(BaseController[FeatureStoreModel, FeatureStoreList]
         FeatureStoreModel
             Newly created feature store document
         """
-        # pylint: disable=duplicate-code
-        document = FeatureStoreModel(**data.json_dict(), user_id=user.id)
-
-        # check any conflict with existing documents
-        await cls.check_document_unique_constraints(
-            persistent=persistent,
-            user_id=user.id,
-            document=document,
-        )
-
-        insert_id = await persistent.insert_one(
-            collection_name=cls.collection_name,
-            document=document.dict(by_alias=True),
-            user_id=user.id,
-        )
-        assert insert_id == document.id
-        return await cls.get(user=user, persistent=persistent, document_id=insert_id)
+        async with cls._creation_context():
+            document = await cls.document_service_class(
+                user=user, persistent=persistent
+            ).create_document(data)
+            return document

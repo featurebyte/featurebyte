@@ -7,14 +7,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
-from fastapi import HTTPException
 
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.exception import DuplicatedRegistryError
+from featurebyte.exception import DocumentConflictError, DuplicatedRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature_store import SourceType, SQLiteDetails, TableDetails
-from featurebyte.routes.feature.controller import FeatureController
+from featurebyte.service.feature import FeatureService
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -79,9 +78,7 @@ class TestFeatureApi(BaseApiTestSuite):
         """
         Mock insert feature registry at the controller level
         """
-        with patch(
-            "featurebyte.routes.feature.controller.FeatureController._insert_feature_registry"
-        ) as mock:
+        with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
             yield mock
 
     def setup_creation_route(self, api_client):
@@ -197,10 +194,8 @@ async def test_insert_feature_registry(
     Test insert_feature_registry
     """
     _ = snowflake_connector
-    user = Mock()
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
-    await FeatureController._insert_feature_registry(
-        user=user,
+    await FeatureService(user=Mock(), persistent=Mock())._insert_feature_registry(
         document=feature,
         get_credential=get_credential,
     )
@@ -243,15 +238,14 @@ async def test_insert_feature_registry__non_snowflake_feature_store(
         "table_details": TableDetails(table_name="some_table"),
     }
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=sqlite_feature_store)
-    user = Mock()
-    await FeatureController._insert_feature_registry(
-        user=user, document=feature, get_credential=get_credential
+    await FeatureService(user=Mock(), persistent=Mock())._insert_feature_registry(
+        document=feature, get_credential=get_credential
     )
     assert mock_execute_query.call_count == 0
 
 
 @pytest.mark.asyncio
-@patch("featurebyte.routes.feature.controller.FeatureManagerSnowflake")
+@patch("featurebyte.service.feature.FeatureManagerSnowflake")
 async def test_insert_feature_registry__duplicated_feature_registry_exception(
     mock_feature_manager,
     feature_model_dict,
@@ -265,21 +259,20 @@ async def test_insert_feature_registry__duplicated_feature_registry_exception(
     _ = snowflake_connector
     mock_feature_manager.return_value.insert_feature_registry.side_effect = DuplicatedRegistryError
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
-    user = Mock()
-    with pytest.raises(HTTPException) as exc:
-        await FeatureController._insert_feature_registry(
-            user=user, document=feature, get_credential=get_credential
+    with pytest.raises(DocumentConflictError) as exc:
+        await FeatureService(user=Mock(), persistent=Mock())._insert_feature_registry(
+            document=feature, get_credential=get_credential
         )
     expected_msg = (
         'Feature (name: "sum_30m") has been registered by other feature '
         "at Snowflake feature store."
     )
-    assert expected_msg in str(exc.value.detail)
+    assert expected_msg in str(exc)
     assert not mock_feature_manager.return_value.remove_feature_registry.called
 
 
 @pytest.mark.asyncio
-@patch("featurebyte.routes.feature.controller.FeatureManagerSnowflake")
+@patch("featurebyte.service.feature.FeatureManagerSnowflake")
 async def test_insert_feature_registry__other_exception(
     mock_feature_manager,
     feature_model_dict,
@@ -293,10 +286,8 @@ async def test_insert_feature_registry__other_exception(
     _ = snowflake_connector
     mock_feature_manager.return_value.insert_feature_registry.side_effect = ValueError
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
-    user = Mock()
     with pytest.raises(ValueError):
-        await FeatureController._insert_feature_registry(
-            user=user,
+        await FeatureService(user=Mock(), persistent=Mock())._insert_feature_registry(
             document=feature,
             get_credential=get_credential,
         )

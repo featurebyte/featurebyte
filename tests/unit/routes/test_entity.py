@@ -92,10 +92,12 @@ class TestEntityApi(BaseApiTestSuite):
         result = response.json()
         assert result["name"] == "Customer"
 
-        # test special case when the name is the same, should not update name history
+        # conflict due the name already exist (event if it is the same as the existing one)
         response = test_api_client.patch(f"/entity/{entity_id}", json={"name": "Customer"})
-        assert response.status_code == HTTPStatus.OK
-        assert response.json() == result
+        assert response.status_code == HTTPStatus.CONFLICT
+        assert response.json()["detail"] == (
+            'Entity (name: "Customer") already exists. Get the existing object by `Entity.get(name="Customer")`.'
+        )
 
         # test get audit records
         response = test_api_client.get(f"/entity/audit/{entity_id}")

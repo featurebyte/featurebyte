@@ -93,7 +93,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         payload = self.payload.copy()
         payload["event_data_id"] = str(ObjectId("63030c9eb9150a577ebb61fb"))
         response = test_api_client.post(f"{self.base_route}", json=payload)
-        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
             response.json()["detail"]
             == 'EventData (id: "63030c9eb9150a577ebb61fb") not found. Please save the EventData object first.'
