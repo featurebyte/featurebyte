@@ -95,7 +95,7 @@ class TableNode(SQLNode, ABC):
     """
 
     columns_map: dict[str, Expression]
-    columns_node: dict[str, SQLNode] = field(init=False)
+    columns_node: dict[str, ExpressionNode] = field(init=False)
 
     def __post_init__(self) -> None:
         self.columns_node = {}
@@ -123,7 +123,7 @@ class TableNode(SQLNode, ABC):
         assert isinstance(sql, expressions.Subqueryable)
         return sql.subquery()
 
-    def assign_column(self, column_name: str, node: SQLNode) -> None:
+    def assign_column(self, column_name: str, node: ExpressionNode) -> None:
         """Performs an assignment and update column_name's expression
 
         Parameters
@@ -136,7 +136,7 @@ class TableNode(SQLNode, ABC):
         self.columns_map[column_name] = node.sql
         self.columns_node[column_name] = node
 
-    def get_column_node(self, column_name: str) -> SQLNode | None:
+    def get_column_node(self, column_name: str) -> ExpressionNode | None:
         """Get SQLNode for a column
 
         Parameters
@@ -1263,9 +1263,9 @@ def make_timedelta_extract_node(
     table_node = input_expr_node.table_node
     if isinstance(input_expr_node, Project):
         # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
-        original_sql_node = table_node.get_column_node(input_expr_node.column_name)
-        assert isinstance(original_sql_node, ExpressionNode)
-        input_expr_node = original_sql_node
+        assigned_node = table_node.get_column_node(input_expr_node.column_name)
+        assert assigned_node is not None
+        input_expr_node = assigned_node
     assert isinstance(input_expr_node, DateDiffNode)
     sql_node = input_expr_node.with_unit(parameters["property"])
     return sql_node
