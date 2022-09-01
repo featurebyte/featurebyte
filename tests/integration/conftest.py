@@ -74,7 +74,8 @@ def mock_get_persistent_fixture(config):
     origin = repo.remotes.origin
     if origin:
         with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
-            origin.push(refspec=(f":{branch}"))
+            # add kill_after_timeout to avoid process blocking which causes timeout exception
+            origin.push(refspec=f":{branch}", kill_after_timeout=30)
 
 
 @pytest.fixture(name="snowflake_feature_store", scope="session")
