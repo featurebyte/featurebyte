@@ -11,6 +11,7 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureReadiness
+from tests.util.helper import get_lagged_series_pandas
 
 
 def test_query_object_operation_on_sqlite_source(
@@ -535,8 +536,6 @@ def check_string_operations(event_view, column_name, limit=100):
 def check_datetime_operations(event_view, column_name, limit=100):
     """Test datetime operations"""
     datetime_series = event_view[column_name]
-    pandas_frame = datetime_series.preview(limit=limit)
-    pandas_series = pandas_frame[pandas_frame.columns[0]]
 
     properties = [
         "year",
@@ -555,7 +554,12 @@ def check_datetime_operations(event_view, column_name, limit=100):
         event_view[name] = getattr(datetime_series.dt, prop)
         columns.append(name)
 
-    dt_df = event_view[columns].preview(limit=limit)
+    event_view["event_interval"] = datetime_series - datetime_series.lag("CUST_ID")
+    event_view["event_interval_hour"] = event_view["event_interval"].dt.hour
+    event_view["event_interval_minute"] = event_view["event_interval"].dt.minute
+
+    dt_df = event_view.preview(limit=limit)
+    pandas_series = dt_df[column_name]
     for prop in properties:
         series_prop = getattr(pandas_series.dt, prop)
         pd.testing.assert_series_equal(
@@ -564,6 +568,12 @@ def check_datetime_operations(event_view, column_name, limit=100):
             check_names=False,
             check_dtype=False,
         )
+
+    pandas_previous_timestamp = get_lagged_series_pandas(
+        dt_df, "EVENT_TIMESTAMP", "EVENT_TIMESTAMP", "CUST_ID"
+    ).total_seconds()
+    pandas_event_interval = pandas_series - pandas_previous_timestamp
+    pd.testing.assert_series_equal(dt_df["event_interval"], pandas_event_interval.total_seconds())
 
 
 def check_cast_operations(event_view, limit=100):

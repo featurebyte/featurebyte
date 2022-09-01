@@ -40,3 +40,29 @@ def patch_import_package(package_path):
             sys.modules[package_path] = original_module
         else:
             sys.modules.pop(package_path)
+
+
+def get_lagged_series_pandas(df, column, timestamp, groupby_key):
+    """
+    Get lagged value for a column in a pandas DataFrame
+
+    Parameters
+    ----------
+    df : DataFrame
+        pandas DataFrame
+    column : str
+        Column name
+    timestamp : str
+        Timestamp column anme
+    groupby_key : str
+        Entity column to consider when getting the lag
+    """
+    df = df.copy()
+    df["__original_index"] = df.index
+    df_sorted = df.sort_values(timestamp)
+    df_sorted["__shifted"] = df_sorted.groupby(groupby_key)[column].shift(1)
+    df_sorted.set_index("__original_index", inplace=True)
+    df["__shifted"] = df["__original_index"].map(df_sorted["__shifted"])
+    out = df["__shifted"]
+    out.name = column
+    return out
