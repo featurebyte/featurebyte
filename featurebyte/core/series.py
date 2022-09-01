@@ -14,8 +14,9 @@ from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import OpsMixin, ParentMixin
 from featurebyte.core.util import series_binary_operation, series_unary_operation
 from featurebyte.enum import DBVarType
+from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
 
 
 class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin):
@@ -495,6 +496,23 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         if self.name:
             columns.append(self.name)
         return self._preview_sql(columns=columns, limit=limit)
+
+    @property
+    def node_types_lineage(self) -> list[NodeType]:
+        """
+        Returns a list of node types that is part of the lineage of this Series
+
+        Returns
+        -------
+        list[NodeType]
+        """
+        out = []
+        series_dict = self.dict()
+        pruned_graph = QueryGraph(**series_dict["graph"])
+        pruned_node = Node(**series_dict["node"])
+        for node in dfs_traversal(pruned_graph, pruned_node):
+            out.append(node.type)
+        return out
 
     @root_validator()
     @classmethod

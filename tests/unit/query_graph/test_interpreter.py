@@ -123,13 +123,17 @@ def test_graph_interpreter_multi_assign(graph, node_input):
     expected = textwrap.dedent(
         """
         SELECT
-          "ts" AS "ts",
-          "cust_id" AS "cust_id",
-          "a" AS "a",
-          "b" AS "b",
-          ("a" + "b") AS "c",
-          ("a" + "b") AS "c2"
-        FROM "db"."public"."event_table"
+          *
+        FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b",
+              ("a" + "b") AS "c",
+              ("a" + "b") AS "c2"
+            FROM "db"."public"."event_table"
+        )
         WHERE
           "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
           AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
@@ -180,12 +184,16 @@ def test_graph_interpreter_binary_operations(graph, node_input, node_type, expec
     expected = textwrap.dedent(
         f"""
         SELECT
-          "ts" AS "ts",
-          "cust_id" AS "cust_id",
-          "a" AS "a",
-          "b" AS "b",
-          ({expected_expr}) AS "a2"
-        FROM "db"."public"."event_table"
+          *
+        FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b",
+              ({expected_expr}) AS "a2"
+            FROM "db"."public"."event_table"
+        )
         WHERE
           "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
           AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
@@ -353,12 +361,16 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
               FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
                 SELECT
-                  "ts" AS "ts",
-                  "cust_id" AS "cust_id",
-                  "a" AS "a",
-                  "b" AS "b",
-                  ("a" + "b") AS "c"
-                FROM "db"."public"."event_table"
+                  *
+                FROM (
+                    SELECT
+                      "ts" AS "ts",
+                      "cust_id" AS "cust_id",
+                      "a" AS "a",
+                      "b" AS "b",
+                      ("a" + "b") AS "c"
+                    FROM "db"."public"."event_table"
+                )
                 WHERE
                   "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
                   AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
@@ -600,9 +612,13 @@ def test_graph_interpreter_snowflake(graph):
               FLOOR((DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
                 SELECT
-                  "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
-                  "CUST_ID" AS "CUST_ID"
-                FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
+                  *
+                FROM (
+                    SELECT
+                      "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
+                      "CUST_ID" AS "CUST_ID"
+                    FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
+                )
                 WHERE
                   "SERVER_TIMESTAMP" >= CAST(__FB_START_DATE AS TIMESTAMP)
                   AND "SERVER_TIMESTAMP" < CAST(__FB_END_DATE AS TIMESTAMP)
@@ -761,9 +777,60 @@ def test_filter_node(graph, node_input):
               "a" AS "a",
               "b" AS "b"
             FROM "db"."public"."event_table"
+            WHERE
+              ("b" = 123)
         )
+        LIMIT 10
+        """
+    ).strip()
+    assert sql_code == expected
+
+
+def test_multiple_filters(graph, node_input):
+    """Test graph with filter operation"""
+    proj_b = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["b"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    binary_node_1 = graph.add_operation(
+        node_type=NodeType.GE,
+        node_params={"value": 1000},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_b],
+    )
+    binary_node_2 = graph.add_operation(
+        node_type=NodeType.LE,
+        node_params={"value": 5000},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_b],
+    )
+    filter_node_1 = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, binary_node_1],
+    )
+    filter_node_2 = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[filter_node_1, binary_node_2],
+    )
+    interpreter = GraphInterpreter(graph)
+    sql_code = interpreter.construct_preview_sql(filter_node_2.name)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b"
+        FROM "db"."public"."event_table"
         WHERE
-          ("b" = 123)
+          ("b" >= 1000)
+          AND ("b" <= 5000)
         LIMIT 10
         """
     ).strip()
@@ -959,3 +1026,71 @@ def test_isnull(graph, node_input):
         """
     ).strip()
     assert sql_code == expected
+
+
+def test_window_function(graph, node_input):
+    """Test tile sql when window function is involved
+
+    Note that the tile start and end date filters are applied on a nested subquery containing the
+    window expression, not on the same select statement. This is so that the data required by
+    the window expression is not filtered prematurely.
+    """
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    binary_node = graph.add_operation(
+        node_type=NodeType.GT,
+        node_params={"value": 1000},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a],
+    )
+    filtered_input_node = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, binary_node],
+    )
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[filtered_input_node],
+    )
+    lagged_a = graph.add_operation(
+        node_type=NodeType.LAG,
+        node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a],
+    )
+    assign_node = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "prev_a"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[filtered_input_node, lagged_a],
+    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE)
+    sql_tree = sql_graph.build(assign_node).sql
+    expected = textwrap.dedent(
+        """
+        SELECT
+          *
+        FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b",
+              LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
+            FROM "db"."public"."event_table"
+            WHERE
+              ("a" > 1000)
+        )
+        WHERE
+          "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+          AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected

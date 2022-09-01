@@ -149,12 +149,14 @@ def transaction_dataframe():
             ),
         ]
     )
+    # make timestamps unique (avoid ties when getting lags, for convenience of writing tests)
+    event_timestamps += rng.rand(event_timestamps.shape[0]) * pd.Timedelta("1ms")
 
     data = pd.DataFrame(
         {
             "event_timestamp": event_timestamps,
             "created_at": pd.date_range("2001-01-01", freq="1min", periods=row_number),
-            "cust_id": rng.randint(1, 10, row_number),
+            "cust_id": rng.randint(1, 1000, row_number),
             "user_id": rng.randint(1, 10, row_number),
             "product_action": rng.choice(product_actions, row_number),
             "session_id": rng.randint(100, 1000, row_number),
@@ -165,8 +167,6 @@ def transaction_dataframe():
     data["amount"] = amount
     data["created_at"] += rng.randint(1, 100, row_number).cumsum() * pd.Timedelta(seconds=1)
     data["created_at"] = data["created_at"].astype(int)
-    data["cust_id"] = data["cust_id"].cumsum()
-    data["cust_id"] = data["cust_id"].sample(frac=1.0).reset_index(drop=True)
     data["session_id"] = data["session_id"].sample(frac=1.0).reset_index(drop=True)
     yield data
 
@@ -313,16 +313,20 @@ def snowflake_feature_expected_tile_spec_dict_fixture():
               FLOOR((DATE_PART(EPOCH_SECOND, "event_timestamp") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 1800) AS tile_index
             FROM (
                 SELECT
-                  "col_int" AS "col_int",
-                  "col_float" AS "col_float",
-                  "col_char" AS "col_char",
-                  "col_text" AS "col_text",
-                  "col_binary" AS "col_binary",
-                  "col_boolean" AS "col_boolean",
-                  "event_timestamp" AS "event_timestamp",
-                  "created_at" AS "created_at",
-                  "cust_id" AS "cust_id"
-                FROM "sf_database"."sf_schema"."sf_table"
+                  *
+                FROM (
+                    SELECT
+                      "col_int" AS "col_int",
+                      "col_float" AS "col_float",
+                      "col_char" AS "col_char",
+                      "col_text" AS "col_text",
+                      "col_binary" AS "col_binary",
+                      "col_boolean" AS "col_boolean",
+                      "event_timestamp" AS "event_timestamp",
+                      "created_at" AS "created_at",
+                      "cust_id" AS "cust_id"
+                    FROM "sf_database"."sf_schema"."sf_table"
+                )
                 WHERE
                   "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
                   AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)

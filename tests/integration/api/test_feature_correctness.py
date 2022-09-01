@@ -1,6 +1,7 @@
 import json
 import time
 from collections import defaultdict
+from decimal import Decimal
 
 import numpy as np
 import pandas as pd
@@ -167,6 +168,9 @@ def fb_assert_frame_equal(df, df_expected, dict_like_columns=None):
         regular_columns = [col for col in regular_columns if col not in dict_like_columns]
 
     if regular_columns:
+        for col in regular_columns:
+            if isinstance(df[col].iloc[0], Decimal):
+                df[col] = df[col].astype(int)
         pd.testing.assert_frame_equal(
             df[regular_columns], df_expected[regular_columns], check_dtype=False
         )
@@ -174,6 +178,49 @@ def fb_assert_frame_equal(df, df_expected, dict_like_columns=None):
     if dict_like_columns:
         for col in dict_like_columns:
             assert_dict_equal(df[col], df_expected[col])
+
+
+def add_inter_events_derived_columns(df, event_view):
+    """
+    Add inter-events columns such as lags
+    """
+
+    df = df.copy()
+    df["original_index"] = df.index
+    df_sorted = df.sort_values("EVENT_TIMESTAMP")
+    by_column = "CUST_ID"
+
+    df_sorted[f"PREV_AMOUNT_BY_{by_column}"] = df_sorted.groupby(by_column)["AMOUNT"].shift(1)
+    event_view[f"PREV_AMOUNT_BY_{by_column}"] = event_view["AMOUNT"].lag(by_column)
+
+    df_sorted.set_index("original_index", inplace=True)
+    df[f"PREV_AMOUNT_BY_{by_column}"] = df["original_index"].map(
+        df_sorted[f"PREV_AMOUNT_BY_{by_column}"]
+    )
+
+    del df["original_index"]
+    return df
+
+
+def check_feature_preview(feature_list, df_expected, credentials, dict_like_columns, n_points=10):
+    """
+    Check correctness of feature preview result
+    """
+    tic = time.time()
+    sampled_points = df_expected.sample(n=n_points, random_state=0)
+    for _, preview_time_point in sampled_points.iterrows():
+        preview_param = {
+            "POINT_IN_TIME": preview_time_point["POINT_IN_TIME"],
+            "uid": preview_time_point["USER_ID"],
+        }
+        output = feature_list[feature_list.feature_names].preview(
+            preview_param, credentials=credentials
+        )
+        output.rename({"uid": "USER_ID"}, axis=1, inplace=True)
+        df_expected = pd.DataFrame([preview_time_point], index=output.index)
+        fb_assert_frame_equal(output, df_expected, dict_like_columns)
+    elapsed = time.time() - tic
+    print(f"elapsed check_feature_preview: {elapsed:.2f}s")
 
 
 def test_aggregation(
@@ -189,13 +236,14 @@ def test_aggregation(
     # Test cases listed here. This is written this way instead of parametrized test is so that all
     # features can be retrieved in one historical request
     feature_parameters = [
-        ("avg", "avg_24h", lambda x: x.mean(), None),
-        ("min", "min_24h", lambda x: x.min(), None),
-        ("max", "max_24h", lambda x: x.max(), None),
-        ("sum", "sum_24h", sum_func, None),
-        ("count", "count_24h", lambda x: len(x), None),
-        ("na_count", "na_count_24h", lambda x: x.isnull().sum(), None),
-        ("count", "count_by_action_24h", lambda x: len(x), "PRODUCT_ACTION"),
+        ("AMOUNT", "avg", "avg_24h", lambda x: x.mean(), None),
+        ("AMOUNT", "min", "min_24h", lambda x: x.min(), None),
+        ("AMOUNT", "max", "max_24h", lambda x: x.max(), None),
+        ("AMOUNT", "sum", "sum_24h", sum_func, None),
+        ("AMOUNT", "count", "count_24h", lambda x: len(x), None),
+        ("AMOUNT", "na_count", "na_count_24h", lambda x: x.isnull().sum(), None),
+        ("AMOUNT", "count", "count_by_action_24h", lambda x: len(x), "PRODUCT_ACTION"),
+        ("PREV_AMOUNT_BY_CUST_ID", "avg", "prev_amount_avg_24h", lambda x: x.mean(), None),
     ]
 
     event_view = EventView.from_event_data(event_data)
@@ -207,16 +255,36 @@ def test_aggregation(
     )
 
     # Some fixed parameters
-    variable_column_name = "AMOUNT"
     entity_column_name = "USER_ID"
     window_size = 3600 * 24
     event_timestamp_column_name = "EVENT_TIMESTAMP"
+
+    # Apply a filter condition
+    def _get_filtered_data(event_view_or_dataframe):
+        cond1 = event_view_or_dataframe["AMOUNT"] > 20
+        cond2 = event_view_or_dataframe["AMOUNT"].isnull()
+        mask = cond1 | cond2
+        return event_view_or_dataframe[mask]
+
+    event_view = _get_filtered_data(event_view)
+    transaction_data_upper_case = _get_filtered_data(transaction_data_upper_case)
+
+    # Add inter-event derived columns
+    transaction_data_upper_case = add_inter_events_derived_columns(
+        transaction_data_upper_case, event_view
+    )
 
     features = []
     df_expected_all = [training_events]
 
     elapsed_time_ref = 0
-    for agg_name, feature_name, agg_func_callable, category in feature_parameters:
+    for (
+        variable_column_name,
+        agg_name,
+        feature_name,
+        agg_func_callable,
+        category,
+    ) in feature_parameters:
 
         feature_group = event_view.groupby(entity_column_name, category=category).aggregate(
             variable_column_name,
@@ -247,6 +315,10 @@ def test_aggregation(
 
     df_expected = pd.concat(df_expected_all, axis=1)
     feature_list = FeatureList(features)
+
+    dict_like_columns = ["count_by_action_24h"]
+    check_feature_preview(feature_list, df_expected, config.credentials, dict_like_columns)
+
     tic = time.time()
     df_historical_features = feature_list.get_historical_features(
         training_events, credentials=config.credentials, serving_names_mapping={"uid": "USER_ID"}
@@ -262,4 +334,4 @@ def test_aggregation(
         ["POINT_IN_TIME", entity_column_name]
     ).reset_index(drop=True)
 
-    fb_assert_frame_equal(df_historical_features, df_expected, ["count_by_action_24h"])
+    fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)

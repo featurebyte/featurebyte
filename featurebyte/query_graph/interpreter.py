@@ -20,11 +20,11 @@ from featurebyte.query_graph.sql import (
     SQLNode,
     SQLType,
     TableNode,
+    handle_filter_node,
     handle_groupby_node,
     make_binary_operation_node,
     make_conditional_node,
     make_expression_node,
-    make_filter_node,
     make_input_node,
     make_project_node,
 )
@@ -141,7 +141,7 @@ class SQLOperationGraph:
             sql_node = make_expression_node(input_sql_nodes, node_type, parameters)
 
         elif node_type == NodeType.FILTER:
-            sql_node = make_filter_node(input_sql_nodes, output_type)
+            sql_node = handle_filter_node(input_sql_nodes, output_type)
 
         elif node_type == NodeType.CONDITIONAL:
             sql_node = make_conditional_node(input_sql_nodes, cur_node)

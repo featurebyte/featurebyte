@@ -69,8 +69,9 @@ def test_query_object_operation_on_sqlite_source(
 
     # check agreement
     output = event_view.preview(limit=expected.shape[0], credentials=config.credentials)
-    # sqlite returns str for timestamp columns
-    expected["event_timestamp"] = expected["event_timestamp"].astype(str)
+    # sqlite returns str for timestamp columns, formatted up to %f precision with quirks
+    expected["event_timestamp"] = expected["event_timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+    expected["event_timestamp"] = expected["event_timestamp"].str.replace(".000000", "")
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
 
@@ -184,8 +185,8 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "COUNT_2h": 1,
-        "COUNT_24h": 15,
+        "COUNT_2h": 3,
+        "COUNT_24h": 14,
     }
 
     # preview count per category features
@@ -197,15 +198,13 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "COUNT_BY_ACTION_2h": '{\n  "purchase": 1\n}',
-        "COUNT_BY_ACTION_24h": (
-            '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 3,\n  "purchase": 2,\n  "remove": 7\n}'
-        ),
-        "ENTROPY_BY_ACTION_24h": 1.3953970923267898,
-        "MOST_FREQUENT_ACTION_24h": "remove",
+        "COUNT_BY_ACTION_2h": '{\n  "add": 2,\n  "purchase": 1\n}',
+        "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
+        "ENTROPY_BY_ACTION_24h": 1.3760552852604169,
+        "MOST_FREQUENT_ACTION_24h": "add",
         "NUM_UNIQUE_ACTION_24h": 5,
         "NUM_UNIQUE_ACTION_24h_exclude_missing": 4,
-        "ACTION_SIMILARITY_2h_to_24h": 0.24433888871261045,
+        "ACTION_SIMILARITY_2h_to_24h": 0.9395523512235255,
     }
 
     # preview one feature only
@@ -216,7 +215,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "COUNT_2h": 1,
+        "COUNT_2h": 3,
     }
 
     # preview a not-yet-assigned feature
@@ -229,7 +228,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "Unnamed": Decimal("0.066667"),
+        "Unnamed": Decimal("0.214286"),
     }
 
     run_test_conditional_assign_feature(config, feature_group)
@@ -244,9 +243,9 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "COUNT_2h": 1,
-        "COUNT_24h": 15,
-        "COUNT_2h / COUNT_24h": Decimal("0.066667"),
+        "COUNT_2h": Decimal("3"),
+        "COUNT_24h": Decimal("14"),
+        "COUNT_2h / COUNT_24h": Decimal("0.214286"),
     }
 
     # check casting on feature
@@ -262,7 +261,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "Unnamed": 2.0,
+        "Unnamed": 4.0,
     }
 
     special_feature = create_feature_with_filtered_event_view(event_view)
@@ -284,9 +283,9 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "COUNT_2h": Decimal("1"),
-        "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 3,\n  "purchase": 2,\n  "remove": 7\n}',
-        "NUM_PURCHASE_7d": Decimal("2"),
+        "COUNT_2h": Decimal("2"),
+        "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
+        "NUM_PURCHASE_7d": Decimal("4"),
     }
 
     # Check using a derived numeric column as category
@@ -326,34 +325,34 @@ def run_test_conditional_assign_feature(config, feature_group):
         "uid": 1,
     }
     result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
-    assert result == {**preview_param, "COUNT_24h": 15}
+    assert result == {**preview_param, "COUNT_24h": 14}
 
     # Assign feature conditionally. Should be reflected in both Feature and FeatureGroup
-    mask = feature_count_24h == 15.0
+    mask = feature_count_24h == 14.0
     feature_count_24h[mask] = 900
     result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
     assert result == {**preview_param, "COUNT_24h": 900}
     result = get_feature_preview_as_dict(feature_group, preview_param, config)
-    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 900}
+    assert result == {**preview_param, "COUNT_2h": 3, "COUNT_24h": 900}
 
     # Assign conditionally again (revert the above). Should be reflected in both Feature and
     # FeatureGroup
     mask = feature_count_24h == 900.0
-    feature_count_24h[mask] = 15.0
+    feature_count_24h[mask] = 14.0
     result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
-    assert result == {**preview_param, "COUNT_24h": 15}
+    assert result == {**preview_param, "COUNT_24h": 14}
     result = get_feature_preview_as_dict(feature_group, preview_param, config)
-    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 15}
+    assert result == {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14}
 
     # Assign to an unnamed Feature conditionally. Should not be reflected in Feature only and has no
     # effect on FeatureGroup
     temp_feature = feature_count_24h * 10
-    mask = temp_feature == 150.0
+    mask = temp_feature == 140.0
     temp_feature[mask] = 900
     result = get_feature_preview_as_dict(temp_feature, preview_param, config)
     assert result == {**preview_param, "Unnamed": 900}
     result = get_feature_preview_as_dict(feature_group, preview_param, config)
-    assert result == {**preview_param, "COUNT_2h": 1, "COUNT_24h": 15}
+    assert result == {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14}
 
 
 def run_and_test_get_historical_features(config, feature_group, feature_group_per_category):
@@ -381,67 +380,67 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
         {
             "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
             "uid": df_training_events["uid"],
-            "COUNT_2h": [1, 0, 2, 3, 0, 1, 1, 3, 0, 0],
-            "COUNT_24h": [15, 12, 16, 21, 9, 8, 21, 13, 13, 0],
+            "COUNT_2h": [3, 1, 1, 0, 0, 3, 0, 0, 1, 0],
+            "COUNT_24h": [14, 12, 13, 11, 13, 18, 18, 13, 14, 0],
             "COUNT_BY_ACTION_24h": [
-                '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 3,\n  "purchase": 2,\n  "remove": 7\n}',
-                '{\n  "__MISSING__": 3,\n  "add": 3,\n  "detail": 4,\n  "purchase": 1,\n  "remove": 1\n}',
-                '{\n  "__MISSING__": 3,\n  "add": 3,\n  "detail": 4,\n  "purchase": 4,\n  "remove": 2\n}',
-                '{\n  "__MISSING__": 4,\n  "add": 1,\n  "detail": 6,\n  "purchase": 6,\n  "remove": 4\n}',
-                '{\n  "__MISSING__": 3,\n  "add": 3,\n  "detail": 2,\n  "remove": 1\n}',
-                '{\n  "add": 4,\n  "detail": 3,\n  "purchase": 1\n}',
-                '{\n  "__MISSING__": 4,\n  "add": 2,\n  "detail": 3,\n  "purchase": 4,\n  "remove": 8\n}',
-                '{\n  "__MISSING__": 2,\n  "add": 1,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 4\n}',
-                '{\n  "__MISSING__": 4,\n  "add": 3,\n  "detail": 2,\n  "purchase": 3,\n  "remove": 1\n}',
+                '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
+                '{\n  "__MISSING__": 5,\n  "add": 1,\n  "detail": 2,\n  "remove": 4\n}',
+                '{\n  "__MISSING__": 3,\n  "detail": 4,\n  "purchase": 4,\n  "remove": 2\n}',
+                '{\n  "__MISSING__": 4,\n  "add": 5,\n  "detail": 1,\n  "purchase": 1\n}',
+                '{\n  "__MISSING__": 2,\n  "add": 2,\n  "detail": 3,\n  "purchase": 4,\n  "remove": 2\n}',
+                '{\n  "__MISSING__": 4,\n  "add": 4,\n  "detail": 2,\n  "purchase": 6,\n  "remove": 2\n}',
+                '{\n  "__MISSING__": 3,\n  "add": 1,\n  "detail": 5,\n  "purchase": 6,\n  "remove": 3\n}',
+                '{\n  "__MISSING__": 4,\n  "add": 1,\n  "detail": 1,\n  "purchase": 1,\n  "remove": 6\n}',
+                '{\n  "__MISSING__": 3,\n  "add": 2,\n  "detail": 3,\n  "purchase": 2,\n  "remove": 4\n}',
                 None,
             ],
             "ENTROPY_BY_ACTION_24h": [
-                1.3953970923267898,
-                1.4735023850806486,
-                1.5808185358593017,
-                1.492547746309338,
-                1.310783678099714,
-                0.9743147528693494,
-                1.5012834639366595,
-                1.4985690796770055,
-                1.5247073930301436,
+                1.3760552852604169,
+                1.236684869140504,
+                1.3516811946858949,
+                1.162225544921092,
+                1.564957250242801,
+                1.5229550675313184,
+                1.4798484184768594,
+                1.3114313374732374,
+                1.5740973368489728,
                 np.nan,
             ],
             "MOST_FREQUENT_ACTION_24h": [
-                "remove",
-                "detail",
-                "detail",
-                "detail",
-                "__MISSING__",
                 "add",
-                "remove",
-                "purchase",
                 "__MISSING__",
+                "detail",
+                "add",
+                "purchase",
+                "purchase",
+                "purchase",
+                "remove",
+                "remove",
                 None,
             ],
-            "NUM_UNIQUE_ACTION_24h": [5.0, 5.0, 5.0, 5.0, 4.0, 3.0, 5.0, 5.0, 5.0, 0.0],
+            "NUM_UNIQUE_ACTION_24h": [5.0, 4.0, 4.0, 4.0, 5.0, 5.0, 5.0, 5.0, 5.0, 0.0],
             "COUNT_2h / COUNT_24h": [
-                0.066667,
-                0.000000,
-                0.125000,
-                0.142857,
-                0.000000,
-                0.125000,
-                0.047619,
-                0.230769,
-                0.000000,
+                0.214286,
+                0.083333,
+                0.076923,
+                0.0,
+                0.0,
+                0.166667,
+                0.0,
+                0.0,
+                0.071429,
                 np.nan,  # Note: zero divide by zero
             ],
             "ACTION_SIMILARITY_2h_to_24h": [
-                0.24433888871261045,
+                0.9395523512235255,
+                0.5897678246195885,
+                0.4472135954999579,
                 np.nan,
-                0.769800358919501,
-                0.5855400437691199,
                 np.nan,
-                0.7844645405527362,
-                0.7662610281769211,
-                0.9016696346674324,
+                0.8207826816681232,
                 np.nan,
+                np.nan,
+                0.4629100498862757,
                 np.nan,
             ],
         }
@@ -608,6 +607,6 @@ def check_day_of_week_counts(event_view, preview_param, config):
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "uid": 1,
-        "DAY_OF_WEEK_COUNTS_24h": '{\n  "0": 7,\n  "1": 8\n}',
-        "DAY_OF_WEEK_ENTROPY_24h": 0.6909233093138181,
+        "DAY_OF_WEEK_COUNTS_24h": '{\n  "0": 9,\n  "1": 5\n}',
+        "DAY_OF_WEEK_ENTROPY_24h": 0.6517565611726532,
     }

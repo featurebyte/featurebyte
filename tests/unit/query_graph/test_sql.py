@@ -18,8 +18,9 @@ def input_node_fixture():
         "col_2": sqlglot.parse_one("col_2"),
         "col_3": sqlglot.parse_one("col_3"),
     }
-    return sql.GenericInputNode(
+    return sql.InputNode(
         columns_map=columns_map,
+        where_condition=None,
         column_names=["col_1", "col_2", "col_3"],
         dbtable={
             "database_name": "my_database",
@@ -185,3 +186,14 @@ def test_cosine_similarity(input_node):
     parameters = {}
     node = sql.make_binary_operation_node(NodeType.COSINE_SIMILARITY, input_nodes, parameters)
     assert node.sql.sql() == "(F_COUNT_DICT_COSINE_SIMILARITY(a, b))"
+
+
+def test_lag(input_node):
+    """Test lag node"""
+    column = sql.StrExpressionNode(table_node=input_node, expr="val")
+    node = sql.make_expression_node(
+        input_sql_nodes=[column],
+        node_type=NodeType.LAG,
+        parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
+    )
+    assert node.sql.sql() == 'LAG(val, 1) OVER(PARTITION BY "cust_id" ORDER BY "ts")'

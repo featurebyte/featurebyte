@@ -718,3 +718,26 @@ def test_astype__invalid_type_cls(float_series):
         'type of argument "new_type" must be one of (Type[int], Type[float], Type[str],'
         " Literal[int, float, str]); got dict instead"
     )
+
+
+def test_node_types_lineage(dataframe, float_series):
+    """
+    Test node_types_lineage attribute
+    """
+    # check lineage of simple series
+    assert float_series.node_types_lineage == ["project", "input"]
+
+    # check lineage of series after unrelated operations in frame
+    dataframe["new_series_add"] = float_series + 123
+    dataframe["new_series_sub"] = float_series - 123
+    new_series = dataframe["new_series_sub"]
+    # only one "assign" and no "add" in the lineage
+    assert new_series.node_types_lineage == ["project", "assign", "input", "sub", "project"]
+    assert new_series.astype(str).node_types_lineage == [
+        "cast",
+        "project",
+        "assign",
+        "input",
+        "sub",
+        "project",
+    ]

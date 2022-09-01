@@ -179,6 +179,47 @@ def test_unary_op_params(snowflake_event_view):
     assert output.event_data_id == column.event_data_id
 
 
+@pytest.mark.parametrize(
+    "column, offset, expected_var_type",
+    [
+        ("event_timestamp", None, DBVarType.TIMESTAMP),
+        ("col_float", 1, DBVarType.FLOAT),
+        ("col_text", 2, DBVarType.VARCHAR),
+    ],
+)
+def test_event_view_column_lag(snowflake_event_view, column, offset, expected_var_type):
+    """
+    Test EventViewColumn lag operation
+    """
+    if offset is None:
+        expected_offset_param = 1
+    else:
+        expected_offset_param = offset
+    lag_kwargs = {}
+    if offset is not None:
+        lag_kwargs["offset"] = offset
+    lagged_column = snowflake_event_view[column].lag("cust_id", **lag_kwargs)
+    assert lagged_column.node.output_type == NodeOutputType.SERIES
+    assert lagged_column.var_type == expected_var_type
+    assert lagged_column.node.type == NodeType.LAG
+    assert lagged_column.node.parameters == {
+        "timestamp_column": "event_timestamp",
+        "entity_columns": ["cust_id"],
+        "offset": expected_offset_param,
+    }
+    assert lagged_column.event_data_id == snowflake_event_view[column].event_data_id
+
+
+def test_event_view_column_lag__invalid(snowflake_event_view):
+    """
+    Test attempting to apply lag more than once raises error
+    """
+    snowflake_event_view["prev_col_float"] = snowflake_event_view["col_float"].lag("cust_id")
+    with pytest.raises(ValueError) as exc:
+        (snowflake_event_view["prev_col_float"] + 123).lag("cust_id")
+    assert "lag can only be applied once per column" in str(exc.value)
+
+
 def test_event_view_copy(snowflake_event_view):
     """
     Test event view copy

@@ -148,9 +148,6 @@ class TableNode(SQLNode, ABC):
     def set_columns_map(self, columns_map: dict[str, Expression]) -> None:
         """Set column-expression mapping to the provided mapping
 
-        The default implementation simply sets self.columns_map to the provided dict. However, nodes
-        such as FilteredFrame need to override this.
-
         Parameters
         ----------
         columns_map : dict[str, Expression]
@@ -200,12 +197,13 @@ class ParsedExpressionNode(ExpressionNode):
 
 
 @dataclass
-class GenericInputNode(TableNode):
+class InputNode(TableNode):
     """Input data node"""
 
     column_names: list[str]
     dbtable: dict[str, str]
     feature_store: dict[str, Any]
+    where_condition: Optional[Expression]
 
     @property
     def sql(self) -> Expression:
@@ -229,11 +227,26 @@ class GenericInputNode(TableNode):
         else:
             dbtable = escape_column_name(self.dbtable["table_name"])
         select_expr = select_expr.from_(dbtable)
+        if self.where_condition is not None:
+            select_expr = select_expr.where(self.where_condition)
         return select_expr
+
+    def update_where_condition(self, condition: Expression) -> None:
+        """Update the node's where condition
+
+        Parameters
+        ----------
+        condition : Expression
+            Condition expression to be used in the WHERE clause
+        """
+        if self.where_condition is not None:
+            self.where_condition = expressions.and_(self.where_condition, condition)
+        else:
+            self.where_condition = condition
 
 
 @dataclass
-class BuildTileInputNode(GenericInputNode):
+class BuildTileInputNode(InputNode):
     """Input data node used when building tiles"""
 
     timestamp: str
@@ -247,8 +260,11 @@ class BuildTileInputNode(GenericInputNode):
         Expression
             A sqlglot Expression object
         """
-        select_expr = super().sql
-        assert isinstance(select_expr, expressions.Select)
+        table_expr = super().sql
+        assert isinstance(table_expr, expressions.Select)
+        # Apply tile start and end date filters on a nested subquery to avoid filtering out data
+        # required by window function
+        select_expr = select("*").from_(table_expr.subquery())
         timestamp = escape_column_name(self.timestamp)
         start_cond = (
             f"{timestamp} >= CAST({InternalName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
@@ -259,7 +275,7 @@ class BuildTileInputNode(GenericInputNode):
 
 
 @dataclass
-class SelectedEntityBuildTileInputNode(GenericInputNode):
+class SelectedEntityBuildTileInputNode(InputNode):
     """Input data node used when building tiles for selected entities only
 
     The selected entities are expected to be available in an "entity table". It can be injected as a
@@ -356,55 +372,6 @@ class AliasNode(ExpressionNode):
     @property
     def sql(self) -> Expression:
         return self.expr_node.sql
-
-
-@dataclass
-class FilteredFrame(TableNode):
-    """Filter node for table"""
-
-    input_node: TableNode
-    mask: ExpressionNode
-
-    def set_columns_map(self, columns_map: dict[str, Expression]) -> None:
-        """Set column-expression mapping to the provided mapping
-
-        This overrides the default implementation because FilteredFrame offloads generation of the
-        pre-filtered SQL to the input_node. Setting columns_map attribute of FilteredFrame itself
-        only has effect if the columns_map is also applied to the input_node as well.
-
-        One scenario that is affected by this is Filter then Project.
-
-        Parameters
-        ----------
-        columns_map : dict[str, Expression]
-            Column names to expressions mapping
-        """
-        self.input_node.set_columns_map(columns_map)
-        super().set_columns_map(columns_map)
-
-    @property
-    def sql(self) -> Expression:
-        input_sql = self.input_node.sql
-        assert isinstance(input_sql, expressions.Select)
-        return input_sql.where(self.mask.sql)
-
-
-@dataclass
-class FilteredSeries(ExpressionNode):
-    """Filter node for series"""
-
-    series_node: ExpressionNode
-    mask: ExpressionNode
-
-    @property
-    def sql(self) -> Expression:
-        return self.series_node.sql
-
-    @property
-    def sql_standalone(self) -> Expression:
-        pre_filter_sql = super().sql_standalone
-        assert isinstance(pre_filter_sql, expressions.Select)
-        return pre_filter_sql.where(self.mask.sql)
 
 
 @dataclass
@@ -687,6 +654,38 @@ class CastNode(ExpressionNode):
 
 
 @dataclass
+class LagNode(ExpressionNode):
+    """Node for lag operation"""
+
+    expr: ExpressionNode
+    entity_columns: list[str]
+    timestamp_column: str
+    offset: int
+
+    @property
+    def sql(self) -> Expression:
+        partition_by = [
+            expressions.Column(this=expressions.Identifier(this=col, quoted=True))
+            for col in self.entity_columns
+        ]
+        order = expressions.Order(
+            expressions=[
+                expressions.Ordered(
+                    this=expressions.Identifier(this=self.timestamp_column, quoted=True)
+                )
+            ]
+        )
+        output_expr = expressions.Window(
+            this=expressions.Anonymous(
+                this="LAG", expressions=[self.expr.sql, make_literal_value(self.offset)]
+            ),
+            partition_by=partition_by,
+            order=order,
+        )
+        return output_expr
+
+
+@dataclass
 class BuildTileNode(TableNode):
     """Tile builder node
 
@@ -908,10 +907,10 @@ def make_project_node(
     return sql_node
 
 
-def make_filter_node(
+def handle_filter_node(
     input_sql_nodes: list[SQLNode], output_type: NodeOutputType
-) -> FilteredFrame | FilteredSeries:
-    """Create a FilteredFrame or FilteredSeries node
+) -> TableNode | ExpressionNode:
+    """Create a TableNode or ExpressionNode with filter condition
 
     Parameters
     ----------
@@ -922,23 +921,23 @@ def make_filter_node(
 
     Returns
     -------
-    FilteredFrame | FilteredSeries
-        The appropriate SQL node for projection
+    TableNode | ExpressionNode
+        The appropriate SQL node for the filtered result
     """
     item, mask = input_sql_nodes
     assert isinstance(mask, ExpressionNode)
-    sql_node: FilteredFrame | FilteredSeries
+    sql_node: TableNode | ExpressionNode
     if output_type == NodeOutputType.FRAME:
-        assert isinstance(item, TableNode)
+        assert isinstance(item, InputNode)
         input_table_copy = deepcopy(item)
-        sql_node = FilteredFrame(
-            columns_map=input_table_copy.columns_map,
-            input_node=input_table_copy,
-            mask=mask,
-        )
+        input_table_copy.update_where_condition(mask.sql)
+        sql_node = input_table_copy
     else:
         assert isinstance(item, ExpressionNode)
-        sql_node = FilteredSeries(table_node=item.table_node, series_node=item, mask=mask)
+        assert isinstance(item.table_node, InputNode)
+        input_table_copy = deepcopy(item.table_node)
+        input_table_copy.update_where_condition(mask.sql)
+        sql_node = ParsedExpressionNode(input_table_copy, item.sql)
     return sql_node
 
 
@@ -988,7 +987,7 @@ def make_input_node(
     parameters: dict[str, Any],
     sql_type: SQLType,
     groupby_keys: list[str] | None = None,
-) -> BuildTileInputNode | GenericInputNode:
+) -> BuildTileInputNode | InputNode:
     """Create a SQLNode corresponding to a query graph input node
 
     Parameters
@@ -1004,17 +1003,18 @@ def make_input_node(
 
     Returns
     -------
-    BuildTileInputNode | GenericInputNode | SelectedEntityBuildTileInputNode
+    BuildTileInputNode | InputNode | SelectedEntityBuildTileInputNode
         SQLNode corresponding to the query graph input node
     """
     columns_map = {}
     for colname in parameters["columns"]:
         columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
-    sql_node: BuildTileInputNode | SelectedEntityBuildTileInputNode | GenericInputNode
+    sql_node: BuildTileInputNode | SelectedEntityBuildTileInputNode | InputNode
     feature_store = parameters["feature_store"]
     if sql_type == SQLType.BUILD_TILE:
         sql_node = BuildTileInputNode(
             columns_map=columns_map,
+            where_condition=None,
             column_names=parameters["columns"],
             timestamp=parameters["timestamp"],
             dbtable=parameters["dbtable"],
@@ -1024,6 +1024,7 @@ def make_input_node(
         assert groupby_keys is not None
         sql_node = SelectedEntityBuildTileInputNode(
             columns_map=columns_map,
+            where_condition=None,
             column_names=parameters["columns"],
             timestamp=parameters["timestamp"],
             dbtable=parameters["dbtable"],
@@ -1031,8 +1032,9 @@ def make_input_node(
             entity_columns=groupby_keys,
         )
     else:
-        sql_node = GenericInputNode(
+        sql_node = InputNode(
             columns_map=columns_map,
+            where_condition=None,
             column_names=parameters["columns"],
             dbtable=parameters["dbtable"],
             feature_store=feature_store,
@@ -1145,6 +1147,7 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.NOT,
     NodeType.COUNT_DICT_TRANSFORM,
     NodeType.CAST,
+    NodeType.LAG,
 }
 
 
@@ -1242,6 +1245,14 @@ def make_expression_node(
             table_node=table_node,
             expr=input_expr_node,
             new_type=parameters["type"],
+        )
+    elif node_type == NodeType.LAG:
+        sql_node = LagNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            entity_columns=parameters["entity_columns"],
+            timestamp_column=parameters["timestamp_column"],
+            offset=parameters["offset"],
         )
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")
