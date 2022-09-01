@@ -693,6 +693,7 @@ def test_varchar_series_concat(varchar_series):
               "VALUE" AS "VALUE",
               "MASK" AS "MASK",
               "TIMESTAMP" AS "TIMESTAMP"
+              "PROMOTION_START_DATE" AS "PROMOTION_START_DATE"
             FROM "db"."public"."transaction"
         )
         LIMIT 10

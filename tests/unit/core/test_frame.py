@@ -105,6 +105,7 @@ def test__getitem__series_key(dataframe, bool_series):
         "VALUE": ("input_1", "filter_1"),
         "MASK": ("input_1", "filter_1"),
         "TIMESTAMP": ("input_1", "filter_1"),
+        "PROMOTION_START_DATE": ("input_1", "filter_1"),
     }
     assert sub_dataframe_dict["row_index_lineage"] == ("input_1", "filter_1")
     assert dict(sub_dataframe_dict["graph"]["edges"]) == {
@@ -375,7 +376,7 @@ def test_frame__getattr__method(dataframe):
     assert dataframe.CUST_ID == dataframe["CUST_ID"]
     with pytest.raises(AttributeError):
         # expect to throw attribute error rather than KeyError due to column not exists
-        dataframe.random_attribute
+        _ = dataframe.random_attribute
 
     # check that "columns" column is set properly
     dataframe["columns"] = dataframe["CUST_ID"] + 1
@@ -388,6 +389,7 @@ def test_frame__getattr__method(dataframe):
         "VALUE",
         "TIMESTAMP",
         "MASK",
+        "PROMOTION_START_DATE",
         "columns",
     }
 
