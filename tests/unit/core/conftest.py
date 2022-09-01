@@ -142,7 +142,7 @@ def timestamp_series_2(dataframe):
     series = dataframe["PROMOTION_START_DATE"]
     assert isinstance(series, Series)
     assert series.name == "PROMOTION_START_DATE"
-    assert series.var_type == DBVarType.DATE
+    assert series.dtype == DBVarType.DATE
     yield series
 
 
@@ -153,5 +153,5 @@ def timedelta_series(timestamp_series, timestamp_series_2):
     """
     series = timestamp_series - timestamp_series_2
     assert isinstance(series, Series)
-    assert series.var_type == DBVarType.TIMEDELTA
+    assert series.dtype == DBVarType.TIMEDELTA
     yield series

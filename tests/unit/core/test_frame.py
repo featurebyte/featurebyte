@@ -150,10 +150,10 @@ def test__getitem__type_not_supported(dataframe):
 @pytest.mark.parametrize(
     "key,value,expected_type,expected_column_count",
     [
-        ("PRODUCT_ACTION", 1, DBVarType.INT, 5),
-        ("VALUE", 1.23, DBVarType.FLOAT, 5),
-        ("string_col", "random_string", DBVarType.VARCHAR, 6),
-        ("bool_col", True, DBVarType.BOOL, 6),
+        ("PRODUCT_ACTION", 1, DBVarType.INT, 6),
+        ("VALUE", 1.23, DBVarType.FLOAT, 6),
+        ("string_col", "random_string", DBVarType.VARCHAR, 7),
+        ("bool_col", True, DBVarType.BOOL, 7),
     ],
 )
 def test__setitem__str_key_scalar_value(
@@ -180,10 +180,10 @@ def test__setitem__str_key_scalar_value(
 @pytest.mark.parametrize(
     "key,value_key,expected_type,expected_column_count",
     [
-        ("random", "CUST_ID", DBVarType.INT, 6),
-        ("CUST_ID", "PRODUCT_ACTION", DBVarType.VARCHAR, 5),
-        ("random", "VALUE", DBVarType.FLOAT, 6),
-        ("PRODUCT_ACTION", "MASK", DBVarType.BOOL, 5),
+        ("random", "CUST_ID", DBVarType.INT, 7),
+        ("CUST_ID", "PRODUCT_ACTION", DBVarType.VARCHAR, 6),
+        ("random", "VALUE", DBVarType.FLOAT, 7),
+        ("PRODUCT_ACTION", "MASK", DBVarType.BOOL, 6),
     ],
 )
 def test__setitem__str_key_series_value(
@@ -265,6 +265,7 @@ def test_multiple_statements(dataframe):
         {"name": "VALUE", "dtype": DBVarType.FLOAT, "entity_id": None},
         {"name": "MASK", "dtype": DBVarType.BOOL, "entity_id": None},
         {"name": "TIMESTAMP", "dtype": DBVarType.TIMESTAMP, "entity_id": None},
+        {"name": "PROMOTION_START_DATE", "dtype": DBVarType.DATE, "entity_id": None},
         {"name": "amount", "dtype": DBVarType.FLOAT, "entity_id": None},
         {"name": "vip_customer", "dtype": DBVarType.BOOL, "entity_id": None},
     ]
@@ -274,6 +275,7 @@ def test_multiple_statements(dataframe):
         "VALUE",
         "MASK",
         "TIMESTAMP",
+        "PROMOTION_START_DATE",
         "amount",
         "vip_customer",
     ]
@@ -291,6 +293,7 @@ def test_multiple_statements(dataframe):
         "VALUE": ("input_1", "filter_1"),
         "MASK": ("input_1", "filter_1"),
         "TIMESTAMP": ("input_1", "filter_1"),
+        "PROMOTION_START_DATE": ("input_1", "filter_1"),
         "amount": ("assign_1",),
         "vip_customer": ("assign_2",),
     }
@@ -314,7 +317,14 @@ def test_frame_column_order(dataframe):
     """
     Check columns are sorted by added order
     """
-    original_columns = ["CUST_ID", "PRODUCT_ACTION", "VALUE", "MASK", "TIMESTAMP"]
+    original_columns = [
+        "CUST_ID",
+        "PRODUCT_ACTION",
+        "VALUE",
+        "MASK",
+        "TIMESTAMP",
+        "PROMOTION_START_DATE",
+    ]
     assert dataframe.columns == original_columns
     dataframe["first_added_column"] = dataframe.CUST_ID * 10
     assert dataframe.columns == original_columns + ["first_added_column"]

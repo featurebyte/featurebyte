@@ -97,7 +97,7 @@ class TableNode(SQLNode, ABC):
     columns_map: dict[str, Expression]
     columns_node: dict[str, SQLNode] = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.columns_node = {}
 
     @property
@@ -123,7 +123,7 @@ class TableNode(SQLNode, ABC):
         assert isinstance(sql, expressions.Subqueryable)
         return sql.subquery()
 
-    def assign_column(self, column_name, node: SQLNode):
+    def assign_column(self, column_name: str, node: SQLNode) -> None:
         """Performs an assignment and update column_name's expression
 
         Parameters
@@ -886,7 +886,7 @@ def make_binary_operation_node(
     node_type: NodeType,
     input_sql_nodes: list[SQLNode],
     parameters: dict[str, Any],
-) -> BinaryOp:
+) -> BinaryOp | DateDiffNode:
     """Create a BinaryOp node for eligible query node types
 
     Parameters
@@ -944,8 +944,9 @@ def make_binary_operation_node(
         NodeType.COSINE_SIMILARITY: fb_expressions.CosineSim,
     }
 
+    output_node: BinaryOp | DateDiffNode
     if node_type in node_type_to_expression_cls:
-        expression_cls = node_type_to_expression_cls.get(node_type)
+        expression_cls = node_type_to_expression_cls[node_type]
         output_node = BinaryOp(
             table_node=table_node,
             left_node=left_node,
@@ -1262,7 +1263,9 @@ def make_timedelta_extract_node(
     table_node = input_expr_node.table_node
     if isinstance(input_expr_node, Project):
         # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
-        input_expr_node = table_node.get_column_node(input_expr_node.column_name)
+        original_sql_node = table_node.get_column_node(input_expr_node.column_name)
+        assert isinstance(original_sql_node, ExpressionNode)
+        input_expr_node = original_sql_node
     assert isinstance(input_expr_node, DateDiffNode)
     sql_node = input_expr_node.with_unit(parameters["property"])
     return sql_node

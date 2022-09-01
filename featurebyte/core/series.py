@@ -431,7 +431,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         -------
         bool
         """
-        return self.var_type in (DBVarType.TIMESTAMP, DBVarType.DATE)
+        return self.dtype in (DBVarType.TIMESTAMP, DBVarType.DATE)
 
     def isnull(self) -> Series:
         """

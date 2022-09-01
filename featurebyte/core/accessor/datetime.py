@@ -64,7 +64,7 @@ class DatetimeAccessor:
             }
         else:
             raise AttributeError(
-                f"Can only use .dt accessor with datetime or timedelta values; got {obj.var_type}"
+                f"Can only use .dt accessor with datetime or timedelta values; got {obj.dtype}"
             )
         self._obj = obj
 

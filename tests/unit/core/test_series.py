@@ -569,7 +569,7 @@ def test_date_difference_operator(timestamp_series, timestamp_series_2):
     Test difference between two date Series
     """
     date_diff_series = timestamp_series_2 - timestamp_series
-    assert date_diff_series.var_type == DBVarType.TIMEDELTA
+    assert date_diff_series.dtype == DBVarType.TIMEDELTA
     assert date_diff_series.node.parameters == {"unit": "second"}
     _check_node_equality(
         date_diff_series.node,
@@ -692,7 +692,7 @@ def test_varchar_series_concat(varchar_series):
               "PRODUCT_ACTION" AS "PRODUCT_ACTION",
               "VALUE" AS "VALUE",
               "MASK" AS "MASK",
-              "TIMESTAMP" AS "TIMESTAMP"
+              "TIMESTAMP" AS "TIMESTAMP",
               "PROMOTION_START_DATE" AS "PROMOTION_START_DATE"
             FROM "db"."public"."transaction"
         )
