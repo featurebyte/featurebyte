@@ -1238,8 +1238,34 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.COUNT_DICT_TRANSFORM,
     NodeType.CAST,
     NodeType.LAG,
-    NodeType.DATE_DIFF_UNIT,
+    NodeType.TIMEDELTA_EXTRACT,
 }
+
+
+def make_timedelta_extract_node(
+    input_expr_node: ExpressionNode, parameters: dict[str, Any]
+) -> ExpressionNode:
+    """Create a SQLNode for extracting timedelta as a numeric value
+
+    Parameters
+    ----------
+    input_expr_node : ExpressionNode
+        Node for the timedelta value
+    parameters: dict[str, Any]
+        Query node parameters
+
+    Returns
+    -------
+    ExpressionNode
+    """
+    # Note: currently date difference is the only way to create a timedelta
+    table_node = input_expr_node.table_node
+    if isinstance(input_expr_node, Project):
+        # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
+        input_expr_node = table_node.get_column_node(input_expr_node.column_name)
+    assert isinstance(input_expr_node, DateDiffNode)
+    sql_node = input_expr_node.with_unit(parameters["property"])
+    return sql_node
 
 
 def make_expression_node(
@@ -1324,12 +1350,9 @@ def make_expression_node(
             expr=input_expr_node,
             dt_property=parameters["property"],
         )
-    elif node_type == NodeType.DATE_DIFF_UNIT:
-        if isinstance(input_expr_node, Project):
-            # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
-            input_expr_node = table_node.get_column_node(input_expr_node.column_name)
-        assert isinstance(input_expr_node, DateDiffNode)
-        sql_node = input_expr_node.with_unit(parameters["property"])
+    elif node_type == NodeType.TIMEDELTA_EXTRACT:
+        sql_node = make_timedelta_extract_node(input_expr_node, parameters)
+
     elif node_type == NodeType.COUNT_DICT_TRANSFORM:
         sql_node = CountDictTransformNode(
             table_node=table_node,

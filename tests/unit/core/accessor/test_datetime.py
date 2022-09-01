@@ -85,7 +85,7 @@ def test_datetime_property_extraction__timedelta(
     """
     series = accessor_func(timedelta_series)
     assert series.var_type == DBVarType.INT
-    assert series.node.type == NodeType.DATE_DIFF_UNIT
+    assert series.node.type == NodeType.TIMEDELTA_EXTRACT
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
     assert series.preview_sql() == expected_sql
