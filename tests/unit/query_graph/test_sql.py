@@ -223,3 +223,16 @@ def test_lag(input_node):
         parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
     )
     assert node.sql.sql() == 'LAG(val, 1) OVER(PARTITION BY "cust_id" ORDER BY "ts")'
+
+
+def test_date_difference(input_node):
+    """Test DateDiff node"""
+    column1 = sql.StrExpressionNode(table_node=input_node, expr="a")
+    column2 = sql.StrExpressionNode(table_node=input_node, expr="b")
+    input_nodes = [column1, column2]
+    node = sql.make_binary_operation_node(
+        NodeType.DATE_DIFF,
+        input_nodes,
+        parameters={"unit": "second"},
+    )
+    assert node.sql.sql() == "DATEDIFF(second, b, a)"
