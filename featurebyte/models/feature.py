@@ -105,7 +105,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Feature id of the object
     name: str
         Feature name
-    var_type: DBVarType
+    dtype: DBVarType
         Variable type of the feature
     row_index_lineage: Tuple[str, ...]
         Tuple of transformation step node names which affect the row number of the feature
@@ -131,7 +131,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Feature namespace id of the object
     """
 
-    var_type: DBVarType = Field(allow_mutation=False)
+    dtype: DBVarType = Field(allow_mutation=False)
     row_index_lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
     graph: QueryGraph = Field(allow_mutation=False)
     node: Node = Field(allow_mutation=False)

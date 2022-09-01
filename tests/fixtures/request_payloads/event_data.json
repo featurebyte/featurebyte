@@ -4,47 +4,47 @@
         {
             "entity_id": null,
             "name": "col_int",
-            "var_type": "INT"
+            "dtype": "INT"
         },
         {
             "entity_id": null,
             "name": "col_float",
-            "var_type": "FLOAT"
+            "dtype": "FLOAT"
         },
         {
             "entity_id": null,
             "name": "col_char",
-            "var_type": "CHAR"
+            "dtype": "CHAR"
         },
         {
             "entity_id": null,
             "name": "col_text",
-            "var_type": "VARCHAR"
+            "dtype": "VARCHAR"
         },
         {
             "entity_id": null,
             "name": "col_binary",
-            "var_type": "BINARY"
+            "dtype": "BINARY"
         },
         {
             "entity_id": null,
             "name": "col_boolean",
-            "var_type": "BOOL"
+            "dtype": "BOOL"
         },
         {
             "entity_id": null,
             "name": "event_timestamp",
-            "var_type": "TIMESTAMP"
+            "dtype": "TIMESTAMP"
         },
         {
             "entity_id": null,
             "name": "created_at",
-            "var_type": "TIMESTAMP"
+            "dtype": "TIMESTAMP"
         },
         {
             "entity_id": "630d7fa8f1275c864fde8493",
             "name": "cust_id",
-            "var_type": "INT"
+            "dtype": "INT"
         }
     ],
     "default_feature_job_setting": null,

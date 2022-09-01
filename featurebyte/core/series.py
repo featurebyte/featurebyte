@@ -25,12 +25,10 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
     """
 
     name: Optional[StrictStr] = Field(default=None)
-    var_type: DBVarType = Field(allow_mutation=False)
+    dtype: DBVarType = Field(allow_mutation=False)
 
     def __repr__(self) -> str:
-        return (
-            f"{type(self).__name__}[{self.var_type}](name={self.name}, node.name={self.node.name})"
-        )
+        return f"{type(self).__name__}[{self.dtype}](name={self.name}, node.name={self.node.name})"
 
     def __str__(self) -> str:
         return repr(self)
@@ -45,7 +43,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             tabular_source=self.tabular_source,
             node=node,
             name=self.name,
-            var_type=self.var_type,
+            dtype=self.dtype,
             row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
         )
 
@@ -107,9 +105,9 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
     def __setitem__(self, key: Series, value: Union[int, float, str, bool]) -> None:
         if self.row_index_lineage != key.row_index_lineage:
             raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
-        if key.var_type != DBVarType.BOOL:
+        if key.dtype != DBVarType.BOOL:
             raise TypeError("Only boolean Series filtering is supported!")
-        if not self._is_assignment_valid(self.var_type, value):
+        if not self._is_assignment_valid(self.dtype, value):
             raise ValueError(f"Setting key '{key}' with value '{value}' not supported!")
 
         self.node = self.graph.add_operation(
@@ -151,9 +149,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             var_type_lst = list(var_type)
         else:
             var_type_lst = [var_type]
-        return isinstance(item, Series) and any(
-            item.var_type == var_type for var_type in var_type_lst
-        )
+        return isinstance(item, Series) and any(item.dtype == var_type for var_type in var_type_lst)
 
     def _binary_op(
         self,
@@ -219,8 +215,8 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         TypeError
             if the left value or right value of the operator are not boolean
         """
-        if self.var_type != DBVarType.BOOL or (
-            isinstance(other, Series) and other.var_type != DBVarType.BOOL
+        if self.dtype != DBVarType.BOOL or (
+            isinstance(other, Series) and other.dtype != DBVarType.BOOL
         ):
             raise TypeError(
                 f"Not supported operation '{node_type}' between '{self}' and '{other}'!"
@@ -263,7 +259,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             DBVarType.INT: (DBVarType.INT, DBVarType.FLOAT),
             DBVarType.FLOAT: (DBVarType.INT, DBVarType.FLOAT),
         }
-        supported_var_types = supported_var_types_map.get(self.var_type, (self.var_type,))
+        supported_var_types = supported_var_types_map.get(self.dtype, (self.dtype,))
         if not self._is_a_series_of_var_type(other, supported_var_types) and (
             self.pytype_dbtype_map.get(type(other)) not in supported_var_types
         ):
@@ -322,14 +318,14 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             if the arithmetic operation between left value and right value is not supported
         """
         supported_types = {DBVarType.INT, DBVarType.FLOAT}
-        if self.var_type not in supported_types:
+        if self.dtype not in supported_types:
             raise TypeError(f"{self} does not support operation '{node_type}'.")
-        if (isinstance(other, Series) and other.var_type in supported_types) or isinstance(
+        if (isinstance(other, Series) and other.dtype in supported_types) or isinstance(
             other, (int, float)
         ):
             output_var_type = DBVarType.FLOAT
             if (
-                self.var_type == DBVarType.INT
+                self.dtype == DBVarType.INT
                 and (isinstance(other, int) or self._is_a_series_of_var_type(other, DBVarType.INT))
                 and node_type not in {NodeType.DIV}
             ):
@@ -371,8 +367,8 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
     @typechecked
     def __add__(self, other: Union[int, float, str, Series]) -> Series:
         is_other_string_like = isinstance(other, str)
-        is_other_string_like |= isinstance(other, Series) and other.var_type in DBVarType.VARCHAR
-        if self.var_type == DBVarType.VARCHAR and is_other_string_like:
+        is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
+        if self.dtype == DBVarType.VARCHAR and is_other_string_like:
             return self._binary_op(
                 other=other, node_type=NodeType.CONCAT, output_var_type=DBVarType.VARCHAR
             )
@@ -381,8 +377,8 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
     @typechecked
     def __radd__(self, other: Union[int, float, str, Series]) -> Series:
         is_other_string_like = isinstance(other, str)
-        is_other_string_like |= isinstance(other, Series) and other.var_type in DBVarType.VARCHAR
-        if self.var_type == DBVarType.VARCHAR and is_other_string_like:
+        is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
+        if self.dtype == DBVarType.VARCHAR and is_other_string_like:
             return self._binary_op(
                 other=other,
                 node_type=NodeType.CONCAT,

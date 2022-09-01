@@ -34,7 +34,7 @@ class BaseFrame(QueryObject):
         -------
         dict[str, DBVarType]
         """
-        return {col.name: col.var_type for col in self.columns_info}
+        return {col.name: col.dtype for col in self.columns_info}
 
     @property
     def dtypes(self) -> pd.Series:
@@ -175,7 +175,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 tabular_source=self.tabular_source,
                 node=node,
                 name=item,
-                var_type=self.column_var_type_map[item],
+                dtype=self.column_var_type_map[item],
                 row_index_lineage=self.row_index_lineage,
                 **self._getitem_series_params,
             )
@@ -222,7 +222,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
     @typechecked
     def __setitem__(self, key: str, value: Union[int, float, str, bool, Series]) -> None:
         """
-        Assign a scalar value or Series object of the same `var_type` to the `Frame` object
+        Assign a scalar value or Series object of the same `dtype` to the `Frame` object
 
         Parameters
         ----------
@@ -245,7 +245,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[self.node, value.node],
             )
-            self.columns_info.append(ColumnInfo(name=key, var_type=value.var_type))
+            self.columns_info.append(ColumnInfo(name=key, dtype=value.dtype))
             self.column_lineage_map[key] = self._append_to_lineage(
                 self.column_lineage_map.get(key, tuple()), self.node.name
             )
@@ -257,7 +257,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 input_nodes=[self.node],
             )
             self.columns_info.append(
-                ColumnInfo(name=key, var_type=self.pytype_dbtype_map[type(value)])
+                ColumnInfo(name=key, dtype=self.pytype_dbtype_map[type(value)])
             )
             self.column_lineage_map[key] = self._append_to_lineage(
                 self.column_lineage_map.get(key, tuple()), self.node.name

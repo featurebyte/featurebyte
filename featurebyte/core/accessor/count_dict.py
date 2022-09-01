@@ -42,7 +42,7 @@ class CountDictAccessor:
     """
 
     def __init__(self, obj: Feature):
-        if obj.var_type != DBVarType.OBJECT:
+        if obj.dtype != DBVarType.OBJECT:
             raise AttributeError("Can only use .cd accessor with count per category features")
         self._obj = obj
 
@@ -123,10 +123,10 @@ class CountDictAccessor:
         """
         if not isinstance(other, type(self._obj)):
             raise TypeError(f"cosine_similarity is only available for Feature; got {other}")
-        if other.var_type != DBVarType.OBJECT:
+        if other.dtype != DBVarType.OBJECT:
             raise TypeError(
                 f"cosine_similarity is only available for Feature of dictionary type; got "
-                f"{other.var_type}"
+                f"{other.dtype}"
             )
         return series_binary_operation(
             input_series=self._obj,

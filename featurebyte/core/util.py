@@ -52,7 +52,7 @@ def series_unary_operation(
         tabular_source=input_series.tabular_source,
         node=node,
         name=None,
-        var_type=output_var_type,
+        dtype=output_var_type,
         row_index_lineage=input_series.row_index_lineage,
         **kwargs,
     )
@@ -106,7 +106,7 @@ def series_binary_operation(
             tabular_source=input_series.tabular_source,
             node=node,
             name=None,
-            var_type=output_var_type,
+            dtype=output_var_type,
             row_index_lineage=input_series.row_index_lineage,
             **kwargs,
         )
@@ -122,7 +122,7 @@ def series_binary_operation(
         tabular_source=input_series.tabular_source,
         node=node,
         name=None,
-        var_type=output_var_type,
+        dtype=output_var_type,
         row_index_lineage=input_series.row_index_lineage,
         **kwargs,
     )

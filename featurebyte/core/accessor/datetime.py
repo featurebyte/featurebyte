@@ -53,7 +53,7 @@ class DatetimeAccessor:
                 "minute": "minute",
                 "second": "second",
             }
-        elif obj.var_type == DBVarType.TIMEDELTA:
+        elif obj.dtype == DBVarType.TIMEDELTA:
             self._node_type = NodeType.TIMEDELTA_EXTRACT
             self._property_node_params_map = {
                 "hour": "hour",

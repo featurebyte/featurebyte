@@ -15,7 +15,7 @@ class PaginationMixin(FeatureByteBaseModel):
     """
 
     page: int = Field(default=1, gt=0)
-    page_size: int = Field(default=10, gt=0, lt=100)
+    page_size: int = Field(default=10, gt=0, le=100)
     total: int
     data: List[Any]
 
@@ -24,7 +24,7 @@ class PaginationMixin(FeatureByteBaseModel):
 COLUMN_STR_MAX_LENGTH = 255
 COLUMN_STR_MIN_LENGTH = 1
 PageQuery = Query(default=1, gt=0)
-PageSizeQuery = Query(default=10, gt=0)
+PageSizeQuery = Query(default=10, gt=0, le=100)
 SortByQuery = Query(
     default="created_at", min_length=COLUMN_STR_MIN_LENGTH, max_length=COLUMN_STR_MAX_LENGTH
 )

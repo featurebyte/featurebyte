@@ -412,7 +412,7 @@ def test_info(saved_feature_list):
         "name": "sum_1d",
         "online_enabled": None,
         "readiness": "DRAFT",
-        "var_type": "FLOAT",
+        "dtype": "FLOAT",
     }
     assert non_verbose_info.items() > expected_info.items()
     assert verbose_info.items() > expected_info.items()

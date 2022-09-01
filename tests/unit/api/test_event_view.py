@@ -117,7 +117,7 @@ def test_getitem__series_key(snowflake_event_view):
     """
     mask_cust_id = snowflake_event_view["cust_id"] < 1000
     assert isinstance(mask_cust_id, Series)
-    assert mask_cust_id.var_type == DBVarType.BOOL
+    assert mask_cust_id.dtype == DBVarType.BOOL
 
     event_view_row_subset = snowflake_event_view[mask_cust_id]
     assert isinstance(event_view_row_subset, EventView)
@@ -200,7 +200,7 @@ def test_event_view_column_lag(snowflake_event_view, column, offset, expected_va
         lag_kwargs["offset"] = offset
     lagged_column = snowflake_event_view[column].lag("cust_id", **lag_kwargs)
     assert lagged_column.node.output_type == NodeOutputType.SERIES
-    assert lagged_column.var_type == expected_var_type
+    assert lagged_column.dtype == expected_var_type
     assert lagged_column.node.type == NodeType.LAG
     assert lagged_column.node.parameters == {
         "timestamp_column": "event_timestamp",

@@ -79,7 +79,7 @@ class EventViewColumn(Series):
         return series_unary_operation(
             input_series=self,
             node_type=NodeType.LAG,
-            output_var_type=self.var_type,
+            output_var_type=self.dtype,
             node_params={
                 "entity_columns": entity_columns,
                 "timestamp_column": self._parent.timestamp_column,

@@ -32,7 +32,7 @@ def test_datetime_property_extraction__timestamp(
     Test datetime accessor function (DatetimeExtractNode)
     """
     series = accessor_func(timestamp_series)
-    assert series.var_type == DBVarType.INT
+    assert series.dtype == DBVarType.INT
     assert series.node.type == NodeType.DT_EXTRACT
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)

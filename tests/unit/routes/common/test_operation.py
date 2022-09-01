@@ -50,11 +50,11 @@ def input_dict_fixture():
         "event_timestamp_column": "event_timestamp",
         "record_creation_date_column": "created_at",
         "columns_info": [
-            {"name": "event_timestamp", "var_type": "timestamp"},
-            {"name": "created_at", "var_type": "timestamp"},
+            {"name": "event_timestamp", "dtype": "timestamp"},
+            {"name": "created_at", "dtype": "timestamp"},
             {
                 "name": "cust_id",
-                "var_type": "int",
+                "dtype": "int",
                 "entity": {"name": "customer", "serving_names": ["cust_id"]},
             },
         ],
@@ -69,14 +69,14 @@ def input_dict_fixture():
             {"name": "event_data", "event_timestamp_column": "event_timestamp"},
         ),
         (
-            {"columns": DictProject(rule=("columns_info", ["name", "var_type", "entity"]))},
+            {"columns": DictProject(rule=("columns_info", ["name", "dtype", "entity"]))},
             {
                 "columns": [
-                    {"name": "event_timestamp", "var_type": "timestamp", "entity": None},
-                    {"name": "created_at", "var_type": "timestamp", "entity": None},
+                    {"name": "event_timestamp", "dtype": "timestamp", "entity": None},
+                    {"name": "created_at", "dtype": "timestamp", "entity": None},
                     {
                         "name": "cust_id",
-                        "var_type": "int",
+                        "dtype": "int",
                         "entity": {"name": "customer", "serving_names": ["cust_id"]},
                     },
                 ]

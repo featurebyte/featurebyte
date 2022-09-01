@@ -34,7 +34,7 @@ def feature_model_dict_feature():
     """Fixture for a Feature dict"""
     return {
         "name": "sum_30m",
-        "var_type": "FLOAT",
+        "dtype": "FLOAT",
         "row_index_lineage": ("groupby_1",),
         "graph": {
             "edges": {

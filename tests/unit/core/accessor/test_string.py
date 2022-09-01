@@ -12,7 +12,7 @@ def test_length_expression(varchar_series, expression_sql_template):
     Test string accessor function (LengthNode)
     """
     str_len = varchar_series.str.len()
-    assert str_len.var_type == DBVarType.INT
+    assert str_len.dtype == DBVarType.INT
     assert str_len.node.type == NodeType.LENGTH
     assert str_len.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression='LENGTH("PRODUCT_ACTION")')
@@ -36,7 +36,7 @@ def test_str_case_expression(
     Test string accessor function (StringCaseNode)
     """
     series = accessor_func(varchar_series)
-    assert series.var_type == DBVarType.VARCHAR
+    assert series.dtype == DBVarType.VARCHAR
     assert series.node.type == NodeType.STR_CASE
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
@@ -64,7 +64,7 @@ def test_strip_expression(
     Test string accessor function (TrimNode)
     """
     series = accessor_func(varchar_series)
-    assert series.var_type == DBVarType.VARCHAR
+    assert series.dtype == DBVarType.VARCHAR
     assert series.node.type == NodeType.TRIM
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
@@ -79,7 +79,7 @@ def test_replace_expression(
     Test string accessor function (ReplaceNode)
     """
     str_replace = varchar_series.str.replace("hello", "kitty")
-    assert str_replace.var_type == DBVarType.VARCHAR
+    assert str_replace.dtype == DBVarType.VARCHAR
     assert str_replace.node.type == NodeType.REPLACE
     assert str_replace.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(
@@ -130,7 +130,7 @@ def test_pad_expression(
     Test string accessor function (PadNode)
     """
     series = accessor_func(varchar_series)
-    assert series.var_type == DBVarType.VARCHAR
+    assert series.dtype == DBVarType.VARCHAR
     assert series.node.type == NodeType.PAD
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
@@ -158,7 +158,7 @@ def test_contains_expression(
     Test string accessor function (StringContainNode)
     """
     series = accessor_func(varchar_series)
-    assert series.var_type == DBVarType.BOOL
+    assert series.dtype == DBVarType.BOOL
     assert series.node.type == NodeType.STR_CONTAINS
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
@@ -186,7 +186,7 @@ def test_slice_expression(
     Test string accessor function (SubStringNode)
     """
     series = accessor_func(varchar_series)
-    assert series.var_type == DBVarType.VARCHAR
+    assert series.dtype == DBVarType.VARCHAR
     assert series.node.type == NodeType.SUBSTRING
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
