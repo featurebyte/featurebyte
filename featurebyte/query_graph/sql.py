@@ -130,8 +130,8 @@ class TableNode(SQLNode, ABC):
         ----------
         column_name : str
             Column name
-        node : SQLNode
-            An instance of SQLNode
+        node : ExpressionNode
+            An instance of ExpressionNode
         """
         self.columns_map[column_name] = node.sql
         self.columns_node[column_name] = node

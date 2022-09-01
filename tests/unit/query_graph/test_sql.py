@@ -5,6 +5,7 @@ import textwrap
 
 import pytest
 import sqlglot
+from sqlglot import parse_one
 
 from featurebyte.query_graph import sql
 from featurebyte.query_graph.enum import NodeType
@@ -14,9 +15,9 @@ from featurebyte.query_graph.enum import NodeType
 def input_node_fixture():
     """Fixture for a generic InputNode"""
     columns_map = {
-        "col_1": sqlglot.parse_one("col_1"),
-        "col_2": sqlglot.parse_one("col_2"),
-        "col_3": sqlglot.parse_one("col_3"),
+        "col_1": parse_one("col_1"),
+        "col_2": parse_one("col_2"),
+        "col_3": parse_one("col_3"),
     }
     return sql.InputNode(
         columns_map=columns_map,
@@ -35,6 +36,31 @@ def input_node_fixture():
             },
         },
     )
+
+
+def test_input_node__subset_columns(input_node):
+    """
+    Test input node subset columns
+    """
+    expr_node_1 = sql.ParsedExpressionNode(input_node, parse_one("a + 1"))
+    expr_node_2 = sql.ParsedExpressionNode(input_node, parse_one("a + 2"))
+    input_node.assign_column("col_new_1", expr_node_1)
+    input_node.assign_column("col_new_2", expr_node_2)
+
+    # check subset node
+    subset_node = input_node.subset_columns(["col_1", "col_new_1"])
+    assert subset_node.columns_map == {"col_1": parse_one("col_1"), "col_new_1": parse_one("a + 1")}
+    assert subset_node.columns_node == {"col_new_1": expr_node_1}
+
+    # check input node without subsetting
+    assert input_node.columns_map == {
+        "col_1": parse_one("col_1"),
+        "col_2": parse_one("col_2"),
+        "col_3": parse_one("col_3"),
+        "col_new_1": parse_one("a + 1"),
+        "col_new_2": parse_one("a + 2"),
+    }
+    assert input_node.columns_node == {"col_new_1": expr_node_1, "col_new_2": expr_node_2}
 
 
 @pytest.mark.parametrize(
