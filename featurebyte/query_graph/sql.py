@@ -8,7 +8,7 @@ from typing import Any, Literal, Optional
 # pylint: disable=too-few-public-methods,too-many-lines
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from sqlglot import Expression, expressions, parse_one, select
@@ -95,6 +95,10 @@ class TableNode(SQLNode, ABC):
     """
 
     columns_map: dict[str, Expression]
+    columns_node: dict[str, SQLNode] = field(init=False)
+
+    def __post_init__(self):
+        self.columns_node = {}
 
     @property
     def columns(self) -> list[str]:
@@ -119,17 +123,32 @@ class TableNode(SQLNode, ABC):
         assert isinstance(sql, expressions.Subqueryable)
         return sql.subquery()
 
-    def set_column_expr(self, column_name: str, expr: Expression) -> None:
-        """Set expression for a column name
+    def assign_column(self, column_name, node: SQLNode):
+        """Performs an assignment and update column_name's expression
 
         Parameters
         ----------
         column_name : str
             Column name
-        expr : Expression
-            SQL expression
+        node : SQLNode
+            An instance of SQLNode
         """
-        self.columns_map[column_name] = expr
+        self.columns_map[column_name] = node.sql
+        self.columns_node[column_name] = node
+
+    def get_column_node(self, column_name: str) -> SQLNode | None:
+        """Get SQLNode for a column
+
+        Parameters
+        ----------
+        column_name : str
+            Column name
+
+        Returns
+        -------
+        SQLNode | None
+        """
+        return self.columns_node.get(column_name)
 
     def get_column_expr(self, column_name: str) -> Expression:
         """Get expression for a column name
@@ -1286,6 +1305,9 @@ def make_expression_node(
             dt_property=parameters["property"],
         )
     elif node_type == NodeType.DATE_DIFF_UNIT:
+        if isinstance(input_expr_node, Project):
+            # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
+            input_expr_node = table_node.get_column_node(input_expr_node.column_name)
         assert isinstance(input_expr_node, DateDiffNode)
         sql_node = input_expr_node.with_unit(parameters["property"])
     elif node_type == NodeType.COUNT_DICT_TRANSFORM:

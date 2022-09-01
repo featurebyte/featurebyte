@@ -535,6 +535,7 @@ def check_string_operations(event_view, column_name, limit=100):
 
 def check_datetime_operations(event_view, column_name, limit=100):
     """Test datetime operations"""
+    event_view = event_view.copy()
     datetime_series = event_view[column_name]
 
     properties = [
@@ -571,9 +572,11 @@ def check_datetime_operations(event_view, column_name, limit=100):
 
     pandas_previous_timestamp = get_lagged_series_pandas(
         dt_df, "EVENT_TIMESTAMP", "EVENT_TIMESTAMP", "CUST_ID"
-    ).total_seconds()
-    pandas_event_interval = pandas_series - pandas_previous_timestamp
-    pd.testing.assert_series_equal(dt_df["event_interval"], pandas_event_interval.total_seconds())
+    )
+    pandas_event_interval_second = (pandas_series - pandas_previous_timestamp).dt.total_seconds()
+    pd.testing.assert_series_equal(
+        dt_df["event_interval"], pandas_event_interval_second, check_names=False
+    )
 
 
 def check_cast_operations(event_view, limit=100):

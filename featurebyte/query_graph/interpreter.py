@@ -121,7 +121,7 @@ class SQLOperationGraph:
             assert len(input_sql_nodes) == 2
             assert isinstance(input_sql_nodes[0], TableNode)
             input_table_node = input_sql_nodes[0]
-            input_table_node.set_column_expr(parameters["name"], input_sql_nodes[1].sql)
+            input_table_node.assign_column(parameters["name"], input_sql_nodes[1])
             sql_node = input_table_node
 
         elif node_type == NodeType.PROJECT:
