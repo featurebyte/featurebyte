@@ -194,6 +194,6 @@ def test_lag(input_node):
     node = sql.make_expression_node(
         input_sql_nodes=[column],
         node_type=NodeType.LAG,
-        parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"]},
+        parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
     )
-    assert node.sql.sql() == 'LAG(val) OVER(PARTITION BY "cust_id" ORDER BY "ts")'
+    assert node.sql.sql() == 'LAG(val, 1) OVER(PARTITION BY "cust_id" ORDER BY "ts")'

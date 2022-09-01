@@ -1061,7 +1061,7 @@ def test_window_function(graph, node_input):
     )
     lagged_a = graph.add_operation(
         node_type=NodeType.LAG,
-        node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"]},
+        node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a],
     )
@@ -1083,7 +1083,7 @@ def test_window_function(graph, node_input):
               "cust_id" AS "cust_id",
               "a" AS "a",
               "b" AS "b",
-              LAG("a") OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
+              LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
             FROM "db"."public"."event_table"
             WHERE
               ("a" > 1000)

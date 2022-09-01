@@ -51,7 +51,7 @@ class EventViewColumn(Series):
         return {"event_data_id": self.event_data_id}
 
     @typechecked
-    def lag(self, entity_columns: Union[str, List[str]]) -> EventViewColumn:
+    def lag(self, entity_columns: Union[str, List[str]], offset: int = 1) -> EventViewColumn:
         """
         Lag operation
 
@@ -59,6 +59,8 @@ class EventViewColumn(Series):
         ----------
         entity_columns : str | list[str]
             Entity columns used when retrieving the lag value
+        offset : int
+            The number of rows backward from which to retrieve a value. Default is 1.
 
         Returns
         -------
@@ -81,6 +83,7 @@ class EventViewColumn(Series):
             node_params={
                 "entity_columns": entity_columns,
                 "timestamp_column": self._parent.timestamp_column,
+                "offset": offset,
             },
             **self.unary_op_series_params(),
         )

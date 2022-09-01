@@ -660,6 +660,7 @@ class LagNode(ExpressionNode):
     expr: ExpressionNode
     entity_columns: list[str]
     timestamp_column: str
+    offset: int
 
     @property
     def sql(self) -> Expression:
@@ -675,7 +676,9 @@ class LagNode(ExpressionNode):
             ]
         )
         output_expr = expressions.Window(
-            this=expressions.Anonymous(this="LAG", expressions=[self.expr.sql]),
+            this=expressions.Anonymous(
+                this="LAG", expressions=[self.expr.sql, make_literal_value(self.offset)]
+            ),
             partition_by=partition_by,
             order=order,
         )
@@ -1249,6 +1252,7 @@ def make_expression_node(
             expr=input_expr_node,
             entity_columns=parameters["entity_columns"],
             timestamp_column=parameters["timestamp_column"],
+            offset=parameters["offset"],
         )
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")
