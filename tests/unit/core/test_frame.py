@@ -25,7 +25,7 @@ def test__getitem__str_key(dataframe, item, expected_type):
     assert isinstance(series, Series)
     series_dict = series.dict()
     assert series_dict["name"] == item
-    assert series_dict["var_type"] == expected_type
+    assert series_dict["dtype"] == expected_type
     assert (
         series_dict["node"].items()
         >= {

@@ -257,11 +257,11 @@ def test_groupby__count_features(snowflake_event_view_with_entity, method, categ
     if category is None:
         # node type changes to ALIAS because of fillna
         assert feature_dict["node"]["type"] == NodeType.ALIAS
-        assert feature_dict["var_type"] == DBVarType.FLOAT
+        assert feature_dict["dtype"] == DBVarType.FLOAT
     else:
         assert feature_dict["node"]["type"] == NodeType.PROJECT
         # count with category has dict like output type
-        assert feature_dict["var_type"] == DBVarType.OBJECT
+        assert feature_dict["dtype"] == DBVarType.OBJECT
 
 
 def test_groupby__prune(snowflake_event_view_with_entity):

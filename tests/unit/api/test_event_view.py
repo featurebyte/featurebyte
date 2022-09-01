@@ -117,7 +117,7 @@ def test_getitem__series_key(snowflake_event_view):
     """
     mask_cust_id = snowflake_event_view["cust_id"] < 1000
     assert isinstance(mask_cust_id, Series)
-    assert mask_cust_id.var_type == DBVarType.BOOL
+    assert mask_cust_id.dtype == DBVarType.BOOL
 
     event_view_row_subset = snowflake_event_view[mask_cust_id]
     assert isinstance(event_view_row_subset, EventView)

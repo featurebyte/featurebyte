@@ -37,7 +37,7 @@ class FeatureService(BaseDocumentService[FeatureModel]):
         rule={
             **BaseDocumentService.base_info_transform_rule,
             "__root__": DictProject(
-                rule=["var_type", "readiness", "version", "is_default", "online_enabled"]
+                rule=["dtype", "readiness", "version", "is_default", "online_enabled"]
             ),
             "tabular_source": DictProject(
                 rule=("tabular_source", ["feature_store", "table_details"]),

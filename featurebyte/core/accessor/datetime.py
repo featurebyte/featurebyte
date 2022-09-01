@@ -52,7 +52,7 @@ class DatetimeAccessor:
     }
 
     def __init__(self, obj: Series):
-        if obj.var_type != DBVarType.TIMESTAMP:
+        if obj.dtype != DBVarType.TIMESTAMP:
             raise AttributeError("Can only use .dt accessor with TIMESTAMP values!")
         self._obj = obj
 

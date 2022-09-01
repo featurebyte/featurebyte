@@ -124,6 +124,6 @@
             "table_name": "sf_table"
         }
     },
-    "var_type": "FLOAT",
+    "dtype": "FLOAT",
     "version": "V220830"
 }

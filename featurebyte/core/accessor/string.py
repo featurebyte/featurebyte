@@ -45,7 +45,7 @@ class StringAccessor:
     """
 
     def __init__(self, obj: Series):
-        if obj.var_type != DBVarType.VARCHAR:
+        if obj.dtype != DBVarType.VARCHAR:
             raise AttributeError("Can only use .str accessor with VARCHAR values!")
         self._obj = obj
 

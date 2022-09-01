@@ -67,7 +67,7 @@ class OpsMixin:
         ValueError
             if the row index between item object & mask are not aligned
         """
-        if mask.var_type != DBVarType.BOOL:
+        if mask.dtype != DBVarType.BOOL:
             raise TypeError("Only boolean Series filtering is supported!")
         if item.row_index_lineage != mask.row_index_lineage:
             raise ValueError(f"Row indices between '{item}' and '{mask}' are not aligned!")
