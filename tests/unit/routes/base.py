@@ -35,6 +35,17 @@ class BaseApiTestSuite:
             ],
         ),
         (
+            {"page_size": 101},
+            [
+                {
+                    "loc": ["query", "page_size"],
+                    "msg": "ensure this value is less than or equal to 100",
+                    "type": "value_error.number.not_le",
+                    "ctx": {"limit_value": 100},
+                },
+            ],
+        ),
+        (
             {"page_size": "abcd"},
             [
                 {
@@ -273,6 +284,12 @@ class BaseApiTestSuite:
         assert response_with_params.status_code == HTTPStatus.OK
         response_with_params_names = [elem["name"] for elem in response_with_params.json()["data"]]
         assert response_with_params_names == [f"{payload_name}_1"]
+
+        # test bench_size_boundary
+        response_page_size_boundary = test_api_client.get(
+            f"{self.base_route}", params={"page_size": 100}
+        )
+        assert response_page_size_boundary.status_code == HTTPStatus.OK
 
     def test_list_422(
         self,

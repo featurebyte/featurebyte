@@ -22,7 +22,7 @@ def test__getitem__series_key(int_series, bool_series):
         >= {"type": "filter", "parameters": {}, "output_type": "series"}.items()
     )
     assert series_dict["name"] == int_series.name
-    assert series_dict["var_type"] == int_series.var_type
+    assert series_dict["dtype"] == int_series.dtype
     assert dict(series_dict["graph"]["edges"]) == {
         "input_1": ["project_1", "project_2"],
         "project_1": ["filter_1"],
@@ -44,7 +44,7 @@ def test__getitem__row_index_not_aligned(int_series, bool_series):
     Test filtering using non-aligned row index
     """
     filtered_bool_series = bool_series[bool_series]
-    assert filtered_bool_series.var_type == DBVarType.BOOL
+    assert filtered_bool_series.dtype == DBVarType.BOOL
     assert filtered_bool_series.parent is None
     with pytest.raises(ValueError) as exc:
         _ = int_series[filtered_bool_series]
@@ -302,12 +302,12 @@ def test_relational_operators__series_other(bool_series, int_series, float_serie
     series_bool_gt = bool_series > bool_series
     series_int_ge = int_series >= int_series
     series_int_ge_float = int_series >= float_series
-    assert series_bool_eq.var_type == DBVarType.BOOL
-    assert series_int_ne.var_type == DBVarType.BOOL
-    assert series_float_lt.var_type == DBVarType.BOOL
-    assert series_varchar_le.var_type == DBVarType.BOOL
-    assert series_bool_gt.var_type == DBVarType.BOOL
-    assert series_int_ge.var_type == DBVarType.BOOL
+    assert series_bool_eq.dtype == DBVarType.BOOL
+    assert series_int_ne.dtype == DBVarType.BOOL
+    assert series_float_lt.dtype == DBVarType.BOOL
+    assert series_varchar_le.dtype == DBVarType.BOOL
+    assert series_bool_gt.dtype == DBVarType.BOOL
+    assert series_int_ge.dtype == DBVarType.BOOL
     node_kwargs = {"parameters": {}, "output_type": NodeOutputType.SERIES}
     exclude = {"name": True}
     _check_node_equality(
@@ -352,12 +352,12 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
     scalar_float_gt = float_series > 1.234
     scalar_float_gt_int = float_series > 1
     scalar_varchar_ge = varchar_series >= "world"
-    assert scalar_float_eq.var_type == DBVarType.BOOL
-    assert scalar_varchar_ne.var_type == DBVarType.BOOL
-    assert scalar_bool_lt.var_type == DBVarType.BOOL
-    assert scalar_int_le.var_type == DBVarType.BOOL
-    assert scalar_float_gt.var_type == DBVarType.BOOL
-    assert scalar_varchar_ge.var_type == DBVarType.BOOL
+    assert scalar_float_eq.dtype == DBVarType.BOOL
+    assert scalar_varchar_ne.dtype == DBVarType.BOOL
+    assert scalar_bool_lt.dtype == DBVarType.BOOL
+    assert scalar_int_le.dtype == DBVarType.BOOL
+    assert scalar_float_gt.dtype == DBVarType.BOOL
+    assert scalar_varchar_ge.dtype == DBVarType.BOOL
     kwargs = {"output_type": NodeOutputType.SERIES}
     exclude = {"name": True}
     _check_node_equality(
@@ -419,11 +419,11 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
     series_float_int_mul = float_series * int_series
     series_float_float_div = float_series / float_series
     series_varchar_varchar_add = varchar_series + varchar_series
-    assert series_int_float_add.var_type == DBVarType.FLOAT
-    assert series_int_int_sub.var_type == DBVarType.INT
-    assert series_float_int_mul.var_type == DBVarType.FLOAT
-    assert series_float_float_div.var_type == DBVarType.FLOAT
-    assert series_varchar_varchar_add.var_type == DBVarType.VARCHAR
+    assert series_int_float_add.dtype == DBVarType.FLOAT
+    assert series_int_int_sub.dtype == DBVarType.INT
+    assert series_float_int_mul.dtype == DBVarType.FLOAT
+    assert series_float_float_div.dtype == DBVarType.FLOAT
+    assert series_varchar_varchar_add.dtype == DBVarType.VARCHAR
     node_kwargs = {"parameters": {}, "output_type": NodeOutputType.SERIES}
     exclude = {"name": True}
     _check_node_equality(
@@ -457,11 +457,11 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
     scalar_float_int_mul = float_series * 2
     scalar_float_float_div = float_series / 2.34
     scalar_varchar_varchar_add = varchar_series + "hello"
-    assert scalar_int_float_add.var_type == DBVarType.FLOAT
-    assert scalar_int_int_sub.var_type == DBVarType.INT
-    assert scalar_float_int_mul.var_type == DBVarType.FLOAT
-    assert scalar_float_float_div.var_type == DBVarType.FLOAT
-    assert scalar_varchar_varchar_add.var_type == DBVarType.VARCHAR
+    assert scalar_int_float_add.dtype == DBVarType.FLOAT
+    assert scalar_int_int_sub.dtype == DBVarType.INT
+    assert scalar_float_int_mul.dtype == DBVarType.FLOAT
+    assert scalar_float_float_div.dtype == DBVarType.FLOAT
+    assert scalar_varchar_varchar_add.dtype == DBVarType.VARCHAR
     kwargs = {"output_type": NodeOutputType.SERIES}
     _check_node_equality(
         scalar_int_float_add.node,
@@ -499,11 +499,11 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
     scalar_float_int_mul = 2 * float_series
     scalar_float_float_div = 2.34 / float_series
     scalar_varchar_varchar_add = "abc" + varchar_series
-    assert scalar_int_float_add.var_type == DBVarType.FLOAT
-    assert scalar_int_int_sub.var_type == DBVarType.INT
-    assert scalar_float_int_mul.var_type == DBVarType.FLOAT
-    assert scalar_float_float_div.var_type == DBVarType.FLOAT
-    assert scalar_varchar_varchar_add.var_type == DBVarType.VARCHAR
+    assert scalar_int_float_add.dtype == DBVarType.FLOAT
+    assert scalar_int_int_sub.dtype == DBVarType.INT
+    assert scalar_float_int_mul.dtype == DBVarType.FLOAT
+    assert scalar_float_float_div.dtype == DBVarType.FLOAT
+    assert scalar_varchar_varchar_add.dtype == DBVarType.VARCHAR
     kwargs = {"output_type": NodeOutputType.SERIES}
     exclude = {"name": True}
     _check_node_equality(
@@ -578,7 +578,7 @@ def test_isnull(bool_series):
     Test isnull operation
     """
     result = bool_series.isnull()
-    assert result.var_type == DBVarType.BOOL
+    assert result.dtype == DBVarType.BOOL
     assert_series_attributes_equal(result, bool_series)
     node_kwargs = {"parameters": {}, "output_type": NodeOutputType.SERIES}
     exclude = {"name": True}
@@ -594,7 +594,7 @@ def test_notnull(bool_series):
     Test notnull operation
     """
     result = bool_series.notnull()
-    assert result.var_type == DBVarType.BOOL
+    assert result.dtype == DBVarType.BOOL
     assert_series_attributes_equal(result, bool_series)
     node_kwargs = {"parameters": {}, "output_type": NodeOutputType.SERIES}
     exclude = {"name": True}

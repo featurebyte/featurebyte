@@ -24,7 +24,7 @@ class FeatureCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    var_type: DBVarType
+    dtype: DBVarType
     row_index_lineage: Tuple[StrictStr, ...]
     graph: QueryGraph
     node: Node

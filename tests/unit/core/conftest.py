@@ -29,11 +29,11 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
     Frame test fixture
     """
     columns_info = [
-        {"name": "CUST_ID", "var_type": DBVarType.INT},
-        {"name": "PRODUCT_ACTION", "var_type": DBVarType.VARCHAR},
-        {"name": "VALUE", "var_type": DBVarType.FLOAT},
-        {"name": "MASK", "var_type": DBVarType.BOOL},
-        {"name": "TIMESTAMP", "var_type": DBVarType.TIMESTAMP},
+        {"name": "CUST_ID", "dtype": DBVarType.INT},
+        {"name": "PRODUCT_ACTION", "dtype": DBVarType.VARCHAR},
+        {"name": "VALUE", "dtype": DBVarType.FLOAT},
+        {"name": "MASK", "dtype": DBVarType.BOOL},
+        {"name": "TIMESTAMP", "dtype": DBVarType.TIMESTAMP},
     ]
     node = global_graph.add_operation(
         node_type=NodeType.INPUT,
@@ -81,7 +81,7 @@ def bool_series(dataframe):
     series = dataframe["MASK"]
     assert isinstance(series, Series)
     assert series.name == "MASK"
-    assert series.var_type == DBVarType.BOOL
+    assert series.dtype == DBVarType.BOOL
     yield series
 
 
@@ -93,7 +93,7 @@ def int_series(dataframe):
     series = dataframe["CUST_ID"]
     assert isinstance(series, Series)
     assert series.name == "CUST_ID"
-    assert series.var_type == DBVarType.INT
+    assert series.dtype == DBVarType.INT
     yield series
 
 
@@ -105,7 +105,7 @@ def float_series(dataframe):
     series = dataframe["VALUE"]
     assert isinstance(series, Series)
     assert series.name == "VALUE"
-    assert series.var_type == DBVarType.FLOAT
+    assert series.dtype == DBVarType.FLOAT
     yield series
 
 
@@ -117,7 +117,7 @@ def varchar_series(dataframe):
     series = dataframe["PRODUCT_ACTION"]
     assert isinstance(series, Series)
     assert series.name == "PRODUCT_ACTION"
-    assert series.var_type == DBVarType.VARCHAR
+    assert series.dtype == DBVarType.VARCHAR
     yield series
 
 
@@ -129,5 +129,5 @@ def timestamp_series(dataframe):
     series = dataframe["TIMESTAMP"]
     assert isinstance(series, Series)
     assert series.name == "TIMESTAMP"
-    assert series.var_type == DBVarType.TIMESTAMP
+    assert series.dtype == DBVarType.TIMESTAMP
     yield series

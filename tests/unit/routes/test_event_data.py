@@ -99,8 +99,8 @@ class TestEventDataApi(BaseApiTestSuite):
                 },
             },
             "columns_info": [
-                {"name": "created_at", "var_type": "TIMESTAMP", "entity_id": None},
-                {"name": "event_date", "var_type": "TIMESTAMP", "entity_id": None},
+                {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
+                {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
             ],
             "event_timestamp_column": "event_date",
             "record_creation_date_column": "created_at",
@@ -142,8 +142,8 @@ class TestEventDataApi(BaseApiTestSuite):
         """
         return {
             "columns_info": [
-                {"name": "created_at", "var_type": "TIMESTAMP", "entity_id": None},
-                {"name": "event_date", "var_type": "TIMESTAMP", "entity_id": None},
+                {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
+                {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
             ],
             "default_feature_job_setting": {
                 "blind_spot": "12m",
@@ -376,8 +376,8 @@ class TestEventDataApi(BaseApiTestSuite):
                 f"/event_data/{document_id}",
                 json={
                     "columns_info": [
-                        {"name": "created_at", "var_type": "TIMESTAMP", "entity_id": None},
-                        {"name": "event_date", "var_type": "TIMESTAMP", "entity_id": None},
+                        {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
+                        {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
                     ],
                     "default_feature_job_setting": {
                         "blind_spot": blind_spot,

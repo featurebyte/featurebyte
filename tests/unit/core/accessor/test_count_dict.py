@@ -31,7 +31,7 @@ def test_transformation(
 ):
     new_feature = getattr(count_per_category_feature.cd, method)(**method_kwargs)
     assert new_feature.node.output_type == NodeOutputType.SERIES
-    assert new_feature.var_type == expected_var_type
+    assert new_feature.dtype == expected_var_type
     assert new_feature.node.type == NodeType.COUNT_DICT_TRANSFORM
     assert new_feature.node.parameters == expected_parameters
     assert new_feature.event_data_ids == count_per_category_feature.event_data_ids

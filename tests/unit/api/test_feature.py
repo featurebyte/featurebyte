@@ -159,7 +159,7 @@ def test_feature_deserialization(
     assert deserialized_float_feature.saved is False
     assert deserialized_float_feature.id == float_feature.id
     assert deserialized_float_feature.name == float_feature.name
-    assert deserialized_float_feature.var_type == float_feature.var_type
+    assert deserialized_float_feature.dtype == float_feature.dtype
     assert deserialized_float_feature.node == float_feature.node
     assert deserialized_float_feature.graph.dict() == global_graph_dict
     assert deserialized_float_feature.row_index_lineage == float_feature.row_index_lineage
@@ -258,7 +258,7 @@ def test_info(saved_feature):
         "name": "sum_1d",
         "online_enabled": None,
         "readiness": "DRAFT",
-        "var_type": "FLOAT",
+        "dtype": "FLOAT",
     }
     expected_info = {"default_version_mode": "AUTO", "name": "sum_1d"}
     assert non_verbose_info.items() > expected_info.items()
@@ -381,7 +381,7 @@ def test_get_feature(saved_feature):
         > {
             "name": "sum_1d",
             "readiness": "DRAFT",
-            "var_type": "FLOAT",
+            "dtype": "FLOAT",
             "updated_at": None,
             "user_id": None,
         }.items()
