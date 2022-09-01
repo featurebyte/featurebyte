@@ -200,7 +200,7 @@ def test_event_view_column_lag(snowflake_event_view, column, offset, expected_va
         lag_kwargs["offset"] = offset
     lagged_column = snowflake_event_view[column].lag("cust_id", **lag_kwargs)
     assert lagged_column.node.output_type == NodeOutputType.SERIES
-    assert lagged_column.var_type == expected_var_type
+    assert lagged_column.dtype == expected_var_type
     assert lagged_column.node.type == NodeType.LAG
     assert lagged_column.node.parameters == {
         "timestamp_column": "event_timestamp",
