@@ -16,7 +16,7 @@ from featurebyte.core.util import series_binary_operation, series_unary_operatio
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
 
 
 class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin):
@@ -507,7 +507,10 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         list[NodeType]
         """
         out = []
-        for node in dfs_traversal(self.graph, self.node):
+        series_dict = self.dict()
+        pruned_graph = QueryGraph(**series_dict["graph"])
+        pruned_node = Node(**series_dict["node"])
+        for node in dfs_traversal(pruned_graph, pruned_node):
             out.append(node.type)
         return out
 
