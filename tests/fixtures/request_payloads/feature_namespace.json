@@ -1,10 +1,16 @@
 {
     "_id": "630d7fa8f1275c864fde849e",
-    "default_version_id": "630d7fa8f1275c864fde8495",
+    "default_feature_id": "630d7fa8f1275c864fde8495",
     "default_version_mode": "AUTO",
     "name": "sum_30m",
     "readiness": "DRAFT",
-    "version_ids": [
+    "feature_ids": [
         "630d7fa8f1275c864fde8495"
+    ],
+    "entity_ids": [
+      "630d7fa8f1275c864fde8493"
+    ],
+    "event_data_ids": [
+      "630d7fa8f1275c864fde8492"
     ]
 }

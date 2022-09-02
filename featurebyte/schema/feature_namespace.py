@@ -19,10 +19,12 @@ class FeatureNamespaceCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
-    version_ids: List[PydanticObjectId] = Field(default_factory=list)
+    feature_ids: List[PydanticObjectId] = Field(default_factory=list)
     readiness: FeatureReadiness
-    default_version_id: PydanticObjectId
+    default_feature_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
+    entity_ids: List[PydanticObjectId]
+    event_data_ids: List[PydanticObjectId]
 
 
 class FeatureNamespaceList(PaginationMixin):
@@ -38,5 +40,5 @@ class FeatureNamespaceUpdate(FeatureByteBaseModel):
     FeatureNamespace update schema
     """
 
-    version_id: Optional[PydanticObjectId]
+    feature_id: Optional[PydanticObjectId]
     default_version_mode: Optional[DefaultVersionMode]

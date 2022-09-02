@@ -13,7 +13,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
 )
 from featurebyte.models.persistent import AuditActionType
-from featurebyte.routes.common.base import BaseDocumentService
+from featurebyte.service.base_document import BaseDocumentService
 
 
 @pytest.mark.asyncio
@@ -272,3 +272,25 @@ def test_field_path_value(doc, field_path, expected):
     assert (
         BaseDocumentService._get_field_path_value(doc_dict=doc, field_path=field_path) == expected
     )
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        ({}, {}),
+        ({"name": "some_name"}, {"name": "some_name"}),
+        ({"search": "some_value"}, {"$text": {"$search": "some_value"}}),
+        ({"query_filter": {"field": {"$in": ["a", "b"]}}}, {"field": {"$in": ["a", "b"]}}),
+        (
+            {
+                "name": "some_name",
+                "search": "some_value",
+                "query_filter": {"field": {"$in": ["a", "b"]}},
+            },
+            {"name": "some_name", "$text": {"$search": "some_value"}, "field": {"$in": ["a", "b"]}},
+        ),
+    ],
+)
+def test_construct_list_query_filter(kwargs, expected):
+    """Test construct_list_query_filter logic"""
+    assert BaseDocumentService._construct_list_query_filter(None, **kwargs) == expected
