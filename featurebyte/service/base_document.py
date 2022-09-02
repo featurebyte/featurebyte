@@ -71,7 +71,7 @@ class BaseDocumentService(Generic[Document]):
         """
         return self._snake_to_camel_case(self.collection_name)
 
-    def _construct_get_query_filter(self, document_id: ObjectId, **kwargs) -> QueryFilter:
+    def _construct_get_query_filter(self, document_id: ObjectId, **kwargs: Any) -> QueryFilter:
         """
         Construct query filter used in get route
 
