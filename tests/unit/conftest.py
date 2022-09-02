@@ -617,9 +617,9 @@ def test_save_payload_fixtures(
         feature_namespace = FeatureNamespaceCreate(
             _id=ObjectId(),
             name=feature_sum_30m.name,
-            version_ids=[feature_sum_30m.id],
+            feature_ids=[feature_sum_30m.id],
             readiness=FeatureReadiness.DRAFT,
-            default_version_id=feature_sum_30m.id,
+            default_feature_id=feature_sum_30m.id,
         )
         with open(f"{base_path}/feature_namespace.json", "w") as fhandle:
             fhandle.write(json.dumps(feature_namespace.json_dict(), indent=4, sort_keys=True))

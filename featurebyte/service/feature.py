@@ -136,7 +136,7 @@ class FeatureService(BaseDocumentService[FeatureModel]):
                 # update feature namespace
                 feature_namespace = await feature_namespace_service.update_document(
                     document_id=feature_namespace.id,
-                    data=FeatureNamespaceUpdate(version_id=document.id),
+                    data=FeatureNamespaceUpdate(feature_id=document.id),
                 )
 
             except DocumentNotFoundError:
@@ -144,9 +144,9 @@ class FeatureService(BaseDocumentService[FeatureModel]):
                     data=FeatureNamespaceCreate(
                         _id=document.feature_namespace_id,
                         name=document.name,
-                        version_ids=[insert_id],
+                        feature_ids=[insert_id],
                         readiness=FeatureReadiness.DRAFT,
-                        default_version_id=insert_id,
+                        default_feature_id=insert_id,
                         default_version_mode=DefaultVersionMode.AUTO,
                         entity_ids=sorted(document.entity_ids),
                         event_data_ids=sorted(document.event_data_ids),
@@ -161,7 +161,7 @@ class FeatureService(BaseDocumentService[FeatureModel]):
             feature_store = ExtendedFeatureStoreModel(**feature_store_dict)
             extended_feature = ExtendedFeatureModel(
                 **document.dict(by_alias=True),
-                is_default=document.id == feature_namespace.default_version_id,
+                is_default=document.id == feature_namespace.default_feature_id,
                 feature_store=feature_store,
             )
             await self._insert_feature_registry(extended_feature, get_credential)

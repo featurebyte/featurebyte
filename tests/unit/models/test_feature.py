@@ -37,16 +37,16 @@ def feature_list_model_dict_fixture():
 @pytest.fixture(name="feature_name_space_dict")
 def feature_name_space_dict_fixture():
     """Fixture for a FixtureNameSpace dict"""
-    version_id = ObjectId()
+    feature_id = ObjectId()
     entity_ids = [ObjectId()]
     event_data_ids = [ObjectId()]
     return {
         "name": "some_feature_name",
-        "version_ids": [version_id],
+        "feature_ids": [feature_id],
         "readiness": "DRAFT",
         "created_at": datetime.now(),
         "updated_at": datetime.now(),
-        "default_version_id": version_id,
+        "default_feature_id": feature_id,
         "default_version_mode": "MANUAL",
         "entity_ids": entity_ids,
         "event_data_ids": event_data_ids,

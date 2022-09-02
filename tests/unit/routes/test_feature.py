@@ -142,9 +142,9 @@ class TestFeatureApi(BaseApiTestSuite):
         )
         assert match_count == 1
         assert feat_namespace_docs[0]["name"] == self.payload["name"]
-        assert feat_namespace_docs[0]["version_ids"] == [ObjectId(self.payload["_id"])]
+        assert feat_namespace_docs[0]["feature_ids"] == [ObjectId(self.payload["_id"])]
         assert feat_namespace_docs[0]["readiness"] == "DRAFT"
-        assert feat_namespace_docs[0]["default_version_id"] == ObjectId(self.payload["_id"])
+        assert feat_namespace_docs[0]["default_feature_id"] == ObjectId(self.payload["_id"])
         assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
         assert feat_namespace_docs[0]["created_at"] >= datetime.fromisoformat(
             response_dict["created_at"]
@@ -167,12 +167,12 @@ class TestFeatureApi(BaseApiTestSuite):
         )
         assert match_count == 1
         assert feat_namespace_docs[0]["name"] == self.payload["name"]
-        assert feat_namespace_docs[0]["version_ids"] == [
+        assert feat_namespace_docs[0]["feature_ids"] == [
             ObjectId(self.payload["_id"]),
             ObjectId(new_payload["_id"]),
         ]
         assert feat_namespace_docs[0]["readiness"] == "DRAFT"
-        assert feat_namespace_docs[0]["default_version_id"] == ObjectId(new_payload["_id"])
+        assert feat_namespace_docs[0]["default_feature_id"] == ObjectId(new_payload["_id"])
         assert feat_namespace_docs[0]["default_version_mode"] == "AUTO"
         assert feat_namespace_docs[0]["created_at"] >= datetime.fromisoformat(
             response_dict["created_at"]

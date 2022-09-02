@@ -73,8 +73,8 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         test_api_client, persistent = test_api_client_persistent
         feature_namespace_data_before_update, _ = await persistent.find("feature_namespace", {})
         create_success_response_dict = create_success_response.json()
-        version_ids_before = feature_namespace_data_before_update[0]["version_ids"]
-        assert len(version_ids_before) == 1
+        feature_ids_before = feature_namespace_data_before_update[0]["feature_ids"]
+        assert len(feature_ids_before) == 1
 
         # insert a feature_id to feature collection
         feature_id = await persistent.insert_one(
@@ -95,14 +95,14 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
 
         response = test_api_client.patch(
             f'{self.base_route}/{create_success_response_dict["_id"]}',
-            json={"version_id": str(feature_id)},
+            json={"feature_id": str(feature_id)},
         )
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
         assert response_dict["user_id"] == create_success_response_dict["user_id"]
-        assert response_dict["version_ids"] == [str(version_ids_before[0]), str(feature_id)]
+        assert response_dict["feature_ids"] == [str(feature_ids_before[0]), str(feature_id)]
         assert response_dict["readiness"] == FeatureReadiness.DRAFT
-        assert response_dict["default_version_id"] == str(feature_id)
+        assert response_dict["default_feature_id"] == str(feature_id)
         assert response_dict["default_version_mode"] == DefaultVersionMode.AUTO
 
         # update another feature_id with lower readiness level
@@ -122,18 +122,18 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
 
         response = test_api_client.patch(
             f'{self.base_route}/{create_success_response_dict["_id"]}',
-            json={"version_id": str(worse_readiness_feature_id)},
+            json={"feature_id": str(worse_readiness_feature_id)},
         )
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
         assert response_dict["user_id"] == create_success_response_dict["user_id"]
-        assert response_dict["version_ids"] == [
-            str(version_ids_before[0]),
+        assert response_dict["feature_ids"] == [
+            str(feature_ids_before[0]),
             str(feature_id),
             str(worse_readiness_feature_id),
         ]
         assert response_dict["readiness"] == FeatureReadiness.DRAFT
-        assert response_dict["default_version_id"] == str(feature_id)
+        assert response_dict["default_feature_id"] == str(feature_id)
         assert response_dict["default_version_mode"] == DefaultVersionMode.AUTO
 
         # test update default version model
@@ -144,13 +144,13 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
         assert response_dict["user_id"] == create_success_response_dict["user_id"]
-        assert response_dict["version_ids"] == [
-            str(version_ids_before[0]),
+        assert response_dict["feature_ids"] == [
+            str(feature_ids_before[0]),
             str(feature_id),
             str(worse_readiness_feature_id),
         ]
         assert response_dict["readiness"] == FeatureReadiness.DRAFT
-        assert response_dict["default_version_id"] == str(feature_id)
+        assert response_dict["default_feature_id"] == str(feature_id)
         assert response_dict["default_version_mode"] == DefaultVersionMode.MANUAL
 
     def test_update_404(self, test_api_client_persistent):
@@ -184,7 +184,7 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
 
         response = test_api_client.patch(
             f'{self.base_route}/{create_success_response_dict["_id"]}',
-            json={"version_id": str(feature_id)},
+            json={"feature_id": str(feature_id)},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {

@@ -60,13 +60,13 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         Feature namespace id
     name: str
         Feature name
-    version_ids: List[PydanticObjectId]
+    feature_ids: List[PydanticObjectId]
         List of feature version id
     readiness: FeatureReadiness
         Aggregated readiness across all feature versions of the same feature namespace
     created_at: datetime
         Datetime when the FeatureNamespace was first saved or published
-    default_version_id: PydanticObjectId
+    default_feature_id: PydanticObjectId
         Default feature version id
     default_version_mode: DefaultVersionMode
         Default feature version mode
@@ -76,9 +76,9 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         EventData IDs used for the feature version
     """
 
-    version_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    feature_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     readiness: FeatureReadiness = Field(allow_mutation=False)
-    default_version_id: PydanticObjectId = Field(allow_mutation=False)
+    default_feature_id: PydanticObjectId = Field(allow_mutation=False)
     default_version_mode: DefaultVersionMode = Field(
         default=DefaultVersionMode.AUTO, allow_mutation=False
     )
