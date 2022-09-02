@@ -74,7 +74,7 @@ class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
                 raise DocumentInconsistencyError(
                     f'Feature (name: "{feature_dict["name"]}") object(s) within the same namespace '
                     f'must have the same "{attr}" value (namespace: {namespace_attr_str}, '
-                    f"version: {version_attr_str})."
+                    f"feature: {version_attr_str})."
                 )
 
     async def update_document(  # type: ignore[override]

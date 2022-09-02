@@ -190,7 +190,7 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         assert response.json() == {
             "detail": (
                 'Feature (name: "other_name") object(s) within the same namespace '
-                'must have the same "name" value (namespace: "sum_30m", version: '
+                'must have the same "name" value (namespace: "sum_30m", feature: '
                 '"other_name").'
             )
         }
