@@ -27,8 +27,8 @@ class TestEventDataApi(BaseApiTestSuite):
         ),
         (
             {**payload, "_id": str(ObjectId())},
-            f'EventData (name: "sf_event_data") already exists. '
-            f'Get the existing object by `EventData.get(name="sf_event_data")`.',
+            'EventData (name: "sf_event_data") already exists. '
+            'Get the existing object by `EventData.get(name="sf_event_data")`.',
         ),
         (
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
@@ -161,7 +161,7 @@ class TestEventDataApi(BaseApiTestSuite):
         """
         Event data response fixture
         """
-        test_api_client, persistent = test_api_client_persistent
+        test_api_client, _ = test_api_client_persistent
         snowflake_feature_store.save()
         response = test_api_client.post(
             "/event_data", json=EventDataModel(**event_data_model_dict).json_dict()

@@ -3,6 +3,8 @@ Fixture for API unit tests
 """
 from __future__ import annotations
 
+from typing import AsyncIterator
+
 import json
 from contextlib import asynccontextmanager
 from unittest.mock import Mock, patch
@@ -73,6 +75,9 @@ async def persistent_fixture(request):
 
 @pytest.fixture(scope="session")
 def user_id():
+    """
+    Mock user id
+    """
     return ObjectId()
 
 

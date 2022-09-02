@@ -12,11 +12,13 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.process_store import ProcessStore
 from tests.util.task import Command, LongRunningPayload, TaskExecutor
 
+# pylint: disable=protected-access
 ProcessStore._command_class = Command
 ProcessStore._task_executor = TaskExecutor
 
 
 class TestTaskStatusApi:
+    """Test suite for Task Status API"""
 
     # class variables to be set at metaclass
     base_route = "/task"

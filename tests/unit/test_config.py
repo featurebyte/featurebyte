@@ -111,6 +111,7 @@ def test_logging_level_change():
     """
     Test logging level is consistent after local logging import in Configurations class
     """
+    # pylint: disable=protected-access
     # fix core log level to 10
     logger._core.min_level = 10
 

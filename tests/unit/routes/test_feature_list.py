@@ -97,7 +97,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         for i in range(3):
             # make a new feature from feature_sum_30m & create a new feature_ids
             feature_payload = self.load_payload(
-                f"tests/fixtures/request_payloads/feature_sum_30m.json"
+                "tests/fixtures/request_payloads/feature_sum_30m.json"
             )
             new_feature_id = str(ObjectId())
             response = api_client.post(
@@ -117,6 +117,7 @@ class TestFeatureListApi(BaseApiTestSuite):
 
     def test_create_201_multiple_features(self, test_api_client_persistent, user_id):
         """Create feature list with multiple features"""
+        _ = user_id
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
@@ -131,7 +132,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         assert payload_multi["feature_ids"] != sorted(payload_multi["feature_ids"])
 
         # check that feature_ids in post response are sorted
-        response = test_api_client.post(f"/feature_list", json=payload_multi)
+        response = test_api_client.post("/feature_list", json=payload_multi)
         assert response.status_code == HTTPStatus.CREATED
         assert response.json()["feature_ids"] == sorted(payload_multi["feature_ids"])
 
@@ -139,7 +140,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         """
         Test feature list with different feature stores
         """
-        test_api_client, persistent = test_api_client_persistent
+        test_api_client, _ = test_api_client_persistent
         # create feature_store, event_data & feature
         self.setup_creation_route(api_client=test_api_client)
 

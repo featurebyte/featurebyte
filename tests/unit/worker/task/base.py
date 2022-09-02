@@ -42,6 +42,7 @@ class BaseTaskTestSuite:
         """
         Apply patch on config path env
         """
+        _ = mock_config_path_env
         yield
 
     @pytest.fixture(autouse=True)
@@ -49,10 +50,15 @@ class BaseTaskTestSuite:
         """
         Apply patch on snowflake operations
         """
+        _ = snowflake_connector
+        _ = snowflake_execute_query
         yield
 
     @pytest_asyncio.fixture(autouse=True)
     async def setup(self, git_persistent):
+        """
+        Run setup
+        """
         persistent, _ = git_persistent
         await self.setup_persistent(persistent)
 
@@ -67,6 +73,7 @@ class BaseTaskTestSuite:
         """
         Execute task with payload
         """
+        # pylint: disable=not-callable
         task = self.task_class(
             payload,
             progress=progress,

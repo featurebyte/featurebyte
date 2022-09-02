@@ -82,9 +82,9 @@ class TestFeatureApi(BaseApiTestSuite):
                 "entity_ids": ["631161373527e8d21e4197ac"],
             },
             (
-                f'Feature (name: "sum_30m") object(s) within the same namespace must have '
-                f"the same \"entity_ids\" value (namespace: ['630d7fa8f1275c864fde8493'], "
-                f"feature: ['631161373527e8d21e4197ac'])."
+                'Feature (name: "sum_30m") object(s) within the same namespace must have '
+                "the same \"entity_ids\" value (namespace: ['630d7fa8f1275c864fde8493'], "
+                "feature: ['631161373527e8d21e4197ac'])."
             ),
         ),
     ]
@@ -128,7 +128,9 @@ class TestFeatureApi(BaseApiTestSuite):
             yield payload
 
     @pytest.mark.asyncio
-    async def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
+    async def test_create_201(
+        self, test_api_client_persistent, create_success_response, user_id
+    ):  # pylint: disable=invalid-overridden-method
         """Test creation (success)"""
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
         response_dict = create_success_response.json()
@@ -229,6 +231,7 @@ def sqlite_feature_store_fixture(mock_get_persistent):
     """
     Sqlite source fixture
     """
+    _ = mock_get_persistent
     return FeatureStore(
         name="sqlite_datasource",
         type="sqlite",
