@@ -31,7 +31,7 @@ from featurebyte.tile.snowflake_tile import TileManagerSnowflake, TileSpec
 
 
 @pytest.fixture(name="config", scope="session")
-def config_fixture(sqlite_filename):
+def config_fixture():
     """
     Config object for integration testing
     """
@@ -102,6 +102,7 @@ def sqlite_feature_store_fixture(mock_get_persistent, sqlite_filename):
     """
     Sqlite source fixture
     """
+    _ = mock_get_persistent
     return FeatureStore(
         name="sqlite_datasource",
         type="sqlite",
@@ -367,6 +368,7 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config, snowfl
     """
     Pytest Fixture for FeatureSnowflake instance
     """
+    _ = config
     feature_model_dict.update(
         {
             "tabular_source": {
@@ -405,7 +407,7 @@ def feature_list_manager(snowflake_session):
 
 
 @pytest.fixture(name="event_data", scope="session")
-def event_data_fixture(config, snowflake_session, snowflake_feature_store, mock_config_path_env):
+def event_data_fixture(config, snowflake_session, snowflake_feature_store):
     """Fixture for an EventData in integration tests"""
     table_name = "TEST_TABLE"
     assert table_name in snowflake_feature_store.list_tables(
