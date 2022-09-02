@@ -250,9 +250,20 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
             values["feature_objects"].values(),
             key=lambda feature: FeatureReadiness(feature.readiness or FeatureReadiness.min()),
         ).readiness
-        values["feature_ids"] = [feature.id for feature in values["feature_objects"].values()]
-        values["status"] = FeatureListStatus.DRAFT
-        values["version"] = get_version()
+        # set the following values if it is empty (used mainly by the SDK constructed feature list)
+        # for the feature list constructed during serialization, following codes should be skipped
+        if not values.get("feature_ids"):
+            values["feature_ids"] = [feature.id for feature in values["feature_objects"].values()]
+        if not values.get("status"):
+            values["status"] = FeatureListStatus.DRAFT
+        if not values.get("version"):
+            values["version"] = get_version()
+        for attr in ["entity_ids", "event_data_ids"]:
+            if not values.get(attr):
+                id_values = []
+                for feature in values["feature_objects"].values():
+                    id_values.extend(getattr(feature, attr))
+                values[attr] = sorted(set(id_values))
         return values
 
     @typechecked

@@ -60,22 +60,30 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         Feature namespace id
     name: str
         Feature name
-    version_ids: List[PydanticObjectId]
+    feature_ids: List[PydanticObjectId]
         List of feature version id
     readiness: FeatureReadiness
         Aggregated readiness across all feature versions of the same feature namespace
     created_at: datetime
         Datetime when the FeatureNamespace was first saved or published
-    default_version_id: PydanticObjectId
+    default_feature_id: PydanticObjectId
         Default feature version id
     default_version_mode: DefaultVersionMode
         Default feature version mode
+    entity_ids: List[PydanticObjectId]
+        Entity IDs used by the feature
+    event_data_ids: List[PydanticObjectId]
+        EventData IDs used for the feature version
     """
 
-    version_ids: List[PydanticObjectId]
-    readiness: FeatureReadiness
-    default_version_id: PydanticObjectId
-    default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
+    feature_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    readiness: FeatureReadiness = Field(allow_mutation=False)
+    default_feature_id: PydanticObjectId = Field(allow_mutation=False)
+    default_version_mode: DefaultVersionMode = Field(
+        default=DefaultVersionMode.AUTO, allow_mutation=False
+    )
+    entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
     class Settings:
         """
@@ -123,6 +131,8 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Whether to this feature version default for the feature namespace
     online_enabled: Optional[bool]
         Whether to make this feature version online enabled
+    entity_ids: List[PydanticObjectId]
+        Entity IDs used by the feature
     event_data_ids: List[PydanticObjectId]
         EventData IDs used for the feature version
     created_at: Optional[datetime]
@@ -139,8 +149,8 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
     version: FeatureVersionIdentifier = Field(default_factory=get_version, allow_mutation=False)
     online_enabled: Optional[bool] = Field(allow_mutation=False)
-    event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
 
     class Settings:
@@ -196,6 +206,10 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         FeatureList status
     version: FeatureListVersionIdentifier
         Feature list version
+    entity_ids: List[PydanticObjectId]
+        Entity IDs used in the feature list
+    event_data_ids: List[PydanticObjectId]
+        EventData IDs used in the feature list
     created_at: Optional[datetime]
         Datetime when the FeatureList was first saved or published
     """
@@ -204,6 +218,8 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
     status: Optional[FeatureListStatus] = Field(allow_mutation=False)
     version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)
+    entity_ids: List[PydanticObjectId] = Field(default_factory=list)
+    event_data_ids: List[PydanticObjectId] = Field(default_factory=list)
 
     class Settings:
         """

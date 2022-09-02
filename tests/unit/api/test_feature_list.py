@@ -63,18 +63,16 @@ def test_features_readiness__deprecated(
     production_ready_feature, draft_feature, quarantine_feature, deprecated_feature
 ):
     """Test features readiness should evaluate to deprecated"""
-    assert (
-        FeatureList(
-            [
-                production_ready_feature,
-                draft_feature,
-                quarantine_feature,
-                deprecated_feature,
-            ],
-            name="feature_list_name",
-        ).readiness
-        == FeatureReadiness.DEPRECATED
+    feature_list = FeatureList(
+        [
+            production_ready_feature,
+            draft_feature,
+            quarantine_feature,
+            deprecated_feature,
+        ],
+        name="feature_list_name",
     )
+    assert feature_list.readiness == FeatureReadiness.DEPRECATED
 
 
 def test_features_readiness__quarantine(
@@ -139,6 +137,8 @@ def test_feature_list_creation__success(production_ready_feature, config, mocked
         "readiness": "PRODUCTION_READY",
         "status": "DRAFT",
         "version": "V220501",
+        "event_data_ids": production_ready_feature.event_data_ids,
+        "entity_ids": production_ready_feature.entity_ids,
         "created_at": None,
         "updated_at": None,
         "user_id": None,
@@ -167,6 +167,8 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         "name": "my_feature_list",
         "readiness": None,
         "status": "DRAFT",
+        "event_data_ids": production_ready_feature.event_data_ids,
+        "entity_ids": production_ready_feature.entity_ids,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -398,6 +400,37 @@ def saved_feature_list_fixture(
     assert feature_list.readiness == FeatureReadiness.DRAFT
     assert feature_list.name == "my_feature_list"
     return feature_list
+
+
+def test_deserialization(production_ready_feature, draft_feature, quarantine_feature):
+    """
+    Test deserialization
+    """
+    feature_group = FeatureGroup([production_ready_feature, draft_feature])
+    feature_list = FeatureList([feature_group, quarantine_feature], name="my_feature_list")
+    feature_list_dict = feature_list.dict(by_alias=True)
+    expected_status = FeatureListStatus.PUBLISHED
+    expected_version = "V220701"
+    feature_list_dict["status"] = expected_status
+    feature_list_dict["version"] = expected_version
+
+    def get_by_id(feature_id):
+        return {
+            production_ready_feature.id: production_ready_feature,
+            draft_feature.id: draft_feature,
+            quarantine_feature.id: quarantine_feature,
+        }[feature_id]
+
+    with patch("featurebyte.api.feature_list.Feature.get_by_id") as mock_get_by_id:
+        mock_get_by_id.side_effect = get_by_id
+        loaded_feature_list = FeatureList(**feature_list_dict, items=[])
+
+    # check consistency between loaded feature list & original feature list
+    assert loaded_feature_list.status == expected_status
+    assert loaded_feature_list.version == expected_version
+    assert loaded_feature_list.feature_ids == feature_list.feature_ids
+    assert loaded_feature_list.entity_ids == feature_list.entity_ids
+    assert loaded_feature_list.event_data_ids == feature_list.event_data_ids
 
 
 def test_info(saved_feature_list):

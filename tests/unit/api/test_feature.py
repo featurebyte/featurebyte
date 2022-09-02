@@ -263,11 +263,11 @@ def test_info(saved_feature):
     expected_info = {"default_version_mode": "AUTO", "name": "sum_1d"}
     assert non_verbose_info.items() > expected_info.items()
     assert verbose_info.items() > expected_info.items()
-    assert verbose_info["default_version"] == non_verbose_info["default_version"]
-    assert verbose_info["default_version"].items() > expected_version.items()
-    assert verbose_info["versions"] == non_verbose_info["versions"]
-    assert len(verbose_info["versions"]) == 1
-    assert verbose_info["versions"][0].items() > expected_version.items()
+    assert verbose_info["default_feature"] == non_verbose_info["default_feature"]
+    assert verbose_info["default_feature"].items() > expected_version.items()
+    assert verbose_info["features"] == non_verbose_info["features"]
+    assert len(verbose_info["features"]) == 1
+    assert verbose_info["features"][0].items() > expected_version.items()
     assert set(verbose_info).difference(non_verbose_info) == {"created_at", "updated_at"}
 
 

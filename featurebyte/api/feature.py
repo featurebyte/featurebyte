@@ -196,7 +196,7 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
         -------
         bool
         """
-        return self.id == self.feature_namespace.default_version_id
+        return self.id == self.feature_namespace.default_feature_id
 
     @property
     def default_version_mode(self) -> DefaultVersionMode:
