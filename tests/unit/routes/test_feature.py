@@ -83,7 +83,7 @@ class TestFeatureApi(BaseApiTestSuite):
             },
             (
                 f'Feature (name: "sum_30m") object(s) within the same namespace must have '
-                f"the same \"entity_ids\" value (namespace: ['631161373527e8d21e4197ac'], "
+                f"the same \"entity_ids\" value (namespace: ['630d7fa8f1275c864fde8493'], "
                 f"version: ['631161373527e8d21e4197ac'])."
             ),
         ),

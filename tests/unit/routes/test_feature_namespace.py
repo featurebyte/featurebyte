@@ -83,6 +83,10 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
                 "_id": ObjectId(),
                 "user_id": ObjectId(create_success_response_dict["user_id"]),
                 "name": create_success_response_dict["name"],
+                "entity_ids": [ObjectId(eid) for eid in create_success_response_dict["entity_ids"]],
+                "event_data_ids": [
+                    ObjectId(eid) for eid in create_success_response_dict["event_data_ids"]
+                ],
                 "readiness": FeatureReadiness.DRAFT.value,
             },
         )
@@ -108,6 +112,10 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
                 "_id": ObjectId(),
                 "user_id": ObjectId(create_success_response_dict["user_id"]),
                 "name": create_success_response_dict["name"],
+                "entity_ids": [ObjectId(eid) for eid in create_success_response_dict["entity_ids"]],
+                "event_data_ids": [
+                    ObjectId(eid) for eid in create_success_response_dict["event_data_ids"]
+                ],
                 "readiness": FeatureReadiness.DEPRECATED.value,
             },
         )
@@ -181,6 +189,8 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
             "detail": (
-                'Feature (name: "other_name") has an inconsistent feature_namespace_id (name: "sum_30m").'
+                'Feature (name: "other_name") object(s) within the same namespace '
+                'must have the same "name" value (namespace: "sum_30m", version: '
+                '"other_name").'
             )
         }

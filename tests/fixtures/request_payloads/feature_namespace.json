@@ -6,5 +6,11 @@
     "readiness": "DRAFT",
     "version_ids": [
         "630d7fa8f1275c864fde8495"
+    ],
+    "entity_ids": [
+      "630d7fa8f1275c864fde8493"
+    ],
+    "event_data_ids": [
+      "630d7fa8f1275c864fde8492"
     ]
 }

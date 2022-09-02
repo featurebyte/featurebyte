@@ -53,24 +53,26 @@ class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
         return await self.get_document(document_id=insert_id)
 
     @staticmethod
-    def _validate_feature_version_and_namespace_consistency(feature, feature_namespace) -> None:
+    def _validate_feature_version_and_namespace_consistency(
+        feature_dict: dict[str, Any], feature_namespace: FeatureNamespaceModel
+    ) -> None:
         attrs = ["name", "entity_ids", "event_data_ids"]
         for attr in attrs:
-            version_attr = getattr(feature, attr)
+            version_attr = feature_dict.get(attr)
             namespace_attr = getattr(feature_namespace, attr)
-            version_attr_str = f'"{version_attr}"'
-            namespace_attr_str = f'"{namespace_attr}"'
+            version_attr_str: str | list[str] = f'"{version_attr}"'
+            namespace_attr_str: str | list[str] = f'"{namespace_attr}"'
             if isinstance(version_attr, list):
                 version_attr = sorted(version_attr)
                 version_attr_str = [str(val) for val in version_attr]
 
             if isinstance(namespace_attr, list):
                 namespace_attr = sorted(namespace_attr)
-                namespace_attr_str = [str(val) for val in version_attr]
+                namespace_attr_str = [str(val) for val in namespace_attr]
 
             if version_attr != namespace_attr:
                 raise DocumentInconsistencyError(
-                    f'Feature (name: "{feature.name}") object(s) within the same namespace '
+                    f'Feature (name: "{feature_dict["name"]}") object(s) within the same namespace '
                     f'must have the same "{attr}" value (namespace: {namespace_attr_str}, '
                     f"version: {version_attr_str})."
                 )
@@ -97,9 +99,7 @@ class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
                 document_id=data.version_id,
                 collection_name=FeatureModel.collection_name(),
             )
-            self._validate_feature_version_and_namespace_consistency(
-                FeatureModel(**feature_version_dict), document
-            )
+            self._validate_feature_version_and_namespace_consistency(feature_version_dict, document)
 
             version_ids.append(feature_version_dict["_id"])
             readiness = max(readiness, FeatureReadiness(feature_version_dict["readiness"]))

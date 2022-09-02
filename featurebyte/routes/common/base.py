@@ -54,7 +54,7 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
             yield
         except DocumentNotFoundError as exc:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)) from exc
-        except DocumentUpdateError as exc:
+        except (DocumentUpdateError, DocumentInconsistencyError) as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
             ) from exc
