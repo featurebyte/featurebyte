@@ -69,7 +69,23 @@ class TestFeatureApi(BaseApiTestSuite):
         ),
         (
             {**payload, "_id": object_id, "name": "random_name"},
-            f'Feature (name: "random_name") has an inconsistent feature_namespace_id (name: "sum_30m").',
+            (
+                'Feature (name: "random_name") object(s) within the same namespace must have '
+                'the same "name" value (namespace: "sum_30m", version: "random_name").'
+            ),
+        ),
+        (
+            {
+                **payload,
+                "_id": object_id,
+                "version": f"{payload['version']}_1",
+                "entity_ids": ["631161373527e8d21e4197ac"],
+            },
+            (
+                f'Feature (name: "sum_30m") object(s) within the same namespace must have '
+                f"the same \"entity_ids\" value (namespace: ['631161373527e8d21e4197ac'], "
+                f"version: ['631161373527e8d21e4197ac'])."
+            ),
         ),
     ]
 

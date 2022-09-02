@@ -148,6 +148,8 @@ class FeatureService(BaseDocumentService[FeatureModel]):
                         readiness=FeatureReadiness.DRAFT,
                         default_version_id=insert_id,
                         default_version_mode=DefaultVersionMode.AUTO,
+                        entity_ids=sorted(document.entity_ids),
+                        event_data_ids=sorted(document.event_data_ids),
                     ),
                 )
 

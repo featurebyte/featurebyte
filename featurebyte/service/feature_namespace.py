@@ -7,7 +7,7 @@ from typing import Any
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import DocumentUpdateError
+from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.models.feature import (
     DefaultVersionMode,
     FeatureModel,
@@ -52,6 +52,29 @@ class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
         assert insert_id == document.id
         return await self.get_document(document_id=insert_id)
 
+    @staticmethod
+    def _validate_feature_version_and_namespace_consistency(feature, feature_namespace) -> None:
+        attrs = ["name", "entity_ids", "event_data_ids"]
+        for attr in attrs:
+            version_attr = getattr(feature, attr)
+            namespace_attr = getattr(feature_namespace, attr)
+            version_attr_str = f'"{version_attr}"'
+            namespace_attr_str = f'"{namespace_attr}"'
+            if isinstance(version_attr, list):
+                version_attr = sorted(version_attr)
+                version_attr_str = [str(val) for val in version_attr]
+
+            if isinstance(namespace_attr, list):
+                namespace_attr = sorted(namespace_attr)
+                namespace_attr_str = [str(val) for val in version_attr]
+
+            if version_attr != namespace_attr:
+                raise DocumentInconsistencyError(
+                    f'Feature (name: "{feature.name}") object(s) within the same namespace '
+                    f'must have the same "{attr}" value (namespace: {namespace_attr_str}, '
+                    f"version: {version_attr_str})."
+                )
+
     async def update_document(  # type: ignore[override]
         self, document_id: ObjectId, data: FeatureNamespaceUpdate
     ) -> FeatureNamespaceModel:
@@ -70,25 +93,22 @@ class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
 
         if data.version_id:
             # check whether the feature is saved to persistent or not
-            feature = await self._get_document(
+            feature_version_dict = await self._get_document(
                 document_id=data.version_id,
                 collection_name=FeatureModel.collection_name(),
             )
-            if feature["name"] != document.name:
-                # sanity check that the feature namespace id has consistent name with feature name
-                raise DocumentUpdateError(
-                    f'Feature (name: "{feature["name"]}") has an inconsistent '
-                    f'feature_namespace_id (name: "{document.name}").'
-                )
+            self._validate_feature_version_and_namespace_consistency(
+                FeatureModel(**feature_version_dict), document
+            )
 
-            version_ids.append(feature["_id"])
-            readiness = max(readiness, FeatureReadiness(feature["readiness"]))
+            version_ids.append(feature_version_dict["_id"])
+            readiness = max(readiness, FeatureReadiness(feature_version_dict["readiness"]))
             if (
                 document.default_version_mode == DefaultVersionMode.AUTO
-                and feature["readiness"] >= document.readiness
+                and feature_version_dict["readiness"] >= document.readiness
             ):
                 # if default version mode is AUTO, use the latest best readiness feature as default feature
-                default_version_id = feature["_id"]
+                default_version_id = feature_version_dict["_id"]
 
         update_count = await self.persistent.update_one(
             collection_name=self.collection_name,

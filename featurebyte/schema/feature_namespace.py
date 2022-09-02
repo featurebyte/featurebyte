@@ -23,6 +23,8 @@ class FeatureNamespaceCreate(FeatureByteBaseModel):
     readiness: FeatureReadiness
     default_version_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
+    entity_ids: List[PydanticObjectId]
+    event_data_ids: List[PydanticObjectId]
 
 
 class FeatureNamespaceList(PaginationMixin):

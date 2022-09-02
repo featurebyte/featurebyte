@@ -72,10 +72,14 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         Default feature version mode
     """
 
-    version_ids: List[PydanticObjectId]
-    readiness: FeatureReadiness
-    default_version_id: PydanticObjectId
-    default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
+    version_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    readiness: FeatureReadiness = Field(allow_mutation=False)
+    default_version_id: PydanticObjectId = Field(allow_mutation=False)
+    default_version_mode: DefaultVersionMode = Field(
+        default=DefaultVersionMode.AUTO, allow_mutation=False
+    )
+    event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
     class Settings:
         """

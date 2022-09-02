@@ -36,6 +36,8 @@ def feature_list_model_dict_fixture():
 def feature_name_space_dict_fixture():
     """Fixture for a FixtureNameSpace dict"""
     version_id = ObjectId()
+    entity_ids = [ObjectId()]
+    event_data_ids = [ObjectId()]
     return {
         "name": "some_feature_name",
         "version_ids": [version_id],
@@ -44,6 +46,8 @@ def feature_name_space_dict_fixture():
         "updated_at": datetime.now(),
         "default_version_id": version_id,
         "default_version_mode": "MANUAL",
+        "entity_ids": entity_ids,
+        "event_data_ids": event_data_ids,
         "user_id": None,
     }
 
