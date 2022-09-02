@@ -10,5 +10,7 @@
     "status": "DRAFT",
     "updated_at": null,
     "user_id": null,
-    "version": "V220830"
+    "version": "V220830",
+    "entity_ids": ["630d7fa8f1275c864fde8493"],
+    "event_data_ids": ["630d7fa8f1275c864fde8492"]
 }

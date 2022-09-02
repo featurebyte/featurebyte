@@ -29,6 +29,8 @@ def feature_list_model_dict_fixture():
         "created_at": None,
         "updated_at": None,
         "user_id": None,
+        "entity_ids": [],
+        "event_data_ids": [],
     }
 
 

@@ -30,6 +30,8 @@ class FeatureListCreate(FeatureByteBaseModel):
     readiness: Optional[FeatureReadiness]
     status: Optional[FeatureListStatus]
     version: Optional[FeatureListVersionIdentifier]
+    entity_ids: List[PydanticObjectId]
+    event_data_ids: List[PydanticObjectId]
 
 
 class FeatureListPaginatedList(PaginationMixin):
