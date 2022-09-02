@@ -564,6 +564,34 @@ def test_arithmetic_operators__types_not_supported(varchar_series, int_series):
     assert expected_msg in str(exc.value)
 
 
+def test_date_difference_operator(timestamp_series, timestamp_series_2):
+    """
+    Test difference between two date Series
+    """
+    date_diff_series = timestamp_series_2 - timestamp_series
+    assert date_diff_series.dtype == DBVarType.TIMEDELTA
+    assert date_diff_series.node.parameters == {"unit": "second"}
+    _check_node_equality(
+        date_diff_series.node,
+        Node(
+            name="date_diff_1",
+            type=NodeType.DATE_DIFF,
+            parameters={"unit": "second"},
+            output_type=NodeOutputType.SERIES,
+        ),
+        exclude={"name": True},
+    )
+
+
+def test_date_difference_operator__invalid(timestamp_series, float_series):
+    """
+    Test difference between a date and a non-date Series (invalid)
+    """
+    with pytest.raises(TypeError) as exc:
+        _ = timestamp_series - float_series
+    assert "does not support operation 'sub'." in str(exc.value)
+
+
 def assert_series_attributes_equal(left, right):
     """
     Check that common series attributes unrelated to transforms are the same
@@ -664,7 +692,8 @@ def test_varchar_series_concat(varchar_series):
               "PRODUCT_ACTION" AS "PRODUCT_ACTION",
               "VALUE" AS "VALUE",
               "MASK" AS "MASK",
-              "TIMESTAMP" AS "TIMESTAMP"
+              "TIMESTAMP" AS "TIMESTAMP",
+              "PROMOTION_START_DATE" AS "PROMOTION_START_DATE"
             FROM "db"."public"."transaction"
         )
         LIMIT 10

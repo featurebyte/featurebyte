@@ -8,7 +8,7 @@ from typing import Any, Literal, Optional
 # pylint: disable=too-few-public-methods,too-many-lines
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from sqlglot import Expression, expressions, parse_one, select
@@ -95,6 +95,10 @@ class TableNode(SQLNode, ABC):
     """
 
     columns_map: dict[str, Expression]
+    columns_node: dict[str, ExpressionNode] = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.columns_node = {}
 
     @property
     def columns(self) -> list[str]:
@@ -119,17 +123,32 @@ class TableNode(SQLNode, ABC):
         assert isinstance(sql, expressions.Subqueryable)
         return sql.subquery()
 
-    def set_column_expr(self, column_name: str, expr: Expression) -> None:
-        """Set expression for a column name
+    def assign_column(self, column_name: str, node: ExpressionNode) -> None:
+        """Performs an assignment and update column_name's expression
 
         Parameters
         ----------
         column_name : str
             Column name
-        expr : Expression
-            SQL expression
+        node : ExpressionNode
+            An instance of ExpressionNode
         """
-        self.columns_map[column_name] = expr
+        self.columns_map[column_name] = node.sql
+        self.columns_node[column_name] = node
+
+    def get_column_node(self, column_name: str) -> ExpressionNode | None:
+        """Get SQLNode for a column
+
+        Parameters
+        ----------
+        column_name : str
+            Column name
+
+        Returns
+        -------
+        SQLNode | None
+        """
+        return self.columns_node.get(column_name)
 
     def get_column_expr(self, column_name: str) -> Expression:
         """Get expression for a column name
@@ -154,6 +173,34 @@ class TableNode(SQLNode, ABC):
             Column names to expressions mapping
         """
         self.columns_map = columns_map
+
+    def subset_columns(self, columns: list[str]) -> TableNode:
+        """Create a new TableNode with subset of columns
+
+        Parameters
+        ----------
+        columns : list[str]
+            Selected column names
+
+        Returns
+        -------
+        TableNode
+        """
+        columns_set = set(columns)
+        subset_columns_map = {
+            column_name: expr
+            for (column_name, expr) in self.columns_map.items()
+            if column_name in columns_set
+        }
+        subset_columns_node = {
+            column_name: node
+            for (column_name, node) in self.columns_node.items()
+            if column_name in columns_set
+        }
+        subset_table = deepcopy(self)
+        subset_table.columns_map = subset_columns_map
+        subset_table.columns_node = subset_columns_node
+        return subset_table
 
 
 @dataclass  # type: ignore
@@ -589,6 +636,49 @@ class DatetimeExtractNode(ExpressionNode):
 
 
 @dataclass
+class DateDiffNode(ExpressionNode):
+    """Node for date difference operation"""
+
+    left_node: ExpressionNode
+    right_node: ExpressionNode
+    unit: Literal["hour", "minute", "second", "millisecond", "microsecond"]
+
+    @property
+    def sql(self) -> Expression:
+        output_expr = expressions.Anonymous(
+            this="DATEDIFF",
+            expressions=[
+                expressions.Identifier(this=self.unit),
+                self.right_node.sql,
+                self.left_node.sql,
+            ],
+        )
+        return output_expr
+
+    def with_unit(
+        self,
+        unit: Literal["hour", "minute", "second", "millisecond", "microsecond"],
+    ) -> DateDiffNode:
+        """Creates a new DateDiffNode with a new unit applied
+
+        Parameters
+        ----------
+        unit : Literal
+            The unit of time for the date difference
+
+        Returns
+        -------
+        DateDiffNode
+        """
+        return DateDiffNode(
+            table_node=self.table_node,
+            left_node=self.left_node,
+            right_node=self.right_node,
+            unit=unit,
+        )
+
+
+@dataclass
 class NotNode(ExpressionNode):
     """Node for inverting binary column operation"""
 
@@ -771,6 +861,7 @@ BINARY_OPERATION_NODE_TYPES = {
     NodeType.OR,
     NodeType.CONCAT,
     NodeType.COSINE_SIMILARITY,
+    NodeType.DATE_DIFF,
 }
 
 
@@ -795,7 +886,7 @@ def make_binary_operation_node(
     node_type: NodeType,
     input_sql_nodes: list[SQLNode],
     parameters: dict[str, Any],
-) -> BinaryOp:
+) -> BinaryOp | DateDiffNode:
     """Create a BinaryOp node for eligible query node types
 
     Parameters
@@ -816,6 +907,22 @@ def make_binary_operation_node(
     NotImplementedError
         For incompatible node types
     """
+    left_node = input_sql_nodes[0]
+    assert isinstance(left_node, ExpressionNode)
+    table_node = left_node.table_node
+    right_node: Any
+    if len(input_sql_nodes) == 1:
+        # When the other value is a scalar
+        literal_value = make_literal_value(parameters["value"])
+        right_node = ParsedExpressionNode(table_node=table_node, expr=literal_value)
+    else:
+        # When the other value is a Series
+        right_node = input_sql_nodes[1]
+
+    if isinstance(right_node, ExpressionNode) and parameters.get("right_op"):
+        # Swap left & right objects if the operation from the right object
+        left_node, right_node = right_node, left_node
+
     node_type_to_expression_cls = {
         # Arithmetic
         NodeType.ADD: expressions.Add,
@@ -836,34 +943,26 @@ def make_binary_operation_node(
         NodeType.CONCAT: fb_expressions.Concat,
         NodeType.COSINE_SIMILARITY: fb_expressions.CosineSim,
     }
-    assert sorted(node_type_to_expression_cls.keys()) == sorted(BINARY_OPERATION_NODE_TYPES)
-    expression_cls = node_type_to_expression_cls.get(node_type)
 
-    if expression_cls is None:
+    output_node: BinaryOp | DateDiffNode
+    if node_type in node_type_to_expression_cls:
+        expression_cls = node_type_to_expression_cls[node_type]
+        output_node = BinaryOp(
+            table_node=table_node,
+            left_node=left_node,
+            right_node=right_node,
+            operation=expression_cls,
+        )
+    elif node_type == NodeType.DATE_DIFF:
+        output_node = DateDiffNode(
+            table_node=table_node,
+            left_node=left_node,
+            right_node=right_node,
+            unit=parameters["unit"],
+        )
+    else:
         raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
 
-    left_node = input_sql_nodes[0]
-    assert isinstance(left_node, ExpressionNode)
-    table_node = left_node.table_node
-    right_node: Any
-    if len(input_sql_nodes) == 1:
-        # When the other value is a scalar
-        literal_value = make_literal_value(parameters["value"])
-        right_node = ParsedExpressionNode(table_node=table_node, expr=literal_value)
-    else:
-        # When the other value is a Series
-        right_node = input_sql_nodes[1]
-
-    if isinstance(right_node, ExpressionNode) and parameters.get("right_op"):
-        # Swap left & right objects if the operation from the right object
-        left_node, right_node = right_node, left_node
-
-    output_node = BinaryOp(
-        table_node=table_node,
-        left_node=left_node,
-        right_node=right_node,
-        operation=expression_cls,
-    )
     return output_node
 
 
@@ -895,15 +994,7 @@ def make_project_node(
     if output_type == NodeOutputType.SERIES:
         sql_node = Project(table_node=table_node, column_name=columns[0])
     else:
-        columns_set = set(columns)
-        columns_map = {
-            column_name: expr
-            for (column_name, expr) in table_node.columns_map.items()
-            if column_name in columns_set
-        }
-        subset_table = deepcopy(table_node)
-        subset_table.set_columns_map(columns_map)
-        sql_node = subset_table
+        sql_node = table_node.subset_columns(columns)
     return sql_node
 
 
@@ -1148,7 +1239,36 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.COUNT_DICT_TRANSFORM,
     NodeType.CAST,
     NodeType.LAG,
+    NodeType.TIMEDELTA_EXTRACT,
 }
+
+
+def make_timedelta_extract_node(
+    input_expr_node: ExpressionNode, parameters: dict[str, Any]
+) -> ExpressionNode:
+    """Create a SQLNode for extracting timedelta as a numeric value
+
+    Parameters
+    ----------
+    input_expr_node : ExpressionNode
+        Node for the timedelta value
+    parameters: dict[str, Any]
+        Query node parameters
+
+    Returns
+    -------
+    ExpressionNode
+    """
+    # Note: currently date difference is the only way to create a timedelta
+    if isinstance(input_expr_node, Project):
+        # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
+        table_node = input_expr_node.table_node
+        assigned_node = table_node.get_column_node(input_expr_node.column_name)
+        assert assigned_node is not None
+        input_expr_node = assigned_node
+    assert isinstance(input_expr_node, DateDiffNode)
+    sql_node = input_expr_node.with_unit(parameters["property"])
+    return sql_node
 
 
 def make_expression_node(
@@ -1233,6 +1353,9 @@ def make_expression_node(
             expr=input_expr_node,
             dt_property=parameters["property"],
         )
+    elif node_type == NodeType.TIMEDELTA_EXTRACT:
+        sql_node = make_timedelta_extract_node(input_expr_node, parameters)
+
     elif node_type == NodeType.COUNT_DICT_TRANSFORM:
         sql_node = CountDictTransformNode(
             table_node=table_node,

@@ -12,6 +12,7 @@ from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.logger import logger
 from featurebyte.query_graph.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
+from tests.util.helper import get_lagged_series_pandas
 
 
 def calculate_feature_ground_truth(
@@ -184,21 +185,22 @@ def add_inter_events_derived_columns(df, event_view):
     """
     Add inter-events columns such as lags
     """
-
     df = df.copy()
-    df["original_index"] = df.index
-    df_sorted = df.sort_values("EVENT_TIMESTAMP")
     by_column = "CUST_ID"
 
-    df_sorted[f"PREV_AMOUNT_BY_{by_column}"] = df_sorted.groupby(by_column)["AMOUNT"].shift(1)
-    event_view[f"PREV_AMOUNT_BY_{by_column}"] = event_view["AMOUNT"].lag(by_column)
+    # Previous amount
+    col = f"PREV_AMOUNT_BY_{by_column}"
+    df[col] = get_lagged_series_pandas(df, "AMOUNT", "EVENT_TIMESTAMP", by_column)
+    event_view[col] = event_view["AMOUNT"].lag(by_column)
 
-    df_sorted.set_index("original_index", inplace=True)
-    df[f"PREV_AMOUNT_BY_{by_column}"] = df["original_index"].map(
-        df_sorted[f"PREV_AMOUNT_BY_{by_column}"]
-    )
+    # Time since previous event
+    col = f"TIME_SINCE_PREVIOUS_EVENT_BY_{by_column}"
+    df[col] = (
+        df["EVENT_TIMESTAMP"]
+        - get_lagged_series_pandas(df, "EVENT_TIMESTAMP", "EVENT_TIMESTAMP", by_column)
+    ).dt.total_seconds()
+    event_view[col] = event_view["EVENT_TIMESTAMP"] - event_view["EVENT_TIMESTAMP"].lag(by_column)
 
-    del df["original_index"]
     return df
 
 
@@ -244,6 +246,13 @@ def test_aggregation(
         ("AMOUNT", "na_count", "na_count_24h", lambda x: x.isnull().sum(), None),
         ("AMOUNT", "count", "count_by_action_24h", lambda x: len(x), "PRODUCT_ACTION"),
         ("PREV_AMOUNT_BY_CUST_ID", "avg", "prev_amount_avg_24h", lambda x: x.mean(), None),
+        (
+            "TIME_SINCE_PREVIOUS_EVENT_BY_CUST_ID",
+            "avg",
+            "event_interval_avg_24h",
+            lambda x: x.mean(),
+            None,
+        ),
     ]
 
     event_view = EventView.from_event_data(event_data)

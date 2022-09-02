@@ -4,7 +4,7 @@ Tests for the featurebyte.query_graph.sql module
 import textwrap
 
 import pytest
-import sqlglot
+from sqlglot import parse_one
 
 from featurebyte.query_graph import sql
 from featurebyte.query_graph.enum import NodeType
@@ -14,9 +14,9 @@ from featurebyte.query_graph.enum import NodeType
 def input_node_fixture():
     """Fixture for a generic InputNode"""
     columns_map = {
-        "col_1": sqlglot.parse_one("col_1"),
-        "col_2": sqlglot.parse_one("col_2"),
-        "col_3": sqlglot.parse_one("col_3"),
+        "col_1": parse_one("col_1"),
+        "col_2": parse_one("col_2"),
+        "col_3": parse_one("col_3"),
     }
     return sql.InputNode(
         columns_map=columns_map,
@@ -35,6 +35,34 @@ def input_node_fixture():
             },
         },
     )
+
+
+def test_input_node__subset_columns(input_node):
+    """
+    Test input node subset columns
+    """
+    expr_node_1 = sql.ParsedExpressionNode(input_node, parse_one("a + 1"))
+    expr_node_2 = sql.ParsedExpressionNode(input_node, parse_one("a + 2"))
+    input_node.assign_column("col_new_1", expr_node_1)
+    input_node.assign_column("col_new_2", expr_node_2)
+
+    # check subset node
+    subset_node = input_node.subset_columns(["col_1", "col_new_1"])
+    assert subset_node.columns_map == {"col_1": parse_one("col_1"), "col_new_1": parse_one("a + 1")}
+    assert subset_node.columns_node == {"col_new_1": expr_node_1}
+    assert subset_node.get_column_expr("col_1") == parse_one("col_1")
+    assert subset_node.get_column_node("col_new_1") == expr_node_1
+    assert subset_node.get_column_node("col_new_2") is None
+
+    # check input node without subsetting
+    assert input_node.columns_map == {
+        "col_1": parse_one("col_1"),
+        "col_2": parse_one("col_2"),
+        "col_3": parse_one("col_3"),
+        "col_new_1": parse_one("a + 1"),
+        "col_new_2": parse_one("a + 2"),
+    }
+    assert input_node.columns_node == {"col_new_1": expr_node_1, "col_new_2": expr_node_2}
 
 
 @pytest.mark.parametrize(
@@ -197,3 +225,16 @@ def test_lag(input_node):
         parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
     )
     assert node.sql.sql() == 'LAG(val, 1) OVER(PARTITION BY "cust_id" ORDER BY "ts")'
+
+
+def test_date_difference(input_node):
+    """Test DateDiff node"""
+    column1 = sql.StrExpressionNode(table_node=input_node, expr="a")
+    column2 = sql.StrExpressionNode(table_node=input_node, expr="b")
+    input_nodes = [column1, column2]
+    node = sql.make_binary_operation_node(
+        NodeType.DATE_DIFF,
+        input_nodes,
+        parameters={"unit": "second"},
+    )
+    assert node.sql.sql() == "DATEDIFF(second, b, a)"

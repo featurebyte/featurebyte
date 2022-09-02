@@ -64,6 +64,7 @@ def series_binary_operation(
     node_type: NodeType,
     output_var_type: DBVarType,
     right_op: bool = False,
+    additional_node_params: dict[str, Any] | None = None,
     **kwargs: Any,
 ) -> SeriesT:
     """
@@ -81,6 +82,8 @@ def series_binary_operation(
         output of the variable type
     right_op: bool
         whether the binary operation is from right object or not
+    additional_node_params: dict[str, Any] | None
+        additional parameters to include as node parameters
     kwargs : Any
         Other series parameters
 
@@ -89,10 +92,12 @@ def series_binary_operation(
     SeriesT
     """
     node_params: dict[str, Any] = {"right_op": right_op} if right_op else {}
+    if additional_node_params is not None:
+        node_params.update(additional_node_params)
     if isinstance(other, type(input_series)):
         node = input_series.graph.add_operation(
             node_type=node_type,
-            node_params={},
+            node_params=node_params,
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[input_series.node, other.node],
         )
