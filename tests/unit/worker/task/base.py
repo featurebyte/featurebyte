@@ -56,6 +56,9 @@ class BaseTaskTestSuite:
 
     @pytest_asyncio.fixture(autouse=True)
     async def setup(self, git_persistent):
+        """
+        Run setup
+        """
         persistent, _ = git_persistent
         await self.setup_persistent(persistent)
 
@@ -70,6 +73,7 @@ class BaseTaskTestSuite:
         """
         Execute task with payload
         """
+        # pylint: disable=not-callable
         task = self.task_class(
             payload,
             progress=progress,

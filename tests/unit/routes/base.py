@@ -322,6 +322,7 @@ class BaseApiTestSuite:
 
     def test_list_501(self, test_api_client_persistent, create_success_response):
         """Test list (not implemented)"""
+        _ = create_success_response
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.get(f"{self.base_route}", params={"search": "abc"})
         assert response.status_code == HTTPStatus.NOT_IMPLEMENTED
@@ -329,7 +330,6 @@ class BaseApiTestSuite:
 
     async def setup_get_info(self, api_client, persistent, user_id):
         """Setup for get_info route testing"""
-        pass
 
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
@@ -399,7 +399,7 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
         assert result["updated_at"] is None
 
         # test get audit record
-        test_api_client, persistent = test_api_client_persistent
+        test_api_client, _ = test_api_client_persistent
         response = test_api_client.get(f"{self.base_route}/audit/{doc_id}")
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK

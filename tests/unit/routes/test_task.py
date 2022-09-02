@@ -18,6 +18,7 @@ ProcessStore._task_executor = TaskExecutor
 
 
 class TestTaskStatusApi:
+    """Test suite for Task Status API"""
 
     # class variables to be set at metaclass
     base_route = "/task"

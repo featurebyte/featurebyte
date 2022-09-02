@@ -78,7 +78,7 @@ async def test_crud(mongo_persistent):
     """
     Test start_transaction context manager
     """
-    persistent, database = mongo_persistent
+    persistent, _ = mongo_persistent
     col = "test_col"
 
     id1 = await persistent.insert_one(collection_name=col, document={"key1": "value1"})

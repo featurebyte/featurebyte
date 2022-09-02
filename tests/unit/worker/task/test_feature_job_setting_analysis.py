@@ -49,6 +49,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
 
     @pytest.fixture(autouse=True)
     def mock_event_dataset(self):
+        """
+        Setup mock event dataset
+        """
         fixture_path = "tests/fixtures/feature_job_setting_analysis"
         count_data = pd.read_parquet(os.path.join(fixture_path, "count_data.parquet"))
         count_per_creation_date = pd.read_parquet(
@@ -77,6 +80,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         """
         Test successful task execution
         """
+        _ = task_completed
         persistent, _ = git_persistent
 
         # check that analysis result is stored in persistent

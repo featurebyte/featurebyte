@@ -112,7 +112,9 @@ class TestFeatureApi(BaseApiTestSuite):
             yield payload
 
     @pytest.mark.asyncio
-    async def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
+    async def test_create_201(
+        self, test_api_client_persistent, create_success_response, user_id
+    ):  # pylint: disable=invalid-overridden-method
         """Test creation (success)"""
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
         response_dict = create_success_response.json()
@@ -213,6 +215,7 @@ def sqlite_feature_store_fixture(mock_get_persistent):
     """
     Sqlite source fixture
     """
+    _ = mock_get_persistent
     return FeatureStore(
         name="sqlite_datasource",
         type="sqlite",
