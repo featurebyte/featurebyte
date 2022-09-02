@@ -58,11 +58,6 @@ def get_lagged_series_pandas(df, column, timestamp, groupby_key):
         Entity column to consider when getting the lag
     """
     df = df.copy()
-    df["__original_index"] = df.index
     df_sorted = df.sort_values(timestamp)
-    df_sorted["__shifted"] = df_sorted.groupby(groupby_key)[column].shift(1)
-    df_sorted.set_index("__original_index", inplace=True)
-    df["__shifted"] = df["__original_index"].map(df_sorted["__shifted"])
-    out = df["__shifted"]
-    out.name = column
-    return out
+    df[column] = df_sorted.groupby(groupby_key)[column].shift(1)
+    return df[column]

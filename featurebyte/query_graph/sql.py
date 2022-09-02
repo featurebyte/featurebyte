@@ -1260,9 +1260,9 @@ def make_timedelta_extract_node(
     ExpressionNode
     """
     # Note: currently date difference is the only way to create a timedelta
-    table_node = input_expr_node.table_node
     if isinstance(input_expr_node, Project):
         # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
+        table_node = input_expr_node.table_node
         assigned_node = table_node.get_column_node(input_expr_node.column_name)
         assert assigned_node is not None
         input_expr_node = assigned_node
