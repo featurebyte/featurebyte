@@ -187,10 +187,20 @@ def add_inter_events_derived_columns(df, event_view):
     """
     df = df.copy()
     by_column = "CUST_ID"
-    df[f"PREV_AMOUNT_BY_{by_column}"] = get_lagged_series_pandas(
-        df, "AMOUNT", "EVENT_TIMESTAMP", by_column
-    )
-    event_view[f"PREV_AMOUNT_BY_{by_column}"] = event_view["AMOUNT"].lag(by_column)
+
+    # Previous amount
+    col = f"PREV_AMOUNT_BY_{by_column}"
+    df[col] = get_lagged_series_pandas(df, "AMOUNT", "EVENT_TIMESTAMP", by_column)
+    event_view[col] = event_view["AMOUNT"].lag(by_column)
+
+    # Time since previous event
+    col = f"TIME_SINCE_PREVIOUS_EVENT_BY_{by_column}"
+    df[col] = (
+        df["EVENT_TIMESTAMP"]
+        - get_lagged_series_pandas(df, "EVENT_TIMESTAMP", "EVENT_TIMESTAMP", by_column)
+    ).dt.total_seconds()
+    event_view[col] = event_view["EVENT_TIMESTAMP"] - event_view["EVENT_TIMESTAMP"].lag(by_column)
+
     return df
 
 
@@ -236,6 +246,13 @@ def test_aggregation(
         ("AMOUNT", "na_count", "na_count_24h", lambda x: x.isnull().sum(), None),
         ("AMOUNT", "count", "count_by_action_24h", lambda x: len(x), "PRODUCT_ACTION"),
         ("PREV_AMOUNT_BY_CUST_ID", "avg", "prev_amount_avg_24h", lambda x: x.mean(), None),
+        (
+            "TIME_SINCE_PREVIOUS_EVENT_BY_CUST_ID",
+            "avg",
+            "event_interval_avg_24h",
+            lambda x: x.mean(),
+            None,
+        ),
     ]
 
     event_view = EventView.from_event_data(event_data)
