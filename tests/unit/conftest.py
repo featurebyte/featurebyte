@@ -264,7 +264,7 @@ def snowflake_event_data_with_entity_fixture(snowflake_event_data, cust_id_entit
     """
     Entity fixture that sets cust_id in snowflake_event_data as an Entity
     """
-    snowflake_event_data.cust_id.as_entity("customer")
+    snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
     yield snowflake_event_data
 
 
@@ -412,6 +412,9 @@ def agg_per_category_feature_fixture(snowflake_event_view_with_entity):
 
 @pytest.fixture(name="count_per_category_feature_group")
 def count_per_category_feature_group_fixture(snowflake_event_view_with_entity):
+    """
+    Aggregation per category FeatureGroup fixture
+    """
     grouped = snowflake_event_view_with_entity.groupby("cust_id", category="col_int")
     features = grouped.aggregate(
         value_column="col_float",
@@ -587,6 +590,7 @@ def test_save_payload_fixtures(
     """
     Write request payload for testing api route
     """
+    # pylint: disable=too-many-locals
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_2h = feature_group["sum_2h"]
     feature_list = FeatureList([feature_sum_30m], name="sf_feature_list")
