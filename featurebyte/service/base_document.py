@@ -133,12 +133,16 @@ class BaseDocumentService(Generic[Document]):
         )
         return self.document_class(**document_dict)
 
-    def _construct_list_query_filter(self, **kwargs: Any) -> QueryFilter:
+    def _construct_list_query_filter(
+        self, query_filter: Optional[Dict[str, Any]] = None, **kwargs: Any
+    ) -> QueryFilter:
         """
         Construct query filter used in list route
 
         Parameters
         ----------
+        query_filter: Optional[Dict[str, Any]]
+            Query filter to use as starting point
         kwargs: Any
             Keyword arguments passed to the list controller
 
@@ -147,7 +151,10 @@ class BaseDocumentService(Generic[Document]):
         QueryFilter
         """
         _ = self
-        output = {}
+        if not query_filter:
+            output = {}
+        else:
+            output = copy.deepcopy(query_filter)
         if kwargs.get("name"):
             output["name"] = kwargs["name"]
         if kwargs.get("search"):
