@@ -7,7 +7,6 @@ import freezegun
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.api.entity import Entity
 from featurebyte.models.feature import (
     FeatureListModel,
     FeatureListStatus,

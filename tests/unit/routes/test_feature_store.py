@@ -22,8 +22,8 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         ),
         (
             {**payload, "_id": str(ObjectId())},
-            f'FeatureStore (name: "sf_featurestore") already exists. '
-            f'Get the existing object by `FeatureStore.get(name="sf_featurestore")`.',
+            'FeatureStore (name: "sf_featurestore") already exists. '
+            'Get the existing object by `FeatureStore.get(name="sf_featurestore")`.',
         ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [

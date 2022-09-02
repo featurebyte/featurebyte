@@ -61,6 +61,8 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         """
         Apply patch on snowflake operations
         """
+        _ = snowflake_connector
+        _ = snowflake_execute_query
         yield
 
     def setup_creation_route(self, api_client):
@@ -80,7 +82,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client
-        for i in range(3):
+        for _ in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             yield payload

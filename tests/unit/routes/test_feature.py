@@ -69,7 +69,7 @@ class TestFeatureApi(BaseApiTestSuite):
         ),
         (
             {**payload, "_id": object_id, "name": "random_name"},
-            f'Feature (name: "random_name") has an inconsistent feature_namespace_id (name: "sum_30m").',
+            'Feature (name: "random_name") has an inconsistent feature_namespace_id (name: "sum_30m").',
         ),
     ]
 

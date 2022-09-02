@@ -115,7 +115,6 @@ class BaseApiTestSuite:
 
     def setup_creation_route(self, api_client):
         """Setup for post route"""
-        pass
 
     @pytest.fixture()
     def create_success_response(self, test_api_client_persistent):
@@ -168,7 +167,7 @@ class BaseApiTestSuite:
         assert result["updated_at"] is None
 
         # test get audit record
-        test_api_client, persistent = test_api_client_persistent
+        test_api_client, _ = test_api_client_persistent
         response = test_api_client.get(f"{self.base_route}/audit/{doc_id}")
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK

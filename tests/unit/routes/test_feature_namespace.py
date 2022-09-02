@@ -41,7 +41,7 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
-        for i in range(3):
+        for _ in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             yield payload
@@ -58,7 +58,7 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
             response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
 
-        payload = self.load_payload(f"tests/fixtures/request_payloads/feature_sum_30m.json")
+        payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
         await persistent.insert_one(
             collection_name="feature",
             document=FeatureCreate(**payload).dict(by_alias=True),

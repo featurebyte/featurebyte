@@ -1,6 +1,7 @@
 """
 Test MongoDB persistent backend
 """
+# pylint: disable=protected-access
 import os.path
 from datetime import datetime
 from unittest.mock import patch
@@ -497,7 +498,7 @@ async def test_replace_one(git_persistent, test_documents):
             "action_type": AuditActionType.INSERT,
             "previous_values": {},
             "current_values": {
-                "name": f"Object 0",
+                "name": "Object 0",
                 "value": [{"key1": "value1", "key2": "value2"}],
                 "created_at": datetime(2022, 8, 1),
             },
@@ -592,7 +593,7 @@ async def test_delete_one(git_persistent, test_documents):
             'Create document: __audit__data/insert: "Object 1"\n'
             'Create document: __audit__data/insert: "Object 2"\n'
         ),
-        ("Delete document: data/Object 0\n" 'Create document: __audit__data/delete: "Object 0"\n'),
+        'Delete document: data/Object 0\nCreate document: __audit__data/delete: "Object 0"\n',
     ]
 
     # check audit record is inserted
@@ -612,7 +613,7 @@ async def test_delete_one(git_persistent, test_documents):
             "action_type": AuditActionType.INSERT,
             "previous_values": {},
             "current_values": {
-                "name": f"Object 0",
+                "name": "Object 0",
                 "value": [{"key1": "value1", "key2": "value2"}],
                 "created_at": datetime(2022, 8, 1),
             },
@@ -743,7 +744,7 @@ async def test_get_audit_logs(git_persistent, test_document):
     """
     Test retrieving audit logs
     """
-    persistent, repo = git_persistent
+    persistent, _ = git_persistent
 
     # insert a doc
     inserted_id = await persistent.insert_one(collection_name="data", document=test_document)

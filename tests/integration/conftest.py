@@ -22,7 +22,6 @@ from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
-from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import FeatureListStatus, FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import SnowflakeDetails, SQLiteDetails, TableDetails
 from featurebyte.persistent.git import GitDB
@@ -83,6 +82,7 @@ def snowflake_feature_store_fixture(mock_get_persistent):
     """
     Snowflake database source fixture
     """
+    _ = mock_get_persistent
     schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
     temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     return FeatureStore(

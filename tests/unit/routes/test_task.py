@@ -12,6 +12,7 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.process_store import ProcessStore
 from tests.util.task import Command, LongRunningPayload, TaskExecutor
 
+# pylint: disable=protected-access
 ProcessStore._command_class = Command
 ProcessStore._task_executor = TaskExecutor
 

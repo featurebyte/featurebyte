@@ -1,6 +1,7 @@
 #* Variables
 MAKE := make
 EXECUTABLES = poetry git
+PYLINT_DISABLE_FOR_TESTS := redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding
 
 .PHONY: init
 .PHONY: install install-nolock install-lock install-main install-dev install-lint install-docs
@@ -75,6 +76,7 @@ lint-style:
 	@poetry run isort --diff --check-only --settings-path pyproject.toml .
 	@poetry run black --diff --check .
 	@poetry run pylint --rcfile pyproject.toml featurebyte
+	@poetry run pylint --disable=${PYLINT_DISABLE_FOR_TESTS} --rcfile pyproject.toml tests
 
 	@find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" | xargs poetry run darglint --verbosity 2
 	@find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs poetry run darglint --verbosity 2
