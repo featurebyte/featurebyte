@@ -1,7 +1,7 @@
 #* Variables
 MAKE := make
 EXECUTABLES = poetry git
-PYLINT_DISABLE_FOR_TESTS := redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding
+PYLINT_DISABLE_FOR_TESTS := redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding,duplicate-code
 
 .PHONY: init
 .PHONY: install install-nolock install-lock install-main install-dev install-lint install-docs
