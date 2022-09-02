@@ -11,12 +11,7 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi import HTTPException
 
-from featurebyte.exception import (
-    DocumentConflictError,
-    DocumentInconsistencyError,
-    DocumentNotFoundError,
-    DocumentUpdateError,
-)
+from featurebyte.exception import DocumentConflictError, DocumentError, DocumentNotFoundError
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
@@ -40,12 +35,40 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
     async def _creation_context(cls) -> AsyncIterator[None]:
         try:
             yield
-        except (DocumentNotFoundError, DocumentInconsistencyError, DocumentUpdateError) as exc:
+        except DocumentConflictError as exc:
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc
+        except DocumentError as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
             ) from exc
-        except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc
+
+    @classmethod
+    @asynccontextmanager
+    async def _get_context(cls) -> AsyncIterator[None]:
+        try:
+            yield
+        except DocumentNotFoundError as exc:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)) from exc
+        except DocumentError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
+
+    @classmethod
+    @asynccontextmanager
+    async def _list_context(cls) -> AsyncIterator[None]:
+        try:
+            yield
+        except DocumentNotFoundError as exc:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)) from exc
+        except NotImplementedError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_IMPLEMENTED, detail="Query not supported."
+            ) from exc
+        except DocumentError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
 
     @classmethod
     @asynccontextmanager
@@ -54,12 +77,26 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
             yield
         except DocumentNotFoundError as exc:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)) from exc
-        except (DocumentUpdateError, DocumentInconsistencyError) as exc:
+        except DocumentConflictError as exc:
+            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc
+        except DocumentError as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
             ) from exc
-        except DocumentConflictError as exc:
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail=str(exc)) from exc
+
+    @classmethod
+    @asynccontextmanager
+    async def _delete_context(cls) -> AsyncIterator[None]:
+        try:
+            yield
+        except DocumentNotFoundError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
+        except DocumentError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=str(exc)
+            ) from exc
 
     @classmethod
     async def get(
@@ -92,7 +129,7 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
         HTTPException
             If the object not found
         """
-        try:
+        async with cls._get_context():
             document = await cls.document_service_class(
                 user=user, persistent=persistent
             ).get_document(
@@ -100,8 +137,6 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
                 exception_detail=exception_detail,
             )
             return cast(Document, document)
-        except DocumentNotFoundError as exc:
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail=str(exc)) from exc
 
     @classmethod
     async def list(
@@ -139,7 +174,7 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
         dict[str, Any]
             List of documents fulfilled the filtering condition
         """
-        try:
+        async with cls._list_context():
             document_data = await cls.document_service_class(
                 user=user, persistent=persistent
             ).list_documents(
@@ -149,12 +184,7 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
                 sort_dir=sort_dir,
                 **kwargs,
             )
-        except NotImplementedError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_IMPLEMENTED, detail="Query not supported."
-            ) from exc
-
-        return cast(PaginatedDocument, cls.paginated_document_class(**document_data))
+            return cast(PaginatedDocument, cls.paginated_document_class(**document_data))
 
     @classmethod
     async def list_audit(
@@ -198,7 +228,7 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
         AuditDocumentList
             List of documents fulfilled the filtering condition
         """
-        try:
+        async with cls._list_context():
             document_data = await cls.document_service_class(
                 user=user, persistent=persistent
             ).list_document_audits(
@@ -210,12 +240,7 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
                 sort_dir=sort_dir,
                 **kwargs,
             )
-        except NotImplementedError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_IMPLEMENTED, detail="Query not supported."
-            ) from exc
-
-        return AuditDocumentList(**document_data)
+            return AuditDocumentList(**document_data)
 
     @classmethod
     async def list_field_history(
@@ -244,15 +269,11 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
         List[FieldValueHistory]
             List of historical values for a field in the document
         """
-        try:
+        async with cls._list_context():
             document_data = await cls.document_service_class(
                 user=user, persistent=persistent
             ).list_document_field_history(document_id=document_id, field=field)
             return document_data
-        except NotImplementedError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_IMPLEMENTED, detail="Query not supported."
-            ) from exc
 
     @classmethod
     async def get_info(
@@ -260,6 +281,7 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
     ) -> dict[str, Any]:
         """
         Construct info based on the given document_id
+
         Parameters
         ----------
         user: Any
@@ -270,6 +292,7 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
             ID of document to retrieve
         verbose: bool
             Control verbose level of the info
+
         Returns
         -------
         dict[str, Any]

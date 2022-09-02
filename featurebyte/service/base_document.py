@@ -71,7 +71,7 @@ class BaseDocumentService(Generic[Document]):
         """
         return self._snake_to_camel_case(self.collection_name)
 
-    def _construct_get_query_filter(self, document_id: ObjectId) -> QueryFilter:
+    def _construct_get_query_filter(self, document_id: ObjectId, **kwargs) -> QueryFilter:
         """
         Construct query filter used in get route
 
@@ -79,12 +79,14 @@ class BaseDocumentService(Generic[Document]):
         ----------
         document_id: ObjectId
             Document ID
+        kwargs: Any
+            Additional keyword arguments
 
         Returns
         -------
         QueryFilter
         """
-        _ = self
+        _ = self, kwargs
         return {"_id": ObjectId(document_id)}
 
     async def _get_document(
@@ -92,8 +94,9 @@ class BaseDocumentService(Generic[Document]):
         document_id: ObjectId,
         exception_detail: str | None = None,
         collection_name: str | None = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
-        query_filter = self._construct_get_query_filter(document_id=document_id)
+        query_filter = self._construct_get_query_filter(document_id=document_id, **kwargs)
         document = await self.persistent.find_one(
             collection_name=collection_name or self.collection_name,
             query_filter=query_filter,
@@ -113,6 +116,7 @@ class BaseDocumentService(Generic[Document]):
         self,
         document_id: ObjectId,
         exception_detail: str | None = None,
+        **kwargs: Any,
     ) -> Document:
         """
         Retrieve document dictionary given document id
@@ -123,13 +127,15 @@ class BaseDocumentService(Generic[Document]):
             Document ID
         exception_detail: str | None
             Exception detail message
+        kwargs: Any
+            Additional keyword arguments
 
         Returns
         -------
         Document
         """
         document_dict = await self._get_document(
-            document_id=document_id, exception_detail=exception_detail
+            document_id=document_id, exception_detail=exception_detail, **kwargs
         )
         return self.document_class(**document_dict)
 

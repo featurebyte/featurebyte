@@ -126,25 +126,31 @@ class TableSchemaHasBeenChangedError(Exception):
     """
 
 
-class DocumentNotFoundError(Exception):
+class DocumentError(Exception):
+    """
+    General exception raised when there are some issue at persistent layer operations
+    """
+
+
+class DocumentNotFoundError(DocumentError):
     """
     Raise when the persistent query return emtpy result
     """
 
 
-class DocumentConflictError(Exception):
+class DocumentConflictError(DocumentError):
     """
     Raise when there exists a conflicting document at the persistent
     """
 
 
-class DocumentUpdateError(Exception):
+class DocumentUpdateError(DocumentError):
     """
     Raise when the document invalid update happens
     """
 
 
-class DocumentInconsistencyError(Exception):
+class DocumentInconsistencyError(DocumentError):
     """
     Raise when the document consistency issue is detected
     """
