@@ -25,6 +25,25 @@ def test_construct_snowflaketile_time_modulo_error():
     assert "time_modulo_frequency_second must be less than 180" in str(excinfo.value)
 
 
+def test_construct_snowflaketile_zero_time_modulo_frequency():
+    """
+    Test construct TileSpec with time modulo frequency of 0
+    """
+    tile_spec = TileSpec(
+        time_modulo_frequency_second=0,
+        blind_spot_second=3,
+        frequency_minute=3,
+        tile_sql="select c1 from dummy where tile_start_ts >= FB_START_TS and tile_start_ts < FB_END_TS",
+        value_column_names=["col2"],
+        entity_column_names=["col1"],
+        tile_id="some_tile_id",
+        aggregation_id="some_agg_id",
+    )
+    assert tile_spec.time_modulo_frequency_second == 0
+    assert tile_spec.blind_spot_second == 3
+    assert tile_spec.frequency_minute == 3
+
+
 def test_generate_tiles(mock_snowflake_tile, tile_manager):
     """
     Test generate_tiles method in TileSnowflake
