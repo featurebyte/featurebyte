@@ -387,7 +387,7 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config, snowfl
         feature_ids=[feature.id],
         features=[{"id": feature.id, "name": feature.name, "version": feature.version}],
         readiness=FeatureReadiness.DRAFT,
-        status=FeatureListStatus.DRAFT,
+        status=FeatureListStatus.PUBLIC_DRAFT,
         version="v1",
     )
 

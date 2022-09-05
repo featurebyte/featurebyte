@@ -10,7 +10,8 @@ from pydantic import Field, StrictStr
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import FeatureListModel, FeatureModel, FeatureVersionIdentifier
+from featurebyte.models.feature import FeatureModel, FeatureVersionIdentifier
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.interpreter import GraphInterpreter
 

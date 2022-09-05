@@ -10,11 +10,11 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import (
+from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListStatus,
     FeatureListVersionIdentifier,
-    FeatureReadiness,
 )
 from featurebyte.routes.common.schema import PaginationMixin
 

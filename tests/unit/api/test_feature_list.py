@@ -10,7 +10,8 @@ from freezegun import freeze_time
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, FeatureList
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.enum import NodeType
 
 
@@ -135,7 +136,7 @@ def test_feature_list_creation__success(production_ready_feature, config, mocked
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],
         "readiness": "PRODUCTION_READY",
-        "status": "DRAFT",
+        "status": "PUBLIC_DRAFT",
         "version": "V220501",
         "event_data_ids": production_ready_feature.event_data_ids,
         "entity_ids": production_ready_feature.entity_ids,
@@ -166,7 +167,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         ],
         "name": "my_feature_list",
         "readiness": None,
-        "status": "DRAFT",
+        "status": "PUBLIC_DRAFT",
         "event_data_ids": production_ready_feature.event_data_ids,
         "entity_ids": production_ready_feature.entity_ids,
     }
@@ -353,7 +354,7 @@ def test_feature_list__construction(production_ready_feature, draft_feature):
     assert feature_list.readiness == FeatureReadiness.DRAFT
     assert feature_list.feature_ids == [production_ready_feature.id, draft_feature.id]
     assert feature_list.feature_names == ["production_ready_feature", "draft_feature"]
-    assert feature_list.status == FeatureListStatus.DRAFT
+    assert feature_list.status == FeatureListStatus.PUBLIC_DRAFT
     assert feature_list.version == "V220720"
     assert list(feature_list.feature_objects.keys()) == [
         "production_ready_feature",
@@ -439,7 +440,7 @@ def test_info(saved_feature_list):
     """
     verbose_info = saved_feature_list.info(verbose=True)
     non_verbose_info = saved_feature_list.info(verbose=False)
-    expected_info = {"name": "my_feature_list", "readiness": "DRAFT", "status": "DRAFT"}
+    expected_info = {"name": "my_feature_list", "readiness": "DRAFT", "status": "PUBLIC_DRAFT"}
     expected_feature = {
         "is_default": None,
         "name": "sum_1d",
@@ -497,7 +498,7 @@ def test_get_feature_list(saved_feature_list):
         history_data[0]["current_values"].items()
         > {
             "name": "my_feature_list",
-            "status": "DRAFT",
+            "status": "PUBLIC_DRAFT",
             "readiness": "DRAFT",
             "updated_at": None,
             "user_id": None,

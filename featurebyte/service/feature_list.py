@@ -17,12 +17,8 @@ from featurebyte.exception import (
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import (
-    FeatureListModel,
-    FeatureModel,
-    FeatureReadiness,
-    FeatureSignature,
-)
+from featurebyte.models.feature import FeatureModel, FeatureReadiness, FeatureSignature
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.service.base_document import BaseDocumentService

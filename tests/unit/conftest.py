@@ -23,7 +23,8 @@ from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
-from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
@@ -554,7 +555,7 @@ def mock_snowflake_feature_list_model(
         feature_ids=[feature.id],
         features=[{"id": feature.id, "name": feature.name, "version": feature.version}],
         readiness=FeatureReadiness.DRAFT,
-        status=FeatureListStatus.DRAFT,
+        status=FeatureListStatus.PUBLIC_DRAFT,
         version="v1",
     )
 

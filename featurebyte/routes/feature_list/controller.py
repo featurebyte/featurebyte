@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Type
 
-from featurebyte.models.feature import FeatureListModel
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListPaginatedList

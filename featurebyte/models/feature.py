@@ -24,7 +24,6 @@ from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import Node, QueryGraph
 
 FeatureVersionIdentifier = StrictStr
-FeatureListVersionIdentifier = StrictStr
 
 
 class FeatureReadiness(OrderedStrEnum):
@@ -34,15 +33,6 @@ class FeatureReadiness(OrderedStrEnum):
     QUARANTINE = "QUARANTINE"
     DRAFT = "DRAFT"
     PRODUCTION_READY = "PRODUCTION_READY"
-
-
-class FeatureListStatus(OrderedStrEnum):
-    """FeatureList status"""
-
-    DEPRECATED = "DEPRECATED"
-    EXPERIMENTAL = "EXPERIMENTAL"
-    DRAFT = "DRAFT"
-    PUBLISHED = "PUBLISHED"
 
 
 class DefaultVersionMode(str, Enum):
@@ -191,59 +181,3 @@ class FeatureSignature(FeatureByteBaseModel):
     id: PydanticObjectId
     name: Optional[StrictStr]
     version: FeatureVersionIdentifier
-
-
-class FeatureListModel(FeatureByteBaseDocumentModel):
-    """
-    Model for feature list entity
-
-    id: PydanticObjectId
-        FeatureList id of the object
-    name: str
-        Name of the feature list
-    feature_ids: List[PydanticObjectId]
-        List of feature IDs
-    readiness: FeatureReadiness
-        Aggregated readiness of the features/feature classes
-    status: FeatureListStatus
-        FeatureList status
-    version: FeatureListVersionIdentifier
-        Feature list version
-    entity_ids: List[PydanticObjectId]
-        Entity IDs used in the feature list
-    event_data_ids: List[PydanticObjectId]
-        EventData IDs used in the feature list
-    created_at: Optional[datetime]
-        Datetime when the FeatureList was first saved or published
-    """
-
-    feature_ids: List[PydanticObjectId] = Field(default_factory=list)
-    readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
-    status: Optional[FeatureListStatus] = Field(allow_mutation=False)
-    version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)
-    entity_ids: List[PydanticObjectId] = Field(default_factory=list)
-    event_data_ids: List[PydanticObjectId] = Field(default_factory=list)
-
-    class Settings:
-        """
-        MongoDB settings
-        """
-
-        collection_name: str = "feature_list"
-        unique_constraints: List[UniqueValuesConstraint] = [
-            UniqueValuesConstraint(
-                fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"name": ["name"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("feature_ids",),
-                conflict_fields_signature={"feature_ids": ["feature_ids"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-        ]

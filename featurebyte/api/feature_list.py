@@ -21,7 +21,8 @@ from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
 from featurebyte.query_graph.feature_historical import get_historical_features
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
@@ -255,7 +256,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         if not values.get("feature_ids"):
             values["feature_ids"] = [feature.id for feature in values["feature_objects"].values()]
         if not values.get("status"):
-            values["status"] = FeatureListStatus.DRAFT
+            values["status"] = FeatureListStatus.PUBLIC_DRAFT
         if not values.get("version"):
             values["version"] = get_version()
         for attr in ["entity_ids", "event_data_ids"]:

@@ -10,7 +10,7 @@ from http import HTTPStatus
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
 
-from featurebyte.models.feature import FeatureListModel
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
