@@ -41,6 +41,7 @@ def feature_name_space_dict_fixture():
     event_data_ids = [ObjectId()]
     return {
         "name": "some_feature_name",
+        "dtype": "FLOAT",
         "feature_ids": [feature_id],
         "readiness": "DRAFT",
         "created_at": datetime.now(),

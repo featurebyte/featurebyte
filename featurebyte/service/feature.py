@@ -144,6 +144,7 @@ class FeatureService(BaseDocumentService[FeatureModel]):
                     data=FeatureNamespaceCreate(
                         _id=document.feature_namespace_id,
                         name=document.name,
+                        dtype=document.dtype,
                         feature_ids=[insert_id],
                         readiness=FeatureReadiness.DRAFT,
                         default_feature_id=insert_id,

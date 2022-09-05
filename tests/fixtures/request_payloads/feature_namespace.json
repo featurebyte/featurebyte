@@ -2,6 +2,7 @@
     "_id": "630d7fa8f1275c864fde849e",
     "default_feature_id": "630d7fa8f1275c864fde8495",
     "default_version_mode": "AUTO",
+    "dtype": "FLOAT",
     "name": "sum_30m",
     "readiness": "DRAFT",
     "feature_ids": [

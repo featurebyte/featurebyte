@@ -56,7 +56,7 @@ class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
     def _validate_feature_version_and_namespace_consistency(
         feature_dict: dict[str, Any], feature_namespace: FeatureNamespaceModel
     ) -> None:
-        attrs = ["name", "entity_ids", "event_data_ids"]
+        attrs = ["name", "dtype", "entity_ids", "event_data_ids"]
         for attr in attrs:
             version_attr = feature_dict.get(attr)
             namespace_attr = getattr(feature_namespace, attr)

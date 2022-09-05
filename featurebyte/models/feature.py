@@ -60,6 +60,8 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         Feature namespace id
     name: str
         Feature name
+    dtype: DBVarType
+        Variable type of the feature
     feature_ids: List[PydanticObjectId]
         List of feature version id
     readiness: FeatureReadiness
@@ -76,6 +78,7 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         EventData IDs used for the feature version
     """
 
+    dtype: DBVarType = Field(allow_mutation=False)
     feature_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     readiness: FeatureReadiness = Field(allow_mutation=False)
     default_feature_id: PydanticObjectId = Field(allow_mutation=False)

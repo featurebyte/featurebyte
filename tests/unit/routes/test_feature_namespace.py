@@ -83,6 +83,7 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
                 "_id": ObjectId(),
                 "user_id": ObjectId(create_success_response_dict["user_id"]),
                 "name": create_success_response_dict["name"],
+                "dtype": "FLOAT",
                 "entity_ids": [ObjectId(eid) for eid in create_success_response_dict["entity_ids"]],
                 "event_data_ids": [
                     ObjectId(eid) for eid in create_success_response_dict["event_data_ids"]
@@ -112,6 +113,7 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
                 "_id": ObjectId(),
                 "user_id": ObjectId(create_success_response_dict["user_id"]),
                 "name": create_success_response_dict["name"],
+                "dtype": "FLOAT",
                 "entity_ids": [ObjectId(eid) for eid in create_success_response_dict["entity_ids"]],
                 "event_data_ids": [
                     ObjectId(eid) for eid in create_success_response_dict["event_data_ids"]
