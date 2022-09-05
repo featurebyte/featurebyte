@@ -13,7 +13,7 @@ from alive_progress import alive_bar
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object import ApiGetObject, ApiObject
 from featurebyte.api.feature import Feature
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import get_version
@@ -22,7 +22,11 @@ from featurebyte.core.mixin import ParentMixin
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureReadiness
-from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
+from featurebyte.models.feature_list import (
+    FeatureListModel,
+    FeatureListNamespaceModel,
+    FeatureListStatus,
+)
 from featurebyte.query_graph.feature_historical import get_historical_features
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
@@ -190,6 +194,15 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         raise ValueError("There is no feature in the FeatureGroup object.")
 
 
+class FeatureListNamespace(FeatureListNamespaceModel, ApiGetObject):
+    """
+    FeatureListNamespace class
+    """
+
+    # class variable
+    _route = "/feature_list_namespace"
+
+
 class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     """
     FeatureList class
@@ -266,6 +279,17 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
                     id_values.extend(getattr(feature, attr))
                 values[attr] = sorted(set(id_values))
         return values
+
+    @property
+    def feature_list_namespace(self) -> FeatureListNamespace:
+        """
+        FeatureListNamespace object of current feature
+
+        Returns
+        -------
+        FeatureListNamespace
+        """
+        return FeatureListNamespace.get_by_id(id=self.feature_list_namespace_id)
 
     @typechecked
     def get_historical_features(

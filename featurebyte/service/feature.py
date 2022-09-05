@@ -99,15 +99,11 @@ class FeatureService(BaseDocumentService[FeatureModel]):
     async def create_document(  # type: ignore[override]
         self, data: FeatureCreate, get_credential: Any = None
     ) -> FeatureModel:
-        async with self.persistent.start_transaction() as session:
-            document = FeatureModel(
-                **{
-                    **data.json_dict(),
-                    "user_id": self.user.id,
-                    "readiness": FeatureReadiness.DRAFT,
-                }
-            )
+        document = FeatureModel(
+            **{**data.json_dict(), "readiness": FeatureReadiness.DRAFT, "user_id": self.user.id}
+        )
 
+        async with self.persistent.start_transaction() as session:
             # check any conflict with existing documents
             await self._check_document_unique_constraints(document=document)
 

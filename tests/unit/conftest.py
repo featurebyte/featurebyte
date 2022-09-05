@@ -14,7 +14,7 @@ from bson.objectid import ObjectId
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
-from featurebyte.api.feature import Feature
+from featurebyte.api.feature import DefaultVersionMode, Feature
 from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
@@ -30,6 +30,7 @@ from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
+from featurebyte.schema.feature_list_namespace import FeatureListNamespaceCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.session.manager import SessionManager, get_session
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
@@ -628,6 +629,18 @@ def test_save_payload_fixtures(
         )
         with open(f"{base_path}/feature_namespace.json", "w") as fhandle:
             fhandle.write(json.dumps(feature_namespace.json_dict(), indent=4, sort_keys=True))
+
+        feature_list_namespace = FeatureListNamespaceCreate(
+            _id=ObjectId(),
+            name=feature_list_multiple.name,
+            feature_list_ids=[feature_list_multiple.id],
+            default_feature_list_id=feature_list_multiple.id,
+            default_version_mode=DefaultVersionMode.AUTO,
+            entity_ids=feature_list_multiple.entity_ids,
+            event_ids=feature_list_multiple.event_data_ids,
+        )
+        with open(f"{base_path}/feature_list_namespace.json", "w") as fhandle:
+            fhandle.write(json.dumps(feature_list_namespace.json_dict(), indent=4, sort_keys=True))
 
         raise AssertionError(
             f"Fixture {output_filenames} updated, please set update_fixture to False"

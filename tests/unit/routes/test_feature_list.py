@@ -39,8 +39,8 @@ class TestFeatureListApi(BaseApiTestSuite):
         ),
         (
             {**payload, "_id": object_id},
-            'FeatureList (name: "sf_feature_list") already exists. '
-            'Get the existing object by `FeatureList.get(name="sf_feature_list")`.',
+            'FeatureList (name: "sf_feature_list", version: "V220830") already exists. '
+            'Get the existing object by `FeatureList.get_by_id(id="630d7fa8f1275c864fde849c")`.',
         ),
         (
             {**payload, "_id": object_id, "name": "other_name"},

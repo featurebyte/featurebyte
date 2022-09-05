@@ -36,7 +36,7 @@ class FeatureListController(BaseDocumentController[FeatureListModel, FeatureList
         get_credential: Any
             Get credential handler function
         data: FeatureListCreate
-            Feature creation payload
+            Feature list creation payload
 
         Returns
         -------

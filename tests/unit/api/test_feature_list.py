@@ -155,7 +155,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         [production_ready_feature, feature_group[["sum_30m", "sum_1d"]]],
         name="my_feature_list",
     )
-    assert flist.dict(exclude={"id": True}) == {
+    assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "created_at": None,
         "updated_at": None,
         "user_id": None,

@@ -12,17 +12,28 @@ from featurebyte.enum import SourceType
 from featurebyte.exception import (
     DocumentConflictError,
     DocumentInconsistencyError,
+    DocumentNotFoundError,
     DuplicatedRegistryError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import FeatureModel, FeatureReadiness, FeatureSignature
+from featurebyte.models.feature import (
+    DefaultVersionMode,
+    FeatureModel,
+    FeatureReadiness,
+    FeatureSignature,
+)
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.feature_list import FeatureListCreate
+from featurebyte.schema.feature_list_namespace import (
+    FeatureListNamespaceCreate,
+    FeatureListNamespaceUpdate,
+)
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.common.operation import DictProject, DictTransform
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 
 
 class FeatureListService(BaseDocumentService[FeatureListModel]):
@@ -137,6 +148,33 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                 user_id=self.user.id,
             )
             assert insert_id == document.id
+
+            feature_list_namespace_service = FeatureListNamespaceService(
+                user=self.user, persistent=self.persistent
+            )
+            try:
+                feature_list_namespace = await feature_list_namespace_service.get_document(
+                    document_id=document.feature_list_namespace_id
+                )
+
+                # update feature list namespace
+                await feature_list_namespace_service.update_document(
+                    document_id=feature_list_namespace.id,
+                    data=FeatureListNamespaceUpdate(feature_list_id=document.id),
+                )
+
+            except DocumentNotFoundError:
+                await feature_list_namespace_service.create_document(
+                    data=FeatureListNamespaceCreate(
+                        _id=document.feature_list_namespace_id,
+                        name=document.name,
+                        feature_list_ids=[insert_id],
+                        default_feature_list_id=insert_id,
+                        default_version_mode=DefaultVersionMode.AUTO,
+                        entity_ids=sorted(document.entity_ids),
+                        event_data_ids=sorted(document.event_data_ids),
+                    )
+                )
 
             # insert feature list registry into feature list store
             await self._insert_feature_list_registry(
