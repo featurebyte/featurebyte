@@ -39,7 +39,7 @@ class TileSpec(FeatureByteBaseModel):
         optional category column name when the groupby operation specifies a category
     """
 
-    time_modulo_frequency_second: int = Field(gt=0)
+    time_modulo_frequency_second: int = Field(gte=0)
     blind_spot_second: int
     frequency_minute: int = Field(gt=0, le=60)
     tile_sql: str
