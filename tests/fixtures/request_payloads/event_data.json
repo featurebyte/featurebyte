@@ -1,50 +1,50 @@
 {
-    "_id": "630d7fa8f1275c864fde8492",
+    "_id": "6315ebcc0177c284c2d6f80f",
     "columns_info": [
         {
+            "dtype": "INT",
             "entity_id": null,
-            "name": "col_int",
-            "dtype": "INT"
+            "name": "col_int"
         },
         {
+            "dtype": "FLOAT",
             "entity_id": null,
-            "name": "col_float",
-            "dtype": "FLOAT"
+            "name": "col_float"
         },
         {
+            "dtype": "CHAR",
             "entity_id": null,
-            "name": "col_char",
-            "dtype": "CHAR"
+            "name": "col_char"
         },
         {
+            "dtype": "VARCHAR",
             "entity_id": null,
-            "name": "col_text",
-            "dtype": "VARCHAR"
+            "name": "col_text"
         },
         {
+            "dtype": "BINARY",
             "entity_id": null,
-            "name": "col_binary",
-            "dtype": "BINARY"
+            "name": "col_binary"
         },
         {
+            "dtype": "BOOL",
             "entity_id": null,
-            "name": "col_boolean",
-            "dtype": "BOOL"
+            "name": "col_boolean"
         },
         {
+            "dtype": "TIMESTAMP",
             "entity_id": null,
-            "name": "event_timestamp",
-            "dtype": "TIMESTAMP"
+            "name": "event_timestamp"
         },
         {
+            "dtype": "TIMESTAMP",
             "entity_id": null,
-            "name": "created_at",
-            "dtype": "TIMESTAMP"
+            "name": "created_at"
         },
         {
-            "entity_id": "630d7fa8f1275c864fde8493",
-            "name": "cust_id",
-            "dtype": "INT"
+            "dtype": "INT",
+            "entity_id": "6315ebcc0177c284c2d6f810",
+            "name": "cust_id"
         }
     ],
     "default_feature_job_setting": null,
@@ -52,7 +52,7 @@
     "name": "sf_event_data",
     "record_creation_date_column": "created_at",
     "tabular_source": {
-        "feature_store_id": "630d7fa8f1275c864fde8490",
+        "feature_store_id": "6315ebcc0177c284c2d6f80d",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

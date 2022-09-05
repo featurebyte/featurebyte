@@ -1,17 +1,17 @@
 {
-    "_id": "630d7fa8f1275c864fde849e",
-    "default_feature_id": "630d7fa8f1275c864fde8495",
+    "_id": "6315ebcd0177c284c2d6f81c",
+    "default_feature_id": "6315ebcd0177c284c2d6f812",
     "default_version_mode": "AUTO",
     "dtype": "FLOAT",
-    "name": "sum_30m",
-    "readiness": "DRAFT",
-    "feature_ids": [
-        "630d7fa8f1275c864fde8495"
-    ],
     "entity_ids": [
-      "630d7fa8f1275c864fde8493"
+        "6315ebcc0177c284c2d6f810"
     ],
     "event_data_ids": [
-      "630d7fa8f1275c864fde8492"
-    ]
+        "6315ebcc0177c284c2d6f80f"
+    ],
+    "feature_ids": [
+        "6315ebcd0177c284c2d6f812"
+    ],
+    "name": "sum_30m",
+    "readiness": "DRAFT"
 }

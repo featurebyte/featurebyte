@@ -1,12 +1,13 @@
 {
-    "_id": "630d7fa8f1275c864fde8497",
+    "_id": "6315ebcd0177c284c2d6f814",
+    "dtype": "FLOAT",
     "entity_ids": [
-        "630d7fa8f1275c864fde8493"
+        "6315ebcc0177c284c2d6f810"
     ],
     "event_data_ids": [
-        "630d7fa8f1275c864fde8492"
+        "6315ebcc0177c284c2d6f80f"
     ],
-    "feature_namespace_id": "630d7fa8f1275c864fde8498",
+    "feature_namespace_id": "6315ebcd0177c284c2d6f815",
     "graph": {
         "backward_edges": {
             "groupby_1": [
@@ -117,13 +118,12 @@
         "groupby_1"
     ],
     "tabular_source": {
-        "feature_store_id": "630d7fa8f1275c864fde8490",
+        "feature_store_id": "6315ebcc0177c284c2d6f80d",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
             "table_name": "sf_table"
         }
     },
-    "dtype": "FLOAT",
-    "version": "V220830"
+    "version": "V220905"
 }

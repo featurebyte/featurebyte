@@ -1,0 +1,15 @@
+{
+    "_id": "6315ebcd0177c284c2d6f81d",
+    "default_feature_list_id": "6315ebcd0177c284c2d6f81a",
+    "default_version_mode": "AUTO",
+    "entity_ids": [
+        "6315ebcc0177c284c2d6f810"
+    ],
+    "event_data_ids": [
+        "6315ebcc0177c284c2d6f80f"
+    ],
+    "feature_list_ids": [
+        "6315ebcd0177c284c2d6f81a"
+    ],
+    "name": "sf_feature_list_multiple"
+}

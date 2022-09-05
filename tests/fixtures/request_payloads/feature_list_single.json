@@ -1,15 +1,20 @@
 {
-    "_id": "630d7fa8f1275c864fde849c",
+    "_id": "6315ebcd0177c284c2d6f818",
     "created_at": null,
-    "feature_ids": [
-        "630d7fa8f1275c864fde8495"
+    "entity_ids": [
+        "6315ebcc0177c284c2d6f810"
     ],
+    "event_data_ids": [
+        "6315ebcc0177c284c2d6f80f"
+    ],
+    "feature_ids": [
+        "6315ebcd0177c284c2d6f812"
+    ],
+    "feature_list_namespace_id": "6315ebcd0177c284c2d6f819",
     "name": "sf_feature_list",
     "readiness": null,
-    "status": "DRAFT",
+    "status": "PUBLIC_DRAFT",
     "updated_at": null,
     "user_id": null,
-    "version": "V220830",
-    "entity_ids": ["630d7fa8f1275c864fde8493"],
-    "event_data_ids": ["630d7fa8f1275c864fde8492"]
+    "version": "V220905"
 }

@@ -1,13 +1,12 @@
 {
-  "_id": "62f301e841b73757c9ff879a",
-  "user_id": "62f302f841b73757c9ff876b",
-  "name": "sample_analysis",
-  "event_data_id": "630d7fa8f1275c864fde8492",
-  "analysis_date": null,
-  "analysis_length": 2419200,
-  "min_featurejob_period": 60,
-  "exclude_late_job": false,
-  "blind_spot_buffer_setting": 5,
-  "job_time_buffer_setting": "auto",
-  "late_data_allowance": 5e-05
+    "_id": "62f301e841b73757c9ff879a",
+    "analysis_date": null,
+    "analysis_length": 2419200,
+    "blind_spot_buffer_setting": 5,
+    "event_data_id": "6315ebcc0177c284c2d6f80f",
+    "exclude_late_job": false,
+    "job_time_buffer_setting": "auto",
+    "late_data_allowance": 5e-05,
+    "min_featurejob_period": 60,
+    "name": "sample_analysis"
 }
