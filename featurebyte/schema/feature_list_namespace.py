@@ -7,6 +7,7 @@ from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureReadinessDistribution
@@ -20,6 +21,7 @@ class FeatureListNamespaceCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
+    dtypes: List[DBVarType]
     feature_list_ids: List[PydanticObjectId] = Field(default_factory=list)
     readiness_distribution: FeatureReadinessDistribution
     default_feature_list_id: PydanticObjectId

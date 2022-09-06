@@ -613,6 +613,7 @@ def test_save_payload_fixtures(
     feature_list_namespace = FeatureListNamespaceCreate(
         _id=ObjectId(),
         name=feature_list_multiple.name,
+        dtypes=["FLOAT"],
         feature_list_ids=[feature_list_multiple.id],
         readiness_distribution=feature_list_multiple.readiness_distribution,
         default_feature_list_id=feature_list_multiple.id,

@@ -40,11 +40,11 @@ class TestFeatureListApi(BaseApiTestSuite):
         (
             {**payload, "_id": object_id},
             'FeatureList (name: "sf_feature_list", version: "V220906") already exists. '
-            'Get the existing object by `FeatureList.get_by_id(id="631697b94065102e4b620360")`.',
+            'Get the existing object by `FeatureList.get_by_id(id="6317467bb72b797bd08f7300")`.',
         ),
         (
             {**payload, "_id": object_id, "name": "other_name"},
-            "FeatureList (feature_ids: \"[ObjectId('631697b94065102e4b62035a')]\") already exists. "
+            "FeatureList (feature_ids: \"[ObjectId('6317467bb72b797bd08f72fa')]\") already exists. "
             'Get the existing object by `FeatureList.get(name="sf_feature_list")`.',
         ),
     ]
@@ -55,7 +55,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         ),
         (
             payload_multi,
-            'Feature (id: "631697b94065102e4b62035c") not found. Please save the Feature object first.',
+            'Feature (id: "6317467bb72b797bd08f72fc") not found. Please save the Feature object first.',
         ),
         (
             {**payload, "feature_ids": []},

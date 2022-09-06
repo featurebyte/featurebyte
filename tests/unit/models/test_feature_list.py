@@ -38,6 +38,7 @@ def feature_list_namespace_model_dict_fixture():
     feature_list_id = ObjectId()
     return {
         "name": "my_feature_list",
+        "dtypes": ["FLOAT"],
         "feature_list_ids": [feature_list_id],
         "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
         "readiness": "DRAFT",

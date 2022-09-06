@@ -13,7 +13,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 from typeguard import typechecked
 
-from featurebyte.enum import OrderedStrEnum
+from featurebyte.enum import DBVarType, OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -129,6 +129,8 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         Feature namespace id
     name: str
         Feature name
+    dtypes: List[DBVarType]
+        List of variable types used in the feature list
     feature_list_ids: List[PydanticObjectId]
         List of feature list ids
     readiness_distribution: List[Dict[str, Any]]
@@ -145,6 +147,7 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         EventData IDs used in the feature list
     """
 
+    dtypes: List[DBVarType] = Field(allow_mutation=False)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     readiness_distribution: FeatureReadinessDistribution = Field(allow_mutation=False)
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)

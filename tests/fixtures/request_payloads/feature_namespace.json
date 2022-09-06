@@ -1,16 +1,16 @@
 {
-    "_id": "631697b94065102e4b620364",
-    "default_feature_id": "631697b94065102e4b62035a",
+    "_id": "6317467bb72b797bd08f7304",
+    "default_feature_id": "6317467bb72b797bd08f72fa",
     "default_version_mode": "AUTO",
     "dtype": "FLOAT",
     "entity_ids": [
-        "631697b94065102e4b620358"
+        "6317467bb72b797bd08f72f8"
     ],
     "event_data_ids": [
-        "631697b94065102e4b620357"
+        "6317467bb72b797bd08f72f7"
     ],
     "feature_ids": [
-        "631697b94065102e4b62035a"
+        "6317467bb72b797bd08f72fa"
     ],
     "name": "sum_30m",
     "readiness": "DRAFT"

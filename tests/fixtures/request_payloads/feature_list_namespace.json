@@ -1,15 +1,18 @@
 {
-    "_id": "631697b94065102e4b620365",
-    "default_feature_list_id": "631697b94065102e4b620362",
+    "_id": "6317467bb72b797bd08f7305",
+    "default_feature_list_id": "6317467bb72b797bd08f7302",
     "default_version_mode": "AUTO",
+    "dtypes": [
+        "FLOAT"
+    ],
     "entity_ids": [
-        "631697b94065102e4b620358"
+        "6317467bb72b797bd08f72f8"
     ],
     "event_data_ids": [
-        "631697b94065102e4b620357"
+        "6317467bb72b797bd08f72f7"
     ],
     "feature_list_ids": [
-        "631697b94065102e4b620362"
+        "6317467bb72b797bd08f7302"
     ],
     "name": "sf_feature_list_multiple",
     "readiness_distribution": [

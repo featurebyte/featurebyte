@@ -1,16 +1,16 @@
 {
-    "_id": "631697b94065102e4b620360",
+    "_id": "6317467bb72b797bd08f7300",
     "created_at": null,
     "entity_ids": [
-        "631697b94065102e4b620358"
+        "6317467bb72b797bd08f72f8"
     ],
     "event_data_ids": [
-        "631697b94065102e4b620357"
+        "6317467bb72b797bd08f72f7"
     ],
     "feature_ids": [
-        "631697b94065102e4b62035a"
+        "6317467bb72b797bd08f72fa"
     ],
-    "feature_list_namespace_id": "631697b94065102e4b620361",
+    "feature_list_namespace_id": "6317467bb72b797bd08f7301",
     "name": "sf_feature_list",
     "readiness": "DRAFT",
     "readiness_distribution": [
@@ -19,7 +19,7 @@
             "readiness": "DRAFT"
         }
     ],
-    "status": "PUBLIC_DRAFT",
+    "status": "DRAFT",
     "updated_at": null,
     "user_id": null,
     "version": "V220906"

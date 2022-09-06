@@ -8,7 +8,7 @@ from typing import Any, List, Optional, Tuple
 from bson.objectid import ObjectId
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import (
     DocumentConflictError,
     DocumentInconsistencyError,
@@ -95,7 +95,8 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
 
     async def _validate_feature_ids_and_extract_feature_data(
         self, document: FeatureListModel
-    ) -> Tuple[ObjectId, List[FeatureSignature]]:
+    ) -> Tuple[ObjectId, List[FeatureSignature], List[DBVarType]]:
+        dtypes: List[DBVarType] = []
         feature_store_id: Optional[ObjectId] = None
         feature_signatures: List[FeatureSignature] = []
         feature_list_readiness: FeatureReadiness = FeatureReadiness.PRODUCTION_READY
@@ -105,6 +106,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                 collection_name=FeatureModel.collection_name(),
             )
             feature = FeatureModel(**feature_dict)
+            dtypes.append(feature.dtype)
             feature_list_readiness = min(
                 feature_list_readiness, FeatureReadiness(feature.readiness)
             )
@@ -121,7 +123,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
             feature_store_id = feature.tabular_source.feature_store_id
 
         assert feature_store_id is not None
-        return feature_store_id, feature_signatures
+        return feature_store_id, feature_signatures, sorted(set(dtypes))
 
     async def create_document(  # type: ignore[override]
         self, data: FeatureListCreate, get_credential: Any = None
@@ -139,6 +141,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
             (
                 feature_store_id,
                 feature_signatures,
+                dtypes,
             ) = await self._validate_feature_ids_and_extract_feature_data(document)
 
             # update document with readiness
@@ -175,6 +178,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                     data=FeatureListNamespaceCreate(
                         _id=document.feature_list_namespace_id,
                         name=document.name,
+                        dtypes=dtypes,
                         feature_list_ids=[insert_id],
                         readiness_distribution=document.readiness_distribution,
                         default_feature_list_id=insert_id,
