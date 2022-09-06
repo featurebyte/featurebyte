@@ -15,6 +15,7 @@ import featurebyte.routes.event_data.api as event_data_api
 import featurebyte.routes.feature.api as feature_api
 import featurebyte.routes.feature_job_setting_analysis.api as feature_job_setting_analysis_api
 import featurebyte.routes.feature_list.api as feature_list_api
+import featurebyte.routes.feature_list_namespace.api as feature_list_namespace_api
 import featurebyte.routes.feature_namespace.api as feature_namespace_api
 import featurebyte.routes.feature_store.api as feature_store_api
 import featurebyte.routes.task.api as task_api
@@ -26,6 +27,7 @@ from featurebyte.routes.feature_job_setting_analysis.controller import (
     FeatureJobSettingAnalysisController,
 )
 from featurebyte.routes.feature_list.controller import FeatureListController
+from featurebyte.routes.feature_list_namespace.controller import FeatureListNamespaceController
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.task.controller import TaskController
@@ -84,6 +86,7 @@ resource_api_controller_pairs: list[tuple[Any, type[BaseDocumentController[Any, 
     (feature_api, FeatureController),
     (feature_job_setting_analysis_api, FeatureJobSettingAnalysisController),
     (feature_list_api, FeatureListController),
+    (feature_list_namespace_api, FeatureListNamespaceController),
     (feature_namespace_api, FeatureNamespaceController),
     (feature_store_api, FeatureStoreController),
 ]

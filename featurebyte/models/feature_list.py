@@ -4,15 +4,19 @@ This module contains Feature list related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Any, List, Optional
+
+import functools
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, validator
+from typeguard import typechecked
 
 from featurebyte.enum import OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
@@ -30,7 +34,108 @@ class FeatureListStatus(OrderedStrEnum):
     PUBLISHED = "PUBLISHED"
 
 
-class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
+class FeatureReadinessFeatureCount(FeatureByteBaseModel):
+    """
+    Feature count corresponding to the feature readiness within a feature list
+
+    feature_readiness: FeatureReadiness
+        Feature readiness level
+    feature_count: int
+        Number of features with the given readiness within a feature list
+    """
+
+    readiness: FeatureReadiness
+    count: int
+
+
+@functools.total_ordering
+class FeatureReadinessDistribution(FeatureByteBaseModel):
+    """
+    Feature readiness distribution
+    """
+
+    __root__: List[FeatureReadinessFeatureCount]
+
+    @staticmethod
+    def _to_count_per_readiness_map(feature_readiness_dist: FeatureReadinessDistribution):
+        output = {}
+        for feature_readiness in FeatureReadiness:
+            output[feature_readiness] = 0
+
+        for feature_readiness_count in feature_readiness_dist.__root__:
+            output[feature_readiness_count.readiness] += feature_readiness_count.count
+        return output
+
+    @classmethod
+    def _transform_and_check(
+        cls, this_dist: FeatureReadinessDistribution, other_dist: FeatureReadinessDistribution
+    ):
+        this_dist_map = cls._to_count_per_readiness_map(this_dist)
+        other_dist_map = cls._to_count_per_readiness_map(other_dist)
+        if sum(this_dist_map.values()) != sum(other_dist_map.values()):
+            raise ValueError(
+                "Invalid comparison between two feature readiness distributions with different sums."
+            )
+        return this_dist_map, other_dist_map
+
+    @typechecked
+    def __eq__(self, other: FeatureReadinessDistribution):
+        this_dist_map, other_dist_map = self._transform_and_check(self, other)
+        for feature_readiness in FeatureReadiness:
+            if this_dist_map[feature_readiness] != other_dist_map[feature_readiness]:
+                return False
+        return True
+
+    @typechecked
+    def __lt__(self, other: FeatureReadinessDistribution):
+        this_dist_map, other_dist_map = self._transform_and_check(self, other)
+        # feature readiness sorted from the worst readiness (deprecated) to the best readiness (production ready)
+        # the one with the lower number of readiness should be preferred
+        # this mean: dist_with_lower_bad_readiness > dist_with_higher_bad_readiness
+        for feature_readiness in FeatureReadiness:
+            compare_readiness = (
+                this_dist_map[feature_readiness] == other_dist_map[feature_readiness]
+            )
+            if compare_readiness:
+                continue
+            return this_dist_map[feature_readiness] > other_dist_map[feature_readiness]
+        return False
+
+    def derive_readiness(self) -> FeatureReadiness:
+        """
+        Derive readiness based on feature readiness distribution
+
+        Returns
+        -------
+        Aggregated featured readiness
+        """
+        output_readiness: Optional[FeatureReadiness] = None
+        for readiness_count in self.__root__:
+            if readiness_count.count:
+                if output_readiness is None:
+                    output_readiness = readiness_count.readiness
+                elif readiness_count.readiness < output_readiness:
+                    output_readiness = readiness_count.readiness
+        return output_readiness or FeatureReadiness.DRAFT
+
+
+class FeatureListValidatorMixin:
+    """
+    FeatureList validator mixin
+    """
+
+    @validator("readiness")
+    @classmethod
+    def _check_readiness(cls, value: FeatureReadiness, values: dict[str, Any]) -> FeatureReadiness:
+        _ = value
+        if isinstance(values["readiness_distribution"], list):
+            readiness_dist = FeatureReadinessDistribution(__root__=values["readiness_distribution"])
+        else:
+            readiness_dist = values["readiness_distribution"]
+        return readiness_dist.derive_readiness()
+
+
+class FeatureListNamespaceModel(FeatureByteBaseDocumentModel, FeatureListValidatorMixin):
     """
     Feature list set with the same feature list name
 
@@ -40,6 +145,10 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         Feature name
     feature_list_ids: List[PydanticObjectId]
         List of feature list ids
+    readiness_distribution: List[Dict[str, Any]]
+        Feature readiness distribution of the default feature list
+    readiness: FeatureReadiness
+        Aggregated readiness of the default feature list
     default_feature_list_id: PydanticObjectId
         Default feature list id
     default_version_mode: DefaultVersionMode
@@ -51,6 +160,8 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
     """
 
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    readiness_distribution: FeatureReadinessDistribution = Field(allow_mutation=False)
+    readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
     default_version_mode: DefaultVersionMode = Field(
         default=DefaultVersionMode.AUTO, allow_mutation=False
@@ -68,7 +179,7 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
+                resolution_signature=None,
             ),
             UniqueValuesConstraint(
                 fields=("name",),
@@ -78,7 +189,7 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         ]
 
 
-class FeatureListModel(FeatureByteBaseDocumentModel):
+class FeatureListModel(FeatureByteBaseDocumentModel, FeatureListValidatorMixin):
     """
     Model for feature list entity
 
@@ -88,8 +199,10 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         Name of the feature list
     feature_ids: List[PydanticObjectId]
         List of feature IDs
+    readiness_distribution: List[Dict[str, Any]]
+        Feature readiness distribution of this feature list
     readiness: FeatureReadiness
-        Aggregated readiness of the features/feature classes
+        Aggregated readiness of this feature list
     status: FeatureListStatus
         FeatureList status
     version: FeatureListVersionIdentifier
@@ -105,7 +218,8 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     """
 
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
-    readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
+    readiness_distribution: FeatureReadinessDistribution = Field(default_factory=list)
+    readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     status: Optional[FeatureListStatus] = Field(allow_mutation=False)
     version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)
     entity_ids: List[PydanticObjectId] = Field(default_factory=list)

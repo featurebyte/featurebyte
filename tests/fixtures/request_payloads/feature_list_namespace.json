@@ -1,15 +1,21 @@
 {
-    "_id": "6315ebcd0177c284c2d6f81d",
-    "default_feature_list_id": "6315ebcd0177c284c2d6f81a",
+    "_id": "631697b94065102e4b620365",
+    "default_feature_list_id": "631697b94065102e4b620362",
     "default_version_mode": "AUTO",
     "entity_ids": [
-        "6315ebcc0177c284c2d6f810"
+        "631697b94065102e4b620358"
     ],
     "event_data_ids": [
-        "6315ebcc0177c284c2d6f80f"
+        "631697b94065102e4b620357"
     ],
     "feature_list_ids": [
-        "6315ebcd0177c284c2d6f81a"
+        "631697b94065102e4b620362"
     ],
-    "name": "sf_feature_list_multiple"
+    "name": "sf_feature_list_multiple",
+    "readiness_distribution": [
+        {
+            "count": 2,
+            "readiness": "DRAFT"
+        }
+    ]
 }

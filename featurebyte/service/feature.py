@@ -168,4 +168,6 @@ class FeatureService(BaseDocumentService[FeatureModel]):
         self, document_id: ObjectId, data: FeatureByteBaseModel
     ) -> FeatureModel:
         # TODO: implement proper logic to update feature document
+        # when update the feature readiness, needs to update feature list's feature readiness distribution
+        # and feature list namespace's feature readiness distribution
         return await self.get_document(document_id=document_id)

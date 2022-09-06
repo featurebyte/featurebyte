@@ -116,7 +116,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Node of the graph which represent the feature
     tabular_source: TabularSource
         Tabular source used to construct this feature
-    readiness: Optional[FeatureReadiness]
+    readiness: FeatureReadiness
         Feature readiness
     version: FeatureVersionIdentifier
         Feature version
@@ -139,7 +139,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     graph: QueryGraph = Field(allow_mutation=False)
     node: Node = Field(allow_mutation=False)
     tabular_source: TabularSource = Field(allow_mutation=False)
-    readiness: Optional[FeatureReadiness] = Field(allow_mutation=False)
+    readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     version: FeatureVersionIdentifier = Field(default_factory=get_version, allow_mutation=False)
     online_enabled: Optional[bool] = Field(allow_mutation=False)
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)

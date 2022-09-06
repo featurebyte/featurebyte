@@ -614,6 +614,7 @@ def test_save_payload_fixtures(
         _id=ObjectId(),
         name=feature_list_multiple.name,
         feature_list_ids=[feature_list_multiple.id],
+        readiness_distribution=feature_list_multiple.readiness_distribution,
         default_feature_list_id=feature_list_multiple.id,
         default_version_mode=DefaultVersionMode.AUTO,
         entity_ids=feature_list_multiple.entity_ids,

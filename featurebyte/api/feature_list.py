@@ -26,6 +26,8 @@ from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
     FeatureListStatus,
+    FeatureReadinessDistribution,
+    FeatureReadinessFeatureCount,
 )
 from featurebyte.query_graph.feature_historical import get_historical_features
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
@@ -272,6 +274,16 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
             values["status"] = FeatureListStatus.PUBLIC_DRAFT
         if not values.get("version"):
             values["version"] = get_version()
+        if not values.get("readiness_distribution"):
+            readiness_dist_map = collections.defaultdict(int)
+            for feature in values["feature_objects"].values():
+                readiness_dist_map[feature.readiness] += 1
+            values["readiness_distribution"] = FeatureReadinessDistribution(
+                __root__=[
+                    FeatureReadinessFeatureCount(readiness=feat_readiness, count=feat_count)
+                    for feat_readiness, feat_count in readiness_dist_map.items()
+                ]
+            )
         for attr in ["entity_ids", "event_data_ids"]:
             if not values.get(attr):
                 id_values = []

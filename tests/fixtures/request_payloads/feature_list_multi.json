@@ -1,21 +1,27 @@
 {
-    "_id": "6315ebcd0177c284c2d6f81a",
+    "_id": "631697b94065102e4b620362",
     "created_at": null,
     "entity_ids": [
-        "6315ebcc0177c284c2d6f810"
+        "631697b94065102e4b620358"
     ],
     "event_data_ids": [
-        "6315ebcc0177c284c2d6f80f"
+        "631697b94065102e4b620357"
     ],
     "feature_ids": [
-        "6315ebcd0177c284c2d6f812",
-        "6315ebcd0177c284c2d6f814"
+        "631697b94065102e4b62035a",
+        "631697b94065102e4b62035c"
     ],
-    "feature_list_namespace_id": "6315ebcd0177c284c2d6f81b",
+    "feature_list_namespace_id": "631697b94065102e4b620363",
     "name": "sf_feature_list_multiple",
-    "readiness": null,
+    "readiness": "DRAFT",
+    "readiness_distribution": [
+        {
+            "count": 2,
+            "readiness": "DRAFT"
+        }
+    ],
     "status": "PUBLIC_DRAFT",
     "updated_at": null,
     "user_id": null,
-    "version": "V220905"
+    "version": "V220906"
 }

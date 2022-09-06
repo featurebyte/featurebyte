@@ -169,6 +169,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                         _id=document.feature_list_namespace_id,
                         name=document.name,
                         feature_list_ids=[insert_id],
+                        readiness_distribution=document.readiness_distribution,
                         default_feature_list_id=insert_id,
                         default_version_mode=DefaultVersionMode.AUTO,
                         entity_ids=sorted(document.entity_ids),

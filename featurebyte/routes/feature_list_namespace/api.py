@@ -24,6 +24,7 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceCreate,
     FeatureListNamespaceList,
+    FeatureListNamespaceUpdate,
 )
 
 router = APIRouter(prefix="/feature_list_namespace")
@@ -58,6 +59,7 @@ async def get_feature_list_namespace(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_list_namespace_id,
+        exception_detail=f'FeatureListNamespace (id: "{feature_list_namespace_id}") not found.',
     )
     return feature_list_namespace
 
@@ -86,6 +88,26 @@ async def list_feature_list_namespace(
         name=name,
     )
     return feature_list_paginated_list
+
+
+@router.patch("/{feature_list_namespace_id}", response_model=FeatureListNamespaceModel)
+async def update_feature_namespace(
+    request: Request,
+    feature_list_namespace_id: str,
+    data: FeatureListNamespaceUpdate,
+) -> FeatureListNamespaceModel:
+    """
+    Update FeatureListNamespace
+    """
+    feature_list_namespace: FeatureListNamespaceModel = (
+        await request.state.controller.update_feature_list_namespace(
+            user=request.state.user,
+            persistent=request.state.persistent,
+            feature_list_namespace_id=feature_list_namespace_id,
+            data=data,
+        )
+    )
+    return feature_list_namespace
 
 
 @router.get("/audit/{feature_list_namespace_id}", response_model=AuditDocumentList)
