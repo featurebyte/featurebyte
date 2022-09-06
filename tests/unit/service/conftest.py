@@ -1,6 +1,7 @@
 """
 Fixture for Service related unit tests
 """
+# pylint: disable=duplicate-code
 from __future__ import annotations
 
 from typing import AsyncIterator
