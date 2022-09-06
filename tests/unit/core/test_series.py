@@ -642,6 +642,15 @@ def test_date_add_operator__constructed_timedelta(timestamp_series, timedelta_se
     }
 
 
+def test_date_add_operator__scalar_timedelta(timestamp_series):
+    """
+    Test incrementing a date Series with a scalar timedelta value
+    """
+    with pytest.raises(TypeError) as exc:
+        _ = timestamp_series + 1.0
+    assert str(exc.value) == ""
+
+
 def assert_series_attributes_equal(left, right):
     """
     Check that common series attributes unrelated to transforms are the same

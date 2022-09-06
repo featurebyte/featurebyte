@@ -65,6 +65,18 @@ def test_input_node__subset_columns(input_node):
     assert input_node.columns_node == {"col_new_1": expr_node_1, "col_new_2": expr_node_2}
 
 
+def test_resolve_project_node(input_node):
+    """Test resolve_project_node helper"""
+    expr_node = sql.ParsedExpressionNode(input_node, parse_one("a + 1"))
+    input_node.assign_column("new_col", expr_node)
+    project_node = sql.Project(input_node, "new_col")
+    project_node_original_column = sql.Project(input_node, "col_1")
+    assert sql.resolve_project_node(project_node) == expr_node
+    assert sql.resolve_project_node(project_node_original_column) is None
+    # no-op if not a Project node
+    assert sql.resolve_project_node(expr_node) == expr_node
+
+
 @pytest.mark.parametrize(
     "node_type, expected",
     [

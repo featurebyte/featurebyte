@@ -898,6 +898,30 @@ BINARY_OPERATION_NODE_TYPES = {
 }
 
 
+def resolve_project_node(expr_node: ExpressionNode) -> Optional[ExpressionNode]:
+    """Resolves a Project node to the original ExpressionNode due to assignment
+
+    This is needed when we need additional information tied to original ExpressionNode than just the
+    constructed sql expression. Such information is lost in a Project node.
+
+    Parameters
+    ----------
+    expr_node : ExpressionNode
+        The ExpressionNode to resolve if it is a Project node
+
+    Returns
+    -------
+    Optional[ExpressionNode]
+        The original ExpressionNode or None if the node is never assigned (e.g. original columns
+        that exist in the input table)
+    """
+    if not isinstance(expr_node, Project):
+        return expr_node
+    table_node = expr_node.table_node
+    assigned_node = table_node.get_column_node(expr_node.column_name)
+    return assigned_node
+
+
 def make_literal_value(value: Any) -> expressions.Literal:
     """Create a sqlglot literal value
 
@@ -994,14 +1018,42 @@ def make_binary_operation_node(
             unit=parameters["unit"],
         )
     elif node_type == NodeType.DATE_ADD:
-        output_node = DateAddNode(
-            table_node=table_node,
-            input_date_node=left_node,
-            timedelta_node=right_node,
+        output_node = make_date_add_node(
+            table_node=table_node, input_date_node=left_node, timedelta_node=right_node
         )
     else:
         raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
 
+    return output_node
+
+
+def make_date_add_node(
+    table_node: TableNode,
+    input_date_node: ExpressionNode,
+    timedelta_node: ExpressionNode,
+) -> DateAddNode:
+    """Create a DateAddNode
+
+    Parameters
+    ----------
+    table_node : TableNode
+        TableNode
+    input_date_node : ExpressionNode
+        Node for date expression
+    timedelta_node : ExpressionNode
+        Node for timedelta expression
+
+    Returns
+    -------
+    DateAddNode
+    """
+    resolved_timedelta_node = resolve_project_node(timedelta_node)
+    assert isinstance(resolved_timedelta_node, (TimedeltaNode, DateDiffNode))
+    output_node = DateAddNode(
+        table_node=table_node,
+        input_date_node=input_date_node,
+        timedelta_node=resolved_timedelta_node,
+    )
     return output_node
 
 
@@ -1299,15 +1351,10 @@ def make_timedelta_extract_node(
     -------
     ExpressionNode
     """
-    # Note: currently date difference is the only way to create a timedelta
-    if isinstance(input_expr_node, Project):
-        # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
-        table_node = input_expr_node.table_node
-        assigned_node = table_node.get_column_node(input_expr_node.column_name)
-        assert assigned_node is not None
-        input_expr_node = assigned_node
-    assert isinstance(input_expr_node, DateDiffNode)
-    sql_node = input_expr_node.with_unit(parameters["property"])
+    # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
+    resolved_expr_node = resolve_project_node(input_expr_node)
+    assert isinstance(resolved_expr_node, DateDiffNode)
+    sql_node = resolved_expr_node.with_unit(parameters["property"])
     return sql_node
 
 

@@ -564,6 +564,7 @@ def check_datetime_operations(event_view, column_name, limit=100):
     event_view["event_interval_minute"] = event_view["event_interval"].dt.minute
     timedelta = to_timedelta(event_view["event_interval_second"], "second")
     event_view["timestamp_added"] = datetime_series + timedelta
+    event_view["timestamp_added_from_timediff"] = datetime_series + event_view["event_interval"]
 
     # check datetime extracted properties
     dt_df = event_view.preview(limit=limit)
@@ -607,6 +608,11 @@ def check_datetime_operations(event_view, column_name, limit=100):
     )
     pd.testing.assert_series_equal(
         dt_df["timestamp_added"],
+        pandas_timestamp_added,
+        check_names=False,
+    )
+    pd.testing.assert_series_equal(
+        dt_df["timestamp_added_from_timediff"],
         pandas_timestamp_added,
         check_names=False,
     )
