@@ -111,14 +111,14 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         -------
         Aggregated featured readiness
         """
-        output_readiness: Optional[FeatureReadiness] = None
-        for readiness_count in self.__root__:
-            if readiness_count.count:
-                if output_readiness is None:
-                    output_readiness = readiness_count.readiness
-                elif readiness_count.readiness < output_readiness:
-                    output_readiness = readiness_count.readiness
-        return output_readiness or FeatureReadiness.DRAFT
+        return min(
+            list(
+                readiness_count.readiness
+                for readiness_count in self.__root__
+                if readiness_count.count
+            )
+            or [FeatureReadiness.DRAFT]
+        )
 
 
 class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):

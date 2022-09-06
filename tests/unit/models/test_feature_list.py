@@ -4,6 +4,7 @@ Tests for Feature list related models
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
@@ -117,7 +118,7 @@ def test_feature_list_status_ordering():
     ],
 )
 def test_feature_readiness_distribution_equality_check(left_dist, right_dist, expected):
-    """Test feature readiness distribution equality comparison"""
+    """Test feature readiness distribution - equality comparison"""
     feat_readiness_dist1 = FeatureReadinessDistribution(__root__=left_dist)
     feat_readiness_dist2 = FeatureReadinessDistribution(__root__=right_dist)
     if isinstance(expected, bool):
@@ -131,8 +132,8 @@ def test_feature_readiness_distribution_equality_check(left_dist, right_dist, ex
         assert err_msg in str(exc.value)
 
 
-def test_feature_readiness_distribution_equality_invalid_type():
-    """Test feature readiness distribution equality comparison (invalid other type)"""
+def test_feature_readiness_distribution__equality_invalid_type():
+    """Test feature readiness distribution - equality comparison (invalid other type)"""
     feat_readiness_dist = FeatureReadinessDistribution(
         __root__=[{"readiness": "DRAFT", "count": 10}]
     )
@@ -181,9 +182,35 @@ def test_feature_readiness_distribution_equality_invalid_type():
         ),
     ],
 )
-def test_readiness_distribution_less_than_check(left_dist, right_dist, expected):
-    """Test feature readiness distribution equality comparison"""
+def test_readiness_distribution__less_than_check(left_dist, right_dist, expected):
+    """Test feature readiness distribution - equality comparison"""
     feat_readiness_dist1 = FeatureReadinessDistribution(__root__=left_dist)
     feat_readiness_dist2 = FeatureReadinessDistribution(__root__=right_dist)
     assert (feat_readiness_dist1 < feat_readiness_dist2) is expected
     assert (feat_readiness_dist1 >= feat_readiness_dist2) is not expected
+
+
+@pytest.mark.parametrize(
+    "dist, expected",
+    [
+        ([], FeatureReadiness.DRAFT),
+        (
+            [
+                {"readiness": "PRODUCTION_READY", "count": 1},
+                {"readiness": "DEPRECATED", "count": 0},
+            ],
+            FeatureReadiness.PRODUCTION_READY,
+        ),
+        (
+            [
+                {"readiness": "PRODUCTION_READY", "count": 1},
+                {"readiness": "DEPRECATED", "count": 1},
+            ],
+            FeatureReadiness.DEPRECATED,
+        ),
+    ],
+)
+def test_readiness_distribution__derive_readiness(dist, expected):
+    """Test feature readiness distribution - derive readiness"""
+    feat_readiness_dist = FeatureReadinessDistribution(__root__=dist)
+    assert feat_readiness_dist.derive_readiness() == expected
