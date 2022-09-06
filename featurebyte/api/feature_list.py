@@ -303,6 +303,10 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         """
         return FeatureListNamespace.get_by_id(id=self.feature_list_namespace_id)
 
+    @classmethod
+    def list(cls) -> List[str]:
+        return FeatureListNamespace.list()
+
     @typechecked
     def get_historical_features(
         self,

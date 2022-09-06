@@ -541,3 +541,8 @@ def test_pre_save_operations(mock_is_notebook, mock_alive_bar, saved_feature_lis
         "title": "Saving Feature(s)",
         "dual_line": True,
     }
+
+
+def test_list(saved_feature_list):
+    """Test listing feature list"""
+    assert FeatureList.list() == [saved_feature_list.name] == ["my_feature_list"]
