@@ -1,6 +1,7 @@
 """
 FeatureListNamespace API routes
 """
+# pylint: disable=duplicate-code
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, cast
@@ -67,7 +68,7 @@ async def list_feature_list_namespace(
 
 
 @router.get("/audit/{feature_list_namespace_id}", response_model=AuditDocumentList)
-async def list_feature_list_audit_logs(
+async def list_feature_list_namespace_audit_logs(
     request: Request,
     feature_list_namespace_id: PydanticObjectId,
     page: int = PageQuery,
@@ -77,7 +78,7 @@ async def list_feature_list_audit_logs(
     search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
-    List FeatureNamespace audit logs
+    List FeatureListNamespace audit logs
     """
     audit_doc_list: AuditDocumentList = await request.state.controller.list_audit(
         user=request.state.user,
@@ -93,7 +94,7 @@ async def list_feature_list_audit_logs(
 
 
 @router.get("/{feature_list_namespace_id}/info")
-async def get_feature_namespace_info(
+async def get_feature_list_namespace_info(
     request: Request,
     feature_list_namespace_id: str,
     verbose: bool = True,
@@ -101,7 +102,6 @@ async def get_feature_namespace_info(
     """
     Retrieve FeatureListNamespace info
     """
-
     info = await request.state.controller.get_info(
         user=request.state.user,
         persistent=request.state.persistent,

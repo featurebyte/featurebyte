@@ -1,6 +1,7 @@
 """
 FeatureList API routes
 """
+# pylint: disable=duplicate-code
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, cast
@@ -88,7 +89,7 @@ async def list_feature_list_audit_logs(
     search: Optional[str] = SearchQuery,
 ) -> AuditDocumentList:
     """
-    List Feature audit logs
+    List FeatureList audit logs
     """
     audit_doc_list: AuditDocumentList = await request.state.controller.list_audit(
         user=request.state.user,
@@ -104,15 +105,12 @@ async def list_feature_list_audit_logs(
 
 
 @router.get("/{feature_list_id}/info")
-async def get_feature_namespace_info(
-    request: Request,
-    feature_list_id: str,
-    verbose: bool = True,
+async def get_feature_list_info(
+    request: Request, feature_list_id: str, verbose: bool = True
 ) -> dict[str, Any]:
     """
     Retrieve FeatureList info
     """
-
     info = await request.state.controller.get_info(
         user=request.state.user,
         persistent=request.state.persistent,
