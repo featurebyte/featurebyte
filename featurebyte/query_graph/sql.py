@@ -919,7 +919,7 @@ def make_binary_operation_node(
     node_type: NodeType,
     input_sql_nodes: list[SQLNode],
     parameters: dict[str, Any],
-) -> BinaryOp | DateDiffNode:
+) -> BinaryOp | DateDiffNode | DateAddNode:
     """Create a BinaryOp node for eligible query node types
 
     Parameters
@@ -933,7 +933,7 @@ def make_binary_operation_node(
 
     Returns
     -------
-    BinaryOp
+    BinaryOp | DateDiffNode | DateAddNode
 
     Raises
     ------
