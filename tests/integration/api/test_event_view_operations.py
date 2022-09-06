@@ -9,6 +9,7 @@ import pandas as pd
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
+from featurebyte.core.timedelta import to_timedelta
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureReadiness
 from tests.util.helper import get_lagged_series_pandas
@@ -561,12 +562,8 @@ def check_datetime_operations(event_view, column_name, limit=100):
     event_view["event_interval_second"] = event_view["event_interval"].dt.second
     event_view["event_interval_hour"] = event_view["event_interval"].dt.hour
     event_view["event_interval_minute"] = event_view["event_interval"].dt.minute
-
-    from featurebyte.core.timedelta import to_timedelta
-
     timedelta = to_timedelta(event_view["event_interval_second"], "second")
     event_view["timestamp_added"] = datetime_series + timedelta
-    event_view["timestamp_unlagged"] = datetime_series.lag("CUST_ID") + timedelta
 
     # check datetime extracted properties
     dt_df = event_view.preview(limit=limit)
@@ -603,6 +600,15 @@ def check_datetime_operations(event_view, column_name, limit=100):
     )
     pd.testing.assert_series_equal(
         dt_df["event_interval_hour"], pandas_event_interval_hour, check_names=False
+    )
+    # check date increment by timedelta
+    pandas_timestamp_added = pandas_series + pd.to_timedelta(
+        dt_df["event_interval_second"], "second"
+    )
+    pd.testing.assert_series_equal(
+        dt_df["timestamp_added"],
+        pandas_timestamp_added,
+        check_names=False,
     )
 
 
