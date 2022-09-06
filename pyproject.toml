@@ -86,19 +86,19 @@ PyYAML = "^6.0"
 alive-progress = "^2.4.1"
 beanie = "^1.11.4"
 cachetools = "^5.2.0"
-fastapi = "^0.79.0"
+fastapi = "^0.82.0"
 featurebyte-freeware = { version = "^0.1.0*", allow-prereleases = true, source = "featurebyte_np" }
 importlib_metadata = {version = "^4.5.0", python = "^3.8"}
 jinja2 = "^3.1.2"
 loguru = "^0.6.0"
 pandas = "^1.4.2"
-pyarrow = "^8.0.0"
+pyarrow = "^8.0.0"   # "9.0.0" causes seg faults
 pydantic = "^1.9.1"
 pymongo = "^4.1.1"
 python = ">=3.8,<3.11"
 rich = "^12.3.0"
 snowflake-connector-python = "^2.7.7"
-sqlglot = "^2.3.2"
+sqlglot = "^2.3.2"   # ^3.0.0 causes test failure maybe due to syntax changes
 typeguard = "^2.13.3"
 typer = {extras = ["all"], version = "^0.6.0"}
 
@@ -130,7 +130,7 @@ isort = {extras = ["colors"], version = "^5.10.1"}
 mypy = "^0.971"
 mypy-extensions = "^0.4.3"
 pylint = "^2.14.5"
-safety = "^2.1.1"
+pip-audit = "^2.4.4"
 types-PyYAML = "^6.0.11"
 types-backports = "^0.1.3"
 types-cachetools = "^5.2.1"
@@ -177,6 +177,6 @@ ignore-signatures = true
 min-similarity-lines = 10
 
 [tool.pytest.ini_options]
-addopts = ["--strict-markers", "--tb=short", "--doctest-modules", "--doctest-continue-on-failure"]
+addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=0", "--doctest-continue-on-failure"] # Extra options:
 doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
 norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]
