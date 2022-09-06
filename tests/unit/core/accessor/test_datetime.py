@@ -109,9 +109,26 @@ def test_accessor_getattr__timedelta(timedelta_series):
 
     # check __dir__ magic method
     assert set(dir(timedelta_series.dt)) == {
+        "year",
+        "quarter",
+        "month",
+        "week",
+        "day",
         "hour",
         "minute",
         "second",
         "millisecond",
         "microsecond",
     }
+
+
+def test_accessor_getattr__timedelta_constructed(timedelta_series_from_int):
+    """
+    Test dt extraction for timedelta is only allowed for result of date difference
+    """
+    with pytest.raises(AttributeError) as exc:
+        _ = timedelta_series_from_int.dt.hour
+    assert str(exc.value) == (
+        "Can only use .dt accessor with datetime or timedelta values generated from date "
+        "difference; got TIMEDELTA"
+    )

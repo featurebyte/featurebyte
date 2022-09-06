@@ -154,7 +154,7 @@ def timedelta_series(timestamp_series, timestamp_series_2):
     """
     series = timestamp_series - timestamp_series_2
     assert isinstance(series, Series)
-    assert series.dtype == DBVarType.TIMEDELTA
+    assert series.dtype == DBVarType.DATEDIFF_TIMEDELTA
     yield series
 
 

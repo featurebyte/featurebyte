@@ -53,7 +53,7 @@ class DatetimeAccessor:
                 "minute": "minute",
                 "second": "second",
             }
-        elif obj.dtype == DBVarType.TIMEDELTA:
+        elif obj.dtype == DBVarType.DATEDIFF_TIMEDELTA:
             self._node_type = NodeType.TIMEDELTA_EXTRACT
             self._property_node_params_map = {
                 "year": "year",
@@ -69,7 +69,8 @@ class DatetimeAccessor:
             }
         else:
             raise AttributeError(
-                f"Can only use .dt accessor with datetime or timedelta values; got {obj.dtype}"
+                f"Can only use .dt accessor with datetime or timedelta values generated from date "
+                f"difference; got {obj.dtype}"
             )
         self._obj = obj
 

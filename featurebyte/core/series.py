@@ -359,7 +359,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return self._binary_op(
             other=other,
             node_type=NodeType.DATE_DIFF,
-            output_var_type=DBVarType.TIMEDELTA,
+            output_var_type=DBVarType.DATEDIFF_TIMEDELTA,
             right_op=right_op,
             additional_node_params={"unit": "second"},
         )
@@ -397,7 +397,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             return self._binary_op(
                 other=other, node_type=NodeType.CONCAT, output_var_type=DBVarType.VARCHAR
             )
-        if self.is_datetime and self._is_a_series_of_var_type(other, DBVarType.TIMEDELTA):
+        if self.is_datetime and isinstance(other, Series) and other.is_timedelta:
             if not isinstance(other, Series):
                 raise TypeError("Scalar timedelta value not supported yet")
             return self._date_add_op(other=other)
@@ -461,6 +461,17 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         bool
         """
         return self.dtype in (DBVarType.TIMESTAMP, DBVarType.DATE)
+
+    @property
+    def is_timedelta(self) -> bool:
+        """
+        Returns whether Series has timedelta like variable type
+
+        Returns
+        -------
+        bool
+        """
+        return self.dtype in (DBVarType.TIMEDELTA, DBVarType.DATEDIFF_TIMEDELTA)
 
     def isnull(self) -> Series:
         """

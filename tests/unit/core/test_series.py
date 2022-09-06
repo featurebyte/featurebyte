@@ -569,7 +569,7 @@ def test_date_difference_operator(timestamp_series, timestamp_series_2):
     Test difference between two date Series
     """
     date_diff_series = timestamp_series_2 - timestamp_series
-    assert date_diff_series.dtype == DBVarType.TIMEDELTA
+    assert date_diff_series.dtype == DBVarType.DATEDIFF_TIMEDELTA
     assert date_diff_series.node.parameters == {"unit": "second"}
     _check_node_equality(
         date_diff_series.node,
@@ -640,15 +640,6 @@ def test_date_add_operator__constructed_timedelta(timestamp_series, timedelta_se
         "timedelta_1": ["project_2"],
         "date_add_1": ["project_1", "timedelta_1"],
     }
-
-
-def test_date_add_operator__scalar_timedelta(timestamp_series):
-    """
-    Test incrementing a date Series with a scalar timedelta value
-    """
-    with pytest.raises(TypeError) as exc:
-        _ = timestamp_series + 1.0
-    assert str(exc.value) == ""
 
 
 def assert_series_attributes_equal(left, right):
