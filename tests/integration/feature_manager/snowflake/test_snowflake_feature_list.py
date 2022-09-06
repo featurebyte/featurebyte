@@ -9,7 +9,8 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import InternalName
 from featurebyte.exception import DuplicatedRegistryError
-from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_list import FeatureListStatus
 
 
 def test_insert_feature_list_registry(

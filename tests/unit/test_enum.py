@@ -92,6 +92,11 @@ def test_ordered_str_enum__ordering(order_str_number):
     assert order_str_number.min() == order_str_number("one")
     assert order_str_number.min() == order_str_number.ONE
 
+    # check str & repr
+    assert f"{order_str_number.ONE}" == "one"
+    assert str(order_str_number.ONE) == "one"
+    assert repr(order_str_number.ONE) == "one"
+
 
 def test_hashable(order_str_number):
     """
