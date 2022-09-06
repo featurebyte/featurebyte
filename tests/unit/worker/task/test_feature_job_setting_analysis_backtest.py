@@ -63,19 +63,21 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         )
 
     @pytest_asyncio.fixture(autouse=True)
-    async def setup(self, git_persistent, storage, temp_storage, mock_event_dataset):
+    async def setup(  # pylint: disable=W0221
+        self, git_persistent, storage, temp_storage, mock_event_dataset
+    ):
+        _ = mock_event_dataset
         persistent, _ = git_persistent
         await self.setup_persistent_storage(persistent, storage, temp_storage)
 
     @pytest.mark.asyncio
-    async def test_execute_success(
-        self, task_completed, git_persistent, progress, temp_storage, update_fixtures
+    async def test_execute_success(  # pylint: disable=too-many-locals
+        self, task_completed, progress, temp_storage, update_fixtures
     ):
         """
         Test successful task execution
         """
         _ = task_completed
-        persistent, _ = git_persistent
         output_document_id = self.payload["output_document_id"]
 
         # check storage of results in temp storage

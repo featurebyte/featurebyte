@@ -52,20 +52,14 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         )
     ]
 
-    @pytest.fixture(autouse=True)
-    def mock_analysis(self):
+    @pytest.fixture(name="analysis_result")
+    def analysis_result_fixture(self):
         """
-        Apply patch on call to analysis
+        AnalysisResult fixture
         """
         result = self.load_payload("tests/fixtures/feature_job_setting_analysis/result.json")
-        record = Mock(
-            **result,
-            to_html=lambda: result["analysis_report"],
-            analysis_plots=None,
-            analysis_data=None,
-        )
-        record.analysis_result = AnalysisResult(
-            **record.analysis_result,
+        return AnalysisResult(
+            **result["analysis_result"],
             backtest_result=BacktestResult(
                 results=pd.DataFrame(),
                 plot=None,
@@ -86,6 +80,21 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
                 thresholds=[],
                 warnings=[],
             ),
+        )
+
+    @pytest.fixture(autouse=True)
+    def mock_analysis(self, analysis_result):
+        """
+        Apply patch on call to analysis
+        """
+        result = self.load_payload("tests/fixtures/feature_job_setting_analysis/result.json")
+        result.pop("analysis_result")
+        record = Mock(
+            **result,
+            to_html=lambda: result["analysis_report"],
+            analysis_plots=None,
+            analysis_data=None,
+            analysis_result=analysis_result,
         )
         with patch(
             "featurebyte.worker.task.feature_job_setting_analysis.create_feature_job_settings_analysis",
@@ -176,7 +185,8 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         data = await storage.get_object(
             f"feature_job_setting_analysis/{feature_job_setting_analysis_id}/data.pkl"
         )
-        assert data == {"analysis_plots": None, "analysis_data": None}
+        assert data["analysis_plots"] is None
+        assert data["analysis_data"] is None
 
     @pytest.mark.asyncio
     async def test_backtest(
@@ -196,7 +206,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         assert response.status_code == HTTPStatus.ACCEPTED
         output_document_id = response.json()["payload"]["output_document_id"]
 
-        output_path = self.wait_for_results(test_api_client, response)
+        self.wait_for_results(test_api_client, response)
 
         # check results are stored to temp storage
         prefix = f"feature_job_setting_analysis/backtest/{output_document_id}"

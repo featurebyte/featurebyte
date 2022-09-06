@@ -4,6 +4,7 @@ Local temp storage class
 from __future__ import annotations
 
 import tempfile
+from pathlib import Path
 
 from featurebyte.storage.local import LocalStorage
 
@@ -17,4 +18,4 @@ class LocalTempStorage(LocalStorage):
         """
         Initialize local temp storage location
         """
-        super().__init__(base_path=tempfile.gettempdir())
+        super().__init__(base_path=Path(tempfile.gettempdir()))

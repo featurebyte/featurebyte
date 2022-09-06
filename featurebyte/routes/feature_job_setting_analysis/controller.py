@@ -82,13 +82,13 @@ class FeatureJobSettingAnalysisController(
             Object that entity will be saved to
         task_manager: AbstractTaskManager
             TaskManager to submit job to
-        data: FeatureJobSettingAnalysisCreate
-            FeatureJobSettingAnalysis creation payload
+        data: FeatureJobSettingAnalysisBacktest
+            FeatureJobSettingAnalysis backtest payload
 
         Returns
         -------
-        TaskSubmission
-            TaskSubmission object for the submitted task
+        Task
+            Task object for the submitted task
         """
         task_id = await cls.document_service_class(
             user=user, persistent=persistent

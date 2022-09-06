@@ -78,7 +78,21 @@ class FeatureJobSettingAnalysisService(BaseDocumentService[FeatureJobSettingAnal
 
     async def create_backtest_task(
         self, data: FeatureJobSettingAnalysisBacktest, task_manager: AbstractTaskManager
-    ):
+    ) -> TaskId:
+        """
+        Create document creation task
+
+        Parameters
+        ----------
+        data: FeatureJobSettingAnalysisBacktest
+            FeatureJobSettingAnalysis backtest payload
+        task_manager: AbstractTaskManager
+            TaskManager
+
+        Returns
+        -------
+        TaskId
+        """
         # check any conflict with existing documents
         output_document_id = data.id or ObjectId()
 

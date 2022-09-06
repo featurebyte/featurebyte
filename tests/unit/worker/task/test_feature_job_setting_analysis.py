@@ -3,10 +3,8 @@ Test Feature Job Setting Analysis worker task
 """
 import copy
 import json
-import os
-from unittest.mock import call, patch
+from unittest.mock import call
 
-import pandas as pd
 import pytest
 from bson import ObjectId
 
@@ -49,10 +47,14 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
 
     @pytest.fixture(autouse=True)
     def use_mock_event_dataset(self, mock_event_dataset):
+        """
+        Patch event dataset to skip calls to data warehouse
+        """
+        _ = mock_event_dataset
         yield
 
     @pytest.mark.asyncio
-    async def test_execute_success(
+    async def test_execute_success(  # pylint: disable=too-many-locals
         self, task_completed, git_persistent, progress, update_fixtures, storage
     ):
         """

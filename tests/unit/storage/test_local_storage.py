@@ -10,6 +10,10 @@ from tests.unit.storage.base import BaseStorageTestSuite
 
 
 class TestLocalStorageSuite(BaseStorageTestSuite):
+    """
+    Test suite for LocalStorage class
+    """
+
     @pytest.fixture(name="storage")
     def storage_fixture(self):
         """

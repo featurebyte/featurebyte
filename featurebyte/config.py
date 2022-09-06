@@ -81,6 +81,8 @@ class LocalStorageSettings(BaseSettings):
     @classmethod
     def expand_path(cls, value: Path) -> Path:
         """
+        Expand path
+
         Parameters
         ----------
         value: Path

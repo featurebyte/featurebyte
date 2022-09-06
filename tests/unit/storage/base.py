@@ -36,7 +36,7 @@ class BaseStorageTestSuite:
         yield remote_path
 
     @pytest.mark.asyncio
-    async def test_put_file_success(self, local_path: Path, remote_path: str):
+    async def test_put_file_success(self, remote_path: str):
         """
         Test file upload
         """
@@ -78,7 +78,7 @@ class BaseStorageTestSuite:
             assert str(exc_info.value) == "Remote file does not exist"
 
     @pytest.mark.asyncio
-    async def test_stream_file_success(self, local_path: Path, remote_path: str, storage: Storage):
+    async def test_stream_file_success(self, remote_path: str, storage: Storage):
         """
         Test file upload
         """
