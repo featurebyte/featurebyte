@@ -99,15 +99,11 @@ class FeatureService(BaseDocumentService[FeatureModel]):
     async def create_document(  # type: ignore[override]
         self, data: FeatureCreate, get_credential: Any = None
     ) -> FeatureModel:
-        async with self.persistent.start_transaction() as session:
-            document = FeatureModel(
-                **{
-                    **data.json_dict(),
-                    "user_id": self.user.id,
-                    "readiness": FeatureReadiness.DRAFT,
-                }
-            )
+        document = FeatureModel(
+            **{**data.json_dict(), "readiness": FeatureReadiness.DRAFT, "user_id": self.user.id}
+        )
 
+        async with self.persistent.start_transaction() as session:
             # check any conflict with existing documents
             await self._check_document_unique_constraints(document=document)
 
@@ -144,6 +140,7 @@ class FeatureService(BaseDocumentService[FeatureModel]):
                     data=FeatureNamespaceCreate(
                         _id=document.feature_namespace_id,
                         name=document.name,
+                        dtype=document.dtype,
                         feature_ids=[insert_id],
                         readiness=FeatureReadiness.DRAFT,
                         default_feature_id=insert_id,
@@ -171,4 +168,6 @@ class FeatureService(BaseDocumentService[FeatureModel]):
         self, document_id: ObjectId, data: FeatureByteBaseModel
     ) -> FeatureModel:
         # TODO: implement proper logic to update feature document
+        # when update the feature readiness, needs to update feature list's feature readiness distribution
+        # and feature list namespace's feature readiness distribution
         return await self.get_document(document_id=document_id)

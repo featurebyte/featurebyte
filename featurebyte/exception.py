@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from requests.exceptions import JSONDecodeError
 from requests.models import Response
 
 
@@ -15,12 +16,15 @@ class ResponseException(Exception):
 
     def __init__(self, response: Response, *args: Any, **kwargs: Any) -> None:
         self.response = response
-        response_dict = response.json()
         exc_info = None
-        for field in ["detail", "traceback"]:
-            if field in response_dict:
-                exc_info = response_dict[field]
-                break
+        try:
+            response_dict = response.json()
+            for field in ["detail", "traceback"]:
+                if field in response_dict:
+                    exc_info = response_dict[field]
+                    break
+        except JSONDecodeError:
+            pass
 
         if exc_info:
             super().__init__(exc_info, *args, **kwargs)

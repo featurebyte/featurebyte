@@ -9,7 +9,8 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import InternalName
 from featurebyte.exception import DuplicatedRegistryError
-from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_list import FeatureListStatus
 
 
 def test_insert_feature_list_registry(
@@ -30,7 +31,7 @@ def test_insert_feature_list_registry(
             "NAME": ["feature_list1"],
             "VERSION": ["v1"],
             "READINESS": ["DRAFT"],
-            "STATUS": ["DRAFT"],
+            "STATUS": ["PUBLIC_DRAFT"],
         }
     )
     result_df = result[
@@ -122,7 +123,7 @@ def test_update_feature_list_registry(
     assert result.iloc[0]["NAME"] == "feature_list1"
     assert result.iloc[0]["VERSION"] == "v1"
     assert result.iloc[0]["READINESS"] == "DRAFT"
-    assert result.iloc[0]["STATUS"] == "DRAFT"
+    assert result.iloc[0]["STATUS"] == "PUBLIC_DRAFT"
 
     snowflake_feature_list.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     snowflake_feature_list.__dict__["status"] = FeatureListStatus.PUBLISHED.value

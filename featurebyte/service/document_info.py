@@ -15,6 +15,7 @@ from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 
@@ -45,6 +46,7 @@ class DocumentInfoService:
             FeatureService,  # type: ignore
             FeatureJobSettingAnalysisService,  # type: ignore
             FeatureListService,  # type: ignore
+            FeatureListNamespaceService,  # type: ignore
             FeatureNamespaceService,  # type: ignore
             FeatureStoreService,  # type: ignore
         ]

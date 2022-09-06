@@ -1,16 +1,27 @@
 {
-    "_id": "630d7fa8f1275c864fde849d",
+    "_id": "6317467bb72b797bd08f7302",
     "created_at": null,
-    "feature_ids": [
-        "630d7fa8f1275c864fde8495",
-        "630d7fa8f1275c864fde8497"
+    "entity_ids": [
+        "6317467bb72b797bd08f72f8"
     ],
+    "event_data_ids": [
+        "6317467bb72b797bd08f72f7"
+    ],
+    "feature_ids": [
+        "6317467bb72b797bd08f72fa",
+        "6317467bb72b797bd08f72fc"
+    ],
+    "feature_list_namespace_id": "6317467bb72b797bd08f7303",
     "name": "sf_feature_list_multiple",
-    "readiness": null,
+    "readiness": "DRAFT",
+    "readiness_distribution": [
+        {
+            "count": 2,
+            "readiness": "DRAFT"
+        }
+    ],
     "status": "DRAFT",
     "updated_at": null,
     "user_id": null,
-    "version": "V220830",
-    "entity_ids": ["630d7fa8f1275c864fde8493"],
-    "event_data_ids": ["630d7fa8f1275c864fde8492"]
+    "version": "V220906"
 }

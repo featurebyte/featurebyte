@@ -3,30 +3,37 @@ FeatureListService class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 from bson.objectid import ObjectId
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.enum import SourceType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import (
     DocumentConflictError,
     DocumentInconsistencyError,
+    DocumentNotFoundError,
     DuplicatedRegistryError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import (
-    FeatureListModel,
+    DefaultVersionMode,
     FeatureModel,
     FeatureReadiness,
     FeatureSignature,
 )
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.feature_list import FeatureListCreate
+from featurebyte.schema.feature_list_namespace import (
+    FeatureListNamespaceCreate,
+    FeatureListNamespaceUpdate,
+)
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.common.operation import DictProject, DictTransform
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 
 
 class FeatureListService(BaseDocumentService[FeatureListModel]):
@@ -86,6 +93,38 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                     f"other feature list at Snowflake feature list store."
                 ) from exc
 
+    async def _validate_feature_ids_and_extract_feature_data(
+        self, document: FeatureListModel
+    ) -> Tuple[ObjectId, List[FeatureSignature], List[DBVarType]]:
+        dtypes: List[DBVarType] = []
+        feature_store_id: Optional[ObjectId] = None
+        feature_signatures: List[FeatureSignature] = []
+        feature_list_readiness: FeatureReadiness = FeatureReadiness.PRODUCTION_READY
+        for feature_id in document.feature_ids:
+            feature_dict = await self._get_document(
+                document_id=feature_id,
+                collection_name=FeatureModel.collection_name(),
+            )
+            feature = FeatureModel(**feature_dict)
+            dtypes.append(feature.dtype)
+            feature_list_readiness = min(
+                feature_list_readiness, FeatureReadiness(feature.readiness)
+            )
+            feature_signatures.append(
+                FeatureSignature(id=feature.id, name=feature.name, version=feature.version)
+            )
+            if feature_store_id and (feature_store_id != feature.tabular_source.feature_store_id):
+                raise DocumentInconsistencyError(
+                    "All the Feature objects within the same FeatureList object must be from the same "
+                    "feature store."
+                )
+
+            # store previous feature store id
+            feature_store_id = feature.tabular_source.feature_store_id
+
+        assert feature_store_id is not None
+        return feature_store_id, feature_signatures, sorted(set(dtypes))
+
     async def create_document(  # type: ignore[override]
         self, data: FeatureListCreate, get_credential: Any = None
     ) -> FeatureListModel:
@@ -99,36 +138,14 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
             await self._check_document_unique_constraints(document=document)
 
             # check whether the feature(s) in the feature list saved to persistent or not
-            feature_store_id: Optional[ObjectId] = None
-            feature_signatures: List[FeatureSignature] = []
-            feature_list_readiness: FeatureReadiness = FeatureReadiness.PRODUCTION_READY
-            for feature_id in document.feature_ids:
-                feature_dict = await self._get_document(
-                    document_id=feature_id,
-                    collection_name=FeatureModel.collection_name(),
-                )
-                feature = FeatureModel(**feature_dict)
-                feature_list_readiness = min(
-                    feature_list_readiness, FeatureReadiness(feature.readiness)
-                )
-                feature_signatures.append(
-                    FeatureSignature(id=feature.id, name=feature.name, version=feature.version)
-                )
-                if feature_store_id and (
-                    feature_store_id != feature.tabular_source.feature_store_id
-                ):
-                    raise DocumentInconsistencyError(
-                        "All the Feature objects within the same FeatureList object must be from the same "
-                        "feature store."
-                    )
-
-                # store previous feature store id
-                feature_store_id = feature.tabular_source.feature_store_id
+            (
+                feature_store_id,
+                feature_signatures,
+                dtypes,
+            ) = await self._validate_feature_ids_and_extract_feature_data(document)
 
             # update document with readiness
-            document = FeatureListModel(
-                **{**document.dict(by_alias=True), "readiness": feature_list_readiness}
-            )
+            document = FeatureListModel(**document.dict(by_alias=True))
             feature_store_dict = await self._get_document(
                 document_id=ObjectId(feature_store_id),
                 collection_name=FeatureStoreModel.collection_name(),
@@ -141,6 +158,35 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                 user_id=self.user.id,
             )
             assert insert_id == document.id
+
+            feature_list_namespace_service = FeatureListNamespaceService(
+                user=self.user, persistent=self.persistent
+            )
+            try:
+                feature_list_namespace = await feature_list_namespace_service.get_document(
+                    document_id=document.feature_list_namespace_id
+                )
+
+                # update feature list namespace
+                await feature_list_namespace_service.update_document(
+                    document_id=feature_list_namespace.id,
+                    data=FeatureListNamespaceUpdate(feature_list_id=document.id),
+                )
+
+            except DocumentNotFoundError:
+                await feature_list_namespace_service.create_document(
+                    data=FeatureListNamespaceCreate(
+                        _id=document.feature_list_namespace_id,
+                        name=document.name,
+                        dtypes=dtypes,
+                        feature_list_ids=[insert_id],
+                        readiness_distribution=document.readiness_distribution,
+                        default_feature_list_id=insert_id,
+                        default_version_mode=DefaultVersionMode.AUTO,
+                        entity_ids=sorted(document.entity_ids),
+                        event_data_ids=sorted(document.event_data_ids),
+                    )
+                )
 
             # insert feature list registry into feature list store
             await self._insert_feature_list_registry(

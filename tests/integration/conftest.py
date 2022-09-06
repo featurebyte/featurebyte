@@ -22,7 +22,8 @@ from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
-from featurebyte.models.feature import FeatureListStatus, FeatureModel, FeatureReadiness
+from featurebyte.models.feature import FeatureModel, FeatureReadiness
+from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.feature_store import SnowflakeDetails, SQLiteDetails, TableDetails
 from featurebyte.persistent.git import GitDB
 from featurebyte.session.manager import SessionManager
@@ -387,7 +388,7 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config, snowfl
         feature_ids=[feature.id],
         features=[{"id": feature.id, "name": feature.name, "version": feature.version}],
         readiness=FeatureReadiness.DRAFT,
-        status=FeatureListStatus.DRAFT,
+        status=FeatureListStatus.PUBLIC_DRAFT,
         version="v1",
     )
 

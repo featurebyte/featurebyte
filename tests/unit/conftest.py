@@ -14,21 +14,24 @@ from bson.objectid import ObjectId
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
-from featurebyte.api.feature import Feature
+from featurebyte.api.feature import DefaultVersionMode, Feature
 from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.config import Configurations
-from featurebyte.enum import InternalName
+from featurebyte.enum import DBVarType, InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
-from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
+from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
+from featurebyte.schema.feature_list_namespace import FeatureListNamespaceCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.session.manager import SessionManager, get_session
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
@@ -554,7 +557,7 @@ def mock_snowflake_feature_list_model(
         feature_ids=[feature.id],
         features=[{"id": feature.id, "name": feature.name, "version": feature.version}],
         readiness=FeatureReadiness.DRAFT,
-        status=FeatureListStatus.DRAFT,
+        status=FeatureListStatus.PUBLIC_DRAFT,
         version="v1",
     )
 
@@ -597,6 +600,40 @@ def test_save_payload_fixtures(
     feature_list_multiple = FeatureList(
         [feature_sum_30m, feature_sum_2h], name="sf_feature_list_multiple"
     )
+    feature_namespace = FeatureNamespaceCreate(
+        _id=ObjectId(),
+        name=feature_sum_30m.name,
+        dtype=DBVarType.FLOAT,
+        feature_ids=[feature_sum_30m.id],
+        readiness=FeatureReadiness.DRAFT,
+        default_feature_id=feature_sum_30m.id,
+        entity_ids=feature_sum_30m.entity_ids,
+        event_data_ids=feature_sum_30m.event_data_ids,
+    )
+    feature_list_namespace = FeatureListNamespaceCreate(
+        _id=ObjectId(),
+        name=feature_list_multiple.name,
+        dtypes=["FLOAT"],
+        feature_list_ids=[feature_list_multiple.id],
+        readiness_distribution=feature_list_multiple.readiness_distribution,
+        default_feature_list_id=feature_list_multiple.id,
+        default_version_mode=DefaultVersionMode.AUTO,
+        entity_ids=feature_list_multiple.entity_ids,
+        event_data_ids=feature_list_multiple.event_data_ids,
+    )
+    feature_job_setting_analysis = FeatureJobSettingAnalysisCreate(
+        _id="62f301e841b73757c9ff879a",
+        user_id="62f302f841b73757c9ff876b",
+        name="sample_analysis",
+        event_data_id=snowflake_event_data.id,
+        analysis_data=None,
+        analysis_length=2419200,
+        min_featurejob_period=60,
+        exclude_late_job=False,
+        blind_spot_buffer_setting=5,
+        job_time_buffer_setting="auto",
+        late_data_allowance=5e-05,
+    )
 
     if update_fixtures:
         api_object_name_pairs = [
@@ -618,16 +655,23 @@ def test_save_payload_fixtures(
                 )
             output_filenames.append(filename)
 
-        feature_namespace = FeatureNamespaceCreate(
-            _id=ObjectId(),
-            name=feature_sum_30m.name,
-            feature_ids=[feature_sum_30m.id],
-            readiness=FeatureReadiness.DRAFT,
-            default_feature_id=feature_sum_30m.id,
-        )
-        with open(f"{base_path}/feature_namespace.json", "w") as fhandle:
+        json_filename = f"{base_path}/feature_namespace.json"
+        with open(json_filename, "w") as fhandle:
             fhandle.write(json.dumps(feature_namespace.json_dict(), indent=4, sort_keys=True))
+            output_filenames.append(json_filename)
+
+        json_filename = f"{base_path}/feature_list_namespace.json"
+        with open(json_filename, "w") as fhandle:
+            fhandle.write(json.dumps(feature_list_namespace.json_dict(), indent=4, sort_keys=True))
+            output_filenames.append(json_filename)
+
+        json_filename = f"{base_path}/feature_job_setting_analysis.json"
+        with open(json_filename, "w") as fhandle:
+            fhandle.write(
+                json.dumps(feature_job_setting_analysis.json_dict(), indent=4, sort_keys=True)
+            )
+            output_filenames.append(json_filename)
 
         raise AssertionError(
-            f"Fixture {output_filenames} updated, please set update_fixture to False"
+            f"Fixtures {output_filenames} updated, please set update_fixture to False"
         )

@@ -56,7 +56,7 @@ class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
     def _validate_feature_version_and_namespace_consistency(
         feature_dict: dict[str, Any], feature_namespace: FeatureNamespaceModel
     ) -> None:
-        attrs = ["name", "entity_ids", "event_data_ids"]
+        attrs = ["name", "dtype", "entity_ids", "event_data_ids"]
         for attr in attrs:
             version_attr = feature_dict.get(attr)
             namespace_attr = getattr(feature_namespace, attr)
@@ -101,6 +101,7 @@ class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
             )
             self._validate_feature_version_and_namespace_consistency(feature_version_dict, document)
 
+            # TODO: update the logic here when the feature_id is already in the feature namespace
             feature_ids.append(feature_version_dict["_id"])
             readiness = max(readiness, FeatureReadiness(feature_version_dict["readiness"]))
             if (

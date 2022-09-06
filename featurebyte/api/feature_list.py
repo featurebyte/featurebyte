@@ -13,7 +13,7 @@ from alive_progress import alive_bar
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object import ApiGetObject, ApiObject
 from featurebyte.api.feature import Feature
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import get_version
@@ -21,7 +21,14 @@ from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import FeatureListModel, FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_list import (
+    FeatureListModel,
+    FeatureListNamespaceModel,
+    FeatureListStatus,
+    FeatureReadinessDistribution,
+    FeatureReadinessFeatureCount,
+)
 from featurebyte.query_graph.feature_historical import get_historical_features
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 
@@ -189,6 +196,15 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         raise ValueError("There is no feature in the FeatureGroup object.")
 
 
+class FeatureListNamespace(FeatureListNamespaceModel, ApiGetObject):
+    """
+    FeatureListNamespace class
+    """
+
+    # class variable
+    _route = "/feature_list_namespace"
+
+
 class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     """
     FeatureList class
@@ -258,6 +274,16 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
             values["status"] = FeatureListStatus.DRAFT
         if not values.get("version"):
             values["version"] = get_version()
+        if not values.get("readiness_distribution"):
+            readiness_dist_map: dict[FeatureReadiness, int] = collections.defaultdict(int)
+            for feature in values["feature_objects"].values():
+                readiness_dist_map[feature.readiness] += 1
+            values["readiness_distribution"] = FeatureReadinessDistribution(
+                __root__=[
+                    FeatureReadinessFeatureCount(readiness=feat_readiness, count=feat_count)
+                    for feat_readiness, feat_count in readiness_dist_map.items()
+                ]
+            )
         for attr in ["entity_ids", "event_data_ids"]:
             if not values.get(attr):
                 id_values = []
@@ -265,6 +291,21 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
                     id_values.extend(getattr(feature, attr))
                 values[attr] = sorted(set(id_values))
         return values
+
+    @property
+    def feature_list_namespace(self) -> FeatureListNamespace:
+        """
+        FeatureListNamespace object of current feature
+
+        Returns
+        -------
+        FeatureListNamespace
+        """
+        return FeatureListNamespace.get_by_id(id=self.feature_list_namespace_id)
+
+    @classmethod
+    def list(cls) -> List[str]:
+        return FeatureListNamespace.list()
 
     @typechecked
     def get_historical_features(
