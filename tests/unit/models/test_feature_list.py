@@ -140,3 +140,4 @@ def test_readiness_distribution_less_than_check(left_dist, right_dist, expected)
     feat_readiness_dist1 = FeatureReadinessDistribution(__root__=left_dist)
     feat_readiness_dist2 = FeatureReadinessDistribution(__root__=right_dist)
     assert (feat_readiness_dist1 < feat_readiness_dist2) is expected
+    assert (feat_readiness_dist1 >= feat_readiness_dist2) is not expected

@@ -7,7 +7,7 @@ from typing import Any
 
 from bson.objectid import ObjectId
 
-from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
+from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
@@ -73,7 +73,7 @@ class FeatureListNamespaceService(BaseDocumentService[FeatureListNamespaceModel]
             readiness_dist = max(readiness_dist, version_readiness_dist)
             if (
                 document.default_version_mode == DefaultVersionMode.AUTO
-                and version_readiness_dist >= document.readiness_distribution
+                and version_readiness_dist >= document.readiness_distribution  # type: ignore[operator]
             ):
                 # if default version mode is AUTO, use the latest best readiness feature as default feature
                 default_feature_list_id = feature_list_version_dict["_id"]

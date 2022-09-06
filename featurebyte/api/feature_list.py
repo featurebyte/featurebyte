@@ -275,7 +275,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         if not values.get("version"):
             values["version"] = get_version()
         if not values.get("readiness_distribution"):
-            readiness_dist_map = collections.defaultdict(int)
+            readiness_dist_map: dict[FeatureReadiness, int] = collections.defaultdict(int)
             for feature in values["feature_objects"].values():
                 readiness_dist_map[feature.readiness] += 1
             values["readiness_distribution"] = FeatureReadinessDistribution(

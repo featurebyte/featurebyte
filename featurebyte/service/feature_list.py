@@ -3,7 +3,7 @@ FeatureListService class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 from bson.objectid import ObjectId
 
@@ -93,6 +93,34 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                     f"other feature list at Snowflake feature list store."
                 ) from exc
 
+    async def _validate_feature_ids_and_extract_feature_data(
+        self, document: FeatureListModel
+    ) -> Tuple[Optional[ObjectId], List[FeatureSignature]]:
+        feature_store_id: Optional[ObjectId] = None
+        feature_signatures: List[FeatureSignature] = []
+        feature_list_readiness: FeatureReadiness = FeatureReadiness.PRODUCTION_READY
+        for feature_id in document.feature_ids:
+            feature_dict = await self._get_document(
+                document_id=feature_id,
+                collection_name=FeatureModel.collection_name(),
+            )
+            feature = FeatureModel(**feature_dict)
+            feature_list_readiness = min(
+                feature_list_readiness, FeatureReadiness(feature.readiness)
+            )
+            feature_signatures.append(
+                FeatureSignature(id=feature.id, name=feature.name, version=feature.version)
+            )
+            if feature_store_id and (feature_store_id != feature.tabular_source.feature_store_id):
+                raise DocumentInconsistencyError(
+                    "All the Feature objects within the same FeatureList object must be from the same "
+                    "feature store."
+                )
+
+            # store previous feature store id
+            feature_store_id = feature.tabular_source.feature_store_id
+        return feature_store_id, feature_signatures
+
     async def create_document(  # type: ignore[override]
         self, data: FeatureListCreate, get_credential: Any = None
     ) -> FeatureListModel:
@@ -106,36 +134,13 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
             await self._check_document_unique_constraints(document=document)
 
             # check whether the feature(s) in the feature list saved to persistent or not
-            feature_store_id: Optional[ObjectId] = None
-            feature_signatures: List[FeatureSignature] = []
-            feature_list_readiness: FeatureReadiness = FeatureReadiness.PRODUCTION_READY
-            for feature_id in document.feature_ids:
-                feature_dict = await self._get_document(
-                    document_id=feature_id,
-                    collection_name=FeatureModel.collection_name(),
-                )
-                feature = FeatureModel(**feature_dict)
-                feature_list_readiness = min(
-                    feature_list_readiness, FeatureReadiness(feature.readiness)
-                )
-                feature_signatures.append(
-                    FeatureSignature(id=feature.id, name=feature.name, version=feature.version)
-                )
-                if feature_store_id and (
-                    feature_store_id != feature.tabular_source.feature_store_id
-                ):
-                    raise DocumentInconsistencyError(
-                        "All the Feature objects within the same FeatureList object must be from the same "
-                        "feature store."
-                    )
-
-                # store previous feature store id
-                feature_store_id = feature.tabular_source.feature_store_id
+            (
+                feature_store_id,
+                feature_signatures,
+            ) = await self._validate_feature_ids_and_extract_feature_data(document)
 
             # update document with readiness
-            document = FeatureListModel(
-                **{**document.dict(by_alias=True), "readiness": feature_list_readiness}
-            )
+            document = FeatureListModel(**document.dict(by_alias=True))
             feature_store_dict = await self._get_document(
                 document_id=ObjectId(feature_store_id),
                 collection_name=FeatureStoreModel.collection_name(),

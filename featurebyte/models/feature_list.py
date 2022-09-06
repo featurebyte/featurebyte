@@ -57,7 +57,9 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
     __root__: List[FeatureReadinessFeatureCount]
 
     @staticmethod
-    def _to_count_per_readiness_map(feature_readiness_dist: FeatureReadinessDistribution):
+    def _to_count_per_readiness_map(
+        feature_readiness_dist: FeatureReadinessDistribution,
+    ) -> dict[FeatureReadiness, int]:
         output = {}
         for feature_readiness in FeatureReadiness:
             output[feature_readiness] = 0
@@ -69,7 +71,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
     @classmethod
     def _transform_and_check(
         cls, this_dist: FeatureReadinessDistribution, other_dist: FeatureReadinessDistribution
-    ):
+    ) -> tuple[dict[FeatureReadiness, int], dict[FeatureReadiness, int]]:
         this_dist_map = cls._to_count_per_readiness_map(this_dist)
         other_dist_map = cls._to_count_per_readiness_map(other_dist)
         if sum(this_dist_map.values()) != sum(other_dist_map.values()):
@@ -79,7 +81,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         return this_dist_map, other_dist_map
 
     @typechecked
-    def __eq__(self, other: FeatureReadinessDistribution):
+    def __eq__(self, other: FeatureReadinessDistribution) -> bool:  # type: ignore[override]
         this_dist_map, other_dist_map = self._transform_and_check(self, other)
         for feature_readiness in FeatureReadiness:
             if this_dist_map[feature_readiness] != other_dist_map[feature_readiness]:
@@ -87,7 +89,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         return True
 
     @typechecked
-    def __lt__(self, other: FeatureReadinessDistribution):
+    def __lt__(self, other: FeatureReadinessDistribution) -> bool:
         this_dist_map, other_dist_map = self._transform_and_check(self, other)
         # feature readiness sorted from the worst readiness (deprecated) to the best readiness (production ready)
         # the one with the lower number of readiness should be preferred
