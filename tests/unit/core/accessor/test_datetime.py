@@ -67,6 +67,11 @@ def test_accessor_getattr__timestamp(timestamp_series):
 @pytest.mark.parametrize(
     "accessor_func, exp_expression",
     [
+        (lambda s: s.dt.year, 'DATEDIFF(year, "PROMOTION_START_DATE", "TIMESTAMP")'),
+        (lambda s: s.dt.quarter, 'DATEDIFF(quarter, "PROMOTION_START_DATE", "TIMESTAMP")'),
+        (lambda s: s.dt.month, 'DATEDIFF(month, "PROMOTION_START_DATE", "TIMESTAMP")'),
+        (lambda s: s.dt.week, 'DATEDIFF(week, "PROMOTION_START_DATE", "TIMESTAMP")'),
+        (lambda s: s.dt.day, 'DATEDIFF(day, "PROMOTION_START_DATE", "TIMESTAMP")'),
         (lambda s: s.dt.hour, 'DATEDIFF(hour, "PROMOTION_START_DATE", "TIMESTAMP")'),
         (lambda s: s.dt.minute, 'DATEDIFF(minute, "PROMOTION_START_DATE", "TIMESTAMP")'),
         (lambda s: s.dt.second, 'DATEDIFF(second, "PROMOTION_START_DATE", "TIMESTAMP")'),

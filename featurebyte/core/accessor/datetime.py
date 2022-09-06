@@ -56,6 +56,11 @@ class DatetimeAccessor:
         elif obj.dtype == DBVarType.TIMEDELTA:
             self._node_type = NodeType.TIMEDELTA_EXTRACT
             self._property_node_params_map = {
+                "year": "year",
+                "quarter": "quarter",
+                "month": "month",
+                "week": "week",
+                "day": "day",
                 "hour": "hour",
                 "minute": "minute",
                 "second": "second",
