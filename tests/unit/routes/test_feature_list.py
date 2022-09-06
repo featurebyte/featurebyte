@@ -57,6 +57,17 @@ class TestFeatureListApi(BaseApiTestSuite):
             payload_multi,
             'Feature (id: "631697b94065102e4b62035c") not found. Please save the Feature object first.',
         ),
+        (
+            {**payload, "feature_ids": []},
+            [
+                {
+                    "loc": ["body", "feature_ids"],
+                    "msg": "ensure this value has at least 1 items",
+                    "type": "value_error.list.min_items",
+                    "ctx": {"limit_value": 1},
+                }
+            ],
+        ),
     ]
 
     @pytest.fixture(autouse=True)

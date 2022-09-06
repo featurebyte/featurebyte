@@ -95,7 +95,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
 
     async def _validate_feature_ids_and_extract_feature_data(
         self, document: FeatureListModel
-    ) -> Tuple[Optional[ObjectId], List[FeatureSignature]]:
+    ) -> Tuple[ObjectId, List[FeatureSignature]]:
         feature_store_id: Optional[ObjectId] = None
         feature_signatures: List[FeatureSignature] = []
         feature_list_readiness: FeatureReadiness = FeatureReadiness.PRODUCTION_READY
@@ -119,6 +119,8 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
 
             # store previous feature store id
             feature_store_id = feature.tabular_source.feature_store_id
+
+        assert feature_store_id is not None
         return feature_store_id, feature_signatures
 
     async def create_document(  # type: ignore[override]

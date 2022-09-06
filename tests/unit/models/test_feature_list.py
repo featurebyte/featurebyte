@@ -2,9 +2,11 @@
 Tests for Feature list related models
 """
 import pytest
+from bson.objectid import ObjectId
 
 from featurebyte.models.feature_list import (
     FeatureListModel,
+    FeatureListNamespaceModel,
     FeatureListStatus,
     FeatureReadinessDistribution,
 )
@@ -15,27 +17,71 @@ def feature_list_model_dict_fixture():
     """Fixture for a FeatureList dict"""
     return {
         "name": "my_feature_list",
-        "feature_ids": [],
-        "readiness_distribution": [],
+        "feature_ids": [ObjectId(), ObjectId()],
+        "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
         "readiness": "DRAFT",
         "status": None,
         "version": "V220710",
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "entity_ids": [],
-        "event_data_ids": [],
+        "entity_ids": [ObjectId()],
+        "event_data_ids": [ObjectId()],
+        "feature_list_namespace_id": ObjectId(),
+    }
+
+
+@pytest.fixture(name="feature_list_namespace_model_dict")
+def feature_list_namespace_model_dict_fixture():
+    """Fixture for a FeatureListNamespace dict"""
+    feature_list_id = ObjectId()
+    return {
+        "name": "my_feature_list",
+        "feature_list_ids": [feature_list_id],
+        "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
+        "readiness": "DRAFT",
+        "default_feature_list_id": feature_list_id,
+        "default_version_mode": "AUTO",
+        "created_at": None,
+        "updated_at": None,
+        "user_id": None,
+        "entity_ids": [ObjectId()],
+        "event_data_ids": [ObjectId()],
     }
 
 
 def test_feature_list_model(feature_list_model_dict):
     """Test feature list model"""
     feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
-    feature_list_dict = feature_list.dict(exclude={"id": True, "feature_list_namespace_id": True})
+    feature_list_dict = feature_list.dict(exclude={"id": True})
     assert feature_list_dict == feature_list_model_dict
     feature_list_json = feature_list.json(by_alias=True)
     loaded_feature_list = FeatureListModel.parse_raw(feature_list_json)
     assert loaded_feature_list == feature_list
+
+    # test derived readiness
+    feature_list_model_dict["readiness_distribution"] = [
+        {"readiness": "PRODUCTION_READY", "count": 2}
+    ]
+    updated_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
+    assert updated_feature_list.readiness == "PRODUCTION_READY"
+
+
+def test_feature_list_namespace_model(feature_list_namespace_model_dict):
+    """Test feature list namespace model"""
+    feature_list_namespace = FeatureListNamespaceModel.parse_obj(feature_list_namespace_model_dict)
+    feature_list_namespace_dict = feature_list_namespace.dict(exclude={"id": True})
+    assert feature_list_namespace_dict == feature_list_namespace_model_dict
+    feature_list_namespace_json = feature_list_namespace.json(by_alias=True)
+    loaded_feature_list_namespace = FeatureListNamespaceModel.parse_raw(feature_list_namespace_json)
+    assert loaded_feature_list_namespace == feature_list_namespace
+
+    # test derived readiness
+    feature_list_namespace_model_dict["readiness_distribution"] = [
+        {"readiness": "PRODUCTION_READY", "count": 2}
+    ]
+    updated_feature_list = FeatureListModel.parse_obj(feature_list_namespace_model_dict)
+    assert updated_feature_list.readiness == "PRODUCTION_READY"
 
 
 def test_feature_list_status_ordering():

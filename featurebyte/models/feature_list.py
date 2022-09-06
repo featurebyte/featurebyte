@@ -121,23 +121,7 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         return output_readiness or FeatureReadiness.DRAFT
 
 
-class FeatureListValidatorMixin:
-    """
-    FeatureList validator mixin
-    """
-
-    @validator("readiness")
-    @classmethod
-    def _check_readiness(cls, value: FeatureReadiness, values: dict[str, Any]) -> FeatureReadiness:
-        _ = value
-        if isinstance(values["readiness_distribution"], list):
-            readiness_dist = FeatureReadinessDistribution(__root__=values["readiness_distribution"])
-        else:
-            readiness_dist = values["readiness_distribution"]
-        return readiness_dist.derive_readiness()
-
-
-class FeatureListNamespaceModel(FeatureByteBaseDocumentModel, FeatureListValidatorMixin):
+class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
     """
     Feature list set with the same feature list name
 
@@ -171,6 +155,16 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel, FeatureListValidat
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
+    @validator("readiness")
+    @classmethod
+    def _check_readiness(cls, value: FeatureReadiness, values: dict[str, Any]) -> FeatureReadiness:
+        _ = value
+        if isinstance(values["readiness_distribution"], list):
+            readiness_dist = FeatureReadinessDistribution(__root__=values["readiness_distribution"])
+        else:
+            readiness_dist = values["readiness_distribution"]
+        return readiness_dist.derive_readiness()
+
     class Settings:
         """
         MongoDB settings
@@ -191,7 +185,7 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel, FeatureListValidat
         ]
 
 
-class FeatureListModel(FeatureByteBaseDocumentModel, FeatureListValidatorMixin):
+class FeatureListModel(FeatureByteBaseDocumentModel):
     """
     Model for feature list entity
 
@@ -229,6 +223,16 @@ class FeatureListModel(FeatureByteBaseDocumentModel, FeatureListValidatorMixin):
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
     )
+
+    @validator("readiness")
+    @classmethod
+    def _check_readiness(cls, value: FeatureReadiness, values: dict[str, Any]) -> FeatureReadiness:
+        _ = value
+        if isinstance(values["readiness_distribution"], list):
+            readiness_dist = FeatureReadinessDistribution(__root__=values["readiness_distribution"])
+        else:
+            readiness_dist = values["readiness_distribution"]
+        return readiness_dist.derive_readiness()
 
     class Settings:
         """
