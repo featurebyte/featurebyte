@@ -5,6 +5,7 @@ import pytest
 
 from featurebyte.core.frame import Frame
 from featurebyte.core.series import Series
+from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph import (
     GlobalQueryGraph,
@@ -152,6 +153,17 @@ def timedelta_series(timestamp_series, timestamp_series_2):
     Series with timedelta var type
     """
     series = timestamp_series - timestamp_series_2
+    assert isinstance(series, Series)
+    assert series.dtype == DBVarType.TIMEDELTA
+    yield series
+
+
+@pytest.fixture()
+def timedelta_series_from_int(int_series):
+    """
+    Series with timedelta var type
+    """
+    series = to_timedelta(int_series, unit="second")
     assert isinstance(series, Series)
     assert series.dtype == DBVarType.TIMEDELTA
     yield series

@@ -365,6 +365,31 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @typechecked
+    def _date_add_op(self, other: Series, right_op: bool = False) -> Series:
+        """
+        Increment date by timedelta
+
+        Parameters
+        ----------
+        other : Series
+            right value of the operation
+        right_op: bool
+            whether the binary operation is from right object or not
+
+        Returns
+        -------
+        Series
+            output of the date difference operation
+        """
+        return self._binary_op(
+            other=other,
+            node_type=NodeType.DATE_ADD,
+            output_var_type=DBVarType.TIMESTAMP,
+            right_op=right_op,
+            additional_node_params={},
+        )
+
+    @typechecked
     def __add__(self, other: Union[int, float, str, Series]) -> Series:
         is_other_string_like = isinstance(other, str)
         is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
@@ -372,6 +397,8 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             return self._binary_op(
                 other=other, node_type=NodeType.CONCAT, output_var_type=DBVarType.VARCHAR
             )
+        if self.is_datetime and self._is_a_series_of_var_type(other, DBVarType.TIMEDELTA):
+            return self._date_add_op(other=other)
         return self._binary_arithmetic_op(other, NodeType.ADD)
 
     @typechecked

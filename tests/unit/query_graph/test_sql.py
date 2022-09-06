@@ -238,3 +238,49 @@ def test_date_difference(input_node):
         parameters={"unit": "second"},
     )
     assert node.sql.sql() == "DATEDIFF(second, b, a)"
+
+
+def test_timedelta(input_node):
+    """Test TimedeltaNode"""
+    column = sql.StrExpressionNode(table_node=input_node, expr="a")
+    node = sql.make_expression_node(
+        [column],
+        NodeType.TIMEDELTA,
+        parameters={"unit": "second"},
+    )
+    # when previewing, this should show the value component of the timedelta without unit
+    assert node.sql.sql() == "a"
+
+
+def test_date_add__timedelta(input_node):
+    """Test DateAdd node"""
+    column = sql.StrExpressionNode(table_node=input_node, expr="num_seconds")
+    timedelta_node = sql.make_expression_node(
+        [column],
+        NodeType.TIMEDELTA,
+        parameters={"unit": "second"},
+    )
+    date_column = sql.StrExpressionNode(table_node=input_node, expr="date_col")
+    date_add_node = sql.make_binary_operation_node(
+        NodeType.DATE_ADD, [date_column, timedelta_node], {}
+    )
+    assert date_add_node.sql.sql() == "DATEADD(second, num_seconds, date_col)"
+
+
+def test_date_add__datediff(input_node):
+    """Test DateAdd node when the timedeta is the result of date difference"""
+    # make a date diff node
+    column1 = sql.StrExpressionNode(table_node=input_node, expr="a")
+    column2 = sql.StrExpressionNode(table_node=input_node, expr="b")
+    input_nodes = [column1, column2]
+    date_diff_node = sql.make_binary_operation_node(
+        NodeType.DATE_DIFF,
+        input_nodes,
+        parameters={"unit": "hour"},
+    )
+    # make a date add node
+    date_column = sql.StrExpressionNode(table_node=input_node, expr="date_col")
+    date_add_node = sql.make_binary_operation_node(
+        NodeType.DATE_ADD, [date_column, date_diff_node], {}
+    )
+    assert date_add_node.sql.sql() == "DATEADD(hour, DATEDIFF(hour, b, a), date_col)"

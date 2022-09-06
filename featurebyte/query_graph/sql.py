@@ -3,7 +3,7 @@ This module contains the list of SQL operations to be used by the Query Graph In
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, Union
 
 # pylint: disable=too-few-public-methods,too-many-lines
 from abc import ABC, abstractmethod
@@ -679,6 +679,38 @@ class DateDiffNode(ExpressionNode):
 
 
 @dataclass
+class TimedeltaNode(ExpressionNode):
+    """Node to represent Timedelta"""
+
+    value_expr: ExpressionNode
+    unit: str
+
+    @property
+    def sql(self) -> Expression:
+        return self.value_expr.sql
+
+
+@dataclass
+class DateAddNode(ExpressionNode):
+    """Node for date increment by timedelta operation"""
+
+    input_date_node: ExpressionNode
+    timedelta_node: Union[TimedeltaNode, DateDiffNode]
+
+    @property
+    def sql(self) -> Expression:
+        output_expr = expressions.Anonymous(
+            this="DATEADD",
+            expressions=[
+                self.timedelta_node.unit,
+                self.timedelta_node.sql,
+                self.input_date_node.sql,
+            ],
+        )
+        return output_expr
+
+
+@dataclass
 class NotNode(ExpressionNode):
     """Node for inverting binary column operation"""
 
@@ -862,6 +894,7 @@ BINARY_OPERATION_NODE_TYPES = {
     NodeType.CONCAT,
     NodeType.COSINE_SIMILARITY,
     NodeType.DATE_DIFF,
+    NodeType.DATE_ADD,
 }
 
 
@@ -944,7 +977,7 @@ def make_binary_operation_node(
         NodeType.COSINE_SIMILARITY: fb_expressions.CosineSim,
     }
 
-    output_node: BinaryOp | DateDiffNode
+    output_node: BinaryOp | DateDiffNode | DateAddNode
     if node_type in node_type_to_expression_cls:
         expression_cls = node_type_to_expression_cls[node_type]
         output_node = BinaryOp(
@@ -959,6 +992,12 @@ def make_binary_operation_node(
             left_node=left_node,
             right_node=right_node,
             unit=parameters["unit"],
+        )
+    elif node_type == NodeType.DATE_ADD:
+        output_node = DateAddNode(
+            table_node=table_node,
+            input_date_node=left_node,
+            timedelta_node=right_node,
         )
     else:
         raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
@@ -1240,6 +1279,7 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.CAST,
     NodeType.LAG,
     NodeType.TIMEDELTA_EXTRACT,
+    NodeType.TIMEDELTA,
 }
 
 
@@ -1355,6 +1395,11 @@ def make_expression_node(
         )
     elif node_type == NodeType.TIMEDELTA_EXTRACT:
         sql_node = make_timedelta_extract_node(input_expr_node, parameters)
+
+    elif node_type == NodeType.TIMEDELTA:
+        sql_node = TimedeltaNode(
+            table_node=table_node, value_expr=input_expr_node, unit=parameters["unit"]
+        )
 
     elif node_type == NodeType.COUNT_DICT_TRANSFORM:
         sql_node = CountDictTransformNode(

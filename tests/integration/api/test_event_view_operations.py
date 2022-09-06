@@ -562,6 +562,12 @@ def check_datetime_operations(event_view, column_name, limit=100):
     event_view["event_interval_hour"] = event_view["event_interval"].dt.hour
     event_view["event_interval_minute"] = event_view["event_interval"].dt.minute
 
+    from featurebyte.core.timedelta import to_timedelta
+
+    timedelta = to_timedelta(event_view["event_interval_second"], "second")
+    event_view["timestamp_added"] = datetime_series + timedelta
+    event_view["timestamp_unlagged"] = datetime_series.lag("CUST_ID") + timedelta
+
     # check datetime extracted properties
     dt_df = event_view.preview(limit=limit)
     pandas_series = dt_df[column_name]
