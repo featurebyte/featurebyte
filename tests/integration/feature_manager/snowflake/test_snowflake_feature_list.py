@@ -31,7 +31,7 @@ def test_insert_feature_list_registry(
             "NAME": ["feature_list1"],
             "VERSION": ["v1"],
             "READINESS": ["DRAFT"],
-            "STATUS": ["DRAFT"],
+            "STATUS": ["PUBLIC_DRAFT"],
         }
     )
     result_df = result[
@@ -123,7 +123,7 @@ def test_update_feature_list_registry(
     assert result.iloc[0]["NAME"] == "feature_list1"
     assert result.iloc[0]["VERSION"] == "v1"
     assert result.iloc[0]["READINESS"] == "DRAFT"
-    assert result.iloc[0]["STATUS"] == "DRAFT"
+    assert result.iloc[0]["STATUS"] == "PUBLIC_DRAFT"
 
     snowflake_feature_list.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     snowflake_feature_list.__dict__["status"] = FeatureListStatus.PUBLISHED.value
