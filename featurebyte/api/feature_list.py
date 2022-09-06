@@ -271,7 +271,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         if not values.get("feature_ids"):
             values["feature_ids"] = [feature.id for feature in values["feature_objects"].values()]
         if not values.get("status"):
-            values["status"] = FeatureListStatus.PUBLIC_DRAFT
+            values["status"] = FeatureListStatus.DRAFT
         if not values.get("version"):
             values["version"] = get_version()
         if not values.get("readiness_distribution"):

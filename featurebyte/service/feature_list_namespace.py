@@ -75,7 +75,7 @@ class FeatureListNamespaceService(BaseDocumentService[FeatureListNamespaceModel]
                 document.default_version_mode == DefaultVersionMode.AUTO
                 and version_readiness_dist >= document.readiness_distribution  # type: ignore[operator]
             ):
-                # if default version mode is AUTO, use the latest best readiness feature as default feature
+                # if default version mode is AUTO, use the latest best readiness feature list as default feature
                 default_feature_list_id = feature_list_version_dict["_id"]
 
         update_count = await self.persistent.update_one(

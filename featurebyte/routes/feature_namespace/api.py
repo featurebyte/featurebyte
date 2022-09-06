@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, cast
 
-from http import HTTPStatus
-
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
 
@@ -21,29 +19,9 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
-from featurebyte.schema.feature_namespace import (
-    FeatureNamespaceCreate,
-    FeatureNamespaceList,
-    FeatureNamespaceUpdate,
-)
+from featurebyte.schema.feature_namespace import FeatureNamespaceList
 
 router = APIRouter(prefix="/feature_namespace")
-
-
-@router.post("", response_model=FeatureNamespaceModel, status_code=HTTPStatus.CREATED)
-async def create_feature_namespace(
-    request: Request,
-    data: FeatureNamespaceCreate,
-) -> FeatureNamespaceModel:
-    """
-    Create Feature Namespace
-    """
-    feature_namespace: FeatureNamespaceModel = (
-        await request.state.controller.create_feature_namespace(
-            user=request.state.user, persistent=request.state.persistent, data=data
-        )
-    )
-    return feature_namespace
 
 
 @router.get("/{feature_namespace_id}", response_model=FeatureNamespaceModel)
@@ -86,26 +64,6 @@ async def list_feature_namespaces(
         name=name,
     )
     return feature_namespace_list
-
-
-@router.patch("/{feature_namespace_id}", response_model=FeatureNamespaceModel)
-async def update_feature_namespace(
-    request: Request,
-    feature_namespace_id: str,
-    data: FeatureNamespaceUpdate,
-) -> FeatureNamespaceModel:
-    """
-    Update FeatureNamespace
-    """
-    feature_namespace: FeatureNamespaceModel = (
-        await request.state.controller.update_feature_namespace(
-            user=request.state.user,
-            persistent=request.state.persistent,
-            feature_namespace_id=feature_namespace_id,
-            data=data,
-        )
-    )
-    return feature_namespace
 
 
 @router.get("/audit/{feature_namespace_id}", response_model=AuditDocumentList)

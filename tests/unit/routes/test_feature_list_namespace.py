@@ -1,12 +1,17 @@
 """
 Test for FeatureListNamespace route
 """
+import asyncio
+import time
 from http import HTTPStatus
+from unittest.mock import Mock
 
 import pytest
 from bson import ObjectId
+from requests import Response
 
-from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
+from featurebyte.schema.feature_list_namespace import FeatureListNamespaceCreate
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -20,15 +25,8 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
     payload = BaseApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/feature_list_namespace.json"
     )
-    create_conflict_payload_expected_detail_pairs = [
-        (payload, f'FeatureListNamespace (id: "{payload["_id"]}") already exists.')
-    ]
-    create_unprocessable_payload_expected_detail_pairs = [
-        (
-            {key: value for key, value in payload.items() if key != "name"},
-            [{"loc": ["body", "name"], "msg": "field required", "type": "value_error.missing"}],
-        )
-    ]
+    create_conflict_payload_expected_detail_pairs = []
+    create_unprocessable_payload_expected_detail_pairs = []
     not_found_save_suggestion = False
 
     def multiple_success_payload_generator(self, api_client):
@@ -38,46 +36,55 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
             payload["_id"] = str(ObjectId())
             yield payload
 
-    @pytest.mark.asyncio
-    async def test_update_200(self, test_api_client_persistent, create_success_response):
-        """
-        Test update (success)
-        """
+    @pytest.fixture
+    def create_success_response(
+        self, test_api_client_persistent, user_id
+    ):  # pylint: disable=arguments-differ
+        """Post route success response object"""
+        _, persistent = test_api_client_persistent
+        user = Mock()
+        user.id = user_id
+        feature_list_namespace_service = FeatureListNamespaceService(
+            user=user, persistent=persistent
+        )
+        document = asyncio.run(
+            feature_list_namespace_service.create_document(
+                data=FeatureListNamespaceCreate(**self.payload)
+            )
+        )
+        response = Response()
+        response._content = bytes(document.json(by_alias=True), "utf-8")
+        response.status_code = HTTPStatus.CREATED
+        return response
+
+    @pytest.mark.skip("POST method not exposed")
+    def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
+        """Test creation (success)"""
+
+    @pytest.mark.skip("POST method not exposed")
+    def test_create_201__without_specifying_id_field(self, test_api_client_persistent):
+        """Test creation (success) without specifying id field"""
+
+    @pytest.fixture
+    def create_multiple_success_responses(
+        self, test_api_client_persistent, user_id
+    ):  # pylint: disable=arguments-differ
+        """Post multiple success responses"""
         test_api_client, persistent = test_api_client_persistent
-        feature_namespace_data_before_update, _ = await persistent.find(
-            "feature_list_namespace", {}
+        user = Mock()
+        user.id = user_id
+        feature_list_namespace_service = FeatureListNamespaceService(
+            user=user, persistent=persistent
         )
-        create_success_response_dict = create_success_response.json()
-        feature_list_ids_before = feature_namespace_data_before_update[0]["feature_list_ids"]
-        assert len(feature_list_ids_before) == 1
-
-        # insert a feature_list_id to feature collection
-        feature_list_id = await persistent.insert_one(
-            collection_name="feature_list",
-            document={
-                "_id": ObjectId(),
-                "user_id": ObjectId(create_success_response_dict["user_id"]),
-                "name": create_success_response_dict["name"],
-                "readiness": FeatureReadiness.PRODUCTION_READY.value,
-                "readiness_distribution": [{"readiness": "PRODUCTION_READY", "count": 2}],
-            },
-        )
-        feature_list_data, _ = await persistent.find(
-            collection_name="feature_list", query_filter={}
-        )
-        assert len(feature_list_data) == 1
-
-        response = test_api_client.patch(
-            f'{self.base_route}/{create_success_response_dict["_id"]}',
-            json={"feature_list_id": str(feature_list_id)},
-        )
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK
-        assert response_dict["user_id"] == create_success_response_dict["user_id"]
-        assert response_dict["feature_list_ids"] == [
-            str(feature_list_ids_before[0]),
-            str(feature_list_id),
-        ]
-        assert response_dict["readiness"] == FeatureReadiness.PRODUCTION_READY
-        assert response_dict["default_feature_list_id"] == str(feature_list_id)
-        assert response_dict["default_version_mode"] == DefaultVersionMode.AUTO
+        output = []
+        for i, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
+            # payload name is set here as we need the exact name value for test_list_200 test
+            payload["name"] = f'{self.payload["name"]}_{i}'
+            document = asyncio.run(
+                feature_list_namespace_service.create_document(
+                    data=FeatureListNamespaceCreate(**payload)
+                )
+            )
+            output.append(document)
+            time.sleep(0.05)
+        return output

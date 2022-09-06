@@ -95,13 +95,11 @@ class BaseApiTestSuite:
     def pytest_generate_tests(self, metafunc):
         """Parametrize fixture at runtime"""
         if "create_conflict_payload_expected_detail" in metafunc.fixturenames:
-            assert len(self.create_conflict_payload_expected_detail_pairs) > 0
             metafunc.parametrize(
                 "create_conflict_payload_expected_detail",
                 self.create_conflict_payload_expected_detail_pairs,
             )
         if "create_unprocessable_payload_expected_detail" in metafunc.fixturenames:
-            assert len(self.create_unprocessable_payload_expected_detail_pairs) > 0
             metafunc.parametrize(
                 "create_unprocessable_payload_expected_detail",
                 self.create_unprocessable_payload_expected_detail_pairs,

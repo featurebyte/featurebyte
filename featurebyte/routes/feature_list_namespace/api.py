@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, cast
 
-from http import HTTPStatus
-
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
 
@@ -21,31 +19,9 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
-from featurebyte.schema.feature_list_namespace import (
-    FeatureListNamespaceCreate,
-    FeatureListNamespaceList,
-    FeatureListNamespaceUpdate,
-)
+from featurebyte.schema.feature_list_namespace import FeatureListNamespaceList
 
 router = APIRouter(prefix="/feature_list_namespace")
-
-
-@router.post("", response_model=FeatureListNamespaceModel, status_code=HTTPStatus.CREATED)
-async def create_feature_list_namespace(
-    request: Request, data: FeatureListNamespaceCreate
-) -> FeatureListNamespaceModel:
-    """
-    Create FeatureListNamespace
-    """
-    feature_list_namespace: FeatureListNamespaceModel = (
-        await request.state.controller.create_feature_list_namespace(
-            user=request.state.user,
-            persistent=request.state.persistent,
-            get_credential=request.state.get_credential,
-            data=data,
-        )
-    )
-    return feature_list_namespace
 
 
 @router.get("/{feature_list_namespace_id}", response_model=FeatureListNamespaceModel)
@@ -88,26 +64,6 @@ async def list_feature_list_namespace(
         name=name,
     )
     return feature_list_paginated_list
-
-
-@router.patch("/{feature_list_namespace_id}", response_model=FeatureListNamespaceModel)
-async def update_feature_namespace(
-    request: Request,
-    feature_list_namespace_id: str,
-    data: FeatureListNamespaceUpdate,
-) -> FeatureListNamespaceModel:
-    """
-    Update FeatureListNamespace
-    """
-    feature_list_namespace: FeatureListNamespaceModel = (
-        await request.state.controller.update_feature_list_namespace(
-            user=request.state.user,
-            persistent=request.state.persistent,
-            feature_list_namespace_id=feature_list_namespace_id,
-            data=data,
-        )
-    )
-    return feature_list_namespace
 
 
 @router.get("/audit/{feature_list_namespace_id}", response_model=AuditDocumentList)
