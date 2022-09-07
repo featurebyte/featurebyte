@@ -288,11 +288,11 @@ def test_date_add__datediff(input_node):
     date_diff_node = sql.make_binary_operation_node(
         NodeType.DATE_DIFF,
         input_nodes,
-        parameters={"unit": "hour"},
+        parameters={},
     )
     # make a date add node
     date_column = sql.StrExpressionNode(table_node=input_node, expr="date_col")
     date_add_node = sql.make_binary_operation_node(
         NodeType.DATE_ADD, [date_column, date_diff_node], {}
     )
-    assert date_add_node.sql.sql() == "DATEADD(hour, DATEDIFF(hour, b, a), date_col)"
+    assert date_add_node.sql.sql() == "DATEADD(microsecond, DATEDIFF(microsecond, b, a), date_col)"

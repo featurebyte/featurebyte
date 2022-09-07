@@ -19,7 +19,6 @@ SupportedUnit = Literal[
     "second",
     "millisecond",
     "microsecond",
-    "nanosecond",
 ]
 
 

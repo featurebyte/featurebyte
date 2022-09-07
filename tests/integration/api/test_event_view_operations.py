@@ -557,14 +557,18 @@ def check_datetime_operations(event_view, column_name, limit=100):
         event_view[name] = getattr(datetime_series.dt, prop)
         columns.append(name)
 
-    # add timedelta and extracted properties
+    # check timedelta constructed from date difference
     event_view["event_interval"] = datetime_series - datetime_series.lag("CUST_ID")
     event_view["event_interval_second"] = event_view["event_interval"].dt.second
     event_view["event_interval_hour"] = event_view["event_interval"].dt.hour
     event_view["event_interval_minute"] = event_view["event_interval"].dt.minute
-    timedelta = to_timedelta(event_view["event_interval_second"], "second")
+    event_view["event_interval_microsecond"] = event_view["event_interval"].dt.microsecond
+
+    # add timedelta constructed from to_timedelta
+    timedelta = to_timedelta(event_view["event_interval_microsecond"], "microsecond")
     event_view["timestamp_added"] = datetime_series + timedelta
     event_view["timestamp_added_from_timediff"] = datetime_series + event_view["event_interval"]
+    event_view["timedelta_hour"] = timedelta.dt.hour
 
     # check datetime extracted properties
     dt_df = event_view.preview(limit=limit)
@@ -583,28 +587,31 @@ def check_datetime_operations(event_view, column_name, limit=100):
         dt_df, "EVENT_TIMESTAMP", "EVENT_TIMESTAMP", "CUST_ID"
     )
     pandas_event_interval_second = (pandas_series - pandas_previous_timestamp).dt.total_seconds()
-    # the floor behaviour mimics the DATEDIFF function on Snowflake
     pandas_event_interval_minute = (
-        pandas_series.dt.floor("min") - pandas_previous_timestamp.dt.floor("min")
+        pandas_series - pandas_previous_timestamp
     ).dt.total_seconds() / 60
     pandas_event_interval_hour = (
-        pandas_series.dt.floor("H") - pandas_previous_timestamp.dt.floor("H")
+        pandas_series - pandas_previous_timestamp
     ).dt.total_seconds() / 3600
     pd.testing.assert_series_equal(
-        dt_df["event_interval"], pandas_event_interval_second, check_names=False
+        dt_df["event_interval"].astype(float), pandas_event_interval_second, check_names=False
     )
     pd.testing.assert_series_equal(
-        dt_df["event_interval_second"], pandas_event_interval_second, check_names=False
+        dt_df["event_interval_second"].astype(float),
+        pandas_event_interval_second,
+        check_names=False,
     )
     pd.testing.assert_series_equal(
-        dt_df["event_interval_minute"], pandas_event_interval_minute, check_names=False
+        dt_df["event_interval_minute"].astype(float),
+        pandas_event_interval_minute,
+        check_names=False,
     )
     pd.testing.assert_series_equal(
-        dt_df["event_interval_hour"], pandas_event_interval_hour, check_names=False
+        dt_df["event_interval_hour"].astype(float), pandas_event_interval_hour, check_names=False
     )
     # check date increment by timedelta
     pandas_timestamp_added = pandas_series + pd.to_timedelta(
-        dt_df["event_interval_second"], "second"
+        dt_df["event_interval_microsecond"].astype(float), "microsecond"
     )
     pd.testing.assert_series_equal(
         dt_df["timestamp_added"],
@@ -615,6 +622,15 @@ def check_datetime_operations(event_view, column_name, limit=100):
         dt_df["timestamp_added_from_timediff"],
         pandas_timestamp_added,
         check_names=False,
+    )
+    pandas_timedelta_hour = (
+        pd.to_timedelta(
+            dt_df["event_interval_microsecond"].astype(float), unit="microsecond"
+        ).dt.total_seconds()
+        / 3600
+    )
+    pd.testing.assert_series_equal(
+        dt_df["timedelta_hour"].astype(float), pandas_timedelta_hour, check_names=False
     )
 
 

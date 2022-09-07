@@ -570,13 +570,12 @@ def test_date_difference_operator(timestamp_series, timestamp_series_2):
     """
     date_diff_series = timestamp_series_2 - timestamp_series
     assert date_diff_series.dtype == DBVarType.TIMEDELTA
-    assert date_diff_series.node.parameters == {"unit": "second"}
     _check_node_equality(
         date_diff_series.node,
         Node(
             name="date_diff_1",
             type=NodeType.DATE_DIFF,
-            parameters={"unit": "second"},
+            parameters={},
             output_type=NodeOutputType.SERIES,
         ),
         exclude={"name": True},
@@ -648,7 +647,7 @@ def test_date_add_operator__scalar_timedelta(timestamp_series):
     """
     with pytest.raises(TypeError) as exc:
         _ = timestamp_series + 1.0
-    assert str(exc.value) == ""
+    assert "does not support operation" in str(exc.value)
 
 
 def assert_series_attributes_equal(left, right):

@@ -67,16 +67,30 @@ def test_accessor_getattr__timestamp(timestamp_series):
 @pytest.mark.parametrize(
     "accessor_func, exp_expression",
     [
-        (lambda s: s.dt.year, 'DATEDIFF(year, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.quarter, 'DATEDIFF(quarter, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.month, 'DATEDIFF(month, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.week, 'DATEDIFF(week, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.day, 'DATEDIFF(day, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.hour, 'DATEDIFF(hour, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.minute, 'DATEDIFF(minute, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.second, 'DATEDIFF(second, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.millisecond, 'DATEDIFF(millisecond, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.microsecond, 'DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP")'),
+        (
+            lambda s: s.dt.day,
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 86400000000)',
+        ),
+        (
+            lambda s: s.dt.hour,
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 3600000000)',
+        ),
+        (
+            lambda s: s.dt.minute,
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 60000000)',
+        ),
+        (
+            lambda s: s.dt.second,
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 1000000)',
+        ),
+        (
+            lambda s: s.dt.millisecond,
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 1000)',
+        ),
+        (
+            lambda s: s.dt.microsecond,
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 1)',
+        ),
     ],
 )
 def test_datetime_property_extraction__timedelta(
@@ -109,6 +123,7 @@ def test_accessor_getattr__timedelta(timedelta_series):
 
     # check __dir__ magic method
     assert set(dir(timedelta_series.dt)) == {
+        "day",
         "hour",
         "minute",
         "second",
