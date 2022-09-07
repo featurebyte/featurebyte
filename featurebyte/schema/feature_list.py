@@ -23,7 +23,7 @@ class FeatureListCreate(FeatureByteBaseModel):
     name: StrictStr
     feature_ids: List[PydanticObjectId] = Field(min_items=1)
     version: Optional[FeatureListVersionIdentifier]
-    feature_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
+    feature_list_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
 
 
 class FeatureListPaginatedList(PaginationMixin):
