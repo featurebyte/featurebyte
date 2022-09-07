@@ -5,13 +5,14 @@ from __future__ import annotations
 
 from typing import Any, AsyncGenerator
 
-import pickle
+import json
 import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 
 import pandas as pd
 from pandas import DataFrame
+from pydantic import BaseModel
 
 
 class Storage(ABC):
@@ -76,25 +77,22 @@ class Storage(ABC):
         """
         yield bytes()
 
-    async def put_object(self, data: Any, remote_path: Path) -> None:
+    async def put_object(self, data: BaseModel, remote_path: Path) -> None:
         """
-        Upload python object to storage as pickle file
+        Upload pydantic object to storage as json file
 
         Parameters
         ----------
-        data: Any
-            Python object that can be pickled
+        data: BaseModel
+            Pydantic object that can be serialized to json
         remote_path: Path
             Path of remote file to upload to
         """
-        with tempfile.NamedTemporaryFile() as file_obj:
-            pickle.dump(data, file_obj)
-            file_obj.flush()
-            await self.put(Path(file_obj.name), remote_path)
+        await self.put_text(data.json(), remote_path)
 
     async def get_object(self, remote_path: Path) -> Any:
         """
-        Download python object from stored pickle file
+        Download pydantic object from stored json file
 
         Parameters
         ----------
@@ -106,9 +104,7 @@ class Storage(ABC):
         Any
             Python object
         """
-        with tempfile.NamedTemporaryFile() as file_obj:
-            await self.get(remote_path, Path(file_obj.name))
-            return pickle.load(file_obj)
+        return json.loads(await self.get_text(remote_path))
 
     async def put_text(self, text: str, remote_path: Path) -> None:
         """

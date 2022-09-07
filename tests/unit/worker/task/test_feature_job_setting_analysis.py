@@ -92,7 +92,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
 
         # check storage of large objects
         analysis_data = await storage.get_object(
-            f"feature_job_setting_analysis/{output_document_id}/data.pkl"
+            f"feature_job_setting_analysis/{output_document_id}/data.json"
         )
         assert sorted(analysis_data.keys()) == [
             "analysis_data",

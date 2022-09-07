@@ -15,7 +15,10 @@ from featurebyte_freeware.feature_job_analysis.schema import FeatureJobSetting
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.logger import logger
 from featurebyte.models.event_data import EventDataModel
-from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
+from featurebyte.models.feature_job_setting_analysis import (
+    FeatureJobSettingAnalysisData,
+    FeatureJobSettingAnalysisModel,
+)
 from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBackTestTaskPayload,
     FeatureJobSettingAnalysisTaskPayload,
@@ -116,17 +119,9 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         assert insert_id == payload.output_document_id
 
         # store analysis data in storage
-        analysis_data = {
-            "analysis_plots": analysis.analysis_plots,
-            "analysis_data": analysis.analysis_data,
-            "analysis_result": {
-                "backtest_result": analysis.analysis_result.backtest_result,
-                "blind_spot_search_result": analysis.analysis_result.blind_spot_search_result,
-                "event_landing_time_result": analysis.analysis_result.event_landing_time_result,
-            },
-        }
+        analysis_data = FeatureJobSettingAnalysisData(**analysis.dict())
         await self.get_storage().put_object(
-            analysis_data, f"feature_job_setting_analysis/{payload.output_document_id}/data.pkl"
+            analysis_data, f"feature_job_setting_analysis/{payload.output_document_id}/data.json"
         )
 
         logger.debug(
@@ -170,9 +165,10 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask):
 
         # retrieve analysis data from storage
         storage = self.get_storage()
-        analysis_data = await storage.get_object(
-            f"feature_job_setting_analysis/{payload.feature_job_setting_analysis_id}/data.pkl",
+        analysis_data_raw = await storage.get_object(
+            f"feature_job_setting_analysis/{payload.feature_job_setting_analysis_id}/data.json",
         )
+        analysis_data = FeatureJobSettingAnalysisData(**analysis_data_raw).dict()
 
         # reconstruct analysis object
         analysis_result = analysis_data.pop("analysis_result")
