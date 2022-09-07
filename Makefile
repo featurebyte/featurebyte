@@ -85,7 +85,7 @@ lint-type:
 	@poetry run mypy --install-types --non-interactive --config-file pyproject.toml .
 
 lint-safety:
-	@poetry run safety check --short-report
+	@poetry run pip-audit
 	@poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing
