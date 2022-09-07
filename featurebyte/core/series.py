@@ -408,7 +408,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return self._binary_arithmetic_op(other, NodeType.ADD)
 
     @typechecked
-    def __radd__(self, other: Union[int, float, str, Series]) -> Series:
+    def __radd__(self, other: Union[int, float, str, pd.Timedelta, Series]) -> Series:
         is_other_string_like = isinstance(other, str)
         is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
         if self.dtype == DBVarType.VARCHAR and is_other_string_like:
@@ -418,6 +418,10 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
                 output_var_type=DBVarType.VARCHAR,
                 right_op=True,
             )
+        if self.is_datetime or isinstance(other, pd.Timedelta):
+            # Intentionally not set right_op=True because it is irrelevant for date add operation.
+            # SQL generation makes the assumption that "other" is always on the right side.
+            return self._date_add_op(other=other)
         return self._binary_arithmetic_op(other, NodeType.ADD, right_op=True)
 
     @typechecked

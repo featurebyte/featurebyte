@@ -642,11 +642,15 @@ def test_date_add_operator__constructed_timedelta(timestamp_series, timedelta_se
     }
 
 
-def test_date_add_operator__scalar_timedelta(timestamp_series):
+@pytest.mark.parametrize("right_side_op", [False, True])
+def test_date_add_operator__scalar_timedelta(timestamp_series, right_side_op):
     """
     Test incrementing a date Series with a scalar timedelta value
     """
-    new_series = timestamp_series + pd.Timedelta("1d")
+    if right_side_op:
+        new_series = pd.Timedelta("1d") + timestamp_series
+    else:
+        new_series = timestamp_series + pd.Timedelta("1d")
     assert new_series.dtype == DBVarType.TIMESTAMP
     _check_node_equality(
         new_series.node,
