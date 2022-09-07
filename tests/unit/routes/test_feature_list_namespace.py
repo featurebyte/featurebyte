@@ -69,6 +69,10 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
     def test_create_201__without_specifying_id_field(self, test_api_client_persistent):
         """Test creation (success) without specifying id field"""
 
+    @pytest.mark.skip("POST method not exposed")
+    def test_create_201__id_is_none(self, test_api_client_persistent):
+        """Test creation (success) ID is None"""
+
     @pytest.fixture
     def create_multiple_success_responses(
         self, test_api_client_persistent, user_id

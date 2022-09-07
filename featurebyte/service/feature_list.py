@@ -3,7 +3,7 @@ FeatureListService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import collections
 
@@ -26,7 +26,11 @@ from featurebyte.models.feature import (
     FeatureReadiness,
     FeatureSignature,
 )
-from featurebyte.models.feature_list import FeatureListModel, FeatureTypeFeatureCount
+from featurebyte.models.feature_list import (
+    FeatureListModel,
+    FeatureReadinessFeatureCount,
+    FeatureTypeFeatureCount,
+)
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.feature_list_namespace import (
@@ -95,26 +99,35 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                     f"other feature list at Snowflake feature list store."
                 ) from exc
 
-    async def _validate_feature_ids_and_extract_feature_data(
-        self, document: FeatureListModel
-    ) -> Tuple[ObjectId, List[FeatureSignature], Dict[DBVarType, int]]:
-        dtype_count_map: Dict[DBVarType, int] = collections.defaultdict(int)
+    async def _extract_feature_data(self, document: FeatureListModel) -> Dict[str, Any]:
         feature_store_id: Optional[ObjectId] = None
         feature_signatures: List[FeatureSignature] = []
+        dtype_count_map: Dict[DBVarType, int] = collections.defaultdict(int)
+        readiness_count_map: Dict[FeatureReadiness, int] = collections.defaultdict(int)
         feature_list_readiness: FeatureReadiness = FeatureReadiness.PRODUCTION_READY
+        entity_ids = []
+        event_data_ids = []
         for feature_id in document.feature_ids:
+            # retrieve feature from the persistent
             feature_dict = await self._get_document(
                 document_id=feature_id,
                 collection_name=FeatureModel.collection_name(),
             )
             feature = FeatureModel(**feature_dict)
+
+            # compute data required to create feature list record
             dtype_count_map[feature.dtype] += 1
+            readiness_count_map[feature.readiness] += 1
             feature_list_readiness = min(
                 feature_list_readiness, FeatureReadiness(feature.readiness)
             )
             feature_signatures.append(
                 FeatureSignature(id=feature.id, name=feature.name, version=feature.version)
             )
+            entity_ids.extend(feature.entity_ids)
+            event_data_ids.extend(feature.event_data_ids)
+
+            # validate the feature list
             if feature_store_id and (feature_store_id != feature.tabular_source.feature_store_id):
                 raise DocumentInconsistencyError(
                     "All the Feature objects within the same FeatureList object must be from the same "
@@ -124,15 +137,33 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
             # store previous feature store id
             feature_store_id = feature.tabular_source.feature_store_id
 
-        assert feature_store_id is not None
-        return feature_store_id, feature_signatures, dtype_count_map
+        derived_output = {
+            "feature_store_id": feature_store_id,
+            "feature_signatures": feature_signatures,
+            "dtype_distribution": [
+                FeatureTypeFeatureCount(dtype=dtype, count=count)
+                for dtype, count in dtype_count_map.items()
+            ],
+            "readiness_distribution": [
+                FeatureReadinessFeatureCount(readiness=readiness, count=count)
+                for readiness, count in readiness_count_map.items()
+            ],
+            "readiness": feature_list_readiness,
+            "entity_ids": sorted(set(entity_ids)),
+            "event_data_ids": sorted(set(event_data_ids)),
+        }
+        return derived_output
 
     async def create_document(  # type: ignore[override]
         self, data: FeatureListCreate, get_credential: Any = None
     ) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
         document = FeatureListModel(
-            **{**data.json_dict(), "feature_ids": sorted(data.feature_ids), "user_id": self.user.id}
+            **{
+                **data.json_dict(),
+                "feature_ids": sorted(data.feature_ids),
+                "user_id": self.user.id,
+            }
         )
 
         async with self.persistent.start_transaction() as session:
@@ -140,16 +171,23 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
             await self._check_document_unique_constraints(document=document)
 
             # check whether the feature(s) in the feature list saved to persistent or not
-            (
-                feature_store_id,
-                feature_signatures,
-                dtype_count_map,
-            ) = await self._validate_feature_ids_and_extract_feature_data(document)
+            feature_data = await self._extract_feature_data(document)
 
-            # update document with readiness
-            document = FeatureListModel(**document.dict(by_alias=True))
+            # update document with derived output
+            derived_fields = {"readiness_distribution", "readiness", "entity_ids", "event_data_ids"}
+            document = FeatureListModel(
+                **{
+                    **document.dict(by_alias=True),
+                    **{
+                        field: value
+                        for field, value in feature_data.items()
+                        if field in derived_fields
+                    },
+                }
+            )
+
             feature_store_dict = await self._get_document(
-                document_id=ObjectId(feature_store_id),
+                document_id=ObjectId(feature_data["feature_store_id"]),
                 collection_name=FeatureStoreModel.collection_name(),
             )
             feature_store = ExtendedFeatureStoreModel(**feature_store_dict)
@@ -178,13 +216,10 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
             except DocumentNotFoundError:
                 await feature_list_namespace_service.create_document(
                     data=FeatureListNamespaceCreate(
-                        _id=document.feature_list_namespace_id,
+                        _id=document.feature_list_namespace_id or ObjectId(),
                         name=document.name,
                         feature_list_ids=[insert_id],
-                        dtype_distribution=[
-                            FeatureTypeFeatureCount(dtype=dtype, count=count)
-                            for dtype, count in dtype_count_map.items()
-                        ],
+                        dtype_distribution=feature_data["dtype_distribution"],
                         readiness_distribution=document.readiness_distribution,
                         default_feature_list_id=insert_id,
                         default_version_mode=DefaultVersionMode.AUTO,
@@ -196,7 +231,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
             # insert feature list registry into feature list store
             await self._insert_feature_list_registry(
                 document=ExtendedFeatureListModel(
-                    **document.dict(by_alias=True), features=feature_signatures
+                    **document.dict(by_alias=True), features=feature_data["feature_signatures"]
                 ),
                 feature_store=feature_store,
                 get_credential=get_credential,

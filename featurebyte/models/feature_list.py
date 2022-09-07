@@ -230,11 +230,13 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     """
 
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
-    readiness_distribution: FeatureReadinessDistribution = Field(default_factory=list)
-    readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
+    readiness_distribution: FeatureReadinessDistribution = Field(
+        allow_mutation=False, default_factory=list
+    )
+    readiness: Optional[FeatureReadiness] = Field(allow_mutation=False, default=None)
     version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)
-    entity_ids: List[PydanticObjectId] = Field(default_factory=list)
-    event_data_ids: List[PydanticObjectId] = Field(default_factory=list)
+    entity_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
     )

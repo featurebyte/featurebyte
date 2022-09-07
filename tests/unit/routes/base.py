@@ -157,6 +157,15 @@ class BaseApiTestSuite:
         response = test_api_client.post(f"{self.base_route}", json=payload)
         assert response.status_code == HTTPStatus.CREATED
 
+    def test_create_201__id_is_none(self, test_api_client_persistent):
+        """Test creation (success) ID is None"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        payload = self.payload.copy()
+        payload["_id"] = None
+        response = test_api_client.post(f"{self.base_route}", json=payload)
+        assert response.status_code == HTTPStatus.CREATED
+
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
         assert create_success_response.status_code == HTTPStatus.CREATED

@@ -135,11 +135,11 @@ def test_feature_list_creation__success(production_ready_feature, config, mocked
     assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],
-        "readiness_distribution": [{"readiness": "PRODUCTION_READY", "count": 1}],
+        "readiness_distribution": [],  # before save, value is empty
         "readiness": "PRODUCTION_READY",
         "version": "V220501",
-        "event_data_ids": production_ready_feature.event_data_ids,
-        "entity_ids": production_ready_feature.entity_ids,
+        "event_data_ids": [],  # before save, value is empty
+        "entity_ids": [],  # before save, value is empty
         "created_at": None,
         "updated_at": None,
         "user_id": None,
@@ -173,14 +173,11 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
             feature_group["sum_30m"].id,
             feature_group["sum_1d"].id,
         ],
-        "readiness_distribution": [
-            {"readiness": "PRODUCTION_READY", "count": 1},
-            {"readiness": "DRAFT", "count": 2},
-        ],
+        "readiness_distribution": [],
         "name": "my_feature_list",
         "readiness": "DRAFT",
-        "event_data_ids": production_ready_feature.event_data_ids,
-        "entity_ids": production_ready_feature.entity_ids,
+        "event_data_ids": [],
+        "entity_ids": [],
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
