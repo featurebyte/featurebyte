@@ -644,12 +644,12 @@ class DateDiffNode(ExpressionNode):
     left_node: ExpressionNode
     right_node: ExpressionNode
 
-    def with_unit(self, unit: str) -> Expression:
+    def with_unit(self, unit: TimedeltaSupportedUnitType) -> Expression:
         """Construct a date difference expression with provided time unit
 
         Parameters
         ----------
-        unit : str
+        unit : TimedeltaSupportedUnitType
             Time unit
 
         Returns
