@@ -3,7 +3,9 @@ FeatureListService class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+import collections
 
 from bson.objectid import ObjectId
 
@@ -24,7 +26,7 @@ from featurebyte.models.feature import (
     FeatureReadiness,
     FeatureSignature,
 )
-from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_list import FeatureListModel, FeatureTypeFeatureCount
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.feature_list_namespace import (
@@ -95,8 +97,8 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
 
     async def _validate_feature_ids_and_extract_feature_data(
         self, document: FeatureListModel
-    ) -> Tuple[ObjectId, List[FeatureSignature], List[DBVarType]]:
-        dtypes: List[DBVarType] = []
+    ) -> Tuple[ObjectId, List[FeatureSignature], Dict[DBVarType, int]]:
+        dtype_count_map: Dict[DBVarType, int] = collections.defaultdict(int)
         feature_store_id: Optional[ObjectId] = None
         feature_signatures: List[FeatureSignature] = []
         feature_list_readiness: FeatureReadiness = FeatureReadiness.PRODUCTION_READY
@@ -106,7 +108,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                 collection_name=FeatureModel.collection_name(),
             )
             feature = FeatureModel(**feature_dict)
-            dtypes.append(feature.dtype)
+            dtype_count_map[feature.dtype] += 1
             feature_list_readiness = min(
                 feature_list_readiness, FeatureReadiness(feature.readiness)
             )
@@ -123,7 +125,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
             feature_store_id = feature.tabular_source.feature_store_id
 
         assert feature_store_id is not None
-        return feature_store_id, feature_signatures, sorted(set(dtypes))
+        return feature_store_id, feature_signatures, dtype_count_map
 
     async def create_document(  # type: ignore[override]
         self, data: FeatureListCreate, get_credential: Any = None
@@ -141,7 +143,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
             (
                 feature_store_id,
                 feature_signatures,
-                dtypes,
+                dtype_count_map,
             ) = await self._validate_feature_ids_and_extract_feature_data(document)
 
             # update document with readiness
@@ -178,8 +180,11 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                     data=FeatureListNamespaceCreate(
                         _id=document.feature_list_namespace_id,
                         name=document.name,
-                        dtypes=dtypes,
                         feature_list_ids=[insert_id],
+                        dtype_distribution=[
+                            FeatureTypeFeatureCount(dtype=dtype, count=count)
+                            for dtype, count in dtype_count_map.items()
+                        ],
                         readiness_distribution=document.readiness_distribution,
                         default_feature_list_id=insert_id,
                         default_version_mode=DefaultVersionMode.AUTO,

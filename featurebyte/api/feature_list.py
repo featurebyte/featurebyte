@@ -295,7 +295,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     @property
     def feature_list_namespace(self) -> FeatureListNamespace:
         """
-        FeatureListNamespace object of current feature
+        FeatureListNamespace object of current feature list
 
         Returns
         -------

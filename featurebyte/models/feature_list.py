@@ -34,13 +34,27 @@ class FeatureListStatus(OrderedStrEnum):
     PUBLISHED = "PUBLISHED"
 
 
+class FeatureTypeFeatureCount(FeatureByteBaseModel):
+    """
+    Feature count corresponding to the feature type within a feature list
+
+    dtype: DBVarType
+        Feature data type
+    count: int
+        Number of features with the specified data type
+    """
+
+    dtype: DBVarType
+    count: int
+
+
 class FeatureReadinessFeatureCount(FeatureByteBaseModel):
     """
     Feature count corresponding to the feature readiness within a feature list
 
-    feature_readiness: FeatureReadiness
+    readiness: FeatureReadiness
         Feature readiness level
-    feature_count: int
+    count: int
         Number of features with the given readiness within a feature list
     """
 
@@ -129,11 +143,11 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         Feature namespace id
     name: str
         Feature name
-    dtypes: List[DBVarType]
-        List of variable types used in the feature list
     feature_list_ids: List[PydanticObjectId]
         List of feature list ids
-    readiness_distribution: List[Dict[str, Any]]
+    dtype_distribution: List[FeatureTypeFeatureCount]
+        Feature type distribution
+    readiness_distribution: FeatureReadinessDistribution
         Feature readiness distribution of the default feature list
     readiness: FeatureReadiness
         Aggregated readiness of the default feature list
@@ -147,8 +161,8 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         EventData IDs used in the feature list
     """
 
-    dtypes: List[DBVarType] = Field(allow_mutation=False)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    dtype_distribution: List[FeatureTypeFeatureCount] = Field(allow_mutation=False)
     readiness_distribution: FeatureReadinessDistribution = Field(allow_mutation=False)
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
