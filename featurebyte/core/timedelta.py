@@ -1,34 +1,26 @@
 """
 Module for Timedelta related functions
 """
-from typing import Literal
+from __future__ import annotations
 
 from typeguard import typechecked
 
+from featurebyte.common.typing import TimedeltaSupportedUnitType
 from featurebyte.core.series import Series
 from featurebyte.core.util import series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 
-TimedeltaSupportedUnit = Literal[
-    "day",
-    "hour",
-    "minute",
-    "second",
-    "millisecond",
-    "microsecond",
-]
-
 
 @typechecked
-def to_timedelta(series: Series, unit: TimedeltaSupportedUnit) -> Series:
+def to_timedelta(series: Series, unit: TimedeltaSupportedUnitType) -> Series:
     """Construct a timedelta Series that can be used to increment a datetime Series
 
     Parameters
     ----------
     series : Series
         Series representing the amount of time unit
-    unit : TimedeltaSupportedUnit
+    unit : TimedeltaSupportedUnitType
         A supported unit in str
 
     Returns

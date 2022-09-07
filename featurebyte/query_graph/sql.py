@@ -14,6 +14,7 @@ from enum import Enum
 import pandas as pd
 from sqlglot import Expression, expressions, parse_one, select
 
+from featurebyte.common.typing import TimedeltaSupportedUnitType
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph import expression as fb_expressions
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -675,7 +676,7 @@ class TimedeltaExtractNode(ExpressionNode):
     """Node for converting Timedelta to numeric value given a unit"""
 
     timedelta_node: Union[TimedeltaNode, DateDiffNode]
-    unit: Literal["day", "hour", "minute", "second", "millisecond", "microsecond"]
+    unit: TimedeltaSupportedUnitType
 
     @property
     def sql(self) -> Expression:
@@ -690,7 +691,10 @@ class TimedeltaExtractNode(ExpressionNode):
 
     @classmethod
     def convert_timedelta_unit(
-        cls, input_expr: Expression, input_unit: str, output_unit: str
+        cls,
+        input_expr: Expression,
+        input_unit: TimedeltaSupportedUnitType,
+        output_unit: TimedeltaSupportedUnitType,
     ) -> Expression:
         """Create an expression that converts a timedelta column to another unit
 
@@ -698,9 +702,9 @@ class TimedeltaExtractNode(ExpressionNode):
         ----------
         input_expr : Expression
             Expression for the timedelta value. Should evaluate to numeric result
-        input_unit : str
+        input_unit : TimedeltaSupportedUnitType
             The time unit that input_expr is in
-        output_unit : str
+        output_unit : TimedeltaSupportedUnitType
             The desired unit to convert to
 
         Returns
@@ -724,7 +728,7 @@ class TimedeltaNode(ExpressionNode):
     """Node to represent Timedelta"""
 
     value_expr: ExpressionNode
-    unit: str
+    unit: TimedeltaSupportedUnitType
 
     @property
     def sql(self) -> Expression:
