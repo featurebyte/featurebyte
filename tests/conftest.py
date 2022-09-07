@@ -1,17 +1,57 @@
 """
 Common fixture for both unit and integration tests
 """
+from typing import Optional, TextIO
+
+import datetime
 import os
+import sys
 from unittest.mock import patch
 
 import pytest
+from _pytest.config import Config
+from _pytest.terminal import TerminalReporter
 from bson.objectid import ObjectId
+
+
+class TimestamperTerminalReporter(TerminalReporter):  # pylint: disable=subclassed-final-class
+    """
+    Add timestamp to the terminal
+
+    References
+    ----------
+    https://github.com/mbkroese/pytest-timestamper/blob/main/src/pytest_timestamper/plugin.py
+    """
+
+    def __init__(self, config: Config, file: Optional[TextIO] = None) -> None:
+        super().__init__(config, file)
+
+        # we need a cache to ensure we only print one line per test
+        self._cache = {}
+
+    def _locationline(self, nodeid: str, fspath: str, lineno: Optional[int], domain: str):
+        key = (nodeid, fspath, lineno, domain)
+        if key not in self._cache:
+            baseline = super()._locationline(nodeid, fspath, lineno, domain)
+            formatted_datetime = datetime.datetime.now().strftime(self.config.option.datefmt)
+            formatted_prefix = self.config.option.prefixfmt.format(
+                formatted_datetime=formatted_datetime
+            )
+            self._cache[key] = formatted_prefix + baseline
+        return self._cache[key]
 
 
 def pytest_configure(config):
     """Set up additional pytest markers"""
     # register an additional marker
     config.addinivalue_line("markers", "no_mock_process_store: mark test to not mock process store")
+
+    if config.pluginmanager.has_plugin("terminalreporter"):
+        reporter = config.pluginmanager.get_plugin("terminalreporter")
+        config.pluginmanager.unregister(reporter, "terminalreporter")
+        config.pluginmanager.register(
+            TimestamperTerminalReporter(config, sys.stdout), "terminalreporter"
+        )
 
 
 def pytest_addoption(parser):
