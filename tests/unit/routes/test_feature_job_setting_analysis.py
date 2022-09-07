@@ -88,14 +88,10 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         Apply patch on call to analysis
         """
         result = self.load_payload("tests/fixtures/feature_job_setting_analysis/result.json")
-        result.pop("analysis_result")
-        record = Mock(
-            **result,
-            to_html=lambda: result["analysis_report"],
-            analysis_plots=None,
-            analysis_data=None,
-            analysis_result=analysis_result,
-        )
+        result["analysis_plots"] = None
+        result["analysis_data"] = None
+        result["analysis_result"] = analysis_result
+        record = Mock(**result, to_html=lambda: result["analysis_report"], dict=lambda: result)
         with patch(
             "featurebyte.worker.task.feature_job_setting_analysis.create_feature_job_settings_analysis",
         ) as mock_create_feature_job_settings_analysis:
@@ -183,7 +179,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
 
         # check results are stored to storage
         data = await storage.get_object(
-            f"feature_job_setting_analysis/{feature_job_setting_analysis_id}/data.pkl"
+            f"feature_job_setting_analysis/{feature_job_setting_analysis_id}/data.json"
         )
         assert data["analysis_plots"] is None
         assert data["analysis_data"] is None

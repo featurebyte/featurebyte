@@ -237,8 +237,8 @@ class FeatureJobSettingAnalysisData(BaseModel):
     Store large objects from the analysis
     """
 
-    analysis_plots: AnalysisPlots
-    analysis_data: AnalysisData
+    analysis_plots: Optional[AnalysisPlots]
+    analysis_data: Optional[AnalysisData]
     analysis_result: AnalysisResultsData
 
     class Config:
