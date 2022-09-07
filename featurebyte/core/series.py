@@ -398,8 +398,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
                 other=other, node_type=NodeType.CONCAT, output_var_type=DBVarType.VARCHAR
             )
         if self.is_datetime and self._is_a_series_of_var_type(other, DBVarType.TIMEDELTA):
-            if not isinstance(other, Series):
-                raise TypeError("Scalar timedelta value not supported yet")
             return self._date_add_op(other=other)
         return self._binary_arithmetic_op(other, NodeType.ADD)
 
