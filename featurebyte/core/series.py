@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, Optional, Type, Union
 
+import pandas as pd
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
@@ -365,7 +366,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @typechecked
-    def _date_add_op(self, other: Series, right_op: bool = False) -> Series:
+    def _date_add_op(self, other: Union[Series, pd.Timedelta], right_op: bool = False) -> Series:
         """
         Increment date by timedelta
 
@@ -381,6 +382,8 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         Series
             output of the date difference operation
         """
+        if isinstance(other, pd.Timedelta):
+            other = other.total_seconds()
         return self._binary_op(
             other=other,
             node_type=NodeType.DATE_ADD,
@@ -390,15 +393,17 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @typechecked
-    def __add__(self, other: Union[int, float, str, Series]) -> Series:
+    def __add__(self, other: Union[int, float, str, pd.Timedelta, Series]) -> Series:
         is_other_string_like = isinstance(other, str)
         is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
         if self.dtype == DBVarType.VARCHAR and is_other_string_like:
             return self._binary_op(
                 other=other, node_type=NodeType.CONCAT, output_var_type=DBVarType.VARCHAR
             )
-        if self.is_datetime and self._is_a_series_of_var_type(other, DBVarType.TIMEDELTA):
-            assert isinstance(other, Series)
+        if self.is_datetime and (
+            self._is_a_series_of_var_type(other, DBVarType.TIMEDELTA)
+            or isinstance(other, pd.Timedelta)
+        ):
             return self._date_add_op(other=other)
         return self._binary_arithmetic_op(other, NodeType.ADD)
 
