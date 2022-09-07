@@ -644,6 +644,17 @@ class DateDiffNode(ExpressionNode):
     right_node: ExpressionNode
 
     def with_unit(self, unit: str) -> Expression:
+        """Construct a date difference expression with provided time unit
+
+        Parameters
+        ----------
+        unit : str
+            Time unit
+
+        Returns
+        -------
+        Expression
+        """
         output_expr = expressions.Anonymous(
             this="DATEDIFF",
             expressions=[
