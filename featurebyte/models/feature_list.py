@@ -169,6 +169,7 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
     default_version_mode: DefaultVersionMode = Field(
         default=DefaultVersionMode.AUTO, allow_mutation=False
     )
+    status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
@@ -216,8 +217,6 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         Feature readiness distribution of this feature list
     readiness: FeatureReadiness
         Aggregated readiness of this feature list
-    status: FeatureListStatus
-        FeatureList status
     version: FeatureListVersionIdentifier
         Feature list version
     entity_ids: List[PydanticObjectId]
@@ -233,7 +232,6 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
     readiness_distribution: FeatureReadinessDistribution = Field(default_factory=list)
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
-    status: Optional[FeatureListStatus] = Field(allow_mutation=False)
     version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)
     entity_ids: List[PydanticObjectId] = Field(default_factory=list)
     event_data_ids: List[PydanticObjectId] = Field(default_factory=list)

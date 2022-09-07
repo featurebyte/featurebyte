@@ -35,7 +35,9 @@ async def get_feature_namespace(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_namespace_id,
-        exception_detail=f'FeatureNamespace (id: "{feature_namespace_id}") not found.',
+        exception_detail=(
+            f'FeatureNamespace (id: "{feature_namespace_id}") not found. Please save the Feature object first.'
+        ),
     )
     return feature_namespace
 

@@ -84,7 +84,11 @@ class BaseApiTestSuite:
             ],
         ),
     ]
-    not_found_save_suggestion = True
+
+    @property
+    def class_name_to_save(self):
+        """Class name used to save the object"""
+        return self.class_name
 
     @staticmethod
     def load_payload(filename):
@@ -222,9 +226,10 @@ class BaseApiTestSuite:
         unknown_id = ObjectId()
         response = test_api_client.get(f"{self.base_route}/{unknown_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
-        error_message = f'{self.class_name} (id: "{unknown_id}") not found.'
-        if self.not_found_save_suggestion:
-            error_message += f" Please save the {self.class_name} object first."
+        error_message = (
+            f'{self.class_name} (id: "{unknown_id}") not found.'
+            f" Please save the {self.class_name_to_save} object first."
+        )
         assert response.json()["detail"] == error_message
 
     def test_list_200(self, test_api_client_persistent, create_multiple_success_responses):

@@ -270,8 +270,6 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         # for the feature list constructed during serialization, following codes should be skipped
         if not values.get("feature_ids"):
             values["feature_ids"] = [feature.id for feature in values["feature_objects"].values()]
-        if not values.get("status"):
-            values["status"] = FeatureListStatus.DRAFT
         if not values.get("version"):
             values["version"] = get_version()
         if not values.get("readiness_distribution"):
@@ -302,6 +300,10 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         FeatureListNamespace
         """
         return FeatureListNamespace.get_by_id(id=self.feature_list_namespace_id)
+
+    @property
+    def status(self) -> FeatureListStatus:
+        return self.feature_list_namespace.status
 
     @classmethod
     def list(cls) -> List[str]:

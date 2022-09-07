@@ -27,7 +27,11 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
     )
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
-    not_found_save_suggestion = False
+
+    @property
+    def class_name_to_save(self):
+        """Class name used to save the object"""
+        return "FeatureList"
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
