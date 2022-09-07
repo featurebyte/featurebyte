@@ -1,5 +1,5 @@
 """
-Test for FeatureNamespace route
+Test for FeatureListNamespace route
 """
 import asyncio
 import time
@@ -10,21 +10,20 @@ import pytest
 from bson import ObjectId
 from requests import Response
 
-from featurebyte.schema.feature import FeatureCreate
-from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
-from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.schema.feature_list_namespace import FeatureListNamespaceCreate
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from tests.unit.routes.base import BaseApiTestSuite
 
 
-class TestFeatureNamespaceApi(BaseApiTestSuite):
+class TestFeatureListNamespaceApi(BaseApiTestSuite):
     """
-    TestFeatureNamespaceApi
+    TestFeatureListNamespaceApi
     """
 
-    class_name = "FeatureNamespace"
-    base_route = "/feature_namespace"
+    class_name = "FeatureListNamespace"
+    base_route = "/feature_list_namespace"
     payload = BaseApiTestSuite.load_payload(
-        "tests/fixtures/request_payloads/feature_namespace.json"
+        "tests/fixtures/request_payloads/feature_list_namespace.json"
     )
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
@@ -45,9 +44,13 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         _, persistent = test_api_client_persistent
         user = Mock()
         user.id = user_id
-        feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
+        feature_list_namespace_service = FeatureListNamespaceService(
+            user=user, persistent=persistent
+        )
         document = asyncio.run(
-            feature_namespace_service.create_document(data=FeatureNamespaceCreate(**self.payload))
+            feature_list_namespace_service.create_document(
+                data=FeatureListNamespaceCreate(**self.payload)
+            )
         )
         response = Response()
         response._content = bytes(document.json(by_alias=True), "utf-8")
@@ -70,33 +73,18 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         test_api_client, persistent = test_api_client_persistent
         user = Mock()
         user.id = user_id
-        feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
+        feature_list_namespace_service = FeatureListNamespaceService(
+            user=user, persistent=persistent
+        )
         output = []
         for i, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
             # payload name is set here as we need the exact name value for test_list_200 test
             payload["name"] = f'{self.payload["name"]}_{i}'
             document = asyncio.run(
-                feature_namespace_service.create_document(data=FeatureNamespaceCreate(**payload))
+                feature_list_namespace_service.create_document(
+                    data=FeatureListNamespaceCreate(**payload)
+                )
             )
             output.append(document)
             time.sleep(0.05)
         return output
-
-    async def setup_get_info(self, api_client, persistent, user_id):
-        """Setup for get_info route testing"""
-        api_object_filename_pairs = [
-            ("feature_store", "feature_store"),
-            ("entity", "entity"),
-            ("event_data", "event_data"),
-        ]
-        for api_object, filename in api_object_filename_pairs:
-            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
-            response = api_client.post(f"/{api_object}", json=payload)
-            assert response.status_code == HTTPStatus.CREATED
-
-        payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
-        await persistent.insert_one(
-            collection_name="feature",
-            document=FeatureCreate(**payload).dict(by_alias=True),
-            user_id=user_id,
-        )

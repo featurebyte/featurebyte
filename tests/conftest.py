@@ -116,7 +116,7 @@ def feature_model_dict_feature():
             "type": "project",
             "output_type": "series",
         },
-        "readiness": None,
+        "readiness": "DRAFT",
         "version": "V220710",
         "online_enabled": None,
         "event_data_ids": [ObjectId()],

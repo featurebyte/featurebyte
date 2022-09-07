@@ -234,7 +234,7 @@ def saved_feature_fixture(
     snowflake_event_data.save()
     assert snowflake_event_data.id == event_data_id_before
     feature_id_before = float_feature.id
-    assert float_feature.readiness is None
+    assert float_feature.readiness is FeatureReadiness.DRAFT
     assert float_feature.saved is False
     float_feature.save()
     assert float_feature.id == feature_id_before

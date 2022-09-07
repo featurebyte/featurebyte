@@ -7,30 +7,7 @@ import freezegun
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.feature import (
-    FeatureListModel,
-    FeatureListStatus,
-    FeatureModel,
-    FeatureNamespaceModel,
-    FeatureReadiness,
-)
-
-
-@pytest.fixture(name="feature_list_model_dict")
-def feature_list_model_dict_fixture():
-    """Fixture for a FeatureList dict"""
-    return {
-        "name": "my_feature_list",
-        "feature_ids": [],
-        "readiness": "DRAFT",
-        "status": None,
-        "version": "V220710",
-        "created_at": None,
-        "updated_at": None,
-        "user_id": None,
-        "entity_ids": [],
-        "event_data_ids": [],
-    }
+from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel, FeatureReadiness
 
 
 @pytest.fixture(name="feature_name_space_dict")
@@ -41,6 +18,7 @@ def feature_name_space_dict_fixture():
     event_data_ids = [ObjectId()]
     return {
         "name": "some_feature_name",
+        "dtype": "FLOAT",
         "feature_ids": [feature_id],
         "readiness": "DRAFT",
         "created_at": datetime.now(),
@@ -93,16 +71,6 @@ def test_feature_model(snowflake_event_view_with_entity, feature_model_dict):
             assert getattr(feature, key) == getattr(loaded_feature, key)
 
 
-def test_feature_list_model(feature_list_model_dict):
-    """Test feature list model"""
-    feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
-    feature_list_dict = feature_list.dict(exclude={"id": True})
-    assert feature_list_dict == feature_list_model_dict
-    feature_list_json = feature_list.json(by_alias=True)
-    loaded_feature_list = FeatureListModel.parse_raw(feature_list_json)
-    assert loaded_feature_list == feature_list
-
-
 def test_feature_name_space(feature_name_space_dict):
     """Test feature name space model"""
     feature_name_space = FeatureNamespaceModel.parse_obj(feature_name_space_dict)
@@ -124,15 +92,3 @@ def test_feature_readiness_ordering():
     )
     assert FeatureReadiness.min() == FeatureReadiness.DEPRECATED
     assert FeatureReadiness.max() == FeatureReadiness.PRODUCTION_READY
-
-
-def test_feature_list_status_ordering():
-    """Test to cover feature list status ordering"""
-    assert (
-        FeatureListStatus.PUBLISHED
-        > FeatureListStatus.DRAFT
-        > FeatureListStatus.EXPERIMENTAL
-        > FeatureListStatus.DEPRECATED
-    )
-    assert FeatureListStatus.min() == FeatureListStatus.DEPRECATED
-    assert FeatureListStatus.max() == FeatureListStatus.PUBLISHED

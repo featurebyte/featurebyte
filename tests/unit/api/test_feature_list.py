@@ -10,7 +10,8 @@ from freezegun import freeze_time
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, FeatureList
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.feature import FeatureListStatus, FeatureReadiness
+from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.enum import NodeType
 
 
@@ -131,9 +132,10 @@ def test_feature_list_creation__success(production_ready_feature, config, mocked
         }
     )
     flist.get_historical_features(dataframe, credentials=config.credentials)
-    assert flist.dict(exclude={"id": True}) == {
+    assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],
+        "readiness_distribution": [{"readiness": "PRODUCTION_READY", "count": 1}],
         "readiness": "PRODUCTION_READY",
         "status": "DRAFT",
         "version": "V220501",
@@ -154,7 +156,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         [production_ready_feature, feature_group[["sum_30m", "sum_1d"]]],
         name="my_feature_list",
     )
-    assert flist.dict(exclude={"id": True}) == {
+    assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "created_at": None,
         "updated_at": None,
         "user_id": None,
@@ -164,8 +166,12 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
             feature_group["sum_30m"].id,
             feature_group["sum_1d"].id,
         ],
+        "readiness_distribution": [
+            {"readiness": "PRODUCTION_READY", "count": 1},
+            {"readiness": "DRAFT", "count": 2},
+        ],
         "name": "my_feature_list",
-        "readiness": None,
+        "readiness": "DRAFT",
         "status": "DRAFT",
         "event_data_ids": production_ready_feature.event_data_ids,
         "entity_ids": production_ready_feature.entity_ids,
@@ -399,6 +405,11 @@ def saved_feature_list_fixture(
     assert feature_list.id == feature_list_id_before
     assert feature_list.readiness == FeatureReadiness.DRAFT
     assert feature_list.name == "my_feature_list"
+
+    feature_list_namespace = feature_list.feature_list_namespace
+    assert feature_list_namespace.name == "my_feature_list"
+    assert feature_list_namespace.feature_list_ids == [feature_list.id]
+    assert feature_list_namespace.default_feature_list_id == feature_list.id
     return feature_list
 
 
@@ -530,3 +541,8 @@ def test_pre_save_operations(mock_is_notebook, mock_alive_bar, saved_feature_lis
         "title": "Saving Feature(s)",
         "dual_line": True,
     }
+
+
+def test_list(saved_feature_list):
+    """Test listing feature list"""
+    assert FeatureList.list() == [saved_feature_list.name] == ["my_feature_list"]

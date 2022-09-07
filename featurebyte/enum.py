@@ -68,6 +68,12 @@ class OrderedStrEnum(OrderedEnum):
     def __hash__(self) -> int:
         return str.__hash__(self.value)
 
+    def __repr__(self) -> str:
+        return str(self.value)
+
+    def __str__(self) -> str:
+        return str(self.value)
+
 
 class DBVarType(str, Enum):
     """
