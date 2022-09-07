@@ -208,13 +208,13 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                 )
 
                 # update feature list namespace
-                await feature_list_namespace_service.update_document(
+                feature_list_namespace = await feature_list_namespace_service.update_document(
                     document_id=feature_list_namespace.id,
                     data=FeatureListNamespaceUpdate(feature_list_id=document.id),
                 )
 
             except DocumentNotFoundError:
-                await feature_list_namespace_service.create_document(
+                feature_list_namespace = await feature_list_namespace_service.create_document(
                     data=FeatureListNamespaceCreate(
                         _id=document.feature_list_namespace_id or ObjectId(),
                         name=document.name,
@@ -231,7 +231,9 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
             # insert feature list registry into feature list store
             await self._insert_feature_list_registry(
                 document=ExtendedFeatureListModel(
-                    **document.dict(by_alias=True), features=feature_data["feature_signatures"]
+                    **document.dict(by_alias=True),
+                    features=feature_data["feature_signatures"],
+                    status=feature_list_namespace.status,
                 ),
                 feature_store=feature_store,
                 get_credential=get_credential,

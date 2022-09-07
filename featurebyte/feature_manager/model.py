@@ -11,7 +11,7 @@ from pydantic import Field, StrictStr
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import FeatureModel, FeatureVersionIdentifier
-from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.interpreter import GraphInterpreter
 
@@ -78,3 +78,4 @@ class ExtendedFeatureListModel(FeatureListModel):
     """
 
     features: List[FeatureSignature] = Field(default_factory=list)
+    status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
