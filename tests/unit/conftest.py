@@ -613,13 +613,13 @@ def test_save_payload_fixtures(
     feature_list_namespace = FeatureListNamespaceCreate(
         _id=ObjectId(),
         name=feature_list_multiple.name,
-        dtypes=["FLOAT"],
         feature_list_ids=[feature_list_multiple.id],
-        readiness_distribution=feature_list_multiple.readiness_distribution,
+        dtype_distribution=[{"dtype": "FLOAT", "count": 2}],
+        readiness_distribution=[{"readiness": "DRAFT", "count": 2}],
         default_feature_list_id=feature_list_multiple.id,
         default_version_mode=DefaultVersionMode.AUTO,
-        entity_ids=feature_list_multiple.entity_ids,
-        event_data_ids=feature_list_multiple.event_data_ids,
+        entity_ids=feature_sum_30m.entity_ids,
+        event_data_ids=feature_sum_30m.event_data_ids,
     )
     feature_job_setting_analysis = FeatureJobSettingAnalysisCreate(
         _id="62f301e841b73757c9ff879a",

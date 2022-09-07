@@ -162,8 +162,9 @@ class TestFeatureListApi(BaseApiTestSuite):
         assert new_fl_dict["feature_list_namespace_id"] == result["feature_list_namespace_id"]
 
         # check feature list namespace
-        fl_namespace_route = f"/feature_list_namespace/{result['feature_list_namespace_id']}"
-        namespace_response = test_api_client.get(fl_namespace_route)
+        namespace_response = test_api_client.get(
+            f"/feature_list_namespace/{result['feature_list_namespace_id']}"
+        )
         namespace_response_dict = namespace_response.json()
         assert namespace_response_dict["feature_list_ids"] == [result["_id"], new_fl_dict["_id"]]
         assert namespace_response_dict["readiness"] == "PRODUCTION_READY"

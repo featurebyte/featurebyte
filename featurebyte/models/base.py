@@ -43,6 +43,11 @@ class FeatureByteBaseModel(BaseModel):
         """
         Convert model into json dictionary that can be used as request payload
 
+        Parameters
+        ----------
+        kwargs: Any
+            Additional parameter(s) passed to pydantic json method
+
         Returns
         -------
         dict[str, Any]
@@ -165,8 +170,19 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
 
     @validator("id", pre=True)
     @classmethod
-    def _validate_id(cls, value: Any) -> Any:
-        """If the value of the ID is None, generate a valid ID"""
+    def validate_id(cls, value: Any) -> Any:
+        """
+        Base document model id field validator. If the value of the ID is None, generate a valid ID.
+
+        Parameters
+        ----------
+        value: Any
+            Input value to id field
+
+        Returns
+        -------
+        Output id value
+        """
         if value is None:
             return ObjectId()
         return value
