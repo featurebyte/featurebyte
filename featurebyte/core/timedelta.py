@@ -10,9 +10,7 @@ from featurebyte.core.util import series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 
-SupportedUnit = Literal[
-    "year",
-    "month",
+TimedeltaSupportedUnit = Literal[
     "day",
     "hour",
     "minute",
@@ -23,14 +21,14 @@ SupportedUnit = Literal[
 
 
 @typechecked
-def to_timedelta(series: Series, unit: SupportedUnit) -> Series:
+def to_timedelta(series: Series, unit: TimedeltaSupportedUnit) -> Series:
     """Construct a timedelta Series that can be used to increment a datetime Series
 
     Parameters
     ----------
     series : Series
         Series representing the amount of time unit
-    unit : SupportedUnit
+    unit : TimedeltaSupportedUnit
         A supported unit in str
 
     Returns
