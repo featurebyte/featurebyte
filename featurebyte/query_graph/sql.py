@@ -681,40 +681,42 @@ class TimedeltaExtractNode(ExpressionNode):
     def sql(self) -> Expression:
         if isinstance(self.timedelta_node, DateDiffNode):
             expr = self.timedelta_node.with_unit("microsecond")
-            output_expr = convert_timedelta_unit(expr, "microsecond", self.unit)
+            output_expr = self.convert_timedelta_unit(expr, "microsecond", self.unit)
         else:
-            output_expr = convert_timedelta_unit(
+            output_expr = self.convert_timedelta_unit(
                 self.timedelta_node.sql, self.timedelta_node.unit, self.unit
             )
         return output_expr
 
+    @classmethod
+    def convert_timedelta_unit(
+        cls, input_expr: Expression, input_unit: str, output_unit: str
+    ) -> Expression:
+        """Create an expression that converts a timedelta column to another unit
 
-def convert_timedelta_unit(input_expr: Expression, input_unit: str, output_unit: str) -> Expression:
-    """Create an expression that converts a timedelta column to another unit
+        Parameters
+        ----------
+        input_expr : Expression
+            Expression for the timedelta value. Should evaluate to numeric result
+        input_unit : str
+            The time unit that input_expr is in
+        output_unit : str
+            The desired unit to convert to
 
-    Parameters
-    ----------
-    input_expr : Expression
-        Expression for the timedelta value. Should evaluate to numeric result
-    input_unit : str
-        The time unit that input_expr is in
-    output_unit : str
-        The desired unit to convert to
-
-    Returns
-    -------
-    Expression
-    """
-    input_unit_milli_seconds = int(pd.Timedelta(1, unit=input_unit).total_seconds() * 1e6)
-    output_unit_milli_seconds = int(pd.Timedelta(1, unit=output_unit).total_seconds() * 1e6)
-    converted_expr = expressions.Div(
-        this=expressions.Mul(
-            this=input_expr, expression=make_literal_value(input_unit_milli_seconds)
-        ),
-        expression=make_literal_value(output_unit_milli_seconds),
-    )
-    converted_expr = expressions.Paren(this=converted_expr)
-    return converted_expr
+        Returns
+        -------
+        Expression
+        """
+        input_unit_milli_seconds = int(pd.Timedelta(1, unit=input_unit).total_seconds() * 1e6)
+        output_unit_milli_seconds = int(pd.Timedelta(1, unit=output_unit).total_seconds() * 1e6)
+        converted_expr = expressions.Div(
+            this=expressions.Mul(
+                this=input_expr, expression=make_literal_value(input_unit_milli_seconds)
+            ),
+            expression=make_literal_value(output_unit_milli_seconds),
+        )
+        converted_expr = expressions.Paren(this=converted_expr)
+        return converted_expr
 
 
 @dataclass
