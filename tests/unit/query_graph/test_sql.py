@@ -247,7 +247,7 @@ def test_date_difference(input_node):
     node = sql.make_binary_operation_node(
         NodeType.DATE_DIFF,
         input_nodes,
-        parameters={"unit": "second"},
+        parameters={},
     )
     assert node.sql.sql() == "DATEDIFF(second, b, a)"
 
