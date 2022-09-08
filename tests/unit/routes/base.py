@@ -15,6 +15,8 @@ class BaseApiTestSuite:
     BaseApiTestSuite contains common api tests
     """
 
+    # pylint: disable=too-many-public-methods
+
     # class variables to be set at metaclass
     base_route = None
     class_name = None

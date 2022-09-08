@@ -167,7 +167,7 @@ class TestEntityApi(BaseApiTestSuite):
             ]
         }
 
-        response = test_api_client.patch(f"/entity/abc", json={"name": "anything"})
+        response = test_api_client.patch("/entity/abc", json={"name": "anything"})
         assert response.json()["detail"] == [
             {
                 "loc": ["path", self.id_field_name],

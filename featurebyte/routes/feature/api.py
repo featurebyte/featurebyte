@@ -60,6 +60,7 @@ async def list_features(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
+    feature_list_id: Optional[PydanticObjectId] = None,
 ) -> FeatureList:
     """
     List Features
@@ -73,6 +74,7 @@ async def list_features(
         sort_dir=sort_dir,
         search=search,
         name=name,
+        feature_list_id=feature_list_id,
     )
     return feature_list
 
