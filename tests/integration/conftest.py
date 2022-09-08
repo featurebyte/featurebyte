@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 import yaml
 from bson.objectid import ObjectId
+from git import Git
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
@@ -48,16 +49,22 @@ def config_fixture():
                 "name": "sqlite_datasource",
             },
         ],
-        "git": {
-            "remote_url": "git@github.com:featurebyte/playground.git",
-            "key_path": os.getenv("GIT_SSH_KEY_PATH"),
-            "branch": f"integration-test-{str(ObjectId())}",
-        },
     }
-    with tempfile.NamedTemporaryFile("w") as file_handle:
-        file_handle.write(yaml.dump(config_dict))
-        file_handle.flush()
-        yield Configurations(config_file_path=file_handle.name)
+    with tempfile.TemporaryDirectory() as temp_dir_path:
+        # initialize git
+        git = Git(temp_dir_path)
+        git.init()
+
+        # use local git as remote
+        config_dict["git"] = {
+            "remote_url": f"file://{temp_dir_path}",
+            "key_path": None,
+            "branch": f"integration-test-{str(ObjectId())}",
+        }
+        with tempfile.NamedTemporaryFile("w") as file_handle:
+            file_handle.write(yaml.dump(config_dict))
+            file_handle.flush()
+            yield Configurations(config_file_path=file_handle.name)
 
 
 @pytest.fixture(name="mock_get_persistent", scope="session")
@@ -69,13 +76,6 @@ def mock_get_persistent_fixture(config):
     with mock.patch("featurebyte.app.get_persistent") as mock_get_persistent:
         mock_get_persistent.return_value = git_db
         yield mock_get_persistent
-
-    repo, ssh_cmd, branch = git_db.repo, git_db.ssh_cmd, git_db.branch
-    origin = repo.remotes.origin
-    if origin:
-        with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
-            # add kill_after_timeout to avoid process blocking which causes timeout exception
-            origin.push(refspec=f":{branch}", kill_after_timeout=30)
 
 
 @pytest.fixture(name="snowflake_feature_store", scope="session")

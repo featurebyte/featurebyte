@@ -6,11 +6,12 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-import os
+import tempfile
 from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
+from git import Git
 
 from featurebyte.persistent.git import GitDB
 
@@ -44,32 +45,26 @@ def persistent_data_fixture():
     """
     # create a GitDB instance and save a document
     branch = f"integration-test-{str(ObjectId())}"
-    remote_url = "git@github.com:featurebyte/playground.git"
-    ssh_key_path = os.environ["GIT_SSH_KEY_PATH"]
-    persistent = GitDB(
-        branch=branch,
-        remote_url=remote_url,
-        key_path=ssh_key_path,
-    )
-    persistent.insert_doc_name_func("data", lambda doc: doc["name"])
-    persistent.insert_doc_name_func("data1", lambda doc: doc["name"])
-    persistent.insert_doc_name_func("data2", lambda doc: doc["name"])
-    persistent.insert_doc_name_func("__audit__data", lambda doc: doc["name"])
-    persistent.insert_doc_name_func("__audit__data1", lambda doc: doc["name"])
-    persistent.insert_doc_name_func("__audit__data2", lambda doc: doc["name"])
-    yield persistent, branch, remote_url, ssh_key_path
+    with tempfile.TemporaryDirectory() as temp_dir_path:
+        # initialize git
+        git = Git(temp_dir_path)
+        git.init()
 
-    # cleanup local and remote repo
-    repo, ssh_cmd, branch = (
-        persistent.repo,
-        persistent.ssh_cmd,
-        persistent.branch,
-    )
-    origin = repo.remotes.origin
-    if origin:
-        with repo.git.custom_environment(GIT_SSH_COMMAND=ssh_cmd):
-            # add kill_after_timeout to avoid process blocking which causes timeout exception
-            origin.push(refspec=f":{branch}", kill_after_timeout=30)
+        # use local git as remote
+        remote_url = f"file://{temp_dir_path}"
+        ssh_key_path = None
+        persistent = GitDB(
+            branch=branch,
+            remote_url=remote_url,
+            key_path=ssh_key_path,
+        )
+        persistent.insert_doc_name_func("data", lambda doc: doc["name"])
+        persistent.insert_doc_name_func("data1", lambda doc: doc["name"])
+        persistent.insert_doc_name_func("data2", lambda doc: doc["name"])
+        persistent.insert_doc_name_func("__audit__data", lambda doc: doc["name"])
+        persistent.insert_doc_name_func("__audit__data1", lambda doc: doc["name"])
+        persistent.insert_doc_name_func("__audit__data2", lambda doc: doc["name"])
+        yield persistent, branch, remote_url, ssh_key_path
 
 
 def _get_commit_messages(repo, branch, max_count=5):

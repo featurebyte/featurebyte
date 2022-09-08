@@ -53,7 +53,7 @@ class GitRepoUrl(ConstrainedStr):
     Git repo string
     """
 
-    regex: Optional[Pattern[str]] = re.compile(r".*\.git")
+    regex: Optional[Pattern[str]] = re.compile(r"^(.*\.git|file:///.*)$")
 
 
 class GitSettings(BaseSettings):
