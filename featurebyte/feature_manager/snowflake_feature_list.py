@@ -67,9 +67,10 @@ class FeatureListManagerSnowflake(BaseModel):
                 f"Inserting new FeatureList version for {feature_list.name} with version {feature_list.version}"
             )
 
-            if feature_list.features:
+            if feature_list.feature_signatures:
                 feature_lst = [
-                    {"feature": f.name, "version": f.version} for f in feature_list.features
+                    {"feature": f.name, "version": f.version}
+                    for f in feature_list.feature_signatures
                 ]
                 feature_lst_str = str(feature_lst).replace("'", '"')
             else:

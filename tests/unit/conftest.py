@@ -24,14 +24,13 @@ from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.feature import FeatureReadiness
-from featurebyte.models.feature_list import FeatureListStatus
+from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.session.manager import SessionManager, get_session
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
@@ -555,7 +554,7 @@ def mock_snowflake_feature_list_model(
     mock_feature_list = ExtendedFeatureListModel(
         name="feature_list1",
         feature_ids=[feature.id],
-        features=[{"id": feature.id, "name": feature.name, "version": feature.version}],
+        feature_signatures=[{"id": feature.id, "name": feature.name, "version": feature.version}],
         readiness=FeatureReadiness.DRAFT,
         status=FeatureListStatus.PUBLIC_DRAFT,
         version="v1",
@@ -610,16 +609,16 @@ def test_save_payload_fixtures(
         entity_ids=feature_sum_30m.entity_ids,
         event_data_ids=feature_sum_30m.event_data_ids,
     )
-    feature_list_namespace = FeatureListNamespaceCreate(
+    feature_list_namespace = FeatureListNamespaceModel(
         _id=ObjectId(),
         name=feature_list_multiple.name,
-        dtypes=["FLOAT"],
         feature_list_ids=[feature_list_multiple.id],
-        readiness_distribution=feature_list_multiple.readiness_distribution,
+        dtype_distribution=[{"dtype": "FLOAT", "count": 2}],
+        readiness_distribution=[{"readiness": "DRAFT", "count": 2}],
         default_feature_list_id=feature_list_multiple.id,
         default_version_mode=DefaultVersionMode.AUTO,
-        entity_ids=feature_list_multiple.entity_ids,
-        event_data_ids=feature_list_multiple.event_data_ids,
+        entity_ids=feature_sum_30m.entity_ids,
+        event_data_ids=feature_sum_30m.event_data_ids,
     )
     feature_job_setting_analysis = FeatureJobSettingAnalysisCreate(
         _id="62f301e841b73757c9ff879a",

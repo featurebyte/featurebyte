@@ -126,6 +126,52 @@ class TestFeatureListApi(BaseApiTestSuite):
             payload["feature_ids"] = [new_feature_id]
             yield payload
 
+    @pytest.mark.asyncio
+    async def test_create_201__with_existing_feature_list_namespace(
+        self, test_api_client_persistent, create_success_response, user_id
+    ):
+        """Test create (success) - with existing feature list namespace"""
+        assert create_success_response.status_code == HTTPStatus.CREATED
+        result = create_success_response.json()
+
+        test_api_client, persistent = test_api_client_persistent
+        # create a new feature
+        feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+        feature_payload["version"] = f'{feature_payload["version"]}_1'
+        feature_id = await persistent.insert_one(
+            collection_name="feature",
+            document={
+                **feature_payload,
+                "_id": ObjectId(),
+                "user_id": ObjectId(user_id),
+                "readiness": "PRODUCTION_READY",
+            },
+        )
+
+        # prepare a new payload with existing feature list namespace
+        new_payload = self.payload.copy()
+        new_payload["_id"] = str(ObjectId())
+        new_payload["version"] = f'{new_payload["version"]}_1'
+        new_payload["feature_ids"] = [str(feature_id)]
+        new_payload["feature_list_namespace_id"] = result["feature_list_namespace_id"]
+        expected_readiness_dist = [{"count": 1, "readiness": "PRODUCTION_READY"}]
+        response = test_api_client.post(f"{self.base_route}", json=new_payload)
+        new_fl_dict = response.json()
+        assert new_fl_dict["readiness"] == "PRODUCTION_READY"
+        assert new_fl_dict["readiness_distribution"] == expected_readiness_dist
+        assert new_fl_dict["feature_list_namespace_id"] == result["feature_list_namespace_id"]
+
+        # check feature list namespace
+        namespace_response = test_api_client.get(
+            f"/feature_list_namespace/{result['feature_list_namespace_id']}"
+        )
+        namespace_response_dict = namespace_response.json()
+        assert namespace_response_dict["feature_list_ids"] == [result["_id"], new_fl_dict["_id"]]
+        assert namespace_response_dict["readiness"] == "PRODUCTION_READY"
+        assert namespace_response_dict["readiness_distribution"] == expected_readiness_dist
+        assert namespace_response_dict["default_version_mode"] == "AUTO"
+        assert namespace_response_dict["default_feature_list_id"] == new_fl_dict["_id"]
+
     def test_create_201_multiple_features(self, test_api_client_persistent, user_id):
         """Create feature list with multiple features"""
         _ = user_id
@@ -200,7 +246,7 @@ def feature_list_model_fixture():
 
     with open("tests/fixtures/request_payloads/feature_list_single.json") as fhandle:
         feature_list_dict = json.loads(fhandle.read())
-        feature_list_dict["features"] = [
+        feature_list_dict["feature_signatures"] = [
             {
                 "id": feature_dict["_id"],
                 "name": feature_list_dict["name"],

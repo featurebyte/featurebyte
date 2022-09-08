@@ -21,13 +21,10 @@ def feature_list_model_dict_fixture():
         "feature_ids": [ObjectId(), ObjectId()],
         "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
         "readiness": "DRAFT",
-        "status": None,
         "version": "V220710",
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "entity_ids": [ObjectId()],
-        "event_data_ids": [ObjectId()],
         "feature_list_namespace_id": ObjectId(),
     }
 
@@ -38,10 +35,11 @@ def feature_list_namespace_model_dict_fixture():
     feature_list_id = ObjectId()
     return {
         "name": "my_feature_list",
-        "dtypes": ["FLOAT"],
+        "dtype_distribution": [{"dtype": "FLOAT", "count": 2}],
         "feature_list_ids": [feature_list_id],
         "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
         "readiness": "DRAFT",
+        "status": "DRAFT",
         "default_feature_list_id": feature_list_id,
         "default_version_mode": "AUTO",
         "created_at": None,

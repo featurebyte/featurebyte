@@ -25,7 +25,7 @@ def test_insert_feature_registry(
 
     feature_lst = [
         {"feature": f.name, "version": f.version}
-        for f in mock_snowflake_feature_list_model.features
+        for f in mock_snowflake_feature_list_model.feature_signatures
     ]
     feature_lst_str = str(feature_lst).replace("'", '"')
 

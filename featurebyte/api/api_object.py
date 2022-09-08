@@ -232,7 +232,7 @@ class ApiObject(ApiGetObject):
         -------
         dict[str, Any]
         """
-        return self.json_dict()
+        return self.json_dict(exclude_none=True)
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         """

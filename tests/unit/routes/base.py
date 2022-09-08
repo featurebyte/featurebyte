@@ -84,7 +84,11 @@ class BaseApiTestSuite:
             ],
         ),
     ]
-    not_found_save_suggestion = True
+
+    @property
+    def class_name_to_save(self):
+        """Class name used to save the object"""
+        return self.class_name
 
     @staticmethod
     def load_payload(filename):
@@ -150,6 +154,15 @@ class BaseApiTestSuite:
         self.setup_creation_route(test_api_client)
         payload = {key: value for key, value in self.payload.items() if key != "_id"}
         assert "_id" not in payload
+        response = test_api_client.post(f"{self.base_route}", json=payload)
+        assert response.status_code == HTTPStatus.CREATED
+
+    def test_create_201__id_is_none(self, test_api_client_persistent):
+        """Test creation (success) ID is None"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        payload = self.payload.copy()
+        payload["_id"] = None
         response = test_api_client.post(f"{self.base_route}", json=payload)
         assert response.status_code == HTTPStatus.CREATED
 
@@ -222,9 +235,10 @@ class BaseApiTestSuite:
         unknown_id = ObjectId()
         response = test_api_client.get(f"{self.base_route}/{unknown_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND
-        error_message = f'{self.class_name} (id: "{unknown_id}") not found.'
-        if self.not_found_save_suggestion:
-            error_message += f" Please save the {self.class_name} object first."
+        error_message = (
+            f'{self.class_name} (id: "{unknown_id}") not found.'
+            f" Please save the {self.class_name_to_save} object first."
+        )
         assert response.json()["detail"] == error_message
 
     def test_list_200(self, test_api_client_persistent, create_multiple_success_responses):

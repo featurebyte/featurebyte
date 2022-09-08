@@ -28,7 +28,11 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
     )
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
-    not_found_save_suggestion = False
+
+    @property
+    def class_name_to_save(self):
+        """Class name used to save the object"""
+        return "Feature"
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
@@ -61,6 +65,10 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
     @pytest.mark.skip("POST method not exposed")
     def test_create_201__without_specifying_id_field(self, test_api_client_persistent):
         """Test creation (success) without specifying id field"""
+
+    @pytest.mark.skip("POST method not exposed")
+    def test_create_201__id_is_none(self, test_api_client_persistent):
+        """Test creation (success) ID is None"""
 
     @pytest.fixture
     def create_multiple_success_responses(

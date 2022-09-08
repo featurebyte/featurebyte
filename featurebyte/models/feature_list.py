@@ -7,10 +7,11 @@ from __future__ import annotations
 from typing import Any, List, Optional
 
 import functools
+from collections import defaultdict
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, root_validator, validator
 from typeguard import typechecked
 
 from featurebyte.enum import DBVarType, OrderedStrEnum
@@ -20,7 +21,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
-from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
+from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 
 FeatureListVersionIdentifier = StrictStr
 
@@ -34,13 +35,27 @@ class FeatureListStatus(OrderedStrEnum):
     PUBLISHED = "PUBLISHED"
 
 
+class FeatureTypeFeatureCount(FeatureByteBaseModel):
+    """
+    Feature count corresponding to the feature type within a feature list
+
+    dtype: DBVarType
+        Feature data type
+    count: int
+        Number of features with the specified data type
+    """
+
+    dtype: DBVarType
+    count: int
+
+
 class FeatureReadinessFeatureCount(FeatureByteBaseModel):
     """
     Feature count corresponding to the feature readiness within a feature list
 
-    feature_readiness: FeatureReadiness
+    readiness: FeatureReadiness
         Feature readiness level
-    feature_count: int
+    count: int
         Number of features with the given readiness within a feature list
     """
 
@@ -129,11 +144,11 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         Feature namespace id
     name: str
         Feature name
-    dtypes: List[DBVarType]
-        List of variable types used in the feature list
     feature_list_ids: List[PydanticObjectId]
         List of feature list ids
-    readiness_distribution: List[Dict[str, Any]]
+    dtype_distribution: List[FeatureTypeFeatureCount]
+        Feature type distribution
+    readiness_distribution: FeatureReadinessDistribution
         Feature readiness distribution of the default feature list
     readiness: FeatureReadiness
         Aggregated readiness of the default feature list
@@ -141,26 +156,103 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         Default feature list id
     default_version_mode: DefaultVersionMode
         Default feature version mode
+    status: FeatureListStatus
+        Feature list status
     entity_ids: List[PydanticObjectId]
         Entity IDs used in the feature list
     event_data_ids: List[PydanticObjectId]
         EventData IDs used in the feature list
     """
 
-    dtypes: List[DBVarType] = Field(allow_mutation=False)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    dtype_distribution: List[FeatureTypeFeatureCount] = Field(allow_mutation=False)
     readiness_distribution: FeatureReadinessDistribution = Field(allow_mutation=False)
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
     default_version_mode: DefaultVersionMode = Field(
         default=DefaultVersionMode.AUTO, allow_mutation=False
     )
+    status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
+    @staticmethod
+    def derive_dtype_distribution(features: List[FeatureModel]) -> List[FeatureTypeFeatureCount]:
+        """
+        Derive feature data type distribution from features
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of features
+
+        Returns
+        -------
+        List[FeatureTypeFeatureCount]
+        """
+        dtype_count_map: dict[DBVarType, int] = defaultdict(int)
+        for feature in features:
+            dtype_count_map[feature.dtype] += 1
+        return [
+            FeatureTypeFeatureCount(dtype=dtype, count=count)
+            for dtype, count in dtype_count_map.items()
+        ]
+
+    @staticmethod
+    def derive_entity_ids(features: List[FeatureModel]) -> List[ObjectId]:
+        """
+        Derive entity ids from features
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of features
+
+        Returns
+        -------
+        List of entity ids
+        """
+        entity_ids = []
+        for feature in features:
+            entity_ids.extend(feature.entity_ids)
+        return sorted(set(entity_ids))
+
+    @staticmethod
+    def derive_event_data_ids(features: List[FeatureModel]) -> List[ObjectId]:
+        """
+        Derive event data ids from features
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of features
+
+        Returns
+        -------
+        List of event data ids
+        """
+        event_data_ids = []
+        for feature in features:
+            event_data_ids.extend(feature.event_data_ids)
+        return sorted(set(event_data_ids))
+
+    @root_validator(pre=True)
+    @classmethod
+    def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # "features" is not an attribute to the FeatureList model, when it appears in the input to
+        # constructor, it is intended to be used to derive other feature-related attributes
+        if "features" in values:
+            features = values["features"]
+            values["dtype_distribution"] = cls.derive_dtype_distribution(features)
+            values["entity_ids"] = cls.derive_entity_ids(features)
+            values["event_data_ids"] = cls.derive_event_data_ids(features)
+        return values
+
     @validator("readiness")
     @classmethod
-    def _check_readiness(cls, value: FeatureReadiness, values: dict[str, Any]) -> FeatureReadiness:
+    def _derive_readiness_validator(
+        cls, value: FeatureReadiness, values: dict[str, Any]
+    ) -> FeatureReadiness:
         _ = value
         if isinstance(values["readiness_distribution"], list):
             readiness_dist = FeatureReadinessDistribution(__root__=values["readiness_distribution"])
@@ -202,34 +294,62 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         Feature readiness distribution of this feature list
     readiness: FeatureReadiness
         Aggregated readiness of this feature list
-    status: FeatureListStatus
-        FeatureList status
     version: FeatureListVersionIdentifier
         Feature list version
-    entity_ids: List[PydanticObjectId]
-        Entity IDs used in the feature list
-    event_data_ids: List[PydanticObjectId]
-        EventData IDs used in the feature list
-    created_at: Optional[datetime]
-        Datetime when the FeatureList was first saved or published
     feature_list_namespace_id: PydanticObjectId
         Feature list namespace id of the object
+    created_at: Optional[datetime]
+        Datetime when the FeatureList was first saved or published
     """
 
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
-    readiness_distribution: FeatureReadinessDistribution = Field(default_factory=list)
-    readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
-    status: Optional[FeatureListStatus] = Field(allow_mutation=False)
+    readiness_distribution: FeatureReadinessDistribution = Field(
+        allow_mutation=False, default_factory=list
+    )
+    readiness: Optional[FeatureReadiness] = Field(allow_mutation=False, default=None)
     version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)
-    entity_ids: List[PydanticObjectId] = Field(default_factory=list)
-    event_data_ids: List[PydanticObjectId] = Field(default_factory=list)
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
     )
 
+    @staticmethod
+    def derive_readiness_distribution(features: List[FeatureModel]) -> FeatureReadinessDistribution:
+        """
+        Derive feature readiness distribution from features
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of features
+
+        Returns
+        -------
+        FeatureReadinessDistribution
+        """
+        readiness_count_map: dict[FeatureReadiness, int] = defaultdict(int)
+        for feature in features:
+            readiness_count_map[feature.readiness] += 1
+        return FeatureReadinessDistribution(
+            __root__=[
+                FeatureReadinessFeatureCount(readiness=readiness, count=count)
+                for readiness, count in readiness_count_map.items()
+            ]
+        )
+
+    @root_validator(pre=True)
+    @classmethod
+    def _derive_feature_related_attributes(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # "features" is not an attribute to the FeatureList model, when it appears in the input to
+        # constructor, it is intended to be used to derive other feature-related attributes
+        if "features" in values:
+            values["readiness_distribution"] = cls.derive_readiness_distribution(values["features"])
+        return values
+
     @validator("readiness")
     @classmethod
-    def _check_readiness(cls, value: FeatureReadiness, values: dict[str, Any]) -> FeatureReadiness:
+    def _derive_readiness_validator(
+        cls, value: FeatureReadiness, values: dict[str, Any]
+    ) -> FeatureReadiness:
         _ = value
         if isinstance(values["readiness_distribution"], list):
             readiness_dist = FeatureReadinessDistribution(__root__=values["readiness_distribution"])

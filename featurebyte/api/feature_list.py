@@ -26,11 +26,10 @@ from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
     FeatureListStatus,
-    FeatureReadinessDistribution,
-    FeatureReadinessFeatureCount,
 )
 from featurebyte.query_graph.feature_historical import get_historical_features
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
+from featurebyte.schema.feature_list import FeatureListCreate
 
 
 class BaseFeatureGroup(FeatureByteBaseModel):
@@ -225,6 +224,10 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     def _get_init_params(cls) -> dict[str, Any]:
         return {"items": []}
 
+    def _get_create_payload(self) -> dict[str, Any]:
+        data = FeatureListCreate(**self.json_dict(exclude_none=True))
+        return data.json_dict()
+
     def _pre_save_operations(self) -> None:
         if is_notebook():
             other_kwargs = {"force_tty": True}
@@ -268,40 +271,36 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         ).readiness
         # set the following values if it is empty (used mainly by the SDK constructed feature list)
         # for the feature list constructed during serialization, following codes should be skipped
+        features = list(values["feature_objects"].values())
         if not values.get("feature_ids"):
-            values["feature_ids"] = [feature.id for feature in values["feature_objects"].values()]
-        if not values.get("status"):
-            values["status"] = FeatureListStatus.DRAFT
+            values["feature_ids"] = [feature.id for feature in features]
         if not values.get("version"):
             values["version"] = get_version()
         if not values.get("readiness_distribution"):
-            readiness_dist_map: dict[FeatureReadiness, int] = collections.defaultdict(int)
-            for feature in values["feature_objects"].values():
-                readiness_dist_map[feature.readiness] += 1
-            values["readiness_distribution"] = FeatureReadinessDistribution(
-                __root__=[
-                    FeatureReadinessFeatureCount(readiness=feat_readiness, count=feat_count)
-                    for feat_readiness, feat_count in readiness_dist_map.items()
-                ]
-            )
-        for attr in ["entity_ids", "event_data_ids"]:
-            if not values.get(attr):
-                id_values = []
-                for feature in values["feature_objects"].values():
-                    id_values.extend(getattr(feature, attr))
-                values[attr] = sorted(set(id_values))
+            values["readiness_distribution"] = cls.derive_readiness_distribution(features)
         return values
 
     @property
     def feature_list_namespace(self) -> FeatureListNamespace:
         """
-        FeatureListNamespace object of current feature
+        FeatureListNamespace object of current feature list
 
         Returns
         -------
         FeatureListNamespace
         """
         return FeatureListNamespace.get_by_id(id=self.feature_list_namespace_id)
+
+    @property
+    def status(self) -> FeatureListStatus:
+        """
+        Retrieve feature list status at persistent
+
+        Returns
+        -------
+        Feature list status
+        """
+        return self.feature_list_namespace.status
 
     @classmethod
     def list(cls) -> List[str]:

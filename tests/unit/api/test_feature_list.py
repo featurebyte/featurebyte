@@ -135,18 +135,23 @@ def test_feature_list_creation__success(production_ready_feature, config, mocked
     assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],
-        "readiness_distribution": [{"readiness": "PRODUCTION_READY", "count": 1}],
+        "readiness_distribution": [{"count": 1, "readiness": "PRODUCTION_READY"}],
         "readiness": "PRODUCTION_READY",
-        "status": "DRAFT",
         "version": "V220501",
-        "event_data_ids": production_ready_feature.event_data_ids,
-        "entity_ids": production_ready_feature.entity_ids,
         "created_at": None,
         "updated_at": None,
         "user_id": None,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
+
+    with pytest.raises(RecordRetrievalException) as exc:
+        _ = flist.status
+    error_message = (
+        f'FeatureListNamespace (id: "{flist.feature_list_namespace_id}") not found. '
+        f"Please save the FeatureList object first."
+    )
+    assert error_message in str(exc.value)
 
 
 @freeze_time("2022-05-01")
@@ -167,14 +172,11 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
             feature_group["sum_1d"].id,
         ],
         "readiness_distribution": [
-            {"readiness": "PRODUCTION_READY", "count": 1},
-            {"readiness": "DRAFT", "count": 2},
+            {"count": 1, "readiness": "PRODUCTION_READY"},
+            {"count": 2, "readiness": "DRAFT"},
         ],
         "name": "my_feature_list",
         "readiness": "DRAFT",
-        "status": "DRAFT",
-        "event_data_ids": production_ready_feature.event_data_ids,
-        "entity_ids": production_ready_feature.entity_ids,
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -359,7 +361,6 @@ def test_feature_list__construction(production_ready_feature, draft_feature):
     assert feature_list.readiness == FeatureReadiness.DRAFT
     assert feature_list.feature_ids == [production_ready_feature.id, draft_feature.id]
     assert feature_list.feature_names == ["production_ready_feature", "draft_feature"]
-    assert feature_list.status == FeatureListStatus.DRAFT
     assert feature_list.version == "V220720"
     assert list(feature_list.feature_objects.keys()) == [
         "production_ready_feature",
@@ -405,6 +406,7 @@ def saved_feature_list_fixture(
     assert feature_list.id == feature_list_id_before
     assert feature_list.readiness == FeatureReadiness.DRAFT
     assert feature_list.name == "my_feature_list"
+    assert feature_list.status == FeatureListStatus.DRAFT
 
     feature_list_namespace = feature_list.feature_list_namespace
     assert feature_list_namespace.name == "my_feature_list"
@@ -437,11 +439,8 @@ def test_deserialization(production_ready_feature, draft_feature, quarantine_fea
         loaded_feature_list = FeatureList(**feature_list_dict, items=[])
 
     # check consistency between loaded feature list & original feature list
-    assert loaded_feature_list.status == expected_status
     assert loaded_feature_list.version == expected_version
     assert loaded_feature_list.feature_ids == feature_list.feature_ids
-    assert loaded_feature_list.entity_ids == feature_list.entity_ids
-    assert loaded_feature_list.event_data_ids == feature_list.event_data_ids
 
 
 def test_info(saved_feature_list):
@@ -450,7 +449,7 @@ def test_info(saved_feature_list):
     """
     verbose_info = saved_feature_list.info(verbose=True)
     non_verbose_info = saved_feature_list.info(verbose=False)
-    expected_info = {"name": "my_feature_list", "readiness": "DRAFT", "status": "DRAFT"}
+    expected_info = {"name": "my_feature_list", "readiness": "DRAFT"}
     expected_feature = {
         "is_default": None,
         "name": "sum_1d",
@@ -508,7 +507,6 @@ def test_get_feature_list(saved_feature_list):
         history_data[0]["current_values"].items()
         > {
             "name": "my_feature_list",
-            "status": "DRAFT",
             "readiness": "DRAFT",
             "updated_at": None,
             "user_id": None,

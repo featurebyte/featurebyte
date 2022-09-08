@@ -12,7 +12,7 @@ from enum import Enum
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import BaseModel, Field, StrictStr, validator
 from pydantic.errors import DictError, PydanticTypeError
 
 Model = TypeVar("Model", bound="FeatureByteBaseModel")
@@ -39,15 +39,20 @@ class FeatureByteBaseModel(BaseModel):
         except DictError as exc:
             raise FeatureByteTypeError(object_type=cls.__name__) from exc
 
-    def json_dict(self) -> dict[str, Any]:
+    def json_dict(self, **kwargs: Any) -> dict[str, Any]:
         """
         Convert model into json dictionary that can be used as request payload
+
+        Parameters
+        ----------
+        kwargs: Any
+            Additional parameter(s) passed to pydantic json method
 
         Returns
         -------
         dict[str, Any]
         """
-        output: dict[str, Any] = json.loads(self.json(by_alias=True))
+        output: dict[str, Any] = json.loads(self.json(by_alias=True, **kwargs))
         return output
 
     class Config:
@@ -162,6 +167,25 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     name: Optional[StrictStr]
     created_at: Optional[datetime] = Field(default=None, allow_mutation=False)
     updated_at: Optional[datetime] = Field(default=None, allow_mutation=False)
+
+    @validator("id", pre=True)
+    @classmethod
+    def validate_id(cls, value: Any) -> Any:
+        """
+        Base document model id field validator. If the value of the ID is None, generate a valid ID.
+
+        Parameters
+        ----------
+        value: Any
+            Input value to id field
+
+        Returns
+        -------
+        Output id value
+        """
+        if value is None:
+            return ObjectId()
+        return value
 
     @classmethod
     def collection_name(cls) -> str:
