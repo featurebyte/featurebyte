@@ -570,13 +570,12 @@ def test_date_difference_operator(timestamp_series, timestamp_series_2):
     """
     date_diff_series = timestamp_series_2 - timestamp_series
     assert date_diff_series.dtype == DBVarType.TIMEDELTA
-    assert date_diff_series.node.parameters == {"unit": "second"}
     _check_node_equality(
         date_diff_series.node,
         Node(
             name="date_diff_1",
             type=NodeType.DATE_DIFF,
-            parameters={"unit": "second"},
+            parameters={},
             output_type=NodeOutputType.SERIES,
         ),
         exclude={"name": True},
@@ -590,6 +589,65 @@ def test_date_difference_operator__invalid(timestamp_series, float_series):
     with pytest.raises(TypeError) as exc:
         _ = timestamp_series - float_series
     assert "does not support operation 'sub'." in str(exc.value)
+
+
+def test_date_add_operator__date_diff_timedelta(timestamp_series, timedelta_series):
+    """
+    Test incrementing a date Series with a timedelta Series
+    """
+    new_series = timestamp_series + timedelta_series
+    assert new_series.dtype == DBVarType.TIMESTAMP
+    _check_node_equality(
+        new_series.node,
+        Node(
+            name="date_add_1",
+            type=NodeType.DATE_ADD,
+            parameters={},
+            output_type=NodeOutputType.SERIES,
+        ),
+        exclude={"name": True},
+    )
+    series_dict = new_series.dict()
+    assert series_dict["graph"]["backward_edges"] == {
+        "project_1": ["input_1"],
+        "project_2": ["input_1"],
+        "date_diff_1": ["project_1", "project_2"],
+        "date_add_1": ["project_1", "date_diff_1"],
+    }
+
+
+def test_date_add_operator__constructed_timedelta(timestamp_series, timedelta_series_from_int):
+    """
+    Test incrementing a date Series with a timedelta Series constructed using to_timedelta()
+    """
+    new_series = timestamp_series + timedelta_series_from_int
+    assert new_series.dtype == DBVarType.TIMESTAMP
+    _check_node_equality(
+        new_series.node,
+        Node(
+            name="date_add_1",
+            type=NodeType.DATE_ADD,
+            parameters={},
+            output_type=NodeOutputType.SERIES,
+        ),
+        exclude={"name": True},
+    )
+    series_dict = new_series.dict()
+    assert series_dict["graph"]["backward_edges"] == {
+        "project_1": ["input_1"],
+        "project_2": ["input_1"],
+        "timedelta_1": ["project_2"],
+        "date_add_1": ["project_1", "timedelta_1"],
+    }
+
+
+def test_date_add_operator__scalar_timedelta(timestamp_series):
+    """
+    Test incrementing a date Series with a scalar timedelta value
+    """
+    with pytest.raises(TypeError) as exc:
+        _ = timestamp_series + 1.0
+    assert "does not support operation" in str(exc.value)
 
 
 def assert_series_attributes_equal(left, right):

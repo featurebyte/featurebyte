@@ -3,7 +3,7 @@ This module contains the list of SQL operations to be used by the Query Graph In
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, Union
 
 # pylint: disable=too-few-public-methods,too-many-lines
 from abc import ABC, abstractmethod
@@ -11,8 +11,10 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
 
+import pandas as pd
 from sqlglot import Expression, expressions, parse_one, select
 
+from featurebyte.common.typing import TimedeltaSupportedUnitType
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph import expression as fb_expressions
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -641,41 +643,121 @@ class DateDiffNode(ExpressionNode):
 
     left_node: ExpressionNode
     right_node: ExpressionNode
-    unit: Literal["hour", "minute", "second", "millisecond", "microsecond"]
 
-    @property
-    def sql(self) -> Expression:
+    def with_unit(self, unit: TimedeltaSupportedUnitType) -> Expression:
+        """Construct a date difference expression with provided time unit
+
+        Parameters
+        ----------
+        unit : TimedeltaSupportedUnitType
+            Time unit
+
+        Returns
+        -------
+        Expression
+        """
         output_expr = expressions.Anonymous(
             this="DATEDIFF",
             expressions=[
-                expressions.Identifier(this=self.unit),
+                expressions.Identifier(this=unit),
                 self.right_node.sql,
                 self.left_node.sql,
             ],
         )
         return output_expr
 
-    def with_unit(
-        self,
-        unit: Literal["hour", "minute", "second", "millisecond", "microsecond"],
-    ) -> DateDiffNode:
-        """Creates a new DateDiffNode with a new unit applied
+    @property
+    def sql(self) -> Expression:
+        return self.with_unit("second")
+
+
+@dataclass
+class TimedeltaExtractNode(ExpressionNode):
+    """Node for converting Timedelta to numeric value given a unit"""
+
+    timedelta_node: Union[TimedeltaNode, DateDiffNode]
+    unit: TimedeltaSupportedUnitType
+
+    @property
+    def sql(self) -> Expression:
+        if isinstance(self.timedelta_node, DateDiffNode):
+            expr = self.timedelta_node.with_unit("microsecond")
+            output_expr = self.convert_timedelta_unit(expr, "microsecond", self.unit)
+        else:
+            output_expr = self.convert_timedelta_unit(
+                self.timedelta_node.sql, self.timedelta_node.unit, self.unit
+            )
+        return output_expr
+
+    @classmethod
+    def convert_timedelta_unit(
+        cls,
+        input_expr: Expression,
+        input_unit: TimedeltaSupportedUnitType,
+        output_unit: TimedeltaSupportedUnitType,
+    ) -> Expression:
+        """Create an expression that converts a timedelta column to another unit
 
         Parameters
         ----------
-        unit : Literal
-            The unit of time for the date difference
+        input_expr : Expression
+            Expression for the timedelta value. Should evaluate to numeric result
+        input_unit : TimedeltaSupportedUnitType
+            The time unit that input_expr is in
+        output_unit : TimedeltaSupportedUnitType
+            The desired unit to convert to
 
         Returns
         -------
-        DateDiffNode
+        Expression
         """
-        return DateDiffNode(
-            table_node=self.table_node,
-            left_node=self.left_node,
-            right_node=self.right_node,
-            unit=unit,
+        input_unit_milli_seconds = int(pd.Timedelta(1, unit=input_unit).total_seconds() * 1e6)
+        output_unit_milli_seconds = int(pd.Timedelta(1, unit=output_unit).total_seconds() * 1e6)
+        converted_expr = expressions.Div(
+            this=expressions.Mul(
+                this=input_expr, expression=make_literal_value(input_unit_milli_seconds)
+            ),
+            expression=make_literal_value(output_unit_milli_seconds),
         )
+        converted_expr = expressions.Paren(this=converted_expr)
+        return converted_expr
+
+
+@dataclass
+class TimedeltaNode(ExpressionNode):
+    """Node to represent Timedelta"""
+
+    value_expr: ExpressionNode
+    unit: TimedeltaSupportedUnitType
+
+    @property
+    def sql(self) -> Expression:
+        return self.value_expr.sql
+
+
+@dataclass
+class DateAddNode(ExpressionNode):
+    """Node for date increment by timedelta operation"""
+
+    input_date_node: ExpressionNode
+    timedelta_node: Union[TimedeltaNode, DateDiffNode]
+
+    @property
+    def sql(self) -> Expression:
+        if isinstance(self.timedelta_node, TimedeltaNode):
+            date_add_args = [
+                self.timedelta_node.unit,
+                self.timedelta_node.sql,
+                self.input_date_node.sql,
+            ]
+        else:
+            date_add_args = [
+                "microsecond",
+                self.timedelta_node.with_unit("microsecond"),
+                self.input_date_node.sql,
+            ]
+        output_expr = expressions.Anonymous(this="DATEADD", expressions=date_add_args)
+        return output_expr
 
 
 @dataclass
@@ -862,7 +944,32 @@ BINARY_OPERATION_NODE_TYPES = {
     NodeType.CONCAT,
     NodeType.COSINE_SIMILARITY,
     NodeType.DATE_DIFF,
+    NodeType.DATE_ADD,
 }
+
+
+def resolve_project_node(expr_node: ExpressionNode) -> Optional[ExpressionNode]:
+    """Resolves a Project node to the original ExpressionNode due to assignment
+
+    This is needed when we need additional information tied to original ExpressionNode than just the
+    constructed sql expression. Such information is lost in a Project node.
+
+    Parameters
+    ----------
+    expr_node : ExpressionNode
+        The ExpressionNode to resolve if it is a Project node
+
+    Returns
+    -------
+    Optional[ExpressionNode]
+        The original ExpressionNode or None if the node is never assigned (e.g. original columns
+        that exist in the input table)
+    """
+    if not isinstance(expr_node, Project):
+        return expr_node
+    table_node = expr_node.table_node
+    assigned_node = table_node.get_column_node(expr_node.column_name)
+    return assigned_node
 
 
 def make_literal_value(value: Any) -> expressions.Literal:
@@ -886,7 +993,7 @@ def make_binary_operation_node(
     node_type: NodeType,
     input_sql_nodes: list[SQLNode],
     parameters: dict[str, Any],
-) -> BinaryOp | DateDiffNode:
+) -> BinaryOp | DateDiffNode | DateAddNode:
     """Create a BinaryOp node for eligible query node types
 
     Parameters
@@ -900,7 +1007,7 @@ def make_binary_operation_node(
 
     Returns
     -------
-    BinaryOp
+    BinaryOp | DateDiffNode | DateAddNode
 
     Raises
     ------
@@ -944,7 +1051,7 @@ def make_binary_operation_node(
         NodeType.COSINE_SIMILARITY: fb_expressions.CosineSim,
     }
 
-    output_node: BinaryOp | DateDiffNode
+    output_node: BinaryOp | DateDiffNode | DateAddNode
     if node_type in node_type_to_expression_cls:
         expression_cls = node_type_to_expression_cls[node_type]
         output_node = BinaryOp(
@@ -958,11 +1065,44 @@ def make_binary_operation_node(
             table_node=table_node,
             left_node=left_node,
             right_node=right_node,
-            unit=parameters["unit"],
+        )
+    elif node_type == NodeType.DATE_ADD:
+        output_node = make_date_add_node(
+            table_node=table_node, input_date_node=left_node, timedelta_node=right_node
         )
     else:
         raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
 
+    return output_node
+
+
+def make_date_add_node(
+    table_node: TableNode,
+    input_date_node: ExpressionNode,
+    timedelta_node: ExpressionNode,
+) -> DateAddNode:
+    """Create a DateAddNode
+
+    Parameters
+    ----------
+    table_node : TableNode
+        TableNode
+    input_date_node : ExpressionNode
+        Node for date expression
+    timedelta_node : ExpressionNode
+        Node for timedelta expression
+
+    Returns
+    -------
+    DateAddNode
+    """
+    resolved_timedelta_node = resolve_project_node(timedelta_node)
+    assert isinstance(resolved_timedelta_node, (TimedeltaNode, DateDiffNode))
+    output_node = DateAddNode(
+        table_node=table_node,
+        input_date_node=input_date_node,
+        timedelta_node=resolved_timedelta_node,
+    )
     return output_node
 
 
@@ -1240,6 +1380,7 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.CAST,
     NodeType.LAG,
     NodeType.TIMEDELTA_EXTRACT,
+    NodeType.TIMEDELTA,
 }
 
 
@@ -1259,15 +1400,14 @@ def make_timedelta_extract_node(
     -------
     ExpressionNode
     """
-    # Note: currently date difference is the only way to create a timedelta
-    if isinstance(input_expr_node, Project):
-        # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
-        table_node = input_expr_node.table_node
-        assigned_node = table_node.get_column_node(input_expr_node.column_name)
-        assert assigned_node is not None
-        input_expr_node = assigned_node
-    assert isinstance(input_expr_node, DateDiffNode)
-    sql_node = input_expr_node.with_unit(parameters["property"])
+    # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
+    resolved_expr_node = resolve_project_node(input_expr_node)
+    assert isinstance(resolved_expr_node, (DateDiffNode, TimedeltaNode))
+    sql_node = TimedeltaExtractNode(
+        table_node=input_expr_node.table_node,
+        timedelta_node=resolved_expr_node,
+        unit=parameters["property"],
+    )
     return sql_node
 
 
@@ -1355,6 +1495,11 @@ def make_expression_node(
         )
     elif node_type == NodeType.TIMEDELTA_EXTRACT:
         sql_node = make_timedelta_extract_node(input_expr_node, parameters)
+
+    elif node_type == NodeType.TIMEDELTA:
+        sql_node = TimedeltaNode(
+            table_node=table_node, value_expr=input_expr_node, unit=parameters["unit"]
+        )
 
     elif node_type == NodeType.COUNT_DICT_TRANSFORM:
         sql_node = CountDictTransformNode(

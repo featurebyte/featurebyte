@@ -67,11 +67,30 @@ def test_accessor_getattr__timestamp(timestamp_series):
 @pytest.mark.parametrize(
     "accessor_func, exp_expression",
     [
-        (lambda s: s.dt.hour, 'DATEDIFF(hour, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.minute, 'DATEDIFF(minute, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.second, 'DATEDIFF(second, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.millisecond, 'DATEDIFF(millisecond, "PROMOTION_START_DATE", "TIMESTAMP")'),
-        (lambda s: s.dt.microsecond, 'DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP")'),
+        (
+            lambda s: s.dt.day,
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 86400000000)',
+        ),
+        (
+            lambda s: s.dt.hour,
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 3600000000)',
+        ),
+        (
+            lambda s: s.dt.minute,
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 60000000)',
+        ),
+        (
+            lambda s: s.dt.second,
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 1000000)',
+        ),
+        (
+            lambda s: s.dt.millisecond,
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 1000)',
+        ),
+        (
+            lambda s: s.dt.microsecond,
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 1)',
+        ),
     ],
 )
 def test_datetime_property_extraction__timedelta(
@@ -81,7 +100,7 @@ def test_datetime_property_extraction__timedelta(
     exp_expression,
 ):
     """
-    Test datetime accessor function (DatetimeExtractNode)
+    Test datetime accessor function (TimedeltaExtractNode)
     """
     series = accessor_func(timedelta_series)
     assert series.dtype == DBVarType.INT
@@ -104,9 +123,56 @@ def test_accessor_getattr__timedelta(timedelta_series):
 
     # check __dir__ magic method
     assert set(dir(timedelta_series.dt)) == {
+        "day",
         "hour",
         "minute",
         "second",
         "millisecond",
         "microsecond",
     }
+
+
+@pytest.mark.parametrize(
+    "accessor_func, exp_expression",
+    [
+        (
+            lambda s: s.dt.day,
+            '("CUST_ID" * 1000000 / 86400000000)',
+        ),
+        (
+            lambda s: s.dt.hour,
+            '("CUST_ID" * 1000000 / 3600000000)',
+        ),
+        (
+            lambda s: s.dt.minute,
+            '("CUST_ID" * 1000000 / 60000000)',
+        ),
+        (
+            lambda s: s.dt.second,
+            '("CUST_ID" * 1000000 / 1000000)',
+        ),
+        (
+            lambda s: s.dt.millisecond,
+            '("CUST_ID" * 1000000 / 1000)',
+        ),
+        (
+            lambda s: s.dt.microsecond,
+            '("CUST_ID" * 1000000 / 1)',
+        ),
+    ],
+)
+def test_datetime_property_extraction__timedelta_from_int(
+    timedelta_series_from_int,
+    expression_sql_template,
+    accessor_func,
+    exp_expression,
+):
+    """
+    Test datetime accessor function (TimedeltaExtractNode)
+    """
+    series = accessor_func(timedelta_series_from_int)
+    assert series.dtype == DBVarType.INT
+    assert series.node.type == NodeType.TIMEDELTA_EXTRACT
+    assert series.node.output_type == NodeOutputType.SERIES
+    expected_sql = expression_sql_template.format(expression=exp_expression)
+    assert series.preview_sql() == expected_sql

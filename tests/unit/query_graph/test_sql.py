@@ -65,6 +65,18 @@ def test_input_node__subset_columns(input_node):
     assert input_node.columns_node == {"col_new_1": expr_node_1, "col_new_2": expr_node_2}
 
 
+def test_resolve_project_node(input_node):
+    """Test resolve_project_node helper"""
+    expr_node = sql.ParsedExpressionNode(input_node, parse_one("a + 1"))
+    input_node.assign_column("new_col", expr_node)
+    project_node = sql.Project(input_node, "new_col")
+    project_node_original_column = sql.Project(input_node, "col_1")
+    assert sql.resolve_project_node(project_node) == expr_node
+    assert sql.resolve_project_node(project_node_original_column) is None
+    # no-op if not a Project node
+    assert sql.resolve_project_node(expr_node) == expr_node
+
+
 @pytest.mark.parametrize(
     "node_type, expected",
     [
@@ -235,6 +247,72 @@ def test_date_difference(input_node):
     node = sql.make_binary_operation_node(
         NodeType.DATE_DIFF,
         input_nodes,
-        parameters={"unit": "second"},
+        parameters={},
     )
     assert node.sql.sql() == "DATEDIFF(second, b, a)"
+
+
+def test_timedelta(input_node):
+    """Test TimedeltaNode"""
+    column = sql.StrExpressionNode(table_node=input_node, expr="a")
+    node = sql.make_expression_node(
+        [column],
+        NodeType.TIMEDELTA,
+        parameters={"unit": "second"},
+    )
+    # when previewing, this should show the value component of the timedelta without unit
+    assert node.sql.sql() == "a"
+
+
+def test_date_add__timedelta(input_node):
+    """Test DateAdd node"""
+    column = sql.StrExpressionNode(table_node=input_node, expr="num_seconds")
+    timedelta_node = sql.make_expression_node(
+        [column],
+        NodeType.TIMEDELTA,
+        parameters={"unit": "second"},
+    )
+    date_column = sql.StrExpressionNode(table_node=input_node, expr="date_col")
+    date_add_node = sql.make_binary_operation_node(
+        NodeType.DATE_ADD, [date_column, timedelta_node], {}
+    )
+    assert date_add_node.sql.sql() == "DATEADD(second, num_seconds, date_col)"
+
+
+def test_date_add__datediff(input_node):
+    """Test DateAdd node when the timedelta is the result of date difference"""
+    # make a date diff node
+    column1 = sql.StrExpressionNode(table_node=input_node, expr="a")
+    column2 = sql.StrExpressionNode(table_node=input_node, expr="b")
+    input_nodes = [column1, column2]
+    date_diff_node = sql.make_binary_operation_node(
+        NodeType.DATE_DIFF,
+        input_nodes,
+        parameters={},
+    )
+    # make a date add node
+    date_column = sql.StrExpressionNode(table_node=input_node, expr="date_col")
+    date_add_node = sql.make_binary_operation_node(
+        NodeType.DATE_ADD, [date_column, date_diff_node], {}
+    )
+    assert date_add_node.sql.sql() == "DATEADD(microsecond, DATEDIFF(microsecond, b, a), date_col)"
+
+
+@pytest.mark.parametrize(
+    "input_unit, output_unit, expected",
+    [
+        ("second", "minute", "(date_col * 1000000 / 60000000)"),
+        ("hour", "minute", "(date_col * 3600000000 / 60000000)"),
+        ("minute", "minute", "(date_col * 60000000 / 60000000)"),
+        ("second", "minute", "(date_col * 1000000 / 60000000)"),
+        ("millisecond", "minute", "(date_col * 1000 / 60000000)"),
+        ("microsecond", "minute", "(date_col * 1 / 60000000)"),
+    ],
+)
+def test_convert_timedelta_unit(input_node, input_unit, output_unit, expected):
+    """Test convert_timedelta_unit"""
+    date_column = sql.StrExpressionNode(table_node=input_node, expr="date_col")
+    converted = sql.TimedeltaExtractNode.convert_timedelta_unit(
+        date_column.sql, input_unit, output_unit
+    )
+    assert converted.sql() == expected
