@@ -296,14 +296,10 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         Aggregated readiness of this feature list
     version: FeatureListVersionIdentifier
         Feature list version
-    entity_ids: List[PydanticObjectId]
-        Entity IDs used in the feature list
-    event_data_ids: List[PydanticObjectId]
-        EventData IDs used in the feature list
-    created_at: Optional[datetime]
-        Datetime when the FeatureList was first saved or published
     feature_list_namespace_id: PydanticObjectId
         Feature list namespace id of the object
+    created_at: Optional[datetime]
+        Datetime when the FeatureList was first saved or published
     """
 
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
