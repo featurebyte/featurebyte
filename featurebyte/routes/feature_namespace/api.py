@@ -26,7 +26,7 @@ router = APIRouter(prefix="/feature_namespace")
 
 @router.get("/{feature_namespace_id}", response_model=FeatureNamespaceModel)
 async def get_feature_namespace(
-    request: Request, feature_namespace_id: str
+    request: Request, feature_namespace_id: PydanticObjectId
 ) -> FeatureNamespaceModel:
     """
     Retrieve Feature Namespace
@@ -97,7 +97,7 @@ async def list_feature_namespace_audit_logs(
 @router.get("/{feature_namespace_id}/info")
 async def get_feature_namespace_info(
     request: Request,
-    feature_namespace_id: str,
+    feature_namespace_id: PydanticObjectId,
     verbose: bool = True,
 ) -> dict[str, Any]:
     """

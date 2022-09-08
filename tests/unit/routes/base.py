@@ -96,6 +96,11 @@ class BaseApiTestSuite:
         with open(filename) as fhandle:
             return json.loads(fhandle.read())
 
+    @property
+    def id_field_name(self):
+        """ID field name in the url"""
+        return self.base_route.lstrip("/") + "_id"
+
     def pytest_generate_tests(self, metafunc):
         """Parametrize fixture at runtime"""
         if "create_conflict_payload_expected_detail" in metafunc.fixturenames:
@@ -241,6 +246,19 @@ class BaseApiTestSuite:
         )
         assert response.json()["detail"] == error_message
 
+    def test_get_422(self, test_api_client_persistent):
+        """Test get (unprocessable)"""
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.get(f"{self.base_route}/abcd")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == [
+            {
+                "loc": ["path", self.id_field_name],
+                "msg": "Id must be of type PydanticObjectId",
+                "type": "type_error",
+            }
+        ]
+
     def test_list_200(self, test_api_client_persistent, create_multiple_success_responses):
         """Test list (success, multiple)"""
         # test with default params
@@ -332,6 +350,19 @@ class BaseApiTestSuite:
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == expected_detail
 
+    def test_list_audit_422__invalid_id_value(self, test_api_client_persistent):
+        """Test list audit (unprocessable) - invalid id value"""
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.get(f"{self.base_route}/audit/abc")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == [
+            {
+                "loc": ["path", self.id_field_name],
+                "msg": "Id must be of type PydanticObjectId",
+                "type": "type_error",
+            }
+        ]
+
     def test_list_501(self, test_api_client_persistent, create_success_response):
         """Test list (not implemented)"""
         _ = create_success_response
@@ -364,6 +395,19 @@ class BaseApiTestSuite:
         assert non_verbose_response.status_code == HTTPStatus.OK
         assert {"name"}.issubset(non_verbose_response_dict)
         assert {"created_at", "updated_at"}.intersection(non_verbose_response_dict) == set()
+
+    def test_get_info_422(self, test_api_client_persistent):
+        """Test get info (unprocessable) - invalid id value"""
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.get(f"{self.base_route}/abc/info")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == [
+            {
+                "loc": ["path", self.id_field_name],
+                "msg": "Id must be of type PydanticObjectId",
+                "type": "type_error",
+            }
+        ]
 
 
 class BaseAsyncApiTestSuite(BaseApiTestSuite):

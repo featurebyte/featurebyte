@@ -67,10 +67,7 @@ async def list_event_data(
 
 
 @router.get("/{event_data_id}", response_model=EventDataModel)
-async def retrieve_event_data(
-    request: Request,
-    event_data_id: str,
-) -> EventDataModel:
+async def get_event_data(request: Request, event_data_id: PydanticObjectId) -> EventDataModel:
     """
     Retrieve Event Data
     """
@@ -85,7 +82,7 @@ async def retrieve_event_data(
 @router.patch("/{event_data_id}", response_model=EventDataModel)
 async def update_event_data(
     request: Request,
-    event_data_id: str,
+    event_data_id: PydanticObjectId,
     data: EventDataUpdate,
 ) -> EventDataModel:
     """
@@ -155,7 +152,7 @@ async def list_default_feature_job_setting_history(
 
 @router.get("/{event_data_id}/info")
 async def get_event_data_info(
-    request: Request, event_data_id: str, verbose: bool = True
+    request: Request, event_data_id: PydanticObjectId, verbose: bool = True
 ) -> dict[str, Any]:
     """
     Retrieve EventData info

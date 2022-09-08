@@ -27,10 +27,7 @@ router = APIRouter(prefix="/feature_store")
 
 
 @router.post("", response_model=FeatureStoreModel, status_code=HTTPStatus.CREATED)
-async def create_feature_store(
-    request: Request,
-    data: FeatureStoreCreate,
-) -> FeatureStoreModel:
+async def create_feature_store(request: Request, data: FeatureStoreCreate) -> FeatureStoreModel:
     """
     Create Feature Store
     """
@@ -42,8 +39,7 @@ async def create_feature_store(
 
 @router.get("/{feature_store_id}", response_model=FeatureStoreModel)
 async def get_feature_store(
-    request: Request,
-    feature_store_id: str,
+    request: Request, feature_store_id: PydanticObjectId
 ) -> FeatureStoreModel:
     """
     Retrieve Feature Store
@@ -110,7 +106,7 @@ async def list_feature_store_audit_logs(
 
 @router.get("/{feature_store_id}/info")
 async def get_feature_store_info(
-    request: Request, feature_store_id: str, verbose: bool = True
+    request: Request, feature_store_id: PydanticObjectId, verbose: bool = True
 ) -> dict[str, Any]:
     """
     Retrieve FeatureStore info
