@@ -246,7 +246,7 @@ def feature_list_model_fixture():
 
     with open("tests/fixtures/request_payloads/feature_list_single.json") as fhandle:
         feature_list_dict = json.loads(fhandle.read())
-        feature_list_dict["features"] = [
+        feature_list_dict["feature_signatures"] = [
             {
                 "id": feature_dict["_id"],
                 "name": feature_list_dict["name"],

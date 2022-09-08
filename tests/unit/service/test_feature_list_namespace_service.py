@@ -8,10 +8,8 @@ import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
-from featurebyte.schema.feature_list_namespace import (
-    FeatureListNamespaceCreate,
-    FeatureListNamespaceUpdate,
-)
+from featurebyte.models.feature_list import FeatureListNamespaceModel
+from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 
 
@@ -29,7 +27,7 @@ def created_document_fixture(feature_list_namespace_service):
     ) as fhandle:
         payload = json.loads(fhandle.read())
     return asyncio.run(
-        feature_list_namespace_service.create_document(FeatureListNamespaceCreate(**payload))
+        feature_list_namespace_service.create_document(FeatureListNamespaceModel(**payload))
     )
 
 

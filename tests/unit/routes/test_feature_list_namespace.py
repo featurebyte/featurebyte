@@ -10,7 +10,7 @@ import pytest
 from bson import ObjectId
 from requests import Response
 
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceCreate
+from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from tests.unit.routes.base import BaseApiTestSuite
 
@@ -53,7 +53,7 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
         )
         document = asyncio.run(
             feature_list_namespace_service.create_document(
-                data=FeatureListNamespaceCreate(**self.payload)
+                data=FeatureListNamespaceModel(**self.payload)
             )
         )
         response = Response()
@@ -90,7 +90,7 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
             payload["name"] = f'{self.payload["name"]}_{i}'
             document = asyncio.run(
                 feature_list_namespace_service.create_document(
-                    data=FeatureListNamespaceCreate(**payload)
+                    data=FeatureListNamespaceModel(**payload)
                 )
             )
             output.append(document)

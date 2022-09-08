@@ -25,8 +25,6 @@ def feature_list_model_dict_fixture():
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "entity_ids": [ObjectId()],
-        "event_data_ids": [ObjectId()],
         "feature_list_namespace_id": ObjectId(),
     }
 

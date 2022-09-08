@@ -271,10 +271,13 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         ).readiness
         # set the following values if it is empty (used mainly by the SDK constructed feature list)
         # for the feature list constructed during serialization, following codes should be skipped
+        features = [feature for feature in values["feature_objects"].values()]
         if not values.get("feature_ids"):
-            values["feature_ids"] = [feature.id for feature in values["feature_objects"].values()]
+            values["feature_ids"] = [feature.id for feature in features]
         if not values.get("version"):
             values["version"] = get_version()
+        if not values.get("readiness_distribution"):
+            values["readiness_distribution"] = cls.derive_readiness_distribution(features)
         return values
 
     @property

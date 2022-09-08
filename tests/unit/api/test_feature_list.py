@@ -135,11 +135,9 @@ def test_feature_list_creation__success(production_ready_feature, config, mocked
     assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],
-        "readiness_distribution": [],  # before save, value is empty
+        "readiness_distribution": [{"count": 1, "readiness": "PRODUCTION_READY"}],
         "readiness": "PRODUCTION_READY",
         "version": "V220501",
-        "event_data_ids": [],  # before save, value is empty
-        "entity_ids": [],  # before save, value is empty
         "created_at": None,
         "updated_at": None,
         "user_id": None,
@@ -173,11 +171,12 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
             feature_group["sum_30m"].id,
             feature_group["sum_1d"].id,
         ],
-        "readiness_distribution": [],
+        "readiness_distribution": [
+            {"count": 1, "readiness": "PRODUCTION_READY"},
+            {"count": 2, "readiness": "DRAFT"},
+        ],
         "name": "my_feature_list",
         "readiness": "DRAFT",
-        "event_data_ids": [],
-        "entity_ids": [],
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -442,8 +441,6 @@ def test_deserialization(production_ready_feature, draft_feature, quarantine_fea
     # check consistency between loaded feature list & original feature list
     assert loaded_feature_list.version == expected_version
     assert loaded_feature_list.feature_ids == feature_list.feature_ids
-    assert loaded_feature_list.entity_ids == feature_list.entity_ids
-    assert loaded_feature_list.event_data_ids == feature_list.event_data_ids
 
 
 def test_info(saved_feature_list):

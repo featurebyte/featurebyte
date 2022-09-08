@@ -25,12 +25,9 @@ class FeatureListNamespaceCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     feature_list_ids: List[PydanticObjectId] = Field(default_factory=list)
-    dtype_distribution: List[FeatureTypeFeatureCount]
     readiness_distribution: FeatureReadinessDistribution
     default_feature_list_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
-    entity_ids: List[PydanticObjectId]
-    event_data_ids: List[PydanticObjectId]
 
 
 class FeatureListNamespaceList(PaginationMixin):

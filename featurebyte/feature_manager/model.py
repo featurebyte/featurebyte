@@ -77,5 +77,5 @@ class ExtendedFeatureListModel(FeatureListModel):
     ExtendedFeatureListModel class has additional features attribute
     """
 
-    features: List[FeatureSignature] = Field(default_factory=list)
+    feature_signatures: List[FeatureSignature] = Field(default_factory=list)
     status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
