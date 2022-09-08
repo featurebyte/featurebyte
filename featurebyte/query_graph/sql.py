@@ -740,20 +740,29 @@ class DateAddNode(ExpressionNode):
     """Node for date increment by timedelta operation"""
 
     input_date_node: ExpressionNode
-    timedelta_node: Union[TimedeltaNode, DateDiffNode]
+    timedelta_node: Union[TimedeltaNode, DateDiffNode, ParsedExpressionNode]
 
     @property
     def sql(self) -> Expression:
         if isinstance(self.timedelta_node, TimedeltaNode):
+            # timedelta is constructed from to_timedelta()
             date_add_args = [
                 self.timedelta_node.unit,
                 self.timedelta_node.sql,
                 self.input_date_node.sql,
             ]
-        else:
+        elif isinstance(self.timedelta_node, DateDiffNode):
+            # timedelta is the result of date difference
             date_add_args = [
                 "microsecond",
                 self.timedelta_node.with_unit("microsecond"),
+                self.input_date_node.sql,
+            ]
+        else:
+            # timedelta is a constant value
+            date_add_args = [
+                "second",
+                self.timedelta_node.sql,
                 self.input_date_node.sql,
             ]
         output_expr = expressions.Anonymous(this="DATEADD", expressions=date_add_args)
@@ -1097,7 +1106,7 @@ def make_date_add_node(
     DateAddNode
     """
     resolved_timedelta_node = resolve_project_node(timedelta_node)
-    assert isinstance(resolved_timedelta_node, (TimedeltaNode, DateDiffNode))
+    assert isinstance(resolved_timedelta_node, (TimedeltaNode, DateDiffNode, ParsedExpressionNode))
     output_node = DateAddNode(
         table_node=table_node,
         input_date_node=input_date_node,

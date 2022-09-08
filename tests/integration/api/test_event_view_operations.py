@@ -568,6 +568,7 @@ def check_datetime_operations(event_view, column_name, limit=100):
     timedelta = to_timedelta(event_view["event_interval_microsecond"], "microsecond")
     event_view["timestamp_added"] = datetime_series + timedelta
     event_view["timestamp_added_from_timediff"] = datetime_series + event_view["event_interval"]
+    event_view["timestamp_added_constant"] = datetime_series + pd.Timedelta("1d")
     event_view["timedelta_hour"] = timedelta.dt.hour
 
     # check datetime extracted properties
@@ -613,6 +614,7 @@ def check_datetime_operations(event_view, column_name, limit=100):
     pandas_timestamp_added = pandas_series + pd.to_timedelta(
         dt_df["event_interval_microsecond"].astype(float), "microsecond"
     )
+    pandas_timestamp_added_constant = pandas_series + pd.Timedelta("1d")
     pd.testing.assert_series_equal(
         dt_df["timestamp_added"],
         pandas_timestamp_added,
@@ -621,6 +623,11 @@ def check_datetime_operations(event_view, column_name, limit=100):
     pd.testing.assert_series_equal(
         dt_df["timestamp_added_from_timediff"],
         pandas_timestamp_added,
+        check_names=False,
+    )
+    pd.testing.assert_series_equal(
+        dt_df["timestamp_added_constant"],
+        pandas_timestamp_added_constant,
         check_names=False,
     )
     pandas_timedelta_hour = (

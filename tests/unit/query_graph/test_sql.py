@@ -298,6 +298,15 @@ def test_date_add__datediff(input_node):
     assert date_add_node.sql.sql() == "DATEADD(microsecond, DATEDIFF(microsecond, b, a), date_col)"
 
 
+def test_date_add__constant(input_node):
+    """Test DateAdd node when the timedelta is a fixed constant"""
+    date_column = sql.StrExpressionNode(table_node=input_node, expr="date_col")
+    date_add_node = sql.make_binary_operation_node(
+        NodeType.DATE_ADD, [date_column], {"value": 3600}
+    )
+    assert date_add_node.sql.sql() == "DATEADD(second, 3600, date_col)"
+
+
 @pytest.mark.parametrize(
     "input_unit, output_unit, expected",
     [

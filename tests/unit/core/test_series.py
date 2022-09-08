@@ -3,6 +3,7 @@ Unit test for Series
 """
 import textwrap
 
+import pandas as pd
 import pytest
 
 from featurebyte.enum import DBVarType
@@ -641,13 +642,31 @@ def test_date_add_operator__constructed_timedelta(timestamp_series, timedelta_se
     }
 
 
-def test_date_add_operator__scalar_timedelta(timestamp_series):
+@pytest.mark.parametrize("right_side_op", [False, True])
+def test_date_add_operator__scalar_timedelta(timestamp_series, right_side_op):
     """
     Test incrementing a date Series with a scalar timedelta value
     """
-    with pytest.raises(TypeError) as exc:
-        _ = timestamp_series + 1.0
-    assert "does not support operation" in str(exc.value)
+    if right_side_op:
+        new_series = pd.Timedelta("1d") + timestamp_series
+    else:
+        new_series = timestamp_series + pd.Timedelta("1d")
+    assert new_series.dtype == DBVarType.TIMESTAMP
+    _check_node_equality(
+        new_series.node,
+        Node(
+            name="date_add_1",
+            type=NodeType.DATE_ADD,
+            parameters={"value": 86400},
+            output_type=NodeOutputType.SERIES,
+        ),
+        exclude={"name": True},
+    )
+    series_dict = new_series.dict()
+    assert series_dict["graph"]["backward_edges"] == {
+        "date_add_1": ["project_1"],
+        "project_1": ["input_1"],
+    }
 
 
 def assert_series_attributes_equal(left, right):
