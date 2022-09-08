@@ -11,7 +11,6 @@ from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_list_namespace import (
-    FeatureListNamespaceCreate,
     FeatureListNamespaceList,
     FeatureListNamespaceUpdate,
 )

@@ -5,12 +5,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-import collections
-
 from bson.objectid import ObjectId
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import SourceType
 from featurebyte.exception import (
     DocumentConflictError,
     DocumentInconsistencyError,
@@ -20,12 +18,7 @@ from featurebyte.exception import (
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import (
-    DefaultVersionMode,
-    FeatureModel,
-    FeatureReadiness,
-    FeatureSignature,
-)
+from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureSignature
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.feature_list import FeatureListCreate

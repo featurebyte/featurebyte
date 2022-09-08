@@ -162,8 +162,8 @@ class QueryObject(FeatureByteBaseModel):
         update_dict = update or {}
         update_dict.update({"feature_store": self.feature_store.copy(deep=deep)})
         return super().copy(
-            include=include,  # type: ignore
-            exclude=exclude,  # type: ignore
+            include=include,
+            exclude=exclude,
             update=update_dict,
             deep=deep,
         )
@@ -188,10 +188,10 @@ class QueryObject(FeatureByteBaseModel):
         # serialize the whole object, then calling `QueryObject.dict()` to construct pruned graph & node map.
         # After that, use the `QueryObject.dict()` result to overwrite pydantic `json()` results.
         json_object = super().json(
-            include=include,  # type: ignore
-            exclude=exclude,  # type: ignore
+            include=include,
+            exclude=exclude,
             by_alias=by_alias,
-            skip_defaults=skip_defaults,  # type: ignore
+            skip_defaults=skip_defaults,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
