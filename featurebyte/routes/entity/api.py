@@ -38,7 +38,7 @@ async def create_entity(request: Request, data: EntityCreate) -> EntityModel:
 
 
 @router.get("/{entity_id}", response_model=EntityModel)
-async def get_entity(request: Request, entity_id: str) -> EntityModel:
+async def get_entity(request: Request, entity_id: PydanticObjectId) -> EntityModel:
     """
     Get Entity
     """
@@ -75,7 +75,9 @@ async def list_entities(
 
 
 @router.patch("/{entity_id}", response_model=EntityModel)
-async def update_entity(request: Request, entity_id: str, data: EntityUpdate) -> EntityModel:
+async def update_entity(
+    request: Request, entity_id: PydanticObjectId, data: EntityUpdate
+) -> EntityModel:
     """
     Update Entity
     """
@@ -142,7 +144,9 @@ async def list_name_history(
 
 
 @router.get("/{entity_id}/info")
-async def get_entity_info(request: Request, entity_id: str, verbose: bool = True) -> dict[str, Any]:
+async def get_entity_info(
+    request: Request, entity_id: PydanticObjectId, verbose: bool = True
+) -> dict[str, Any]:
     """
     Retrieve EventData info
     """

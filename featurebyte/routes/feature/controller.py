@@ -3,13 +3,14 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Type
+from typing import Any, Literal, Type
 
 from featurebyte.models.feature import FeatureModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature import FeatureCreate, FeatureList
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
 
 
 class FeatureController(BaseDocumentController[FeatureModel, FeatureList]):
@@ -48,3 +49,33 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureList]):
                 user=user, persistent=persistent
             ).create_document(data=data, get_credential=get_credential)
             return document
+
+    @classmethod
+    async def list(
+        cls,
+        user: Any,
+        persistent: Persistent,
+        page: int = 1,
+        page_size: int = 10,
+        sort_by: str | None = "created_at",
+        sort_dir: Literal["asc", "desc"] = "desc",
+        **kwargs: Any,
+    ) -> FeatureList:
+        params = kwargs.copy()
+        feature_list_id = params.pop("feature_list_id")
+        if feature_list_id:
+            async with cls._list_context():
+                feature_list_document = await FeatureListService(
+                    user=user, persistent=persistent
+                ).get_document(document_id=feature_list_id)
+                params["query_filter"] = {"_id": {"$in": feature_list_document.feature_ids}}
+
+        return await super().list(
+            user=user,
+            persistent=persistent,
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            **params,
+        )

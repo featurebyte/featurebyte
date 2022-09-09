@@ -355,6 +355,19 @@ class TestEventDataApi(BaseApiTestSuite):
             None,
         ]
 
+    def test_update_422(self, test_api_client_persistent, event_data_update_dict):
+        """Test update (unprocessable) - invalid id value"""
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.patch(f"{self.base_route}/abc", json=event_data_update_dict)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == [
+            {
+                "loc": ["path", self.id_field_name],
+                "msg": "Id must be of type PydanticObjectId",
+                "type": "type_error",
+            }
+        ]
+
     def test_get_default_feature_job_setting_history(
         self, test_api_client_persistent, event_data_response
     ):

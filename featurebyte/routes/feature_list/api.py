@@ -42,7 +42,7 @@ async def create_feature_list(request: Request, data: FeatureListCreate) -> Feat
 
 
 @router.get("/{feature_list_id}", response_model=FeatureListModel)
-async def get_feature_list(request: Request, feature_list_id: str) -> FeatureListModel:
+async def get_feature_list(request: Request, feature_list_id: PydanticObjectId) -> FeatureListModel:
     """
     Get FeatureList
     """
@@ -106,7 +106,7 @@ async def list_feature_list_audit_logs(
 
 @router.get("/{feature_list_id}/info")
 async def get_feature_list_info(
-    request: Request, feature_list_id: str, verbose: bool = True
+    request: Request, feature_list_id: PydanticObjectId, verbose: bool = True
 ) -> dict[str, Any]:
     """
     Retrieve FeatureList info

@@ -97,6 +97,16 @@ class TestFeatureApi(BaseApiTestSuite):
         with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
             yield mock
 
+    @pytest.fixture(autouse=True)
+    def mock_insert_feature_list_registry_fixture(self):
+        """
+        Mock insert feature registry at the controller level
+        """
+        with patch(
+            "featurebyte.service.feature_list.FeatureListService._insert_feature_list_registry"
+        ) as mock:
+            yield mock
+
     def setup_creation_route(self, api_client):
         """
         Setup for post route
@@ -180,6 +190,54 @@ class TestFeatureApi(BaseApiTestSuite):
             response_dict["created_at"]
         )
         assert feat_namespace_docs[0]["updated_at"] > feat_namespace_docs[0]["created_at"]
+
+    def test_list_404__feature_list_not_found(
+        self,
+        test_api_client_persistent,
+        create_multiple_success_responses,
+    ):
+        """Test list (not found) when the feature list id is not found"""
+        test_api_client, _ = test_api_client_persistent
+        _ = create_multiple_success_responses
+        random_id = ObjectId()
+        response = test_api_client.get(self.base_route, params={"feature_list_id": str(random_id)})
+        error_message = (
+            f'FeatureList (id: "{random_id}") not found. Please save the FeatureList object first.'
+        )
+        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert response.json()["detail"] == error_message
+
+    def test_list_200__filter_by_feature_list_id(self, test_api_client_persistent):
+        """Test list (success) using feature_list_id to filter"""
+        test_api_client, _ = test_api_client_persistent
+
+        # create feature list first
+        api_object_filename_pairs = [
+            ("feature_store", "feature_store"),
+            ("entity", "entity"),
+            ("event_data", "event_data"),
+            ("feature", "feature_sum_30m"),
+            ("feature", "feature_sum_2h"),
+            ("feature_list", "feature_list_multi"),
+        ]
+        feature_ids = []
+        feature_list_id = None
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = test_api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
+
+            if api_object == "feature":
+                feature_ids.append(response.json()["_id"])
+            if api_object == "feature_list_id":
+                feature_list_id = payload["_id"]
+
+        response = test_api_client.get(self.base_route, params={"feature_list_id": feature_list_id})
+        response_dict = response.json()
+        output_feature_ids = [feat["_id"] for feat in response_dict["data"]]
+        assert response.status_code == HTTPStatus.OK
+        assert response_dict["total"] == len(feature_ids)
+        assert set(output_feature_ids) == set(feature_ids)
 
 
 @pytest.fixture(name="feature_model_dict")

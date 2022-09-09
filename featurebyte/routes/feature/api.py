@@ -41,7 +41,7 @@ async def create_feature(request: Request, data: FeatureCreate) -> FeatureModel:
 
 
 @router.get("/{feature_id}", response_model=FeatureModel)
-async def get_feature(request: Request, feature_id: str) -> FeatureModel:
+async def get_feature(request: Request, feature_id: PydanticObjectId) -> FeatureModel:
     """
     Get Feature
     """
@@ -60,6 +60,7 @@ async def list_features(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
+    feature_list_id: Optional[PydanticObjectId] = None,
 ) -> FeatureList:
     """
     List Features
@@ -73,6 +74,7 @@ async def list_features(
         sort_dir=sort_dir,
         search=search,
         name=name,
+        feature_list_id=feature_list_id,
     )
     return feature_list
 
@@ -105,7 +107,7 @@ async def list_feature_audit_logs(
 
 @router.get("/{feature_id}/info")
 async def get_feature_info(
-    request: Request, feature_id: str, verbose: bool = True
+    request: Request, feature_id: PydanticObjectId, verbose: bool = True
 ) -> dict[str, Any]:
     """
     Retrieve Feature info

@@ -167,6 +167,15 @@ class TestEntityApi(BaseApiTestSuite):
             ]
         }
 
+        response = test_api_client.patch("/entity/abc", json={"name": "anything"})
+        assert response.json()["detail"] == [
+            {
+                "loc": ["path", self.id_field_name],
+                "msg": "Id must be of type PydanticObjectId",
+                "type": "type_error",
+            }
+        ]
+
     def tests_get_name_history(self, test_api_client_persistent, create_success_response):
         """
         Test retrieve name history
