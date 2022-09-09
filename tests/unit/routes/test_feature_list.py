@@ -157,7 +157,6 @@ class TestFeatureListApi(BaseApiTestSuite):
         expected_readiness_dist = [{"count": 1, "readiness": "PRODUCTION_READY"}]
         response = test_api_client.post(f"{self.base_route}", json=new_payload)
         new_fl_dict = response.json()
-        assert new_fl_dict["readiness"] == "PRODUCTION_READY"
         assert new_fl_dict["readiness_distribution"] == expected_readiness_dist
         assert new_fl_dict["feature_list_namespace_id"] == result["feature_list_namespace_id"]
 
@@ -167,7 +166,6 @@ class TestFeatureListApi(BaseApiTestSuite):
         )
         namespace_response_dict = namespace_response.json()
         assert namespace_response_dict["feature_list_ids"] == [result["_id"], new_fl_dict["_id"]]
-        assert namespace_response_dict["readiness"] == "PRODUCTION_READY"
         assert namespace_response_dict["readiness_distribution"] == expected_readiness_dist
         assert namespace_response_dict["default_version_mode"] == "AUTO"
         assert namespace_response_dict["default_feature_list_id"] == new_fl_dict["_id"]

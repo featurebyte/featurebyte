@@ -105,35 +105,41 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
 
     @typechecked
     def __lt__(self, other: FeatureReadinessDistribution) -> bool:
+        # check whether the two readiness distributions comparison is valid
         this_dist_map, other_dist_map = self._transform_and_check(self, other)
-        # feature readiness sorted from the worst readiness (deprecated) to the best readiness (production ready)
-        # the one with the lower number of readiness should be preferred
-        # this mean: dist_with_lower_bad_readiness > dist_with_higher_bad_readiness
-        for feature_readiness in FeatureReadiness:
-            compare_readiness = (
-                this_dist_map[feature_readiness] == other_dist_map[feature_readiness]
-            )
-            if compare_readiness:
-                continue
-            return this_dist_map[feature_readiness] > other_dist_map[feature_readiness]
-        return False
 
-    def derive_readiness(self) -> FeatureReadiness:
+        # first check the production readiness fraction first
+        this_prod_ready_frac = self.derive_production_ready_fraction()
+        other_prod_ready_frac = other.derive_production_ready_fraction()
+        if this_prod_ready_frac != other_prod_ready_frac:
+            return this_prod_ready_frac < other_prod_ready_frac
+        else:
+            # feature readiness sorted from the worst readiness (deprecated) to the best readiness (production ready)
+            # the one with the lower number of readiness should be preferred
+            # this mean: dist_with_lower_bad_readiness > dist_with_higher_bad_readiness
+            for feature_readiness in FeatureReadiness:
+                compare_readiness = (
+                    this_dist_map[feature_readiness] == other_dist_map[feature_readiness]
+                )
+                if compare_readiness:
+                    continue
+                return this_dist_map[feature_readiness] > other_dist_map[feature_readiness]
+            return False
+
+    def derive_production_ready_fraction(self) -> float:
         """
-        Derive readiness based on feature readiness distribution
+        Derive fraction of features whose readiness level is at production ready
 
         Returns
         -------
-        Aggregated featured readiness
+        Fraction of production ready features
         """
-        return min(
-            list(
-                readiness_count.readiness
-                for readiness_count in self.__root__
-                if readiness_count.count
-            )
-            or [FeatureReadiness.DRAFT]
-        )
+        production_ready_cnt, total = 0, 0
+        for readiness_count in self.__root__:
+            total += readiness_count.count
+            if readiness_count.readiness == FeatureReadiness.PRODUCTION_READY:
+                production_ready_cnt += readiness_count.count
+        return production_ready_cnt / max(total, 1)
 
 
 class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
@@ -150,8 +156,6 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         Feature type distribution
     readiness_distribution: FeatureReadinessDistribution
         Feature readiness distribution of the default feature list
-    readiness: FeatureReadiness
-        Aggregated readiness of the default feature list
     default_feature_list_id: PydanticObjectId
         Default feature list id
     default_version_mode: DefaultVersionMode
@@ -167,7 +171,6 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     dtype_distribution: List[FeatureTypeFeatureCount] = Field(allow_mutation=False)
     readiness_distribution: FeatureReadinessDistribution = Field(allow_mutation=False)
-    readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
     default_version_mode: DefaultVersionMode = Field(
         default=DefaultVersionMode.AUTO, allow_mutation=False
@@ -248,18 +251,6 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
             values["event_data_ids"] = cls.derive_event_data_ids(features)
         return values
 
-    @validator("readiness")
-    @classmethod
-    def _derive_readiness_validator(
-        cls, value: FeatureReadiness, values: dict[str, Any]
-    ) -> FeatureReadiness:
-        _ = value
-        if isinstance(values["readiness_distribution"], list):
-            readiness_dist = FeatureReadinessDistribution(__root__=values["readiness_distribution"])
-        else:
-            readiness_dist = values["readiness_distribution"]
-        return readiness_dist.derive_readiness()
-
     class Settings:
         """
         MongoDB settings
@@ -292,8 +283,6 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         List of feature IDs
     readiness_distribution: List[Dict[str, Any]]
         Feature readiness distribution of this feature list
-    readiness: FeatureReadiness
-        Aggregated readiness of this feature list
     version: FeatureListVersionIdentifier
         Feature list version
     feature_list_namespace_id: PydanticObjectId
@@ -306,7 +295,6 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     readiness_distribution: FeatureReadinessDistribution = Field(
         allow_mutation=False, default_factory=list
     )
-    readiness: Optional[FeatureReadiness] = Field(allow_mutation=False, default=None)
     version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
@@ -344,18 +332,6 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         if "features" in values:
             values["readiness_distribution"] = cls.derive_readiness_distribution(values["features"])
         return values
-
-    @validator("readiness")
-    @classmethod
-    def _derive_readiness_validator(
-        cls, value: FeatureReadiness, values: dict[str, Any]
-    ) -> FeatureReadiness:
-        _ = value
-        if isinstance(values["readiness_distribution"], list):
-            readiness_dist = FeatureReadinessDistribution(__root__=values["readiness_distribution"])
-        else:
-            readiness_dist = values["readiness_distribution"]
-        return readiness_dist.derive_readiness()
 
     class Settings:
         """

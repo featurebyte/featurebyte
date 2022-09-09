@@ -449,12 +449,11 @@ def test_info(saved_feature_list):
     """
     verbose_info = saved_feature_list.info(verbose=True)
     non_verbose_info = saved_feature_list.info(verbose=False)
-    expected_info = {"name": "my_feature_list", "readiness": "DRAFT"}
+    expected_info = {"name": "my_feature_list"}
     expected_feature = {
         "is_default": None,
         "name": "sum_1d",
         "online_enabled": None,
-        "readiness": "DRAFT",
         "dtype": "FLOAT",
     }
     assert non_verbose_info.items() > expected_info.items()
@@ -507,7 +506,10 @@ def test_get_feature_list(saved_feature_list):
         history_data[0]["current_values"].items()
         > {
             "name": "my_feature_list",
-            "readiness": "DRAFT",
+            "feature_ids": [str(val) for val in saved_feature_list.feature_ids],
+            "readiness_distribution": [{"readiness": "DRAFT", "count": 1}],
+            "feature_list_namespace_id": str(saved_feature_list.feature_list_namespace.id),
+            "version": saved_feature_list.version,
             "updated_at": None,
             "user_id": None,
         }.items()

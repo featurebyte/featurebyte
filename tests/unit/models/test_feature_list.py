@@ -20,7 +20,6 @@ def feature_list_model_dict_fixture():
         "name": "my_feature_list",
         "feature_ids": [ObjectId(), ObjectId()],
         "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
-        "readiness": "DRAFT",
         "version": "V220710",
         "created_at": None,
         "updated_at": None,
@@ -38,7 +37,6 @@ def feature_list_namespace_model_dict_fixture():
         "dtype_distribution": [{"dtype": "FLOAT", "count": 2}],
         "feature_list_ids": [feature_list_id],
         "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
-        "readiness": "DRAFT",
         "status": "DRAFT",
         "default_feature_list_id": feature_list_id,
         "default_version_mode": "AUTO",
@@ -64,7 +62,6 @@ def test_feature_list_model(feature_list_model_dict):
         {"readiness": "PRODUCTION_READY", "count": 2}
     ]
     updated_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
-    assert updated_feature_list.readiness == "PRODUCTION_READY"
 
 
 def test_feature_list_namespace_model(feature_list_namespace_model_dict):
@@ -81,7 +78,6 @@ def test_feature_list_namespace_model(feature_list_namespace_model_dict):
         {"readiness": "PRODUCTION_READY", "count": 2}
     ]
     updated_feature_list = FeatureListModel.parse_obj(feature_list_namespace_model_dict)
-    assert updated_feature_list.readiness == "PRODUCTION_READY"
 
 
 def test_feature_list_status_ordering():
@@ -149,32 +145,47 @@ def test_feature_readiness_distribution__equality_invalid_type():
     "left_dist, right_dist, expected",
     [
         (
+            # left_prod_ready_frac < right_prod_ready_frac
             [{"readiness": "PRODUCTION_READY", "count": 4}, {"readiness": "DRAFT", "count": 1}],
             [{"readiness": "PRODUCTION_READY", "count": 5}],
             True,
         ),
         (
+            # left_prod_ready_frac == right_prod_ready_frac, left has higher number of worse readiness features
             [
-                {"readiness": "PRODUCTION_READY", "count": 4},
-                {"readiness": "QUARANTINE", "count": 1},
+                {"readiness": "PRODUCTION_READY", "count": 3},
+                {"readiness": "QUARANTINE", "count": 2},
             ],
-            [{"readiness": "DRAFT", "count": 5}],
+            [{"readiness": "PRODUCTION_READY", "count": 3}, {"readiness": "DRAFT", "count": 2}],
             True,
         ),
         (
+            # left_prod_ready_frac > right_prod_ready_frac
             [
                 {"readiness": "PRODUCTION_READY", "count": 4},
                 {"readiness": "DEPRECATED", "count": 1},
             ],
             [{"readiness": "QUARANTINE", "count": 5}],
-            True,
+            False,
         ),
         (
-            [{"readiness": "DRAFT", "count": 5}],
-            [{"readiness": "PRODUCTION_READY", "count": 5}],
-            True,
+            # left_prod_ready_frac == right_prod_ready_frac, right has higher number of worse readiness features
+            [
+                {"readiness": "PRODUCTION_READY", "count": 3},
+                {"readiness": "DRAFT", "count": 2},
+                {"readiness": "QUARANTINE", "count": 2},
+                {"readiness": "DEPRECATED", "count": 1},
+            ],
+            [
+                {"readiness": "PRODUCTION_READY", "count": 3},
+                {"readiness": "DRAFT", "count": 1},
+                {"readiness": "QUARANTINE", "count": 3},
+                {"readiness": "DEPRECATED", "count": 1},
+            ],
+            False,
         ),
         (
+            # left == right
             [{"readiness": "PRODUCTION_READY", "count": 5}],
             [{"readiness": "PRODUCTION_READY", "count": 5}],
             False,
@@ -187,29 +198,3 @@ def test_readiness_distribution__less_than_check(left_dist, right_dist, expected
     feat_readiness_dist2 = FeatureReadinessDistribution(__root__=right_dist)
     assert (feat_readiness_dist1 < feat_readiness_dist2) is expected
     assert (feat_readiness_dist1 >= feat_readiness_dist2) is not expected
-
-
-@pytest.mark.parametrize(
-    "dist, expected",
-    [
-        ([], FeatureReadiness.DRAFT),
-        (
-            [
-                {"readiness": "PRODUCTION_READY", "count": 1},
-                {"readiness": "DEPRECATED", "count": 0},
-            ],
-            FeatureReadiness.PRODUCTION_READY,
-        ),
-        (
-            [
-                {"readiness": "PRODUCTION_READY", "count": 1},
-                {"readiness": "DEPRECATED", "count": 1},
-            ],
-            FeatureReadiness.DEPRECATED,
-        ),
-    ],
-)
-def test_readiness_distribution__derive_readiness(dist, expected):
-    """Test feature readiness distribution - derive readiness"""
-    feat_readiness_dist = FeatureReadinessDistribution(__root__=dist)
-    assert feat_readiness_dist.derive_readiness() == expected

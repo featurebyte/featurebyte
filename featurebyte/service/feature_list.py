@@ -37,7 +37,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
     info_transform = DictTransform(
         rule={
             **BaseDocumentService.base_info_transform_rule,
-            "__root__": DictProject(rule=["readiness", "status"]),
+            "__root__": DictProject(rule=["status"]),
             "features": DictProject(rule="feature"),
         }
     )
