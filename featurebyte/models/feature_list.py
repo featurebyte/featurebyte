@@ -152,6 +152,8 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         Feature name
     feature_list_ids: List[PydanticObjectId]
         List of feature list ids
+    feature_namespace_ids: List[PydanticObjectId]
+        List of feature namespace ids
     dtype_distribution: List[FeatureTypeFeatureCount]
         Feature type distribution
     readiness_distribution: FeatureReadinessDistribution
@@ -169,6 +171,7 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
     """
 
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    feature_namespace_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     dtype_distribution: List[FeatureTypeFeatureCount] = Field(allow_mutation=False)
     readiness_distribution: FeatureReadinessDistribution = Field(allow_mutation=False)
     default_feature_list_id: PydanticObjectId = Field(allow_mutation=False)
@@ -178,6 +181,22 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
     status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+
+    @staticmethod
+    def derive_feature_namespace_ids(features: List[FeatureModel]) -> List[PydanticObjectId]:
+        """
+        Derive feature namespace id from features
+
+        Parameters
+        ----------
+        features: List[FeatureModel]
+            List of features
+
+        Returns
+        -------
+        List[PydanticObjectId]
+        """
+        return [feature.feature_namespace_id for feature in features]
 
     @staticmethod
     def derive_dtype_distribution(features: List[FeatureModel]) -> List[FeatureTypeFeatureCount]:
@@ -246,10 +265,17 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         # constructor, it is intended to be used to derive other feature-related attributes
         if "features" in values:
             features = values["features"]
+            values["feature_namespace_ids"] = cls.derive_feature_namespace_ids(features)
             values["dtype_distribution"] = cls.derive_dtype_distribution(features)
             values["entity_ids"] = cls.derive_entity_ids(features)
             values["event_data_ids"] = cls.derive_event_data_ids(features)
         return values
+
+    @validator("feature_list_ids", "feature_namespace_ids", "entity_ids", "event_data_ids")
+    @classmethod
+    def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
+        # make sure list of ids always sorted
+        return sorted(value)
 
     class Settings:
         """
@@ -332,6 +358,12 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         if "features" in values:
             values["readiness_distribution"] = cls.derive_readiness_distribution(values["features"])
         return values
+
+    @validator("feature_ids")
+    @classmethod
+    def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
+        # make sure list of ids always sorted
+        return sorted(value)
 
     class Settings:
         """

@@ -17,6 +17,10 @@
     "feature_list_ids": [
         "6317467bb72b797bd08f7302"
     ],
+    "feature_namespace_ids": [
+        "6317467bb72b797bd08f72fb",
+        "6317467bb72b797bd08f72fd"
+    ],
     "name": "sf_feature_list_multiple",
     "readiness_distribution": [
         {

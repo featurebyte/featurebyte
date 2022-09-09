@@ -13,17 +13,17 @@ from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel, Feat
 @pytest.fixture(name="feature_name_space_dict")
 def feature_name_space_dict_fixture():
     """Fixture for a FixtureNameSpace dict"""
-    feature_id = ObjectId()
-    entity_ids = [ObjectId()]
-    event_data_ids = [ObjectId()]
+    feature_ids = [ObjectId("631b00277280fc9aa9522794"), ObjectId("631b00277280fc9aa9522793")]
+    entity_ids = [ObjectId("631b00277280fc9aa9522790"), ObjectId("631b00277280fc9aa9522789")]
+    event_data_ids = [ObjectId("631b00277280fc9aa9522792"), ObjectId("631b00277280fc9aa9522791")]
     return {
         "name": "some_feature_name",
         "dtype": "FLOAT",
-        "feature_ids": [feature_id],
+        "feature_ids": feature_ids,
         "readiness": "DRAFT",
         "created_at": datetime.now(),
         "updated_at": datetime.now(),
-        "default_feature_id": feature_id,
+        "default_feature_id": feature_ids[0],
         "default_version_mode": "MANUAL",
         "entity_ids": entity_ids,
         "event_data_ids": event_data_ids,
@@ -74,8 +74,12 @@ def test_feature_model(snowflake_event_view_with_entity, feature_model_dict):
 def test_feature_name_space(feature_name_space_dict):
     """Test feature name space model"""
     feature_name_space = FeatureNamespaceModel.parse_obj(feature_name_space_dict)
-    feat_name_space_dict = feature_name_space.dict(exclude={"id": True})
-    assert feat_name_space_dict == feature_name_space_dict
+    serialized_feature_name_space = feature_name_space.dict(exclude={"id": True})
+    feature_name_space_dict_sorted_ids = {
+        key: sorted(value) if key.endswith("_ids") else value
+        for key, value in feature_name_space_dict.items()
+    }
+    assert serialized_feature_name_space == feature_name_space_dict_sorted_ids
     loaded_feature_name_space = FeatureNamespaceModel.parse_raw(
         feature_name_space.json(by_alias=True)
     )

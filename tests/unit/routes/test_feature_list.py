@@ -191,7 +191,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.CREATED
         assert response.json()["feature_ids"] == sorted(payload_multi["feature_ids"])
 
-    def test_create_422_different_feature_stores(self, test_api_client_persistent):
+    def test_create_422__different_feature_stores(self, test_api_client_persistent):
         """
         Test feature list with different feature stores
         """
@@ -233,6 +233,32 @@ class TestFeatureListApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == (
             "All the Feature objects within the same FeatureList object must be from the same feature store."
+        )
+
+    def test_create_422__duplicated_feature_name(self, test_api_client_persistent):
+        """
+        Test feature list with different feature stores
+        """
+        test_api_client, _ = test_api_client_persistent
+        # create feature_store, event_data & feature
+        self.setup_creation_route(api_client=test_api_client)
+
+        # create another feature with the same name
+        feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+        new_feature_id = str(ObjectId())
+        feature_payload["_id"] = new_feature_id
+        feature_payload["version"] = f"{feature_payload['version']}_1"
+        response = test_api_client.post(f"/feature", json=feature_payload)
+        assert response.status_code == HTTPStatus.CREATED, response.text
+
+        payload = self.load_payload("tests/fixtures/request_payloads/feature_list_single.json")
+        payload["feature_ids"].append(new_feature_id)
+
+        # check that feature_ids in post response are sorted
+        response = test_api_client.post("/feature_list", json=payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.text
+        assert response.json()["detail"] == (
+            "Two Feature objects must not share the same name in a FeatureList object."
         )
 
 

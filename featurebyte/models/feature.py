@@ -10,7 +10,7 @@ from enum import Enum
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, validator
 
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import DBVarType, OrderedStrEnum
@@ -77,6 +77,12 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
     )
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+
+    @validator("feature_ids", "entity_ids", "event_data_ids")
+    @classmethod
+    def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
+        # make sure list of ids always sorted
+        return sorted(value)
 
     class Settings:
         """
@@ -145,6 +151,12 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
+
+    @validator("entity_ids", "event_data_ids")
+    @classmethod
+    def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
+        # make sure list of ids always sorted
+        return sorted(value)
 
     class Settings:
         """

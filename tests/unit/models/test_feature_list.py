@@ -16,9 +16,10 @@ from featurebyte.models.feature_list import (
 @pytest.fixture(name="feature_list_model_dict")
 def feature_list_model_dict_fixture():
     """Fixture for a FeatureList dict"""
+    feature_ids = [ObjectId("631af7f5b02b7992313dd577"), ObjectId("631af7f5b02b7992313dd576")]
     return {
         "name": "my_feature_list",
-        "feature_ids": [ObjectId(), ObjectId()],
+        "feature_ids": feature_ids,
         "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
         "version": "V220710",
         "created_at": None,
@@ -31,53 +32,65 @@ def feature_list_model_dict_fixture():
 @pytest.fixture(name="feature_list_namespace_model_dict")
 def feature_list_namespace_model_dict_fixture():
     """Fixture for a FeatureListNamespace dict"""
-    feature_list_id = ObjectId()
+    feature_namespace_ids = [
+        ObjectId("631af7f5b02b7992313dd579"),
+        ObjectId("631af7f5b02b7992313dd578"),
+    ]
+    feature_list_ids = [ObjectId("631af7f5b02b7992313dd585"), ObjectId("631af7f5b02b7992313dd584")]
+    entity_ids = [ObjectId("631af7f5b02b7992313dd581"), ObjectId("631af7f5b02b7992313dd580")]
+    event_data_ids = [ObjectId("631af7f5b02b7992313dd583"), ObjectId("631af7f5b02b7992313dd582")]
     return {
         "name": "my_feature_list",
+        "feature_namespace_ids": feature_namespace_ids,
         "dtype_distribution": [{"dtype": "FLOAT", "count": 2}],
-        "feature_list_ids": [feature_list_id],
+        "feature_list_ids": feature_list_ids,
         "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
         "status": "DRAFT",
-        "default_feature_list_id": feature_list_id,
+        "default_feature_list_id": feature_list_ids[0],
         "default_version_mode": "AUTO",
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "entity_ids": [ObjectId()],
-        "event_data_ids": [ObjectId()],
+        "entity_ids": entity_ids,
+        "event_data_ids": event_data_ids,
     }
 
 
 def test_feature_list_model(feature_list_model_dict):
     """Test feature list model"""
     feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
-    feature_list_dict = feature_list.dict(exclude={"id": True})
-    assert feature_list_dict == feature_list_model_dict
+    serialized_feature_list = feature_list.dict(exclude={"id": True})
+    feature_list_dict_sorted_ids = {
+        key: sorted(value) if key.endswith("_ids") else value
+        for key, value in feature_list_model_dict.items()
+    }
+    assert serialized_feature_list == feature_list_dict_sorted_ids
+
     feature_list_json = feature_list.json(by_alias=True)
     loaded_feature_list = FeatureListModel.parse_raw(feature_list_json)
     assert loaded_feature_list == feature_list
 
-    # test derived readiness
+    # test derive production readiness fraction
     feature_list_model_dict["readiness_distribution"] = [
         {"readiness": "PRODUCTION_READY", "count": 2}
     ]
     updated_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
+    assert updated_feature_list.readiness_distribution.derive_production_ready_fraction() == 1.0
 
 
 def test_feature_list_namespace_model(feature_list_namespace_model_dict):
     """Test feature list namespace model"""
     feature_list_namespace = FeatureListNamespaceModel.parse_obj(feature_list_namespace_model_dict)
-    feature_list_namespace_dict = feature_list_namespace.dict(exclude={"id": True})
-    assert feature_list_namespace_dict == feature_list_namespace_model_dict
+    serialized_feature_list_namespace = feature_list_namespace.dict(exclude={"id": True})
+    feature_list_namespace_model_dict_sorted_ids = {
+        key: sorted(value) if key.endswith("_ids") else value
+        for key, value in feature_list_namespace_model_dict.items()
+    }
+    assert serialized_feature_list_namespace == feature_list_namespace_model_dict_sorted_ids
+
     feature_list_namespace_json = feature_list_namespace.json(by_alias=True)
     loaded_feature_list_namespace = FeatureListNamespaceModel.parse_raw(feature_list_namespace_json)
     assert loaded_feature_list_namespace == feature_list_namespace
-
-    # test derived readiness
-    feature_list_namespace_model_dict["readiness_distribution"] = [
-        {"readiness": "PRODUCTION_READY", "count": 2}
-    ]
-    updated_feature_list = FeatureListModel.parse_obj(feature_list_namespace_model_dict)
 
 
 def test_feature_list_status_ordering():
