@@ -44,8 +44,7 @@ class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureSt
         FeatureStoreModel
             Newly created feature store document
         """
-        async with cls._creation_context():
-            document = await cls.document_service_class(
-                user=user, persistent=persistent
-            ).create_document(data)
-            return document
+        document = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).create_document(data)
+        return document

@@ -54,8 +54,7 @@ class FeatureListNamespaceController(
         FeatureListNamespaceModel
             FeatureListNamespace object with updated attribute(s)
         """
-        async with cls._update_context():
-            document = await cls.document_service_class(
-                user=user, persistent=persistent
-            ).update_document(document_id=feature_list_namespace_id, data=data)
-            return document
+        document = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).update_document(document_id=feature_list_namespace_id, data=data)
+        return document

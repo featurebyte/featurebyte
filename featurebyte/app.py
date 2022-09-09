@@ -19,6 +19,7 @@ import featurebyte.routes.feature_list_namespace.api as feature_list_namespace_a
 import featurebyte.routes.feature_namespace.api as feature_namespace_api
 import featurebyte.routes.feature_store.api as feature_store_api
 import featurebyte.routes.task.api as task_api
+from featurebyte.middleware import request_handler
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_data.controller import EventDataController
@@ -101,6 +102,8 @@ for resource_api, resource_controller in resource_api_controller_pairs:
 app.include_router(
     task_api.router, dependencies=[Depends(_get_api_deps(TaskController))], tags=["task"]
 )
+
+app.middleware("http")(request_handler)
 
 
 def _sigint_handler(signum, frame):  # type: ignore

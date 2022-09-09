@@ -49,11 +49,10 @@ class FeatureNamespaceController(
         FeatureNamespaceModel
             Newly created feature store document
         """
-        async with cls._creation_context():
-            document = await cls.document_service_class(
-                user=user, persistent=persistent
-            ).create_document(data)
-            return document
+        document = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).create_document(data)
+        return document
 
     @classmethod
     async def update_feature_namespace(
@@ -82,8 +81,7 @@ class FeatureNamespaceController(
         FeatureNamespaceModel
             FeatureNamespace object with updated attribute(s)
         """
-        async with cls._update_context():
-            document = await cls.document_service_class(
-                user=user, persistent=persistent
-            ).update_document(document_id=feature_namespace_id, data=data)
-            return document
+        document = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).update_document(document_id=feature_namespace_id, data=data)
+        return document

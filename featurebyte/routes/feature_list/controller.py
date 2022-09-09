@@ -43,8 +43,7 @@ class FeatureListController(BaseDocumentController[FeatureListModel, FeatureList
         FeatureListModel
             Newly created feature list object
         """
-        async with cls._creation_context():
-            document = await cls.document_service_class(
-                user=user, persistent=persistent
-            ).create_document(data=data, get_credential=get_credential)
-            return document
+        document = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).create_document(data=data, get_credential=get_credential)
+        return document

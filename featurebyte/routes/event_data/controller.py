@@ -46,11 +46,10 @@ class EventDataController(BaseDocumentController[EventDataModel, EventDataList])
         EventDataModel
             Newly created event data object
         """
-        async with cls._creation_context():
-            document = await cls.document_service_class(
-                user=user, persistent=persistent
-            ).create_document(data)
-            return document
+        document = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).create_document(data)
+        return document
 
     @classmethod
     async def update_event_data(
@@ -79,8 +78,7 @@ class EventDataController(BaseDocumentController[EventDataModel, EventDataList])
         EventDataModel
             EventData object with updated attribute(s)
         """
-        async with cls._update_context():
-            document = await cls.document_service_class(
-                user=user, persistent=persistent
-            ).update_document(document_id=event_data_id, data=data)
-            return document
+        document = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).update_document(document_id=event_data_id, data=data)
+        return document
