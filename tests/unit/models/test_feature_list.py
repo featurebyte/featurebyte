@@ -210,3 +210,29 @@ def test_readiness_distribution__less_than_check(left_dist, right_dist, expected
     feat_readiness_dist2 = FeatureReadinessDistribution(__root__=right_dist)
     assert (feat_readiness_dist1 < feat_readiness_dist2) is expected
     assert (feat_readiness_dist1 >= feat_readiness_dist2) is not expected
+
+
+@pytest.mark.parametrize(
+    "dist, expected",
+    [
+        ([], 0.0),
+        (
+            [
+                {"readiness": "PRODUCTION_READY", "count": 1},
+                {"readiness": "DEPRECATED", "count": 0},
+            ],
+            1.0,
+        ),
+        (
+            [
+                {"readiness": "PRODUCTION_READY", "count": 1},
+                {"readiness": "DEPRECATED", "count": 1},
+            ],
+            0.5,
+        ),
+    ],
+)
+def test_readiness_distribution__derive_production_ready_fraction(dist, expected):
+    """Test feature readiness distribution - derive production ready fraction"""
+    feat_readiness_dist = FeatureReadinessDistribution(__root__=dist)
+    assert feat_readiness_dist.derive_production_ready_fraction() == expected
