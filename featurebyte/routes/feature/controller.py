@@ -44,11 +44,10 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureList]):
         FeatureModel
             Newly created feature object
         """
-        async with cls._creation_context():
-            document = await cls.document_service_class(
-                user=user, persistent=persistent
-            ).create_document(data=data, get_credential=get_credential)
-            return document
+        document = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).create_document(data=data, get_credential=get_credential)
+        return document
 
     @classmethod
     async def list(
@@ -64,11 +63,10 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureList]):
         params = kwargs.copy()
         feature_list_id = params.pop("feature_list_id")
         if feature_list_id:
-            async with cls._list_context():
-                feature_list_document = await FeatureListService(
-                    user=user, persistent=persistent
-                ).get_document(document_id=feature_list_id)
-                params["query_filter"] = {"_id": {"$in": feature_list_document.feature_ids}}
+            feature_list_document = await FeatureListService(
+                user=user, persistent=persistent
+            ).get_document(document_id=feature_list_id)
+            params["query_filter"] = {"_id": {"$in": feature_list_document.feature_ids}}
 
         return await super().list(
             user=user,

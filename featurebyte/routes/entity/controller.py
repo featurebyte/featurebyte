@@ -46,11 +46,10 @@ class EntityController(BaseDocumentController[EntityModel, EntityList]):
         EntityModel
             Newly created entity object
         """
-        async with cls._creation_context():
-            document = await cls.document_service_class(
-                user=user, persistent=persistent
-            ).create_document(data)
-            return document
+        document = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).create_document(data)
+        return document
 
     @classmethod
     async def update_entity(
@@ -75,8 +74,7 @@ class EntityController(BaseDocumentController[EntityModel, EntityList]):
         EntityModel
             Entity object with updated attribute(s)
         """
-        async with cls._update_context():
-            document = await cls.document_service_class(
-                user=user, persistent=persistent
-            ).update_document(document_id=entity_id, data=data)
-            return document
+        document = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).update_document(document_id=entity_id, data=data)
+        return document

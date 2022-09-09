@@ -57,8 +57,7 @@ class FeatureJobSettingAnalysisController(
         Task
             Task object for the submitted task
         """
-        async with cls._creation_context():
-            task_id = await cls.document_service_class(
-                user=user, persistent=persistent
-            ).create_document_creation_task(data=data, task_manager=task_manager)
-            return await TaskController.get_task(task_manager=task_manager, task_id=str(task_id))
+        task_id = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).create_document_creation_task(data=data, task_manager=task_manager)
+        return await TaskController.get_task(task_manager=task_manager, task_id=str(task_id))
