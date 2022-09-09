@@ -117,8 +117,9 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                 raise DocumentError(
                     "Two Feature objects must not share the same name in a FeatureList object."
                 )
-            else:
-                feature_namespace_ids.add(feature.feature_namespace_id)
+
+            # update feature_namespace_ids
+            feature_namespace_ids.add(feature.feature_namespace_id)
 
             # store previous feature store id
             feature_store_id = feature.tabular_source.feature_store_id

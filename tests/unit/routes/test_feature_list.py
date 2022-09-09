@@ -248,7 +248,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         new_feature_id = str(ObjectId())
         feature_payload["_id"] = new_feature_id
         feature_payload["version"] = f"{feature_payload['version']}_1"
-        response = test_api_client.post(f"/feature", json=feature_payload)
+        response = test_api_client.post("/feature", json=feature_payload)
         assert response.status_code == HTTPStatus.CREATED, response.text
 
         payload = self.load_payload("tests/fixtures/request_payloads/feature_list_single.json")

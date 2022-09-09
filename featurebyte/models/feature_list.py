@@ -113,18 +113,18 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         other_prod_ready_frac = other.derive_production_ready_fraction()
         if this_prod_ready_frac != other_prod_ready_frac:
             return this_prod_ready_frac < other_prod_ready_frac
-        else:
-            # feature readiness sorted from the worst readiness (deprecated) to the best readiness (production ready)
-            # the one with the lower number of readiness should be preferred
-            # this mean: dist_with_lower_bad_readiness > dist_with_higher_bad_readiness
-            for feature_readiness in FeatureReadiness:
-                compare_readiness = (
-                    this_dist_map[feature_readiness] == other_dist_map[feature_readiness]
-                )
-                if compare_readiness:
-                    continue
-                return this_dist_map[feature_readiness] > other_dist_map[feature_readiness]
-            return False
+
+        # feature readiness sorted from the worst readiness (deprecated) to the best readiness (production ready)
+        # the one with the lower number of readiness should be preferred
+        # this mean: dist_with_lower_bad_readiness > dist_with_higher_bad_readiness
+        for feature_readiness in FeatureReadiness:
+            compare_readiness = (
+                this_dist_map[feature_readiness] == other_dist_map[feature_readiness]
+            )
+            if compare_readiness:
+                continue
+            return this_dist_map[feature_readiness] > other_dist_map[feature_readiness]
+        return False
 
     def derive_production_ready_fraction(self) -> float:
         """
