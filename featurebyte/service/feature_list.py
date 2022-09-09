@@ -11,6 +11,7 @@ from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import SourceType
 from featurebyte.exception import (
     DocumentConflictError,
+    DocumentError,
     DocumentInconsistencyError,
     DocumentNotFoundError,
     DuplicatedRegistryError,
@@ -37,7 +38,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
     info_transform = DictTransform(
         rule={
             **BaseDocumentService.base_info_transform_rule,
-            "__root__": DictProject(rule=["readiness", "status"]),
+            "__root__": DictProject(rule=["status"]),
             "features": DictProject(rule="feature"),
         }
     )
@@ -88,6 +89,7 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
     async def _extract_feature_data(self, document: FeatureListModel) -> Dict[str, Any]:
         feature_store_id: Optional[ObjectId] = None
         feature_signatures: List[FeatureSignature] = []
+        feature_namespace_ids = set()
         features = []
         for feature_id in document.feature_ids:
             # retrieve feature from the persistent
@@ -109,6 +111,15 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
                     "All the Feature objects within the same FeatureList object must be from the same "
                     "feature store."
                 )
+
+            # check whether there are duplicated feature names in a feature list
+            if feature.feature_namespace_id in feature_namespace_ids:
+                raise DocumentError(
+                    "Two Feature objects must not share the same name in a FeatureList object."
+                )
+
+            # update feature_namespace_ids
+            feature_namespace_ids.add(feature.feature_namespace_id)
 
             # store previous feature store id
             feature_store_id = feature.tabular_source.feature_store_id

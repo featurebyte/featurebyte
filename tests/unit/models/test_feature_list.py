@@ -4,7 +4,6 @@ Tests for Feature list related models
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
@@ -16,11 +15,11 @@ from featurebyte.models.feature_list import (
 @pytest.fixture(name="feature_list_model_dict")
 def feature_list_model_dict_fixture():
     """Fixture for a FeatureList dict"""
+    feature_ids = [ObjectId("631af7f5b02b7992313dd577"), ObjectId("631af7f5b02b7992313dd576")]
     return {
         "name": "my_feature_list",
-        "feature_ids": [ObjectId(), ObjectId()],
+        "feature_ids": feature_ids,
         "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
-        "readiness": "DRAFT",
         "version": "V220710",
         "created_at": None,
         "updated_at": None,
@@ -32,56 +31,65 @@ def feature_list_model_dict_fixture():
 @pytest.fixture(name="feature_list_namespace_model_dict")
 def feature_list_namespace_model_dict_fixture():
     """Fixture for a FeatureListNamespace dict"""
-    feature_list_id = ObjectId()
+    feature_namespace_ids = [
+        ObjectId("631af7f5b02b7992313dd579"),
+        ObjectId("631af7f5b02b7992313dd578"),
+    ]
+    feature_list_ids = [ObjectId("631af7f5b02b7992313dd585"), ObjectId("631af7f5b02b7992313dd584")]
+    entity_ids = [ObjectId("631af7f5b02b7992313dd581"), ObjectId("631af7f5b02b7992313dd580")]
+    event_data_ids = [ObjectId("631af7f5b02b7992313dd583"), ObjectId("631af7f5b02b7992313dd582")]
     return {
         "name": "my_feature_list",
+        "feature_namespace_ids": feature_namespace_ids,
         "dtype_distribution": [{"dtype": "FLOAT", "count": 2}],
-        "feature_list_ids": [feature_list_id],
+        "feature_list_ids": feature_list_ids,
         "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
-        "readiness": "DRAFT",
         "status": "DRAFT",
-        "default_feature_list_id": feature_list_id,
+        "default_feature_list_id": feature_list_ids[0],
         "default_version_mode": "AUTO",
         "created_at": None,
         "updated_at": None,
         "user_id": None,
-        "entity_ids": [ObjectId()],
-        "event_data_ids": [ObjectId()],
+        "entity_ids": entity_ids,
+        "event_data_ids": event_data_ids,
     }
 
 
 def test_feature_list_model(feature_list_model_dict):
     """Test feature list model"""
     feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
-    feature_list_dict = feature_list.dict(exclude={"id": True})
-    assert feature_list_dict == feature_list_model_dict
+    serialized_feature_list = feature_list.dict(exclude={"id": True})
+    feature_list_dict_sorted_ids = {
+        key: sorted(value) if key.endswith("_ids") else value
+        for key, value in feature_list_model_dict.items()
+    }
+    assert serialized_feature_list == feature_list_dict_sorted_ids
+
     feature_list_json = feature_list.json(by_alias=True)
     loaded_feature_list = FeatureListModel.parse_raw(feature_list_json)
     assert loaded_feature_list == feature_list
 
-    # test derived readiness
+    # test derive production readiness fraction
     feature_list_model_dict["readiness_distribution"] = [
         {"readiness": "PRODUCTION_READY", "count": 2}
     ]
     updated_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
-    assert updated_feature_list.readiness == "PRODUCTION_READY"
+    assert updated_feature_list.readiness_distribution.derive_production_ready_fraction() == 1.0
 
 
 def test_feature_list_namespace_model(feature_list_namespace_model_dict):
     """Test feature list namespace model"""
     feature_list_namespace = FeatureListNamespaceModel.parse_obj(feature_list_namespace_model_dict)
-    feature_list_namespace_dict = feature_list_namespace.dict(exclude={"id": True})
-    assert feature_list_namespace_dict == feature_list_namespace_model_dict
+    serialized_feature_list_namespace = feature_list_namespace.dict(exclude={"id": True})
+    feature_list_namespace_model_dict_sorted_ids = {
+        key: sorted(value) if key.endswith("_ids") else value
+        for key, value in feature_list_namespace_model_dict.items()
+    }
+    assert serialized_feature_list_namespace == feature_list_namespace_model_dict_sorted_ids
+
     feature_list_namespace_json = feature_list_namespace.json(by_alias=True)
     loaded_feature_list_namespace = FeatureListNamespaceModel.parse_raw(feature_list_namespace_json)
     assert loaded_feature_list_namespace == feature_list_namespace
-
-    # test derived readiness
-    feature_list_namespace_model_dict["readiness_distribution"] = [
-        {"readiness": "PRODUCTION_READY", "count": 2}
-    ]
-    updated_feature_list = FeatureListModel.parse_obj(feature_list_namespace_model_dict)
-    assert updated_feature_list.readiness == "PRODUCTION_READY"
 
 
 def test_feature_list_status_ordering():
@@ -149,32 +157,47 @@ def test_feature_readiness_distribution__equality_invalid_type():
     "left_dist, right_dist, expected",
     [
         (
+            # left_prod_ready_frac < right_prod_ready_frac
             [{"readiness": "PRODUCTION_READY", "count": 4}, {"readiness": "DRAFT", "count": 1}],
             [{"readiness": "PRODUCTION_READY", "count": 5}],
             True,
         ),
         (
+            # left_prod_ready_frac == right_prod_ready_frac, left has higher number of worse readiness features
             [
-                {"readiness": "PRODUCTION_READY", "count": 4},
-                {"readiness": "QUARANTINE", "count": 1},
+                {"readiness": "PRODUCTION_READY", "count": 3},
+                {"readiness": "QUARANTINE", "count": 2},
             ],
-            [{"readiness": "DRAFT", "count": 5}],
+            [{"readiness": "PRODUCTION_READY", "count": 3}, {"readiness": "DRAFT", "count": 2}],
             True,
         ),
         (
+            # left_prod_ready_frac > right_prod_ready_frac
             [
                 {"readiness": "PRODUCTION_READY", "count": 4},
                 {"readiness": "DEPRECATED", "count": 1},
             ],
             [{"readiness": "QUARANTINE", "count": 5}],
-            True,
+            False,
         ),
         (
-            [{"readiness": "DRAFT", "count": 5}],
-            [{"readiness": "PRODUCTION_READY", "count": 5}],
-            True,
+            # left_prod_ready_frac == right_prod_ready_frac, right has higher number of worse readiness features
+            [
+                {"readiness": "PRODUCTION_READY", "count": 3},
+                {"readiness": "DRAFT", "count": 2},
+                {"readiness": "QUARANTINE", "count": 2},
+                {"readiness": "DEPRECATED", "count": 1},
+            ],
+            [
+                {"readiness": "PRODUCTION_READY", "count": 3},
+                {"readiness": "DRAFT", "count": 1},
+                {"readiness": "QUARANTINE", "count": 3},
+                {"readiness": "DEPRECATED", "count": 1},
+            ],
+            False,
         ),
         (
+            # left == right
             [{"readiness": "PRODUCTION_READY", "count": 5}],
             [{"readiness": "PRODUCTION_READY", "count": 5}],
             False,
@@ -192,24 +215,24 @@ def test_readiness_distribution__less_than_check(left_dist, right_dist, expected
 @pytest.mark.parametrize(
     "dist, expected",
     [
-        ([], FeatureReadiness.DRAFT),
+        ([], 0.0),
         (
             [
                 {"readiness": "PRODUCTION_READY", "count": 1},
                 {"readiness": "DEPRECATED", "count": 0},
             ],
-            FeatureReadiness.PRODUCTION_READY,
+            1.0,
         ),
         (
             [
                 {"readiness": "PRODUCTION_READY", "count": 1},
                 {"readiness": "DEPRECATED", "count": 1},
             ],
-            FeatureReadiness.DEPRECATED,
+            0.5,
         ),
     ],
 )
-def test_readiness_distribution__derive_readiness(dist, expected):
-    """Test feature readiness distribution - derive readiness"""
+def test_readiness_distribution__derive_production_ready_fraction(dist, expected):
+    """Test feature readiness distribution - derive production ready fraction"""
     feat_readiness_dist = FeatureReadinessDistribution(__root__=dist)
-    assert feat_readiness_dist.derive_readiness() == expected
+    assert feat_readiness_dist.derive_production_ready_fraction() == expected

@@ -82,7 +82,6 @@ class FeatureListNamespaceService(BaseDocumentService[FeatureListNamespaceModel]
                 "$set": {
                     "feature_list_ids": feature_list_ids,
                     "readiness_distribution": readiness_dist.dict()["__root__"],
-                    "readiness": readiness_dist.derive_readiness(),
                     "default_feature_list_id": default_feature_list_id,
                     "default_version_mode": default_version_mode.value,
                 }

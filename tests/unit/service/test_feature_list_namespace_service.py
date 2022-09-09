@@ -59,7 +59,6 @@ async def test_update_document(feature_list_namespace_service, created_document)
     )
     assert updated_doc.user_id == created_document.user_id
     assert updated_doc.feature_list_ids == [feature_list_ids_before[0], feature_list_id]
-    assert updated_doc.readiness == FeatureReadiness.PRODUCTION_READY
     assert updated_doc.default_feature_list_id == feature_list_id
     assert updated_doc.default_version_mode == DefaultVersionMode.AUTO
 
@@ -85,7 +84,6 @@ async def test_update_document(feature_list_namespace_service, created_document)
         feature_list_id,
         worse_readiness_feature_list_id,
     ]
-    assert updated_doc.readiness == FeatureReadiness.PRODUCTION_READY
     assert updated_doc.default_feature_list_id == feature_list_id
     assert updated_doc.default_version_mode == DefaultVersionMode.AUTO
 
@@ -100,6 +98,5 @@ async def test_update_document(feature_list_namespace_service, created_document)
         feature_list_id,
         worse_readiness_feature_list_id,
     ]
-    assert updated_doc.readiness == FeatureReadiness.PRODUCTION_READY
     assert updated_doc.default_feature_list_id == feature_list_id
     assert updated_doc.default_version_mode == DefaultVersionMode.MANUAL

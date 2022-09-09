@@ -76,14 +76,12 @@ tm_insert_feature_list_registry = Template(
     INSERT INTO FEATURE_LIST_REGISTRY (
         NAME,
         VERSION,
-        READINESS,
         STATUS,
         FEATURE_VERSIONS
     )
     SELECT
         '{{feature_list.name}}' as NAME,
         '{{feature_list.version}}' as VERSION,
-        '{{feature_list.readiness}}' as READINESS,
         '{{feature_list.status}}' as STATUS,
         parse_json('{{feature_lst_str}}') as FEATURE_VERSIONS
 """
@@ -99,7 +97,6 @@ tm_update_feature_list_registry = Template(
     """
     UPDATE FEATURE_LIST_REGISTRY
     SET
-        READINESS = '{{feature_list.readiness}}',
         STATUS = '{{feature_list.status}}'
     WHERE NAME = '{{feature_list.name}}'
     AND VERSION = '{{feature_list.version}}'
