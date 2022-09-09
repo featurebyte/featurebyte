@@ -9,7 +9,6 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import InternalName
 from featurebyte.exception import DuplicatedRegistryError
-from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 
 
@@ -30,7 +29,6 @@ def test_insert_feature_list_registry(
         {
             "NAME": ["feature_list1"],
             "VERSION": ["v1"],
-            "READINESS": ["DRAFT"],
             "STATUS": ["PUBLIC_DRAFT"],
         }
     )
@@ -38,7 +36,6 @@ def test_insert_feature_list_registry(
         [
             "NAME",
             "VERSION",
-            "READINESS",
             "STATUS",
         ]
     ]
@@ -80,7 +77,6 @@ def test_retrieve_feature_list_registry(snowflake_feature_list, feature_list_man
     assert len(f_reg_df) == 1
     assert f_reg_df.iloc[0]["NAME"] == "feature_list1"
     assert f_reg_df.iloc[0]["VERSION"] == "v1"
-    assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
 
     f_reg_df = feature_list_manager.retrieve_feature_list_registries(
         feature_list=snowflake_feature_list, version="v1"
@@ -88,7 +84,6 @@ def test_retrieve_feature_list_registry(snowflake_feature_list, feature_list_man
     assert len(f_reg_df) == 1
     assert f_reg_df.iloc[0]["NAME"] == "feature_list1"
     assert f_reg_df.iloc[0]["VERSION"] == "v1"
-    assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
 
 
 def test_retrieve_feature_list_registry_multiple(snowflake_feature_list, feature_list_manager):
@@ -98,17 +93,14 @@ def test_retrieve_feature_list_registry_multiple(snowflake_feature_list, feature
     feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
 
     snowflake_feature_list.__dict__["version"] = "v2"
-    snowflake_feature_list.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
 
     f_reg_df = feature_list_manager.retrieve_feature_list_registries(snowflake_feature_list)
     assert len(f_reg_df) > 1
     assert f_reg_df.iloc[0]["NAME"] == "feature_list1"
     assert f_reg_df.iloc[0]["VERSION"] == "v1"
-    assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
     assert f_reg_df.iloc[1]["NAME"] == "feature_list1"
     assert f_reg_df.iloc[1]["VERSION"] == "v2"
-    assert f_reg_df.iloc[1]["READINESS"] == "PRODUCTION_READY"
 
 
 def test_update_feature_list_registry(
@@ -122,10 +114,8 @@ def test_update_feature_list_registry(
     assert len(result) == 1
     assert result.iloc[0]["NAME"] == "feature_list1"
     assert result.iloc[0]["VERSION"] == "v1"
-    assert result.iloc[0]["READINESS"] == "DRAFT"
     assert result.iloc[0]["STATUS"] == "PUBLIC_DRAFT"
 
-    snowflake_feature_list.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     snowflake_feature_list.__dict__["status"] = FeatureListStatus.PUBLISHED.value
     feature_list_manager.update_feature_list_registry(snowflake_feature_list)
 
@@ -133,7 +123,6 @@ def test_update_feature_list_registry(
     assert len(result) == 1
     assert result.iloc[0]["NAME"] == "feature_list1"
     assert result.iloc[0]["VERSION"] == "v1"
-    assert result.iloc[0]["READINESS"] == "PRODUCTION_READY"
     assert result.iloc[0]["STATUS"] == "PUBLISHED"
 
 
