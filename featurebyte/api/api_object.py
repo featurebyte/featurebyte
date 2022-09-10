@@ -191,7 +191,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         raise RecordRetrievalException(response)
 
     @typechecked
-    def info(self, verbose: bool = True) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
         Construct summary info of the API object
 
@@ -209,8 +209,10 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         RecordRetrievalException
             When the object not found
         """
+        # TODO: add support for verbose flag
+        _ = verbose
         client = Configurations().get_client()
-        response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})
+        response = client.get(url=f"{self._route}/{self.id}/info")
         if response.status_code == HTTPStatus.OK:
             return dict(response.json())
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")

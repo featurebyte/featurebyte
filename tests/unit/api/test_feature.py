@@ -251,24 +251,30 @@ def test_info(saved_feature):
     """
     Test info
     """
-    verbose_info = saved_feature.info(verbose=True)
-    non_verbose_info = saved_feature.info(verbose=False)
-    expected_version = {
-        "is_default": None,
+    info_dict = saved_feature.info()
+    expected_info = {
         "name": "sum_1d",
-        "online_enabled": None,
-        "readiness": "DRAFT",
+        "update_date": None,
         "dtype": "FLOAT",
+        "entities": {
+            "data": [{"name": "customer", "serving_names": ["cust_id"]}],
+            "page": 1,
+            "page_size": 10,
+            "total": 1,
+        },
+        "event_data": {
+            "data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "page": 1,
+            "page_size": 10,
+            "total": 1,
+        },
+        "default_version_mode": "AUTO",
+        "readiness": {"this": "DRAFT", "default": "DRAFT"},
     }
-    expected_info = {"default_version_mode": "AUTO", "name": "sum_1d"}
-    assert non_verbose_info.items() > expected_info.items()
-    assert verbose_info.items() > expected_info.items()
-    assert verbose_info["default_feature"] == non_verbose_info["default_feature"]
-    assert verbose_info["default_feature"].items() > expected_version.items()
-    assert verbose_info["features"] == non_verbose_info["features"]
-    assert len(verbose_info["features"]) == 1
-    assert verbose_info["features"][0].items() > expected_version.items()
-    assert set(verbose_info).difference(non_verbose_info) == {"created_at", "updated_at"}
+    assert info_dict.items() > expected_info.items(), info_dict
+    assert "creation_date" in info_dict, info_dict
+    assert "version" in info_dict, info_dict
+    assert set(info_dict["version"]) == {"this", "default"}, info_dict["version"]
 
 
 def test_feature_save__exception_due_to_event_data_not_saved(float_feature, snowflake_event_data):

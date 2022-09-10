@@ -447,20 +447,33 @@ def test_info(saved_feature_list):
     """
     Test info
     """
-    verbose_info = saved_feature_list.info(verbose=True)
-    non_verbose_info = saved_feature_list.info(verbose=False)
-    expected_info = {"name": "my_feature_list"}
-    expected_feature = {
-        "is_default": None,
-        "name": "sum_1d",
-        "online_enabled": None,
-        "dtype": "FLOAT",
+    info_dict = saved_feature_list.info()
+    expected_info = {
+        "name": "my_feature_list",
+        "update_date": None,
+        "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
+        "entities": {
+            "data": [{"name": "customer", "serving_names": ["cust_id"]}],
+            "page": 1,
+            "page_size": 10,
+            "total": 1,
+        },
+        "event_data": {
+            "data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "page": 1,
+            "page_size": 10,
+            "total": 1,
+        },
+        "default_version_mode": "AUTO",
+        "status": "DRAFT",
+        "feature_count": 1,
+        "version_count": 1,
+        "production_ready_fraction": {"this": 0.0, "default": 0.0},
     }
-    assert non_verbose_info.items() > expected_info.items()
-    assert verbose_info.items() > expected_info.items()
-    assert verbose_info["features"] == non_verbose_info["features"]
-    assert len(verbose_info["features"]) == 1
-    assert verbose_info["features"][0].items() > expected_feature.items()
+    assert info_dict.items() > expected_info.items(), info_dict
+    assert "creation_date" in info_dict, info_dict
+    assert "version" in info_dict, info_dict
+    assert set(info_dict["version"]) == {"this", "default"}, info_dict["version"]
 
 
 def test_get_feature_list(saved_feature_list):
