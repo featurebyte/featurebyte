@@ -8,11 +8,12 @@ from typing import Any
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.entity import EntityModel
 from featurebyte.models.event_data import EventDataModel, EventDataStatus
-from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
+from featurebyte.schema.common.operation import DictProject
+from featurebyte.schema.entity import EntityBriefInfoList
+from featurebyte.schema.event_data import EventDataCreate, EventDataInfo, EventDataUpdate
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.common.operation import DictProject, DictTransform
+from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
 
 
@@ -22,21 +23,6 @@ class EventDataService(BaseDocumentService[EventDataModel]):
     """
 
     document_class = EventDataModel
-    info_transform = DictTransform(
-        rule={
-            **BaseDocumentService.base_info_transform_rule,
-            "__root__": DictProject(
-                rule=[
-                    "event_timestamp_column",
-                    "record_creation_date_column",
-                ]
-            ),
-            "columns": DictProject(
-                rule=("columns_info", ["name", "dtype", "entity"]), verbose_only=True
-            ),
-        }
-    )
-    foreign_key_map = {"entity_id": EntityModel.collection_name()}
 
     async def create_document(  # type: ignore[override]
         self, data: EventDataCreate, get_credential: Any = None
@@ -89,3 +75,21 @@ class EventDataService(BaseDocumentService[EventDataModel]):
             user_id=self.user.id,
         )
         return await self.get_document(document_id=document_id)
+
+    async def get_info(self, document_id: ObjectId) -> EventDataInfo:
+        event_data = await self.get_document(document_id=document_id)
+        entity_service = EntityService(user=self.user, persistent=self.persistent)
+        entity_ids = DictProject(rule=("columns_info", "entity_id")).project(event_data.dict())
+        entities = await entity_service.list_documents(query_filter={"_id": {"$in": entity_ids}})
+        return EventDataInfo(
+            name=event_data.name,
+            creation_date=event_data.created_at,
+            update_date=event_data.updated_at,
+            event_timestamp_column=event_data.event_timestamp_column,
+            record_creation_date_column=event_data.record_creation_date_column,
+            table_details=event_data.tabular_source.table_details,
+            default_feature_job_setting=event_data.default_feature_job_setting,
+            status=event_data.status,
+            entities=EntityBriefInfoList.from_paginated_data(entities),
+            column_count=len(event_data.columns_info),
+        )

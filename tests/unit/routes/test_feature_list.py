@@ -261,6 +261,42 @@ class TestFeatureListApi(BaseApiTestSuite):
             "Two Feature objects must not share the same name in a FeatureList object."
         )
 
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
+        """Test retrieve info"""
+        test_api_client, persistent = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert (
+            response_dict.items()
+            > {
+                "name": "sf_feature_list",
+                "update_date": None,
+                "entities": {
+                    "data": [{"name": "customer", "serving_names": ["cust_id"]}],
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                },
+                "event_data": {
+                    "data": [{"name": "sf_event_data", "status": "DRAFT"}],
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                },
+                "default_version_mode": "AUTO",
+                "dtype_distribution": [{"count": 1, "dtype": "FLOAT"}],
+                "version_count": 1,
+                "feature_count": 1,
+                "version": {"this": "V220906", "default": "V220906"},
+                "production_ready_fraction": {"this": 0, "default": 0},
+            }.items()
+        )
+        assert "creation_date" in response_dict
+
 
 @pytest.fixture(name="feature_list_model")
 def feature_list_model_fixture():

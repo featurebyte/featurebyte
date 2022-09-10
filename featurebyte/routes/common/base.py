@@ -10,11 +10,11 @@ from bson.objectid import ObjectId
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
-from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.routes.common.schema import BaseInfo, PaginationMixin
 from featurebyte.service.base_document import BaseDocumentService, Document
-from featurebyte.service.document_info import DocumentInfoService
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
+InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
 
 
 class BaseDocumentController(Generic[Document, PaginatedDocument]):
@@ -196,31 +196,18 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
         ).list_document_field_history(document_id=document_id, field=field)
         return document_data
 
+
+class GetInfoMixin(Generic[InfoDocument]):
+    """
+    GetInfoMixin contains method to retrieve document info
+    """
+
+    document_service_class: Type[BaseDocumentService[FeatureByteBaseDocumentModel]]
+
     @classmethod
     async def get_info(
-        cls, user: Any, persistent: Persistent, document_id: ObjectId, verbose: bool = True
-    ) -> dict[str, Any]:
-        """
-        Construct info based on the given document_id
-
-        Parameters
-        ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Persistent to retrieve audit docs from
-        document_id: ObjectId
-            ID of document to retrieve
-        verbose: bool
-            Control verbose level of the info
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        document_info_service = DocumentInfoService(user=user, persistent=persistent)
-        return await document_info_service.get_info(
-            collection_name=cls.document_service_class.document_class.collection_name(),
-            document_id=document_id,
-            verbose=verbose,
+        cls, user: Any, persistent: Persistent, document_id: ObjectId
+    ) -> InfoDocument:
+        return await cls.document_service_class(user=user, persistent=persistent).get_info(
+            document_id=document_id
         )

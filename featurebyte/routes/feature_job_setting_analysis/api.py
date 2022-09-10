@@ -116,22 +116,6 @@ async def list_feature_job_setting_analysis_audit_logs(
     return audit_doc_list
 
 
-@router.get("/{feature_job_setting_analysis_id}/info")
-async def get_feature_job_setting_analysis_info(
-    request: Request, feature_job_setting_analysis_id: PydanticObjectId, verbose: bool = True
-) -> dict[str, Any]:
-    """
-    Retrieve Feature Job Setting Analysis info
-    """
-    info = await request.state.controller.get_info(
-        user=request.state.user,
-        persistent=request.state.persistent,
-        document_id=feature_job_setting_analysis_id,
-        verbose=bool(verbose),
-    )
-    return cast(Dict[str, Any], info)
-
-
 @router.post(
     "/{feature_job_setting_analysis_id}/backtest",
     response_model=Task,

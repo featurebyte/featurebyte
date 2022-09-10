@@ -9,9 +9,8 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.entity import EntityModel
-from featurebyte.schema.entity import EntityCreate, EntityUpdate
+from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityUpdate
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.common.operation import DictProject, DictTransform
 
 
 class EntityService(BaseDocumentService[EntityModel]):
@@ -20,12 +19,6 @@ class EntityService(BaseDocumentService[EntityModel]):
     """
 
     document_class = EntityModel
-    info_transform = DictTransform(
-        rule={
-            **BaseDocumentService.base_info_transform_rule,
-            "__root__": DictProject(rule=["serving_names"]),
-        }
-    )
 
     async def create_document(  # type: ignore[override]
         self, data: EntityCreate, get_credential: Any = None
@@ -62,3 +55,12 @@ class EntityService(BaseDocumentService[EntityModel]):
             user_id=self.user.id,
         )
         return await self.get_document(document_id=document_id)
+
+    async def get_info(self, document_id: ObjectId) -> EntityInfo:
+        entity = await self.get_document(document_id=document_id)
+        return EntityInfo(
+            name=entity.name,
+            creation_date=entity.created_at,
+            update_date=entity.updated_at,
+            serving_names=entity.serving_names,
+        )

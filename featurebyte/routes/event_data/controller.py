@@ -9,12 +9,19 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
+from featurebyte.routes.common.base import BaseDocumentController, GetInfoMixin
+from featurebyte.schema.event_data import (
+    EventDataCreate,
+    EventDataInfo,
+    EventDataList,
+    EventDataUpdate,
+)
 from featurebyte.service.event_data import EventDataService
 
 
-class EventDataController(BaseDocumentController[EventDataModel, EventDataList]):
+class EventDataController(
+    BaseDocumentController[EventDataModel, EventDataList], GetInfoMixin[EventDataInfo]
+):
     """
     EventData controller
     """

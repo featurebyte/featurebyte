@@ -21,7 +21,12 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
-from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
+from featurebyte.schema.event_data import (
+    EventDataCreate,
+    EventDataInfo,
+    EventDataList,
+    EventDataUpdate,
+)
 
 router = APIRouter(prefix="/event_data")
 
@@ -151,9 +156,7 @@ async def list_default_feature_job_setting_history(
 
 
 @router.get("/{event_data_id}/info")
-async def get_event_data_info(
-    request: Request, event_data_id: PydanticObjectId, verbose: bool = True
-) -> dict[str, Any]:
+async def get_event_data_info(request: Request, event_data_id: PydanticObjectId) -> EventDataInfo:
     """
     Retrieve EventData info
     """
@@ -161,6 +164,5 @@ async def get_event_data_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=event_data_id,
-        verbose=bool(verbose),
     )
-    return cast(Dict[str, Any], info)
+    return info

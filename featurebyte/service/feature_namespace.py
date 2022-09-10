@@ -14,9 +14,16 @@ from featurebyte.models.feature import (
     FeatureNamespaceModel,
     FeatureReadiness,
 )
-from featurebyte.schema.feature_namespace import FeatureNamespaceCreate, FeatureNamespaceUpdate
+from featurebyte.schema.entity import EntityBriefInfoList
+from featurebyte.schema.event_data import EventDataBriefInfoList
+from featurebyte.schema.feature_namespace import (
+    FeatureNamespaceCreate,
+    FeatureNamespaceInfo,
+    FeatureNamespaceUpdate,
+)
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.common.operation import DictProject, DictTransform
+from featurebyte.service.entity import EntityService
+from featurebyte.service.event_data import EventDataService
 
 
 class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
@@ -25,17 +32,6 @@ class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
     """
 
     document_class = FeatureNamespaceModel
-    info_transform = DictTransform(
-        rule={
-            **BaseDocumentService.base_info_transform_rule,
-            "__root__": DictProject(rule=["default_version_mode", "default_feature"]),
-            "features": DictProject(rule="feature"),
-        }
-    )
-    foreign_key_map = {
-        "feature_ids": FeatureModel.collection_name(),
-        "default_feature_id": FeatureModel.collection_name(),
-    }
 
     async def create_document(  # type: ignore[override]
         self, data: FeatureNamespaceCreate, get_credential: Any = None
@@ -125,3 +121,26 @@ class FeatureNamespaceService(BaseDocumentService[FeatureNamespaceModel]):
         )
         assert update_count == 1
         return await self.get_document(document_id=document_id)
+
+    async def get_info(self, document_id: ObjectId) -> FeatureNamespaceInfo:
+        namespace = await self.get_document(document_id=document_id)
+        entity_service = EntityService(user=self.user, persistent=self.persistent)
+        entities = await entity_service.list_documents(
+            query_filter={"_id": {"$in": namespace.entity_ids}}
+        )
+
+        event_data_service = EventDataService(user=self.user, persistent=self.persistent)
+        event_data = await event_data_service.list_documents(
+            query_filter={"_id": {"$in": namespace.event_data_ids}}
+        )
+        return FeatureNamespaceInfo(
+            name=namespace.name,
+            creation_date=namespace.created_at,
+            update_date=namespace.updated_at,
+            entities=EntityBriefInfoList.from_paginated_data(entities),
+            event_data=EventDataBriefInfoList.from_paginated_data(event_data),
+            default_version_mode=namespace.default_version_mode,
+            default_feature_id=namespace.default_feature_id,
+            dtype=namespace.dtype,
+            version_count=len(namespace.feature_ids),
+        )

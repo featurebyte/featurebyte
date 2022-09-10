@@ -20,7 +20,10 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceList
+from featurebyte.schema.feature_list_namespace import (
+    FeatureListNamespaceInfo,
+    FeatureListNamespaceList,
+)
 
 router = APIRouter(prefix="/feature_list_namespace")
 
@@ -100,8 +103,7 @@ async def list_feature_list_namespace_audit_logs(
 async def get_feature_list_namespace_info(
     request: Request,
     feature_list_namespace_id: PydanticObjectId,
-    verbose: bool = True,
-) -> dict[str, Any]:
+) -> FeatureListNamespaceInfo:
     """
     Retrieve FeatureListNamespace info
     """
@@ -109,6 +111,5 @@ async def get_feature_list_namespace_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_list_namespace_id,
-        verbose=bool(verbose),
     )
-    return cast(Dict[str, Any], info)
+    return info

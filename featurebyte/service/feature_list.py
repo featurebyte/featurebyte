@@ -22,10 +22,9 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureSignature
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.schema.feature_list import FeatureListCreate
+from featurebyte.schema.feature_list import FeatureListCreate, FeatureListInfo
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.common.operation import DictProject, DictTransform
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 
 
@@ -35,14 +34,6 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
     """
 
     document_class = FeatureListModel
-    info_transform = DictTransform(
-        rule={
-            **BaseDocumentService.base_info_transform_rule,
-            "__root__": DictProject(rule=["status"]),
-            "features": DictProject(rule="feature"),
-        }
-    )
-    foreign_key_map = {"feature_ids": FeatureModel.collection_name()}
 
     async def _insert_feature_list_registry(
         self,
@@ -212,3 +203,23 @@ class FeatureListService(BaseDocumentService[FeatureListModel]):
     ) -> FeatureListModel:
         # TODO: implement proper logic to update feature list document
         return await self.get_document(document_id=document_id)
+
+    async def get_info(self, document_id: ObjectId) -> FeatureListInfo:
+        feature_list = await self.get_document(document_id=document_id)
+        feature_list_namespace_service = FeatureListNamespaceService(
+            user=self.user, persistent=self.persistent
+        )
+        namespace_info = await feature_list_namespace_service.get_info(
+            document_id=feature_list.feature_list_namespace_id
+        )
+        default_feature_list = await self.get_document(
+            document_id=namespace_info.default_feature_list_id
+        )
+        return FeatureListInfo(
+            **namespace_info.dict(),
+            version={"this": feature_list.version, "default": default_feature_list.version},
+            production_ready_fraction={
+                "this": feature_list.readiness_distribution.derive_production_ready_fraction(),
+                "default": default_feature_list.readiness_distribution.derive_production_ready_fraction(),
+            },
+        )

@@ -209,3 +209,22 @@ class TestEntityApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert list(reversed(results)) == expected_history
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
+        """Test retrieve info"""
+        test_api_client, persistent = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert (
+            response_dict.items()
+            > {
+                "name": "customer",
+                "update_date": None,
+                "serving_names": ["cust_id"],
+            }.items()
+        )
+        assert "creation_date" in response_dict

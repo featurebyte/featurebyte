@@ -3,7 +3,7 @@ Feature API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, cast
+from typing import Optional
 
 from http import HTTPStatus
 
@@ -21,7 +21,7 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
-from featurebyte.schema.feature import FeatureCreate, FeatureList
+from featurebyte.schema.feature import FeatureCreate, FeatureInfo, FeatureList
 
 router = APIRouter(prefix="/feature")
 
@@ -106,9 +106,7 @@ async def list_feature_audit_logs(
 
 
 @router.get("/{feature_id}/info")
-async def get_feature_info(
-    request: Request, feature_id: PydanticObjectId, verbose: bool = True
-) -> dict[str, Any]:
+async def get_feature_info(request: Request, feature_id: PydanticObjectId) -> FeatureInfo:
     """
     Retrieve Feature info
     """
@@ -116,6 +114,5 @@ async def get_feature_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_id,
-        verbose=bool(verbose),
     )
-    return cast(Dict[str, Any], info)
+    return info

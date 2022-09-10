@@ -3,6 +3,8 @@ FeatureNamespace API pyaload schema
 """
 from typing import List, Optional
 
+from datetime import datetime
+
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
@@ -10,7 +12,9 @@ from pydantic import Field, StrictStr
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import DefaultVersionMode, FeatureNamespaceModel, FeatureReadiness
-from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.routes.common.schema import BaseInfo, PaginationMixin
+from featurebyte.schema.entity import EntityBriefInfoList
+from featurebyte.schema.event_data import EventDataBriefInfoList
 
 
 class FeatureNamespaceCreate(FeatureByteBaseModel):
@@ -44,3 +48,23 @@ class FeatureNamespaceUpdate(FeatureByteBaseModel):
 
     feature_id: Optional[PydanticObjectId]
     default_version_mode: Optional[DefaultVersionMode]
+
+
+class NamespaceInfo(BaseInfo):
+    """
+    Namespace info schema
+    """
+
+    entities: EntityBriefInfoList
+    event_data: EventDataBriefInfoList
+    default_version_mode: DefaultVersionMode
+    version_count: int
+
+
+class FeatureNamespaceInfo(NamespaceInfo):
+    """
+    FeatureNamespace info schema
+    """
+
+    dtype: DBVarType
+    default_feature_id: PydanticObjectId

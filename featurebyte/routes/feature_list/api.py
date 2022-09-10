@@ -22,7 +22,11 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
-from featurebyte.schema.feature_list import FeatureListCreate, FeatureListPaginatedList
+from featurebyte.schema.feature_list import (
+    FeatureListCreate,
+    FeatureListInfo,
+    FeatureListPaginatedList,
+)
 
 router = APIRouter(prefix="/feature_list")
 
@@ -106,8 +110,8 @@ async def list_feature_list_audit_logs(
 
 @router.get("/{feature_list_id}/info")
 async def get_feature_list_info(
-    request: Request, feature_list_id: PydanticObjectId, verbose: bool = True
-) -> dict[str, Any]:
+    request: Request, feature_list_id: PydanticObjectId
+) -> FeatureListInfo:
     """
     Retrieve FeatureList info
     """
@@ -115,6 +119,5 @@ async def get_feature_list_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_list_id,
-        verbose=bool(verbose),
     )
-    return cast(Dict[str, Any], info)
+    return info

@@ -7,8 +7,13 @@ from beanie import PydanticObjectId
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import DefaultVersionMode
-from featurebyte.models.feature_list import FeatureListNamespaceModel
+from featurebyte.models.feature_list import (
+    FeatureListNamespaceModel,
+    FeatureListStatus,
+    FeatureTypeFeatureCount,
+)
 from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.feature_namespace import NamespaceInfo
 
 
 class FeatureListNamespaceList(PaginationMixin):
@@ -26,3 +31,14 @@ class FeatureListNamespaceUpdate(FeatureByteBaseModel):
 
     feature_list_id: Optional[PydanticObjectId]
     default_version_mode: Optional[DefaultVersionMode]
+
+
+class FeatureListNamespaceInfo(NamespaceInfo):
+    """
+    FeatureListNamespace info schema
+    """
+
+    dtype_distribution: List[FeatureTypeFeatureCount]
+    default_feature_list_id: PydanticObjectId
+    status: FeatureListStatus
+    feature_count: int

@@ -9,9 +9,8 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.schema.feature_store import FeatureStoreCreate
+from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreInfo
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.common.operation import DictProject, DictTransform
 
 
 class FeatureStoreService(BaseDocumentService[FeatureStoreModel]):
@@ -20,12 +19,6 @@ class FeatureStoreService(BaseDocumentService[FeatureStoreModel]):
     """
 
     document_class: Type[FeatureStoreModel] = FeatureStoreModel
-    info_transform = DictTransform(
-        rule={
-            **BaseDocumentService.base_info_transform_rule,
-            "__root__": DictProject(rule=["type", "details"]),
-        }
-    )
 
     async def create_document(  # type: ignore[override]
         self, data: FeatureStoreCreate, get_credential: Any = None
@@ -48,3 +41,13 @@ class FeatureStoreService(BaseDocumentService[FeatureStoreModel]):
     ) -> FeatureStoreModel:
         # TODO: implement proper logic to update feature store document
         return await self.get_document(document_id=document_id)
+
+    async def get_info(self, document_id: ObjectId) -> FeatureStoreInfo:
+        feature_store = await self.get_document(document_id=document_id)
+        return FeatureStoreInfo(
+            name=feature_store.name,
+            creation_date=feature_store.created_at,
+            update_date=feature_store.updated_at,
+            source=feature_store.type,
+            database_details=feature_store.details,
+        )

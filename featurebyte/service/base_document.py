@@ -20,7 +20,6 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.persistent import AuditActionType, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
-from featurebyte.service.common.operation import DictProject, DictTransform
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
 
@@ -31,15 +30,6 @@ class BaseDocumentService(Generic[Document]):
     """
 
     document_class: Type[Document]
-
-    # variables used to construct document info output
-    base_info_transform_rule = {
-        "name": DictProject(rule="name"),
-        "created_at": DictProject(rule="created_at", verbose_only=True),
-        "updated_at": DictProject(rule="updated_at", verbose_only=True),
-    }
-    info_transform: DictTransform = DictTransform(rule=base_info_transform_rule)
-    foreign_key_map: Dict[str, str] = {}
 
     def __init__(self, user: Any, persistent: Persistent):
         self.user = user
@@ -545,3 +535,17 @@ class BaseDocumentService(Generic[Document]):
         -------
         Document
         """
+
+    def get_info(self, document_id: ObjectId) -> Document:
+        """
+        Retrieve document related info given document ID
+
+        Parameters
+        ----------
+        document_id: ObjectId
+
+        Returns
+        -------
+        Document info
+        """
+        raise NotImplementedError

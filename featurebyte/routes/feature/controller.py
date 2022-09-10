@@ -7,13 +7,15 @@ from typing import Any, Literal, Type
 
 from featurebyte.models.feature import FeatureModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.feature import FeatureCreate, FeatureList
+from featurebyte.routes.common.base import BaseDocumentController, GetInfoMixin
+from featurebyte.schema.feature import FeatureCreate, FeatureInfo, FeatureList
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 
 
-class FeatureController(BaseDocumentController[FeatureModel, FeatureList]):
+class FeatureController(
+    BaseDocumentController[FeatureModel, FeatureList], GetInfoMixin[FeatureInfo]
+):
     """
     Feature controller
     """

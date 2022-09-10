@@ -416,3 +416,37 @@ class TestEventDataApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert list(reversed(results)) == expected_history
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
+        """Test retrieve info"""
+        test_api_client, persistent = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert (
+            response_dict.items()
+            > {
+                "name": "sf_event_data",
+                "update_date": None,
+                "event_timestamp_column": "event_timestamp",
+                "record_creation_date_column": "created_at",
+                "table_details": {
+                    "database_name": "sf_database",
+                    "schema_name": "sf_schema",
+                    "table_name": "sf_table",
+                },
+                "default_feature_job_setting": None,
+                "status": "DRAFT",
+                "entities": {
+                    "data": [{"name": "customer", "serving_names": ["cust_id"]}],
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                },
+                "column_count": 9,
+            }.items()
+        )
+        assert "creation_date" in response_dict

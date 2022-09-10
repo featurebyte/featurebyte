@@ -9,12 +9,12 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.entity import EntityModel
 from featurebyte.persistent.base import Persistent
-from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
+from featurebyte.routes.common.base import BaseDocumentController, GetInfoMixin
+from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityList, EntityUpdate
 from featurebyte.service.entity import EntityService
 
 
-class EntityController(BaseDocumentController[EntityModel, EntityList]):
+class EntityController(BaseDocumentController[EntityModel, EntityList], GetInfoMixin[EntityInfo]):
     """
     Entity Controller
     """

@@ -10,8 +10,15 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_list import FeatureListModel, FeatureListVersionIdentifier
+from featurebyte.models.feature_list import (
+    FeatureListModel,
+    FeatureListStatus,
+    FeatureListVersionIdentifier,
+    FeatureTypeFeatureCount,
+)
 from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.feature import VersionComparison
+from featurebyte.schema.feature_namespace import NamespaceInfo
 
 
 class FeatureListCreate(FeatureByteBaseModel):
@@ -32,3 +39,24 @@ class FeatureListPaginatedList(PaginationMixin):
     """
 
     data: List[FeatureListModel]
+
+
+class ProductionReadyFractionComparison(FeatureByteBaseModel):
+    """
+    Production ready fraction comparison
+    """
+
+    this: float
+    default: float
+
+
+class FeatureListInfo(NamespaceInfo):
+    """
+    FeatureList info schema
+    """
+
+    dtype_distribution: List[FeatureTypeFeatureCount]
+    status: FeatureListStatus
+    feature_count: int
+    version: VersionComparison
+    production_ready_fraction: ProductionReadyFractionComparison

@@ -108,3 +108,38 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
             document=FeatureCreate(**payload).dict(by_alias=True),
             user_id=user_id,
         )
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
+        """Test retrieve info"""
+        test_api_client, persistent = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        await self.setup_get_info(test_api_client, persistent, user_id)
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert (
+            response_dict.items()
+            > {
+                "name": "sum_30m",
+                "update_date": None,
+                "entities": {
+                    "data": [{"name": "customer", "serving_names": ["cust_id"]}],
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                },
+                "event_data": {
+                    "data": [{"name": "sf_event_data", "status": "DRAFT"}],
+                    "page": 1,
+                    "page_size": 10,
+                    "total": 1,
+                },
+                "default_version_mode": "AUTO",
+                "default_feature_id": "6317467bb72b797bd08f72fa",
+                "dtype": "FLOAT",
+                "version_count": 1,
+            }.items()
+        )
+        assert "creation_date" in response_dict
