@@ -20,8 +20,10 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.persistent import AuditActionType, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
+from featurebyte.schema.common.base import BaseInfo
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
+InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
 
 
 class BaseDocumentService(Generic[Document]):
@@ -536,16 +538,25 @@ class BaseDocumentService(Generic[Document]):
         Document
         """
 
-    def get_info(self, document_id: ObjectId) -> Document:
+
+class GetInfoServiceMixin(Generic[InfoDocument]):
+    """
+    GetInfoServiceMixin contains method to retrieve document info
+    """
+
+    # pylint: disable=too-few-public-methods
+
+    @abstractmethod
+    async def get_info(self, document_id: ObjectId) -> InfoDocument:
         """
         Retrieve document related info given document ID
 
         Parameters
         ----------
         document_id: ObjectId
+            Document ID
 
         Returns
         -------
-        Document info
+        InfoDocument
         """
-        raise NotImplementedError

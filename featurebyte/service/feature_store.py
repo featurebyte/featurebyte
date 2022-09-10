@@ -10,10 +10,12 @@ from bson.objectid import ObjectId
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreInfo
-from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 
 
-class FeatureStoreService(BaseDocumentService[FeatureStoreModel]):
+class FeatureStoreService(
+    BaseDocumentService[FeatureStoreModel], GetInfoServiceMixin[FeatureStoreInfo]
+):
     """
     FeatureStoreService class
     """

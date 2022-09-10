@@ -4,7 +4,7 @@ FeatureList API routes
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, cast
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -120,4 +120,4 @@ async def get_feature_list_info(
         persistent=request.state.persistent,
         document_id=feature_list_id,
     )
-    return info
+    return cast(FeatureListInfo, info)

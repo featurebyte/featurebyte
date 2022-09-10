@@ -7,7 +7,7 @@ from typing import Any, Type
 
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.common.base import BaseDocumentController, GetInfoMixin
+from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListInfo,
@@ -18,7 +18,7 @@ from featurebyte.service.feature_list import FeatureListService
 
 class FeatureListController(
     BaseDocumentController[FeatureListModel, FeatureListPaginatedList],
-    GetInfoMixin[FeatureListInfo],
+    GetInfoControllerMixin[FeatureListInfo],
 ):
     """
     FeatureList controller

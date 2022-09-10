@@ -19,12 +19,14 @@ from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceInfo,
     FeatureListNamespaceUpdate,
 )
-from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 
 
-class FeatureListNamespaceService(BaseDocumentService[FeatureListNamespaceModel]):
+class FeatureListNamespaceService(
+    BaseDocumentService[FeatureListNamespaceModel], GetInfoServiceMixin[FeatureListNamespaceInfo]
+):
     """
     FeatureListNamespaceService class
     """

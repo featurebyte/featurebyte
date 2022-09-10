@@ -12,7 +12,8 @@ from pydantic import Field, StrictStr
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
 from featurebyte.models.feature_store import ColumnInfo, TableDetails, TabularSource
-from featurebyte.routes.common.schema import BaseBriefInfo, BaseInfo, PaginationMixin
+from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject, DictTransform
 from featurebyte.schema.entity import EntityBriefInfoList
 
@@ -67,6 +68,18 @@ class EventDataBriefInfoList(PaginationMixin):
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EventDataBriefInfoList:
+        """
+        Construct event data brief info list from paginated data
+
+        Parameters
+        ----------
+        paginated_data: dict[str, Any]
+            Paginated data
+
+        Returns
+        -------
+        EventDataBriefInfoList
+        """
         event_data_transform = DictTransform(
             rule={
                 "__root__": DictProject(rule=["page", "page_size", "total"]),

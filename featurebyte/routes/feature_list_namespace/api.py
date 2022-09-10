@@ -4,7 +4,7 @@ FeatureListNamespace API routes
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, cast
+from typing import Optional, cast
 
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
@@ -112,4 +112,4 @@ async def get_feature_list_namespace_info(
         persistent=request.state.persistent,
         document_id=feature_list_namespace_id,
     )
-    return info
+    return cast(FeatureListNamespaceInfo, info)

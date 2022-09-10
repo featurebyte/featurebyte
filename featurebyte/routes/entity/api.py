@@ -3,7 +3,7 @@ Entity API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
+from typing import List, Optional, cast
 
 from http import HTTPStatus
 
@@ -153,4 +153,4 @@ async def get_entity_info(request: Request, entity_id: PydanticObjectId) -> Enti
         persistent=request.state.persistent,
         document_id=entity_id,
     )
-    return info
+    return cast(EntityInfo, info)

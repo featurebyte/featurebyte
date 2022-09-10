@@ -1,9 +1,7 @@
 """
 Common classes mixin for API payload schema
 """
-from typing import Any, List, Optional
-
-from datetime import datetime
+from typing import Any, List
 
 from fastapi import Query
 from pydantic import Field
@@ -20,23 +18,6 @@ class PaginationMixin(FeatureByteBaseModel):
     page_size: int = Field(default=10, gt=0, le=100)
     total: int
     data: List[Any]
-
-
-class BaseBriefInfo(FeatureByteBaseModel):
-    """
-    Base BriefInfo schema
-    """
-
-    name: str
-
-
-class BaseInfo(BaseBriefInfo):
-    """
-    Base Info schema
-    """
-
-    creation_date: datetime
-    update_date: Optional[datetime]
 
 
 # route query parameters

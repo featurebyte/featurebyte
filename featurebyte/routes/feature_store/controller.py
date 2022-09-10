@@ -7,14 +7,14 @@ from typing import Any, Type
 
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.persistent.base import Persistent
-from featurebyte.routes.common.base import BaseDocumentController, GetInfoMixin
+from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
 from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreInfo, FeatureStoreList
 from featurebyte.service.feature_store import FeatureStoreService
 
 
 class FeatureStoreController(
     BaseDocumentController[FeatureStoreModel, FeatureStoreList],
-    GetInfoMixin[FeatureStoreInfo],
+    GetInfoControllerMixin[FeatureStoreInfo],
 ):
     """
     FeatureStore controller

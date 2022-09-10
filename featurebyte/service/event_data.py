@@ -12,12 +12,12 @@ from featurebyte.models.event_data import EventDataModel, EventDataStatus
 from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.entity import EntityBriefInfoList
 from featurebyte.schema.event_data import EventDataCreate, EventDataInfo, EventDataUpdate
-from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
 
 
-class EventDataService(BaseDocumentService[EventDataModel]):
+class EventDataService(BaseDocumentService[EventDataModel], GetInfoServiceMixin[EventDataInfo]):
     """
     EventDataService class
     """

@@ -81,7 +81,7 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
     def test_create_201__id_is_none(self, test_api_client_persistent):
         """Test creation (success) ID is None"""
 
-    async def setup_get_info(self, api_client, persistent, user_id):
+    async def setup_get_info(self, api_client):
         """Setup for get_info route testing"""
         api_object_filename_pairs = [
             ("feature_store", "feature_store"),
@@ -120,11 +120,11 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
         return output
 
     @pytest.mark.asyncio
-    async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""
-        test_api_client, persistent = test_api_client_persistent
+        test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
-        await self.setup_get_info(test_api_client, persistent, user_id)
+        await self.setup_get_info(test_api_client)
         doc_id = create_response_dict["_id"]
         response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
         assert response.status_code == HTTPStatus.OK, response.text

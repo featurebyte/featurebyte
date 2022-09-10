@@ -240,9 +240,9 @@ class TestFeatureApi(BaseApiTestSuite):
         assert set(output_feature_ids) == set(feature_ids)
 
     @pytest.mark.asyncio
-    async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""
-        test_api_client, persistent = test_api_client_persistent
+        test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
         response = test_api_client.get(f"{self.base_route}/{doc_id}/info")

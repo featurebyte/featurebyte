@@ -3,7 +3,7 @@ Feature API routes
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -115,4 +115,4 @@ async def get_feature_info(request: Request, feature_id: PydanticObjectId) -> Fe
         persistent=request.state.persistent,
         document_id=feature_id,
     )
-    return info
+    return cast(FeatureInfo, info)

@@ -24,11 +24,13 @@ from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespa
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListInfo
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
-from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 
 
-class FeatureListService(BaseDocumentService[FeatureListModel]):
+class FeatureListService(
+    BaseDocumentService[FeatureListModel], GetInfoServiceMixin[FeatureListInfo]
+):
     """
     FeatureListService class
     """

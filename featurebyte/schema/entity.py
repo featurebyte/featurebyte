@@ -11,7 +11,8 @@ from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.entity import EntityModel
-from featurebyte.routes.common.schema import BaseBriefInfo, BaseInfo, PaginationMixin
+from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject, DictTransform
 
 
@@ -58,6 +59,18 @@ class EntityBriefInfoList(PaginationMixin):
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EntityBriefInfoList:
+        """
+        Construct entity brief info list from paginated data
+
+        Parameters
+        ----------
+        paginated_data: dict[str, Any]
+            Paginated data
+
+        Returns
+        -------
+        EntityBriefInfoList
+        """
         entity_transform = DictTransform(
             rule={
                 "__root__": DictProject(rule=["page", "page_size", "total"]),

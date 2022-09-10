@@ -22,11 +22,11 @@ from featurebyte.models.feature import DefaultVersionMode, FeatureModel, Feature
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.feature import FeatureCreate, FeatureInfo
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate, FeatureNamespaceUpdate
-from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 
 
-class FeatureService(BaseDocumentService[FeatureModel]):
+class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[FeatureInfo]):
     """
     FeatureService class
     """

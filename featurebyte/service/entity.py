@@ -10,10 +10,10 @@ from bson.objectid import ObjectId
 from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.entity import EntityModel
 from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityUpdate
-from featurebyte.service.base_document import BaseDocumentService
+from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 
 
-class EntityService(BaseDocumentService[EntityModel]):
+class EntityService(BaseDocumentService[EntityModel], GetInfoServiceMixin[EntityInfo]):
     """
     EntityService class
     """

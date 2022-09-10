@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.common.base import BaseDocumentController, GetInfoMixin
+from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceInfo,
     FeatureListNamespaceList,
@@ -20,7 +20,7 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 
 class FeatureListNamespaceController(
     BaseDocumentController[FeatureListNamespaceModel, FeatureListNamespaceList],
-    GetInfoMixin[FeatureListNamespaceInfo],
+    GetInfoControllerMixin[FeatureListNamespaceInfo],
 ):
     """
     FeatureList controller

@@ -3,7 +3,7 @@ EventData API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
+from typing import List, Optional, cast
 
 from http import HTTPStatus
 
@@ -165,4 +165,4 @@ async def get_event_data_info(request: Request, event_data_id: PydanticObjectId)
         persistent=request.state.persistent,
         document_id=event_data_id,
     )
-    return info
+    return cast(EventDataInfo, info)

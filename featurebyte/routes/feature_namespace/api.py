@@ -3,7 +3,7 @@ FeatureNamespace API routes
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, cast
 
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
@@ -108,4 +108,4 @@ async def get_feature_namespace_info(
         persistent=request.state.persistent,
         document_id=feature_namespace_id,
     )
-    return info
+    return cast(FeatureNamespaceInfo, info)

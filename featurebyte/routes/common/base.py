@@ -10,11 +10,15 @@ from bson.objectid import ObjectId
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
-from featurebyte.routes.common.schema import BaseInfo, PaginationMixin
-from featurebyte.service.base_document import BaseDocumentService, Document
+from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.service.base_document import (
+    BaseDocumentService,
+    Document,
+    GetInfoServiceMixin,
+    InfoDocument,
+)
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
-InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
 
 
 class BaseDocumentController(Generic[Document, PaginatedDocument]):
@@ -197,17 +201,35 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
         return document_data
 
 
-class GetInfoMixin(Generic[InfoDocument]):
+class GetInfoControllerMixin(Generic[InfoDocument]):
     """
-    GetInfoMixin contains method to retrieve document info
+    GetInfoControllerMixin contains method to retrieve document info
     """
 
-    document_service_class: Type[BaseDocumentService[FeatureByteBaseDocumentModel]]
+    # pylint: disable=too-few-public-methods
+
+    document_service_class: Type[GetInfoServiceMixin[InfoDocument]]
 
     @classmethod
     async def get_info(
         cls, user: Any, persistent: Persistent, document_id: ObjectId
     ) -> InfoDocument:
-        return await cls.document_service_class(user=user, persistent=persistent).get_info(
-            document_id=document_id
-        )
+        """
+        Get document info given document ID
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Persistent that the document will be saved to
+        document_id: ObjectId
+            Document ID
+
+        Returns
+        -------
+        InfoDocument
+        """
+        document_service = cls.document_service_class(user=user, persistent=persistent)  # type: ignore
+        info_document = await document_service.get_info(document_id=document_id)
+        return cast(InfoDocument, info_document)
