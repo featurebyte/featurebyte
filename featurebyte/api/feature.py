@@ -18,6 +18,7 @@ from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.enum import SpecialColumnName
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.feature import (
     DefaultVersionMode,
@@ -255,6 +256,16 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
             for col in self.serving_names:
                 if col not in point_in_time_and_serving_name:
                     raise KeyError(f"Serving name not provided: {col}")
+
+    def _get_verbose_info(self, info_dict: dict[str, Any]) -> dict[str, Any]:
+        version_info = []
+        params = {"feature_namespace_id": str(self.feature_namespace_id)}
+        for response_dict in self._iterate_paginated_routes(route=self._route, params=params):
+            for item in response_dict["data"]:
+                version_info.append({"version": item["version"], "readiness": item["readiness"]})
+        output = info_dict.copy()
+        output["version_info"] = version_info
+        return output
 
     @typechecked
     def preview(  # type: ignore[override]  # pylint: disable=arguments-renamed

@@ -404,7 +404,6 @@ def saved_feature_list_fixture(
     feature_list.save()
     assert feature_list.saved is True
     assert feature_list.id == feature_list_id_before
-    assert feature_list.readiness == FeatureReadiness.DRAFT
     assert feature_list.name == "my_feature_list"
     assert feature_list.status == FeatureListStatus.DRAFT
 
@@ -474,6 +473,18 @@ def test_info(saved_feature_list):
     assert "creation_date" in info_dict, info_dict
     assert "version" in info_dict, info_dict
     assert set(info_dict["version"]) == {"this", "default"}, info_dict["version"]
+
+    verbose_info_dict = saved_feature_list.info(verbose=True)
+    assert verbose_info_dict.items() > expected_info.items(), verbose_info_dict
+    assert "creation_date" in verbose_info_dict, verbose_info_dict
+    assert "version" in verbose_info_dict, verbose_info_dict
+    assert set(verbose_info_dict["version"]) == {"this", "default"}, verbose_info_dict["version"]
+    assert "feature_info" in verbose_info_dict, verbose_info_dict
+    assert len(verbose_info_dict["feature_info"]) == 1
+    expected_feature_info = {"name": "sum_1d", "type": "FLOAT", "readiness": "DRAFT"}
+    assert (
+        verbose_info_dict["feature_info"][0].items() > expected_feature_info.items()
+    ), verbose_info_dict
 
 
 def test_get_feature_list(saved_feature_list):

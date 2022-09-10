@@ -61,6 +61,7 @@ async def list_features(
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
     feature_list_id: Optional[PydanticObjectId] = None,
+    feature_namespace_id: Optional[PydanticObjectId] = None,
 ) -> FeatureList:
     """
     List Features
@@ -75,6 +76,7 @@ async def list_features(
         search=search,
         name=name,
         feature_list_id=feature_list_id,
+        feature_namespace_id=feature_namespace_id,
     )
     return feature_list
 

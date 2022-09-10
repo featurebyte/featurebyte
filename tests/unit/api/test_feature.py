@@ -276,6 +276,15 @@ def test_info(saved_feature):
     assert "version" in info_dict, info_dict
     assert set(info_dict["version"]) == {"this", "default"}, info_dict["version"]
 
+    verbose_info_dict = saved_feature.info(verbose=True)
+    assert verbose_info_dict.items() > expected_info.items(), verbose_info_dict
+    assert "creation_date" in verbose_info_dict, verbose_info_dict
+    assert "version" in verbose_info_dict, verbose_info_dict
+    assert set(verbose_info_dict["version"]) == {"this", "default"}, verbose_info_dict["version"]
+    assert "version_info" in verbose_info_dict, verbose_info_dict
+    assert len(verbose_info_dict["version_info"]) == 1, verbose_info_dict
+    assert set(verbose_info_dict["version_info"][0]) == {"version", "readiness"}, verbose_info_dict
+
 
 def test_feature_save__exception_due_to_event_data_not_saved(float_feature, snowflake_event_data):
     """

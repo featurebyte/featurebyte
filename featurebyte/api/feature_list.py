@@ -306,6 +306,24 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     def list(cls) -> List[str]:
         return FeatureListNamespace.list()
 
+    def _get_verbose_info(self, info_dict: dict[str, Any]) -> dict[str, Any]:
+        feature_info = []
+        params = {"feature_list_id": str(self.id)}
+        for response_dict in self._iterate_paginated_routes(route="/feature", params=params):
+            for item in response_dict["data"]:
+                feature_info.append(
+                    {
+                        "name": item["name"],
+                        "type": item["dtype"],
+                        "version": item["version"],
+                        "creation_date": item["created_at"],
+                        "readiness": item["readiness"],
+                    }
+                )
+        output = info_dict.copy()
+        output["feature_info"] = feature_info
+        return output
+
     @typechecked
     def get_historical_features(
         self,
