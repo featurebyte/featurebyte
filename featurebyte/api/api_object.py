@@ -3,7 +3,7 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Iterator, List, Optional, Type, TypeVar
+from typing import Any, Callable, ClassVar, Dict, Iterator, List, Optional, Type, TypeVar
 
 import time
 from http import HTTPStatus
@@ -112,22 +112,65 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             return cls(**response.json(), **cls._get_init_params(), saved=True)
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
+    @staticmethod
+    def _default_to_request_func(response_dict: dict[str, Any], page: int) -> bool:
+        """
+        Default helper function to check whether to continue calling list route
+
+        Parameters
+        ----------
+        response_dict: dict[str, Any]
+            Response data
+        page: int
+            Page number
+
+        Returns
+        -------
+        Flag to indicate whether to continue calling list route
+        """
+        return bool(response_dict["total"] > (page * response_dict["page_size"]))
+
     @classmethod
     def _iterate_paginated_routes(
-        cls, route: str, params: dict[str, Any] | None = None
+        cls,
+        route: str,
+        params: dict[str, Any] | None = None,
+        to_request_func: Callable[[dict[str, Any], int], bool] | None = None,
     ) -> Iterator[dict[str, Any]]:
+        """
+        List route response generator
+
+        Parameters
+        ----------
+        route: str
+            List route
+        params: dict[str, Any] | None
+            Route parameters
+        to_request_func: Callable[[dict[str, Any], int], bool] = None,
+            Function used to check whether to continue calling the route
+
+        Yields
+        -------
+        Iterator[dict[str, Any]]
+            List route response
+
+        Raises
+        ------
+        RecordRetrievalException
+            When failed to retrieve from list route
+        """
         client = Configurations().get_client()
         to_request, page = True, 1
         params = params or {}
+        if to_request_func is None:
+            to_request_func = cls._default_to_request_func
         while to_request:
             params = params.copy()
             params["page"] = page
             response = client.get(url=route, params=params)
             if response.status_code == HTTPStatus.OK:
                 response_dict = response.json()
-                total = response_dict["total"]
-                page_size = response_dict["page_size"]
-                to_request = total > page * page_size
+                to_request = to_request_func(response_dict, page)
                 page += 1
                 yield response_dict
             else:
