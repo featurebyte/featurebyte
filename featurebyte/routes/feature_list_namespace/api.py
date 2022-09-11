@@ -19,6 +19,7 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceInfo,
@@ -105,6 +106,7 @@ async def get_feature_list_namespace_info(
     feature_list_namespace_id: PydanticObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
+    verbose: bool = VerboseQuery,
 ) -> FeatureListNamespaceInfo:
     """
     Retrieve FeatureListNamespace info
@@ -115,5 +117,6 @@ async def get_feature_list_namespace_info(
         document_id=feature_list_namespace_id,
         page=page,
         page_size=page_size,
+        verbose=verbose,
     )
     return cast(FeatureListNamespaceInfo, info)

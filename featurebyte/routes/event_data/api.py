@@ -20,6 +20,7 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
 from featurebyte.schema.event_data import (
     EventDataCreate,
@@ -161,6 +162,7 @@ async def get_event_data_info(
     event_data_id: PydanticObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
+    verbose: bool = VerboseQuery,
 ) -> EventDataInfo:
     """
     Retrieve EventData info
@@ -171,5 +173,6 @@ async def get_event_data_info(
         document_id=event_data_id,
         page=page,
         page_size=page_size,
+        verbose=verbose,
     )
     return cast(EventDataInfo, info)

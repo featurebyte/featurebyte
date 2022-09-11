@@ -31,7 +31,39 @@ from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 from featurebyte.schema.feature import FeatureCreate
 
 
-class FeatureNamespace(FeatureNamespaceModel, ApiGetObject):
+class FeatureGetObject(ApiGetObject):
+    """
+    FeatureGetObject class
+    """
+
+    @classmethod
+    def _get_info_to_request_func(cls, response_dict: dict[str, Any], page: int) -> bool:
+        return any(
+            [
+                cls._default_to_request_func(response_dict["entities"], page),
+                cls._default_to_request_func(response_dict["event_data"], page),
+            ]
+        )
+
+    @classmethod
+    def _get_info_reduce_func(
+        cls, accumulator: dict[str, Any], response_dict: dict[str, Any]
+    ) -> dict[str, Any]:
+        if accumulator:
+            accumulator["entities"] = cls._pagination_response_reduce_func(
+                accumulator["entities"], response_dict
+            )
+            accumulator["event_data"] = cls._pagination_response_reduce_func(
+                accumulator["event_data"], response_dict
+            )
+        else:
+            accumulator = response_dict.copy()
+            accumulator["entities"] = response_dict["entities"]["data"]
+            accumulator["event_data"] = response_dict["event_data"]["data"]
+        return accumulator
+
+
+class FeatureNamespace(FeatureNamespaceModel, FeatureGetObject):
     """
     FeatureNamespace class
     """
@@ -40,7 +72,14 @@ class FeatureNamespace(FeatureNamespaceModel, ApiGetObject):
     _route = "/feature_namespace"
 
 
-class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAccessorMixin):
+class Feature(
+    ProtectedColumnsQueryObject,
+    Series,
+    FeatureModel,
+    FeatureGetObject,
+    ApiObject,
+    CdAccessorMixin,
+):
     """
     Feature class
     """
@@ -255,16 +294,6 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
             for col in self.serving_names:
                 if col not in point_in_time_and_serving_name:
                     raise KeyError(f"Serving name not provided: {col}")
-
-    def _get_verbose_info(self, info_dict: dict[str, Any]) -> dict[str, Any]:
-        version_info = []
-        params = {"feature_namespace_id": str(self.feature_namespace_id)}
-        for response_dict in self._iterate_paginated_routes(route=self._route, params=params):
-            for item in response_dict["data"]:
-                version_info.append({"version": item["version"], "readiness": item["readiness"]})
-        output = info_dict.copy()
-        output["version_info"] = version_info
-        return output
 
     @typechecked
     def preview(  # type: ignore[override]  # pylint: disable=arguments-renamed

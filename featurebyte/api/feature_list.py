@@ -195,7 +195,39 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         raise ValueError("There is no feature in the FeatureGroup object.")
 
 
-class FeatureListNamespace(FeatureListNamespaceModel, ApiGetObject):
+class FeatureListGetObject(ApiGetObject):
+    """
+    FeatureListGetObject class
+    """
+
+    @classmethod
+    def _get_info_to_request_func(cls, response_dict: dict[str, Any], page: int) -> bool:
+        return any(
+            [
+                cls._default_to_request_func(response_dict["entities"], page),
+                cls._default_to_request_func(response_dict["event_data"], page),
+            ]
+        )
+
+    @classmethod
+    def _get_info_reduce_func(
+        cls, accumulator: dict[str, Any], response_dict: dict[str, Any]
+    ) -> dict[str, Any]:
+        if accumulator:
+            accumulator["entities"] = cls._pagination_response_reduce_func(
+                accumulator["entities"], response_dict
+            )
+            accumulator["event_data"] = cls._pagination_response_reduce_func(
+                accumulator["event_data"], response_dict
+            )
+        else:
+            accumulator = response_dict.copy()
+            accumulator["entities"] = response_dict["entities"]["data"]
+            accumulator["event_data"] = response_dict["event_data"]["data"]
+        return accumulator
+
+
+class FeatureListNamespace(FeatureListNamespaceModel, FeatureListGetObject):
     """
     FeatureListNamespace class
     """
@@ -204,7 +236,7 @@ class FeatureListNamespace(FeatureListNamespaceModel, ApiGetObject):
     _route = "/feature_list_namespace"
 
 
-class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
+class FeatureList(BaseFeatureGroup, FeatureListModel, FeatureListGetObject, ApiObject):
     """
     FeatureList class
 

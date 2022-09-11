@@ -125,7 +125,7 @@ class FeatureNamespaceService(
         return await self.get_document(document_id=document_id)
 
     async def get_info(
-        self, document_id: ObjectId, page: int, page_size: int
+        self, document_id: ObjectId, page: int, page_size: int, verbose: bool
     ) -> FeatureNamespaceInfo:
         namespace = await self.get_document(document_id=document_id)
         entity_service = EntityService(user=self.user, persistent=self.persistent)

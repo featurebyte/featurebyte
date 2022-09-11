@@ -310,12 +310,7 @@ def test_info(saved_event_data):
         "record_creation_date_column": "created_at",
         "default_feature_job_setting": None,
         "status": "DRAFT",
-        "entities": {
-            "data": [],
-            "page": 1,
-            "page_size": 10,
-            "total": 0,
-        },
+        "entities": [],
         "column_count": 9,
         "table_details": {
             "database_name": "sf_database",

@@ -547,7 +547,9 @@ class GetInfoServiceMixin(Generic[InfoDocument]):
     # pylint: disable=too-few-public-methods
 
     @abstractmethod
-    async def get_info(self, document_id: ObjectId, page: int, page_size: int) -> InfoDocument:
+    async def get_info(
+        self, document_id: ObjectId, page: int, page_size: int, verbose: bool
+    ) -> InfoDocument:
         """
         Retrieve document related info given document ID
 
@@ -559,6 +561,8 @@ class GetInfoServiceMixin(Generic[InfoDocument]):
             Page number
         page_size: int
             Number of items per page
+        verbose: bool
+            Flag to control info verbose level
 
         Returns
         -------

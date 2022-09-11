@@ -153,7 +153,9 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
         # and feature list namespace's feature readiness distribution
         return await self.get_document(document_id=document_id)
 
-    async def get_info(self, document_id: ObjectId, page: int, page_size: int) -> FeatureInfo:
+    async def get_info(
+        self, document_id: ObjectId, page: int, page_size: int, verbose: bool
+    ) -> FeatureInfo:
         feature = await self.get_document(document_id=document_id)
         feature_namespace_service = FeatureNamespaceService(
             user=self.user, persistent=self.persistent
@@ -162,6 +164,7 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
             document_id=feature.feature_namespace_id,
             page=page,
             page_size=page_size,
+            verbose=verbose,
         )
         default_feature = await self.get_document(document_id=namespace_info.default_feature_id)
         return FeatureInfo(

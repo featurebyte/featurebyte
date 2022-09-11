@@ -20,6 +20,7 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
 from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityList, EntityUpdate
 
@@ -149,6 +150,7 @@ async def get_entity_info(
     entity_id: PydanticObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
+    verbose: bool = VerboseQuery,
 ) -> EntityInfo:
     """
     Retrieve EventData info
@@ -159,5 +161,6 @@ async def get_entity_info(
         document_id=entity_id,
         page=page,
         page_size=page_size,
+        verbose=verbose,
     )
     return cast(EntityInfo, info)

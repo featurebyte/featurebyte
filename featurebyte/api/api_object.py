@@ -238,21 +238,26 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             return history
         raise RecordRetrievalException(response)
 
-    def _get_verbose_info(self, info_dict: dict[str, Any]) -> dict[str, Any]:
-        """
-        Get the verbose information
+    @staticmethod
+    def _pagination_response_reduce_func(
+        accumulator: List[Any], response_dict: dict[str, Any]
+    ) -> List[Any]:
+        accumulator.extend(response_dict["data"])
+        return accumulator
 
-        Parameters
-        ----------
-        info_dict: dict[str, Any]
-            Info dictionary
+    @classmethod
+    def _get_info_to_request_func(cls, response_dict: dict[str, Any], page: int) -> bool:
+        # method used to check whether to continue listing info route
+        _ = response_dict, page
+        return False
 
-        Returns
-        -------
-        Info dictionary with more details
-        """
-        _ = self
-        return info_dict
+    @classmethod
+    def _get_info_reduce_func(
+        cls, accumulator: dict[str, Any], response_dict: dict[str, Any]
+    ) -> dict[str, Any]:
+        # reduce method used to reduce list of listing info route responses into single output
+        accumulator.update(response_dict)
+        return accumulator
 
     @typechecked
     def info(self, verbose: bool = False) -> Dict[str, Any]:
@@ -267,20 +272,16 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         Returns
         -------
         Dict[str, Any]
-
-        Raises
-        ------
-        RecordRetrievalException
-            When the object not found
         """
-        client = Configurations().get_client()
-        response = client.get(url=f"{self._route}/{self.id}/info")
-        if response.status_code == HTTPStatus.OK:
-            info_dict = dict(response.json())
-            if verbose:
-                info_dict = self._get_verbose_info(info_dict)
-            return info_dict
-        raise RecordRetrievalException(response, "Failed to retrieve specified object.")
+        response_generator = self._iterate_paginated_routes(
+            route=f"{self._route}/{self.id}/info",
+            params={"verbose": verbose},
+            to_request_func=self._get_info_to_request_func,
+        )
+        output: dict[str, Any] = {}
+        for response_dict in response_generator:
+            output = self._get_info_reduce_func(output, response_dict)
+        return output
 
 
 class ApiObject(ApiGetObject):

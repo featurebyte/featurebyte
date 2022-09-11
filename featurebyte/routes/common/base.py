@@ -212,7 +212,13 @@ class GetInfoControllerMixin(Generic[InfoDocument]):
 
     @classmethod
     async def get_info(
-        cls, user: Any, persistent: Persistent, document_id: ObjectId, page: int, page_size: int
+        cls,
+        user: Any,
+        persistent: Persistent,
+        document_id: ObjectId,
+        page: int,
+        page_size: int,
+        verbose: bool,
     ) -> InfoDocument:
         """
         Get document info given document ID
@@ -229,6 +235,8 @@ class GetInfoControllerMixin(Generic[InfoDocument]):
             Page number
         page_size: int
             Number of items per page
+        verbose: bool
+            Flag to control verbose level
 
         Returns
         -------
@@ -236,6 +244,9 @@ class GetInfoControllerMixin(Generic[InfoDocument]):
         """
         document_service = cls.document_service_class(user=user, persistent=persistent)  # type: ignore
         info_document = await document_service.get_info(
-            document_id=document_id, page=page, page_size=page_size
+            document_id=document_id,
+            page=page,
+            page_size=page_size,
+            verbose=verbose,
         )
         return cast(InfoDocument, info_document)

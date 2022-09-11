@@ -20,6 +20,7 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
 from featurebyte.schema.feature import FeatureCreate, FeatureInfo, FeatureList
 
@@ -113,6 +114,7 @@ async def get_feature_info(
     feature_id: PydanticObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
+    verbose: bool = VerboseQuery,
 ) -> FeatureInfo:
     """
     Retrieve Feature info
@@ -123,5 +125,6 @@ async def get_feature_info(
         document_id=feature_id,
         page=page,
         page_size=page_size,
+        verbose=verbose,
     )
     return cast(FeatureInfo, info)

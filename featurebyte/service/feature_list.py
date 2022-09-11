@@ -206,13 +206,18 @@ class FeatureListService(
         # TODO: implement proper logic to update feature list document
         return await self.get_document(document_id=document_id)
 
-    async def get_info(self, document_id: ObjectId, page: int, page_size: int) -> FeatureListInfo:
+    async def get_info(
+        self, document_id: ObjectId, page: int, page_size: int, verbose: bool
+    ) -> FeatureListInfo:
         feature_list = await self.get_document(document_id=document_id)
         feature_list_namespace_service = FeatureListNamespaceService(
             user=self.user, persistent=self.persistent
         )
         namespace_info = await feature_list_namespace_service.get_info(
-            document_id=feature_list.feature_list_namespace_id, page=page, page_size=page_size
+            document_id=feature_list.feature_list_namespace_id,
+            page=page,
+            page_size=page_size,
+            verbose=verbose,
         )
         default_feature_list = await self.get_document(
             document_id=namespace_info.default_feature_list_id

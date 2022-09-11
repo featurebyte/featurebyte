@@ -76,7 +76,9 @@ class EventDataService(BaseDocumentService[EventDataModel], GetInfoServiceMixin[
         )
         return await self.get_document(document_id=document_id)
 
-    async def get_info(self, document_id: ObjectId, page: int, page_size: int) -> EventDataInfo:
+    async def get_info(
+        self, document_id: ObjectId, page: int, page_size: int, verbose: bool
+    ) -> EventDataInfo:
         event_data = await self.get_document(document_id=document_id)
         entity_service = EntityService(user=self.user, persistent=self.persistent)
         entity_ids = DictProject(rule=("columns_info", "entity_id")).project(event_data.dict())
