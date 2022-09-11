@@ -60,10 +60,10 @@ def deprecated_feature_fixture(feature_group):
     return feature
 
 
-def test_features_readiness__deprecated(
+def test_feature_list_production_ready_fraction__one_fourth(
     production_ready_feature, draft_feature, quarantine_feature, deprecated_feature
 ):
-    """Test features readiness should evaluate to deprecated"""
+    """Test feature list production ready fraction"""
     feature_list = FeatureList(
         [
             production_ready_feature,
@@ -73,13 +73,13 @@ def test_features_readiness__deprecated(
         ],
         name="feature_list_name",
     )
-    assert feature_list.readiness == FeatureReadiness.DEPRECATED
+    assert feature_list.production_ready_fraction == 0.25
 
 
-def test_features_readiness__quarantine(
+def test_feature_list_production_ready_fraction__one_third(
     production_ready_feature, draft_feature, quarantine_feature
 ):
-    """Test features readiness should evaluate to quarantine"""
+    """Test feature list production ready fraction"""
     assert (
         FeatureList(
             [
@@ -88,13 +88,13 @@ def test_features_readiness__quarantine(
                 quarantine_feature,
             ],
             name="feature_list_name",
-        ).readiness
-        == FeatureReadiness.QUARANTINE
+        ).production_ready_fraction
+        == 1 / 3.0
     )
 
 
-def test_features_readiness__draft(production_ready_feature, draft_feature):
-    """Test features readiness should evaluate to draft"""
+def test_feature_list_production_ready_fraction__one_half(production_ready_feature, draft_feature):
+    """Test feature list production ready fraction"""
     assert (
         FeatureList(
             [
@@ -102,21 +102,21 @@ def test_features_readiness__draft(production_ready_feature, draft_feature):
                 draft_feature,
             ],
             name="feature_list_name",
-        ).readiness
-        == FeatureReadiness.DRAFT
+        ).production_ready_fraction
+        == 0.5
     )
 
 
-def test_features_readiness__production_ready(production_ready_feature):
-    """Test features readiness should evaluate to production ready"""
+def test_feature_list_production_ready_fraction__single_feature(production_ready_feature):
+    """Test feature list production ready fraction"""
     assert (
         FeatureList(
             [
                 production_ready_feature,
             ],
             name="feature_list_name",
-        ).readiness
-        == FeatureReadiness.PRODUCTION_READY
+        ).production_ready_fraction
+        == 1.0
     )
 
 
@@ -136,7 +136,6 @@ def test_feature_list_creation__success(production_ready_feature, config, mocked
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],
         "readiness_distribution": [{"count": 1, "readiness": "PRODUCTION_READY"}],
-        "readiness": "PRODUCTION_READY",
         "version": "V220501",
         "created_at": None,
         "updated_at": None,
@@ -176,7 +175,6 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
             {"count": 2, "readiness": "DRAFT"},
         ],
         "name": "my_feature_list",
-        "readiness": "DRAFT",
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -358,7 +356,6 @@ def test_feature_list__construction(production_ready_feature, draft_feature):
     """
     feature_list = FeatureList([production_ready_feature, draft_feature], name="my_feature_list")
     assert feature_list.saved is False
-    assert feature_list.readiness == FeatureReadiness.DRAFT
     assert feature_list.feature_ids == [production_ready_feature.id, draft_feature.id]
     assert feature_list.feature_names == ["production_ready_feature", "draft_feature"]
     assert feature_list.version == "V220720"
