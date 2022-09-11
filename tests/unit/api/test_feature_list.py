@@ -476,6 +476,7 @@ def test_info(saved_feature_list):
         "version",
         "readiness_distribution",
         "created_at",
+        "production_ready_fraction",
     }, verbose_info_dict
 
 

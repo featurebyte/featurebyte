@@ -9,7 +9,7 @@ from datetime import datetime
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, validator
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_list import (
@@ -62,6 +62,14 @@ class FeatureListBriefInfo(FeatureByteBaseModel):
     version: FeatureListVersionIdentifier
     readiness_distribution: FeatureReadinessDistribution
     created_at: datetime
+    production_ready_fraction: Optional[float] = Field(default=None)
+
+    @validator("production_ready_fraction")
+    @classmethod
+    def _derive_production_ready_fraction(cls, value: Any, values: dict[str, Any]) -> Any:
+        if value is None:
+            return values["readiness_distribution"].derive_production_ready_fraction()
+        return value
 
 
 class FeatureListBriefInfoList(PaginationMixin):
