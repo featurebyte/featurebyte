@@ -44,7 +44,8 @@ class FeatureStoreService(
         # TODO: implement proper logic to update feature store document
         return await self.get_document(document_id=document_id)
 
-    async def get_info(self, document_id: ObjectId) -> FeatureStoreInfo:
+    async def get_info(self, document_id: ObjectId, page: int, page_size: int) -> FeatureStoreInfo:
+        _ = page, page_size
         feature_store = await self.get_document(document_id=document_id)
         return FeatureStoreInfo(
             name=feature_store.name,

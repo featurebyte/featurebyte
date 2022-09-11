@@ -104,9 +104,12 @@ async def list_feature_store_audit_logs(
     return audit_doc_list
 
 
-@router.get("/{feature_store_id}/info")
+@router.get("/{feature_store_id}/info", response_model=FeatureStoreInfo)
 async def get_feature_store_info(
-    request: Request, feature_store_id: PydanticObjectId
+    request: Request,
+    feature_store_id: PydanticObjectId,
+    page: Optional[int] = PageQuery,
+    page_size: Optional[int] = PageSizeQuery,
 ) -> FeatureStoreInfo:
     """
     Retrieve FeatureStore info
@@ -115,5 +118,7 @@ async def get_feature_store_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_store_id,
+        page=page,
+        page_size=page_size,
     )
     return cast(FeatureStoreInfo, info)

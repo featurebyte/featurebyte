@@ -143,8 +143,13 @@ async def list_name_history(
     ]
 
 
-@router.get("/{entity_id}/info")
-async def get_entity_info(request: Request, entity_id: PydanticObjectId) -> EntityInfo:
+@router.get("/{entity_id}/info", response_model=EntityInfo)
+async def get_entity_info(
+    request: Request,
+    entity_id: PydanticObjectId,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+) -> EntityInfo:
     """
     Retrieve EventData info
     """
@@ -152,5 +157,7 @@ async def get_entity_info(request: Request, entity_id: PydanticObjectId) -> Enti
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=entity_id,
+        page=page,
+        page_size=page_size,
     )
     return cast(EntityInfo, info)

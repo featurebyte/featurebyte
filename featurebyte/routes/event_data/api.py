@@ -155,8 +155,13 @@ async def list_default_feature_job_setting_history(
     ]
 
 
-@router.get("/{event_data_id}/info")
-async def get_event_data_info(request: Request, event_data_id: PydanticObjectId) -> EventDataInfo:
+@router.get("/{event_data_id}/info", response_model=EventDataInfo)
+async def get_event_data_info(
+    request: Request,
+    event_data_id: PydanticObjectId,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+) -> EventDataInfo:
     """
     Retrieve EventData info
     """
@@ -164,5 +169,7 @@ async def get_event_data_info(request: Request, event_data_id: PydanticObjectId)
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=event_data_id,
+        page=page,
+        page_size=page_size,
     )
     return cast(EventDataInfo, info)

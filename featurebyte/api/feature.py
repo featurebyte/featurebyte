@@ -18,7 +18,6 @@ from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.enum import SpecialColumnName
-from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.feature import (
     DefaultVersionMode,

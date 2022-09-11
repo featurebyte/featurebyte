@@ -212,7 +212,7 @@ class GetInfoControllerMixin(Generic[InfoDocument]):
 
     @classmethod
     async def get_info(
-        cls, user: Any, persistent: Persistent, document_id: ObjectId
+        cls, user: Any, persistent: Persistent, document_id: ObjectId, page: int, page_size: int
     ) -> InfoDocument:
         """
         Get document info given document ID
@@ -225,11 +225,17 @@ class GetInfoControllerMixin(Generic[InfoDocument]):
             Persistent that the document will be saved to
         document_id: ObjectId
             Document ID
+        page: int
+            Page number
+        page_size: int
+            Number of items per page
 
         Returns
         -------
         InfoDocument
         """
         document_service = cls.document_service_class(user=user, persistent=persistent)  # type: ignore
-        info_document = await document_service.get_info(document_id=document_id)
+        info_document = await document_service.get_info(
+            document_id=document_id, page=page, page_size=page_size
+        )
         return cast(InfoDocument, info_document)

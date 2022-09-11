@@ -107,8 +107,13 @@ async def list_feature_audit_logs(
     return audit_doc_list
 
 
-@router.get("/{feature_id}/info")
-async def get_feature_info(request: Request, feature_id: PydanticObjectId) -> FeatureInfo:
+@router.get("/{feature_id}/info", response_model=FeatureInfo)
+async def get_feature_info(
+    request: Request,
+    feature_id: PydanticObjectId,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+) -> FeatureInfo:
     """
     Retrieve Feature info
     """
@@ -116,5 +121,7 @@ async def get_feature_info(request: Request, feature_id: PydanticObjectId) -> Fe
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_id,
+        page=page,
+        page_size=page_size,
     )
     return cast(FeatureInfo, info)

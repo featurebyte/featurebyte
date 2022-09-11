@@ -99,10 +99,12 @@ async def list_feature_list_namespace_audit_logs(
     return audit_doc_list
 
 
-@router.get("/{feature_list_namespace_id}/info")
+@router.get("/{feature_list_namespace_id}/info", response_model=FeatureListNamespaceInfo)
 async def get_feature_list_namespace_info(
     request: Request,
     feature_list_namespace_id: PydanticObjectId,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
 ) -> FeatureListNamespaceInfo:
     """
     Retrieve FeatureListNamespace info
@@ -111,5 +113,7 @@ async def get_feature_list_namespace_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_list_namespace_id,
+        page=page,
+        page_size=page_size,
     )
     return cast(FeatureListNamespaceInfo, info)

@@ -142,11 +142,6 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         -------
         list[str]
             List of object name
-
-        Raises
-        ------
-        RecordRetrievalException
-            When the response status code is unexpected
         """
         output = []
         for response_dict in cls._iterate_paginated_routes(route=cls._route):

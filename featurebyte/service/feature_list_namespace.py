@@ -99,16 +99,18 @@ class FeatureListNamespaceService(
         assert update_count == 1
         return await self.get_document(document_id=document_id)
 
-    async def get_info(self, document_id: ObjectId) -> FeatureListNamespaceInfo:
+    async def get_info(
+        self, document_id: ObjectId, page: int, page_size: int
+    ) -> FeatureListNamespaceInfo:
         namespace = await self.get_document(document_id=document_id)
         entity_service = EntityService(user=self.user, persistent=self.persistent)
         entities = await entity_service.list_documents(
-            query_filter={"_id": {"$in": namespace.entity_ids}}
+            page=page, page_size=page_size, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
 
         event_data_service = EventDataService(user=self.user, persistent=self.persistent)
         event_data = await event_data_service.list_documents(
-            query_filter={"_id": {"$in": namespace.event_data_ids}}
+            page=page, page_size=page_size, query_filter={"_id": {"$in": namespace.event_data_ids}}
         )
         return FeatureListNamespaceInfo(
             name=namespace.name,
