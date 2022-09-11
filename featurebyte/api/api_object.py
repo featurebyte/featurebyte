@@ -243,6 +243,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
     def _pagination_response_reduce_func(
         accumulator: List[Any], response_dict: dict[str, Any]
     ) -> List[Any]:
+        # method used to combine multiple pagination responses
         accumulator.extend(response_dict["data"])
         return accumulator
 

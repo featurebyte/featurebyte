@@ -263,4 +263,13 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         else:
             accumulator = response_dict.copy()
             accumulator["entities"] = response_dict["entities"]["data"]
+
+        if verbose:
+            columns_info = []
+            zipper = zip(accumulator["columns_info"], response_dict["columns_info"])
+            for acc_col_info, res_col_info in zipper:
+                col_info = acc_col_info.copy()
+                col_info["entity"] = acc_col_info["entity"] or res_col_info["entity"]
+                columns_info.append(col_info)
+            accumulator["columns_info"] = columns_info
         return accumulator
