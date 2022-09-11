@@ -116,30 +116,36 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         create_response_dict = create_success_response.json()
         await self.setup_get_info(test_api_client, persistent, user_id)
         doc_id = create_response_dict["_id"]
-        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
+        expected_info_response = {
+            "name": "sum_30m",
+            "updated_at": None,
+            "entities": {
+                "data": [{"name": "customer", "serving_names": ["cust_id"]}],
+                "page": 1,
+                "page_size": 10,
+                "total": 1,
+            },
+            "event_data": {
+                "data": [{"name": "sf_event_data", "status": "DRAFT"}],
+                "page": 1,
+                "page_size": 10,
+                "total": 1,
+            },
+            "default_version_mode": "AUTO",
+            "default_feature_id": "6317467bb72b797bd08f72fa",
+            "dtype": "FLOAT",
+            "version_count": 1,
+        }
+
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
-        assert (
-            response_dict.items()
-            > {
-                "name": "sum_30m",
-                "updated_at": None,
-                "entities": {
-                    "data": [{"name": "customer", "serving_names": ["cust_id"]}],
-                    "page": 1,
-                    "page_size": 10,
-                    "total": 1,
-                },
-                "event_data": {
-                    "data": [{"name": "sf_event_data", "status": "DRAFT"}],
-                    "page": 1,
-                    "page_size": 10,
-                    "total": 1,
-                },
-                "default_version_mode": "AUTO",
-                "default_feature_id": "6317467bb72b797bd08f72fa",
-                "dtype": "FLOAT",
-                "version_count": 1,
-            }.items()
-        )
+        assert response_dict.items() > expected_info_response.items(), response_dict
         assert "created_at" in response_dict
+
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
+        assert verbose_response.status_code == HTTPStatus.OK, verbose_response.text

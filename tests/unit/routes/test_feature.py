@@ -245,34 +245,44 @@ class TestFeatureApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
-        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
+        expected_info_response = {
+            "name": "sum_30m",
+            "updated_at": None,
+            "entities": {
+                "data": [{"name": "customer", "serving_names": ["cust_id"]}],
+                "page": 1,
+                "page_size": 10,
+                "total": 1,
+            },
+            "event_data": {
+                "data": [{"name": "sf_event_data", "status": "DRAFT"}],
+                "page": 1,
+                "page_size": 10,
+                "total": 1,
+            },
+            "dtype": "FLOAT",
+            "default_version_mode": "AUTO",
+            "version_count": 1,
+            "readiness": {"this": "DRAFT", "default": "DRAFT"},
+            "version": {"this": "V220906", "default": "V220906"},
+        }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()
-        assert (
-            response_dict.items()
-            > {
-                "name": "sum_30m",
-                "updated_at": None,
-                "entities": {
-                    "data": [{"name": "customer", "serving_names": ["cust_id"]}],
-                    "page": 1,
-                    "page_size": 10,
-                    "total": 1,
-                },
-                "event_data": {
-                    "data": [{"name": "sf_event_data", "status": "DRAFT"}],
-                    "page": 1,
-                    "page_size": 10,
-                    "total": 1,
-                },
-                "dtype": "FLOAT",
-                "default_version_mode": "AUTO",
-                "version_count": 1,
-                "readiness": {"this": "DRAFT", "default": "DRAFT"},
-                "version": {"this": "V220906", "default": "V220906"},
-            }.items()
-        )
+        assert response_dict.items() > expected_info_response.items(), response_dict
         assert "created_at" in response_dict
+        assert response_dict["versions_info"] is None
+
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
+        assert response.status_code == HTTPStatus.OK, response.text
+        verbose_response_dict = verbose_response.json()
+        assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
+        assert "created_at" in verbose_response_dict
+        assert verbose_response_dict["versions_info"] is not None
 
 
 @pytest.fixture(name="feature_model_dict")
