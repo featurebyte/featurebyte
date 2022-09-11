@@ -11,7 +11,12 @@ from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.event_data import EventDataModel, EventDataStatus
 from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.entity import EntityBriefInfoList
-from featurebyte.schema.event_data import EventDataCreate, EventDataInfo, EventDataUpdate
+from featurebyte.schema.event_data import (
+    EventDataColumnInfo,
+    EventDataCreate,
+    EventDataInfo,
+    EventDataUpdate,
+)
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -85,10 +90,21 @@ class EventDataService(BaseDocumentService[EventDataModel], GetInfoServiceMixin[
         entities = await entity_service.list_documents(
             page=page, page_size=page_size, query_filter={"_id": {"$in": entity_ids}}
         )
+        columns_info = None
+        if verbose:
+            columns_info = []
+            entity_map = {entity["_id"]: entity["name"] for entity in entities["data"]}
+            for column_info in event_data.columns_info:
+                columns_info.append(
+                    EventDataColumnInfo(
+                        **column_info.dict(), entity=entity_map.get(column_info.entity_id)
+                    )
+                )
+
         return EventDataInfo(
             name=event_data.name,
-            creation_date=event_data.created_at,
-            update_date=event_data.updated_at,
+            created_at=event_data.created_at,
+            updated_at=event_data.updated_at,
             event_timestamp_column=event_data.event_timestamp_column,
             record_creation_date_column=event_data.record_creation_date_column,
             table_details=event_data.tabular_source.table_details,
@@ -96,4 +112,5 @@ class EventDataService(BaseDocumentService[EventDataModel], GetInfoServiceMixin[
             status=event_data.status,
             entities=EntityBriefInfoList.from_paginated_data(entities),
             column_count=len(event_data.columns_info),
+            columns_info=columns_info,
         )

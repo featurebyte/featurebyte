@@ -37,17 +37,20 @@ class FeatureGetObject(ApiGetObject):
     """
 
     @classmethod
-    def _get_info_to_request_func(cls, response_dict: dict[str, Any], page: int) -> bool:
-        return any(
-            [
-                cls._default_to_request_func(response_dict["entities"], page),
-                cls._default_to_request_func(response_dict["event_data"], page),
-            ]
-        )
+    def _get_info_to_request_func(
+        cls, response_dict: dict[str, Any], page: int, verbose: bool
+    ) -> bool:
+        decisions = [
+            cls._default_to_request_func(response_dict["entities"], page),
+            cls._default_to_request_func(response_dict["event_data"], page),
+        ]
+        if verbose:
+            decisions.append(cls._default_to_request_func(response_dict["versions_info"], page))
+        return any(decisions)
 
     @classmethod
     def _get_info_reduce_func(
-        cls, accumulator: dict[str, Any], response_dict: dict[str, Any]
+        cls, accumulator: dict[str, Any], response_dict: dict[str, Any], verbose: bool
     ) -> dict[str, Any]:
         if accumulator:
             accumulator["entities"] = cls._pagination_response_reduce_func(
@@ -60,6 +63,11 @@ class FeatureGetObject(ApiGetObject):
             accumulator = response_dict.copy()
             accumulator["entities"] = response_dict["entities"]["data"]
             accumulator["event_data"] = response_dict["event_data"]["data"]
+            if not verbose:
+                accumulator.pop("versions_info")
+
+        if verbose:
+            accumulator["versions_info"] = response_dict["versions_info"]["data"]
         return accumulator
 
 

@@ -274,7 +274,7 @@ class TestFeatureListApi(BaseApiTestSuite):
             response_dict.items()
             > {
                 "name": "sf_feature_list",
-                "update_date": None,
+                "updated_at": None,
                 "entities": {
                     "data": [{"name": "customer", "serving_names": ["cust_id"]}],
                     "page": 1,
@@ -295,7 +295,7 @@ class TestFeatureListApi(BaseApiTestSuite):
                 "production_ready_fraction": {"this": 0, "default": 0},
             }.items()
         )
-        assert "creation_date" in response_dict
+        assert "created_at" in response_dict
 
 
 @pytest.fixture(name="feature_list_model")

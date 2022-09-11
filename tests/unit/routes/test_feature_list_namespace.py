@@ -133,7 +133,7 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
             response_dict.items()
             > {
                 "name": "sf_feature_list_multiple",
-                "update_date": None,
+                "updated_at": None,
                 "entities": {
                     "data": [{"name": "customer", "serving_names": ["cust_id"]}],
                     "page": 1,
@@ -153,4 +153,4 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
                 "feature_count": 2,
             }.items()
         )
-        assert "creation_date" in response_dict
+        assert "created_at" in response_dict

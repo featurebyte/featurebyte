@@ -88,7 +88,7 @@ def test_info(saved_snowflake_feature_store):
     info_dict = saved_snowflake_feature_store.info()
     expected_info = {
         "name": "sf_featurestore",
-        "update_date": None,
+        "updated_at": None,
         "source": "snowflake",
         "database_details": {
             "account": "sf_account",
@@ -98,7 +98,7 @@ def test_info(saved_snowflake_feature_store):
         },
     }
     assert info_dict.items() > expected_info.items(), info_dict
-    assert "creation_date" in info_dict, info_dict
+    assert "created_at" in info_dict, info_dict
 
 
 @pytest.fixture(name="saved_snowflake_feature_store")

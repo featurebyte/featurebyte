@@ -118,8 +118,8 @@ class FeatureListNamespaceService(
         )
         return FeatureListNamespaceInfo(
             name=namespace.name,
-            creation_date=namespace.created_at,
-            update_date=namespace.updated_at,
+            created_at=namespace.created_at,
+            updated_at=namespace.updated_at,
             entities=EntityBriefInfoList.from_paginated_data(entities),
             event_data=EventDataBriefInfoList.from_paginated_data(event_data),
             default_version_mode=namespace.default_version_mode,

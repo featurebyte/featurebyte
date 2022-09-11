@@ -430,7 +430,7 @@ class TestEventDataApi(BaseApiTestSuite):
             response_dict.items()
             > {
                 "name": "sf_event_data",
-                "update_date": None,
+                "updated_at": None,
                 "event_timestamp_column": "event_timestamp",
                 "record_creation_date_column": "created_at",
                 "table_details": {
@@ -449,4 +449,4 @@ class TestEventDataApi(BaseApiTestSuite):
                 "column_count": 9,
             }.items()
         )
-        assert "creation_date" in response_dict
+        assert "created_at" in response_dict

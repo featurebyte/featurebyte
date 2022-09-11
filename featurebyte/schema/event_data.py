@@ -9,6 +9,7 @@ from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
 from featurebyte.models.feature_store import ColumnInfo, TableDetails, TabularSource
@@ -89,6 +90,23 @@ class EventDataBriefInfoList(PaginationMixin):
         return EventDataBriefInfoList(**event_data_transform.transform(paginated_data))
 
 
+class EventDataColumnInfo(FeatureByteBaseModel):
+    """
+    EventDataColumnInfo for storing column information
+
+    name: str
+        Column name
+    dtype: DBVarType
+        Variable type of the column
+    entity: str
+        Entity name associated with the column
+    """
+
+    name: StrictStr
+    dtype: DBVarType
+    entity: Optional[str] = Field(default=None)
+
+
 class EventDataInfo(EventDataBriefInfo, BaseInfo):
     """
     EventData info schema
@@ -101,3 +119,4 @@ class EventDataInfo(EventDataBriefInfo, BaseInfo):
     entities: EntityBriefInfoList
     column_count: int
     # feature_count: int
+    columns_info: Optional[List[EventDataColumnInfo]]

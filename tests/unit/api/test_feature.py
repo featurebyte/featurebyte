@@ -254,27 +254,33 @@ def test_info(saved_feature):
     info_dict = saved_feature.info()
     expected_info = {
         "name": "sum_1d",
-        "update_date": None,
+        "updated_at": None,
         "dtype": "FLOAT",
         "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
         "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
         "default_version_mode": "AUTO",
+        "default_feature_id": str(saved_feature.id),
         "readiness": {"this": "DRAFT", "default": "DRAFT"},
     }
     assert info_dict.items() > expected_info.items(), info_dict
-    assert "creation_date" in info_dict, info_dict
+    assert "created_at" in info_dict, info_dict
     assert "version" in info_dict, info_dict
     assert set(info_dict["version"]) == {"this", "default"}, info_dict["version"]
+    assert "versions_info" not in info_dict, info_dict
 
+    verbose_info_dict = saved_feature.info(verbose=True)
+    assert verbose_info_dict.items() > expected_info.items(), verbose_info_dict
+    assert "created_at" in verbose_info_dict, verbose_info_dict
+    assert "version" in verbose_info_dict, verbose_info_dict
+    assert set(verbose_info_dict["version"]) == {"this", "default"}, verbose_info_dict["version"]
 
-#    verbose_info_dict = saved_feature.info(verbose=True)
-#    assert verbose_info_dict.items() > expected_info.items(), verbose_info_dict
-#    assert "creation_date" in verbose_info_dict, verbose_info_dict
-#    assert "version" in verbose_info_dict, verbose_info_dict
-#    assert set(verbose_info_dict["version"]) == {"this", "default"}, verbose_info_dict["version"]
-#    assert "version_info" in verbose_info_dict, verbose_info_dict
-#    assert len(verbose_info_dict["version_info"]) == 1, verbose_info_dict
-#    assert set(verbose_info_dict["version_info"][0]) == {"version", "readiness"}, verbose_info_dict
+    assert "versions_info" in verbose_info_dict, verbose_info_dict
+    assert len(verbose_info_dict["versions_info"]) == 1, verbose_info_dict
+    assert set(verbose_info_dict["versions_info"][0]) == {
+        "version",
+        "readiness",
+        "created_at",
+    }, verbose_info_dict
 
 
 def test_feature_save__exception_due_to_event_data_not_saved(float_feature, snowflake_event_data):

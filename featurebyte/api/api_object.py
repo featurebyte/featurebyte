@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Callable, ClassVar, Dict, Iterator, List, Optional, Type, TypeVar
 
 import time
+from functools import partial
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
@@ -246,16 +247,19 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         return accumulator
 
     @classmethod
-    def _get_info_to_request_func(cls, response_dict: dict[str, Any], page: int) -> bool:
+    def _get_info_to_request_func(
+        cls, response_dict: dict[str, Any], page: int, verbose: bool
+    ) -> bool:
         # method used to check whether to continue listing info route
-        _ = response_dict, page
+        _ = response_dict, page, verbose
         return False
 
     @classmethod
     def _get_info_reduce_func(
-        cls, accumulator: dict[str, Any], response_dict: dict[str, Any]
+        cls, accumulator: dict[str, Any], response_dict: dict[str, Any], verbose: bool
     ) -> dict[str, Any]:
         # reduce method used to reduce list of listing info route responses into single output
+        _ = verbose
         accumulator.update(response_dict)
         return accumulator
 
@@ -276,11 +280,11 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         response_generator = self._iterate_paginated_routes(
             route=f"{self._route}/{self.id}/info",
             params={"verbose": verbose},
-            to_request_func=self._get_info_to_request_func,
+            to_request_func=partial(self._get_info_to_request_func, verbose=verbose),
         )
         output: dict[str, Any] = {}
         for response_dict in response_generator:
-            output = self._get_info_reduce_func(output, response_dict)
+            output = self._get_info_reduce_func(output, response_dict, verbose)
         return output
 
 

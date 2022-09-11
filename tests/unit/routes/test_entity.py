@@ -223,8 +223,8 @@ class TestEntityApi(BaseApiTestSuite):
             response_dict.items()
             > {
                 "name": "customer",
-                "update_date": None,
+                "updated_at": None,
                 "serving_names": ["cust_id"],
             }.items()
         )
-        assert "creation_date" in response_dict
+        assert "created_at" in response_dict

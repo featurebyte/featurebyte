@@ -123,7 +123,7 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
             response_dict.items()
             > {
                 "name": "sum_30m",
-                "update_date": None,
+                "updated_at": None,
                 "entities": {
                     "data": [{"name": "customer", "serving_names": ["cust_id"]}],
                     "page": 1,
@@ -142,4 +142,4 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
                 "version_count": 1,
             }.items()
         )
-        assert "creation_date" in response_dict
+        assert "created_at" in response_dict

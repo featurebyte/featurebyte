@@ -20,7 +20,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.schema.feature import FeatureCreate, FeatureInfo
+from featurebyte.schema.feature import FeatureBriefInfoList, FeatureCreate, FeatureInfo
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate, FeatureNamespaceUpdate
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.feature_namespace import FeatureNamespaceService
@@ -167,8 +167,22 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
             verbose=verbose,
         )
         default_feature = await self.get_document(document_id=namespace_info.default_feature_id)
+        versions_info = None
+        if verbose:
+            namespace = await feature_namespace_service.get_document(
+                document_id=feature.feature_namespace_id
+            )
+            versions_info = FeatureBriefInfoList.from_paginated_data(
+                await self.list_documents(
+                    page=page,
+                    page_size=page_size,
+                    query_filter={"_id": {"$in": namespace.feature_ids}},
+                )
+            )
+
         return FeatureInfo(
             **namespace_info.dict(),
             version={"this": feature.version, "default": default_feature.version},
             readiness={"this": feature.readiness, "default": default_feature.readiness},
+            versions_info=versions_info,
         )

@@ -3,7 +3,9 @@ Feature API payload schema
 """
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
+
+from datetime import datetime
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
@@ -15,7 +17,8 @@ from featurebyte.models.feature import FeatureModel, FeatureReadiness, FeatureVe
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.schema.feature_namespace import NamespaceInfo
+from featurebyte.schema.common.operation import DictProject, DictTransform
+from featurebyte.schema.feature_namespace import FeatureNamespaceInfo
 
 
 class FeatureCreate(FeatureByteBaseModel):
@@ -62,7 +65,47 @@ class VersionComparison(FeatureByteBaseModel):
     default: FeatureVersionIdentifier
 
 
-class FeatureInfo(NamespaceInfo):
+class FeatureBriefInfo(FeatureByteBaseModel):
+    """
+    Feature brief info schema
+    """
+
+    version: FeatureVersionIdentifier
+    readiness: FeatureReadiness
+    created_at: datetime
+
+
+class FeatureBriefInfoList(PaginationMixin):
+    """
+    Paginated list of feature brief info
+    """
+
+    data: List[FeatureBriefInfo]
+
+    @classmethod
+    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> FeatureBriefInfoList:
+        """
+        Construct feature info list from paginated data
+
+        Parameters
+        ----------
+        paginated_data: dict[str, Any]
+            Paginated data
+
+        Returns
+        -------
+        FeatureBriefInfoList
+        """
+        feature_transform = DictTransform(
+            rule={
+                "__root__": DictProject(rule=["page", "page_size", "total"]),
+                "data": DictProject(rule=("data", ["version", "readiness", "created_at"])),
+            }
+        )
+        return FeatureBriefInfoList(**feature_transform.transform(paginated_data))
+
+
+class FeatureInfo(FeatureNamespaceInfo):
     """
     Feature info schema
     """
@@ -70,3 +113,4 @@ class FeatureInfo(NamespaceInfo):
     dtype: DBVarType
     version: VersionComparison
     readiness: ReadinessComparison
+    versions_info: Optional[FeatureBriefInfoList]

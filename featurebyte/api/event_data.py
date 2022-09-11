@@ -246,12 +246,14 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         return self._get_audit_history(field_name="default_feature_job_setting")
 
     @classmethod
-    def _get_info_to_request_func(cls, response_dict: dict[str, Any], page: int) -> bool:
+    def _get_info_to_request_func(
+        cls, response_dict: dict[str, Any], page: int, verbose: bool
+    ) -> bool:
         return cls._default_to_request_func(response_dict["entities"], page)
 
     @classmethod
     def _get_info_reduce_func(
-        cls, accumulator: dict[str, Any], response_dict: dict[str, Any]
+        cls, accumulator: dict[str, Any], response_dict: dict[str, Any], verbose: bool
     ) -> dict[str, Any]:
         if accumulator:
             accumulator["entities"] = cls._pagination_response_reduce_func(

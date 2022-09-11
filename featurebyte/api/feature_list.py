@@ -13,8 +13,8 @@ from alive_progress import alive_bar
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiGetObject, ApiObject
-from featurebyte.api.feature import Feature
+from featurebyte.api.api_object import ApiObject
+from featurebyte.api.feature import Feature, FeatureGetObject
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
@@ -195,39 +195,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         raise ValueError("There is no feature in the FeatureGroup object.")
 
 
-class FeatureListGetObject(ApiGetObject):
-    """
-    FeatureListGetObject class
-    """
-
-    @classmethod
-    def _get_info_to_request_func(cls, response_dict: dict[str, Any], page: int) -> bool:
-        return any(
-            [
-                cls._default_to_request_func(response_dict["entities"], page),
-                cls._default_to_request_func(response_dict["event_data"], page),
-            ]
-        )
-
-    @classmethod
-    def _get_info_reduce_func(
-        cls, accumulator: dict[str, Any], response_dict: dict[str, Any]
-    ) -> dict[str, Any]:
-        if accumulator:
-            accumulator["entities"] = cls._pagination_response_reduce_func(
-                accumulator["entities"], response_dict
-            )
-            accumulator["event_data"] = cls._pagination_response_reduce_func(
-                accumulator["event_data"], response_dict
-            )
-        else:
-            accumulator = response_dict.copy()
-            accumulator["entities"] = response_dict["entities"]["data"]
-            accumulator["event_data"] = response_dict["event_data"]["data"]
-        return accumulator
-
-
-class FeatureListNamespace(FeatureListNamespaceModel, FeatureListGetObject):
+class FeatureListNamespace(FeatureListNamespaceModel, FeatureGetObject):
     """
     FeatureListNamespace class
     """
@@ -236,7 +204,7 @@ class FeatureListNamespace(FeatureListNamespaceModel, FeatureListGetObject):
     _route = "/feature_list_namespace"
 
 
-class FeatureList(BaseFeatureGroup, FeatureListModel, FeatureListGetObject, ApiObject):
+class FeatureList(BaseFeatureGroup, FeatureListModel, FeatureGetObject, ApiObject):
     """
     FeatureList class
 
@@ -337,24 +305,6 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, FeatureListGetObject, ApiO
     @classmethod
     def list(cls) -> List[str]:
         return FeatureListNamespace.list()
-
-    def _get_verbose_info(self, info_dict: dict[str, Any]) -> dict[str, Any]:
-        feature_info = []
-        params = {"feature_list_id": str(self.id)}
-        for response_dict in self._iterate_paginated_routes(route="/feature", params=params):
-            for item in response_dict["data"]:
-                feature_info.append(
-                    {
-                        "name": item["name"],
-                        "type": item["dtype"],
-                        "version": item["version"],
-                        "creation_date": item["created_at"],
-                        "readiness": item["readiness"],
-                    }
-                )
-        output = info_dict.copy()
-        output["feature_info"] = feature_info
-        return output
 
     @typechecked
     def get_historical_features(

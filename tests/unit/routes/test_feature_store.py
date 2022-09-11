@@ -66,7 +66,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             response_dict.items()
             > {
                 "name": "sf_featurestore",
-                "update_date": None,
+                "updated_at": None,
                 "source": "snowflake",
                 "database_details": {
                     "account": "sf_account",
@@ -76,4 +76,4 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 },
             }.items()
         )
-        assert "creation_date" in response_dict
+        assert "created_at" in response_dict

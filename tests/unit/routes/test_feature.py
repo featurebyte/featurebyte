@@ -252,7 +252,7 @@ class TestFeatureApi(BaseApiTestSuite):
             response_dict.items()
             > {
                 "name": "sum_30m",
-                "update_date": None,
+                "updated_at": None,
                 "entities": {
                     "data": [{"name": "customer", "serving_names": ["cust_id"]}],
                     "page": 1,
@@ -272,7 +272,7 @@ class TestFeatureApi(BaseApiTestSuite):
                 "version": {"this": "V220906", "default": "V220906"},
             }.items()
         )
-        assert "creation_date" in response_dict
+        assert "created_at" in response_dict
 
 
 @pytest.fixture(name="feature_model_dict")

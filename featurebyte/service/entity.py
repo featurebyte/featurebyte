@@ -63,7 +63,7 @@ class EntityService(BaseDocumentService[EntityModel], GetInfoServiceMixin[Entity
         entity = await self.get_document(document_id=document_id)
         return EntityInfo(
             name=entity.name,
-            creation_date=entity.created_at,
-            update_date=entity.updated_at,
+            created_at=entity.created_at,
+            updated_at=entity.updated_at,
             serving_names=entity.serving_names,
         )

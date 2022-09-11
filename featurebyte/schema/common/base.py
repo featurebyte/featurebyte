@@ -21,5 +21,5 @@ class BaseInfo(BaseBriefInfo):
     Base Info schema
     """
 
-    creation_date: datetime
-    update_date: Optional[datetime]
+    created_at: datetime
+    updated_at: Optional[datetime]

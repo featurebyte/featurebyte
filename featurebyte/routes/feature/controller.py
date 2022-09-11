@@ -70,12 +70,6 @@ class FeatureController(
             ).get_document(document_id=feature_list_id)
             params["query_filter"] = {"_id": {"$in": feature_list_document.feature_ids}}
 
-        feature_namespace_id = params.pop("feature_namespace_id")
-        if feature_namespace_id:
-            query_filter = params.get("query_filter", {})
-            query_filter["feature_namespace_id"] = feature_namespace_id
-            params["query_filter"] = query_filter
-
         return await super().list(
             user=user,
             persistent=persistent,

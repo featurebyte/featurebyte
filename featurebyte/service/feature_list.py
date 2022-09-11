@@ -22,7 +22,11 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureSignature
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.schema.feature_list import FeatureListCreate, FeatureListInfo
+from featurebyte.schema.feature_list import (
+    FeatureListBriefInfoList,
+    FeatureListCreate,
+    FeatureListInfo,
+)
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -222,6 +226,19 @@ class FeatureListService(
         default_feature_list = await self.get_document(
             document_id=namespace_info.default_feature_list_id
         )
+        versions_info = None
+        if verbose:
+            namespace = await feature_list_namespace_service.get_document(
+                document_id=feature_list.feature_list_namespace_id
+            )
+            versions_info = FeatureListBriefInfoList.from_paginated_data(
+                await self.list_documents(
+                    page=page,
+                    page_size=page_size,
+                    query_filter={"_id": {"$in": namespace.feature_list_ids}},
+                )
+            )
+
         return FeatureListInfo(
             **namespace_info.dict(),
             version={"this": feature_list.version, "default": default_feature_list.version},
@@ -229,4 +246,5 @@ class FeatureListService(
                 "this": feature_list.readiness_distribution.derive_production_ready_fraction(),
                 "default": default_feature_list.readiness_distribution.derive_production_ready_fraction(),
             },
+            versions_info=versions_info,
         )

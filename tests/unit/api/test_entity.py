@@ -79,10 +79,10 @@ def test_info(entity):
     expected_info = {
         "name": "customer",
         "serving_names": ["cust_id"],
-        "update_date": None,
+        "updated_at": None,
     }
     assert info_dict.items() > expected_info.items(), info_dict
-    assert "creation_date" in info_dict, info_dict
+    assert "created_at" in info_dict, info_dict
 
 
 def test_entity_creation(entity):

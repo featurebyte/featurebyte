@@ -51,8 +51,8 @@ class FeatureStoreService(
         feature_store = await self.get_document(document_id=document_id)
         return FeatureStoreInfo(
             name=feature_store.name,
-            creation_date=feature_store.created_at,
-            update_date=feature_store.updated_at,
+            created_at=feature_store.created_at,
+            updated_at=feature_store.updated_at,
             source=feature_store.type,
             database_details=feature_store.details,
         )
