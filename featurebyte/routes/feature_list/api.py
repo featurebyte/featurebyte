@@ -66,6 +66,7 @@ async def list_feature_list(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
+    feature_list_namespace_id: Optional[PydanticObjectId] = None,
 ) -> FeatureListPaginatedList:
     """
     List FeatureLists
@@ -79,6 +80,7 @@ async def list_feature_list(
         sort_dir=sort_dir,
         search=search,
         name=name,
+        feature_list_namespace_id=feature_list_namespace_id,
     )
     return feature_list_paginated_list
 
