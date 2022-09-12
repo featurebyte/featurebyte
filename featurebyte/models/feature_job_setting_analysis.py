@@ -160,7 +160,7 @@ class MissingJobsInfo(BaseMissingJobsInfo):
     affected_jobs_index: npt.NDArray[Any]
     affected_event_index: Optional[pd.Series]
 
-    @validator("late_job_index", "jobs_after_missing_jobs_index", "affected_jobs_index")
+    @validator("late_job_index", "jobs_after_missing_jobs_index", "affected_jobs_index", pre=True)
     @classmethod
     def convert_to_ndarray(cls, value: Any) -> npt.NDArray[Any]:
         """
