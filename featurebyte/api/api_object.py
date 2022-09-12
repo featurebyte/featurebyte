@@ -251,11 +251,16 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         Returns
         -------
         Dict[str, Any]
+
+        Raises
+        ------
+        RecordRetrievalException
+            When the object not found or unexpected response status code
         """
         client = Configurations().get_client()
         response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})
         if response.status_code == HTTPStatus.OK:
-            return response.json()
+            return dict(response.json())
         raise RecordRetrievalException(response, "Failed to retrieve object info.")
 
 
