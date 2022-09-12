@@ -15,7 +15,7 @@ from featurebyte.models.event_data import EventDataModel, EventDataStatus, Featu
 from featurebyte.models.feature_store import ColumnInfo, TableDetails, TabularSource
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
-from featurebyte.schema.common.operation import DictProject, DictTransform
+from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.entity import EntityBriefInfoList
 
 

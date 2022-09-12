@@ -13,7 +13,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.entity import EntityModel
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
-from featurebyte.schema.common.operation import DictProject, DictTransform
+from featurebyte.schema.common.operation import DictProject
 
 
 class EntityCreate(FeatureByteBaseModel):

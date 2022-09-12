@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Any, Callable, ClassVar, Dict, Iterator, List, Optional, Type, TypeVar
 
 import time
-from functools import partial
 from http import HTTPStatus
 
 from bson.objectid import ObjectId

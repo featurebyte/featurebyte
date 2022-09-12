@@ -20,7 +20,7 @@ from featurebyte.models.feature_list import (
     FeatureTypeFeatureCount,
 )
 from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.schema.common.operation import DictProject, DictTransform
+from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.feature import VersionComparison
 from featurebyte.schema.feature_namespace import NamespaceInfo
 

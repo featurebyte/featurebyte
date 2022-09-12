@@ -17,7 +17,7 @@ from featurebyte.models.feature import FeatureModel, FeatureReadiness, FeatureVe
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.schema.common.operation import DictProject, DictTransform
+from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.feature_namespace import FeatureNamespaceInfo
 
 
