@@ -40,7 +40,13 @@ class FeatureNamespace(FeatureNamespaceModel, ApiGetObject):
     _route = "/feature_namespace"
 
 
-class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAccessorMixin):
+class Feature(
+    ProtectedColumnsQueryObject,
+    Series,
+    FeatureModel,
+    ApiObject,
+    CdAccessorMixin,
+):
     """
     Feature class
     """
@@ -219,21 +225,6 @@ class Feature(ProtectedColumnsQueryObject, Series, FeatureModel, ApiObject, CdAc
         FeatureReadiness
         """
         return self.feature_namespace.readiness
-
-    def info(self, verbose: bool = True) -> Dict[str, Any]:
-        """
-        Construct summary info of the API object
-
-        Parameters
-        ----------
-        verbose: bool
-            Control verbose level of the summary
-
-        Returns
-        -------
-        Dict[str, Any]
-        """
-        return self.feature_namespace.info(verbose=verbose)
 
     def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """

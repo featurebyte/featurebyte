@@ -11,8 +11,12 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.service.base_document import BaseDocumentService, Document
-from featurebyte.service.document_info import DocumentInfoService
+from featurebyte.service.base_document import (
+    BaseDocumentService,
+    Document,
+    GetInfoServiceMixin,
+    InfoDocument,
+)
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
 
@@ -196,31 +200,42 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
         ).list_document_field_history(document_id=document_id, field=field)
         return document_data
 
+
+class GetInfoControllerMixin(Generic[InfoDocument]):
+    """
+    GetInfoControllerMixin contains method to retrieve document info
+    """
+
+    # pylint: disable=too-few-public-methods
+
+    document_service_class: Type[GetInfoServiceMixin[InfoDocument]]
+
     @classmethod
     async def get_info(
-        cls, user: Any, persistent: Persistent, document_id: ObjectId, verbose: bool = True
-    ) -> dict[str, Any]:
+        cls,
+        user: Any,
+        persistent: Persistent,
+        document_id: ObjectId,
+        verbose: bool,
+    ) -> InfoDocument:
         """
-        Construct info based on the given document_id
+        Get document info given document ID
 
         Parameters
         ----------
         user: Any
             User class to provide user identifier
         persistent: Persistent
-            Persistent to retrieve audit docs from
+            Persistent that the document will be saved to
         document_id: ObjectId
-            ID of document to retrieve
+            Document ID
         verbose: bool
-            Control verbose level of the info
+            Flag to control verbose level
 
         Returns
         -------
-        dict[str, Any]
+        InfoDocument
         """
-        document_info_service = DocumentInfoService(user=user, persistent=persistent)
-        return await document_info_service.get_info(
-            collection_name=cls.document_service_class.document_class.collection_name(),
-            document_id=document_id,
-            verbose=verbose,
-        )
+        document_service = cls.document_service_class(user=user, persistent=persistent)  # type: ignore
+        info_document = await document_service.get_info(document_id=document_id, verbose=verbose)
+        return cast(InfoDocument, info_document)

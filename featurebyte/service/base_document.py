@@ -20,9 +20,10 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.persistent import AuditActionType, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
-from featurebyte.service.common.operation import DictProject, DictTransform
+from featurebyte.schema.common.base import BaseInfo
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
+InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
 
 
 class BaseDocumentService(Generic[Document]):
@@ -31,15 +32,6 @@ class BaseDocumentService(Generic[Document]):
     """
 
     document_class: Type[Document]
-
-    # variables used to construct document info output
-    base_info_transform_rule = {
-        "name": DictProject(rule="name"),
-        "created_at": DictProject(rule="created_at", verbose_only=True),
-        "updated_at": DictProject(rule="updated_at", verbose_only=True),
-    }
-    info_transform: DictTransform = DictTransform(rule=base_info_transform_rule)
-    foreign_key_map: Dict[str, str] = {}
 
     def __init__(self, user: Any, persistent: Persistent):
         self.user = user
@@ -544,4 +536,29 @@ class BaseDocumentService(Generic[Document]):
         Returns
         -------
         Document
+        """
+
+
+class GetInfoServiceMixin(Generic[InfoDocument]):
+    """
+    GetInfoServiceMixin contains method to retrieve document info
+    """
+
+    # pylint: disable=too-few-public-methods
+
+    @abstractmethod
+    async def get_info(self, document_id: ObjectId, verbose: bool) -> InfoDocument:
+        """
+        Retrieve document related info given document ID
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Flag to control info verbose level
+
+        Returns
+        -------
+        InfoDocument
         """

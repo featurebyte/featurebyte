@@ -60,10 +60,10 @@ def deprecated_feature_fixture(feature_group):
     return feature
 
 
-def test_features_readiness__deprecated(
+def test_feature_list_production_ready_fraction__one_fourth(
     production_ready_feature, draft_feature, quarantine_feature, deprecated_feature
 ):
-    """Test features readiness should evaluate to deprecated"""
+    """Test feature list production ready fraction"""
     feature_list = FeatureList(
         [
             production_ready_feature,
@@ -73,13 +73,13 @@ def test_features_readiness__deprecated(
         ],
         name="feature_list_name",
     )
-    assert feature_list.readiness == FeatureReadiness.DEPRECATED
+    assert feature_list.production_ready_fraction == 0.25
 
 
-def test_features_readiness__quarantine(
+def test_feature_list_production_ready_fraction__one_third(
     production_ready_feature, draft_feature, quarantine_feature
 ):
-    """Test features readiness should evaluate to quarantine"""
+    """Test feature list production ready fraction"""
     assert (
         FeatureList(
             [
@@ -88,13 +88,13 @@ def test_features_readiness__quarantine(
                 quarantine_feature,
             ],
             name="feature_list_name",
-        ).readiness
-        == FeatureReadiness.QUARANTINE
+        ).production_ready_fraction
+        == 1 / 3.0
     )
 
 
-def test_features_readiness__draft(production_ready_feature, draft_feature):
-    """Test features readiness should evaluate to draft"""
+def test_feature_list_production_ready_fraction__one_half(production_ready_feature, draft_feature):
+    """Test feature list production ready fraction"""
     assert (
         FeatureList(
             [
@@ -102,21 +102,21 @@ def test_features_readiness__draft(production_ready_feature, draft_feature):
                 draft_feature,
             ],
             name="feature_list_name",
-        ).readiness
-        == FeatureReadiness.DRAFT
+        ).production_ready_fraction
+        == 0.5
     )
 
 
-def test_features_readiness__production_ready(production_ready_feature):
-    """Test features readiness should evaluate to production ready"""
+def test_feature_list_production_ready_fraction__single_feature(production_ready_feature):
+    """Test feature list production ready fraction"""
     assert (
         FeatureList(
             [
                 production_ready_feature,
             ],
             name="feature_list_name",
-        ).readiness
-        == FeatureReadiness.PRODUCTION_READY
+        ).production_ready_fraction
+        == 1.0
     )
 
 
@@ -136,7 +136,6 @@ def test_feature_list_creation__success(production_ready_feature, config, mocked
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],
         "readiness_distribution": [{"count": 1, "readiness": "PRODUCTION_READY"}],
-        "readiness": "PRODUCTION_READY",
         "version": "V220501",
         "created_at": None,
         "updated_at": None,
@@ -176,7 +175,6 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
             {"count": 2, "readiness": "DRAFT"},
         ],
         "name": "my_feature_list",
-        "readiness": "DRAFT",
     }
     for obj in flist.feature_objects.values():
         assert isinstance(obj, Feature)
@@ -358,7 +356,6 @@ def test_feature_list__construction(production_ready_feature, draft_feature):
     """
     feature_list = FeatureList([production_ready_feature, draft_feature], name="my_feature_list")
     assert feature_list.saved is False
-    assert feature_list.readiness == FeatureReadiness.DRAFT
     assert feature_list.feature_ids == [production_ready_feature.id, draft_feature.id]
     assert feature_list.feature_names == ["production_ready_feature", "draft_feature"]
     assert feature_list.version == "V220720"
@@ -404,7 +401,6 @@ def saved_feature_list_fixture(
     feature_list.save()
     assert feature_list.saved is True
     assert feature_list.id == feature_list_id_before
-    assert feature_list.readiness == FeatureReadiness.DRAFT
     assert feature_list.name == "my_feature_list"
     assert feature_list.status == FeatureListStatus.DRAFT
 
@@ -447,20 +443,38 @@ def test_info(saved_feature_list):
     """
     Test info
     """
-    verbose_info = saved_feature_list.info(verbose=True)
-    non_verbose_info = saved_feature_list.info(verbose=False)
-    expected_info = {"name": "my_feature_list"}
-    expected_feature = {
-        "is_default": None,
-        "name": "sum_1d",
-        "online_enabled": None,
-        "dtype": "FLOAT",
+    info_dict = saved_feature_list.info()
+    expected_info = {
+        "name": "my_feature_list",
+        "updated_at": None,
+        "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
+        "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
+        "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+        "default_version_mode": "AUTO",
+        "status": "DRAFT",
+        "feature_count": 1,
+        "version_count": 1,
+        "production_ready_fraction": {"this": 0.0, "default": 0.0},
     }
-    assert non_verbose_info.items() > expected_info.items()
-    assert verbose_info.items() > expected_info.items()
-    assert verbose_info["features"] == non_verbose_info["features"]
-    assert len(verbose_info["features"]) == 1
-    assert verbose_info["features"][0].items() > expected_feature.items()
+    assert info_dict.items() > expected_info.items(), info_dict
+    assert "created_at" in info_dict, info_dict
+    assert "version" in info_dict, info_dict
+    assert set(info_dict["version"]) == {"this", "default"}, info_dict["version"]
+
+    verbose_info_dict = saved_feature_list.info(verbose=True)
+    assert verbose_info_dict.items() > expected_info.items(), verbose_info_dict
+    assert "created_at" in verbose_info_dict, verbose_info_dict
+    assert "version" in verbose_info_dict, verbose_info_dict
+    assert set(verbose_info_dict["version"]) == {"this", "default"}, verbose_info_dict["version"]
+
+    assert "versions_info" in verbose_info_dict, verbose_info_dict
+    assert len(verbose_info_dict["versions_info"]) == 1, verbose_info_dict
+    assert set(verbose_info_dict["versions_info"][0]) == {
+        "version",
+        "readiness_distribution",
+        "created_at",
+        "production_ready_fraction",
+    }, verbose_info_dict
 
 
 def test_get_feature_list(saved_feature_list):

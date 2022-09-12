@@ -4,7 +4,7 @@ FeatureList API routes
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, cast
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -21,8 +21,13 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
-from featurebyte.schema.feature_list import FeatureListCreate, FeatureListPaginatedList
+from featurebyte.schema.feature_list import (
+    FeatureListCreate,
+    FeatureListInfo,
+    FeatureListPaginatedList,
+)
 
 router = APIRouter(prefix="/feature_list")
 
@@ -61,6 +66,7 @@ async def list_feature_list(
     sort_dir: Optional[str] = SortDirQuery,
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
+    feature_list_namespace_id: Optional[PydanticObjectId] = None,
 ) -> FeatureListPaginatedList:
     """
     List FeatureLists
@@ -74,6 +80,7 @@ async def list_feature_list(
         sort_dir=sort_dir,
         search=search,
         name=name,
+        feature_list_namespace_id=feature_list_namespace_id,
     )
     return feature_list_paginated_list
 
@@ -104,10 +111,12 @@ async def list_feature_list_audit_logs(
     return audit_doc_list
 
 
-@router.get("/{feature_list_id}/info")
+@router.get("/{feature_list_id}/info", response_model=FeatureListInfo)
 async def get_feature_list_info(
-    request: Request, feature_list_id: PydanticObjectId, verbose: bool = True
-) -> dict[str, Any]:
+    request: Request,
+    feature_list_id: PydanticObjectId,
+    verbose: bool = VerboseQuery,
+) -> FeatureListInfo:
     """
     Retrieve FeatureList info
     """
@@ -115,6 +124,6 @@ async def get_feature_list_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_list_id,
-        verbose=bool(verbose),
+        verbose=verbose,
     )
-    return cast(Dict[str, Any], info)
+    return cast(FeatureListInfo, info)

@@ -3,7 +3,7 @@ Entity API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
+from typing import List, Optional, cast
 
 from http import HTTPStatus
 
@@ -20,8 +20,9 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
-from featurebyte.schema.entity import EntityCreate, EntityList, EntityUpdate
+from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityList, EntityUpdate
 
 router = APIRouter(prefix="/entity")
 
@@ -143,10 +144,12 @@ async def list_name_history(
     ]
 
 
-@router.get("/{entity_id}/info")
+@router.get("/{entity_id}/info", response_model=EntityInfo)
 async def get_entity_info(
-    request: Request, entity_id: PydanticObjectId, verbose: bool = True
-) -> dict[str, Any]:
+    request: Request,
+    entity_id: PydanticObjectId,
+    verbose: bool = VerboseQuery,
+) -> EntityInfo:
     """
     Retrieve EventData info
     """
@@ -154,6 +157,6 @@ async def get_entity_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=entity_id,
-        verbose=bool(verbose),
+        verbose=verbose,
     )
-    return cast(Dict[str, Any], info)
+    return cast(EntityInfo, info)

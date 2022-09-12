@@ -85,21 +85,20 @@ def test_info(saved_snowflake_feature_store):
     """
     Test info
     """
-    verbose_info = saved_snowflake_feature_store.info(verbose=True)
-    non_verbose_info = saved_snowflake_feature_store.info(verbose=False)
+    info_dict = saved_snowflake_feature_store.info()
     expected_info = {
         "name": "sf_featurestore",
-        "type": "snowflake",
-        "details": {
+        "updated_at": None,
+        "source": "snowflake",
+        "database_details": {
             "account": "sf_account",
             "database": "sf_database",
             "sf_schema": "sf_schema",
             "warehouse": "sf_warehouse",
         },
     }
-    assert non_verbose_info == expected_info
-    assert verbose_info.items() > expected_info.items()
-    assert set(verbose_info).difference(expected_info) == {"created_at", "updated_at"}
+    assert info_dict.items() > expected_info.items(), info_dict
+    assert "created_at" in info_dict, info_dict
 
 
 @pytest.fixture(name="saved_snowflake_feature_store")

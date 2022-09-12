@@ -1,6 +1,9 @@
 """
 Test for FeatureStore route
 """
+from http import HTTPStatus
+
+import pytest
 from bson.objectid import ObjectId
 
 from tests.unit.routes.base import BaseApiTestSuite
@@ -49,3 +52,28 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 key: f"{value}_{i}" for key, value in self.payload["details"].items()
             }
             yield payload
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
+        """Test retrieve info"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert (
+            response_dict.items()
+            > {
+                "name": "sf_featurestore",
+                "updated_at": None,
+                "source": "snowflake",
+                "database_details": {
+                    "account": "sf_account",
+                    "database": "sf_database",
+                    "sf_schema": "sf_schema",
+                    "warehouse": "sf_warehouse",
+                },
+            }.items()
+        )
+        assert "created_at" in response_dict

@@ -11,6 +11,7 @@ from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel
 from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import BaseInfo
 
 
 class FeatureStoreCreate(FeatureByteBaseModel):
@@ -30,3 +31,12 @@ class FeatureStoreList(PaginationMixin):
     """
 
     data: List[FeatureStoreModel]
+
+
+class FeatureStoreInfo(BaseInfo):
+    """
+    FeatureStore in schema
+    """
+
+    source: SourceType
+    database_details: DatabaseDetails

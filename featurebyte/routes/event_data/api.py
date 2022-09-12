@@ -3,7 +3,7 @@ EventData API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
+from typing import List, Optional, cast
 
 from http import HTTPStatus
 
@@ -20,8 +20,14 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
-from featurebyte.schema.event_data import EventDataCreate, EventDataList, EventDataUpdate
+from featurebyte.schema.event_data import (
+    EventDataCreate,
+    EventDataInfo,
+    EventDataList,
+    EventDataUpdate,
+)
 
 router = APIRouter(prefix="/event_data")
 
@@ -150,10 +156,12 @@ async def list_default_feature_job_setting_history(
     ]
 
 
-@router.get("/{event_data_id}/info")
+@router.get("/{event_data_id}/info", response_model=EventDataInfo)
 async def get_event_data_info(
-    request: Request, event_data_id: PydanticObjectId, verbose: bool = True
-) -> dict[str, Any]:
+    request: Request,
+    event_data_id: PydanticObjectId,
+    verbose: bool = VerboseQuery,
+) -> EventDataInfo:
     """
     Retrieve EventData info
     """
@@ -161,6 +169,6 @@ async def get_event_data_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=event_data_id,
-        verbose=bool(verbose),
+        verbose=verbose,
     )
-    return cast(Dict[str, Any], info)
+    return cast(EventDataInfo, info)

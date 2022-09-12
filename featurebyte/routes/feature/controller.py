@@ -7,13 +7,15 @@ from typing import Any, Literal, Type
 
 from featurebyte.models.feature import FeatureModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.feature import FeatureCreate, FeatureList
+from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
+from featurebyte.schema.feature import FeatureCreate, FeatureInfo, FeatureList
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 
 
-class FeatureController(BaseDocumentController[FeatureModel, FeatureList]):
+class FeatureController(
+    BaseDocumentController[FeatureModel, FeatureList], GetInfoControllerMixin[FeatureInfo]
+):
     """
     Feature controller
     """
@@ -67,6 +69,12 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureList]):
                 user=user, persistent=persistent
             ).get_document(document_id=feature_list_id)
             params["query_filter"] = {"_id": {"$in": feature_list_document.feature_ids}}
+
+        feature_namespace_id = params.pop("feature_namespace_id")
+        if feature_namespace_id:
+            query_filter = params.get("query_filter", {}).copy()
+            query_filter["feature_namespace_id"] = feature_namespace_id
+            params["query_filter"] = query_filter
 
         return await super().list(
             user=user,

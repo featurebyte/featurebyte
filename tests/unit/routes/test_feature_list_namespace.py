@@ -4,7 +4,7 @@ Test for FeatureListNamespace route
 import asyncio
 import time
 from http import HTTPStatus
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 from bson import ObjectId
@@ -32,6 +32,14 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
     def class_name_to_save(self):
         """Class name used to save the object"""
         return "FeatureList"
+
+    @pytest.fixture(autouse=True)
+    def mock_insert_feature_registry_fixture(self):
+        """
+        Mock insert feature registry at the controller level
+        """
+        with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
+            yield mock
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
@@ -73,6 +81,20 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
     def test_create_201__id_is_none(self, test_api_client_persistent):
         """Test creation (success) ID is None"""
 
+    async def setup_get_info(self, api_client):
+        """Setup for get_info route testing"""
+        api_object_filename_pairs = [
+            ("feature_store", "feature_store"),
+            ("entity", "entity"),
+            ("event_data", "event_data"),
+            ("feature", "feature_sum_2h"),
+            ("feature", "feature_sum_30m"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
+
     @pytest.fixture
     def create_multiple_success_responses(
         self, test_api_client_persistent, user_id
@@ -96,3 +118,32 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
             output.append(document)
             time.sleep(0.05)
         return output
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
+        """Test retrieve info"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        await self.setup_get_info(test_api_client)
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
+        expected_info_response = {
+            "name": "sf_feature_list_multiple",
+            "updated_at": None,
+            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
+            "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "default_version_mode": "AUTO",
+            "default_feature_list_id": "6317467bb72b797bd08f7302",
+            "dtype_distribution": [{"count": 2, "dtype": "FLOAT"}],
+            "version_count": 1,
+            "feature_count": 2,
+        }
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert response_dict.items() > expected_info_response.items(), response_dict
+        assert "created_at" in response_dict
+
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
+        assert verbose_response.status_code == HTTPStatus.OK, verbose_response.text

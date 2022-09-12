@@ -373,44 +373,6 @@ class BaseApiTestSuite:
         assert response.status_code == HTTPStatus.NOT_IMPLEMENTED
         assert response.json()["detail"] == "Query not supported."
 
-    async def setup_get_info(self, api_client, persistent, user_id):
-        """Setup for get_info route testing"""
-
-    @pytest.mark.asyncio
-    async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):
-        """Test retrieve info"""
-        test_api_client, persistent = test_api_client_persistent
-        create_response_dict = create_success_response.json()
-        await self.setup_get_info(test_api_client, persistent, user_id)
-        doc_id = create_response_dict["_id"]
-        verbose_response = test_api_client.get(
-            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
-        )
-        verbose_response_dict = verbose_response.json()
-        assert verbose_response.status_code == HTTPStatus.OK
-        assert {"name", "created_at", "updated_at"}.issubset(verbose_response_dict)
-
-        non_verbose_response = test_api_client.get(
-            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
-        )
-        non_verbose_response_dict = non_verbose_response.json()
-        assert non_verbose_response.status_code == HTTPStatus.OK
-        assert {"name"}.issubset(non_verbose_response_dict)
-        assert {"created_at", "updated_at"}.intersection(non_verbose_response_dict) == set()
-
-    def test_get_info_422(self, test_api_client_persistent):
-        """Test get info (unprocessable) - invalid id value"""
-        test_api_client, _ = test_api_client_persistent
-        response = test_api_client.get(f"{self.base_route}/abc/info")
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == [
-            {
-                "loc": ["path", self.id_field_name],
-                "msg": "Id must be of type PydanticObjectId",
-                "type": "type_error",
-            }
-        ]
-
 
 class BaseAsyncApiTestSuite(BaseApiTestSuite):
     """
