@@ -10,8 +10,12 @@ from bson.objectid import ObjectId
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
-from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
+from featurebyte.schema.feature_job_setting_analysis import (
+    FeatureJobSettingAnalysisBacktest,
+    FeatureJobSettingAnalysisCreate,
+)
 from featurebyte.schema.worker.task.feature_job_setting_analysis import (
+    FeatureJobSettingAnalysisBackTestTaskPayload,
     FeatureJobSettingAnalysisTaskPayload,
 )
 from featurebyte.service.base_document import BaseDocumentService
@@ -71,3 +75,35 @@ class FeatureJobSettingAnalysisService(BaseDocumentService[FeatureJobSettingAnal
     ) -> FeatureJobSettingAnalysisModel:
         # TODO: implement proper logic to update feature job analysis document
         return await self.get_document(document_id=document_id)
+
+    async def create_backtest_task(
+        self, data: FeatureJobSettingAnalysisBacktest, task_manager: AbstractTaskManager
+    ) -> TaskId:
+        """
+        Create document creation task
+
+        Parameters
+        ----------
+        data: FeatureJobSettingAnalysisBacktest
+            FeatureJobSettingAnalysis backtest payload
+        task_manager: AbstractTaskManager
+            TaskManager
+
+        Returns
+        -------
+        TaskId
+        """
+        # check any conflict with existing documents
+        output_document_id = data.id or ObjectId()
+
+        # check that analysis exists
+        _ = await self.get_document(
+            document_id=data.feature_job_setting_analysis_id,
+        )
+
+        payload = FeatureJobSettingAnalysisBackTestTaskPayload(
+            **data.dict(), user_id=self.user.id, output_document_id=output_document_id
+        )
+
+        # submit a task to run analysis
+        return await task_manager.submit(payload=payload)

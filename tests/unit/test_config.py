@@ -1,6 +1,7 @@
 """
 Test config parser
 """
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -11,6 +12,7 @@ from featurebyte.config import (
     Configurations,
     FeatureByteSettings,
     GitSettings,
+    LocalStorageSettings,
     LoggingSettings,
 )
 from featurebyte.exception import InvalidSettingsError
@@ -45,6 +47,9 @@ def test_configurations():
         key_path="~/.ssh/id_rsa",
         branch="test",
     )
+
+    # storage settings
+    assert config.storage == LocalStorageSettings(local_path="~/.featurebyte_custom/data")
 
     # other settings
     assert config.settings == {}
@@ -121,3 +126,11 @@ def test_logging_level_change():
     # expect logging to adopt logging level specified in the config
     config.get_client()
     assert logger._core.min_level == 20
+
+
+def test_default_local_storage():
+    """
+    Test default local storage location if not specified
+    """
+    config = Configurations("tests/fixtures/config_no_persistent.yaml")
+    assert config.storage.local_path == Path("~/.featurebyte/data").expanduser()

@@ -22,6 +22,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
 )
 from featurebyte.schema.feature_job_setting_analysis import (
+    FeatureJobSettingAnalysisBacktest,
     FeatureJobSettingAnalysisCreate,
     FeatureJobSettingAnalysisList,
 )
@@ -129,3 +130,24 @@ async def get_feature_job_setting_analysis_info(
         verbose=bool(verbose),
     )
     return cast(Dict[str, Any], info)
+
+
+@router.post(
+    "/{feature_job_setting_analysis_id}/backtest",
+    response_model=Task,
+    status_code=HTTPStatus.ACCEPTED,
+)
+async def run_backtest(
+    request: Request,
+    data: FeatureJobSettingAnalysisBacktest,
+) -> Task:
+    """
+    Run Backtest on Feature Job Setting Analysis
+    """
+    task_submit: Task = await request.state.controller.backtest(
+        user=request.state.user,
+        persistent=request.state.persistent,
+        task_manager=request.state.task_manager,
+        data=data,
+    )
+    return task_submit

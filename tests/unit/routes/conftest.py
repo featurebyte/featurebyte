@@ -83,7 +83,7 @@ def user_id():
 
 
 @pytest.fixture(autouse=True, scope="function")
-def mock_process_store(request, persistent):
+def mock_process_store(request, persistent, storage, temp_storage):
     """
     Mock process store to avoid running task in subprocess for testing
     """
@@ -103,6 +103,8 @@ def mock_process_store(request, persistent):
                 progress=Mock(),
                 get_credential=get_credential,
                 get_persistent=lambda: persistent,
+                get_storage=lambda: storage,
+                get_temp_storage=lambda: temp_storage,
             )
             await task.execute()
             task_id = ObjectId()
@@ -132,16 +134,18 @@ def mock_process_store(request, persistent):
 
 
 @pytest.fixture()
-def test_api_client_persistent(persistent, user_id):
+def test_api_client_persistent(persistent, user_id, temp_storage):
     """
     Test API client
     """
     with patch("featurebyte.app.get_persistent") as mock_get_persistent:
-        with patch("featurebyte.app.User") as mock_user:
-            mock_user.return_value.id = user_id
-            mock_get_persistent.return_value = persistent
-            with TestClient(app) as client:
-                yield client, persistent
+        with patch("featurebyte.app.get_temp_storage") as mock_get_temp_storage:
+            with patch("featurebyte.app.User") as mock_user:
+                mock_user.return_value.id = user_id
+                mock_get_persistent.return_value = persistent
+                mock_get_temp_storage.return_value = temp_storage
+                with TestClient(app) as client:
+                    yield client, persistent
 
 
 @pytest.fixture(name="get_credential")

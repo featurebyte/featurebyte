@@ -1,0 +1,11 @@
+{
+    "id": "63049af4ecc3fad6f2b139d4",
+    "feature_job_setting_analysis_id": "62f301e841b73757c9ff879a",
+    "frequency": 180,
+    "job_time_modulo_frequency": 61,
+    "blind_spot": 10,
+    "user_id": "6301d232b9a5c3e5bfc45a0b",
+    "output_document_id": "62f301e841b9a757c9ff871b",
+    "command": "FEATURE_JOB_SETTING_ANALYSIS_BACKTEST",
+    "output_collection_name": "temp_data"
+}
