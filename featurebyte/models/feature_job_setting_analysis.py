@@ -4,7 +4,7 @@ This module contains FeatureJobSettingAnalysis related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import json
 
@@ -90,7 +90,7 @@ class DataFrameResultsMixin(BaseModel):
     Handle conversion of json to DataFrame in results field
     """
 
-    results: Union[pd.DataFrame, Any]
+    results: pd.DataFrame
 
     class Config:
         """
@@ -99,7 +99,7 @@ class DataFrameResultsMixin(BaseModel):
 
         arbitrary_types_allowed: bool = True
 
-    @validator("results")
+    @validator("results", pre=True)
     @classmethod
     def convert_to_dataframe(cls, value: Any) -> pd.DataFrame:
         """
@@ -154,11 +154,11 @@ class MissingJobsInfo(BaseMissingJobsInfo):
     MissingJobsInfo with support for json deserialization
     """
 
-    late_job_index: Optional[Union[npt.NDArray[Any], str]]
-    late_event_index: Optional[Union[pd.Series, str]]
-    jobs_after_missing_jobs_index: Union[npt.NDArray[Any], str]
-    affected_jobs_index: Union[npt.NDArray[Any], str]
-    affected_event_index: Optional[Union[pd.Series, str]]
+    late_job_index: Optional[npt.NDArray[Any]]
+    late_event_index: Optional[pd.Series]
+    jobs_after_missing_jobs_index: npt.NDArray[Any]
+    affected_jobs_index: npt.NDArray[Any]
+    affected_event_index: Optional[pd.Series]
 
     @validator("late_job_index", "jobs_after_missing_jobs_index", "affected_jobs_index")
     @classmethod
@@ -181,7 +181,7 @@ class MissingJobsInfo(BaseMissingJobsInfo):
         assert isinstance(value, np.ndarray)
         return value
 
-    @validator("late_event_index", "affected_event_index")
+    @validator("late_event_index", "affected_event_index", pre=True)
     @classmethod
     def convert_to_series(cls, value: Any) -> pd.Series:
         """
@@ -207,11 +207,11 @@ class AnalysisData(BaseAnalysisData):
     Analysis Data with support for json serialization
     """
 
-    count_data: Union[pd.DataFrame, str]
-    count_per_creation_date: Union[pd.DataFrame, str]
+    count_data: pd.DataFrame
+    count_per_creation_date: pd.DataFrame
     missing_jobs_info: MissingJobsInfo
 
-    @validator("count_data", "count_per_creation_date")
+    @validator("count_data", "count_per_creation_date", pre=True)
     @classmethod
     def convert_to_dataframe(cls, value: Any) -> pd.DataFrame:
         """
