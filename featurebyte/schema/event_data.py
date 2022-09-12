@@ -60,12 +60,12 @@ class EventDataBriefInfo(BaseBriefInfo):
     status: EventDataStatus
 
 
-class EventDataBriefInfoList(PaginationMixin):
+class EventDataBriefInfoList(FeatureByteBaseModel):
     """
     Paginated list of event data brief info
     """
 
-    data: List[EventDataBriefInfo]
+    __root__: List[EventDataBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EventDataBriefInfoList:
@@ -81,13 +81,8 @@ class EventDataBriefInfoList(PaginationMixin):
         -------
         EventDataBriefInfoList
         """
-        event_data_transform = DictTransform(
-            rule={
-                "__root__": DictProject(rule=["page", "page_size", "total"]),
-                "data": DictProject(rule=("data", ["name", "status"])),
-            }
-        )
-        return EventDataBriefInfoList(**event_data_transform.transform(paginated_data))
+        event_data_project = DictProject(rule=("data", ["name", "status"]))
+        return EventDataBriefInfoList(__root__=event_data_project.project(paginated_data))
 
 
 class EventDataColumnInfo(FeatureByteBaseModel):

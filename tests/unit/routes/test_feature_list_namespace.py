@@ -130,18 +130,8 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
         expected_info_response = {
             "name": "sf_feature_list_multiple",
             "updated_at": None,
-            "entities": {
-                "data": [{"name": "customer", "serving_names": ["cust_id"]}],
-                "page": 1,
-                "page_size": 10,
-                "total": 1,
-            },
-            "event_data": {
-                "data": [{"name": "sf_event_data", "status": "DRAFT"}],
-                "page": 1,
-                "page_size": 10,
-                "total": 1,
-            },
+            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
+            "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
             "default_version_mode": "AUTO",
             "default_feature_list_id": "6317467bb72b797bd08f7302",
             "dtype_distribution": [{"count": 2, "dtype": "FLOAT"}],

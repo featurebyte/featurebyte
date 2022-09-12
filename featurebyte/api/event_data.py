@@ -244,32 +244,3 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         list[dict[str, Any]]
         """
         return self._get_audit_history(field_name="default_feature_job_setting")
-
-    @classmethod
-    def _get_info_to_request_func(
-        cls, response_dict: dict[str, Any], page: int, verbose: bool
-    ) -> bool:
-        return cls._default_to_request_func(response_dict["entities"], page)
-
-    @classmethod
-    def _get_info_reduce_func(
-        cls, accumulator: dict[str, Any], response_dict: dict[str, Any], verbose: bool
-    ) -> dict[str, Any]:
-        if accumulator:
-            accumulator["entities"] = cls._pagination_response_reduce_func(
-                accumulator["entities"],
-                response_dict,
-            )
-        else:
-            accumulator = response_dict.copy()
-            accumulator["entities"] = response_dict["entities"]["data"]
-
-        if verbose:
-            columns_info = []
-            zipper = zip(accumulator["columns_info"], response_dict["columns_info"])
-            for acc_col_info, res_col_info in zipper:
-                col_info = acc_col_info.copy()
-                col_info["entity"] = acc_col_info["entity"] or res_col_info["entity"]
-                columns_info.append(col_info)
-            accumulator["columns_info"] = columns_info
-        return accumulator

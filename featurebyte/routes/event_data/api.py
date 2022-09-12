@@ -160,8 +160,6 @@ async def list_default_feature_job_setting_history(
 async def get_event_data_info(
     request: Request,
     event_data_id: PydanticObjectId,
-    page: int = PageQuery,
-    page_size: int = PageSizeQuery,
     verbose: bool = VerboseQuery,
 ) -> EventDataInfo:
     """
@@ -171,8 +169,6 @@ async def get_event_data_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=event_data_id,
-        page=page,
-        page_size=page_size,
         verbose=verbose,
     )
     return cast(EventDataInfo, info)

@@ -113,8 +113,6 @@ async def list_feature_list_audit_logs(
 async def get_feature_list_info(
     request: Request,
     feature_list_id: PydanticObjectId,
-    page: int = PageQuery,
-    page_size: int = PageSizeQuery,
     verbose: bool = VerboseQuery,
 ) -> FeatureListInfo:
     """
@@ -124,8 +122,6 @@ async def get_feature_list_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_list_id,
-        page=page,
-        page_size=page_size,
         verbose=verbose,
     )
     return cast(FeatureListInfo, info)

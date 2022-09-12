@@ -56,10 +56,8 @@ class EntityService(BaseDocumentService[EntityModel], GetInfoServiceMixin[Entity
         )
         return await self.get_document(document_id=document_id)
 
-    async def get_info(
-        self, document_id: ObjectId, page: int, page_size: int, verbose: bool
-    ) -> EntityInfo:
-        _ = page, page_size, verbose
+    async def get_info(self, document_id: ObjectId, verbose: bool) -> EntityInfo:
+        _ = verbose
         entity = await self.get_document(document_id=document_id)
         return EntityInfo(
             name=entity.name,

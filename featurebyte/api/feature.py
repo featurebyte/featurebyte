@@ -31,47 +31,7 @@ from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 from featurebyte.schema.feature import FeatureCreate
 
 
-class FeatureGetObject(ApiGetObject):
-    """
-    FeatureGetObject class
-    """
-
-    @classmethod
-    def _get_info_to_request_func(
-        cls, response_dict: dict[str, Any], page: int, verbose: bool
-    ) -> bool:
-        decisions = [
-            cls._default_to_request_func(response_dict["entities"], page),
-            cls._default_to_request_func(response_dict["event_data"], page),
-        ]
-        if verbose:
-            decisions.append(cls._default_to_request_func(response_dict["versions_info"], page))
-        return any(decisions)
-
-    @classmethod
-    def _get_info_reduce_func(
-        cls, accumulator: dict[str, Any], response_dict: dict[str, Any], verbose: bool
-    ) -> dict[str, Any]:
-        if accumulator:
-            accumulator["entities"] = cls._pagination_response_reduce_func(
-                accumulator["entities"], response_dict
-            )
-            accumulator["event_data"] = cls._pagination_response_reduce_func(
-                accumulator["event_data"], response_dict
-            )
-        else:
-            accumulator = response_dict.copy()
-            accumulator["entities"] = response_dict["entities"]["data"]
-            accumulator["event_data"] = response_dict["event_data"]["data"]
-            if not verbose:
-                accumulator.pop("versions_info")
-
-        if verbose:
-            accumulator["versions_info"] = response_dict["versions_info"]["data"]
-        return accumulator
-
-
-class FeatureNamespace(FeatureNamespaceModel, FeatureGetObject):
+class FeatureNamespace(FeatureNamespaceModel, ApiGetObject):
     """
     FeatureNamespace class
     """
@@ -84,7 +44,6 @@ class Feature(
     ProtectedColumnsQueryObject,
     Series,
     FeatureModel,
-    FeatureGetObject,
     ApiObject,
     CdAccessorMixin,
 ):

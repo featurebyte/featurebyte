@@ -104,8 +104,6 @@ async def list_feature_list_namespace_audit_logs(
 async def get_feature_list_namespace_info(
     request: Request,
     feature_list_namespace_id: PydanticObjectId,
-    page: int = PageQuery,
-    page_size: int = PageSizeQuery,
     verbose: bool = VerboseQuery,
 ) -> FeatureListNamespaceInfo:
     """
@@ -115,8 +113,6 @@ async def get_feature_list_namespace_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_list_namespace_id,
-        page=page,
-        page_size=page_size,
         verbose=verbose,
     )
     return cast(FeatureListNamespaceInfo, info)

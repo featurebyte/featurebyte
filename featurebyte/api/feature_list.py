@@ -13,8 +13,8 @@ from alive_progress import alive_bar
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
-from featurebyte.api.feature import Feature, FeatureGetObject
+from featurebyte.api.api_object import ApiGetObject, ApiObject
+from featurebyte.api.feature import Feature
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
@@ -194,7 +194,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         raise ValueError("There is no feature in the FeatureGroup object.")
 
 
-class FeatureListNamespace(FeatureListNamespaceModel, FeatureGetObject):
+class FeatureListNamespace(FeatureListNamespaceModel, ApiGetObject):
     """
     FeatureListNamespace class
     """
@@ -203,7 +203,7 @@ class FeatureListNamespace(FeatureListNamespaceModel, FeatureGetObject):
     _route = "/feature_list_namespace"
 
 
-class FeatureList(BaseFeatureGroup, FeatureListModel, FeatureGetObject, ApiObject):
+class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     """
     FeatureList class
 

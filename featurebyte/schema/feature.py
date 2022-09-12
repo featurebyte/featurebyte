@@ -75,12 +75,12 @@ class FeatureBriefInfo(FeatureByteBaseModel):
     created_at: datetime
 
 
-class FeatureBriefInfoList(PaginationMixin):
+class FeatureBriefInfoList(FeatureByteBaseModel):
     """
     Paginated list of feature brief info
     """
 
-    data: List[FeatureBriefInfo]
+    __root__: List[FeatureBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> FeatureBriefInfoList:
@@ -96,13 +96,8 @@ class FeatureBriefInfoList(PaginationMixin):
         -------
         FeatureBriefInfoList
         """
-        feature_transform = DictTransform(
-            rule={
-                "__root__": DictProject(rule=["page", "page_size", "total"]),
-                "data": DictProject(rule=("data", ["version", "readiness", "created_at"])),
-            }
-        )
-        return FeatureBriefInfoList(**feature_transform.transform(paginated_data))
+        feature_project = DictProject(rule=("data", ["version", "readiness", "created_at"]))
+        return FeatureBriefInfoList(__root__=feature_project.project(paginated_data))
 
 
 class FeatureInfo(FeatureNamespaceInfo):

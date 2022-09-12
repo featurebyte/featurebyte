@@ -273,18 +273,8 @@ class TestFeatureListApi(BaseApiTestSuite):
         expected_info_response = {
             "name": "sf_feature_list",
             "updated_at": None,
-            "entities": {
-                "data": [{"name": "customer", "serving_names": ["cust_id"]}],
-                "page": 1,
-                "page_size": 10,
-                "total": 1,
-            },
-            "event_data": {
-                "data": [{"name": "sf_event_data", "status": "DRAFT"}],
-                "page": 1,
-                "page_size": 10,
-                "total": 1,
-            },
+            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
+            "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
             "default_version_mode": "AUTO",
             "dtype_distribution": [{"count": 1, "dtype": "FLOAT"}],
             "version_count": 1,

@@ -251,18 +251,8 @@ class TestFeatureApi(BaseApiTestSuite):
         expected_info_response = {
             "name": "sum_30m",
             "updated_at": None,
-            "entities": {
-                "data": [{"name": "customer", "serving_names": ["cust_id"]}],
-                "page": 1,
-                "page_size": 10,
-                "total": 1,
-            },
-            "event_data": {
-                "data": [{"name": "sf_event_data", "status": "DRAFT"}],
-                "page": 1,
-                "page_size": 10,
-                "total": 1,
-            },
+            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
+            "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
             "dtype": "FLOAT",
             "default_version_mode": "AUTO",
             "version_count": 1,

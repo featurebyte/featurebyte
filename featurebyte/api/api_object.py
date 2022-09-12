@@ -239,31 +239,6 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             return history
         raise RecordRetrievalException(response)
 
-    @staticmethod
-    def _pagination_response_reduce_func(
-        accumulator: List[Any], response_dict: dict[str, Any]
-    ) -> List[Any]:
-        # method used to combine multiple pagination responses
-        accumulator.extend(response_dict["data"])
-        return accumulator
-
-    @classmethod
-    def _get_info_to_request_func(
-        cls, response_dict: dict[str, Any], page: int, verbose: bool
-    ) -> bool:
-        # method used to check whether to continue listing info route
-        _ = response_dict, page, verbose
-        return False
-
-    @classmethod
-    def _get_info_reduce_func(
-        cls, accumulator: dict[str, Any], response_dict: dict[str, Any], verbose: bool
-    ) -> dict[str, Any]:
-        # reduce method used to reduce list of listing info route responses into single output
-        _ = verbose
-        accumulator.update(response_dict)
-        return accumulator
-
     @typechecked
     def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
@@ -278,15 +253,11 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         -------
         Dict[str, Any]
         """
-        response_generator = self._iterate_paginated_routes(
-            route=f"{self._route}/{self.id}/info",
-            params={"verbose": verbose},
-            to_request_func=partial(self._get_info_to_request_func, verbose=verbose),
-        )
-        output: dict[str, Any] = {}
-        for response_dict in response_generator:
-            output = self._get_info_reduce_func(output, response_dict, verbose)
-        return output
+        client = Configurations().get_client()
+        response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})
+        if response.status_code == HTTPStatus.OK:
+            return response.json()
+        raise RecordRetrievalException(response, "Failed to retrieve object info.")
 
 
 class ApiObject(ApiGetObject):

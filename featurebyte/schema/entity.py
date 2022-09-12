@@ -50,12 +50,12 @@ class EntityBriefInfo(BaseBriefInfo):
     serving_names: List[str]
 
 
-class EntityBriefInfoList(PaginationMixin):
+class EntityBriefInfoList(FeatureByteBaseModel):
     """
     Paginated list of entity brief info
     """
 
-    data: List[EntityBriefInfo]
+    __root__: List[EntityBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EntityBriefInfoList:
@@ -71,13 +71,8 @@ class EntityBriefInfoList(PaginationMixin):
         -------
         EntityBriefInfoList
         """
-        entity_transform = DictTransform(
-            rule={
-                "__root__": DictProject(rule=["page", "page_size", "total"]),
-                "data": DictProject(rule=("data", ["name", "serving_names"])),
-            }
-        )
-        return EntityBriefInfoList(**entity_transform.transform(paginated_data))
+        entity_project = DictProject(rule=("data", ["name", "serving_names"]))
+        return EntityBriefInfoList(__root__=entity_project.project(paginated_data))
 
 
 class EntityInfo(EntityBriefInfo, BaseInfo):

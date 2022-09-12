@@ -216,8 +216,6 @@ class GetInfoControllerMixin(Generic[InfoDocument]):
         user: Any,
         persistent: Persistent,
         document_id: ObjectId,
-        page: int,
-        page_size: int,
         verbose: bool,
     ) -> InfoDocument:
         """
@@ -231,10 +229,6 @@ class GetInfoControllerMixin(Generic[InfoDocument]):
             Persistent that the document will be saved to
         document_id: ObjectId
             Document ID
-        page: int
-            Page number
-        page_size: int
-            Number of items per page
         verbose: bool
             Flag to control verbose level
 
@@ -243,10 +237,5 @@ class GetInfoControllerMixin(Generic[InfoDocument]):
         InfoDocument
         """
         document_service = cls.document_service_class(user=user, persistent=persistent)  # type: ignore
-        info_document = await document_service.get_info(
-            document_id=document_id,
-            page=page,
-            page_size=page_size,
-            verbose=verbose,
-        )
+        info_document = await document_service.get_info(document_id=document_id, verbose=verbose)
         return cast(InfoDocument, info_document)

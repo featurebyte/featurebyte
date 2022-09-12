@@ -266,7 +266,7 @@ def test_info(saved_feature):
     assert "created_at" in info_dict, info_dict
     assert "version" in info_dict, info_dict
     assert set(info_dict["version"]) == {"this", "default"}, info_dict["version"]
-    assert "versions_info" not in info_dict, info_dict
+    assert info_dict["versions_info"] is None, info_dict["versions_info"]
 
     verbose_info_dict = saved_feature.info(verbose=True)
     assert verbose_info_dict.items() > expected_info.items(), verbose_info_dict
