@@ -4,7 +4,8 @@ from importlib import metadata as importlib_metadata
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
-from featurebyte.api.feature_list import Feature, FeatureGroup, FeatureList
+from featurebyte.api.feature import Feature
+from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc, SourceType
