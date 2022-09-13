@@ -151,6 +151,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
+    feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
 
     @validator("entity_ids", "event_data_ids")
     @classmethod

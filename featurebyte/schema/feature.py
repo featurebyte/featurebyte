@@ -13,7 +13,12 @@ from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import FeatureModel, FeatureReadiness, FeatureVersionIdentifier
+from featurebyte.models.feature import (
+    DefaultVersionMode,
+    FeatureModel,
+    FeatureReadiness,
+    FeatureVersionIdentifier,
+)
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.routes.common.schema import PaginationMixin
@@ -45,6 +50,15 @@ class FeatureList(PaginationMixin):
     """
 
     data: List[FeatureModel]
+
+
+class FeatureUpdate(FeatureByteBaseModel):
+    """
+    Feature update schema
+    """
+
+    readiness: Optional[FeatureReadiness]
+    default_version_mode: Optional[DefaultVersionMode]
 
 
 class ReadinessComparison(FeatureByteBaseModel):

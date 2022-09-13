@@ -18,11 +18,15 @@ from featurebyte.exception import (
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.schema.feature import FeatureBriefInfoList, FeatureCreate, FeatureInfo
+from featurebyte.schema.feature import (
+    FeatureBriefInfoList,
+    FeatureCreate,
+    FeatureInfo,
+    FeatureUpdate,
+)
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate, FeatureNamespaceUpdate
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.feature_namespace import FeatureNamespaceService
@@ -155,12 +159,34 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
             await self._insert_feature_registry(extended_feature, get_credential)
         return await self.get_document(document_id=insert_id)
 
-    async def update_document(
-        self, document_id: ObjectId, data: FeatureByteBaseModel
+    async def update_document(  # type: ignore[override]
+        self, document_id: ObjectId, data: FeatureUpdate
     ) -> FeatureModel:
-        # TODO: implement proper logic to update feature document
-        # when update the feature readiness, needs to update feature list's feature readiness distribution
-        # and feature list namespace's feature readiness distribution
+        document = await self.get_document(document_id=document_id)
+
+        update_payload = {}
+        if data.readiness:
+            update_payload["readiness"] = data.readiness.value
+
+        async with self.persistent.start_transaction() as session:
+            if update_payload:
+                await session.update_one(
+                    collection_name=self.collection_name,
+                    query_filter=self._construct_get_query_filter(document_id=document_id),
+                    update={"$set": update_payload},
+                    user_id=self.user.id,
+                )
+
+            feature_namespace_service = FeatureNamespaceService(
+                user=self.user, persistent=self.persistent
+            )
+            await feature_namespace_service.update_document(
+                document_id=document.feature_namespace_id,
+                data=FeatureNamespaceUpdate(
+                    feature_id=document_id,
+                    default_version_mode=data.default_version_mode,
+                ),
+            )
         return await self.get_document(document_id=document_id)
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureInfo:

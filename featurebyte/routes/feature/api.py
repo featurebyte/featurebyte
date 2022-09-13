@@ -22,7 +22,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.feature import FeatureCreate, FeatureInfo, FeatureList
+from featurebyte.schema.feature import FeatureCreate, FeatureInfo, FeatureList, FeatureUpdate
 
 router = APIRouter(prefix="/feature")
 
@@ -48,6 +48,22 @@ async def get_feature(request: Request, feature_id: PydanticObjectId) -> Feature
     """
     feature: FeatureModel = await request.state.controller.get(
         user=request.state.user, persistent=request.state.persistent, document_id=feature_id
+    )
+    return feature
+
+
+@router.patch("/{feature_id}", response_model=FeatureModel)
+async def update_feature(
+    request: Request, feature_id: PydanticObjectId, data: FeatureUpdate
+) -> FeatureModel:
+    """
+    Update Feature
+    """
+    feature: FeatureModel = await request.state.controller.update_feature(
+        user=request.state.user,
+        persistent=request.state.persistent,
+        entity_id=feature_id,
+        data=data,
     )
     return feature
 

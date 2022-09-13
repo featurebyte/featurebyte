@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureSignature
+from featurebyte.models.feature import DefaultVersionMode, FeatureSignature
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.schema.feature_list import (
     FeatureListBriefInfoList,
@@ -18,6 +18,7 @@ from featurebyte.schema.feature_list import (
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 
 
@@ -35,13 +36,10 @@ class FeatureListService(
         feature_signatures: List[FeatureSignature] = []
         feature_namespace_ids = set()
         features = []
+        feature_service = FeatureService(user=self.user, persistent=self.persistent)
         for feature_id in document.feature_ids:
             # retrieve feature from the persistent
-            feature_dict = await self._get_document(
-                document_id=feature_id,
-                collection_name=FeatureModel.collection_name(),
-            )
-            feature = FeatureModel(**feature_dict)
+            feature = await feature_service.get_document(document_id=feature_id)
 
             # compute data required to create feature list record
             features.append(feature)

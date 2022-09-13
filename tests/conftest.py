@@ -121,6 +121,7 @@ def feature_model_dict_feature():
         "online_enabled": None,
         "event_data_ids": [ObjectId()],
         "entity_ids": [ObjectId()],
+        "feature_list_ids": [],
         "created_at": None,
         "updated_at": None,
         "user_id": None,
