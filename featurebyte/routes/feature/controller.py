@@ -10,19 +10,24 @@ from bson.objectid import ObjectId
 from featurebyte.models.feature import FeatureModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
-from featurebyte.schema.feature import FeatureCreate, FeatureInfo, FeatureList, FeatureUpdate
+from featurebyte.schema.feature import (
+    FeatureCreate,
+    FeatureInfo,
+    FeaturePaginatedList,
+    FeatureUpdate,
+)
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 
 
 class FeatureController(
-    BaseDocumentController[FeatureModel, FeatureList], GetInfoControllerMixin[FeatureInfo]
+    BaseDocumentController[FeatureModel, FeaturePaginatedList], GetInfoControllerMixin[FeatureInfo]
 ):
     """
     Feature controller
     """
 
-    paginated_document_class = FeatureList
+    paginated_document_class = FeaturePaginatedList
     document_service_class: Type[FeatureService] = FeatureService  # type: ignore[assignment]
 
     @classmethod
@@ -95,7 +100,7 @@ class FeatureController(
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,
-    ) -> FeatureList:
+    ) -> FeaturePaginatedList:
         params = kwargs.copy()
         feature_list_id = params.pop("feature_list_id")
         if feature_list_id:

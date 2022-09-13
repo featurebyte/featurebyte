@@ -22,7 +22,12 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.feature import FeatureCreate, FeatureInfo, FeatureList, FeatureUpdate
+from featurebyte.schema.feature import (
+    FeatureCreate,
+    FeatureInfo,
+    FeaturePaginatedList,
+    FeatureUpdate,
+)
 
 router = APIRouter(prefix="/feature")
 
@@ -68,7 +73,7 @@ async def update_feature(
     return feature
 
 
-@router.get("", response_model=FeatureList)
+@router.get("", response_model=FeaturePaginatedList)
 async def list_features(
     request: Request,
     page: int = PageQuery,
@@ -79,11 +84,11 @@ async def list_features(
     name: Optional[str] = NameQuery,
     feature_list_id: Optional[PydanticObjectId] = None,
     feature_namespace_id: Optional[PydanticObjectId] = None,
-) -> FeatureList:
+) -> FeaturePaginatedList:
     """
     List Features
     """
-    feature_list: FeatureList = await request.state.controller.list(
+    feature_list: FeaturePaginatedList = await request.state.controller.list(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,
