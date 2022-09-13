@@ -6,10 +6,7 @@ from decimal import Decimal
 import numpy as np
 import pandas as pd
 
-from featurebyte.api.event_data import EventData
-from featurebyte.api.event_view import EventView
-from featurebyte.api.feature_list import FeatureList
-from featurebyte.core.timedelta import to_timedelta
+from featurebyte import EventData, EventView, FeatureList, to_timedelta
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureReadiness
 from tests.util.helper import get_lagged_series_pandas
