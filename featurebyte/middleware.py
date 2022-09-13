@@ -3,12 +3,19 @@ Handles API requests middleware
 """
 from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
 
+import inspect
 from http import HTTPStatus
 
 from fastapi import Request, Response
 from starlette.responses import JSONResponse
 
-from featurebyte.exception import DocumentConflictError, DocumentError, DocumentNotFoundError
+from featurebyte.exception import (
+    DocumentConflictError,
+    DocumentError,
+    DocumentInconsistencyError,
+    DocumentNotFoundError,
+    DocumentUpdateError,
+)
 
 
 class ExecutionContext:
@@ -22,8 +29,8 @@ class ExecutionContext:
     def register(
         cls,
         except_class: Any,
-        handle_status_code: Union[int, Callable[[Request], int]],
-        handle_message: Optional[Union[str, Callable[[Request], str]]] = None,
+        handle_status_code: Union[int, Callable[[Request, Exception], int]],
+        handle_message: Optional[Union[str, Callable[[Request, Exception], str]]] = None,
     ) -> None:
         """
         Register handlers for exception
@@ -36,7 +43,18 @@ class ExecutionContext:
             http status code or a lambda function for customize status code
         handle_message: Union[str, Callable[[Request], str]]
             exception message or a lambda function for customize exception message
+
+        Raises
+        ----------
+        ValueError
+            when except_class is not a subclass of Exception
         """
+        if not issubclass(except_class, Exception):
+            raise ValueError(f"registered key Type {except_class} must be a subtype of Exception")
+
+        if except_class in inspect.getmro(except_class)[1:-3]:
+            raise ValueError(f"{except_class} must be registered before its super class")
+
         cls.exception_handlers[except_class] = (handle_status_code, handle_message)
 
     @classmethod
@@ -49,7 +67,7 @@ class ExecutionContext:
         except_class: Any
             exception class to be un-register
         """
-        del cls.exception_handlers[except_class]
+        cls.exception_handlers.pop(except_class)
 
     def __init__(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]):
         self.request = request
@@ -83,13 +101,13 @@ class ExecutionContext:
                     if isinstance(handle_status_code, int):
                         status_code = handle_status_code
                     else:
-                        status_code = handle_status_code(self.request)
+                        status_code = handle_status_code(self.request, exc)
 
                     if handle_message is not None:
                         if isinstance(handle_message, str):
                             message = handle_message
                         else:
-                            message = handle_message(self.request)
+                            message = handle_message(self.request, exc)
                     else:
                         message = str(exc)
 
@@ -127,8 +145,8 @@ ExecutionContext.register(DocumentConflictError, handle_status_code=HTTPStatus.C
 
 ExecutionContext.register(
     DocumentNotFoundError,
-    handle_status_code=lambda x: HTTPStatus.UNPROCESSABLE_ENTITY
-    if x.method == "POST"
+    handle_status_code=lambda req, exc: HTTPStatus.UNPROCESSABLE_ENTITY
+    if req.method == "POST"
     else HTTPStatus.NOT_FOUND,
 )
 
@@ -163,10 +181,10 @@ async def request_handler(
 
     try:
         async with ExecutionContext(request, call_next) as executor:
-            response = await executor.execute()
+            response: Response = await executor.execute()
     except Exception as exc:  # pylint: disable=broad-except
         response = JSONResponse(
             content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
 
-    return response  # type: ignore[no-any-return]
+    return response
