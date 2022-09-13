@@ -3,7 +3,7 @@ FeatureNamespace API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, cast
+from typing import Optional, cast
 
 from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
@@ -18,8 +18,9 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
-from featurebyte.schema.feature_namespace import FeatureNamespaceList
+from featurebyte.schema.feature_namespace import FeatureNamespaceInfo, FeatureNamespaceList
 
 router = APIRouter(prefix="/feature_namespace")
 
@@ -94,12 +95,12 @@ async def list_feature_namespace_audit_logs(
     return audit_doc_list
 
 
-@router.get("/{feature_namespace_id}/info")
+@router.get("/{feature_namespace_id}/info", response_model=FeatureNamespaceInfo)
 async def get_feature_namespace_info(
     request: Request,
     feature_namespace_id: PydanticObjectId,
-    verbose: bool = True,
-) -> dict[str, Any]:
+    verbose: bool = VerboseQuery,
+) -> FeatureNamespaceInfo:
     """
     Retrieve FeatureNamespace info
     """
@@ -108,6 +109,6 @@ async def get_feature_namespace_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_namespace_id,
-        verbose=bool(verbose),
+        verbose=verbose,
     )
-    return cast(Dict[str, Any], info)
+    return cast(FeatureNamespaceInfo, info)

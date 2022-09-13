@@ -1,5 +1,5 @@
 """
-Utility functions for persistent storage
+Utility functions for persistent
 """
 from __future__ import annotations
 

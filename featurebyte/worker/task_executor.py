@@ -14,6 +14,7 @@ from featurebyte.enum import WorkerCommand
 from featurebyte.logger import configure_logger, logger
 from featurebyte.utils.credential import get_credential
 from featurebyte.utils.persistent import get_persistent
+from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker.task.base import TASK_MAP, BaseTask
 
 
@@ -35,6 +36,8 @@ class TaskExecutor:
             payload=payload,
             progress=progress,
             get_persistent=get_persistent,
+            get_storage=get_storage,
+            get_temp_storage=get_temp_storage,
             get_credential=get_credential,
         )
         asyncio.run(self.execute(task, queue))

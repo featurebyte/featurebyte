@@ -3,16 +3,23 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Type
+from typing import Any, Literal, Type
 
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.persistent import Persistent
-from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.schema.feature_list import FeatureListCreate, FeatureListPaginatedList
+from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
+from featurebyte.schema.feature_list import (
+    FeatureListCreate,
+    FeatureListInfo,
+    FeatureListPaginatedList,
+)
 from featurebyte.service.feature_list import FeatureListService
 
 
-class FeatureListController(BaseDocumentController[FeatureListModel, FeatureListPaginatedList]):
+class FeatureListController(
+    BaseDocumentController[FeatureListModel, FeatureListPaginatedList],
+    GetInfoControllerMixin[FeatureListInfo],
+):
     """
     FeatureList controller
     """
@@ -47,3 +54,31 @@ class FeatureListController(BaseDocumentController[FeatureListModel, FeatureList
             user=user, persistent=persistent
         ).create_document(data=data, get_credential=get_credential)
         return document
+
+    @classmethod
+    async def list(
+        cls,
+        user: Any,
+        persistent: Persistent,
+        page: int = 1,
+        page_size: int = 10,
+        sort_by: str | None = "created_at",
+        sort_dir: Literal["asc", "desc"] = "desc",
+        **kwargs: Any,
+    ) -> FeatureListPaginatedList:
+        params = kwargs.copy()
+        feature_list_namespace_id = params.pop("feature_list_namespace_id")
+        if feature_list_namespace_id:
+            query_filter = params.get("query_filter", {}).copy()
+            query_filter["feature_list_namespace_id"] = feature_list_namespace_id
+            params["query_filter"] = query_filter
+
+        return await super().list(
+            user=user,
+            persistent=persistent,
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            **params,
+        )

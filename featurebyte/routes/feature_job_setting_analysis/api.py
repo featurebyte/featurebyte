@@ -3,7 +3,7 @@ FeatureJobSettingAnalysis API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, cast
+from typing import Optional
 
 from http import HTTPStatus
 
@@ -22,6 +22,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
 )
 from featurebyte.schema.feature_job_setting_analysis import (
+    FeatureJobSettingAnalysisBacktest,
     FeatureJobSettingAnalysisCreate,
     FeatureJobSettingAnalysisList,
 )
@@ -115,17 +116,22 @@ async def list_feature_job_setting_analysis_audit_logs(
     return audit_doc_list
 
 
-@router.get("/{feature_job_setting_analysis_id}/info")
-async def get_feature_job_setting_analysis_info(
-    request: Request, feature_job_setting_analysis_id: PydanticObjectId, verbose: bool = True
-) -> dict[str, Any]:
+@router.post(
+    "/{feature_job_setting_analysis_id}/backtest",
+    response_model=Task,
+    status_code=HTTPStatus.ACCEPTED,
+)
+async def run_backtest(
+    request: Request,
+    data: FeatureJobSettingAnalysisBacktest,
+) -> Task:
     """
-    Retrieve Feature Job Setting Analysis info
+    Run Backtest on Feature Job Setting Analysis
     """
-    info = await request.state.controller.get_info(
+    task_submit: Task = await request.state.controller.backtest(
         user=request.state.user,
         persistent=request.state.persistent,
-        document_id=feature_job_setting_analysis_id,
-        verbose=bool(verbose),
+        task_manager=request.state.task_manager,
+        data=data,
     )
-    return cast(Dict[str, Any], info)
+    return task_submit

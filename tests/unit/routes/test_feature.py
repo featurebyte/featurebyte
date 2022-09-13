@@ -1,6 +1,7 @@
 """
 Tests for Feature route
 """
+from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
 from unittest.mock import Mock, patch
@@ -238,6 +239,66 @@ class TestFeatureApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response_dict["total"] == len(feature_ids)
         assert set(output_feature_ids) == set(feature_ids)
+
+    def test_list_200__filter_by_namespace_id(
+        self, test_api_client_persistent, create_multiple_success_responses
+    ):
+        """Test list (filtered by feature namespace id)"""
+        test_api_client, _ = test_api_client_persistent
+        namespace_map = defaultdict(set)
+        for success_response in create_multiple_success_responses:
+            response_dict = success_response.json()
+            namespace_map[response_dict["feature_namespace_id"]].add(response_dict["_id"])
+
+        for namespace_id, ids in namespace_map.items():
+            filter_response = test_api_client.get(
+                self.base_route, params={"feature_namespace_id": namespace_id}
+            )
+            filter_response_dict = filter_response.json()
+            assert filter_response_dict["total"] == len(ids)
+            response_ids = set(item["_id"] for item in filter_response_dict["data"])
+            assert response_ids == ids
+
+        # test negative cases
+        negative_response = test_api_client.get(
+            self.base_route, params={"feature_namespace_id": str(ObjectId())}
+        )
+        assert negative_response.json()["total"] == 0, negative_response.json()
+
+    @pytest.mark.asyncio
+    async def test_get_info_200(self, test_api_client_persistent, create_success_response):
+        """Test retrieve info"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
+        expected_info_response = {
+            "name": "sum_30m",
+            "updated_at": None,
+            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
+            "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "dtype": "FLOAT",
+            "default_version_mode": "AUTO",
+            "version_count": 1,
+            "readiness": {"this": "DRAFT", "default": "DRAFT"},
+            "version": {"this": "V220906", "default": "V220906"},
+        }
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert response_dict.items() > expected_info_response.items(), response_dict
+        assert "created_at" in response_dict
+        assert response_dict["versions_info"] is None
+
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
+        assert response.status_code == HTTPStatus.OK, response.text
+        verbose_response_dict = verbose_response.json()
+        assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
+        assert "created_at" in verbose_response_dict
+        assert verbose_response_dict["versions_info"] is not None
 
 
 @pytest.fixture(name="feature_model_dict")

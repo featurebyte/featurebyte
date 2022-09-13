@@ -75,12 +75,14 @@ def test_info(entity):
     """
     Test info
     """
-    verbose_info = entity.info(verbose=True)
-    non_verbose_info = entity.info(verbose=False)
-    expected_info = {"name": "customer", "serving_names": ["cust_id"]}
-    assert non_verbose_info == expected_info
-    assert verbose_info.items() > expected_info.items()
-    assert set(verbose_info).difference(expected_info) == {"created_at", "updated_at"}
+    info_dict = entity.info(verbose=True)
+    expected_info = {
+        "name": "customer",
+        "serving_names": ["cust_id"],
+        "updated_at": None,
+    }
+    assert info_dict.items() > expected_info.items(), info_dict
+    assert "created_at" in info_dict, info_dict
 
 
 def test_entity_creation(entity):

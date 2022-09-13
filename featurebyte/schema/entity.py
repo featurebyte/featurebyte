@@ -1,7 +1,9 @@
 """
 Entity API payload schema
 """
-from typing import List, Optional
+from __future__ import annotations
+
+from typing import Any, List, Optional
 
 from beanie import PydanticObjectId
 from bson.objectid import ObjectId
@@ -10,6 +12,8 @@ from pydantic import Field, StrictStr
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.entity import EntityModel
 from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
+from featurebyte.schema.common.operation import DictProject
 
 
 class EntityCreate(FeatureByteBaseModel):
@@ -36,3 +40,42 @@ class EntityUpdate(FeatureByteBaseModel):
     """
 
     name: StrictStr
+
+
+class EntityBriefInfo(BaseBriefInfo):
+    """
+    Entity brief info schema
+    """
+
+    serving_names: List[str]
+
+
+class EntityBriefInfoList(FeatureByteBaseModel):
+    """
+    Paginated list of entity brief info
+    """
+
+    __root__: List[EntityBriefInfo]
+
+    @classmethod
+    def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EntityBriefInfoList:
+        """
+        Construct entity brief info list from paginated data
+
+        Parameters
+        ----------
+        paginated_data: dict[str, Any]
+            Paginated data
+
+        Returns
+        -------
+        EntityBriefInfoList
+        """
+        entity_project = DictProject(rule=("data", ["name", "serving_names"]))
+        return EntityBriefInfoList(__root__=entity_project.project(paginated_data))
+
+
+class EntityInfo(EntityBriefInfo, BaseInfo):
+    """
+    Entity info schema
+    """

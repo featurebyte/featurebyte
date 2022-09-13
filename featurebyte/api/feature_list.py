@@ -21,7 +21,6 @@ from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
@@ -265,10 +264,6 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     @root_validator()
     @classmethod
     def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
-        values["readiness"] = min(
-            values["feature_objects"].values(),
-            key=lambda feature: FeatureReadiness(feature.readiness or FeatureReadiness.min()),
-        ).readiness
         # set the following values if it is empty (used mainly by the SDK constructed feature list)
         # for the feature list constructed during serialization, following codes should be skipped
         features = list(values["feature_objects"].values())
@@ -301,6 +296,17 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         Feature list status
         """
         return self.feature_list_namespace.status
+
+    @property
+    def production_ready_fraction(self) -> float:
+        """
+        Retrieve fraction of production ready features in the feature list
+
+        Returns
+        -------
+        Fraction of production ready feature
+        """
+        return self.readiness_distribution.derive_production_ready_fraction()
 
     @classmethod
     def list(cls) -> List[str]:

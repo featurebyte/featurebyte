@@ -10,6 +10,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.feature_job_setting_analysis import (
+    FeatureJobSettingAnalysisBacktest,
     FeatureJobSettingAnalysisCreate,
     FeatureJobSettingAnalysisList,
 )
@@ -39,7 +40,7 @@ class FeatureJobSettingAnalysisController(
         data: FeatureJobSettingAnalysisCreate,
     ) -> Task:
         """
-        Create Feature JobSetting Analysis and store in persisten
+        Create Feature JobSetting Analysis and store in persistent
 
         Parameters
         ----------
@@ -60,4 +61,36 @@ class FeatureJobSettingAnalysisController(
         task_id = await cls.document_service_class(
             user=user, persistent=persistent
         ).create_document_creation_task(data=data, task_manager=task_manager)
+        return await TaskController.get_task(task_manager=task_manager, task_id=str(task_id))
+
+    @classmethod
+    async def backtest(
+        cls,
+        user: Any,
+        persistent: Persistent,
+        task_manager: AbstractTaskManager,
+        data: FeatureJobSettingAnalysisBacktest,
+    ) -> Task:
+        """
+        Run backtest on a Feature JobSetting Analysis
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        task_manager: AbstractTaskManager
+            TaskManager to submit job to
+        data: FeatureJobSettingAnalysisBacktest
+            FeatureJobSettingAnalysis backtest payload
+
+        Returns
+        -------
+        Task
+            Task object for the submitted task
+        """
+        task_id = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).create_backtest_task(data=data, task_manager=task_manager)
         return await TaskController.get_task(task_manager=task_manager, task_id=str(task_id))

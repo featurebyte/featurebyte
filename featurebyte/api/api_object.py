@@ -3,7 +3,7 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
+from typing import Any, Callable, ClassVar, Dict, Iterator, List, Optional, Type, TypeVar
 
 import time
 from http import HTTPStatus
@@ -112,6 +112,70 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             return cls(**response.json(), **cls._get_init_params(), saved=True)
         raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
+    @staticmethod
+    def _default_to_request_func(response_dict: dict[str, Any], page: int) -> bool:
+        """
+        Default helper function to check whether to continue calling list route
+
+        Parameters
+        ----------
+        response_dict: dict[str, Any]
+            Response data
+        page: int
+            Page number
+
+        Returns
+        -------
+        Flag to indicate whether to continue calling list route
+        """
+        return bool(response_dict["total"] > (page * response_dict["page_size"]))
+
+    @classmethod
+    def _iterate_paginated_routes(
+        cls,
+        route: str,
+        params: dict[str, Any] | None = None,
+        to_request_func: Callable[[dict[str, Any], int], bool] | None = None,
+    ) -> Iterator[dict[str, Any]]:
+        """
+        List route response generator
+
+        Parameters
+        ----------
+        route: str
+            List route
+        params: dict[str, Any] | None
+            Route parameters
+        to_request_func: Callable[[dict[str, Any], int], bool] = None,
+            Function used to check whether to continue calling the route
+
+        Yields
+        -------
+        Iterator[dict[str, Any]]
+            List route response
+
+        Raises
+        ------
+        RecordRetrievalException
+            When failed to retrieve from list route
+        """
+        client = Configurations().get_client()
+        to_request, page = True, 1
+        params = params or {}
+        if to_request_func is None:
+            to_request_func = cls._default_to_request_func
+        while to_request:
+            params = params.copy()
+            params["page"] = page
+            response = client.get(url=route, params=params)
+            if response.status_code == HTTPStatus.OK:
+                response_dict = response.json()
+                to_request = to_request_func(response_dict, page)
+                page += 1
+                yield response_dict
+            else:
+                raise RecordRetrievalException(response, "Failed to list object names.")
+
     @classmethod
     def list(cls) -> list[str]:
         """
@@ -121,27 +185,11 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         -------
         list[str]
             List of object name
-
-        Raises
-        ------
-        RecordRetrievalException
-            When the response status code is unexpected
         """
         output = []
-        to_request = True
-        page = 1
-        while to_request:
-            client = Configurations().get_client()
-            response = client.get(url=cls._route, params={"page": page})
-            if response.status_code == HTTPStatus.OK:
-                response_dict = response.json()
-                total = response_dict["total"]
-                page_size = response_dict["page_size"]
-                to_request = total > page * page_size
-                page += 1
-                output.extend([elem["name"] for elem in response_dict["data"]])
-            else:
-                raise RecordRetrievalException(response, "Failed to list object names.")
+        for response_dict in cls._iterate_paginated_routes(route=cls._route):
+            for item in response_dict["data"]:
+                output.append(item["name"])
         return output
 
     def audit(self) -> dict[str, Any]:
@@ -191,7 +239,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         raise RecordRetrievalException(response)
 
     @typechecked
-    def info(self, verbose: bool = True) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
         Construct summary info of the API object
 
@@ -207,13 +255,13 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         Raises
         ------
         RecordRetrievalException
-            When the object not found
+            When the object not found or unexpected response status code
         """
         client = Configurations().get_client()
         response = client.get(url=f"{self._route}/{self.id}/info", params={"verbose": verbose})
         if response.status_code == HTTPStatus.OK:
             return dict(response.json())
-        raise RecordRetrievalException(response, "Failed to retrieve specified object.")
+        raise RecordRetrievalException(response, "Failed to retrieve object info.")
 
 
 class ApiObject(ApiGetObject):

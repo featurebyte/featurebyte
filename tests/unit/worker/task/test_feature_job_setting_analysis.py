@@ -3,10 +3,8 @@ Test Feature Job Setting Analysis worker task
 """
 import copy
 import json
-import os
-from unittest.mock import call, patch
+from unittest.mock import call
 
-import pandas as pd
 import pytest
 from bson import ObjectId
 
@@ -27,7 +25,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         "tests/fixtures/task_payloads/feature_job_setting_analysis.json"
     )
 
-    async def setup_persistent(self, persistent):
+    async def setup_persistent_storage(self, persistent, storage, temp_storage):
         """
         Setup for post route
         """
@@ -48,45 +46,28 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         )
 
     @pytest.fixture(autouse=True)
-    def mock_event_dataset(self):
+    def use_mock_event_dataset(self, mock_event_dataset):
         """
-        Setup mock event dataset
+        Patch event dataset to skip calls to data warehouse
         """
-        fixture_path = "tests/fixtures/feature_job_setting_analysis"
-        count_data = pd.read_parquet(os.path.join(fixture_path, "count_data.parquet"))
-        count_per_creation_date = pd.read_parquet(
-            os.path.join(fixture_path, "count_per_creation_date.parquet")
-        )
-        count_per_creation_date["CREATION_DATE"] = pd.to_datetime(
-            count_per_creation_date["CREATION_DATE"]
-        )
-
-        with patch(
-            "featurebyte_freeware.feature_job_analysis.database.EventDataset.get_latest_timestamp",
-        ) as mock_latest_timestamp:
-            mock_latest_timestamp.return_value = pd.Timestamp("2022-04-18 23:59:55.799897854")
-            with patch(
-                "featurebyte_freeware.feature_job_analysis.database.EventDataset.get_count_per_creation_date",
-            ) as mock_get_count_per_creation_date:
-                mock_get_count_per_creation_date.return_value = count_per_creation_date
-                with patch(
-                    "featurebyte_freeware.feature_job_analysis.database.EventDataset.get_count_data",
-                ) as mock_get_count_data:
-                    mock_get_count_data.return_value = count_data
-                    yield
+        _ = mock_event_dataset
+        yield
 
     @pytest.mark.asyncio
-    async def test_execute_success(self, task_completed, git_persistent, progress, update_fixtures):
+    async def test_execute_success(  # pylint: disable=too-many-locals
+        self, task_completed, git_persistent, progress, update_fixtures, storage
+    ):
         """
         Test successful task execution
         """
         _ = task_completed
         persistent, _ = git_persistent
+        output_document_id = self.payload["output_document_id"]
 
         # check that analysis result is stored in persistent
         document = await persistent.find_one(
             collection_name=FeatureJobSettingAnalysisModel.collection_name(),
-            query_filter={"_id": ObjectId(self.payload["output_document_id"])},
+            query_filter={"_id": ObjectId(output_document_id)},
             user_id=None,
         )
         assert document
@@ -109,6 +90,16 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         assert result.analysis_result == expected.analysis_result
         assert result.analysis_report == expected.analysis_report
 
+        # check storage of large objects
+        analysis_data = await storage.get_object(
+            f"feature_job_setting_analysis/{output_document_id}/data.json"
+        )
+        assert sorted(analysis_data.keys()) == [
+            "analysis_data",
+            "analysis_plots",
+            "analysis_result",
+        ]
+
         # check progress update records
         assert progress.put.call_args_list == [
             call({"percent": 0, "message": "Preparing data"}),
@@ -118,7 +109,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         ]
 
     @pytest.mark.asyncio
-    async def test_execute_fail(self, git_persistent, progress):
+    async def test_execute_fail(self, git_persistent, progress, storage, temp_storage):
         """
         Test failed task execution
         """
@@ -129,7 +120,14 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         payload["event_data_id"] = ObjectId()
 
         with pytest.raises(ValueError) as excinfo:
-            await self.execute_task(payload, persistent, progress)
+            await self.execute_task(
+                task_class=self.task_class,
+                payload=payload,
+                persistent=persistent,
+                progress=progress,
+                storage=storage,
+                temp_storage=temp_storage,
+            )
         assert str(excinfo.value) == "Event Data not found"
 
         # check progress update records

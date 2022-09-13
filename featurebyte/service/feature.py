@@ -20,37 +20,18 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.schema.feature import FeatureCreate
+from featurebyte.schema.feature import FeatureBriefInfoList, FeatureCreate, FeatureInfo
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate, FeatureNamespaceUpdate
-from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.common.operation import DictProject, DictTransform
+from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 
 
-class FeatureService(BaseDocumentService[FeatureModel]):
+class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[FeatureInfo]):
     """
     FeatureService class
     """
 
     document_class = FeatureModel
-    info_transform = DictTransform(
-        rule={
-            **BaseDocumentService.base_info_transform_rule,
-            "__root__": DictProject(
-                rule=["dtype", "readiness", "version", "is_default", "online_enabled"]
-            ),
-            "tabular_source": DictProject(
-                rule=("tabular_source", ["feature_store", "table_details"]),
-                verbose_only=True,
-            ),
-            "event_data": DictProject(rule="event_data", verbose_only=True),
-            "feature_namespace": DictProject(rule="feature_namespace", verbose_only=True),
-        }
-    )
-    foreign_key_map = {
-        "event_data_ids": EventDataModel.collection_name(),
-        "feature_store_id": FeatureStoreModel.collection_name(),
-    }
 
     async def _insert_feature_registry(
         self, document: ExtendedFeatureModel, get_credential: Any
@@ -171,3 +152,33 @@ class FeatureService(BaseDocumentService[FeatureModel]):
         # when update the feature readiness, needs to update feature list's feature readiness distribution
         # and feature list namespace's feature readiness distribution
         return await self.get_document(document_id=document_id)
+
+    async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureInfo:
+        feature = await self.get_document(document_id=document_id)
+        feature_namespace_service = FeatureNamespaceService(
+            user=self.user, persistent=self.persistent
+        )
+        namespace_info = await feature_namespace_service.get_info(
+            document_id=feature.feature_namespace_id,
+            verbose=verbose,
+        )
+        default_feature = await self.get_document(document_id=namespace_info.default_feature_id)
+        versions_info = None
+        if verbose:
+            namespace = await feature_namespace_service.get_document(
+                document_id=feature.feature_namespace_id
+            )
+            versions_info = FeatureBriefInfoList.from_paginated_data(
+                await self.list_documents(
+                    page=1,
+                    page_size=0,
+                    query_filter={"_id": {"$in": namespace.feature_ids}},
+                )
+            )
+
+        return FeatureInfo(
+            **namespace_info.dict(),
+            version={"this": feature.version, "default": default_feature.version},
+            readiness={"this": feature.readiness, "default": default_feature.readiness},
+            versions_info=versions_info,
+        )

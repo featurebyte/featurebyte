@@ -1,0 +1,53 @@
+"""
+Test for Temp Data route
+"""
+from http import HTTPStatus
+
+import pytest
+
+
+class TestTempDataApi:
+    """Test suite for Temp Data API"""
+
+    # class variables to be set at metaclass
+    base_route = "/temp_data"
+
+    @pytest.mark.asyncio
+    async def test_retrieve_html(self, test_api_client_persistent, temp_storage):
+        """
+        Retrieve temp html file
+        """
+        test_api_client, _ = test_api_client_persistent
+
+        source_file = "tests/fixtures/feature_job_setting_analysis/backtest.html"
+        dest_path = "feature_job_setting_analysis/backtest/62f301e841b9a757c9ff871b.html"
+        await temp_storage.put(source_file, dest_path)
+
+        # retrieve profile picture
+        response = test_api_client.get(f"/temp_data?path={dest_path}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.headers["content-type"] == "text/html; charset=utf-8"
+
+        with open(source_file, "r") as file_obj:
+            expected_content = file_obj.read()
+        assert response.content.decode("utf-8") == expected_content
+
+    @pytest.mark.asyncio
+    async def test_retrieve_parquet(self, test_api_client_persistent, temp_storage):
+        """
+        Retrieve temp parquet file
+        """
+        test_api_client, _ = test_api_client_persistent
+
+        source_file = "tests/fixtures/feature_job_setting_analysis/backtest.parquet"
+        dest_path = "feature_job_setting_analysis/backtest/62f301e841b9a757c9ff871b.parquet"
+        await temp_storage.put(source_file, dest_path)
+
+        # retrieve profile picture
+        response = test_api_client.get(f"/temp_data?path={dest_path}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.headers["content-type"] == "application/octet-stream"
+
+        with open(source_file, "rb") as file_obj:
+            expected_content = file_obj.read()
+        assert response.content == expected_content

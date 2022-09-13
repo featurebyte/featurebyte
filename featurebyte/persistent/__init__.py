@@ -1,5 +1,5 @@
 """
-Storage class
+Persistent classes
 """
 from featurebyte.persistent.base import DuplicateDocumentError, Persistent
 from featurebyte.persistent.git import GitDB

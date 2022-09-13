@@ -36,3 +36,4 @@ NameQuery = Query(default=None, min_length=COLUMN_STR_MIN_LENGTH, max_length=COL
 AuditLogSortByQuery = Query(
     default="_id", min_length=COLUMN_STR_MIN_LENGTH, max_length=COLUMN_STR_MAX_LENGTH
 )
+VerboseQuery = Query(default=False)

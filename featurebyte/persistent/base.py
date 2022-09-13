@@ -30,7 +30,7 @@ class DuplicateDocumentError(Exception):
 
 class Persistent(ABC):
     """
-    Persistent persistent base class
+    Persistent base class
     """
 
     def __init__(self) -> None:

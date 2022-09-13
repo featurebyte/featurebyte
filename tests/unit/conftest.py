@@ -33,6 +33,7 @@ from featurebyte.query_graph.graph import GlobalQueryGraph, Node
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.session.manager import SessionManager, get_session
+from featurebyte.storage.local import LocalStorage
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 # register tests.unit.routes.base so that API stacktrace display properly
@@ -109,6 +110,24 @@ def git_persistent_fixture():
     # persistent.insert_doc_name_func("__audit__data", lambda doc: doc["name"])
     # persistent.insert_doc_name_func("__audit__test_col", lambda doc: doc["name"])
     yield persistent, persistent.repo
+
+
+@pytest.fixture(name="storage")
+def storage_fixture():
+    """
+    Storage object fixture
+    """
+    with tempfile.TemporaryDirectory() as tempdir:
+        yield LocalStorage(base_path=tempdir)
+
+
+@pytest.fixture(name="temp_storage")
+def temp_storage_fixture():
+    """
+    Storage object fixture
+    """
+    with tempfile.TemporaryDirectory() as tempdir:
+        yield LocalStorage(base_path=tempdir)
 
 
 @pytest.fixture(name="mock_get_persistent")

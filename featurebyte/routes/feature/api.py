@@ -3,7 +3,7 @@ Feature API routes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, cast
+from typing import Optional, cast
 
 from http import HTTPStatus
 
@@ -20,8 +20,9 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
+    VerboseQuery,
 )
-from featurebyte.schema.feature import FeatureCreate, FeatureList
+from featurebyte.schema.feature import FeatureCreate, FeatureInfo, FeatureList
 
 router = APIRouter(prefix="/feature")
 
@@ -61,6 +62,7 @@ async def list_features(
     search: Optional[str] = SearchQuery,
     name: Optional[str] = NameQuery,
     feature_list_id: Optional[PydanticObjectId] = None,
+    feature_namespace_id: Optional[PydanticObjectId] = None,
 ) -> FeatureList:
     """
     List Features
@@ -75,6 +77,7 @@ async def list_features(
         search=search,
         name=name,
         feature_list_id=feature_list_id,
+        feature_namespace_id=feature_namespace_id,
     )
     return feature_list
 
@@ -105,10 +108,12 @@ async def list_feature_audit_logs(
     return audit_doc_list
 
 
-@router.get("/{feature_id}/info")
+@router.get("/{feature_id}/info", response_model=FeatureInfo)
 async def get_feature_info(
-    request: Request, feature_id: PydanticObjectId, verbose: bool = True
-) -> dict[str, Any]:
+    request: Request,
+    feature_id: PydanticObjectId,
+    verbose: bool = VerboseQuery,
+) -> FeatureInfo:
     """
     Retrieve Feature info
     """
@@ -116,6 +121,6 @@ async def get_feature_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_id,
-        verbose=bool(verbose),
+        verbose=verbose,
     )
-    return cast(Dict[str, Any], info)
+    return cast(FeatureInfo, info)
