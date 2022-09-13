@@ -17,7 +17,7 @@ from snowflake import connector
 from snowflake.connector.errors import NotSupportedError
 from snowflake.connector.pandas_tools import write_pandas
 
-import featurebyte
+from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
@@ -346,7 +346,7 @@ class SchemaInitializer:
         -------
         list[str]
         """
-        sql_directory = os.path.join(os.path.dirname(featurebyte.__file__), "sql", "snowflake")
+        sql_directory = os.path.join(get_package_root(), "sql", "snowflake")
         output = []
 
         for filename in os.listdir(sql_directory):
