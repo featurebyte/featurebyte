@@ -29,6 +29,9 @@ class NodeType(str, Enum):
     DIV = "div"
     MOD = "mod"
 
+    # mathematical functions
+    SQRT = "sqrt"
+
     # SQL operations
     PROJECT = "project"
     FILTER = "filter"

@@ -365,9 +365,10 @@ class EventViewGroupBy(OpsMixin):
             expected_x_features.feature_names,
             feature_names,
         ):
-            feature = expected_x2_features[name_x2] - (
-                expected_x_features[name_x] * expected_x_features[name_x]
-            )
+            feature = (
+                expected_x2_features[name_x2]
+                - (expected_x_features[name_x] * expected_x_features[name_x])
+            ).sqrt()
             feature.name = feature_name
             feature = cast(Feature, feature)
             features.append(feature)

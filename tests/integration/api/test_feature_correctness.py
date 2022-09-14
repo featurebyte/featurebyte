@@ -257,6 +257,7 @@ def test_aggregation(
             lambda x: x.mean(),
             None,
         ),
+        ("AMOUNT", "std", "std_24h", lambda x: x.std(ddof=0), None),
     ]
 
     event_view = EventView.from_event_data(event_data)
