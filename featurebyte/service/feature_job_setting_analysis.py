@@ -3,7 +3,7 @@ FeatureJobSettingAnalysisService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
@@ -70,11 +70,20 @@ class FeatureJobSettingAnalysisService(BaseDocumentService[FeatureJobSettingAnal
         # submit a task to run analysis
         return await task_manager.submit(payload=payload)
 
-    async def update_document(
-        self, document_id: ObjectId, data: FeatureByteBaseModel
-    ) -> FeatureJobSettingAnalysisModel:
+    async def update_document(  # type: ignore[override]
+        self,
+        document_id: ObjectId,
+        data: FeatureByteBaseModel,
+        document: Optional[FeatureJobSettingAnalysisModel] = None,
+        return_document: bool = True,
+    ) -> Optional[FeatureJobSettingAnalysisModel]:
         # TODO: implement proper logic to update feature job analysis document
-        return await self.get_document(document_id=document_id)
+        if document is None:
+            document = await self.get_document(document_id=document_id)
+
+        if return_document:
+            return document
+        return None
 
     async def create_backtest_task(
         self, data: FeatureJobSettingAnalysisBacktest, task_manager: AbstractTaskManager

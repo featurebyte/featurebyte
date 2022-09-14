@@ -3,7 +3,7 @@ FeatureNamespaceService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
@@ -19,7 +19,7 @@ from featurebyte.schema.event_data import EventDataBriefInfoList
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceInfo,
-    FeatureNamespaceUpdate,
+    FeatureNamespaceServiceUpdate,
 )
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.entity import EntityService
@@ -77,7 +77,7 @@ class FeatureNamespaceService(
 
     async def _prepare_update_payload(
         self,
-        update_data: FeatureNamespaceUpdate,
+        update_data: FeatureNamespaceServiceUpdate,
         namespace: FeatureNamespaceModel,
     ) -> dict[str, Any]:
         from featurebyte.service.feature import (  # pylint: disable=import-outside-toplevel,cyclic-import
@@ -144,12 +144,18 @@ class FeatureNamespaceService(
         return update_payload
 
     async def update_document(  # type: ignore[override]
-        self, document_id: ObjectId, data: FeatureNamespaceUpdate
-    ) -> FeatureNamespaceModel:
-        document = await self.get_document(
-            document_id=document_id,
-            exception_detail=f'FeatureNamespace (id: "{document_id}") not found.',
-        )
+        self,
+        document_id: ObjectId,
+        data: FeatureNamespaceServiceUpdate,
+        document: Optional[FeatureNamespaceModel] = None,
+        return_document: bool = True,
+    ) -> Optional[FeatureNamespaceModel]:
+        if document is None:
+            document = await self.get_document(
+                document_id=document_id,
+                exception_detail=f'FeatureNamespace (id: "{document_id}") not found.',
+            )
+
         update_payload = await self._prepare_update_payload(update_data=data, namespace=document)
         _ = await self.persistent.update_one(
             collection_name=self.collection_name,
@@ -158,7 +164,9 @@ class FeatureNamespaceService(
         )
 
         # TODO: add logic to update readiness distribution at feature list version level
-        return await self.get_document(document_id=document_id)
+        if return_document:
+            return await self.get_document(document_id=document_id)
+        return None
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureNamespaceInfo:
         namespace = await self.get_document(document_id=document_id)

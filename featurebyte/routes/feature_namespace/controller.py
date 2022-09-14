@@ -14,6 +14,7 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceInfo,
     FeatureNamespaceList,
+    FeatureNamespaceServiceUpdate,
     FeatureNamespaceUpdate,
 )
 from featurebyte.service.feature_namespace import FeatureNamespaceService
@@ -85,5 +86,9 @@ class FeatureNamespaceController(
         """
         document = await cls.document_service_class(
             user=user, persistent=persistent
-        ).update_document(document_id=feature_namespace_id, data=data)
+        ).update_document(
+            document_id=feature_namespace_id,
+            data=FeatureNamespaceServiceUpdate(**data.dict()),
+        )
+        assert document is not None
         return document

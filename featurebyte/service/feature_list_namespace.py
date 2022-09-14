@@ -3,7 +3,7 @@ FeatureListNamespaceService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
@@ -18,7 +18,7 @@ from featurebyte.schema.entity import EntityBriefInfoList
 from featurebyte.schema.event_data import EventDataBriefInfoList
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceInfo,
-    FeatureListNamespaceUpdate,
+    FeatureListNamespaceServiceUpdate,
 )
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.entity import EntityService
@@ -69,7 +69,7 @@ class FeatureListNamespaceService(
 
     async def _prepare_update_payload(
         self,
-        update_data: FeatureListNamespaceUpdate,
+        update_data: FeatureListNamespaceServiceUpdate,
         namespace: FeatureListNamespaceModel,
     ) -> dict[str, Any]:
         from featurebyte.service.feature_list import (  # pylint: disable=import-outside-toplevel,cyclic-import
@@ -145,19 +145,28 @@ class FeatureListNamespaceService(
         return update_payload
 
     async def update_document(  # type: ignore[override]
-        self, document_id: ObjectId, data: FeatureListNamespaceUpdate
-    ) -> FeatureListNamespaceModel:
-        document = await self.get_document(
-            document_id=document_id,
-            exception_detail=f'FeatureListNamespace (id: "{document_id}") not found.',
-        )
+        self,
+        document_id: ObjectId,
+        data: FeatureListNamespaceServiceUpdate,
+        document: Optional[FeatureListNamespaceModel] = None,
+        return_document: bool = True,
+    ) -> Optional[FeatureListNamespaceModel]:
+        if document is None:
+            document = await self.get_document(
+                document_id=document_id,
+                exception_detail=f'FeatureListNamespace (id: "{document_id}") not found.',
+            )
+
         update_payload = await self._prepare_update_payload(update_data=data, namespace=document)
         _ = await self.persistent.update_one(
             collection_name=self.collection_name,
             query_filter={"_id": document.id},
             update={"$set": update_payload},
         )
-        return await self.get_document(document_id=document_id)
+
+        if return_document:
+            return await self.get_document(document_id=document_id)
+        return None
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureListNamespaceInfo:
         namespace = await self.get_document(document_id=document_id)

@@ -67,7 +67,7 @@ async def update_feature(
     feature: FeatureModel = await request.state.controller.update_feature(
         user=request.state.user,
         persistent=request.state.persistent,
-        entity_id=feature_id,
+        feature_id=feature_id,
         data=data,
     )
     return feature

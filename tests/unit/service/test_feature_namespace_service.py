@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.schema.feature import FeatureCreate
-from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
+from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 
 
 async def insert_feature_into_persistent(user, persistent, version_suffix, readiness, name=None):
@@ -49,7 +49,8 @@ async def test_update_document__auto_default_version_mode(feature_namespace_serv
 
     # update feature namespace by using the newly inserted feature_id
     updated_doc = await feature_namespace_service.update_document(
-        document_id=feature.feature_namespace_id, data=FeatureNamespaceUpdate(feature_id=feature_id)
+        document_id=feature.feature_namespace_id,
+        data=FeatureNamespaceServiceUpdate(feature_id=feature_id),
     )
     assert updated_doc.user_id == feature.user_id
     assert updated_doc.feature_ids == sorted([feature_ids_before[0], feature_id])
@@ -67,7 +68,7 @@ async def test_update_document__auto_default_version_mode(feature_namespace_serv
 
     updated_doc = await feature_namespace_service.update_document(
         document_id=feature.feature_namespace_id,
-        data=FeatureNamespaceUpdate(feature_id=worse_readiness_feature_id),
+        data=FeatureNamespaceServiceUpdate(feature_id=worse_readiness_feature_id),
     )
     assert updated_doc.user_id == feature.user_id
     assert updated_doc.feature_ids == sorted(
@@ -96,7 +97,7 @@ async def test_update_document__manual_default_version_mode(
     # test update default version mode
     updated_doc = await feature_namespace_service.update_document(
         document_id=feature.feature_namespace_id,
-        data=FeatureNamespaceUpdate(default_version_mode=DefaultVersionMode.MANUAL),
+        data=FeatureNamespaceServiceUpdate(default_version_mode=DefaultVersionMode.MANUAL),
     )
     assert updated_doc.user_id == feature.user_id
     assert updated_doc.feature_ids == feature_ids_before
@@ -113,7 +114,7 @@ async def test_update_document__manual_default_version_mode(
     )
     updated_doc = await feature_namespace_service.update_document(
         document_id=feature.feature_namespace_id,
-        data=FeatureNamespaceUpdate(feature_id=prod_ready_feature_id),
+        data=FeatureNamespaceServiceUpdate(feature_id=prod_ready_feature_id),
     )
     assert updated_doc.feature_ids == sorted(feature_ids_before + [prod_ready_feature_id])
     assert updated_doc.default_feature_id == feature_ids_before[0]
@@ -122,7 +123,7 @@ async def test_update_document__manual_default_version_mode(
     # test update default version mode to auto
     updated_doc = await feature_namespace_service.update_document(
         document_id=feature.feature_namespace_id,
-        data=FeatureNamespaceUpdate(default_version_mode=DefaultVersionMode.AUTO),
+        data=FeatureNamespaceServiceUpdate(default_version_mode=DefaultVersionMode.AUTO),
     )
     assert updated_doc.feature_ids == sorted(feature_ids_before + [prod_ready_feature_id])
     assert updated_doc.default_feature_id == prod_ready_feature_id
@@ -142,7 +143,7 @@ async def test_update_document__inconsistency_error(feature_namespace_service, f
     with pytest.raises(DocumentInconsistencyError) as exc:
         await feature_namespace_service.update_document(
             document_id=feature.feature_namespace_id,
-            data=FeatureNamespaceUpdate(feature_id=inconsistent_feature_id),
+            data=FeatureNamespaceServiceUpdate(feature_id=inconsistent_feature_id),
         )
     expected_msg = (
         'Feature (name: "random_name") object(s) within the same namespace must have the same "name" value '

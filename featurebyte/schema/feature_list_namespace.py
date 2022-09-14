@@ -29,9 +29,16 @@ class FeatureListNamespaceUpdate(FeatureByteBaseModel):
     FeatureListNamespace update schema
     """
 
-    feature_list_id: Optional[PydanticObjectId]
     status: Optional[FeatureListStatus]
     default_version_mode: Optional[DefaultVersionMode]
+
+
+class FeatureListNamespaceServiceUpdate(FeatureListNamespaceUpdate):
+    """
+    FeatureListNamespace service update schema
+    """
+
+    feature_list_id: Optional[PydanticObjectId]
 
 
 class FeatureListNamespaceInfo(NamespaceInfo):

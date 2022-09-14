@@ -14,6 +14,7 @@ from featurebyte.schema.feature import (
     FeatureCreate,
     FeatureInfo,
     FeaturePaginatedList,
+    FeatureServiceUpdate,
     FeatureUpdate,
 )
 from featurebyte.service.feature import FeatureService
@@ -87,7 +88,8 @@ class FeatureController(
         """
         document = await cls.document_service_class(
             user=user, persistent=persistent
-        ).update_document(document_id=feature_id, data=data)
+        ).update_document(document_id=feature_id, data=FeatureServiceUpdate(**data.dict()))
+        assert document is not None
         return document
 
     @classmethod

@@ -11,7 +11,7 @@ from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus, FeatureReadinessDistribution
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.feature_list import FeatureListCreate
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
+from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.feature import FeatureService
 
 
@@ -72,7 +72,7 @@ async def test_update_document__auto_default_version_mode(
     # update feature list namespace by using newly inserted feature_list_id
     updated_doc = await feature_list_namespace_service.update_document(
         document_id=feature_list.feature_list_namespace_id,
-        data=FeatureListNamespaceUpdate(feature_list_id=feature_list_id),
+        data=FeatureListNamespaceServiceUpdate(feature_list_id=feature_list_id),
     )
     assert updated_doc.user_id == feature_list.user_id
     assert updated_doc.feature_list_ids == sorted([feature_list_ids_before[0], feature_list_id])
@@ -91,7 +91,9 @@ async def test_update_document__auto_default_version_mode(
     )
     updated_doc = await feature_list_namespace_service.update_document(
         document_id=feature_list.feature_list_namespace_id,
-        data=FeatureListNamespaceUpdate(feature_list_id=worse_readiness_dist_feature_list_id),
+        data=FeatureListNamespaceServiceUpdate(
+            feature_list_id=worse_readiness_dist_feature_list_id
+        ),
     )
     assert updated_doc.user_id == feature_list.user_id
     assert updated_doc.feature_list_ids == sorted(
@@ -123,7 +125,7 @@ async def test_update_document__manual_default_version_mode(
     # test update default version mode
     updated_doc = await feature_list_namespace_service.update_document(
         document_id=feature_list.feature_list_namespace_id,
-        data=FeatureListNamespaceUpdate(default_version_mode=DefaultVersionMode.MANUAL),
+        data=FeatureListNamespaceServiceUpdate(default_version_mode=DefaultVersionMode.MANUAL),
     )
     assert updated_doc.user_id == feature_list.user_id
     assert updated_doc.feature_list_ids == feature_list_ids_before
@@ -142,7 +144,7 @@ async def test_update_document__manual_default_version_mode(
     )
     updated_doc = await feature_list_namespace_service.update_document(
         document_id=feature_list.feature_list_namespace_id,
-        data=FeatureListNamespaceUpdate(feature_list_id=prod_ready_feature_list_id),
+        data=FeatureListNamespaceServiceUpdate(feature_list_id=prod_ready_feature_list_id),
     )
     assert updated_doc.feature_list_ids == sorted(
         feature_list_ids_before + [prod_ready_feature_list_id]
@@ -155,7 +157,7 @@ async def test_update_document__manual_default_version_mode(
     # test update default version mode to auto
     updated_doc = await feature_list_namespace_service.update_document(
         document_id=feature_list.feature_list_namespace_id,
-        data=FeatureListNamespaceUpdate(default_version_mode=DefaultVersionMode.AUTO),
+        data=FeatureListNamespaceServiceUpdate(default_version_mode=DefaultVersionMode.AUTO),
     )
     assert updated_doc.feature_list_ids == sorted(
         feature_list_ids_before + [prod_ready_feature_list_id]
@@ -175,7 +177,7 @@ async def test_update_document__status(feature_list_namespace_service, feature_l
     assert original_doc.status == FeatureListStatus.DRAFT
     updated_doc = await feature_list_namespace_service.update_document(
         document_id=feature_list.feature_list_namespace_id,
-        data=FeatureListNamespaceUpdate(status=FeatureListStatus.PUBLISHED),
+        data=FeatureListNamespaceServiceUpdate(status=FeatureListStatus.PUBLISHED),
     )
     assert updated_doc.status == FeatureListStatus.PUBLISHED
     assert updated_doc.readiness_distribution == original_doc.readiness_distribution
@@ -198,7 +200,7 @@ async def test_update_document__inconsistency_error(
     with pytest.raises(DocumentInconsistencyError) as exc:
         await feature_list_namespace_service.update_document(
             document_id=feature_list.feature_list_namespace_id,
-            data=FeatureListNamespaceUpdate(feature_list_id=inconsistent_feature_list_id),
+            data=FeatureListNamespaceServiceUpdate(feature_list_id=inconsistent_feature_list_id),
         )
     expected_msg = (
         'FeatureList (name: "sf_feature_list") object(s) within the same namespace must '

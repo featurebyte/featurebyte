@@ -3,7 +3,7 @@ FeatureStoreService class
 """
 from __future__ import annotations
 
-from typing import Any, Type
+from typing import Any, Optional, Type
 
 from bson.objectid import ObjectId
 
@@ -38,11 +38,20 @@ class FeatureStoreService(
         assert insert_id == document.id
         return await self.get_document(document_id=insert_id)
 
-    async def update_document(
-        self, document_id: ObjectId, data: FeatureByteBaseModel
-    ) -> FeatureStoreModel:
+    async def update_document(  # type: ignore[override]
+        self,
+        document_id: ObjectId,
+        data: FeatureByteBaseModel,
+        document: Optional[FeatureStoreModel] = None,
+        return_document: bool = True,
+    ) -> Optional[FeatureStoreModel]:
         # TODO: implement proper logic to update feature store document
-        return await self.get_document(document_id=document_id)
+        if document is None:
+            document = await self.get_document(document_id=document_id)
+
+        if return_document:
+            return document
+        return None
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureStoreInfo:
         _ = verbose

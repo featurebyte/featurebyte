@@ -3,7 +3,7 @@ FeatureService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 from pydantic import ValidationError
@@ -25,9 +25,12 @@ from featurebyte.schema.feature import (
     FeatureBriefInfoList,
     FeatureCreate,
     FeatureInfo,
-    FeatureUpdate,
+    FeatureServiceUpdate,
 )
-from featurebyte.schema.feature_namespace import FeatureNamespaceCreate, FeatureNamespaceUpdate
+from featurebyte.schema.feature_namespace import (
+    FeatureNamespaceCreate,
+    FeatureNamespaceServiceUpdate,
+)
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 
@@ -120,15 +123,12 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                 user=self.user, persistent=self.persistent
             )
             try:
-                feature_namespace = await feature_namespace_service.get_document(
-                    document_id=document.feature_namespace_id
-                )
-
                 # update feature namespace
                 feature_namespace = await feature_namespace_service.update_document(
-                    document_id=feature_namespace.id,
-                    data=FeatureNamespaceUpdate(feature_id=document.id),
+                    document_id=document.feature_namespace_id,
+                    data=FeatureNamespaceServiceUpdate(feature_id=document.id),
                 )
+                assert feature_namespace is not None
 
             except DocumentNotFoundError:
                 feature_namespace = await feature_namespace_service.create_document(
@@ -160,13 +160,21 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
         return await self.get_document(document_id=insert_id)
 
     async def update_document(  # type: ignore[override]
-        self, document_id: ObjectId, data: FeatureUpdate
-    ) -> FeatureModel:
-        document = await self.get_document(document_id=document_id)
+        self,
+        document_id: ObjectId,
+        data: FeatureServiceUpdate,
+        document: Optional[FeatureModel] = None,
+        return_document: bool = True,
+    ) -> Optional[FeatureModel]:
+        if document is None:
+            document = await self.get_document(document_id=document_id)
 
-        update_payload = {}
+        update_payload: dict[str, Any] = {}
         if data.readiness:
             update_payload["readiness"] = data.readiness.value
+        if data.feature_list_id:
+            feature_list_ids = set(document.feature_list_ids + [data.feature_list_id])
+            update_payload["feature_list_ids"] = sorted(feature_list_ids)
 
         async with self.persistent.start_transaction() as session:
             if update_payload:
@@ -177,17 +185,20 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                     user_id=self.user.id,
                 )
 
-            feature_namespace_service = FeatureNamespaceService(
-                user=self.user, persistent=self.persistent
-            )
-            await feature_namespace_service.update_document(
-                document_id=document.feature_namespace_id,
-                data=FeatureNamespaceUpdate(
-                    feature_id=document_id,
-                    default_version_mode=data.default_version_mode,
-                ),
-            )
-        return await self.get_document(document_id=document_id)
+            if data.readiness:
+                feature_namespace_service = FeatureNamespaceService(
+                    user=self.user, persistent=self.persistent
+                )
+                await feature_namespace_service.update_document(
+                    document_id=document.feature_namespace_id,
+                    data=FeatureNamespaceServiceUpdate(
+                        feature_id=document_id,
+                    ),
+                )
+
+        if return_document:
+            return await self.get_document(document_id=document_id)
+        return None
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureInfo:
         feature = await self.get_document(document_id=document_id)

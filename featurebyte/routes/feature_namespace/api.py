@@ -20,7 +20,11 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.feature_namespace import FeatureNamespaceInfo, FeatureNamespaceList
+from featurebyte.schema.feature_namespace import (
+    FeatureNamespaceInfo,
+    FeatureNamespaceList,
+    FeatureNamespaceUpdate,
+)
 
 router = APIRouter(prefix="/feature_namespace")
 
@@ -41,6 +45,22 @@ async def get_feature_namespace(
         ),
     )
     return feature_namespace
+
+
+@router.patch("/{feature_namespace_id}", response_model=FeatureNamespaceModel)
+async def update_feature(
+    request: Request, feature_namespace_id: PydanticObjectId, data: FeatureNamespaceUpdate
+) -> FeatureNamespaceModel:
+    """
+    Update FeatureNamespace
+    """
+    feature: FeatureNamespaceModel = await request.state.controller.update_feature_namespace(
+        user=request.state.user,
+        persistent=request.state.persistent,
+        feature_namespace_id=feature_namespace_id,
+        data=data,
+    )
+    return feature
 
 
 @router.get("", response_model=FeatureNamespaceList)

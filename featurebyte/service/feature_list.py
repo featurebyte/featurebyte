@@ -7,16 +7,20 @@ from typing import Any, Dict, List, Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
-from featurebyte.models.feature import DefaultVersionMode, FeatureSignature
+from featurebyte.exception import (
+    DocumentError,
+    DocumentInconsistencyError,
+    DocumentNotFoundError,
+)
+from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureSignature
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
+from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import (
     FeatureListBriefInfoList,
     FeatureListCreate,
     FeatureListInfo,
-    FeatureListUpdate,
 )
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
+from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -73,6 +77,18 @@ class FeatureListService(
         }
         return derived_output
 
+    async def _update_features(
+        self, features: list[FeatureModel], feature_list_id: ObjectId
+    ) -> None:
+        feature_service = FeatureService(user=self.user, persistent=self.persistent)
+        for feature in features:
+            await feature_service.update_document(
+                document_id=feature.id,
+                data=FeatureServiceUpdate(feature_list_id=feature_list_id),
+                document=feature,
+                return_document=False,
+            )
+
     async def create_document(  # type: ignore[override]
         self, data: FeatureListCreate, get_credential: Any = None
     ) -> FeatureListModel:
@@ -108,15 +124,12 @@ class FeatureListService(
                 user=self.user, persistent=self.persistent
             )
             try:
-                feature_list_namespace = await feature_list_namespace_service.get_document(
-                    document_id=document.feature_list_namespace_id
-                )
-
                 # update feature list namespace
-                await feature_list_namespace_service.update_document(
-                    document_id=feature_list_namespace.id,
-                    data=FeatureListNamespaceUpdate(feature_list_id=document.id),
+                feature_list_namespace = await feature_list_namespace_service.update_document(
+                    document_id=document.feature_list_namespace_id,
+                    data=FeatureListNamespaceServiceUpdate(feature_list_id=document.id),
                 )
+                assert feature_list_namespace is not None
 
             except DocumentNotFoundError:
                 await feature_list_namespace_service.create_document(
@@ -130,25 +143,10 @@ class FeatureListService(
                         features=feature_data["features"],
                     )
                 )
+
+            # update feature's feature_list_ids attribute
+            await self._update_features(feature_data["features"], insert_id)
         return await self.get_document(document_id=insert_id)
-
-    async def update_document(  # type: ignore[override]
-        self, document_id: ObjectId, data: FeatureListUpdate
-    ) -> FeatureListModel:
-        document = await self.get_document(document_id=document_id)
-
-        feature_list_namespace_service = FeatureListNamespaceService(
-            user=self.user, persistent=self.persistent
-        )
-        await feature_list_namespace_service.update_document(
-            document_id=document.feature_list_namespace_id,
-            data=FeatureListNamespaceUpdate(
-                feature_list_id=document_id,
-                status=data.status,
-                default_version_mode=data.default_version_mode,
-            ),
-        )
-        return document
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureListInfo:
         feature_list = await self.get_document(document_id=document_id)
