@@ -1,0 +1,85 @@
+"""
+Implementation of derived aggregations (complex aggregations that combine multiple Features)
+"""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
+
+from featurebyte.api.feature import Feature
+from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.enum import AggFunc
+
+if TYPE_CHECKING:
+    from featurebyte.api.groupby import EventViewGroupBy
+
+
+def std_aggregation(
+    groupby_obj: EventViewGroupBy,
+    value_column: str,
+    windows: List[str],
+    feature_names: List[str],
+    timestamp_column: str,
+    feature_job_setting: Optional[Dict[str, str]],
+) -> FeatureGroup:
+    """Computes standard deviation aggregation by combining two average features
+
+    Using the formula:
+        Stddev(x) = sqrt(E[x^2] - E[x]^2)
+
+    This allows tiles to be shared with other features when possible, especially the tiles required
+    to compute E[x] (i.e. Avg(x))
+
+    Parameters
+    ----------
+    groupby_obj: EventViewGroupBy
+        EventViewGroupBy object that called this function
+    value_column: str
+        Column to be aggregated
+    windows: List[str]
+        List of aggregation window sizes
+    feature_names: List[str]
+        Output feature names
+    timestamp_column: Optional[str]
+        Timestamp column used to specify the window (if not specified, event data timestamp is used)
+    feature_job_setting: Optional[Dict[str, str]]
+        Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
+        feature job setting parameters
+    """
+    temp_view = groupby_obj.obj.copy()
+    temp_view["_value_squared"] = temp_view[value_column] * temp_view[value_column]
+    temp_view_grouped = temp_view.groupby(groupby_obj.keys, groupby_obj.category)
+    temp_feature_names = [f"_value_squared_avg_{i}" for i in range(len(feature_names))]
+    expected_x2_features = temp_view_grouped.aggregate(
+        "_value_squared",
+        method=AggFunc.AVG,
+        windows=windows,
+        feature_names=temp_feature_names,
+        timestamp_column=timestamp_column,
+        feature_job_setting=feature_job_setting,
+    )
+    temp_feature_names = [f"_value_avg_{i}" for i in range(len(feature_names))]
+    expected_x_features = temp_view_grouped.aggregate(
+        value_column,
+        method=AggFunc.AVG,
+        windows=windows,
+        feature_names=temp_feature_names,
+        timestamp_column=timestamp_column,
+        feature_job_setting=feature_job_setting,
+    )
+
+    features = []
+    for name_x2, name_x, feature_name in zip(
+        expected_x2_features.feature_names,
+        expected_x_features.feature_names,
+        feature_names,
+    ):
+        feature = (
+            expected_x2_features[name_x2]
+            - (expected_x_features[name_x] * expected_x_features[name_x])
+        ).sqrt()
+        feature.name = feature_name
+        feature = cast(Feature, feature)
+        features.append(feature)
+
+    feature_group = FeatureGroup(items=features)
+    return feature_group
