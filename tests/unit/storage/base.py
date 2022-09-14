@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 import pytest_asyncio
+from pydantic import BaseModel
 
 from featurebyte.storage import Storage
 
@@ -16,13 +17,36 @@ class BaseStorageTestSuite:
     BaseStorageTestSuite class
     """
 
+    @pytest.fixture(name="pydantic_object")
+    def pydantic_object_fixture(self):
+        """
+        Pydantic object
+        """
+
+        class SomeModel(BaseModel):
+            """
+            Test pydantic class
+            """
+
+            text: str
+            value: int
+
+        return SomeModel(text="Some text value", value=1234)
+
+    @pytest.fixture(name="text_file_content")
+    def text_file_content_fixture(self):
+        """
+        Content of text file
+        """
+        return "There is some content in this file"
+
     @pytest.fixture(name="local_path")
-    def local_path_fixture(self):
+    def local_path_fixture(self, text_file_content):
         """
         Path to local temporary file
         """
         with tempfile.NamedTemporaryFile(mode="w") as file_obj:
-            file_obj.write("There is some content in this file")
+            file_obj.write(text_file_content)
             file_obj.flush()
             yield file_obj.name
 
@@ -78,13 +102,15 @@ class BaseStorageTestSuite:
             assert str(exc_info.value) == "Remote file does not exist"
 
     @pytest.mark.asyncio
-    async def test_stream_file_success(self, remote_path: str, storage: Storage):
+    async def test_stream_file_success(
+        self, remote_path: str, storage: Storage, text_file_content: str
+    ):
         """
         Test file upload
         """
         file_stream = storage.get_file_stream(remote_path, chunk_size=5)
         read_bytes = b"".join([chunk async for chunk in file_stream])
-        assert read_bytes.decode("utf-8") == "There is some content in this file"
+        assert read_bytes.decode("utf-8") == text_file_content
 
     @pytest.mark.asyncio
     async def test_stream_file_fail(self, storage: Storage):
@@ -97,3 +123,29 @@ class BaseStorageTestSuite:
             b"".join([chunk async for chunk in file_stream])
 
         assert str(exc_info.value) == "Remote file does not exist"
+
+    @pytest.mark.asyncio
+    async def test_get_text_success(self, storage: Storage, text_file_content):
+        """
+        Test file upload
+        """
+        # upload text
+        remote_path = "some/text/file"
+        await storage.put_text(text=text_file_content, remote_path=remote_path)
+
+        # download should work
+        value = await storage.get_text(remote_path)
+        assert value == text_file_content
+
+    @pytest.mark.asyncio
+    async def test_get_object_success(self, storage: Storage, pydantic_object):
+        """
+        Dict object upload
+        """
+        # upload text
+        remote_path = "some/json/file"
+        await storage.put_object(data=pydantic_object, remote_path=remote_path)
+
+        # download should work
+        value = await storage.get_object(remote_path)
+        assert value == pydantic_object.dict()

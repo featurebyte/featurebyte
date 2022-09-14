@@ -200,7 +200,11 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
             f"{self.base_route}/{feature_job_setting_analysis_id}/backtest", json=payload
         )
         assert response.status_code == HTTPStatus.ACCEPTED
-        output_document_id = response.json()["payload"]["output_document_id"]
+        response_dict = response.json()
+        output_document_id = response_dict["payload"]["output_document_id"]
+        assert response_dict["output_path"] == (
+            f"/temp_data?path=feature_job_setting_analysis/backtest/{output_document_id}"
+        )
 
         self.wait_for_results(test_api_client, response)
 

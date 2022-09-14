@@ -136,9 +136,11 @@ class Storage(ABC):
         str
             Text data
         """
-        with tempfile.NamedTemporaryFile(mode="r") as file_obj:
-            await self.get(remote_path, Path(file_obj.name))
-            return file_obj.read()
+        with tempfile.NamedTemporaryFile(mode="r") as tmp_file:
+            await self.get(remote_path, Path(tmp_file.name))
+            with open(tmp_file.name, encoding="utf8") as file_obj:
+                text = file_obj.read()
+            return text
 
     async def put_dataframe(self, dataframe: DataFrame, remote_path: Path) -> None:
         """
