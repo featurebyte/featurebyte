@@ -470,6 +470,17 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         """
         return self.dtype in (DBVarType.TIMESTAMP, DBVarType.DATE)
 
+    @property
+    def is_numeric(self) -> bool:
+        """
+        Returns whether Series has a numeric variable type
+
+        Returns
+        -------
+        bool
+        """
+        return self.dtype in (DBVarType.INT, DBVarType.FLOAT)
+
     def isnull(self) -> Series:
         """
         Returns a boolean Series indicating whether each value is missing
@@ -550,6 +561,29 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_type=NodeType.CAST,
             output_var_type=output_var_type,
             node_params=node_params,
+            **self.unary_op_series_params(),
+        )
+
+    def sqrt(self) -> Series:
+        """
+        Returns a new Series that computes the square root of the current Series
+
+        Returns
+        -------
+        Series
+
+        Raises
+        ------
+        TypeError
+            if the current Series dtype is not compatible with sqrt
+        """
+        if not self.is_numeric:
+            raise TypeError(f"sqrt is only available to numeric series; got {self.dtype}")
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.SQRT,
+            output_var_type=DBVarType.FLOAT,
+            node_params={},
             **self.unary_op_series_params(),
         )
 

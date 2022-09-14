@@ -373,6 +373,18 @@ class SelectedEntityBuildTileInputNode(InputNode):
 
 
 @dataclass
+class UnaryOp(ExpressionNode):
+    """Typical unary operation node"""
+
+    expr: ExpressionNode
+    operation: type[expressions.Expression]
+
+    @property
+    def sql(self) -> Expression:
+        return self.operation(this=self.expr.sql)
+
+
+@dataclass
 class BinaryOp(ExpressionNode):
     """Binary operation node"""
 
@@ -1390,6 +1402,7 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.LAG,
     NodeType.TIMEDELTA_EXTRACT,
     NodeType.TIMEDELTA,
+    NodeType.SQRT,
 }
 
 
@@ -1531,6 +1544,8 @@ def make_expression_node(
             timestamp_column=parameters["timestamp_column"],
             offset=parameters["offset"],
         )
+    elif node_type == NodeType.SQRT:
+        sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expressions.Sqrt)
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")
     return sql_node

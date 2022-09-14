@@ -847,3 +847,23 @@ def test_node_types_lineage(dataframe, float_series):
         "sub",
         "project",
     ]
+
+
+def test_sqrt(float_series):
+    """Test sqrt operation"""
+    new_series = float_series.sqrt()
+    assert_series_attributes_equal(new_series, float_series)
+    node_kwargs = {"parameters": {}, "output_type": NodeOutputType.SERIES}
+    exclude = {"name": True}
+    _check_node_equality(
+        new_series.node,
+        Node(name="sqrt_1", type=NodeType.SQRT, **node_kwargs),
+        exclude=exclude,
+    )
+
+
+def test_sqrt__invalid_dtype(bool_series):
+    """Test sqrt operation cannot be applied to non-numeric series"""
+    with pytest.raises(TypeError) as exc:
+        _ = bool_series.sqrt()
+    assert str(exc.value) == "sqrt is only available to numeric series; got BOOL"

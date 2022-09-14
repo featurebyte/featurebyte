@@ -96,6 +96,7 @@ def int_series(dataframe):
     assert isinstance(series, Series)
     assert series.name == "CUST_ID"
     assert series.dtype == DBVarType.INT
+    assert series.is_numeric
     yield series
 
 
@@ -108,6 +109,7 @@ def float_series(dataframe):
     assert isinstance(series, Series)
     assert series.name == "VALUE"
     assert series.dtype == DBVarType.FLOAT
+    assert series.is_numeric
     yield series
 
 
