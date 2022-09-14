@@ -8,6 +8,7 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.graph import QueryGraph
 
 
 @pytest.mark.parametrize(
@@ -345,4 +346,66 @@ def test_groupby__prune(snowflake_event_view_with_entity):
         "mul_2": ["assign_2"],
         "project_1": ["mul_1"],
         "project_2": ["mul_2"],
+    }
+
+
+def test_groupby__std_aggregation(snowflake_event_view_with_entity):
+    """
+    Test std aggregation builds features using multiple groupby nodes
+    """
+    features = snowflake_event_view_with_entity.groupby("cust_id").aggregate(
+        value_column="col_float",
+        method="std",
+        windows=["1h", "4h"],
+        feature_names=["1h_std", "4h_std"],
+        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+    )
+    assert features.feature_names == ["1h_std", "4h_std"]
+    feature_dict = features["1h_std"].dict()
+    assert feature_dict["graph"]["backward_edges"] == {
+        "project_1": ["input_1"],
+        "mul_1": ["project_1", "project_1"],
+        "assign_1": ["input_1", "mul_1"],
+        "groupby_1": ["assign_1"],
+        "project_2": ["groupby_1"],
+        "groupby_2": ["assign_1"],
+        "project_3": ["groupby_2"],
+        "mul_2": ["project_3", "project_3"],
+        "sub_1": ["project_2", "mul_2"],
+        "sqrt_1": ["sub_1"],
+        "alias_1": ["sqrt_1"],
+    }
+    # check job settings are propagated
+    graph = QueryGraph(**feature_dict["graph"])
+    groupby_node_1 = graph.get_node_by_name("groupby_1")
+    assert groupby_node_1.parameters == {
+        "keys": ["cust_id"],
+        "parent": "_value_squared",
+        "agg_func": "avg",
+        "value_by": None,
+        "windows": ["1h", "4h"],
+        "timestamp": "event_timestamp",
+        "blind_spot": 90,
+        "time_modulo_frequency": 180,
+        "frequency": 360,
+        "names": ["_value_squared_avg_0", "_value_squared_avg_1"],
+        "serving_names": ["cust_id"],
+        "tile_id": "sf_table_f360_m180_b90_6779d772dcc5c83e10a93ca08923844041ded978",
+        "aggregation_id": "avg_1ce84b047a02745f32c13556aa0e01c98405788c",
+    }
+    groupby_node_2 = graph.get_node_by_name("groupby_2")
+    assert groupby_node_2.parameters == {
+        "keys": ["cust_id"],
+        "parent": "col_float",
+        "agg_func": "avg",
+        "value_by": None,
+        "windows": ["1h", "4h"],
+        "timestamp": "event_timestamp",
+        "blind_spot": 90,
+        "time_modulo_frequency": 180,
+        "frequency": 360,
+        "names": ["_value_avg_0", "_value_avg_1"],
+        "serving_names": ["cust_id"],
+        "tile_id": "sf_table_f360_m180_b90_6779d772dcc5c83e10a93ca08923844041ded978",
+        "aggregation_id": "avg_a1fe55b568f07808c926c0d9d5550c76df42f280",
     }
