@@ -12,7 +12,6 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListStatus,
@@ -44,15 +43,6 @@ class FeatureListPaginatedList(PaginationMixin):
     """
 
     data: List[FeatureListModel]
-
-
-class FeatureListUpdate(FeatureByteBaseModel):
-    """
-    FeatureList update schema
-    """
-
-    status: Optional[FeatureListStatus]
-    default_version_mode: Optional[DefaultVersionMode]
 
 
 class ProductionReadyFractionComparison(FeatureByteBaseModel):

@@ -7,11 +7,8 @@ from typing import Any, Dict, List, Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import (
-    DocumentError,
-    DocumentInconsistencyError,
-    DocumentNotFoundError,
-)
+from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureSignature
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.schema.feature import FeatureServiceUpdate
@@ -147,6 +144,21 @@ class FeatureListService(
             # update feature's feature_list_ids attribute
             await self._update_features(feature_data["features"], insert_id)
         return await self.get_document(document_id=insert_id)
+
+    async def update_document(  # type: ignore[override]
+        self,
+        document_id: ObjectId,
+        data: FeatureByteBaseModel,
+        document: Optional[FeatureListModel] = None,
+        return_document: bool = True,
+    ) -> Optional[FeatureListModel]:
+        # TODO: implement logic to update feature list deployment
+        if document is None:
+            document = await self.get_document(document_id=document_id)
+
+        if return_document:
+            return document
+        return None
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureListInfo:
         feature_list = await self.get_document(document_id=document_id)

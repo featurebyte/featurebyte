@@ -528,7 +528,7 @@ class BaseDocumentService(Generic[Document]):
         data: FeatureByteBaseModel,
         document: Optional[FeatureByteBaseDocumentModel] = None,
         return_document: bool = True,
-    ) -> Document:
+    ) -> Optional[Document]:
         """
         Update document at persistent
 
@@ -545,7 +545,7 @@ class BaseDocumentService(Generic[Document]):
 
         Returns
         -------
-        Document
+        Optional[Document]
         """
 
 
