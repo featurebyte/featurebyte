@@ -9,13 +9,7 @@ from http import HTTPStatus
 from fastapi import Request, Response
 from starlette.responses import JSONResponse
 
-from featurebyte.exception import (
-    DocumentConflictError,
-    DocumentError,
-    DocumentInconsistencyError,
-    DocumentNotFoundError,
-    DocumentUpdateError,
-)
+from featurebyte.exception import DocumentConflictError, DocumentError, DocumentNotFoundError
 
 
 class ExecutionContext:
@@ -52,8 +46,12 @@ class ExecutionContext:
         if not issubclass(except_class, Exception):
             raise ValueError(f"registered key Type {except_class} must be a subtype of Exception")
 
-        if except_class in inspect.getmro(except_class)[1:-3]:
-            raise ValueError(f"{except_class} must be registered before its super class")
+        super_classes = inspect.getmro(except_class)[1:-3]
+        for super_clazz in super_classes:
+            if super_clazz in cls.exception_handlers:
+                raise ValueError(
+                    f"{except_class} must be registered before its super class {super_clazz}"
+                )
 
         cls.exception_handlers[except_class] = (handle_status_code, handle_message)
 
