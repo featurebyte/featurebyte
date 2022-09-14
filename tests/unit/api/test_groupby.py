@@ -82,7 +82,7 @@ def test_groupby__value_column_not_found(snowflake_event_view_with_entity):
     """
     grouped = EventViewGroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
     with pytest.raises(KeyError) as exc:
-        grouped.aggregate("non_existing_column", "count", ["1d"], ["feature_name"])
+        grouped.aggregate("non_existing_column", "sum", ["1d"], ["feature_name"])
     expected_msg = 'Column "non_existing_column" not found'
     assert expected_msg in str(exc.value)
 
@@ -243,15 +243,18 @@ def test_groupby__count_features(snowflake_event_view_with_entity, method, categ
     """
     Test count features have fillna transform applied
     """
-    feature_group = snowflake_event_view_with_entity.groupby(
-        "cust_id", category=category
-    ).aggregate(
-        value_column="col_float",
+    aggregate_kwargs = dict(
         method=method,
         windows=["30m", "1h", "2h"],
         feature_names=["feat_30m", "feat_1h", "feat_2h"],
         feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
     )
+    if method != "count":
+        aggregate_kwargs["value_column"] = "col_float"
+
+    feature_group = snowflake_event_view_with_entity.groupby(
+        "cust_id", category=category
+    ).aggregate(**aggregate_kwargs)
     feature = feature_group["feat_30m"]
     feature_dict = feature.dict()
     if category is None:
@@ -262,6 +265,54 @@ def test_groupby__count_features(snowflake_event_view_with_entity, method, categ
         assert feature_dict["node"]["type"] == NodeType.PROJECT
         # count with category has dict like output type
         assert feature_dict["dtype"] == DBVarType.OBJECT
+
+
+def test_groupby__count_feature_specify_value_column(snowflake_event_view_with_entity):
+    """
+    Test count aggregation cannot have value_column specified
+    """
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate(
+            value_column="col_float",
+            method="count",
+            windows=["30m", "1h", "2h"],
+            feature_names=["feat_30m", "feat_1h", "feat_2h"],
+            feature_job_setting=dict(
+                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+            ),
+        )
+    assert (
+        str(exc.value)
+        == 'Specifying value column is not allowed for COUNT aggregation; try aggregate(method="count", ...)'
+    )
+
+
+@pytest.mark.parametrize(
+    "missing_param, expected_error",
+    [
+        ("windows", "windows is required and should be a list; got None"),
+        ("feature_names", "feature_names is required and should be a list; got None"),
+        ("value_column", "value_column is required"),
+        ("method", "method is required"),
+    ],
+)
+def test_groupby__required_params_missing(
+    snowflake_event_view_with_entity, missing_param, expected_error
+):
+    """
+    Test errors are expected when required parameters are missing
+    """
+    aggregate_kwargs = dict(
+        value_column="col_float",
+        method="max",
+        windows=["30m", "1h", "2h"],
+        feature_names=["feat_30m", "feat_1h", "feat_2h"],
+        feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+    )
+    aggregate_kwargs.pop(missing_param)
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate(**aggregate_kwargs)
+    assert str(exc.value) == expected_error
 
 
 def test_groupby__prune(snowflake_event_view_with_entity):

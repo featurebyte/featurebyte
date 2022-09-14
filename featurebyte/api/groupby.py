@@ -70,22 +70,36 @@ class EventViewGroupBy(OpsMixin):
     def __str__(self) -> str:
         return repr(self)
 
-    def _prepare_node_parameters(
+    def _validate_parameters(
         self,
-        value_column: str,
-        method: str,
-        windows: list[str],
-        feature_names: list[str],
-        timestamp_column: str | None = None,
-        value_by_column: str | None = None,
-        feature_job_setting: dict[str, str] | None = None,
-    ) -> dict[str, Any]:
-        # pylint: disable=too-many-locals
+        value_column: Optional[str],
+        method: Optional[str],
+        windows: Optional[list[str]],
+        feature_names: Optional[list[str]],
+    ) -> None:
+        if method is None:
+            raise ValueError("method is required")
+
         if method not in AggFunc.all():
             raise ValueError(f"Aggregation method not supported: {method}")
 
-        if value_column not in self.obj.columns:
-            raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
+        if method == AggFunc.COUNT:
+            if value_column is not None:
+                raise ValueError(
+                    "Specifying value column is not allowed for COUNT aggregation;"
+                    ' try aggregate(method="count", ...)'
+                )
+        else:
+            if value_column is None:
+                raise ValueError("value_column is required")
+            if value_column not in self.obj.columns:
+                raise KeyError(f'Column "{value_column}" not found in {self.obj}!')
+
+        if not isinstance(windows, list):
+            raise ValueError(f"windows is required and should be a list; got {windows}")
+
+        if not isinstance(feature_names, list):
+            raise ValueError(f"feature_names is required and should be a list; got {feature_names}")
 
         if len(windows) != len(feature_names):
             raise ValueError(
@@ -94,6 +108,21 @@ class EventViewGroupBy(OpsMixin):
 
         if len(windows) != len(set(feature_names)) or len(set(windows)) != len(feature_names):
             raise ValueError("Window sizes or feature names contains duplicated value(s).")
+
+    def _prepare_node_parameters(
+        self,
+        value_column: Optional[str],
+        method: Optional[str],
+        windows: Optional[list[str]],
+        feature_names: Optional[list[str]],
+        timestamp_column: str | None = None,
+        value_by_column: str | None = None,
+        feature_job_setting: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        # pylint: disable=too-many-locals
+        self._validate_parameters(
+            value_column=value_column, method=method, windows=windows, feature_names=feature_names
+        )
 
         feature_job_setting = feature_job_setting or {}
         frequency = feature_job_setting.get("frequency")
@@ -173,10 +202,10 @@ class EventViewGroupBy(OpsMixin):
     @typechecked
     def aggregate(
         self,
-        value_column: str,
-        method: str,
-        windows: List[str],
-        feature_names: List[str],
+        value_column: Optional[str] = None,
+        method: Optional[str] = None,
+        windows: Optional[List[str]] = None,
+        feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[Dict[str, str]] = None,
     ) -> FeatureGroup:
@@ -241,6 +270,7 @@ class EventViewGroupBy(OpsMixin):
         ) = self._prepare_node_and_column_metadata(node_params, tile_id, aggregation_id)
 
         items: list[Feature | BaseFeatureGroup] = []
+        assert isinstance(feature_names, list)
         for feature_name in feature_names:
             feature_node = self.obj.graph.add_operation(
                 node_type=NodeType.PROJECT,

@@ -32,6 +32,10 @@ def calculate_feature_ground_truth(
     """
     Reference implementation for feature calculation that is as simple as possible
     """
+    if variable_column_name is None:
+        # take any column because it doesn't matter
+        variable_column_name = df.columns[0]
+
     last_job_index = (get_epoch_seconds(point_in_time) - time_modulo_frequency) // frequency
     last_job_epoch_seconds = last_job_index * frequency + time_modulo_frequency
 
@@ -242,9 +246,9 @@ def test_aggregation(
         ("AMOUNT", "min", "min_24h", lambda x: x.min(), None),
         ("AMOUNT", "max", "max_24h", lambda x: x.max(), None),
         ("AMOUNT", "sum", "sum_24h", sum_func, None),
-        ("AMOUNT", "count", "count_24h", lambda x: len(x), None),
+        (None, "count", "count_24h", lambda x: len(x), None),
         ("AMOUNT", "na_count", "na_count_24h", lambda x: x.isnull().sum(), None),
-        ("AMOUNT", "count", "count_by_action_24h", lambda x: len(x), "PRODUCT_ACTION"),
+        (None, "count", "count_by_action_24h", lambda x: len(x), "PRODUCT_ACTION"),
         ("PREV_AMOUNT_BY_CUST_ID", "avg", "prev_amount_avg_24h", lambda x: x.mean(), None),
         (
             "TIME_SINCE_PREVIOUS_EVENT_BY_CUST_ID",
