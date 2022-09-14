@@ -104,6 +104,7 @@ class AggFunc(str, Enum):
     MAX = "max"
     COUNT = "count"
     NA_COUNT = "na_count"
+    STD = "std"
 
     @classmethod
     def all(cls) -> list[str]:
@@ -114,6 +115,16 @@ class AggFunc(str, Enum):
         list[str]
         """
         return [c.value for c in cls]
+
+    @classmethod
+    def derived(cls) -> list[str]:
+        """List of functions that are derived from others
+
+        Returns
+        -------
+        list[str]
+        """
+        return [cls.STD]
 
 
 class SourceType(str, Enum):

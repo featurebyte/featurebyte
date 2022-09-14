@@ -3,7 +3,7 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 from typeguard import typechecked
 
@@ -120,10 +120,6 @@ class EventViewGroupBy(OpsMixin):
         feature_job_setting: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         # pylint: disable=too-many-locals
-        self._validate_parameters(
-            value_column=value_column, method=method, windows=windows, feature_names=feature_names
-        )
-
         feature_job_setting = feature_job_setting or {}
         frequency = feature_job_setting.get("frequency")
         time_modulo_frequency = feature_job_setting.get("time_modulo_frequency")
@@ -233,6 +229,34 @@ class EventViewGroupBy(OpsMixin):
         FeatureGroup
         """
         # pylint: disable=too-many-locals
+        self._validate_parameters(
+            value_column=value_column, method=method, windows=windows, feature_names=feature_names
+        )
+
+        if method in AggFunc.derived():
+            func = self._aggregate_derived
+        else:
+            func = self._aggregate_groupby
+
+        return func(
+            value_column=value_column,
+            method=method,
+            windows=windows,
+            feature_names=feature_names,
+            timestamp_column=timestamp_column,
+            feature_job_setting=feature_job_setting,
+        )
+
+    def _aggregate_groupby(
+        self,
+        value_column: Optional[str] = None,
+        method: Optional[str] = None,
+        windows: Optional[List[str]] = None,
+        feature_names: Optional[List[str]] = None,
+        timestamp_column: Optional[str] = None,
+        feature_job_setting: Optional[Dict[str, str]] = None,
+    ) -> FeatureGroup:
+
         node_params = self._prepare_node_parameters(
             value_column,
             method,
@@ -301,4 +325,52 @@ class EventViewGroupBy(OpsMixin):
                 feature.name = feature_name
             items.append(feature)
         feature_group = FeatureGroup(items)
+        return feature_group
+
+    def _aggregate_derived(
+        self,
+        value_column: Optional[str] = None,
+        method: Optional[str] = None,
+        windows: Optional[List[str]] = None,
+        feature_names: Optional[List[str]] = None,
+        timestamp_column: Optional[str] = None,
+        feature_job_setting: Optional[Dict[str, str]] = None,
+    ):
+        assert method == AggFunc.STD
+        temp_view = self.obj.copy()
+        temp_view["_value_squared"] = temp_view[value_column] * temp_view[value_column]
+        temp_view_grouped = temp_view.groupby(self.keys, self.category)
+        temp_feature_names = [f"_value_squared_avg_{i}" for i in range(len(feature_names))]
+        expected_x2_features = temp_view_grouped.aggregate(
+            "_value_squared",
+            method=AggFunc.AVG,
+            windows=windows,
+            feature_names=temp_feature_names,
+            timestamp_column=timestamp_column,
+            feature_job_setting=feature_job_setting,
+        )
+        temp_feature_names = [f"_value_avg_{i}" for i in range(len(feature_names))]
+        expected_x_features = temp_view_grouped.aggregate(
+            value_column,
+            method=AggFunc.AVG,
+            windows=windows,
+            feature_names=temp_feature_names,
+            timestamp_column=timestamp_column,
+            feature_job_setting=feature_job_setting,
+        )
+
+        features = []
+        for name_x2, name_x, feature_name in zip(
+            expected_x2_features.feature_names,
+            expected_x_features.feature_names,
+            feature_names,
+        ):
+            feature = expected_x2_features[name_x2] - (
+                expected_x_features[name_x] * expected_x_features[name_x]
+            )
+            feature.name = feature_name
+            feature = cast(Feature, feature)
+            features.append(feature)
+
+        feature_group = FeatureGroup(items=features)
         return feature_group
