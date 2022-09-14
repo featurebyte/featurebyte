@@ -144,14 +144,12 @@ def test_query_object_operation_on_snowflake_source(
     # create some features
     event_view["derived_value_column"] = 1.0 * event_view["USER_ID"]
     feature_group = event_view.groupby("USER_ID").aggregate(
-        "derived_value_column",
-        "count",
+        method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_2h", "COUNT_24h"],
     )
     feature_group_per_category = event_view.groupby("USER_ID", category="PRODUCT_ACTION").aggregate(
-        "derived_value_column",
-        "count",
+        method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_BY_ACTION_2h", "COUNT_BY_ACTION_24h"],
     )
@@ -299,8 +297,7 @@ def create_feature_with_filtered_event_view(event_view):
     """
     event_view = event_view[event_view["PRODUCT_ACTION"] == "purchase"]
     feature_group = event_view.groupby("USER_ID").aggregate(
-        "USER_ID",
-        "count",
+        method="count",
         windows=["7d"],
         feature_names=["NUM_PURCHASE_7d"],
     )
@@ -663,8 +660,7 @@ def check_day_of_week_counts(event_view, preview_param, config):
     """Check using derived numeric column as category"""
     event_view["event_day_of_week"] = event_view["EVENT_TIMESTAMP"].dt.day_of_week
     day_of_week_counts = event_view.groupby("USER_ID", category="event_day_of_week").aggregate(
-        "USER_ID",
-        "count",
+        method="count",
         windows=["24h"],
         feature_names=["DAY_OF_WEEK_COUNTS_24h"],
     )
