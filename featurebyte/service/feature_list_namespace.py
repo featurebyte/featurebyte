@@ -128,18 +128,18 @@ class FeatureListNamespaceService(
 
         if to_find_default_feature_list:
             for feature_list_id in namespace.feature_list_ids:
-                flist = await feature_list_service.get_document(document_id=feature_list_id)
-                assert flist.created_at is not None
-                if flist.readiness_distribution > readiness_dist:
-                    readiness_dist = flist.readiness_distribution
-                    default_feature_list_id = flist.id
-                    default_feature_list = flist
+                version = await feature_list_service.get_document(document_id=feature_list_id)
+                assert version.created_at is not None
+                if version.readiness_distribution > readiness_dist:
+                    readiness_dist = version.readiness_distribution
+                    default_feature_list_id = version.id
+                    default_feature_list = version
                 elif (
-                    flist.readiness_distribution == readiness_dist
-                    and flist.created_at > default_feature_list.created_at  # type: ignore
+                    version.readiness_distribution == readiness_dist
+                    and version.created_at > default_feature_list.created_at  # type: ignore
                 ):
-                    default_feature_list_id = flist.id
-                    default_feature_list = flist
+                    default_feature_list_id = version.id
+                    default_feature_list = version
             update_payload["readiness_distribution"] = readiness_dist.dict()["__root__"]
             update_payload["default_feature_list_id"] = default_feature_list_id
         return update_payload

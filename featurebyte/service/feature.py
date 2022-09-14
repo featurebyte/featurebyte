@@ -191,9 +191,7 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                 )
                 await feature_namespace_service.update_document(
                     document_id=document.feature_namespace_id,
-                    data=FeatureNamespaceServiceUpdate(
-                        feature_id=document_id,
-                    ),
+                    data=FeatureNamespaceServiceUpdate(feature_id=document_id),
                 )
 
         if return_document:

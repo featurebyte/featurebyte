@@ -90,9 +90,9 @@ class FeatureNamespaceService(
         default_feature = await feature_service.get_document(document_id=default_feature_id)
         assert default_feature.created_at is not None
 
+        update_payload: dict[str, Any] = {}
         readiness = FeatureReadiness(namespace.readiness)
         default_version_mode = update_data.default_version_mode or namespace.default_version_mode
-        update_payload: dict[str, Any] = {}
         if (
             update_data.default_version_mode
             and update_data.default_version_mode != namespace.default_version_mode
