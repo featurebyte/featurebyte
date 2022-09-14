@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Literal, Type
 
+from bson.objectid import ObjectId
+
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
@@ -12,6 +14,7 @@ from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListInfo,
     FeatureListPaginatedList,
+    FeatureListUpdate,
 )
 from featurebyte.service.feature_list import FeatureListService
 
@@ -53,6 +56,37 @@ class FeatureListController(
         document = await cls.document_service_class(
             user=user, persistent=persistent
         ).create_document(data=data, get_credential=get_credential)
+        return document
+
+    @classmethod
+    async def update_feature_list(
+        cls,
+        user: Any,
+        persistent: Persistent,
+        feature_list_id: ObjectId,
+        data: FeatureListUpdate,
+    ) -> FeatureListModel:
+        """
+        Update FeatureList at persistent
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        feature_list_id: ObjectId
+            FeatureList ID
+        data: FeatureListUpdate
+            Feature list update payload
+
+        Returns
+        -------
+        FeatureListModel
+        """
+        document = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).update_document(document_id=feature_list_id, data=data)
         return document
 
     @classmethod

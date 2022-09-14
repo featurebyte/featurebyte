@@ -80,17 +80,16 @@ class FeatureNamespaceService(
         update_data: FeatureNamespaceUpdate,
         namespace: FeatureNamespaceModel,
     ) -> dict[str, Any]:
-        from featurebyte.service.feature import (  # pylint: disable=import-outside-toplevel
+        from featurebyte.service.feature import (  # pylint: disable=import-outside-toplevel,cyclic-import
             FeatureService,
         )
 
         # prepare payload to update
         feature_service = FeatureService(user=self.user, persistent=self.persistent)
         default_feature_id = namespace.default_feature_id
-        default_feature = await feature_service.get_document(
-            document_id=namespace.default_feature_id
-        )
+        default_feature = await feature_service.get_document(document_id=default_feature_id)
         assert default_feature.created_at is not None
+
         readiness = FeatureReadiness(namespace.readiness)
         default_version_mode = update_data.default_version_mode or namespace.default_version_mode
         update_payload: dict[str, Any] = {}
@@ -107,11 +106,13 @@ class FeatureNamespaceService(
             # check whether the feature has been saved to persistent or not
             feature = await feature_service.get_document(document_id=update_data.feature_id)
             assert feature.created_at is not None
-            self._validate_feature_version_and_namespace_consistency(feature, namespace)
+            self._validate_feature_version_and_namespace_consistency(
+                feature=feature, feature_namespace=namespace
+            )
 
             if feature.id not in namespace.feature_ids:
                 # when a new feature version is added to the namespace
-                update_payload["feature_ids"] = namespace.feature_ids + [feature.id]
+                update_payload["feature_ids"] = sorted(namespace.feature_ids + [feature.id])
                 if default_version_mode == DefaultVersionMode.AUTO:
                     if (
                         FeatureReadiness(feature.readiness) >= namespace.readiness
@@ -150,13 +151,13 @@ class FeatureNamespaceService(
             exception_detail=f'FeatureNamespace (id: "{document_id}") not found.',
         )
         update_payload = await self._prepare_update_payload(update_data=data, namespace=document)
-
-        # TODO: add logic to update readiness distribution at feature list version level
         _ = await self.persistent.update_one(
             collection_name=self.collection_name,
             query_filter={"_id": document.id},
             update={"$set": update_payload},
         )
+
+        # TODO: add logic to update readiness distribution at feature list version level
         return await self.get_document(document_id=document_id)
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureNamespaceInfo:

@@ -8,13 +8,13 @@ from typing import Any, Dict, List, Optional
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
-from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import DefaultVersionMode, FeatureSignature
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.schema.feature_list import (
     FeatureListBriefInfoList,
     FeatureListCreate,
     FeatureListInfo,
+    FeatureListUpdate,
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
@@ -132,11 +132,23 @@ class FeatureListService(
                 )
         return await self.get_document(document_id=insert_id)
 
-    async def update_document(
-        self, document_id: ObjectId, data: FeatureByteBaseModel
+    async def update_document(  # type: ignore[override]
+        self, document_id: ObjectId, data: FeatureListUpdate
     ) -> FeatureListModel:
-        # TODO: implement proper logic to update feature list document
-        return await self.get_document(document_id=document_id)
+        document = await self.get_document(document_id=document_id)
+
+        feature_list_namespace_service = FeatureListNamespaceService(
+            user=self.user, persistent=self.persistent
+        )
+        await feature_list_namespace_service.update_document(
+            document_id=document.feature_list_namespace_id,
+            data=FeatureListNamespaceUpdate(
+                feature_list_id=document_id,
+                status=data.status,
+                default_version_mode=data.default_version_mode,
+            ),
+        )
+        return document
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureListInfo:
         feature_list = await self.get_document(document_id=document_id)

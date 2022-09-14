@@ -365,6 +365,16 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         # make sure list of ids always sorted
         return sorted(value)
 
+    @validator("readiness_distribution")
+    @classmethod
+    def _validate_readiness_distribution(cls, value: Any, values: dict[str, Any]) -> Any:
+        total_count = sum(read_count.count for read_count in value.__root__)
+        if total_count != len(values["feature_ids"]):
+            raise ValueError(
+                "readiness_distribution total count is different from total feature ids."
+            )
+        return value
+
     class Settings:
         """
         MongoDB settings

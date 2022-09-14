@@ -23,10 +23,13 @@ from featurebyte.persistent.mongo import MongoDB
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.event_data import EventDataCreate
 from featurebyte.schema.feature import FeatureCreate
+from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 
@@ -132,6 +135,18 @@ def feature_service_fixture(persistent, user):
     return FeatureService(persistent=persistent, user=user)
 
 
+@pytest.fixture(name="feature_list_namespace_service")
+def feature_list_namespace_service_fixture(persistent, user):
+    """FeatureListNamespaceService fixture"""
+    return FeatureListNamespaceService(persistent=persistent, user=user)
+
+
+@pytest.fixture(name="feature_list_service")
+def feature_list_service_fixture(persistent, user):
+    """FeatureListService fixture"""
+    return FeatureListService(persistent=persistent, user=user)
+
+
 @pytest.fixture(name="feature_store")
 def feature_store_fixture(feature_store_service, user):
     """FeatureStore model"""
@@ -185,3 +200,28 @@ def feature_fixture(event_data, entity, feature_service, mock_insert_feature_reg
         payload = json.loads(fhandle.read())
         feature = asyncio.run(feature_service.create_document(data=FeatureCreate(**payload)))
         return feature
+
+
+@pytest.fixture(name="mock_insert_feature_list_registry")
+def mock_insert_feature_list_registry_fixture():
+    """
+    Mock insert feature list registry at the controller level
+    """
+    with patch(
+        "featurebyte.service.feature_list.FeatureListService._insert_feature_list_registry"
+    ) as mock:
+        yield mock
+
+
+@pytest.fixture(name="feature_list")
+def feature_list_fixture(feature, feature_list_service, mock_insert_feature_list_registry):
+    """Feature list model"""
+    _ = mock_insert_feature_list_registry
+    with open(
+        "tests/fixtures/request_payloads/feature_list_single.json", encoding="utf"
+    ) as fhandle:
+        payload = json.loads(fhandle.read())
+        feature_list = asyncio.run(
+            feature_list_service.create_document(data=FeatureListCreate(**payload))
+        )
+        return feature_list
