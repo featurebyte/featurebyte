@@ -23,7 +23,7 @@ def feature_for_tile_cache_tests_fixture(event_data, groupby_category):
         windows=["48h"],
         feature_names=["SESSION_COUNT_48h"],
         feature_job_setting={
-            "blind_spot": "30m",
+            "blind_spot": "45m",
             "frequency": "1h",
             "time_modulo_frequency": "30m",
         },
