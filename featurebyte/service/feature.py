@@ -175,9 +175,10 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
         to_update_readiness = bool(data.readiness and document.readiness != data.readiness)
         if to_update_readiness:
             update_payload["readiness"] = data.readiness
+        feature_list_ids = document.feature_list_ids
         if data.feature_list_id:
-            feature_list_ids = set(document.feature_list_ids + [data.feature_list_id])
-            update_payload["feature_list_ids"] = sorted(feature_list_ids)
+            feature_list_ids = sorted(set(document.feature_list_ids + [data.feature_list_id]))
+            update_payload["feature_list_ids"] = feature_list_ids
 
         async with self.persistent.start_transaction() as session:
             if update_payload:
@@ -205,7 +206,7 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                 feature_list_service = FeatureListService(
                     user=self.user, persistent=self.persistent
                 )
-                for feature_list_id in document.feature_list_ids:
+                for feature_list_id in feature_list_ids:
                     await feature_list_service.update_document(
                         document_id=feature_list_id,
                         data=FeatureListServiceUpdate(
