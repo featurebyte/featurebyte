@@ -4,17 +4,12 @@ Tests for FeatureList route
 import json
 from collections import defaultdict
 from http import HTTPStatus
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.enum import SourceType
-from featurebyte.exception import DocumentConflictError, DuplicatedRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
-from featurebyte.models.feature_store import SQLiteDetails
-from featurebyte.service.feature_list import FeatureListService
 from tests.unit.routes.base import BaseApiTestSuite
 
 

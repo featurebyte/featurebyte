@@ -7,21 +7,10 @@ from typing import Any, Dict, List, Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.enum import SourceType
-from featurebyte.exception import (
-    DocumentConflictError,
-    DocumentError,
-    DocumentInconsistencyError,
-    DocumentNotFoundError,
-    DuplicatedRegistryError,
-)
-from featurebyte.feature_manager.model import ExtendedFeatureListModel
-from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
+from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureSignature
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
-from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.feature_list import (
     FeatureListBriefInfoList,
     FeatureListCreate,
@@ -110,12 +99,6 @@ class FeatureListService(
                 **document.dict(by_alias=True), features=feature_data["features"]
             )
 
-            feature_store_dict = await self._get_document(
-                document_id=ObjectId(feature_data["feature_store_id"]),
-                collection_name=FeatureStoreModel.collection_name(),
-            )
-            feature_store = ExtendedFeatureStoreModel(**feature_store_dict)
-
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
                 document=document.dict(by_alias=True),
@@ -132,13 +115,13 @@ class FeatureListService(
                 )
 
                 # update feature list namespace
-                feature_list_namespace = await feature_list_namespace_service.update_document(
+                await feature_list_namespace_service.update_document(
                     document_id=feature_list_namespace.id,
                     data=FeatureListNamespaceUpdate(feature_list_id=document.id),
                 )
 
             except DocumentNotFoundError:
-                feature_list_namespace = await feature_list_namespace_service.create_document(
+                await feature_list_namespace_service.create_document(
                     data=FeatureListNamespaceModel(
                         _id=document.feature_list_namespace_id or ObjectId(),
                         name=document.name,
