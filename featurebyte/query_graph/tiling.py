@@ -144,6 +144,25 @@ class NACountAggregator(TilingAggregator):
         return f"SUM(value_{agg_id})"
 
 
+class StdAggregator(TilingAggregator):
+    """Aggregator that computes the standard deviation"""
+
+    @staticmethod
+    def tile(col: str, agg_id: str) -> list[TileSpec]:
+        return [
+            TileSpec(f'SUM("{col}" * "{col}")', f"sum_value_squared_{agg_id}"),
+            TileSpec(f'SUM("{col}")', f"sum_value_{agg_id}"),
+            TileSpec(f'COUNT("{col}")', f"count_value_{agg_id}"),
+        ]
+
+    @staticmethod
+    def merge(agg_id: str) -> str:
+        expected_x2 = f"SUM(sum_value_squared_{agg_id}) / SUM(count_value_{agg_id})"
+        expected_x = f"SUM(sum_value_{agg_id}) / SUM(count_value_{agg_id})"
+        stddev = f"SQRT(({expected_x2}) - ({expected_x} * {expected_x}))"
+        return stddev
+
+
 def get_aggregator(agg_name: AggFunc) -> type[TilingAggregator]:
     """Retrieves an aggregator class given the aggregation name
 
@@ -168,6 +187,7 @@ def get_aggregator(agg_name: AggFunc) -> type[TilingAggregator]:
         AggFunc.MAX: MaxAggregator,
         AggFunc.COUNT: CountAggregator,
         AggFunc.NA_COUNT: NACountAggregator,
+        AggFunc.STD: StdAggregator,
     }
     if agg_name not in aggregator_mapping:
         raise ValueError(f"Unsupported aggregation: {agg_name}")
