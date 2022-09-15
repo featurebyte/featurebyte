@@ -127,6 +127,7 @@ class FeatureListNamespaceService(
             to_find_default_feature_list = True
 
         if to_find_default_feature_list:
+            readiness_dist = readiness_dist.worst_case()
             for feature_list_id in namespace.feature_list_ids:
                 version = await feature_list_service.get_document(document_id=feature_list_id)
                 assert version.created_at is not None

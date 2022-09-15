@@ -80,6 +80,17 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
 
     __root__: List[FeatureReadinessCount]
 
+    @property
+    def total_count(self) -> int:
+        """
+        Total count of the distribution
+
+        Returns
+        -------
+        int
+        """
+        return sum(readiness_count.count for readiness_count in self.__root__)
+
     @staticmethod
     def _to_count_per_readiness_map(
         feature_readiness_dist: FeatureReadinessDistribution,
@@ -143,12 +154,11 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
         -------
         Fraction of production ready features
         """
-        production_ready_cnt, total = 0, 0
+        production_ready_cnt = 0
         for readiness_count in self.__root__:
-            total += readiness_count.count
             if readiness_count.readiness == FeatureReadiness.PRODUCTION_READY:
                 production_ready_cnt += readiness_count.count
-        return production_ready_cnt / max(total, 1)
+        return production_ready_cnt / max(self.total_count, 1)
 
     def update_readiness(
         self, transition: FeatureReadinessTransition
@@ -171,18 +181,32 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
             When the readiness transition is invalid
         """
         this_dist_map = self._to_count_per_readiness_map(self)
-        if this_dist_map[transition.from_readiness]:
+        if this_dist_map[transition.from_readiness] < 1:
             raise ValueError("Invalid feature readiness transition.")
         this_dist_map[transition.from_readiness] -= 1
         this_dist_map[transition.to_readiness] += 1
         readiness_dist = []
         for feature_readiness in FeatureReadiness:
-            readiness_dist.append(
-                FeatureReadinessCount(
-                    readiness=feature_readiness, count=this_dist_map[feature_readiness]
+            count = this_dist_map[feature_readiness]
+            if count:
+                readiness_dist.append(
+                    FeatureReadinessCount(readiness=feature_readiness, count=count)
                 )
-            )
         return FeatureReadinessDistribution(__root__=readiness_dist)
+
+    def worst_case(self) -> FeatureReadinessDistribution:
+        """
+        Return the worst possible case for feature readiness distribution
+
+        Returns
+        -------
+        FeatureReadinessDistribution
+        """
+        return FeatureReadinessDistribution(
+            __root__=[
+                FeatureReadinessCount(readiness=min(FeatureReadiness), count=self.total_count)
+            ]
+        )
 
 
 class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):

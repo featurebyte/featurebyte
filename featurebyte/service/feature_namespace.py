@@ -91,15 +91,12 @@ class FeatureNamespaceService(
         assert default_feature.created_at is not None
 
         update_payload: dict[str, Any] = {}
-        readiness = FeatureReadiness(namespace.readiness)
         default_version_mode = update_data.default_version_mode or namespace.default_version_mode
         if (
             update_data.default_version_mode
             and update_data.default_version_mode != namespace.default_version_mode
         ):
-            update_payload["default_version_mode"] = DefaultVersionMode(
-                update_data.default_version_mode
-            ).value
+            update_payload["default_version_mode"] = update_data.default_version_mode
 
         to_find_default_feature = False
         if update_data.feature_id:
@@ -118,7 +115,7 @@ class FeatureNamespaceService(
                         FeatureReadiness(feature.readiness) >= namespace.readiness
                         and feature.created_at > default_feature.created_at
                     ):
-                        update_payload["readiness"] = FeatureReadiness(feature.readiness).value
+                        update_payload["readiness"] = feature.readiness
                         update_payload["default_feature_id"] = feature.id
             elif default_version_mode == DefaultVersionMode.AUTO:
                 to_find_default_feature = True
@@ -126,6 +123,7 @@ class FeatureNamespaceService(
             to_find_default_feature = True
 
         if to_find_default_feature:
+            readiness = min(FeatureReadiness)
             for feature_id in namespace.feature_ids:
                 version = await feature_service.get_document(document_id=feature_id)
                 assert version.created_at is not None

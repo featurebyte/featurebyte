@@ -172,8 +172,9 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
             document = await self.get_document(document_id=document_id)
 
         update_payload: dict[str, Any] = {}
-        if data.readiness and document.readiness != data.readiness:
-            update_payload["readiness"] = data.readiness.value
+        to_update_readiness = bool(data.readiness and document.readiness != data.readiness)
+        if to_update_readiness:
+            update_payload["readiness"] = data.readiness
         if data.feature_list_id:
             feature_list_ids = set(document.feature_list_ids + [data.feature_list_id])
             update_payload["feature_list_ids"] = sorted(feature_list_ids)
@@ -187,7 +188,7 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                     user_id=self.user.id,
                 )
 
-            if data.readiness and document.readiness != data.readiness:
+            if to_update_readiness:
                 # trigger feature namespace service to check whether there is a need to update default feature id
                 feature_namespace_service = FeatureNamespaceService(
                     user=self.user, persistent=self.persistent

@@ -167,7 +167,7 @@ class FeatureListService(
             _ = await self.persistent.update_one(
                 collection_name=self.collection_name,
                 query_filter={"_id": document.id},
-                update={"$set": readiness_dist.dict()["__root__"]},
+                update={"$set": {"readiness_distribution": readiness_dist.dict()["__root__"]}},
             )
 
             # trigger feature list namespace to check whether to update default feature list
