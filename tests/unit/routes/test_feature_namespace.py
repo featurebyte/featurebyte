@@ -4,7 +4,7 @@ Test for FeatureNamespace route
 import asyncio
 import time
 from http import HTTPStatus
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 from bson import ObjectId
@@ -28,6 +28,14 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
     )
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
+
+    @pytest.fixture(autouse=True)
+    def mock_insert_feature_registry_fixture(self):
+        """
+        Mock insert feature registry at the controller level
+        """
+        with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
+            yield mock
 
     @property
     def class_name_to_save(self):
@@ -108,6 +116,28 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
             document=FeatureCreate(**payload).dict(by_alias=True),
             user_id=user_id,
         )
+
+    def test_update_200(self, test_api_client_persistent):
+        """Test update (success)"""
+        test_api_client, _ = test_api_client_persistent
+        api_object_filename_pairs = [
+            ("feature_store", "feature_store"),
+            ("entity", "entity"),
+            ("event_data", "event_data"),
+            ("feature", "feature_sum_30m"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = test_api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
+
+        payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
+        doc_id = payload["feature_namespace_id"]
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"default_version_mode": "MANUAL"}
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["default_version_mode"] == "MANUAL"
 
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):

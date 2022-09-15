@@ -22,6 +22,7 @@ class BaseApiTestSuite:
     class_name = None
     payload_filename = None
     payload = None
+    has_update_method = True
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
     list_unprocessable_params_expected_detail_pairs = [
@@ -336,6 +337,14 @@ class BaseApiTestSuite:
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == expected_detail
 
+    def test_list_501(self, test_api_client_persistent, create_success_response):
+        """Test list (not implemented)"""
+        _ = create_success_response
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.get(f"{self.base_route}", params={"search": "abc"})
+        assert response.status_code == HTTPStatus.NOT_IMPLEMENTED
+        assert response.json()["detail"] == "Query not supported."
+
     def test_list_audit_422(
         self,
         test_api_client_persistent,
@@ -364,14 +373,6 @@ class BaseApiTestSuite:
                 "type": "type_error",
             }
         ]
-
-    def test_list_501(self, test_api_client_persistent, create_success_response):
-        """Test list (not implemented)"""
-        _ = create_success_response
-        test_api_client, _ = test_api_client_persistent
-        response = test_api_client.get(f"{self.base_route}", params={"search": "abc"})
-        assert response.status_code == HTTPStatus.NOT_IMPLEMENTED
-        assert response.json()["detail"] == "Query not supported."
 
 
 class BaseAsyncApiTestSuite(BaseApiTestSuite):

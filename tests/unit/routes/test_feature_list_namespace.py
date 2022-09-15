@@ -41,6 +41,16 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
         with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
             yield mock
 
+    @pytest.fixture(autouse=True)
+    def mock_insert_feature_list_registry_fixture(self):
+        """
+        Mock insert feature registry at the controller level
+        """
+        with patch(
+            "featurebyte.service.feature_list.FeatureListService._insert_feature_list_registry"
+        ) as mock:
+            yield mock
+
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         for _ in range(3):
@@ -118,6 +128,37 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
             output.append(document)
             time.sleep(0.05)
         return output
+
+    def test_update_200(self, test_api_client_persistent):
+        """Test update (success)"""
+        test_api_client, _ = test_api_client_persistent
+        api_object_filename_pairs = [
+            ("feature_store", "feature_store"),
+            ("entity", "entity"),
+            ("event_data", "event_data"),
+            ("feature", "feature_sum_30m"),
+            ("feature_list", "feature_list_single"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = test_api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
+
+        payload = self.load_payload("tests/fixtures/request_payloads/feature_list_single.json")
+        doc_id = payload["feature_list_namespace_id"]
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"default_version_mode": "MANUAL"}
+        )
+        response_dict = response.json()
+        assert response_dict["default_version_mode"] == "MANUAL"
+        assert response_dict["status"] == "DRAFT"
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"status": "PUBLISHED"}
+        )
+        response_dict = response.json()
+        assert response_dict["default_version_mode"] == "MANUAL"
+        assert response_dict["status"] == "PUBLISHED"
 
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):

@@ -258,6 +258,18 @@ class TestFeatureApi(BaseApiTestSuite):
         )
         assert negative_response.json()["total"] == 0, negative_response.json()
 
+    def test_update_200(self, test_api_client_persistent, create_success_response):
+        """Test update (success)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        assert create_response_dict["readiness"] == "DRAFT"
+        doc_id = create_response_dict["_id"]
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"readiness": "PRODUCTION_READY"}
+        )
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["readiness"] == "PRODUCTION_READY"
+
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""
