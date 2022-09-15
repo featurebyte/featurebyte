@@ -61,6 +61,7 @@ def std_aggregation(
     if groupby_obj.category is not None:
         raise ValueError("category parameter is not supported for std aggregation method")
 
+    # Compute E[x^2] as a feature
     temp_view = groupby_obj.obj.copy()
     temp_view["_value_squared"] = temp_view[value_column] * temp_view[value_column]  # type: ignore[operator]
     temp_view_grouped = temp_view.groupby(groupby_obj.keys, groupby_obj.category)
@@ -73,6 +74,8 @@ def std_aggregation(
         timestamp_column=timestamp_column,
         feature_job_setting=feature_job_setting,
     )
+
+    # Compute E[x] as a feature
     temp_feature_names = [f"_value_avg_{i}" for i in range(len(feature_names))]
     expected_x_features = temp_view_grouped.aggregate(
         value_column,
@@ -89,6 +92,7 @@ def std_aggregation(
         expected_x_features.feature_names,
         feature_names,
     ):
+        # Compute standard deviation as sqrt(E[x^2] - E[x]^2)
         feature = (
             expected_x2_features[name_x2]  # type: ignore[operator]
             - (expected_x_features[name_x] * expected_x_features[name_x])  # type: ignore[operator]
