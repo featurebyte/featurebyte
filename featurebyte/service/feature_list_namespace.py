@@ -151,6 +151,7 @@ class FeatureListNamespaceService(
         document: Optional[FeatureListNamespaceModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureListNamespaceModel]:
+        # pylint: disable=duplicate-code
         if document is None:
             document = await self.get_document(
                 document_id=document_id,
