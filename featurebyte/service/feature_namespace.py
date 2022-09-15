@@ -75,29 +75,42 @@ class FeatureNamespaceService(
                     f"feature: {version_attr_str})."
                 )
 
-    async def _prepare_update_payload(
-        self,
-        update_data: FeatureNamespaceServiceUpdate,
-        namespace: FeatureNamespaceModel,
+    @staticmethod
+    def _prepare_default_version_mode_update_dict(
+        update_data: FeatureNamespaceServiceUpdate, namespace: FeatureNamespaceModel
     ) -> dict[str, Any]:
-        from featurebyte.service.feature import (  # pylint: disable=import-outside-toplevel,cyclic-import
-            FeatureService,
-        )
-
-        # prepare payload to update
-        feature_service = FeatureService(user=self.user, persistent=self.persistent)
-        default_feature_id = namespace.default_feature_id
-        default_feature = await feature_service.get_document(document_id=default_feature_id)
-        assert default_feature.created_at is not None
-
-        update_payload: dict[str, Any] = {}
-        default_version_mode = update_data.default_version_mode or namespace.default_version_mode
+        update_dict: dict[str, Any] = {}
         if (
             update_data.default_version_mode
             and update_data.default_version_mode != namespace.default_version_mode
         ):
-            update_payload["default_version_mode"] = update_data.default_version_mode
+            update_dict["default_version_mode"] = update_data.default_version_mode
+        return update_dict
 
+    @staticmethod
+    async def _find_default_feature(
+        namespace: FeatureNamespaceModel, default_feature: FeatureModel, feature_service: Any
+    ) -> FeatureModel:
+        readiness = min(FeatureReadiness)
+        for feature_id in namespace.feature_ids:
+            version = await feature_service.get_document(document_id=feature_id)
+            assert version.created_at is not None
+            if version.readiness > readiness:
+                readiness = FeatureReadiness(version.readiness)
+                default_feature = version
+            elif version.readiness == readiness and version.created_at > default_feature.created_at:
+                default_feature = version
+        return default_feature
+
+    async def _check_change_in_default_feature(
+        self,
+        update_data: FeatureNamespaceServiceUpdate,
+        namespace: FeatureNamespaceModel,
+        default_feature: FeatureModel,
+        feature_service: Any,
+    ) -> tuple[bool, dict[str, Any]]:
+        update_dict: dict[str, Any] = {}
+        default_version_mode = update_data.default_version_mode or namespace.default_version_mode
         to_find_default_feature = False
         if update_data.feature_id:
             # check whether the feature has been saved to persistent or not
@@ -109,37 +122,53 @@ class FeatureNamespaceService(
 
             if feature.id not in namespace.feature_ids:
                 # when a new feature version is added to the namespace
-                update_payload["feature_ids"] = sorted(namespace.feature_ids + [feature.id])
+                update_dict["feature_ids"] = sorted(namespace.feature_ids + [feature.id])
                 if default_version_mode == DefaultVersionMode.AUTO:
                     if (
                         FeatureReadiness(feature.readiness) >= namespace.readiness
                         and feature.created_at > default_feature.created_at
                     ):
-                        update_payload["readiness"] = feature.readiness
-                        update_payload["default_feature_id"] = feature.id
+                        update_dict["readiness"] = feature.readiness
+                        update_dict["default_feature_id"] = feature.id
             elif default_version_mode == DefaultVersionMode.AUTO:
                 to_find_default_feature = True
         elif default_version_mode == DefaultVersionMode.AUTO:
             to_find_default_feature = True
+        return to_find_default_feature, update_dict
+
+    async def _prepare_update_dict(
+        self,
+        update_data: FeatureNamespaceServiceUpdate,
+        namespace: FeatureNamespaceModel,
+    ) -> dict[str, Any]:
+        from featurebyte.service.feature import (  # pylint: disable=import-outside-toplevel,cyclic-import
+            FeatureService,
+        )
+
+        feature_service = FeatureService(user=self.user, persistent=self.persistent)
+        default_feature = await feature_service.get_document(
+            document_id=namespace.default_feature_id
+        )
+        assert default_feature.created_at is not None
+
+        update_dict = self._prepare_default_version_mode_update_dict(
+            update_data=update_data, namespace=namespace
+        )
+        (
+            to_find_default_feature,
+            default_feat_update_dict,
+        ) = await self._check_change_in_default_feature(
+            update_data, namespace, default_feature, feature_service
+        )
+        update_dict.update(default_feat_update_dict)
 
         if to_find_default_feature:
-            readiness = min(FeatureReadiness)
-            for feature_id in namespace.feature_ids:
-                version = await feature_service.get_document(document_id=feature_id)
-                assert version.created_at is not None
-                if version.readiness > readiness:
-                    readiness = FeatureReadiness(version.readiness)
-                    default_feature_id = version.id
-                    default_feature = version
-                elif (
-                    version.readiness == readiness
-                    and version.created_at > default_feature.created_at  # type: ignore
-                ):
-                    default_feature_id = version.id
-                    default_feature = version
-            update_payload["readiness"] = FeatureReadiness(readiness).value
-            update_payload["default_feature_id"] = default_feature_id
-        return update_payload
+            default_feature = await self._find_default_feature(
+                namespace, default_feature, feature_service
+            )
+            update_dict["readiness"] = default_feature.readiness
+            update_dict["default_feature_id"] = default_feature.id
+        return update_dict
 
     async def update_document(  # type: ignore[override]
         self,
@@ -155,11 +184,11 @@ class FeatureNamespaceService(
                 exception_detail=f'FeatureNamespace (id: "{document_id}") not found.',
             )
 
-        update_payload = await self._prepare_update_payload(update_data=data, namespace=document)
+        update_dict = await self._prepare_update_dict(update_data=data, namespace=document)
         _ = await self.persistent.update_one(
             collection_name=self.collection_name,
             query_filter={"_id": document.id},
-            update={"$set": update_payload},
+            update={"$set": update_dict},
         )
 
         if return_document:

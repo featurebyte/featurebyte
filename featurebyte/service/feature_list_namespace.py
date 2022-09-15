@@ -9,11 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.models.feature import DefaultVersionMode
-from featurebyte.models.feature_list import (
-    FeatureListModel,
-    FeatureListNamespaceModel,
-    FeatureListStatus,
-)
+from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.schema.entity import EntityBriefInfoList
 from featurebyte.schema.event_data import EventDataBriefInfoList
 from featurebyte.schema.feature_list_namespace import (
@@ -67,37 +63,51 @@ class FeatureListNamespaceService(
                 f"must share the same feature name(s)."
             )
 
-    async def _prepare_update_payload(
-        self,
+    @staticmethod
+    def _prepare_default_version_mode_and_status_update_dict(
         update_data: FeatureListNamespaceServiceUpdate,
         namespace: FeatureListNamespaceModel,
     ) -> dict[str, Any]:
-        from featurebyte.service.feature_list import (  # pylint: disable=import-outside-toplevel,cyclic-import
-            FeatureListService,
-        )
-
-        # prepare payload to update
-        feature_list_service = FeatureListService(user=self.user, persistent=self.persistent)
-        default_feature_list_id = namespace.default_feature_list_id
-        default_feature_list = await feature_list_service.get_document(
-            document_id=default_feature_list_id
-        )
-        assert default_feature_list.created_at is not None
-
-        update_payload: dict[str, Any] = {}
+        update_dict: dict[str, Any] = {}
         if update_data.status and update_data.status != namespace.status:
-            update_payload["status"] = FeatureListStatus(update_data.status).value
+            update_dict["status"] = update_data.status
 
-        readiness_dist = namespace.readiness_distribution
-        default_version_mode = update_data.default_version_mode or namespace.default_version_mode
         if (
             update_data.default_version_mode
             and update_data.default_version_mode != namespace.default_version_mode
         ):
-            update_payload["default_version_mode"] = DefaultVersionMode(
-                update_data.default_version_mode
-            ).value
+            update_dict["default_version_mode"] = update_data.default_version_mode
+        return update_dict
 
+    @staticmethod
+    async def _find_default_feature_list(
+        namespace: FeatureListNamespaceModel,
+        default_feature_list: FeatureListModel,
+        feature_list_service: Any,
+    ) -> FeatureListModel:
+        readiness_dist = namespace.readiness_distribution.worst_case()
+        for feature_list_id in namespace.feature_list_ids:
+            version = await feature_list_service.get_document(document_id=feature_list_id)
+            assert version.created_at is not None
+            if version.readiness_distribution > readiness_dist:
+                readiness_dist = version.readiness_distribution
+                default_feature_list = version
+            elif (
+                version.readiness_distribution == readiness_dist
+                and version.created_at > default_feature_list.created_at
+            ):
+                default_feature_list = version
+        return default_feature_list
+
+    async def _check_check_in_default_feature_list(
+        self,
+        update_data: FeatureListNamespaceServiceUpdate,
+        namespace: FeatureListNamespaceModel,
+        default_fl: FeatureListModel,
+        feature_list_service: Any,
+    ) -> tuple[bool, dict[str, Any]]:
+        update_dict: dict[str, Any] = {}
+        default_version_mode = update_data.default_version_mode or namespace.default_version_mode
         to_find_default_feature_list = False
         if update_data.feature_list_id:
             # check whether the feature list has been saved to persistent or not
@@ -111,39 +121,55 @@ class FeatureListNamespaceService(
 
             if flist.id not in namespace.feature_list_ids:
                 # when a new feature list version is added to the namespace
-                update_payload["feature_list_ids"] = sorted(namespace.feature_list_ids + [flist.id])
+                update_dict["feature_list_ids"] = sorted(namespace.feature_list_ids + [flist.id])
                 if default_version_mode == DefaultVersionMode.AUTO:
                     if (
-                        flist.readiness_distribution >= namespace.readiness_distribution  # type: ignore[operator]
-                        and flist.created_at > default_feature_list.created_at
+                        flist.readiness_distribution >= namespace.readiness_distribution
+                        and flist.created_at > default_fl.created_at
                     ):
-                        update_payload[
-                            "readiness_distribution"
-                        ] = flist.readiness_distribution.dict()["__root__"]
-                        update_payload["default_feature_list_id"] = flist.id
+                        read_dist_dict = flist.readiness_distribution.dict()["__root__"]
+                        update_dict["readiness_distribution"] = read_dist_dict
+                        update_dict["default_feature_list_id"] = flist.id
             elif default_version_mode == DefaultVersionMode.AUTO:
                 to_find_default_feature_list = True
         elif default_version_mode == DefaultVersionMode.AUTO:
             to_find_default_feature_list = True
+        return to_find_default_feature_list, update_dict
+
+    async def _prepare_update_dict(
+        self,
+        update_data: FeatureListNamespaceServiceUpdate,
+        namespace: FeatureListNamespaceModel,
+    ) -> dict[str, Any]:
+        from featurebyte.service.feature_list import (  # pylint: disable=import-outside-toplevel,cyclic-import
+            FeatureListService,
+        )
+
+        feature_list_service = FeatureListService(user=self.user, persistent=self.persistent)
+        default_fl = await feature_list_service.get_document(
+            document_id=namespace.default_feature_list_id
+        )
+        assert default_fl.created_at is not None
+
+        update_dict = self._prepare_default_version_mode_and_status_update_dict(
+            update_data=update_data, namespace=namespace
+        )
+        (
+            to_find_default_feature_list,
+            default_fl_update_dict,
+        ) = await self._check_check_in_default_feature_list(
+            update_data, namespace, default_fl, feature_list_service
+        )
+        update_dict.update(default_fl_update_dict)
 
         if to_find_default_feature_list:
-            readiness_dist = readiness_dist.worst_case()
-            for feature_list_id in namespace.feature_list_ids:
-                version = await feature_list_service.get_document(document_id=feature_list_id)
-                assert version.created_at is not None
-                if version.readiness_distribution > readiness_dist:
-                    readiness_dist = version.readiness_distribution
-                    default_feature_list_id = version.id
-                    default_feature_list = version
-                elif (
-                    version.readiness_distribution == readiness_dist
-                    and version.created_at > default_feature_list.created_at  # type: ignore
-                ):
-                    default_feature_list_id = version.id
-                    default_feature_list = version
-            update_payload["readiness_distribution"] = readiness_dist.dict()["__root__"]
-            update_payload["default_feature_list_id"] = default_feature_list_id
-        return update_payload
+            default_fl = await self._find_default_feature_list(
+                namespace, default_fl, feature_list_service
+            )
+            default_read_dist = default_fl.readiness_distribution.dict()["__root__"]
+            update_dict["readiness_distribution"] = default_read_dist
+            update_dict["default_feature_list_id"] = default_fl.id
+        return update_dict
 
     async def update_document(  # type: ignore[override]
         self,
@@ -159,11 +185,11 @@ class FeatureListNamespaceService(
                 exception_detail=f'FeatureListNamespace (id: "{document_id}") not found.',
             )
 
-        update_payload = await self._prepare_update_payload(update_data=data, namespace=document)
+        update_dict = await self._prepare_update_dict(update_data=data, namespace=document)
         _ = await self.persistent.update_one(
             collection_name=self.collection_name,
             query_filter={"_id": document.id},
-            update={"$set": update_payload},
+            update={"$set": update_dict},
         )
 
         if return_document:
