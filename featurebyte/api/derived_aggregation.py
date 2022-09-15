@@ -52,6 +52,10 @@ def std_aggregation(
     # pylint: disable=too-many-locals
     assert value_column is not None
     assert feature_names is not None
+
+    if groupby_obj.category is not None:
+        raise ValueError("category parameter is not supported for std aggregation method")
+
     temp_view = groupby_obj.obj.copy()
     temp_view["_value_squared"] = temp_view[value_column] * temp_view[value_column]  # type: ignore[operator]
     temp_view_grouped = temp_view.groupby(groupby_obj.keys, groupby_obj.category)

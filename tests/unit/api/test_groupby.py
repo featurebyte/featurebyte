@@ -409,3 +409,20 @@ def test_groupby__std_aggregation(snowflake_event_view_with_entity):
         "tile_id": "sf_table_f360_m180_b90_6779d772dcc5c83e10a93ca08923844041ded978",
         "aggregation_id": "avg_a1fe55b568f07808c926c0d9d5550c76df42f280",
     }
+
+
+def test_groupby__std_aggregation_category(snowflake_event_view_with_entity):
+    """
+    Test std aggregation not supported with category parameter
+    """
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_event_view_with_entity.groupby("cust_id", category="col_int").aggregate(
+            value_column="col_float",
+            method="std",
+            windows=["1h", "4h"],
+            feature_names=["1h_std", "4h_std"],
+            feature_job_setting=dict(
+                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+            ),
+        )
+    assert str(exc.value) == "category parameter is not supported for std aggregation method"
