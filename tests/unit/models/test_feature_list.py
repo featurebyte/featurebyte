@@ -4,7 +4,6 @@ Tests for Feature list related models
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
