@@ -53,6 +53,22 @@ from featurebyte.query_graph.tiling import AggFunc, TileSpec, get_aggregator
             ],
             "SUM(value_1234beef)",
         ),
+        (
+            AggFunc.STD,
+            [
+                TileSpec(
+                    tile_expr='SUM("a_column" * "a_column")',
+                    tile_column_name="sum_value_squared_1234beef",
+                ),
+                TileSpec(tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"),
+                TileSpec(tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"),
+            ],
+            (
+                "SQRT((SUM(sum_value_squared_1234beef) / SUM(count_value_1234beef))"
+                " - ((SUM(sum_value_1234beef) / SUM(count_value_1234beef))"
+                " * (SUM(sum_value_1234beef) / SUM(count_value_1234beef))))"
+            ),
+        ),
     ],
 )
 def test_tiling_aggregators(agg_func, expected_tile_specs, expected_merge_expr):

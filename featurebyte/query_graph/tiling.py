@@ -157,9 +157,9 @@ class StdAggregator(TilingAggregator):
 
     @staticmethod
     def merge(agg_id: str) -> str:
-        expected_x2 = f"SUM(sum_value_squared_{agg_id}) / SUM(count_value_{agg_id})"
-        expected_x = f"SUM(sum_value_{agg_id}) / SUM(count_value_{agg_id})"
-        stddev = f"SQRT(({expected_x2}) - ({expected_x} * {expected_x}))"
+        expected_x2 = f"(SUM(sum_value_squared_{agg_id}) / SUM(count_value_{agg_id}))"
+        expected_x = f"(SUM(sum_value_{agg_id}) / SUM(count_value_{agg_id}))"
+        stddev = f"SQRT({expected_x2} - ({expected_x} * {expected_x}))"
         return stddev
 
 
