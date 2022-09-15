@@ -47,6 +47,9 @@ class TestTempDataApi:
         response = test_api_client.get(f"/temp_data?path={dest_path}")
         assert response.status_code == HTTPStatus.OK
         assert response.headers["content-type"] == "application/octet-stream"
+        assert (
+            response.headers["content-disposition"] == "filename=62f301e841b9a757c9ff871b.parquet"
+        )
 
         with open(source_file, "rb") as file_obj:
             expected_content = file_obj.read()

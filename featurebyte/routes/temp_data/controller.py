@@ -49,4 +49,8 @@ class TempDataController:  # pylint: disable=too-few-public-methods
             bytestream = temp_storage.get_file_stream(remote_path=path)
         except FileNotFoundError as exc:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Invalid path") from exc
-        return StreamingResponse(bytestream, media_type=media_type)
+        return StreamingResponse(
+            bytestream,
+            media_type=media_type,
+            headers={"content-disposition": f"filename={path.name}"},
+        )
