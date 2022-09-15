@@ -49,7 +49,7 @@ class FeatureTypeFeatureCount(FeatureByteBaseModel):
     count: int
 
 
-class FeatureReadinessFeatureCount(FeatureByteBaseModel):
+class FeatureReadinessCount(FeatureByteBaseModel):
     """
     Feature count corresponding to the feature readiness within a feature list
 
@@ -63,13 +63,22 @@ class FeatureReadinessFeatureCount(FeatureByteBaseModel):
     count: int
 
 
+class FeatureReadinessTransition(FeatureByteBaseModel):
+    """
+    Feature readiness transition
+    """
+
+    from_readiness: FeatureReadiness
+    to_readiness: FeatureReadiness
+
+
 @functools.total_ordering
 class FeatureReadinessDistribution(FeatureByteBaseModel):
     """
     Feature readiness distribution
     """
 
-    __root__: List[FeatureReadinessFeatureCount]
+    __root__: List[FeatureReadinessCount]
 
     @staticmethod
     def _to_count_per_readiness_map(
@@ -140,6 +149,40 @@ class FeatureReadinessDistribution(FeatureByteBaseModel):
             if readiness_count.readiness == FeatureReadiness.PRODUCTION_READY:
                 production_ready_cnt += readiness_count.count
         return production_ready_cnt / max(total, 1)
+
+    def update_readiness(
+        self, transition: FeatureReadinessTransition
+    ) -> FeatureReadinessDistribution:
+        """
+        Construct a new readiness distribution based on current distribution & readiness transition
+
+        Parameters
+        ----------
+        transition: FeatureReadinessTransition
+            Feature readiness transition
+
+        Returns
+        -------
+        FeatureReadinessDistribution
+
+        Raises
+        ------
+        ValueError
+            When the readiness transition is invalid
+        """
+        this_dist_map = self._to_count_per_readiness_map(self)
+        if this_dist_map[transition.from_readiness]:
+            raise ValueError("Invalid feature readiness transition.")
+        this_dist_map[transition.from_readiness] -= 1
+        this_dist_map[transition.to_readiness] += 1
+        readiness_dist = []
+        for feature_readiness in FeatureReadiness:
+            readiness_dist.append(
+                FeatureReadinessCount(
+                    readiness=feature_readiness, count=this_dist_map[feature_readiness]
+                )
+            )
+        return FeatureReadinessDistribution(__root__=readiness_dist)
 
 
 class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
@@ -345,7 +388,7 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
             readiness_count_map[feature.readiness] += 1
         return FeatureReadinessDistribution(
             __root__=[
-                FeatureReadinessFeatureCount(readiness=readiness, count=count)
+                FeatureReadinessCount(readiness=readiness, count=count)
                 for readiness, count in readiness_count_map.items()
             ]
         )

@@ -7,8 +7,11 @@ from typing import Any, Dict, List, Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.exception import (
+    DocumentError,
+    DocumentInconsistencyError,
+    DocumentNotFoundError,
+)
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureSignature
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.schema.feature import FeatureServiceUpdate
@@ -16,6 +19,7 @@ from featurebyte.schema.feature_list import (
     FeatureListBriefInfoList,
     FeatureListCreate,
     FeatureListInfo,
+    FeatureListServiceUpdate,
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
@@ -148,13 +152,32 @@ class FeatureListService(
     async def update_document(  # type: ignore[override]
         self,
         document_id: ObjectId,
-        data: FeatureByteBaseModel,
+        data: FeatureListServiceUpdate,
         document: Optional[FeatureListModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureListModel]:
-        # TODO: implement logic to update feature list deployment
         if document is None:
             document = await self.get_document(document_id=document_id)
+
+        if data.readiness_transition:
+            # update feature list readiness distribution
+            readiness_dist = document.readiness_distribution.update_readiness(
+                transition=data.readiness_transition
+            )
+            _ = await self.persistent.update_one(
+                collection_name=self.collection_name,
+                query_filter={"_id": document.id},
+                update={"$set": readiness_dist.dict()["__root__"]},
+            )
+
+            # trigger feature list namespace to check whether to update default feature list
+            feature_list_namespace_service = FeatureListNamespaceService(
+                user=self.user, persistent=self.persistent
+            )
+            _ = await feature_list_namespace_service.update_document(
+                document_id=document.feature_list_namespace_id,
+                data=FeatureListNamespaceServiceUpdate(feature_list_id=document_id),
+            )
 
         if return_document:
             return document

@@ -163,7 +163,6 @@ class FeatureNamespaceService(
             update={"$set": update_payload},
         )
 
-        # TODO: add logic to update readiness distribution at feature list version level
         if return_document:
             return await self.get_document(document_id=document_id)
         return None
