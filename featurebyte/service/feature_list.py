@@ -7,11 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import (
-    DocumentError,
-    DocumentInconsistencyError,
-    DocumentNotFoundError,
-)
+from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureSignature
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.schema.feature import FeatureServiceUpdate
