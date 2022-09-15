@@ -11,7 +11,7 @@ from featurebyte.middleware import ExecutionContext
 
 
 @pytest.fixture(name="mock_exception_context")
-def mock_insert_feature_list_registry_fixture():
+def mock_exception_context_fixture():
     """
     Fixture for ExecutionContext
     """

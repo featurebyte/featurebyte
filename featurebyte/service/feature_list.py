@@ -41,48 +41,6 @@ class FeatureListService(
 
     document_class = FeatureListModel
 
-    async def _insert_feature_list_registry(
-        self,
-        document: ExtendedFeatureListModel,
-        feature_store: ExtendedFeatureStoreModel,
-        get_credential: Any,
-    ) -> None:
-        """
-        Insert feature list registry into feature list store
-
-        Parameters
-        ----------
-        document: ExtendedFeatureListModel
-            ExtendedFeatureList document
-        feature_store: ExtendedFeatureStoreModel
-            FeatureStore document
-        get_credential: Any
-            Get credential handler function
-
-        Raises
-        ------
-        DocumentConflictError
-            When the feature registry already exists at the feature store
-        """
-        if feature_store.type == SourceType.SNOWFLAKE:
-            db_session = feature_store.get_session(
-                credentials={
-                    feature_store.name: await get_credential(
-                        user_id=self.user.id, feature_store_name=feature_store.name
-                    )
-                }
-            )
-            feature_list_manager = FeatureListManagerSnowflake(session=db_session)
-            try:
-                feature_list_manager.insert_feature_list_registry(document)
-            except DuplicatedRegistryError as exc:
-                # someone else already registered the feature at snowflake
-                # do not remove the current registry & raise error to remove persistent record
-                raise DocumentConflictError(
-                    f'FeatureList (name: "{document.name}") has been registered by '
-                    f"other feature list at Snowflake feature list store."
-                ) from exc
-
     async def _extract_feature_data(self, document: FeatureListModel) -> Dict[str, Any]:
         feature_store_id: Optional[ObjectId] = None
         feature_signatures: List[FeatureSignature] = []
@@ -191,17 +149,6 @@ class FeatureListService(
                         features=feature_data["features"],
                     )
                 )
-
-            # insert feature list registry into feature list store
-            await self._insert_feature_list_registry(
-                document=ExtendedFeatureListModel(
-                    **document.dict(by_alias=True),
-                    feature_signatures=feature_data["feature_signatures"],
-                    status=feature_list_namespace.status,
-                ),
-                feature_store=feature_store,
-                get_credential=get_credential,
-            )
         return await self.get_document(document_id=insert_id)
 
     async def update_document(

@@ -98,16 +98,6 @@ class TestFeatureApi(BaseApiTestSuite):
         with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
             yield mock
 
-    @pytest.fixture(autouse=True)
-    def mock_insert_feature_list_registry_fixture(self):
-        """
-        Mock insert feature registry at the controller level
-        """
-        with patch(
-            "featurebyte.service.feature_list.FeatureListService._insert_feature_list_registry"
-        ) as mock:
-            yield mock
-
     def setup_creation_route(self, api_client):
         """
         Setup for post route
