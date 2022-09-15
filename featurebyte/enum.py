@@ -104,6 +104,7 @@ class AggFunc(str, Enum):
     MAX = "max"
     COUNT = "count"
     NA_COUNT = "na_count"
+    STD = "std"
 
     @classmethod
     def all(cls) -> list[str]:
