@@ -48,6 +48,11 @@ def std_aggregation(
     Returns
     -------
     FeatureGroup
+
+    Raises
+    ------
+    ValueError
+        if category parameter was specified in groupby
     """
     # pylint: disable=too-many-locals
     assert value_column is not None

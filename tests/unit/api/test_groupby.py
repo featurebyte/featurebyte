@@ -353,6 +353,7 @@ def test_groupby__std_aggregation(snowflake_event_view_with_entity):
     """
     Test std aggregation builds features using multiple groupby nodes
     """
+    beginning_event_view_node = snowflake_event_view_with_entity.node
     features = snowflake_event_view_with_entity.groupby("cust_id").aggregate(
         value_column="col_float",
         method="std",
@@ -360,6 +361,10 @@ def test_groupby__std_aggregation(snowflake_event_view_with_entity):
         feature_names=["1h_std", "4h_std"],
         feature_job_setting=dict(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
     )
+    # check EventView was not modified in place
+    assert snowflake_event_view_with_entity.node == beginning_event_view_node
+
+    # check graph structure is expected
     assert features.feature_names == ["1h_std", "4h_std"]
     feature_dict = features["1h_std"].dict()
     assert feature_dict["graph"]["backward_edges"] == {
@@ -375,6 +380,7 @@ def test_groupby__std_aggregation(snowflake_event_view_with_entity):
         "sqrt_1": ["sub_1"],
         "alias_1": ["sqrt_1"],
     }
+
     # check job settings are propagated
     graph = QueryGraph(**feature_dict["graph"])
     groupby_node_1 = graph.get_node_by_name("groupby_1")
