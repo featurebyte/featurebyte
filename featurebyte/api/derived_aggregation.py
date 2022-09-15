@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, List, Optional, cast
 
 from featurebyte.api.feature import Feature
-from featurebyte.api.feature_list import FeatureGroup
+from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup
 from featurebyte.enum import AggFunc
 
 if TYPE_CHECKING:
@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 
 def std_aggregation(
     groupby_obj: EventViewGroupBy,
-    value_column: str,
-    windows: List[str],
-    feature_names: List[str],
-    timestamp_column: str,
+    value_column: Optional[str],
+    windows: Optional[List[str]],
+    feature_names: Optional[List[str]],
+    timestamp_column: Optional[str],
     feature_job_setting: Optional[Dict[str, str]],
 ) -> FeatureGroup:
     """Computes standard deviation aggregation by combining two average features
@@ -44,7 +44,14 @@ def std_aggregation(
     feature_job_setting: Optional[Dict[str, str]]
         Dictionary contains `blind_spot`, `frequency` and `time_modulo_frequency` keys which are
         feature job setting parameters
+
+    Returns
+    -------
+    FeatureGroup
     """
+    # pylint: disable=too-many-locals
+    assert value_column is not None
+    assert feature_names is not None
     temp_view = groupby_obj.obj.copy()
     temp_view["_value_squared"] = temp_view[value_column] * temp_view[value_column]
     temp_view_grouped = temp_view.groupby(groupby_obj.keys, groupby_obj.category)
@@ -67,7 +74,7 @@ def std_aggregation(
         feature_job_setting=feature_job_setting,
     )
 
-    features = []
+    features: list[Feature | BaseFeatureGroup] = []
     for name_x2, name_x, feature_name in zip(
         expected_x2_features.feature_names,
         expected_x_features.feature_names,

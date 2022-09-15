@@ -3,7 +3,7 @@ This module contains groupby related class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union
 
 from typeguard import typechecked
 
@@ -229,7 +229,6 @@ class EventViewGroupBy(OpsMixin):
         -------
         FeatureGroup
         """
-        # pylint: disable=too-many-locals
         self._validate_parameters(
             value_column=value_column, method=method, windows=windows, feature_names=feature_names
         )
@@ -258,6 +257,7 @@ class EventViewGroupBy(OpsMixin):
         feature_job_setting: Optional[Dict[str, str]] = None,
     ) -> FeatureGroup:
 
+        # pylint: disable=too-many-locals
         node_params = self._prepare_node_parameters(
             value_column,
             method,
