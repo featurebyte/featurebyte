@@ -53,7 +53,7 @@ def std_aggregation(
     assert value_column is not None
     assert feature_names is not None
     temp_view = groupby_obj.obj.copy()
-    temp_view["_value_squared"] = temp_view[value_column] * temp_view[value_column]
+    temp_view["_value_squared"] = temp_view[value_column] * temp_view[value_column]  # type: ignore[operator]
     temp_view_grouped = temp_view.groupby(groupby_obj.keys, groupby_obj.category)
     temp_feature_names = [f"_value_squared_avg_{i}" for i in range(len(feature_names))]
     expected_x2_features = temp_view_grouped.aggregate(
@@ -81,8 +81,8 @@ def std_aggregation(
         feature_names,
     ):
         feature = (
-            expected_x2_features[name_x2]
-            - (expected_x_features[name_x] * expected_x_features[name_x])
+            expected_x2_features[name_x2]  # type: ignore[operator]
+            - (expected_x_features[name_x] * expected_x_features[name_x])  # type: ignore[operator]
         ).sqrt()
         feature.name = feature_name
         feature = cast(Feature, feature)
