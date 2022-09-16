@@ -522,7 +522,13 @@ class BaseDocumentService(Generic[Document]):
         """
 
     @abstractmethod
-    async def update_document(self, document_id: ObjectId, data: FeatureByteBaseModel) -> Document:
+    async def update_document(
+        self,
+        document_id: ObjectId,
+        data: FeatureByteBaseModel,
+        document: Optional[FeatureByteBaseDocumentModel] = None,
+        return_document: bool = True,
+    ) -> Optional[Document]:
         """
         Update document at persistent
 
@@ -532,10 +538,14 @@ class BaseDocumentService(Generic[Document]):
             Document ID
         data: FeatureByteBaseModel
             Document update payload object
+        document: Optional[FeatureByteBaseDocumentModel]
+            Document to be updated (when provided, this method won't query persistent for retrieval)
+        return_document: bool
+            Whether to make additional query to retrieval updated document & return
 
         Returns
         -------
-        Document
+        Optional[Document]
         """
 
 

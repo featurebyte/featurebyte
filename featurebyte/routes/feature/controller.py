@@ -5,22 +5,30 @@ from __future__ import annotations
 
 from typing import Any, Literal, Type
 
+from bson.objectid import ObjectId
+
 from featurebyte.models.feature import FeatureModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
-from featurebyte.schema.feature import FeatureCreate, FeatureInfo, FeatureList
+from featurebyte.schema.feature import (
+    FeatureCreate,
+    FeatureInfo,
+    FeaturePaginatedList,
+    FeatureServiceUpdate,
+    FeatureUpdate,
+)
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 
 
 class FeatureController(
-    BaseDocumentController[FeatureModel, FeatureList], GetInfoControllerMixin[FeatureInfo]
+    BaseDocumentController[FeatureModel, FeaturePaginatedList], GetInfoControllerMixin[FeatureInfo]
 ):
     """
     Feature controller
     """
 
-    paginated_document_class = FeatureList
+    paginated_document_class = FeaturePaginatedList
     document_service_class: Type[FeatureService] = FeatureService  # type: ignore[assignment]
 
     @classmethod
@@ -52,6 +60,39 @@ class FeatureController(
         return document
 
     @classmethod
+    async def update_feature(
+        cls,
+        user: Any,
+        persistent: Persistent,
+        feature_id: ObjectId,
+        data: FeatureUpdate,
+    ) -> FeatureModel:
+        """
+        Update Feature at persistent
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Object that entity will be saved to
+        feature_id: ObjectId
+            Feature ID
+        data: FeatureUpdate
+            Feature update payload
+
+        Returns
+        -------
+        FeatureModel
+            Feature object with updated attribute(s)
+        """
+        document = await cls.document_service_class(
+            user=user, persistent=persistent
+        ).update_document(document_id=feature_id, data=FeatureServiceUpdate(**data.dict()))
+        assert document is not None
+        return document
+
+    @classmethod
     async def list(
         cls,
         user: Any,
@@ -61,7 +102,7 @@ class FeatureController(
         sort_by: str | None = "created_at",
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,
-    ) -> FeatureList:
+    ) -> FeaturePaginatedList:
         params = kwargs.copy()
         feature_list_id = params.pop("feature_list_id")
         if feature_list_id:

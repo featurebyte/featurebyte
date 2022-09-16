@@ -13,6 +13,7 @@ from featurebyte.routes.common.base import BaseDocumentController, GetInfoContro
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceInfo,
     FeatureListNamespaceList,
+    FeatureListNamespaceServiceUpdate,
     FeatureListNamespaceUpdate,
 )
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
@@ -58,5 +59,9 @@ class FeatureListNamespaceController(
         """
         document = await cls.document_service_class(
             user=user, persistent=persistent
-        ).update_document(document_id=feature_list_namespace_id, data=data)
+        ).update_document(
+            document_id=feature_list_namespace_id,
+            data=FeatureListNamespaceServiceUpdate(**data.dict()),
+        )
+        assert document is not None
         return document

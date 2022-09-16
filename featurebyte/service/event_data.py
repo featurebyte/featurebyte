@@ -3,7 +3,7 @@ EventDataService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
@@ -51,9 +51,14 @@ class EventDataService(BaseDocumentService[EventDataModel], GetInfoServiceMixin[
         return await self.get_document(document_id=insert_id)
 
     async def update_document(  # type: ignore[override]
-        self, document_id: ObjectId, data: EventDataUpdate
-    ) -> EventDataModel:
-        document = await self.get_document(document_id=document_id)
+        self,
+        document_id: ObjectId,
+        data: EventDataUpdate,
+        document: Optional[EventDataModel] = None,
+        return_document: bool = True,
+    ) -> Optional[EventDataModel]:
+        if document is None:
+            document = await self.get_document(document_id=document_id)
 
         # prepare update payload
         update_payload = data.dict()
@@ -79,7 +84,10 @@ class EventDataService(BaseDocumentService[EventDataModel], GetInfoServiceMixin[
             update={"$set": update_payload},
             user_id=self.user.id,
         )
-        return await self.get_document(document_id=document_id)
+
+        if return_document:
+            return await self.get_document(document_id=document_id)
+        return None
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> EventDataInfo:
         event_data = await self.get_document(document_id=document_id)

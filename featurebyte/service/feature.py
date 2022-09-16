@@ -3,7 +3,7 @@ FeatureService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 from pydantic import ValidationError
@@ -18,12 +18,21 @@ from featurebyte.exception import (
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
+from featurebyte.models.feature_list import FeatureReadinessTransition
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.schema.feature import FeatureBriefInfoList, FeatureCreate, FeatureInfo
-from featurebyte.schema.feature_namespace import FeatureNamespaceCreate, FeatureNamespaceUpdate
+from featurebyte.schema.feature import (
+    FeatureBriefInfoList,
+    FeatureCreate,
+    FeatureInfo,
+    FeatureServiceUpdate,
+)
+from featurebyte.schema.feature_list import FeatureListServiceUpdate
+from featurebyte.schema.feature_namespace import (
+    FeatureNamespaceCreate,
+    FeatureNamespaceServiceUpdate,
+)
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 
@@ -116,15 +125,12 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                 user=self.user, persistent=self.persistent
             )
             try:
-                feature_namespace = await feature_namespace_service.get_document(
-                    document_id=document.feature_namespace_id
-                )
-
                 # update feature namespace
                 feature_namespace = await feature_namespace_service.update_document(
-                    document_id=feature_namespace.id,
-                    data=FeatureNamespaceUpdate(feature_id=document.id),
+                    document_id=document.feature_namespace_id,
+                    data=FeatureNamespaceServiceUpdate(feature_id=document.id),
                 )
+                assert feature_namespace is not None
 
             except DocumentNotFoundError:
                 feature_namespace = await feature_namespace_service.create_document(
@@ -155,13 +161,65 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
             await self._insert_feature_registry(extended_feature, get_credential)
         return await self.get_document(document_id=insert_id)
 
-    async def update_document(
-        self, document_id: ObjectId, data: FeatureByteBaseModel
-    ) -> FeatureModel:
-        # TODO: implement proper logic to update feature document
-        # when update the feature readiness, needs to update feature list's feature readiness distribution
-        # and feature list namespace's feature readiness distribution
-        return await self.get_document(document_id=document_id)
+    async def update_document(  # type: ignore[override]
+        self,
+        document_id: ObjectId,
+        data: FeatureServiceUpdate,
+        document: Optional[FeatureModel] = None,
+        return_document: bool = True,
+    ) -> Optional[FeatureModel]:
+        if document is None:
+            document = await self.get_document(document_id=document_id)
+
+        update_payload: dict[str, Any] = {}
+        to_update_readiness = bool(data.readiness and document.readiness != data.readiness)
+        if to_update_readiness:
+            update_payload["readiness"] = data.readiness
+        feature_list_ids = document.feature_list_ids
+        if data.feature_list_id:
+            feature_list_ids = sorted(set(document.feature_list_ids + [data.feature_list_id]))
+            update_payload["feature_list_ids"] = feature_list_ids
+
+        async with self.persistent.start_transaction() as session:
+            if update_payload:
+                await session.update_one(
+                    collection_name=self.collection_name,
+                    query_filter=self._construct_get_query_filter(document_id=document_id),
+                    update={"$set": update_payload},
+                    user_id=self.user.id,
+                )
+
+            if to_update_readiness:
+                # trigger feature namespace service to check whether there is a need to update default feature id
+                feature_namespace_service = FeatureNamespaceService(
+                    user=self.user, persistent=self.persistent
+                )
+                await feature_namespace_service.update_document(
+                    document_id=document.feature_namespace_id,
+                    data=FeatureNamespaceServiceUpdate(feature_id=document_id),
+                )
+
+                from featurebyte.service.feature_list import (  # pylint: disable=import-outside-toplevel,cyclic-import
+                    FeatureListService,
+                )
+
+                feature_list_service = FeatureListService(
+                    user=self.user, persistent=self.persistent
+                )
+                for feature_list_id in feature_list_ids:
+                    await feature_list_service.update_document(
+                        document_id=feature_list_id,
+                        data=FeatureListServiceUpdate(
+                            readiness_transition=FeatureReadinessTransition(
+                                from_readiness=document.readiness,
+                                to_readiness=data.readiness,
+                            ),
+                        ),
+                    )
+
+        if return_document:
+            return await self.get_document(document_id=document_id)
+        return None
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureInfo:
         feature = await self.get_document(document_id=document_id)

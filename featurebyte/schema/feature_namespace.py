@@ -47,8 +47,15 @@ class FeatureNamespaceUpdate(FeatureByteBaseModel):
     FeatureNamespace update schema
     """
 
-    feature_id: Optional[PydanticObjectId]
     default_version_mode: Optional[DefaultVersionMode]
+
+
+class FeatureNamespaceServiceUpdate(FeatureNamespaceUpdate):
+    """
+    FeatureNamespace service update schema
+    """
+
+    feature_id: Optional[PydanticObjectId]
 
 
 class NamespaceInfo(BaseInfo):

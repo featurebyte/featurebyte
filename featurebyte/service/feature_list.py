@@ -8,16 +8,18 @@ from typing import Any, Dict, List, Optional
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
-from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureSignature
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
+from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import (
     FeatureListBriefInfoList,
     FeatureListCreate,
     FeatureListInfo,
+    FeatureListServiceUpdate,
 )
-from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
+from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 
 
@@ -35,13 +37,10 @@ class FeatureListService(
         feature_signatures: List[FeatureSignature] = []
         feature_namespace_ids = set()
         features = []
+        feature_service = FeatureService(user=self.user, persistent=self.persistent)
         for feature_id in document.feature_ids:
             # retrieve feature from the persistent
-            feature_dict = await self._get_document(
-                document_id=feature_id,
-                collection_name=FeatureModel.collection_name(),
-            )
-            feature = FeatureModel(**feature_dict)
+            feature = await feature_service.get_document(document_id=feature_id)
 
             # compute data required to create feature list record
             features.append(feature)
@@ -74,6 +73,18 @@ class FeatureListService(
             "features": features,
         }
         return derived_output
+
+    async def _update_features(
+        self, features: list[FeatureModel], feature_list_id: ObjectId
+    ) -> None:
+        feature_service = FeatureService(user=self.user, persistent=self.persistent)
+        for feature in features:
+            await feature_service.update_document(
+                document_id=feature.id,
+                data=FeatureServiceUpdate(feature_list_id=feature_list_id),
+                document=feature,
+                return_document=False,
+            )
 
     async def create_document(  # type: ignore[override]
         self, data: FeatureListCreate, get_credential: Any = None
@@ -110,15 +121,12 @@ class FeatureListService(
                 user=self.user, persistent=self.persistent
             )
             try:
-                feature_list_namespace = await feature_list_namespace_service.get_document(
-                    document_id=document.feature_list_namespace_id
-                )
-
                 # update feature list namespace
-                await feature_list_namespace_service.update_document(
-                    document_id=feature_list_namespace.id,
-                    data=FeatureListNamespaceUpdate(feature_list_id=document.id),
+                feature_list_namespace = await feature_list_namespace_service.update_document(
+                    document_id=document.feature_list_namespace_id,
+                    data=FeatureListNamespaceServiceUpdate(feature_list_id=document.id),
                 )
+                assert feature_list_namespace is not None
 
             except DocumentNotFoundError:
                 await feature_list_namespace_service.create_document(
@@ -132,13 +140,44 @@ class FeatureListService(
                         features=feature_data["features"],
                     )
                 )
+
+            # update feature's feature_list_ids attribute
+            await self._update_features(feature_data["features"], insert_id)
         return await self.get_document(document_id=insert_id)
 
-    async def update_document(
-        self, document_id: ObjectId, data: FeatureByteBaseModel
-    ) -> FeatureListModel:
-        # TODO: implement proper logic to update feature list document
-        return await self.get_document(document_id=document_id)
+    async def update_document(  # type: ignore[override]
+        self,
+        document_id: ObjectId,
+        data: FeatureListServiceUpdate,
+        document: Optional[FeatureListModel] = None,
+        return_document: bool = True,
+    ) -> Optional[FeatureListModel]:
+        if document is None:
+            document = await self.get_document(document_id=document_id)
+
+        if data.readiness_transition:
+            # update feature list readiness distribution
+            readiness_dist = document.readiness_distribution.update_readiness(
+                transition=data.readiness_transition
+            )
+            _ = await self.persistent.update_one(
+                collection_name=self.collection_name,
+                query_filter={"_id": document.id},
+                update={"$set": {"readiness_distribution": readiness_dist.dict()["__root__"]}},
+            )
+
+            # trigger feature list namespace to check whether to update default feature list
+            feature_list_namespace_service = FeatureListNamespaceService(
+                user=self.user, persistent=self.persistent
+            )
+            _ = await feature_list_namespace_service.update_document(
+                document_id=document.feature_list_namespace_id,
+                data=FeatureListNamespaceServiceUpdate(feature_list_id=document_id),
+            )
+
+        if return_document:
+            return document
+        return None
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureListInfo:
         feature_list = await self.get_document(document_id=document_id)

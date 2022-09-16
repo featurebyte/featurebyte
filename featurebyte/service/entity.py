@@ -3,7 +3,7 @@ EntityService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
@@ -39,8 +39,15 @@ class EntityService(BaseDocumentService[EntityModel], GetInfoServiceMixin[Entity
         return await self.get_document(document_id=insert_id)
 
     async def update_document(  # type: ignore[override]
-        self, document_id: ObjectId, data: EntityUpdate
-    ) -> EntityModel:
+        self,
+        document_id: ObjectId,
+        data: EntityUpdate,
+        document: Optional[EntityModel] = None,
+        return_document: bool = True,
+    ) -> Optional[EntityModel]:
+        if document is None:
+            _ = await self.get_document(document_id=document_id)
+
         # check any conflict with existing documents
         await self._check_document_unique_constraint(
             query_filter={"name": data.name},
@@ -54,7 +61,10 @@ class EntityService(BaseDocumentService[EntityModel], GetInfoServiceMixin[Entity
             update={"$set": {"name": data.name}},
             user_id=self.user.id,
         )
-        return await self.get_document(document_id=document_id)
+
+        if return_document:
+            return await self.get_document(document_id=document_id)
+        return None
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> EntityInfo:
         _ = verbose

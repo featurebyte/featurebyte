@@ -9,6 +9,7 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FeatureListStatus,
     FeatureReadinessDistribution,
+    FeatureReadinessTransition,
 )
 
 
@@ -236,3 +237,47 @@ def test_readiness_distribution__derive_production_ready_fraction(dist, expected
     """Test feature readiness distribution - derive production ready fraction"""
     feat_readiness_dist = FeatureReadinessDistribution(__root__=dist)
     assert feat_readiness_dist.derive_production_ready_fraction() == expected
+
+
+def test_feature_readiness_distribution__worst_cast_worst_case():
+    """Test feature readiness distribution - worst cast & total count"""
+    feat_readiness_dist = FeatureReadinessDistribution(
+        __root__=[
+            {"readiness": "DRAFT", "count": 2},
+            {"readiness": "PRODUCTION_READY", "count": 5},
+        ]
+    )
+    worst_cast_readiness_dist = feat_readiness_dist.worst_case()
+    assert feat_readiness_dist.total_count == 7
+    assert isinstance(worst_cast_readiness_dist, FeatureReadinessDistribution)
+    assert worst_cast_readiness_dist.__root__ == [{"readiness": "DEPRECATED", "count": 7}]
+
+
+@pytest.mark.parametrize(
+    "from_readiness,to_readiness,expected",
+    [
+        ("PRODUCTION_READY", "DRAFT", {"DRAFT": 3, "PRODUCTION_READY": 4}),
+        ("PRODUCTION_READY", "DEPRECATED", {"DEPRECATED": 1, "DRAFT": 2, "PRODUCTION_READY": 4}),
+        ("DRAFT", "DEPRECATED", {"DEPRECATED": 1, "DRAFT": 1, "PRODUCTION_READY": 5}),
+        ("DRAFT", "PRODUCTION_READY", {"DRAFT": 1, "PRODUCTION_READY": 6}),
+    ],
+)
+def test_feature_readiness_distribution__transition(from_readiness, to_readiness, expected):
+    """Test feature readiness distribution - readiness transition"""
+    feat_readiness_dist = FeatureReadinessDistribution(
+        __root__=[
+            {"readiness": "DRAFT", "count": 2},
+            {"readiness": "PRODUCTION_READY", "count": 5},
+        ]
+    )
+
+    output = feat_readiness_dist.update_readiness(
+        transition=FeatureReadinessTransition(
+            from_readiness=from_readiness, to_readiness=to_readiness
+        )
+    )
+    assert output == FeatureReadinessDistribution(
+        __root__=[
+            {"readiness": readiness, "count": count} for readiness, count in expected.items()
+        ],
+    )

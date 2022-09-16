@@ -80,4 +80,5 @@ class EntityController(
         document = await cls.document_service_class(
             user=user, persistent=persistent
         ).update_document(document_id=entity_id, data=data)
+        assert document is not None
         return document

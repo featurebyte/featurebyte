@@ -39,12 +39,28 @@ class FeatureCreate(FeatureByteBaseModel):
     feature_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
 
 
-class FeatureList(PaginationMixin):
+class FeaturePaginatedList(PaginationMixin):
     """
-    Paginated list of Entity
+    Paginated list of features
     """
 
     data: List[FeatureModel]
+
+
+class FeatureUpdate(FeatureByteBaseModel):
+    """
+    Feature update schema
+    """
+
+    readiness: Optional[FeatureReadiness]
+
+
+class FeatureServiceUpdate(FeatureUpdate):
+    """
+    Feature service update schema
+    """
+
+    feature_list_id: Optional[PydanticObjectId]
 
 
 class ReadinessComparison(FeatureByteBaseModel):
