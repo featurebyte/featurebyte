@@ -464,17 +464,6 @@ class IsNullNode(ExpressionNode):
 
 
 @dataclass
-class LengthNode(ExpressionNode):
-    """Node for LENGTH operation"""
-
-    expr: ExpressionNode
-
-    @property
-    def sql(self) -> Expression:
-        return expressions.Length(this=self.expr.sql)
-
-
-@dataclass
 class StringCaseNode(ExpressionNode):
     """Node for UPPER, LOWER operation"""
 
@@ -781,17 +770,6 @@ class DateAddNode(ExpressionNode):
             ]
         output_expr = expressions.Anonymous(this="DATEADD", expressions=date_add_args)
         return output_expr
-
-
-@dataclass
-class NotNode(ExpressionNode):
-    """Node for inverting binary column operation"""
-
-    expr: ExpressionNode
-
-    @property
-    def sql(self) -> Expression:
-        return expressions.Not(this=self.expr.sql)
 
 
 @dataclass
@@ -1477,16 +1455,14 @@ def make_expression_node(
         NodeType.ABS: expressions.Abs,
         NodeType.FLOOR: expressions.Floor,
         NodeType.CEIL: expressions.Ceil,
+        NodeType.NOT: expressions.Not,
+        NodeType.LENGTH: expressions.Length,
     }
     if node_type in node_type_to_expression_cls:
         cls = node_type_to_expression_cls[node_type]
         sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=cls)
     elif node_type == NodeType.IS_NULL:
         sql_node = IsNullNode(table_node=table_node, expr=input_expr_node)
-    elif node_type == NodeType.NOT:
-        sql_node = NotNode(table_node=table_node, expr=input_expr_node)
-    elif node_type == NodeType.LENGTH:
-        sql_node = LengthNode(table_node=table_node, expr=input_expr_node)
     elif node_type == NodeType.STR_CASE:
         sql_node = StringCaseNode(
             table_node=table_node,

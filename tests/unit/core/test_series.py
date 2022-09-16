@@ -719,7 +719,7 @@ def test_isnull(bool_series):
     )
 
 
-def test_notnull(bool_series):
+def test_notnull(bool_series, expression_sql_template):
     """
     Test notnull operation
     """
@@ -733,6 +733,8 @@ def test_notnull(bool_series):
         Node(name="not_1", type=NodeType.NOT, **node_kwargs),
         exclude=exclude,
     )
+    expected_sql = expression_sql_template.format(expression='NOT "MASK" IS NULL')
+    assert expected_sql == result.preview_sql()
 
 
 def test_fillna(float_series):
