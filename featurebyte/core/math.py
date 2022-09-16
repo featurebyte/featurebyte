@@ -44,7 +44,7 @@ class MathMixin:
     @numeric_only
     def abs(self: SeriesT) -> SeriesT:  # type: ignore
         """
-        Returns a new Series that computes the absolute value of the current Series
+        Computes the absolute value of the current Series
 
         Returns
         -------
@@ -61,7 +61,7 @@ class MathMixin:
     @numeric_only
     def sqrt(self: SeriesT) -> SeriesT:  # type: ignore
         """
-        Returns a new Series that computes the square root of the current Series
+        Computes the square root of the current Series
 
         Returns
         -------
@@ -73,6 +73,17 @@ class MathMixin:
             output_var_type=DBVarType.FLOAT,
             node_params={},
             **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def pow(self: SeriesT, other: int | float | SeriesT) -> SeriesT:
+        """
+        Computes the exponential power of the current Series
+        """
+        return self._binary_op(
+            other=other,
+            node_type=NodeType.POWER,
+            output_var_type=DBVarType.FLOAT,
         )
 
     @numeric_only
@@ -107,15 +118,4 @@ class MathMixin:
             output_var_type=DBVarType.INT,
             node_params={},
             **self.unary_op_series_params(),
-        )
-
-    @numeric_only
-    def pow(self: SeriesT, other: int | float | SeriesT) -> SeriesT:
-        """
-        Returns a new Series that computes the exponential power of itself
-        """
-        return self._binary_op(
-            other=other,
-            node_type=NodeType.POWER,
-            output_var_type=DBVarType.FLOAT,
         )

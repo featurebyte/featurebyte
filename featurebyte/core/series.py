@@ -460,6 +460,10 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             **self.unary_op_series_params(),
         )
 
+    @typechecked
+    def __pow__(self, other: Union[int, float, Series]) -> Series:
+        return self.pow(other)
+
     @property
     def is_datetime(self) -> bool:
         """

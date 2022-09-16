@@ -855,6 +855,7 @@ def test_node_types_lineage(dataframe, float_series):
         (lambda s: s.sqrt(), NodeType.SQRT, DBVarType.FLOAT, {}, 'SQRT("VALUE")'),
         (lambda s: s.abs(), NodeType.ABS, DBVarType.FLOAT, {}, 'ABS("VALUE")'),
         (lambda s: s.pow(2), NodeType.POWER, DBVarType.FLOAT, {"value": 2}, '(POW("VALUE", 2))'),
+        (lambda s: s**2, NodeType.POWER, DBVarType.FLOAT, {"value": 2}, '(POW("VALUE", 2))'),
         (lambda s: s.floor(), NodeType.FLOOR, DBVarType.INT, {}, 'FLOOR("VALUE")'),
         (lambda s: s.ceil(), NodeType.CEIL, DBVarType.INT, {}, 'CEIL("VALUE")'),
     ],
@@ -881,7 +882,7 @@ def test_numeric_operations(
 
 @pytest.mark.parametrize("method", ["sqrt", "abs", "floor", "ceil"])
 def test_numeric__invalid_dtype(bool_series, method):
-    """Test sqrt operation cannot be applied to non-numeric series"""
+    """Test numeric operations cannot be applied to non-numeric series"""
     with pytest.raises(TypeError) as exc:
         _ = getattr(bool_series, method)()
     assert str(exc.value) == f"{method} is only available to numeric series; got BOOL"
