@@ -12,6 +12,7 @@ from typeguard import typechecked
 from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
+from featurebyte.core.math import MathMixin
 from featurebyte.core.mixin import OpsMixin, ParentMixin
 from featurebyte.core.util import series_binary_operation, series_unary_operation
 from featurebyte.enum import DBVarType
@@ -20,7 +21,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
 
 
-class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin):
+class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin, MathMixin):
     """
     Implement operations to manipulate database column
     """
@@ -561,29 +562,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_type=NodeType.CAST,
             output_var_type=output_var_type,
             node_params=node_params,
-            **self.unary_op_series_params(),
-        )
-
-    def sqrt(self) -> Series:
-        """
-        Returns a new Series that computes the square root of the current Series
-
-        Returns
-        -------
-        Series
-
-        Raises
-        ------
-        TypeError
-            if the current Series dtype is not compatible with sqrt
-        """
-        if not self.is_numeric:
-            raise TypeError(f"sqrt is only available to numeric series; got {self.dtype}")
-        return series_unary_operation(
-            input_series=self,
-            node_type=NodeType.SQRT,
-            output_var_type=DBVarType.FLOAT,
-            node_params={},
             **self.unary_op_series_params(),
         )
 
