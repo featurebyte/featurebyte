@@ -41,16 +41,6 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
         with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
             yield mock
 
-    @pytest.fixture(autouse=True)
-    def mock_insert_feature_list_registry_fixture(self):
-        """
-        Mock insert feature registry at the controller level
-        """
-        with patch(
-            "featurebyte.service.feature_list.FeatureListService._insert_feature_list_registry"
-        ) as mock:
-            yield mock
-
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         for _ in range(3):
