@@ -1470,7 +1470,18 @@ def make_expression_node(
     assert isinstance(input_expr_node, ExpressionNode)
     table_node = input_expr_node.table_node
     sql_node: ExpressionNode
-    if node_type == NodeType.IS_NULL:
+
+    # Some node types can be handled identically given the correct sqlglot expression
+    node_type_to_expression_cls = {
+        NodeType.SQRT: expressions.Sqrt,
+        NodeType.ABS: expressions.Abs,
+        NodeType.FLOOR: expressions.Floor,
+        NodeType.CEIL: expressions.Ceil,
+    }
+    if node_type in node_type_to_expression_cls:
+        cls = node_type_to_expression_cls[node_type]
+        sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=cls)
+    elif node_type == NodeType.IS_NULL:
         sql_node = IsNullNode(table_node=table_node, expr=input_expr_node)
     elif node_type == NodeType.NOT:
         sql_node = NotNode(table_node=table_node, expr=input_expr_node)
@@ -1553,14 +1564,6 @@ def make_expression_node(
             timestamp_column=parameters["timestamp_column"],
             offset=parameters["offset"],
         )
-    elif node_type == NodeType.SQRT:
-        sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expressions.Sqrt)
-    elif node_type == NodeType.ABS:
-        sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expressions.Abs)
-    elif node_type == NodeType.FLOOR:
-        sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expressions.Floor)
-    elif node_type == NodeType.CEIL:
-        sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expressions.Ceil)
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")
     return sql_node
