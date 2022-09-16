@@ -269,7 +269,7 @@ def test_aggregation(
     )
 
     # Some fixed parameters
-    entity_column_name = "USER_ID"
+    entity_column_name = "USER ID"
     window_size = 3600 * 24
     event_timestamp_column_name = "EVENT_TIMESTAMP"
 

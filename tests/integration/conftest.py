@@ -160,7 +160,7 @@ def transaction_dataframe():
             "event_timestamp": event_timestamps,
             "created_at": pd.date_range("2001-01-01", freq="1min", periods=row_number),
             "cust_id": rng.randint(1, 1000, row_number),
-            "user_id": rng.randint(1, 10, row_number),
+            "user id": rng.randint(1, 10, row_number),
             "product_action": rng.choice(product_actions, row_number),
             "session_id": rng.randint(100, 1000, row_number),
         }
@@ -428,7 +428,7 @@ def event_data_fixture(config, snowflake_session, snowflake_feature_store):
             "EVENT_TIMESTAMP": "TIMESTAMP",
             "CREATED_AT": "INT",
             "CUST_ID": "INT",
-            "USER_ID": "INT",
+            "USER ID": "INT",
             "PRODUCT_ACTION": "VARCHAR",
             "SESSION_ID": "INT",
             "AMOUNT": "FLOAT",
@@ -452,8 +452,8 @@ def event_data_fixture(config, snowflake_session, snowflake_feature_store):
     )
 
     # create entity & event data
-    Entity(name="User", serving_names=["uid"]).save()
-    event_data["USER_ID"].as_entity("User")
+    Entity(name="User", serving_names=["user id"]).save()
+    event_data["USER ID"].as_entity("User")
     snowflake_feature_store.save()
     event_data.save()
 
