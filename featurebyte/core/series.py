@@ -12,7 +12,7 @@ from typeguard import typechecked
 from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
-from featurebyte.core.math import MathMixin
+from featurebyte.core.math import NumericMixin
 from featurebyte.core.mixin import OpsMixin, ParentMixin
 from featurebyte.core.util import series_binary_operation, series_unary_operation
 from featurebyte.enum import DBVarType
@@ -21,7 +21,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
 
 
-class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin, MathMixin):
+class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin, NumericMixin):
     """
     Implement operations to manipulate database column
     """

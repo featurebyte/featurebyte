@@ -21,6 +21,11 @@ def numeric_only(func):  # type: ignore
     """
     Decorator for methods that can only applied to numeric Series
 
+    Parameters
+    ----------
+    func : callable
+        Method to decorate
+
     Returns
     -------
     callable
@@ -36,9 +41,9 @@ def numeric_only(func):  # type: ignore
     return wrapped
 
 
-class MathMixin:
+class NumericMixin:
     """
-    Mixin for mathematical functions
+    Mixin for numerical functions
     """
 
     @numeric_only
@@ -76,9 +81,18 @@ class MathMixin:
         )
 
     @numeric_only
-    def pow(self: SeriesT, other: int | float | SeriesT) -> SeriesT:
+    def pow(self: SeriesT, other: int | float | SeriesT) -> SeriesT:  # type: ignore
         """
         Computes the exponential power of the current Series
+
+        Parameters
+        ----------
+        other : int | float | Series
+            Power to raise to
+
+        Returns
+        -------
+        Series
         """
         return self._binary_op(
             other=other,
@@ -93,7 +107,7 @@ class MathMixin:
 
         Returns
         -------
-        SeriesT
+        Series
         """
         return series_unary_operation(
             input_series=self,
