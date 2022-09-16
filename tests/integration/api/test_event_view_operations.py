@@ -125,6 +125,9 @@ def test_query_object_operation_on_snowflake_source(
     # check casting operations
     check_cast_operations(event_view)
 
+    # check numeric operations
+    check_numeric_operations(event_view)
+
     # construct expected results
     expected = transaction_data_upper_case.copy()
     expected["CUST_ID_X_SESSION_ID"] = (expected["CUST_ID"] * expected["SESSION_ID"]) / 1000.0
@@ -654,6 +657,29 @@ def check_cast_operations(event_view, limit=100):
     )
 
     assert df["AMOUNT_FLOAT"].tolist() == df["AMOUNT"].astype(float).tolist()
+
+
+def check_numeric_operations(event_view, limit=100):
+    """Check casting operations"""
+    event_view = event_view.copy()
+
+    event_view["AMOUNT_ABS"] = (event_view["AMOUNT"] * (-1)).abs()
+    event_view["AMOUNT_SQRT"] = event_view["AMOUNT"].sqrt()
+    event_view["AMOUNT_POW_2"] = event_view["AMOUNT"].pow(2)
+    event_view["AMOUNT_FLOOR"] = event_view["AMOUNT"].floor()
+    event_view["AMOUNT_CEIL"] = event_view["AMOUNT"].ceil()
+    event_view["AMOUNT_INT_MOD_5"] = event_view["AMOUNT"].astype(int) % 5
+
+    df = event_view.preview(limit=limit)
+
+    pd.testing.assert_series_equal(df["AMOUNT_ABS"], (df["AMOUNT"] * (-1)).abs(), check_names=False)
+    pd.testing.assert_series_equal(df["AMOUNT_SQRT"], np.sqrt(df["AMOUNT"]), check_names=False)
+    pd.testing.assert_series_equal(df["AMOUNT_POW_2"], df["AMOUNT"].pow(2), check_names=False)
+    pd.testing.assert_series_equal(df["AMOUNT_FLOOR"], np.floor(df["AMOUNT"]), check_names=False)
+    pd.testing.assert_series_equal(df["AMOUNT_CEIL"], np.ceil(df["AMOUNT"]), check_names=False)
+    pd.testing.assert_series_equal(
+        df["AMOUNT_INT_MOD_5"].astype(int), df["AMOUNT"].astype(int) % 5, check_names=False
+    )
 
 
 def check_day_of_week_counts(event_view, preview_param, config):
