@@ -29,7 +29,7 @@ class NodeType(str, Enum):
     DIV = "div"
     MOD = "mod"
 
-    # mathematical functions
+    # numerical functions
     ABS = "abs"
     POWER = "power"
     SQRT = "sqrt"

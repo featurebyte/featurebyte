@@ -26,7 +26,7 @@ FuncT = TypeVar("FuncT", bound=Callable[..., "Series"])
 
 def numeric_only(func: FuncT) -> FuncT:
     """
-    Decorator for methods that can only applied to numeric Series
+    Decorator for methods that can only be applied to numeric Series
 
     Parameters
     ----------
@@ -42,7 +42,7 @@ def numeric_only(func: FuncT) -> FuncT:
     def wrapped(self: Series, *args: Any, **kwargs: Any) -> Series:
         op_name = func.__name__
         if not self.is_numeric:
-            raise TypeError(f"{op_name} is only available to numeric series; got {self.dtype}")
+            raise TypeError(f"{op_name} is only available to numeric Series; got {self.dtype}")
         return func(self, *args, **kwargs)
 
     return wrapped  # type: ignore
