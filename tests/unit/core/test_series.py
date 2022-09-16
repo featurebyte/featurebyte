@@ -912,4 +912,4 @@ def test_numeric__invalid_dtype(bool_series, method):
     """Test numeric operations cannot be applied to non-numeric series"""
     with pytest.raises(TypeError) as exc:
         _ = getattr(bool_series, method)()
-    assert str(exc.value) == f"{method} is only available to numeric series; got BOOL"
+    assert str(exc.value) == f"{method} is only available to numeric Series; got BOOL"
