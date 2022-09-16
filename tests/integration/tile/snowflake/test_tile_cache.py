@@ -18,7 +18,7 @@ def feature_for_tile_cache_tests_fixture(event_data, groupby_category):
     computation, get_historical_features(), etc.
     """
     event_view = EventView.from_event_data(event_data)
-    feature_group = event_view.groupby("USER_ID", category=groupby_category).aggregate(
+    feature_group = event_view.groupby("USER ID", category=groupby_category).aggregate(
         method="count",
         windows=["48h"],
         feature_names=["SESSION_COUNT_48h"],
@@ -64,7 +64,7 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests, g
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
-            "uid": [1, 2, 3, 4, 5],
+            "user id": [1, 2, 3, 4, 5],
         }
     )
     snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
@@ -75,7 +75,7 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests, g
     check_entity_table_sql_and_tile_compute_sql(
         snowflake_session,
         requests[0],
-        "USER_ID",
+        "USER ID",
         [1, 2, 3, 4, 5],
     )
     tile_cache.invoke_tile_manager(requests)
@@ -92,7 +92,7 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests, g
             "POINT_IN_TIME": pd.to_datetime(
                 ["2001-01-02 10:00:00"] * 2 + ["2001-01-03 10:00:00"] * 3
             ),
-            "uid": [1, 2, 3, 4, 5],
+            "user id": [1, 2, 3, 4, 5],
         }
     )
     snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
@@ -101,7 +101,7 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests, g
     check_entity_table_sql_and_tile_compute_sql(
         snowflake_session,
         requests[0],
-        "USER_ID",
+        "USER ID",
         [3, 4, 5],
     )
     tile_cache.invoke_tile_manager(requests)
@@ -112,7 +112,7 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests, g
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 2),
-            "uid": [6, 7],
+            "user id": [6, 7],
         }
     )
     snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
@@ -121,7 +121,7 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests, g
     check_entity_table_sql_and_tile_compute_sql(
         snowflake_session,
         requests[0],
-        "USER_ID",
+        "USER ID",
         [6, 7],
     )
     tile_cache.invoke_tile_manager(requests)

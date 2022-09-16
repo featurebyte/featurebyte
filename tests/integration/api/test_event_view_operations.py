@@ -32,7 +32,7 @@ def test_query_object_operation_on_sqlite_source(
             "event_timestamp": "TIMESTAMP",
             "created_at": "INT",
             "cust_id": "INT",
-            "user_id": "INT",
+            "user id": "INT",
             "product_action": "VARCHAR",
             "session_id": "INT",
             "amount": "FLOAT",
@@ -51,7 +51,7 @@ def test_query_object_operation_on_sqlite_source(
         "event_timestamp",
         "created_at",
         "cust_id",
-        "user_id",
+        "user id",
         "product_action",
         "session_id",
         "amount",
@@ -194,7 +194,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "uid": 1,
+        "user id": 1,
         "COUNT_BY_ACTION_2h": '{\n  "add": 2,\n  "purchase": 1\n}',
         "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
         "ENTROPY_BY_ACTION_24h": 1.3760552852604169,
@@ -211,7 +211,7 @@ def test_query_object_operation_on_snowflake_source(
     )
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "uid": 1,
+        "user id": 1,
         "COUNT_2h": 3,
     }
 
@@ -224,7 +224,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "uid": 1,
+        "user id": 1,
         "Unnamed": Decimal("0.214286"),
     }
 
@@ -239,7 +239,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "uid": 1,
+        "user id": 1,
         "COUNT_2h": Decimal("3"),
         "COUNT_24h": Decimal("14"),
         "COUNT_2h / COUNT_24h": Decimal("0.214286"),
@@ -257,7 +257,7 @@ def test_query_object_operation_on_snowflake_source(
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "uid": 1,
+        "user id": 1,
         "Unnamed": 4.0,
     }
 
@@ -279,7 +279,7 @@ def test_query_object_operation_on_snowflake_source(
     )
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "uid": 1,
+        "user id": 1,
         "COUNT_2h": Decimal("2"),
         "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
         "NUM_PURCHASE_7d": Decimal("4"),
@@ -318,7 +318,7 @@ def run_test_conditional_assign_feature(config, feature_group):
     feature_count_24h = feature_group["COUNT_24h"]
     preview_param = {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "uid": 1,
+        "user id": 1,
     }
     result = get_feature_preview_as_dict(feature_count_24h, preview_param, config)
     assert result == {**preview_param, "COUNT_24h": 14}
@@ -356,7 +356,7 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
     df_training_events = pd.DataFrame(
         {
             "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
-            "uid": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "user id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         }
     )
     feature_list = FeatureList(
@@ -375,7 +375,7 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
     df_historical_expected = pd.DataFrame(
         {
             "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
-            "uid": df_training_events["uid"],
+            "user id": df_training_events["user id"],
             "COUNT_2h": [3, 1, 1, 0, 0, 3, 0, 0, 1, 0],
             "COUNT_24h": [14, 12, 13, 11, 13, 18, 18, 13, 14, 0],
             "COUNT_BY_ACTION_24h": [
@@ -458,13 +458,13 @@ def _test_get_historical_features_with_serving_names(
 ):
     """Test getting historical features from FeatureList with alternative serving names"""
 
-    mapping = {"uid": "new_uid"}
+    mapping = {"user id": "new_user id"}
 
-    # Instead of providing the default serving name "uid", provide "new_uid" in data
+    # Instead of providing the default serving name "user id", provide "new_user id" in data
     df_training_events = df_training_events.rename(mapping, axis=1)
     df_historical_expected = df_historical_expected.rename(mapping, axis=1)
-    assert "new_uid" in df_training_events
-    assert "new_uid" in df_historical_expected
+    assert "new_user id" in df_training_events
+    assert "new_user id" in df_historical_expected
 
     df_historical_features = feature_list.get_historical_features(
         df_training_events,
@@ -674,7 +674,7 @@ def check_day_of_week_counts(event_view, preview_param, config):
     assert df_feature_preview.shape[0] == 1
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "uid": 1,
+        "user id": 1,
         "DAY_OF_WEEK_COUNTS_24h": '{\n  "0": 9,\n  "1": 5\n}',
         "DAY_OF_WEEK_ENTROPY_24h": 0.6517565611726532,
     }
