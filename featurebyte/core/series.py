@@ -451,6 +451,14 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
     def __rtruediv__(self, other: Union[int, float, Series]) -> Series:
         return self._binary_arithmetic_op(other, NodeType.DIV, right_op=True)
 
+    @typechecked
+    def __mod__(self, other: Union[int, float, Series]) -> Series:
+        return self._binary_arithmetic_op(other, NodeType.MOD)
+
+    @typechecked
+    def __rmod__(self, other: Union[int, float, Series]) -> Series:
+        return self._binary_arithmetic_op(other, NodeType.MOD, right_op=True)
+
     def __invert__(self) -> Series:
         return series_unary_operation(
             input_series=self,

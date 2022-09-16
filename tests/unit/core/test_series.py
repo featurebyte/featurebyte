@@ -420,11 +420,13 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
     series_float_int_mul = float_series * int_series
     series_float_float_div = float_series / float_series
     series_varchar_varchar_add = varchar_series + varchar_series
+    series_int_int_mod = int_series % int_series
     assert series_int_float_add.dtype == DBVarType.FLOAT
     assert series_int_int_sub.dtype == DBVarType.INT
     assert series_float_int_mul.dtype == DBVarType.FLOAT
     assert series_float_float_div.dtype == DBVarType.FLOAT
     assert series_varchar_varchar_add.dtype == DBVarType.VARCHAR
+    assert series_int_int_mod.dtype == DBVarType.INT
     node_kwargs = {"parameters": {}, "output_type": NodeOutputType.SERIES}
     exclude = {"name": True}
     _check_node_equality(
@@ -452,17 +454,24 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         Node(name="concat_1", type=NodeType.CONCAT, **node_kwargs),
         exclude=exclude,
     )
+    _check_node_equality(
+        series_int_int_mod.node,
+        Node(name="mod_1", type=NodeType.MOD, **node_kwargs),
+        exclude=exclude,
+    )
 
     scalar_int_float_add = int_series + 1.23
     scalar_int_int_sub = int_series - 1
     scalar_float_int_mul = float_series * 2
     scalar_float_float_div = float_series / 2.34
     scalar_varchar_varchar_add = varchar_series + "hello"
+    scalar_int_int_mod = int_series % 3
     assert scalar_int_float_add.dtype == DBVarType.FLOAT
     assert scalar_int_int_sub.dtype == DBVarType.INT
     assert scalar_float_int_mul.dtype == DBVarType.FLOAT
     assert scalar_float_float_div.dtype == DBVarType.FLOAT
     assert scalar_varchar_varchar_add.dtype == DBVarType.VARCHAR
+    assert scalar_int_int_mod.dtype == DBVarType.INT
     kwargs = {"output_type": NodeOutputType.SERIES}
     _check_node_equality(
         scalar_int_float_add.node,
@@ -489,6 +498,11 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         Node(name="concat_2", type=NodeType.CONCAT, parameters={"value": "hello"}, **kwargs),
         exclude=exclude,
     )
+    _check_node_equality(
+        scalar_int_int_mod.node,
+        Node(name="mod_2", type=NodeType.MOD, parameters={"value": 3}, **kwargs),
+        exclude=exclude,
+    )
 
 
 def test_right_arithmetic_operators(int_series, float_series, varchar_series):
@@ -500,6 +514,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
     scalar_float_int_mul = 2 * float_series
     scalar_float_float_div = 2.34 / float_series
     scalar_varchar_varchar_add = "abc" + varchar_series
+    scalar_int_int_mod = 1234 % int_series
     assert scalar_int_float_add.dtype == DBVarType.FLOAT
     assert scalar_int_int_sub.dtype == DBVarType.INT
     assert scalar_float_int_mul.dtype == DBVarType.FLOAT
@@ -537,6 +552,16 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
             name="concat_2",
             type=NodeType.CONCAT,
             parameters={"value": "abc", "right_op": True},
+            **kwargs,
+        ),
+        exclude=exclude,
+    )
+    _check_node_equality(
+        scalar_int_int_mod.node,
+        Node(
+            name="mod_2",
+            type=NodeType.MOD,
+            parameters={"value": 1234, "right_op": True},
             **kwargs,
         ),
         exclude=exclude,

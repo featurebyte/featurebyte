@@ -395,7 +395,7 @@ class BinaryOp(ExpressionNode):
     @property
     def sql(self) -> Expression:
         right_expr = self.right_node.sql
-        if self.operation == expressions.Div:
+        if self.operation in {expressions.Div, expressions.Mod}:
             # Make 0 divisor null to prevent division-by-zero error
             right_expr = parse_one(f"NULLIF({right_expr.sql()}, 0)")
         if self.operation == fb_expressions.Concat:
@@ -956,6 +956,7 @@ BINARY_OPERATION_NODE_TYPES = {
     NodeType.SUB,
     NodeType.MUL,
     NodeType.DIV,
+    NodeType.MOD,
     NodeType.EQ,
     NodeType.NE,
     NodeType.LT,
@@ -1060,6 +1061,7 @@ def make_binary_operation_node(
         NodeType.SUB: expressions.Sub,
         NodeType.MUL: expressions.Mul,
         NodeType.DIV: expressions.Div,
+        NodeType.MOD: expressions.Mod,
         # Relational
         NodeType.EQ: expressions.EQ,
         NodeType.NE: expressions.NEQ,
