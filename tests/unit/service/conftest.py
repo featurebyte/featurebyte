@@ -202,21 +202,9 @@ def feature_fixture(event_data, entity, feature_service, mock_insert_feature_reg
         return feature
 
 
-@pytest.fixture(name="mock_insert_feature_list_registry")
-def mock_insert_feature_list_registry_fixture():
-    """
-    Mock insert feature list registry at the controller level
-    """
-    with patch(
-        "featurebyte.service.feature_list.FeatureListService._insert_feature_list_registry"
-    ) as mock:
-        yield mock
-
-
 @pytest.fixture(name="feature_list")
-def feature_list_fixture(feature, feature_list_service, mock_insert_feature_list_registry):
+def feature_list_fixture(feature, feature_list_service):
     """Feature list model"""
-    _ = mock_insert_feature_list_registry
     with open(
         "tests/fixtures/request_payloads/feature_list_single.json", encoding="utf"
     ) as fhandle:
