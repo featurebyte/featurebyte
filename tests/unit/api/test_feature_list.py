@@ -369,29 +369,17 @@ def test_feature_list__construction(production_ready_feature, draft_feature):
     }
 
 
-@pytest.fixture(name="mock_insert_feature_list_registry")
-def mock_insert_feature_registry_fixture():
-    """
-    Mock insert feature registry at the controller level
-    """
-    with patch(
-        "featurebyte.service.feature_list.FeatureListService._insert_feature_list_registry"
-    ) as mock:
-        yield mock
-
-
 @pytest.fixture(name="saved_feature_list")
 def saved_feature_list_fixture(
     snowflake_feature_store,
     snowflake_event_data,
     float_feature,
     mock_insert_feature_registry,
-    mock_insert_feature_list_registry,
 ):
     """
     Saved feature list fixture
     """
-    _ = mock_insert_feature_list_registry, mock_insert_feature_registry
+    _ = mock_insert_feature_registry
     snowflake_feature_store.save()
     snowflake_event_data.save()
     assert float_feature.tabular_source.feature_store_id == snowflake_feature_store.id

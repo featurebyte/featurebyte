@@ -76,3 +76,16 @@ def user():
     user = Mock()
     user.id = ObjectId()
     return user
+
+
+@pytest.fixture(name="get_credential")
+def get_credential_fixture(config):
+    """
+    get_credential fixture
+    """
+
+    async def get_credential(user_id, feature_store_name):
+        _ = user_id
+        return config.credentials.get(feature_store_name)
+
+    return get_credential

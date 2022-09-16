@@ -9,7 +9,12 @@ from http import HTTPStatus
 from fastapi import Request, Response
 from starlette.responses import JSONResponse
 
-from featurebyte.exception import DocumentConflictError, DocumentError, DocumentNotFoundError
+from featurebyte.exception import (
+    CredentialsError,
+    DocumentConflictError,
+    DocumentError,
+    DocumentNotFoundError,
+)
 
 
 class ExecutionContext:
@@ -138,6 +143,8 @@ class ExecutionContext:
         """
         return False
 
+
+ExecutionContext.register(CredentialsError, handle_status_code=HTTPStatus.UNAUTHORIZED)
 
 ExecutionContext.register(DocumentConflictError, handle_status_code=HTTPStatus.CONFLICT)
 
