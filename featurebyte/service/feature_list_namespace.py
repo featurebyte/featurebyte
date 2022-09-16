@@ -99,7 +99,7 @@ class FeatureListNamespaceService(
                 default_feature_list = version
         return default_feature_list
 
-    async def _check_check_in_default_feature_list(
+    async def _check_change_in_default_feature_list(
         self,
         update_data: FeatureListNamespaceServiceUpdate,
         namespace: FeatureListNamespaceModel,
@@ -157,7 +157,7 @@ class FeatureListNamespaceService(
         (
             to_find_default_feature_list,
             default_fl_update_dict,
-        ) = await self._check_check_in_default_feature_list(
+        ) = await self._check_change_in_default_feature_list(
             update_data, namespace, default_fl, feature_list_service
         )
         update_dict.update(default_fl_update_dict)
