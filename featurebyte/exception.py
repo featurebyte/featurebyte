@@ -130,6 +130,12 @@ class TableSchemaHasBeenChangedError(Exception):
     """
 
 
+class CredentialsError(Exception):
+    """
+    Raise when the credentials used to access the resource is missing or invalid
+    """
+
+
 class DocumentError(Exception):
     """
     General exception raised when there are some issue at persistent layer operations

@@ -6,10 +6,12 @@ from __future__ import annotations
 from typing import Any
 
 from bson.objectid import ObjectId
+from pydantic import ValidationError
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import SourceType
 from featurebyte.exception import (
+    CredentialsError,
     DocumentConflictError,
     DocumentNotFoundError,
     DuplicatedRegistryError,
@@ -48,6 +50,8 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
 
         Raises
         ------
+        CredentialsError
+            When the credentials used to access the feature store is missing or invalid
         DocumentConflictError
             When the feature registry already exists at the feature store
         Exception
@@ -55,13 +59,19 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
         """
         feature_store = document.feature_store
         if feature_store.type == SourceType.SNOWFLAKE:
-            db_session = feature_store.get_session(
-                credentials={
-                    feature_store.name: await get_credential(
-                        user_id=self.user.id, feature_store_name=feature_store.name
-                    )
-                }
-            )
+            try:
+                db_session = feature_store.get_session(
+                    credentials={
+                        feature_store.name: await get_credential(
+                            user_id=self.user.id, feature_store_name=feature_store.name
+                        )
+                    }
+                )
+            except ValidationError as exc:
+                raise CredentialsError(
+                    f'Credential used to access FeatureStore (name: "{feature_store.name}") is missing or invalid.'
+                ) from exc
+
             feature_manager = FeatureManagerSnowflake(session=db_session)
             try:
                 feature_manager.insert_feature_registry(document)
