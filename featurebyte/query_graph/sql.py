@@ -1403,6 +1403,7 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.TIMEDELTA_EXTRACT,
     NodeType.TIMEDELTA,
     NodeType.SQRT,
+    NodeType.ABS,
 }
 
 
@@ -1546,6 +1547,8 @@ def make_expression_node(
         )
     elif node_type == NodeType.SQRT:
         sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expressions.Sqrt)
+    elif node_type == NodeType.ABS:
+        sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expressions.Abs)
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")
     return sql_node

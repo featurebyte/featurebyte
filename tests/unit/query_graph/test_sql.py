@@ -147,20 +147,6 @@ def test_binary_operation_node__scalar(node_type, value, right_op, expected, inp
     assert node.sql.sql() == expected
 
 
-@pytest.mark.parametrize(
-    "node_type, expected",
-    [
-        (NodeType.SQRT, "SQRT(a)"),
-    ],
-)
-def test_unary_operation_node(input_node, node_type, expected):
-    """Test unary operation node"""
-    column = sql.StrExpressionNode(table_node=input_node, expr="a")
-    input_nodes = [column]
-    node = sql.make_expression_node(input_nodes, node_type, parameters={})
-    assert node.sql.sql() == expected
-
-
 def test_make_input_node_escape_special_characters():
     """Test input node quotes all identifiers to handle special characters"""
     parameters = {

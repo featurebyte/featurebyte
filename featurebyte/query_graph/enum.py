@@ -30,7 +30,11 @@ class NodeType(str, Enum):
     MOD = "mod"
 
     # mathematical functions
+    ABS = "abs"
+    POWER = "power"
     SQRT = "sqrt"
+    FLOOR = "floor"
+    CEIL = "ceil"
 
     # SQL operations
     PROJECT = "project"
