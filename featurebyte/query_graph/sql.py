@@ -400,6 +400,8 @@ class BinaryOp(ExpressionNode):
             right_expr = parse_one(f"NULLIF({right_expr.sql()}, 0)")
         if self.operation == fb_expressions.Concat:
             op_expr = self.operation(expressions=[self.left_node.sql, right_expr])
+        elif self.operation == expressions.Pow:
+            op_expr = self.operation(this=self.left_node.sql, power=right_expr)
         else:
             op_expr = self.operation(this=self.left_node.sql, expression=right_expr)
         return expressions.Paren(this=op_expr)
@@ -966,6 +968,7 @@ BINARY_OPERATION_NODE_TYPES = {
     NodeType.COSINE_SIMILARITY,
     NodeType.DATE_DIFF,
     NodeType.DATE_ADD,
+    NodeType.POWER,
 }
 
 
@@ -1070,6 +1073,7 @@ def make_binary_operation_node(
         # String
         NodeType.CONCAT: fb_expressions.Concat,
         NodeType.COSINE_SIMILARITY: fb_expressions.CosineSim,
+        NodeType.POWER: expressions.Pow,
     }
 
     output_node: BinaryOp | DateDiffNode | DateAddNode
@@ -1404,6 +1408,8 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.TIMEDELTA,
     NodeType.SQRT,
     NodeType.ABS,
+    NodeType.FLOOR,
+    NodeType.CEIL,
 }
 
 
@@ -1549,6 +1555,10 @@ def make_expression_node(
         sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expressions.Sqrt)
     elif node_type == NodeType.ABS:
         sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expressions.Abs)
+    elif node_type == NodeType.FLOOR:
+        sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expressions.Floor)
+    elif node_type == NodeType.CEIL:
+        sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expressions.Ceil)
     else:
         raise NotImplementedError(f"Unexpected node type: {node_type}")
     return sql_node

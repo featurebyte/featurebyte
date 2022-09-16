@@ -45,6 +45,10 @@ class MathMixin:
     def abs(self: SeriesT) -> SeriesT:  # type: ignore
         """
         Returns a new Series that computes the absolute value of the current Series
+
+        Returns
+        -------
+        SeriesT
         """
         return series_unary_operation(
             input_series=self,
@@ -62,11 +66,6 @@ class MathMixin:
         Returns
         -------
         Series
-
-        Raises
-        ------
-        TypeError
-            if the current Series dtype is not compatible with sqrt
         """
         return series_unary_operation(
             input_series=self,
@@ -74,4 +73,49 @@ class MathMixin:
             output_var_type=DBVarType.FLOAT,
             node_params={},
             **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def floor(self: SeriesT) -> SeriesT:  # type: ignore
+        """
+        Round the Series to the nearest equal or smaller integer
+
+        Returns
+        -------
+        SeriesT
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.FLOOR,
+            output_var_type=DBVarType.INT,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def ceil(self: SeriesT) -> SeriesT:  # type: ignore
+        """
+        Round the Series to the nearest equal or larger integer
+
+        Returns
+        -------
+        SeriesT
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.CEIL,
+            output_var_type=DBVarType.INT,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def pow(self: SeriesT, other: int | float | SeriesT) -> SeriesT:
+        """
+        Returns a new Series that computes the exponential power of itself
+        """
+        return self._binary_op(
+            other=other,
+            node_type=NodeType.POWER,
+            output_var_type=DBVarType.FLOAT,
         )

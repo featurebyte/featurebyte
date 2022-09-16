@@ -850,31 +850,36 @@ def test_node_types_lineage(dataframe, float_series):
 
 
 @pytest.mark.parametrize(
-    "method, expected_node_type, expected_expr",
+    "op_func, expected_node_type, expected_dtype, expected_params, expected_expr",
     [
-        ("sqrt", NodeType.SQRT, 'SQRT("VALUE")'),
-        ("abs", NodeType.ABS, 'ABS("VALUE")'),
+        (lambda s: s.sqrt(), NodeType.SQRT, DBVarType.FLOAT, {}, 'SQRT("VALUE")'),
+        (lambda s: s.abs(), NodeType.ABS, DBVarType.FLOAT, {}, 'ABS("VALUE")'),
+        (lambda s: s.pow(2), NodeType.POWER, DBVarType.FLOAT, {"value": 2}, '(POW("VALUE", 2))'),
+        (lambda s: s.floor(), NodeType.FLOOR, DBVarType.INT, {}, 'FLOOR("VALUE")'),
+        (lambda s: s.ceil(), NodeType.CEIL, DBVarType.INT, {}, 'CEIL("VALUE")'),
     ],
 )
 def test_numeric_operations(
     float_series,
     expression_sql_template,
-    method,
+    op_func,
     expected_node_type,
+    expected_dtype,
+    expected_params,
     expected_expr,
 ):
     """Test numeric operations"""
-    new_series = getattr(float_series, method)()
+    new_series = op_func(float_series)
     assert_series_attributes_equal(new_series, float_series)
-    assert new_series.dtype == DBVarType.FLOAT
-    assert new_series.node.parameters == {}
+    assert new_series.dtype == expected_dtype
+    assert new_series.node.parameters == expected_params
     assert new_series.node.type == expected_node_type
     assert new_series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=expected_expr)
     assert expected_sql == new_series.preview_sql()
 
 
-@pytest.mark.parametrize("method", ["sqrt", "abs"])
+@pytest.mark.parametrize("method", ["sqrt", "abs", "floor", "ceil"])
 def test_numeric__invalid_dtype(bool_series, method):
     """Test sqrt operation cannot be applied to non-numeric series"""
     with pytest.raises(TypeError) as exc:
