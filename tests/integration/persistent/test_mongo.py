@@ -35,8 +35,8 @@ async def test_start_transaction__success(mongo_persistent):
     col = "test_col"
 
     async with persistent.start_transaction() as session:
-        await session.insert_one(collection_name=col, document={"key1": "value1"})
-        await session.insert_one(collection_name=col, document={"key2": "value2"})
+        await session.insert_one(collection_name=col, document={"key1": "value1"}, user_id=None)
+        await session.insert_one(collection_name=col, document={"key2": "value2"}, user_id=None)
 
     # check both records written to the mongodb
     output = sorted(
@@ -58,8 +58,8 @@ async def test_start_transaction__exception_within_transaction(mongo_persistent)
 
     with pytest.raises(TypeError):
         async with persistent.start_transaction() as session:
-            await session.insert_one(collection_name=col, document={"key1": "value1"})
-            await session.insert_one(collection_name=col, document={"key2": "value2"})
+            await session.insert_one(collection_name=col, document={"key1": "value1"}, user_id=None)
+            await session.insert_one(collection_name=col, document={"key2": "value2"}, user_id=None)
             await session.find(collection_name="data4", query_filter={})[0]
 
     # ensure persistent is working after failed transaction
@@ -81,8 +81,12 @@ async def test_crud(mongo_persistent):
     persistent, _ = mongo_persistent
     col = "test_col"
 
-    id1 = await persistent.insert_one(collection_name=col, document={"key1": "value1"})
-    id2 = await persistent.insert_one(collection_name=col, document={"key2": "value2"})
+    id1 = await persistent.insert_one(
+        collection_name=col, document={"key1": "value1"}, user_id=None
+    )
+    id2 = await persistent.insert_one(
+        collection_name=col, document={"key2": "value2"}, user_id=None
+    )
 
     # check both records written to the mongodb
     records, total = await persistent.find(collection_name=col, query_filter={})
