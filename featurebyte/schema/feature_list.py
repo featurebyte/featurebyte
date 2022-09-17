@@ -49,7 +49,7 @@ class FeatureListServiceUpdate(FeatureByteBaseModel):
     FeatureList service update schema
     """
 
-    readiness_distribution: FeatureReadinessDistribution
+    readiness_distribution: Optional[FeatureReadinessDistribution]
 
 
 class ProductionReadyFractionComparison(FeatureByteBaseModel):
