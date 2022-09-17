@@ -3,8 +3,9 @@ This module contains mixin class(es) used in the service directory.
 """
 from __future__ import annotations
 
-from beanie import PydanticObjectId
 from bson.objectid import ObjectId
+
+from featurebyte.models.base import PydanticObjectId
 
 
 class OpsServiceMixin:

@@ -45,6 +45,13 @@ async def validate_feature_list_version_and_namespace_consistency(
     DocumentInconsistencyError
         If the inconsistency between version & namespace found
     """
+    if feature_list.name != feature_list_namespace.name:
+        raise DocumentInconsistencyError(
+            f'FeatureList (name: "{feature_list.name}") object(s) within the same namespace '
+            f'must have the same "name" value (namespace: "{feature_list_namespace.name}", '
+            f'feature_list: "{feature_list.name}").'
+        )
+
     feature_namespace_ids = []
     for feature_id in feature_list.feature_ids:
         feature = await feature_service.get_document(document_id=feature_id)

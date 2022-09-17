@@ -110,6 +110,7 @@ class TestFeatureListApi(BaseApiTestSuite):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["feature_ids"] = [new_feature_id]
+            payload["feature_list_namespace_id"] = str(ObjectId())
             yield payload
 
     @pytest.mark.asyncio
