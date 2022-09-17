@@ -51,7 +51,7 @@ class FeatureUpdate(FeatureByteBaseModel):
     Feature update schema
     """
 
-    readiness: Optional[FeatureReadiness]
+    readiness: Optional[FeatureReadiness] = Field(default=None)
 
 
 class FeatureServiceUpdate(FeatureUpdate):
@@ -59,7 +59,7 @@ class FeatureServiceUpdate(FeatureUpdate):
     Feature service update schema
     """
 
-    feature_list_id: Optional[PydanticObjectId]
+    feature_list_ids: Optional[List[PydanticObjectId]] = Field(default=None)
 
 
 class ReadinessComparison(FeatureByteBaseModel):

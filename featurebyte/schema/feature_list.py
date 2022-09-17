@@ -16,7 +16,6 @@ from featurebyte.models.feature_list import (
     FeatureListStatus,
     FeatureListVersionIdentifier,
     FeatureReadinessDistribution,
-    FeatureReadinessTransition,
     FeatureTypeFeatureCount,
 )
 from featurebyte.routes.common.schema import PaginationMixin
@@ -50,7 +49,7 @@ class FeatureListServiceUpdate(FeatureByteBaseModel):
     FeatureList service update schema
     """
 
-    readiness_transition: Optional[FeatureReadinessTransition]
+    readiness_distribution: FeatureReadinessDistribution
 
 
 class ProductionReadyFractionComparison(FeatureByteBaseModel):

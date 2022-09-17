@@ -7,18 +7,18 @@ from typing import Any, Literal, Type
 
 from bson.objectid import ObjectId
 
-from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
 from featurebyte.schema.feature import (
     FeatureCreate,
     FeatureInfo,
     FeaturePaginatedList,
-    FeatureServiceUpdate,
     FeatureUpdate,
 )
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_readiness import FeatureReadinessService
 
 
 class FeatureController(
@@ -57,6 +57,14 @@ class FeatureController(
         document = await cls.document_service_class(
             user=user, persistent=persistent
         ).create_document(data=data, get_credential=get_credential)
+
+        # update feature namespace readiness due to introduction of new feature
+        readiness_service = FeatureReadinessService(user=user, persistent=persistent)
+        await readiness_service.update_feature_namespace(
+            feature_namespace_id=document.feature_namespace_id,
+            feature=document,
+            return_document=False,
+        )
         return document
 
     @classmethod
@@ -86,11 +94,14 @@ class FeatureController(
         FeatureModel
             Feature object with updated attribute(s)
         """
-        document = await cls.document_service_class(
-            user=user, persistent=persistent
-        ).update_document(document_id=feature_id, data=FeatureServiceUpdate(**data.dict()))
-        assert document is not None
-        return document
+        if data.readiness:
+            readiness_service = FeatureReadinessService(user=user, persistent=persistent)
+            await readiness_service.update_feature(
+                feature_id=feature_id,
+                readiness=FeatureReadiness(data.readiness),
+                return_document=False,
+            )
+        return await cls.get(user=user, persistent=persistent, document_id=feature_id)
 
     @classmethod
     async def list(

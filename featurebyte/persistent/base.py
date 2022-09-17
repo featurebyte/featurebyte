@@ -41,7 +41,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         document: Document,
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> ObjectId:
         """
         Insert record into collection
@@ -68,7 +68,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         documents: Iterable[Document],
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> List[ObjectId]:
         """
         Insert records into collection
@@ -168,7 +168,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         update: DocumentUpdate,
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> int:
         """
         Update one record in collection
@@ -212,7 +212,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         update: DocumentUpdate,
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> int:
         """
         Update many records in collection
@@ -256,7 +256,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         replacement: Document,
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> int:
         """
         Replace one record in collection
@@ -289,7 +289,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> int:
         """
         Delete one record from collection
@@ -315,7 +315,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        user_id: Optional[ObjectId] = None,  # pylint: disable=unused-argument
+        user_id: Optional[ObjectId],  # pylint: disable=unused-argument
     ) -> int:
         """
         Delete many records from collection

@@ -24,13 +24,16 @@ from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.event_data import EventDataCreate
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.feature_list import FeatureListCreate
+from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
+from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 
 
@@ -126,25 +129,37 @@ def event_data_service_fixture(user, persistent):
 @pytest.fixture(name="feature_namespace_service")
 def feature_namespace_service_fixture(persistent, user):
     """FeatureNamespaceService fixture"""
-    return FeatureNamespaceService(persistent=persistent, user=user)
+    return FeatureNamespaceService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_service")
 def feature_service_fixture(persistent, user):
     """FeatureService fixture"""
-    return FeatureService(persistent=persistent, user=user)
+    return FeatureService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_list_namespace_service")
 def feature_list_namespace_service_fixture(persistent, user):
     """FeatureListNamespaceService fixture"""
-    return FeatureListNamespaceService(persistent=persistent, user=user)
+    return FeatureListNamespaceService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_list_service")
 def feature_list_service_fixture(persistent, user):
     """FeatureListService fixture"""
-    return FeatureListService(persistent=persistent, user=user)
+    return FeatureListService(user=user, persistent=persistent)
+
+
+@pytest.fixture(name="feature_readiness_service")
+def feature_readiness_service_fixture(persistent, user):
+    """FeatureReadinessService fixture"""
+    return FeatureReadinessService(user=user, persistent=persistent)
+
+
+@pytest.fixture(name="default_version_mode_service")
+def default_version_mode_service_fixture(persistent, user):
+    """DefaultVersionModeService fixture"""
+    return DefaultVersionModeService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_store")
@@ -213,3 +228,87 @@ def feature_list_fixture(feature, feature_list_service):
             feature_list_service.create_document(data=FeatureListCreate(**payload))
         )
         return feature_list
+
+
+async def insert_feature_into_persistent(user, persistent, version_suffix, readiness, name=None):
+    """Insert a feature into persistent"""
+    with open("tests/fixtures/request_payloads/feature_sum_30m.json", encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        payload = FeatureCreate(**payload, user_id=user.id).dict(by_alias=True)
+        payload["_id"] = ObjectId()
+        payload["version"] = f'{payload["version"]}_{version_suffix}'
+        payload["readiness"] = readiness
+        if name:
+            payload["name"] = name
+        feature_id = await persistent.insert_one(
+            collection_name="feature",
+            document=payload,
+            user_id=user.id,
+        )
+        return feature_id
+
+
+@pytest.fixture(name="setup_for_feature_readiness")
+def setup_for_feature_readiness_fixture(
+    feature_list_service,
+    feature_list_namespace_service,
+    feature_namespace_service,
+    feature,
+    feature_list,
+    user,
+    persistent,
+):
+    """Setup for feature readiness test fixture"""
+    namespace = asyncio.run(
+        feature_namespace_service.get_document(document_id=feature.feature_namespace_id)
+    )
+    assert namespace.default_version_mode == "AUTO"
+    assert namespace.default_feature_id == feature.id
+    assert namespace.feature_ids == [feature.id]
+
+    # add a deprecated feature version first
+    new_feature_id = asyncio.run(
+        insert_feature_into_persistent(
+            user=user,
+            persistent=persistent,
+            version_suffix="_1",
+            readiness="DEPRECATED",
+        )
+    )
+    feat_namespace = asyncio.run(
+        feature_namespace_service.update_document(
+            document_id=feature.feature_namespace_id,
+            data=FeatureNamespaceServiceUpdate(
+                feature_ids=namespace.feature_ids + [new_feature_id]
+            ),
+        )
+    )
+    assert len(feat_namespace.feature_ids) == 2
+    assert new_feature_id in feat_namespace.feature_ids
+    assert feat_namespace.default_feature_id == feature.id
+    assert feat_namespace.default_version_mode == "AUTO"
+    assert feat_namespace.readiness == "DRAFT"
+
+    # create another feature list version
+    new_flist = asyncio.run(
+        feature_list_service.create_document(
+            data=FeatureListCreate(
+                feature_ids=[new_feature_id],
+                feature_list_namespace_id=feature_list.feature_list_namespace_id,
+                name="sf_feature_list",
+                version="V220914",
+            )
+        )
+    )
+    flist_namespace = asyncio.run(
+        feature_list_namespace_service.get_document(
+            document_id=feature_list.feature_list_namespace_id
+        )
+    )
+    assert len(flist_namespace.feature_list_ids) == 2
+    assert new_flist.id in flist_namespace.feature_list_ids
+    assert new_flist.feature_list_namespace_id == feature_list.feature_list_namespace_id
+    assert flist_namespace.default_version_mode == "AUTO"
+    assert flist_namespace.default_feature_list_id == feature_list.id
+    assert flist_namespace.readiness_distribution.__root__ == [{"readiness": "DRAFT", "count": 1}]
+    yield new_feature_id, new_flist.id

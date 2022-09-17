@@ -54,7 +54,9 @@ class FeatureNamespaceServiceUpdate(FeatureNamespaceUpdate):
     FeatureNamespace service update schema
     """
 
-    feature_id: Optional[PydanticObjectId]
+    feature_ids: Optional[List[PydanticObjectId]]
+    readiness: Optional[FeatureReadiness]
+    default_feature_id: Optional[PydanticObjectId]
 
 
 class NamespaceInfo(BaseInfo):

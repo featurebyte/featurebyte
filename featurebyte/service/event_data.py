@@ -54,14 +54,12 @@ class EventDataService(BaseDocumentService[EventDataModel], GetInfoServiceMixin[
         self,
         document_id: ObjectId,
         data: EventDataUpdate,
+        exclude_none: bool = True,
         document: Optional[EventDataModel] = None,
         return_document: bool = True,
     ) -> Optional[EventDataModel]:
         if document is None:
             document = await self.get_document(document_id=document_id)
-
-        # prepare update payload
-        update_payload = data.dict()
 
         # check eligibility of status transition
         eligible_transitions = {
@@ -78,10 +76,15 @@ class EventDataService(BaseDocumentService[EventDataModel], GetInfoServiceMixin[
                 f"Invalid status transition from {current_status} to {data.status}."
             )
 
+        update_dict = data.dict(exclude_none=True)
+        if data.columns_info:
+            # do not exclude None in columns_info
+            update_dict["columns_info"] = data.dict()["columns_info"]
+
         await self.persistent.update_one(
             collection_name=self.collection_name,
             query_filter=self._construct_get_query_filter(document_id=document_id),
-            update={"$set": update_payload},
+            update={"$set": update_dict},
             user_id=self.user.id,
         )
 
