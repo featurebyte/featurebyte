@@ -8,7 +8,6 @@ from typing import List, Optional, Tuple
 
 from enum import Enum
 
-from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
@@ -17,6 +16,7 @@ from featurebyte.enum import DBVarType, OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )

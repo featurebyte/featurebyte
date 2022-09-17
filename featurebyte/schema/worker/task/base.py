@@ -8,11 +8,10 @@ from typing import Any, ClassVar, Optional
 import json
 from enum import Enum
 
-from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import Field
 
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 
 
 class BaseTaskPayload(FeatureByteBaseModel):

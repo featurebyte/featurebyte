@@ -4,18 +4,59 @@ FeatureByte specific BaseModel
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 import json
 from datetime import datetime
 from enum import Enum
 
-from beanie import PydanticObjectId
+from bson.errors import InvalidId
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field, StrictStr, validator
 from pydantic.errors import DictError, PydanticTypeError
 
 Model = TypeVar("Model", bound="FeatureByteBaseModel")
+
+
+class PydanticObjectId(ObjectId):
+    """
+    Pydantic-compatible Object Id type
+    """
+
+    @classmethod
+    def __get_validators__(cls) -> Any:
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value: Union[str, bytes, ObjectId]) -> ObjectId:
+        """
+        Validate value is ObjectID type and convert Object ID string to ObjectID
+
+        Parameters
+        ----------
+        value: Union[str, bytes, ObjectId]
+            value to validate / convert
+
+        Returns
+        -------
+        ObjectId
+            Converted / validated value
+
+        Raises
+        ------
+        TypeError
+            Input string is not a valid ObjectId value
+        """
+        if isinstance(value, bytes):
+            value = value.decode("utf-8")
+        try:
+            return ObjectId(value)
+        except InvalidId as exc:
+            raise TypeError("Id must be of type PydanticObjectId") from exc
+
+    @classmethod
+    def __modify_schema__(cls, field_schema: Dict[str, Any]) -> Any:
+        field_schema.update(type="string")
 
 
 class FeatureByteTypeError(PydanticTypeError):

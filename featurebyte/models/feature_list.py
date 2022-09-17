@@ -9,7 +9,6 @@ from typing import Any, List, Optional
 import functools
 from collections import defaultdict
 
-from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 from typeguard import typechecked
@@ -18,6 +17,7 @@ from featurebyte.enum import DBVarType, OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )

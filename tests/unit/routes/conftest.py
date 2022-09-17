@@ -20,7 +20,7 @@ from mongomock_motor import AsyncMongoMockClient
 from featurebyte.app import app
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.event_data import EventDataModel
-from featurebyte.persistent import GitDB
+from featurebyte.persistent.git import GitDB
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.utils.credential import get_credential
 from featurebyte.worker.task.base import TASK_MAP

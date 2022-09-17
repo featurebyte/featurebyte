@@ -6,11 +6,10 @@ from typing import Any, Dict, List, Mapping, MutableMapping, Optional
 from datetime import datetime
 from enum import Enum
 
-from beanie import PydanticObjectId
 from bson import ObjectId
 from pydantic import Field
 
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.routes.common.util import get_utc_now
 

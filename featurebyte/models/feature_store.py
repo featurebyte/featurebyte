@@ -6,13 +6,13 @@ from __future__ import annotations
 
 from typing import List, Optional, Union
 
-from beanie import PydanticObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )

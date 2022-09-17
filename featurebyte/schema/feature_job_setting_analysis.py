@@ -5,11 +5,10 @@ from typing import List, Literal, Optional, Union
 
 from datetime import datetime
 
-from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.routes.common.schema import PaginationMixin
 

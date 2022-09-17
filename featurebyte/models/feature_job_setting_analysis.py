@@ -11,7 +11,6 @@ import json
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from beanie import PydanticObjectId
 from featurebyte_freeware.feature_job_analysis.schema import AnalysisData as BaseAnalysisData
 from featurebyte_freeware.feature_job_analysis.schema import (
     AnalysisOptions,
@@ -32,6 +31,7 @@ from pydantic import BaseModel, validator
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
