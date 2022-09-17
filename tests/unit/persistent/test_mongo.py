@@ -78,7 +78,9 @@ async def test_insert_one__duplicate_key__(mongo_persistent, test_document):
     with pytest.raises(DuplicateDocumentError):
         with patch("mongomock_motor.AsyncMongoMockCollection.insert_one") as mock_insert:
             mock_insert.side_effect = DuplicateKeyError("Document exists")
-            await persistent.insert_one(collection_name="data", document=test_document)
+            await persistent.insert_one(
+                collection_name="data", document=test_document, user_id=None
+            )
 
 
 @pytest.mark.asyncio
@@ -115,7 +117,9 @@ async def test_insert_many__duplicate_key__(mongo_persistent, test_documents):
     with pytest.raises(DuplicateDocumentError):
         with patch("mongomock_motor.AsyncMongoMockCollection.insert_many") as mock_insert:
             mock_insert.side_effect = DuplicateKeyError("Document exists")
-            await persistent.insert_many(collection_name="data", documents=test_documents)
+            await persistent.insert_many(
+                collection_name="data", documents=test_documents, user_id=None
+            )
 
 
 @pytest.mark.asyncio
@@ -313,18 +317,23 @@ async def test_get_audit_logs(mongo_persistent, test_document):
     persistent, _ = mongo_persistent
 
     # insert a doc
-    inserted_id = await persistent.insert_one(collection_name="data", document=test_document)
+    inserted_id = await persistent.insert_one(
+        collection_name="data", document=test_document, user_id=None
+    )
 
     # update the doc a few times
     for i in range(5):
         num_updated = await persistent.update_one(
-            collection_name="data", query_filter={"_id": inserted_id}, update={"$set": {"value": i}}
+            collection_name="data",
+            query_filter={"_id": inserted_id},
+            update={"$set": {"value": i}},
+            user_id=None,
         )
         assert num_updated == 1
 
     # delete the doc
     num_deleted = await persistent.delete_one(
-        collection_name="data", query_filter={"_id": inserted_id}
+        collection_name="data", query_filter={"_id": inserted_id}, user_id=None
     )
     assert num_deleted == 1
 

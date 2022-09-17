@@ -3,6 +3,7 @@ This module contains mixin class(es) used in the service directory.
 """
 from __future__ import annotations
 
+from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 
 
@@ -12,7 +13,9 @@ class OpsServiceMixin:
     """
 
     @staticmethod
-    def include_object_id(document_ids: list[ObjectId], document_id: ObjectId) -> list[ObjectId]:
+    def include_object_id(
+        document_ids: list[ObjectId] | list[PydanticObjectId], document_id: ObjectId
+    ) -> list[ObjectId]:
         """
         Include document_id to the document_ids list
 
@@ -27,10 +30,12 @@ class OpsServiceMixin:
         -------
         List of sorted document_ids
         """
-        return sorted(document_ids + [document_id])
+        return sorted(document_ids + [document_id])  # type: ignore
 
     @staticmethod
-    def exclude_object_id(document_ids: list[ObjectId], document_id: ObjectId) -> list[ObjectId]:
+    def exclude_object_id(
+        document_ids: list[ObjectId] | list[PydanticObjectId], document_id: ObjectId
+    ) -> list[ObjectId]:
         """
         Exclude document_id from the document_ids list
 
@@ -45,4 +50,4 @@ class OpsServiceMixin:
         -------
         List of sorted document_ids
         """
-        return sorted(doc_id for doc_id in document_ids if doc_id != document_id)
+        return sorted(ObjectId(doc_id) for doc_id in document_ids if doc_id != document_id)
