@@ -10,6 +10,7 @@ from pydantic import BaseModel, PrivateAttr
 from featurebyte.enum import InternalName
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.query_graph.sql import escape_column_names
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_sql_template import (
     tm_generate_tile,
@@ -61,7 +62,7 @@ class TileManagerSnowflake(BaseModel):
             sql = tm_insert_tile_registry.render(
                 tile_id=tile_spec.tile_id,
                 tile_sql=tile_spec.tile_sql,
-                entity_column_names=",".join(tile_spec.entity_column_names),
+                entity_column_names=",".join(escape_column_names(tile_spec.entity_column_names)),
                 value_column_names=",".join(tile_spec.value_column_names),
                 time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
                 blind_spot_second=tile_spec.blind_spot_second,
@@ -114,7 +115,7 @@ class TileManagerSnowflake(BaseModel):
             ]
         sql = tm_tile_entity_tracking.render(
             tile_id=tile_spec.aggregation_id,
-            entity_column_names=",".join(entity_column_names),
+            entity_column_names=",".join(escape_column_names(entity_column_names)),
             entity_table=temp_entity_table.replace("'", "''"),
             tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
         )
@@ -175,7 +176,7 @@ class TileManagerSnowflake(BaseModel):
             time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
             blind_spot_second=tile_spec.blind_spot_second,
             frequency_minute=tile_spec.frequency_minute,
-            entity_column_names=",".join(tile_spec.entity_column_names),
+            entity_column_names=",".join(escape_column_names(tile_spec.entity_column_names)),
             value_column_names=",".join(tile_spec.value_column_names),
             tile_id=tile_spec.tile_id,
             tile_type=tile_type,
@@ -287,7 +288,7 @@ class TileManagerSnowflake(BaseModel):
             time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
             blind_spot_second=tile_spec.blind_spot_second,
             frequency_minute=tile_spec.frequency_minute,
-            entity_column_names=",".join(tile_spec.entity_column_names),
+            entity_column_names=",".join(escape_column_names(tile_spec.entity_column_names)),
             value_column_names=",".join(tile_spec.value_column_names),
             tile_id=tile_spec.tile_id,
             tile_type=tile_type,

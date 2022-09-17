@@ -64,7 +64,7 @@ def test_generate_tiles(mock_snowflake_tile, tile_manager):
             183,
             3,
             5,
-            'col1',
+            '"col1"',
             'col2',
             'tile_id1',
             'ONLINE',
@@ -99,7 +99,7 @@ def test_schedule_online_tiles(mock_snowflake_tile, tile_manager):
                 'LAST_TILE_START_DATE',
                 '__FB_START_DATE',
                 '__FB_END_DATE',
-                'col1',
+                '"col1"',
                 'col2',
                 'ONLINE',
                 10
@@ -133,7 +133,7 @@ def test_schedule_offline_tiles(mock_snowflake_tile, tile_manager):
                 'LAST_TILE_START_DATE',
                 '__FB_START_DATE',
                 '__FB_END_DATE',
-                'col1',
+                '"col1"',
                 'col2',
                 'OFFLINE',
                 10

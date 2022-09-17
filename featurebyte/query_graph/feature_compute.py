@@ -163,7 +163,7 @@ class RequestTablePlan(ABC):
                 time_modulo_frequency=time_modulo_frequency,
                 serving_names=list(serving_names),
             )
-            expanded_request_ctes.append((table_name, expanded_table_sql))
+            expanded_request_ctes.append((escape_column_name(table_name), expanded_table_sql))
         return expanded_request_ctes
 
     @staticmethod
@@ -447,7 +447,7 @@ class FeatureExecutionPlan(ABC):
                     )
                 ],
             )
-            .from_(f"{expanded_request_table_name} AS REQ")
+            .from_(f"{escape_column_name(expanded_request_table_name)} AS REQ")
             .join(
                 tile_table_id,
                 join_alias="TILE",
