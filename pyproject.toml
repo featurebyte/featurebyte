@@ -86,7 +86,7 @@ PyYAML = "^6.0"
 alive-progress = "^2.4.1"
 cachetools = "^5.2.0"
 fastapi = "^0.82.0"
-featurebyte-freeware = { version = "^0.1.0-dev", allow-prereleases = true, source = "featurebyte_np" }
+featurebyte-freeware = { version = "^0.1.0", allow-prereleases = true, source = "featurebyte_np" }
 importlib_metadata = {version = "^4.5.0", python = "^3.8"}
 jinja2 = "^3.1.2"
 loguru = "^0.6.0"

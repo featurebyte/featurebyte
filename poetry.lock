@@ -351,7 +351,7 @@ test = ["pytest (>=6.2.4,<7.0.0)", "pytest-cov (>=2.12.0,<4.0.0)", "mypy (==0.91
 
 [[package]]
 name = "featurebyte-freeware"
-version = "0.1.0.dev4"
+version = "0.1.2"
 description = "Free utilities from FeatureByte"
 category = "main"
 optional = false
@@ -1757,7 +1757,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "2dd21f21cc34d28ad9dcff9f9268af20e787eecbbb5cf82c7a77cb7a96e835da"
+content-hash = "bf365f74bb727112cdaa141bf2ea790a3c7b2373bab8d371189e037d93c357fc"
 
 [metadata.files]
 about-time = [
@@ -2093,8 +2093,8 @@ fastapi = [
     {file = "fastapi-0.82.0.tar.gz", hash = "sha256:5ee7b7473a55940a18d4869ff57d29c372363bf8d3033a0e660a8cf38b1d3d9e"},
 ]
 featurebyte-freeware = [
-    {file = "featurebyte_freeware-0.1.0.dev4-py3-none-any.whl", hash = "sha256:99ee2d2f6af1b74befa80d6a55cefc137b2187f7fe241321bdf2f2e429d8671e"},
-    {file = "featurebyte_freeware-0.1.0.dev4.tar.gz", hash = "sha256:18a262ac970d133664cd3009d8cd5a8a54c7bebd15486e54241a09bd6a0680a8"},
+    {file = "featurebyte_freeware-0.1.2-py3-none-any.whl", hash = "sha256:24527290dbe444e390981fade69eb359af070e5cb8bcfaa2a422d2e7cd80d9ac"},
+    {file = "featurebyte_freeware-0.1.2.tar.gz", hash = "sha256:a4a2e9523027717a7e2d6e9b122f5ca7da9c968f741434186bd3b7e648906341"},
 ]
 filelock = [
     {file = "filelock-3.8.0-py3-none-any.whl", hash = "sha256:617eb4e5eedc82fc5f47b6d61e4d11cb837c56cb4544e39081099fa17ad109d4"},
