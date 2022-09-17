@@ -223,6 +223,7 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
         document: Optional[FeatureModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureModel]:
+        # pylint: disable=duplicate-code
         if document is None:
             await self.get_document(document_id=document_id)
 

@@ -210,6 +210,7 @@ class FeatureListService(
         document: Optional[FeatureListModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureListModel]:
+        # pylint: disable=duplicate-code
         if document is None:
             await self.get_document(document_id=document_id)
 
