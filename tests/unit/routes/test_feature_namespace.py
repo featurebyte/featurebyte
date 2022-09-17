@@ -136,8 +136,20 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         response = test_api_client.patch(
             f"{self.base_route}/{doc_id}", json={"default_version_mode": "MANUAL"}
         )
+        response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
-        assert response.json()["default_version_mode"] == "MANUAL"
+        assert response_dict["default_version_mode"] == "MANUAL"
+        assert response_dict["readiness"] == "DRAFT"
+
+        # upgrade default feature_sum_30m to production ready & check the default feature readiness get updated
+        feature_id = response_dict["default_feature_id"]
+        response = test_api_client.patch(
+            f"feature/{feature_id}", json={"readiness": "PRODUCTION_READY"}
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        response_dict = response.json()
+        assert response_dict["readiness"] == "PRODUCTION_READY"
 
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response, user_id):

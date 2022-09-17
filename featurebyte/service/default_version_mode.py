@@ -37,7 +37,8 @@ class DefaultVersionModeService(BaseUpdateService):
         self,
         feature_namespace_id: ObjectId,
         default_version_mode: DefaultVersionMode,
-        return_document: bool,
+        document: Optional[FeatureNamespaceModel] = None,
+        return_document: bool = True,
     ) -> Optional[FeatureNamespaceModel]:
         """
         Update feature namespace default version mode
@@ -48,6 +49,8 @@ class DefaultVersionModeService(BaseUpdateService):
             Target FeatureNamespace ID
         default_version_mode: DefaultVersionMode
             Target default version mode
+        document: Optional[FeatureNamespaceModel]
+            Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to return updated document
 
@@ -55,14 +58,15 @@ class DefaultVersionModeService(BaseUpdateService):
         -------
         Optional[FeatureNamespaceModel]
         """
-        namespace = await self.feature_namespace_service.get_document(
-            document_id=feature_namespace_id
-        )
-        if namespace.default_version_mode != default_version_mode:
+        if document is None:
+            document = await self.feature_namespace_service.get_document(
+                document_id=feature_namespace_id
+            )
+        if document.default_version_mode != default_version_mode:
             await self.feature_namespace_service.update_document(
                 document_id=feature_namespace_id,
                 data=FeatureNamespaceServiceUpdate(default_version_mode=default_version_mode),
-                document=namespace,
+                document=document,
                 return_document=False,
             )
             feature_namespace = await self.feature_readiness_service.update_feature_namespace(
@@ -72,14 +76,15 @@ class DefaultVersionModeService(BaseUpdateService):
             )
             return feature_namespace
         if return_document:
-            return namespace
+            return document
         return None
 
     async def update_feature_list_default_version_mode(
         self,
         feature_list_namespace_id: ObjectId,
         default_version_mode: DefaultVersionMode,
-        return_document: bool,
+        document: Optional[FeatureListNamespaceModel] = None,
+        return_document: bool = True,
     ) -> Optional[FeatureListNamespaceModel]:
         """
         Update feature list namespace default version mode
@@ -90,6 +95,8 @@ class DefaultVersionModeService(BaseUpdateService):
             Target FeatureListNamespace ID
         default_version_mode: DefaultVersionMode
             Target default version mode
+        document: Optional[FeatureListNamespaceModel]
+            Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to return updated document
 
@@ -97,14 +104,15 @@ class DefaultVersionModeService(BaseUpdateService):
         -------
         Optional[FeatureListNamespaceModel]
         """
-        namespace = await self.feature_list_namespace_service.get_document(
-            document_id=feature_list_namespace_id
-        )
-        if namespace.default_version_mode != default_version_mode:
+        if document is None:
+            document = await self.feature_list_namespace_service.get_document(
+                document_id=feature_list_namespace_id
+            )
+        if document.default_version_mode != default_version_mode:
             await self.feature_list_namespace_service.update_document(
                 document_id=feature_list_namespace_id,
                 data=FeatureListNamespaceServiceUpdate(default_version_mode=default_version_mode),
-                document=namespace,
+                document=document,
                 return_document=False,
             )
             feature_list_namespace = (
@@ -116,5 +124,5 @@ class DefaultVersionModeService(BaseUpdateService):
             )
             return feature_list_namespace
         if return_document:
-            return namespace
+            return document
         return None

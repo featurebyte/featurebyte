@@ -16,6 +16,7 @@ from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceServiceUpdate,
     FeatureListNamespaceUpdate,
 )
+from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 
 
@@ -57,11 +58,21 @@ class FeatureListNamespaceController(
         FeatureListNamespaceModel
             FeatureListNamespace object with updated attribute(s)
         """
-        document = await cls.document_service_class(
-            user=user, persistent=persistent
-        ).update_document(
-            document_id=feature_list_namespace_id,
-            data=FeatureListNamespaceServiceUpdate(**data.dict()),
+        if data.default_version_mode:
+            default_version_mode_service = DefaultVersionModeService(
+                user=user, persistent=persistent
+            )
+            await default_version_mode_service.update_feature_list_default_version_mode(
+                feature_list_namespace_id=feature_list_namespace_id,
+                default_version_mode=data.default_version_mode,
+                return_document=False,
+            )
+        if data.status:
+            await cls.document_service_class(user=user, persistent=persistent).update_document(
+                document_id=feature_list_namespace_id,
+                data=FeatureListNamespaceServiceUpdate(status=data.status),
+                return_document=False,
+            )
+        return await cls.get(
+            user=user, persistent=persistent, document_id=feature_list_namespace_id
         )
-        assert document is not None
-        return document
