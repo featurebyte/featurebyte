@@ -76,7 +76,7 @@ def training_events(transaction_data_upper_case):
 
     # Sample training time points from historical data
     df = transaction_data_upper_case
-    cols = ["EVENT_TIMESTAMP", "USER_ID"]
+    cols = ["EVENT_TIMESTAMP", "USER ID"]
     df = df[cols].drop_duplicates(cols)
     df = df.sample(1000, replace=False, random_state=0).reset_index(drop=True)
     df.rename({"EVENT_TIMESTAMP": "POINT_IN_TIME"}, axis=1, inplace=True)
@@ -217,12 +217,12 @@ def check_feature_preview(feature_list, df_expected, credentials, dict_like_colu
     for _, preview_time_point in sampled_points.iterrows():
         preview_param = {
             "POINT_IN_TIME": preview_time_point["POINT_IN_TIME"],
-            "uid": preview_time_point["USER_ID"],
+            "user id": preview_time_point["USER ID"],
         }
         output = feature_list[feature_list.feature_names].preview(
             preview_param, credentials=credentials
         )
-        output.rename({"uid": "USER_ID"}, axis=1, inplace=True)
+        output.rename({"user id": "USER ID"}, axis=1, inplace=True)
         df_expected = pd.DataFrame([preview_time_point], index=output.index)
         fb_assert_frame_equal(output, df_expected, dict_like_columns)
     elapsed = time.time() - tic
@@ -335,7 +335,9 @@ def test_aggregation(
 
     tic = time.time()
     df_historical_features = feature_list.get_historical_features(
-        training_events, credentials=config.credentials, serving_names_mapping={"uid": "USER_ID"}
+        training_events,
+        credentials=config.credentials,
+        serving_names_mapping={"user id": "USER ID"},
     )
     elapsed_historical = time.time() - tic
     logger.debug(f"elapsed historical: {elapsed_historical}")
