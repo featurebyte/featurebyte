@@ -5,12 +5,11 @@ from __future__ import annotations
 
 from typing import Any, List, Optional
 
-from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
 from featurebyte.models.feature_store import ColumnInfo, TableDetails, TabularSource
 from featurebyte.routes.common.schema import PaginationMixin

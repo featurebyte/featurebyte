@@ -6,7 +6,6 @@ from unittest import mock
 
 import pandas as pd
 import pytest
-from beanie import PydanticObjectId
 
 from featurebyte.exception import InvalidFeatureRegistryOperationError, MissingFeatureRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
@@ -18,6 +17,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_update_feature_registry,
     tm_update_feature_registry_default_false,
 )
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureReadiness
 
 

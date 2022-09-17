@@ -7,9 +7,9 @@ from typing import Optional, cast
 
 from http import HTTPStatus
 
-from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
 
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (

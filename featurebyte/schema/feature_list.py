@@ -7,11 +7,10 @@ from typing import Any, List, Optional
 
 from datetime import datetime
 
-from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListStatus,

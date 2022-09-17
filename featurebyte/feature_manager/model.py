@@ -5,11 +5,10 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from beanie import PydanticObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature import FeatureModel, FeatureVersionIdentifier
 from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
 from featurebyte.models.tile import TileSpec

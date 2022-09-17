@@ -3,9 +3,7 @@ FeatureListNamespace API payload scheme
 """
 from typing import List, Optional
 
-from beanie import PydanticObjectId
-
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,

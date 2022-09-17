@@ -3,12 +3,11 @@ FeatureStore API payload schema
 """
 from typing import List, Optional
 
-from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import SourceType
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.schema.common.base import BaseInfo

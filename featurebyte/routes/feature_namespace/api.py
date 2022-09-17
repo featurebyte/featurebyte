@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from typing import Optional, cast
 
-from beanie import PydanticObjectId
 from fastapi import APIRouter, Request
 
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureNamespaceModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (

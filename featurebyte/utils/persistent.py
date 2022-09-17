@@ -4,7 +4,8 @@ Utility functions for persistent
 from __future__ import annotations
 
 from featurebyte.config import Configurations
-from featurebyte.persistent import GitDB, Persistent
+from featurebyte.persistent.base import Persistent
+from featurebyte.persistent.git import GitDB
 
 PERSISTENT = None
 

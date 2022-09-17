@@ -7,12 +7,11 @@ from typing import Any, List, Optional, Tuple
 
 from datetime import datetime
 
-from beanie import PydanticObjectId
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature import FeatureModel, FeatureReadiness, FeatureVersionIdentifier
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import Node, QueryGraph

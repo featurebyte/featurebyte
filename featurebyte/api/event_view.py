@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional, TypeVar, Union
 
-from beanie import PydanticObjectId
 from pydantic import Field, PrivateAttr
 from typeguard import typechecked
 
@@ -14,6 +13,7 @@ from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.core.util import series_unary_operation
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeType
 

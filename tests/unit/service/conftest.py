@@ -18,7 +18,7 @@ from bson.objectid import ObjectId
 from mongomock_motor import AsyncMongoMockClient
 
 from featurebyte.models.event_data import EventDataModel
-from featurebyte.persistent import GitDB
+from featurebyte.persistent.git import GitDB
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.schema.entity import EntityCreate
 from featurebyte.schema.event_data import EventDataCreate
