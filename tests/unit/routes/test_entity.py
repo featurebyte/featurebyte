@@ -103,7 +103,6 @@ class TestEntityApi(BaseApiTestSuite):
         response = test_api_client.get(f"/entity/audit/{entity_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
-        print(results)
         assert results["total"] == 2
         assert [record["action_type"] for record in results["data"]] == ["UPDATE", "INSERT"]
         assert [record["previous_values"].get("name") for record in results["data"]] == [
