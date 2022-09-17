@@ -373,6 +373,18 @@ class SelectedEntityBuildTileInputNode(InputNode):
 
 
 @dataclass
+class UnaryOp(ExpressionNode):
+    """Typical unary operation node"""
+
+    expr: ExpressionNode
+    operation: type[expressions.Expression]
+
+    @property
+    def sql(self) -> Expression:
+        return self.operation(this=self.expr.sql)
+
+
+@dataclass
 class BinaryOp(ExpressionNode):
     """Binary operation node"""
 
@@ -383,11 +395,13 @@ class BinaryOp(ExpressionNode):
     @property
     def sql(self) -> Expression:
         right_expr = self.right_node.sql
-        if self.operation == expressions.Div:
+        if self.operation in {expressions.Div, expressions.Mod}:
             # Make 0 divisor null to prevent division-by-zero error
             right_expr = parse_one(f"NULLIF({right_expr.sql()}, 0)")
         if self.operation == fb_expressions.Concat:
             op_expr = self.operation(expressions=[self.left_node.sql, right_expr])
+        elif self.operation == expressions.Pow:
+            op_expr = self.operation(this=self.left_node.sql, power=right_expr)
         else:
             op_expr = self.operation(this=self.left_node.sql, expression=right_expr)
         return expressions.Paren(this=op_expr)
@@ -447,17 +461,6 @@ class IsNullNode(ExpressionNode):
     @property
     def sql(self) -> Expression:
         return expressions.Is(this=self.expr.sql, expression=expressions.Null())
-
-
-@dataclass
-class LengthNode(ExpressionNode):
-    """Node for LENGTH operation"""
-
-    expr: ExpressionNode
-
-    @property
-    def sql(self) -> Expression:
-        return expressions.Length(this=self.expr.sql)
 
 
 @dataclass
@@ -770,17 +773,6 @@ class DateAddNode(ExpressionNode):
 
 
 @dataclass
-class NotNode(ExpressionNode):
-    """Node for inverting binary column operation"""
-
-    expr: ExpressionNode
-
-    @property
-    def sql(self) -> Expression:
-        return expressions.Not(this=self.expr.sql)
-
-
-@dataclass
 class CountDictTransformNode(ExpressionNode):
     """Node for count dict transform operation (eg. entropy)"""
 
@@ -942,6 +934,7 @@ BINARY_OPERATION_NODE_TYPES = {
     NodeType.SUB,
     NodeType.MUL,
     NodeType.DIV,
+    NodeType.MOD,
     NodeType.EQ,
     NodeType.NE,
     NodeType.LT,
@@ -954,6 +947,7 @@ BINARY_OPERATION_NODE_TYPES = {
     NodeType.COSINE_SIMILARITY,
     NodeType.DATE_DIFF,
     NodeType.DATE_ADD,
+    NodeType.POWER,
 }
 
 
@@ -1045,6 +1039,7 @@ def make_binary_operation_node(
         NodeType.SUB: expressions.Sub,
         NodeType.MUL: expressions.Mul,
         NodeType.DIV: expressions.Div,
+        NodeType.MOD: expressions.Mod,
         # Relational
         NodeType.EQ: expressions.EQ,
         NodeType.NE: expressions.NEQ,
@@ -1058,6 +1053,7 @@ def make_binary_operation_node(
         # String
         NodeType.CONCAT: fb_expressions.Concat,
         NodeType.COSINE_SIMILARITY: fb_expressions.CosineSim,
+        NodeType.POWER: expressions.Pow,
     }
 
     output_node: BinaryOp | DateDiffNode | DateAddNode
@@ -1390,6 +1386,10 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.LAG,
     NodeType.TIMEDELTA_EXTRACT,
     NodeType.TIMEDELTA,
+    NodeType.SQRT,
+    NodeType.ABS,
+    NodeType.FLOOR,
+    NodeType.CEIL,
 }
 
 
@@ -1448,12 +1448,21 @@ def make_expression_node(
     assert isinstance(input_expr_node, ExpressionNode)
     table_node = input_expr_node.table_node
     sql_node: ExpressionNode
-    if node_type == NodeType.IS_NULL:
+
+    # Some node types can be handled identically given the correct sqlglot expression
+    node_type_to_expression_cls = {
+        NodeType.SQRT: expressions.Sqrt,
+        NodeType.ABS: expressions.Abs,
+        NodeType.FLOOR: expressions.Floor,
+        NodeType.CEIL: expressions.Ceil,
+        NodeType.NOT: expressions.Not,
+        NodeType.LENGTH: expressions.Length,
+    }
+    if node_type in node_type_to_expression_cls:
+        cls = node_type_to_expression_cls[node_type]
+        sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=cls)
+    elif node_type == NodeType.IS_NULL:
         sql_node = IsNullNode(table_node=table_node, expr=input_expr_node)
-    elif node_type == NodeType.NOT:
-        sql_node = NotNode(table_node=table_node, expr=input_expr_node)
-    elif node_type == NodeType.LENGTH:
-        sql_node = LengthNode(table_node=table_node, expr=input_expr_node)
     elif node_type == NodeType.STR_CASE:
         sql_node = StringCaseNode(
             table_node=table_node,

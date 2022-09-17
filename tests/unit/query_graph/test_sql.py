@@ -84,6 +84,7 @@ def test_resolve_project_node(input_node):
         (NodeType.SUB, "(a - b)"),
         (NodeType.MUL, "(a * b)"),
         (NodeType.DIV, "(a / NULLIF(b, 0))"),
+        (NodeType.MOD, "(a % NULLIF(b, 0))"),
         (NodeType.EQ, "(a = b)"),
         (NodeType.NE, "(a <> b)"),
         (NodeType.LT, "(a < b)"),

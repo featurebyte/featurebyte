@@ -1,6 +1,8 @@
 """
 Common test fixtures used across test files in core directory
 """
+import textwrap
+
 import pytest
 
 from featurebyte.core.frame import Frame
@@ -96,6 +98,7 @@ def int_series(dataframe):
     assert isinstance(series, Series)
     assert series.name == "CUST_ID"
     assert series.dtype == DBVarType.INT
+    assert series.is_numeric
     yield series
 
 
@@ -108,6 +111,7 @@ def float_series(dataframe):
     assert isinstance(series, Series)
     assert series.name == "VALUE"
     assert series.dtype == DBVarType.FLOAT
+    assert series.is_numeric
     yield series
 
 
@@ -167,3 +171,24 @@ def timedelta_series_from_int(int_series):
     assert isinstance(series, Series)
     assert series.dtype == DBVarType.TIMEDELTA
     yield series
+
+
+@pytest.fixture(name="expression_sql_template")
+def expression_sql_template_fixture():
+    """SQL template used to construct the expected sql code"""
+    template_sql = """
+    SELECT
+      {expression}
+    FROM (
+        SELECT
+          "CUST_ID" AS "CUST_ID",
+          "PRODUCT_ACTION" AS "PRODUCT_ACTION",
+          "VALUE" AS "VALUE",
+          "MASK" AS "MASK",
+          "TIMESTAMP" AS "TIMESTAMP",
+          "PROMOTION_START_DATE" AS "PROMOTION_START_DATE"
+        FROM "db"."public"."transaction"
+    )
+    LIMIT 10
+    """
+    return textwrap.dedent(template_sql).strip()

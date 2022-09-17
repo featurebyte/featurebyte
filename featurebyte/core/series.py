@@ -3,7 +3,9 @@ Series class
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Type, Union
+from typing import Any, Callable, Literal, Optional, Type, TypeVar, Union
+
+from functools import wraps
 
 import pandas as pd
 from pydantic import Field, StrictStr, root_validator
@@ -18,6 +20,32 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
+
+FuncT = TypeVar("FuncT", bound=Callable[..., "Series"])
+
+
+def numeric_only(func: FuncT) -> FuncT:
+    """
+    Decorator for methods that can only be applied to numeric Series
+
+    Parameters
+    ----------
+    func : FuncT
+        Method to decorate
+
+    Returns
+    -------
+    callable
+    """
+
+    @wraps(func)
+    def wrapped(self: Series, *args: Any, **kwargs: Any) -> Series:
+        op_name = func.__name__
+        if not self.is_numeric:
+            raise TypeError(f"{op_name} is only available to numeric Series; got {self.dtype}")
+        return func(self, *args, **kwargs)
+
+    return wrapped  # type: ignore
 
 
 class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMixin):
@@ -450,6 +478,14 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
     def __rtruediv__(self, other: Union[int, float, Series]) -> Series:
         return self._binary_arithmetic_op(other, NodeType.DIV, right_op=True)
 
+    @typechecked
+    def __mod__(self, other: Union[int, float, Series]) -> Series:
+        return self._binary_arithmetic_op(other, NodeType.MOD)
+
+    @typechecked
+    def __rmod__(self, other: Union[int, float, Series]) -> Series:
+        return self._binary_arithmetic_op(other, NodeType.MOD, right_op=True)
+
     def __invert__(self) -> Series:
         return series_unary_operation(
             input_series=self,
@@ -458,6 +494,10 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_params={},
             **self.unary_op_series_params(),
         )
+
+    @typechecked
+    def __pow__(self, other: Union[int, float, Series]) -> Series:
+        return self.pow(other)
 
     @property
     def is_datetime(self) -> bool:
@@ -469,6 +509,17 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         bool
         """
         return self.dtype in (DBVarType.TIMESTAMP, DBVarType.DATE)
+
+    @property
+    def is_numeric(self) -> bool:
+        """
+        Returns whether Series has a numeric variable type
+
+        Returns
+        -------
+        bool
+        """
+        return self.dtype in (DBVarType.INT, DBVarType.FLOAT)
 
     def isnull(self) -> Series:
         """
@@ -550,6 +601,94 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             node_type=NodeType.CAST,
             output_var_type=output_var_type,
             node_params=node_params,
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def abs(self) -> Series:
+        """
+        Computes the absolute value of the current Series
+
+        Returns
+        -------
+        Series
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.ABS,
+            output_var_type=self.dtype,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def sqrt(self: Series) -> Series:
+        """
+        Computes the square root of the current Series
+
+        Returns
+        -------
+        Series
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.SQRT,
+            output_var_type=DBVarType.FLOAT,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def pow(self: Series, other: int | float | Series) -> Series:
+        """
+        Computes the exponential power of the current Series
+
+        Parameters
+        ----------
+        other : int | float | Series
+            Power to raise to
+
+        Returns
+        -------
+        Series
+        """
+        return self._binary_op(
+            other=other,
+            node_type=NodeType.POWER,
+            output_var_type=DBVarType.FLOAT,
+        )
+
+    @numeric_only
+    def floor(self: Series) -> Series:
+        """
+        Round the Series to the nearest equal or smaller integer
+
+        Returns
+        -------
+        Series
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.FLOOR,
+            output_var_type=DBVarType.INT,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def ceil(self: Series) -> Series:
+        """
+        Round the Series to the nearest equal or larger integer
+
+        Returns
+        -------
+        Series
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.CEIL,
+            output_var_type=DBVarType.INT,
+            node_params={},
             **self.unary_op_series_params(),
         )
 

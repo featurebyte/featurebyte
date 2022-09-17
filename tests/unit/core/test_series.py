@@ -420,11 +420,13 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
     series_float_int_mul = float_series * int_series
     series_float_float_div = float_series / float_series
     series_varchar_varchar_add = varchar_series + varchar_series
+    series_int_int_mod = int_series % int_series
     assert series_int_float_add.dtype == DBVarType.FLOAT
     assert series_int_int_sub.dtype == DBVarType.INT
     assert series_float_int_mul.dtype == DBVarType.FLOAT
     assert series_float_float_div.dtype == DBVarType.FLOAT
     assert series_varchar_varchar_add.dtype == DBVarType.VARCHAR
+    assert series_int_int_mod.dtype == DBVarType.INT
     node_kwargs = {"parameters": {}, "output_type": NodeOutputType.SERIES}
     exclude = {"name": True}
     _check_node_equality(
@@ -452,17 +454,24 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         Node(name="concat_1", type=NodeType.CONCAT, **node_kwargs),
         exclude=exclude,
     )
+    _check_node_equality(
+        series_int_int_mod.node,
+        Node(name="mod_1", type=NodeType.MOD, **node_kwargs),
+        exclude=exclude,
+    )
 
     scalar_int_float_add = int_series + 1.23
     scalar_int_int_sub = int_series - 1
     scalar_float_int_mul = float_series * 2
     scalar_float_float_div = float_series / 2.34
     scalar_varchar_varchar_add = varchar_series + "hello"
+    scalar_int_int_mod = int_series % 3
     assert scalar_int_float_add.dtype == DBVarType.FLOAT
     assert scalar_int_int_sub.dtype == DBVarType.INT
     assert scalar_float_int_mul.dtype == DBVarType.FLOAT
     assert scalar_float_float_div.dtype == DBVarType.FLOAT
     assert scalar_varchar_varchar_add.dtype == DBVarType.VARCHAR
+    assert scalar_int_int_mod.dtype == DBVarType.INT
     kwargs = {"output_type": NodeOutputType.SERIES}
     _check_node_equality(
         scalar_int_float_add.node,
@@ -489,6 +498,11 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         Node(name="concat_2", type=NodeType.CONCAT, parameters={"value": "hello"}, **kwargs),
         exclude=exclude,
     )
+    _check_node_equality(
+        scalar_int_int_mod.node,
+        Node(name="mod_2", type=NodeType.MOD, parameters={"value": 3}, **kwargs),
+        exclude=exclude,
+    )
 
 
 def test_right_arithmetic_operators(int_series, float_series, varchar_series):
@@ -500,6 +514,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
     scalar_float_int_mul = 2 * float_series
     scalar_float_float_div = 2.34 / float_series
     scalar_varchar_varchar_add = "abc" + varchar_series
+    scalar_int_int_mod = 1234 % int_series
     assert scalar_int_float_add.dtype == DBVarType.FLOAT
     assert scalar_int_int_sub.dtype == DBVarType.INT
     assert scalar_float_int_mul.dtype == DBVarType.FLOAT
@@ -537,6 +552,16 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
             name="concat_2",
             type=NodeType.CONCAT,
             parameters={"value": "abc", "right_op": True},
+            **kwargs,
+        ),
+        exclude=exclude,
+    )
+    _check_node_equality(
+        scalar_int_int_mod.node,
+        Node(
+            name="mod_2",
+            type=NodeType.MOD,
+            parameters={"value": 1234, "right_op": True},
             **kwargs,
         ),
         exclude=exclude,
@@ -694,7 +719,7 @@ def test_isnull(bool_series):
     )
 
 
-def test_notnull(bool_series):
+def test_notnull(bool_series, expression_sql_template):
     """
     Test notnull operation
     """
@@ -708,6 +733,8 @@ def test_notnull(bool_series):
         Node(name="not_1", type=NodeType.NOT, **node_kwargs),
         exclude=exclude,
     )
+    expected_sql = expression_sql_template.format(expression='NOT "MASK" IS NULL')
+    assert expected_sql == result.preview_sql()
 
 
 def test_fillna(float_series):
@@ -847,3 +874,42 @@ def test_node_types_lineage(dataframe, float_series):
         "sub",
         "project",
     ]
+
+
+@pytest.mark.parametrize(
+    "op_func, expected_node_type, expected_dtype, expected_params, expected_expr",
+    [
+        (lambda s: s.sqrt(), NodeType.SQRT, DBVarType.FLOAT, {}, 'SQRT("VALUE")'),
+        (lambda s: s.abs(), NodeType.ABS, DBVarType.FLOAT, {}, 'ABS("VALUE")'),
+        (lambda s: s.pow(2), NodeType.POWER, DBVarType.FLOAT, {"value": 2}, '(POW("VALUE", 2))'),
+        (lambda s: s**2, NodeType.POWER, DBVarType.FLOAT, {"value": 2}, '(POW("VALUE", 2))'),
+        (lambda s: s.floor(), NodeType.FLOOR, DBVarType.INT, {}, 'FLOOR("VALUE")'),
+        (lambda s: s.ceil(), NodeType.CEIL, DBVarType.INT, {}, 'CEIL("VALUE")'),
+    ],
+)
+def test_numeric_operations(
+    float_series,
+    expression_sql_template,
+    op_func,
+    expected_node_type,
+    expected_dtype,
+    expected_params,
+    expected_expr,
+):
+    """Test numeric operations"""
+    new_series = op_func(float_series)
+    assert_series_attributes_equal(new_series, float_series)
+    assert new_series.dtype == expected_dtype
+    assert new_series.node.parameters == expected_params
+    assert new_series.node.type == expected_node_type
+    assert new_series.node.output_type == NodeOutputType.SERIES
+    expected_sql = expression_sql_template.format(expression=expected_expr)
+    assert expected_sql == new_series.preview_sql()
+
+
+@pytest.mark.parametrize("method", ["sqrt", "abs", "floor", "ceil"])
+def test_numeric__invalid_dtype(bool_series, method):
+    """Test numeric operations cannot be applied to non-numeric series"""
+    with pytest.raises(TypeError) as exc:
+        _ = getattr(bool_series, method)()
+    assert str(exc.value) == f"{method} is only available to numeric Series; got BOOL"
