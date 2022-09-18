@@ -62,6 +62,7 @@ class DefaultVersionModeService(BaseUpdateService):
             document = await self.feature_namespace_service.get_document(
                 document_id=feature_namespace_id
             )
+
         if document.default_version_mode != default_version_mode:
             await self.feature_namespace_service.update_document(
                 document_id=feature_namespace_id,
@@ -75,6 +76,7 @@ class DefaultVersionModeService(BaseUpdateService):
                 return_document=return_document,
             )
             return feature_namespace
+
         if return_document:
             return document
         return None
@@ -108,6 +110,7 @@ class DefaultVersionModeService(BaseUpdateService):
             document = await self.feature_list_namespace_service.get_document(
                 document_id=feature_list_namespace_id
             )
+
         if document.default_version_mode != default_version_mode:
             await self.feature_list_namespace_service.update_document(
                 document_id=feature_list_namespace_id,
@@ -123,6 +126,7 @@ class DefaultVersionModeService(BaseUpdateService):
                 )
             )
             return feature_list_namespace
+
         if return_document:
             return document
         return None
