@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import AsyncIterator
 
-import asyncio
 import json
 from contextlib import asynccontextmanager
 from unittest.mock import Mock, patch
@@ -162,39 +161,35 @@ def default_version_mode_service_fixture(persistent, user):
     return DefaultVersionModeService(user=user, persistent=persistent)
 
 
-@pytest.fixture(name="feature_store")
-def feature_store_fixture(feature_store_service, user):
+@pytest_asyncio.fixture(name="feature_store")
+async def feature_store_fixture(feature_store_service, user):
     """FeatureStore model"""
     with open("tests/fixtures/request_payloads/feature_store.json", encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature_store = asyncio.run(
-            feature_store_service.create_document(
-                data=FeatureStoreCreate(**payload, user_id=user.id)
-            )
+        feature_store = await feature_store_service.create_document(
+            data=FeatureStoreCreate(**payload, user_id=user.id)
         )
         return feature_store
 
 
-@pytest.fixture(name="event_data")
-def event_data_fixture(feature_store, event_data_service, user):
+@pytest_asyncio.fixture(name="event_data")
+async def event_data_fixture(feature_store, event_data_service, user):
     """EventData model"""
     _ = feature_store
     with open("tests/fixtures/request_payloads/event_data.json", encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        event_data = asyncio.run(
-            event_data_service.create_document(data=EventDataCreate(**payload, user_id=user.id))
+        event_data = await event_data_service.create_document(
+            data=EventDataCreate(**payload, user_id=user.id)
         )
         return event_data
 
 
-@pytest.fixture(name="entity")
-def entity_fixture(entity_service, user):
+@pytest_asyncio.fixture(name="entity")
+async def entity_fixture(entity_service, user):
     """Entity model"""
     with open("tests/fixtures/request_payloads/entity.json", encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        entity = asyncio.run(
-            entity_service.create_document(data=EntityCreate(**payload, user_id=user.id))
-        )
+        entity = await entity_service.create_document(data=EntityCreate(**payload, user_id=user.id))
         return entity
 
 
@@ -207,26 +202,25 @@ def mock_insert_feature_registry_fixture():
         yield mock
 
 
-@pytest.fixture(name="feature")
-def feature_fixture(event_data, entity, feature_service, mock_insert_feature_registry):
+@pytest_asyncio.fixture(name="feature")
+async def feature_fixture(event_data, entity, feature_service, mock_insert_feature_registry):
     """Feature model"""
-    _ = mock_insert_feature_registry
+    _ = event_data, entity, mock_insert_feature_registry
     with open("tests/fixtures/request_payloads/feature_sum_30m.json", encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
-        feature = asyncio.run(feature_service.create_document(data=FeatureCreate(**payload)))
+        feature = await feature_service.create_document(data=FeatureCreate(**payload))
         return feature
 
 
-@pytest.fixture(name="feature_list")
-def feature_list_fixture(feature, feature_list_service):
+@pytest_asyncio.fixture(name="feature_list")
+async def feature_list_fixture(feature, feature_list_service):
     """Feature list model"""
+    _ = feature
     with open(
         "tests/fixtures/request_payloads/feature_list_single.json", encoding="utf"
     ) as fhandle:
         payload = json.loads(fhandle.read())
-        feature_list = asyncio.run(
-            feature_list_service.create_document(data=FeatureListCreate(**payload))
-        )
+        feature_list = await feature_list_service.create_document(data=FeatureListCreate(**payload))
         return feature_list
 
 
@@ -248,8 +242,8 @@ async def insert_feature_into_persistent(user, persistent, version_suffix, readi
         return feature_id
 
 
-@pytest.fixture(name="setup_for_feature_readiness")
-def setup_for_feature_readiness_fixture(
+@pytest_asyncio.fixture(name="setup_for_feature_readiness")
+async def setup_for_feature_readiness_fixture(
     feature_list_service,
     feature_list_namespace_service,
     feature_namespace_service,
@@ -259,29 +253,23 @@ def setup_for_feature_readiness_fixture(
     persistent,
 ):
     """Setup for feature readiness test fixture"""
-    namespace = asyncio.run(
-        feature_namespace_service.get_document(document_id=feature.feature_namespace_id)
+    namespace = await feature_namespace_service.get_document(
+        document_id=feature.feature_namespace_id
     )
     assert namespace.default_version_mode == "AUTO"
     assert namespace.default_feature_id == feature.id
     assert namespace.feature_ids == [feature.id]
 
     # add a deprecated feature version first
-    new_feature_id = asyncio.run(
-        insert_feature_into_persistent(
-            user=user,
-            persistent=persistent,
-            version_suffix="_1",
-            readiness="DEPRECATED",
-        )
+    new_feature_id = await insert_feature_into_persistent(
+        user=user,
+        persistent=persistent,
+        version_suffix="_1",
+        readiness="DEPRECATED",
     )
-    feat_namespace = asyncio.run(
-        feature_namespace_service.update_document(
-            document_id=feature.feature_namespace_id,
-            data=FeatureNamespaceServiceUpdate(
-                feature_ids=namespace.feature_ids + [new_feature_id]
-            ),
-        )
+    feat_namespace = await feature_namespace_service.update_document(
+        document_id=feature.feature_namespace_id,
+        data=FeatureNamespaceServiceUpdate(feature_ids=namespace.feature_ids + [new_feature_id]),
     )
     assert len(feat_namespace.feature_ids) == 2
     assert new_feature_id in feat_namespace.feature_ids
@@ -290,20 +278,16 @@ def setup_for_feature_readiness_fixture(
     assert feat_namespace.readiness == "DRAFT"
 
     # create another feature list version
-    new_flist = asyncio.run(
-        feature_list_service.create_document(
-            data=FeatureListCreate(
-                feature_ids=[new_feature_id],
-                feature_list_namespace_id=feature_list.feature_list_namespace_id,
-                name="sf_feature_list",
-                version="V220914",
-            )
+    new_flist = await feature_list_service.create_document(
+        data=FeatureListCreate(
+            feature_ids=[new_feature_id],
+            feature_list_namespace_id=feature_list.feature_list_namespace_id,
+            name="sf_feature_list",
+            version="V220914",
         )
     )
-    flist_namespace = asyncio.run(
-        feature_list_namespace_service.get_document(
-            document_id=feature_list.feature_list_namespace_id
-        )
+    flist_namespace = await feature_list_namespace_service.get_document(
+        document_id=feature_list.feature_list_namespace_id
     )
     assert len(flist_namespace.feature_list_ids) == 2
     assert new_flist.id in flist_namespace.feature_list_ids

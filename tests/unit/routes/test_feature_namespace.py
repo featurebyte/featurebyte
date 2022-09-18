@@ -1,12 +1,12 @@
 """
 Test for FeatureNamespace route
 """
-import asyncio
 import time
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
 import pytest
+import pytest_asyncio
 from bson import ObjectId
 from requests import Response
 
@@ -49,8 +49,8 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
             payload["_id"] = str(ObjectId())
             yield payload
 
-    @pytest.fixture
-    def create_success_response(
+    @pytest_asyncio.fixture
+    async def create_success_response(
         self, test_api_client_persistent, user_id
     ):  # pylint: disable=arguments-differ
         """Post route success response object"""
@@ -58,8 +58,8 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         user = Mock()
         user.id = user_id
         feature_namespace_service = FeatureNamespaceService(user=user, persistent=persistent)
-        document = asyncio.run(
-            feature_namespace_service.create_document(data=FeatureNamespaceCreate(**self.payload))
+        document = await feature_namespace_service.create_document(
+            data=FeatureNamespaceCreate(**self.payload)
         )
         response = Response()
         response._content = bytes(document.json(by_alias=True), "utf-8")
@@ -78,8 +78,8 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
     def test_create_201__id_is_none(self, test_api_client_persistent):
         """Test creation (success) ID is None"""
 
-    @pytest.fixture
-    def create_multiple_success_responses(
+    @pytest_asyncio.fixture
+    async def create_multiple_success_responses(
         self, test_api_client_persistent, user_id
     ):  # pylint: disable=arguments-differ
         """Post multiple success responses"""
@@ -91,8 +91,8 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         for i, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
             # payload name is set here as we need the exact name value for test_list_200 test
             payload["name"] = f'{self.payload["name"]}_{i}'
-            document = asyncio.run(
-                feature_namespace_service.create_document(data=FeatureNamespaceCreate(**payload))
+            document = await feature_namespace_service.create_document(
+                data=FeatureNamespaceCreate(**payload)
             )
             output.append(document)
             time.sleep(0.05)

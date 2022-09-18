@@ -6,7 +6,7 @@ from datetime import datetime
 from http import HTTPStatus
 from time import sleep
 
-import pytest
+import pytest_asyncio
 from bson.objectid import ObjectId
 
 
@@ -126,8 +126,8 @@ class BaseApiTestSuite:
     def setup_creation_route(self, api_client):
         """Setup for post route"""
 
-    @pytest.fixture()
-    def create_success_response(self, test_api_client_persistent):
+    @pytest_asyncio.fixture()
+    async def create_success_response(self, test_api_client_persistent):
         """Post route success response object"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
@@ -142,8 +142,8 @@ class BaseApiTestSuite:
         _ = api_client
         return []
 
-    @pytest.fixture()
-    def create_multiple_success_responses(self, test_api_client_persistent):
+    @pytest_asyncio.fixture()
+    async def create_multiple_success_responses(self, test_api_client_persistent):
         """Post multiple success responses"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
@@ -402,8 +402,8 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
 
         return output_path
 
-    @pytest.fixture()
-    def create_success_response(self, test_api_client_persistent):
+    @pytest_asyncio.fixture()
+    async def create_success_response(self, test_api_client_persistent):
         """Post route success response object"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
