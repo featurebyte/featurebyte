@@ -137,6 +137,8 @@ def test_feature_list_creation__success(production_ready_feature, config, mocked
         "feature_ids": [production_ready_feature.id],
         "readiness_distribution": [{"count": 1, "readiness": "PRODUCTION_READY"}],
         "version": "V220501",
+        "deployed": False,
+        "online_enabled_feature_ids": [],
         "created_at": None,
         "updated_at": None,
         "user_id": None,
@@ -164,12 +166,14 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         "created_at": None,
         "updated_at": None,
         "user_id": None,
+        "deployed": False,
         "version": "V220501",
         "feature_ids": [
             production_ready_feature.id,
             feature_group["sum_30m"].id,
             feature_group["sum_1d"].id,
         ],
+        "online_enabled_feature_ids": [],
         "readiness_distribution": [
             {"count": 1, "readiness": "PRODUCTION_READY"},
             {"count": 2, "readiness": "DRAFT"},

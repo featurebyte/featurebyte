@@ -27,6 +27,7 @@ def feature_list_model_dict_fixture():
         "user_id": None,
         "feature_list_namespace_id": ObjectId(),
         "deployed": False,
+        "online_enabled_feature_ids": [],
     }
 
 
