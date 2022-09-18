@@ -27,6 +27,7 @@ from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListInfo,
     FeatureListPaginatedList,
+    FeatureListUpdate,
 )
 
 router = APIRouter(prefix="/feature_list")
@@ -53,6 +54,22 @@ async def get_feature_list(request: Request, feature_list_id: PydanticObjectId) 
     """
     feature_list: FeatureListModel = await request.state.controller.get(
         user=request.state.user, persistent=request.state.persistent, document_id=feature_list_id
+    )
+    return feature_list
+
+
+@router.patch("/{feature_list_id}", response_model=FeatureListModel)
+async def update_feature_list(
+    request: Request, feature_list_id: PydanticObjectId, data: FeatureListUpdate
+) -> FeatureListModel:
+    """
+    Update FeatureList
+    """
+    feature_list: FeatureListModel = await request.state.controller.update_feature_list(
+        user=request.state.user,
+        persistent=request.state.persistent,
+        feature_list_id=feature_list_id,
+        data=data,
     )
     return feature_list
 

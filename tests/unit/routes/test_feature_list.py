@@ -274,6 +274,35 @@ class TestFeatureListApi(BaseApiTestSuite):
         )
         assert negative_response.json()["total"] == 0, negative_response.json()
 
+    def test_update_200(self, test_api_client_persistent, create_success_response):
+        """Test update (success)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+
+        for feature_id in create_response_dict["feature_ids"]:
+            # upgrade readiness level to production ready first
+            response = test_api_client.patch(
+                f"/feature/{feature_id}", json={"readiness": "PRODUCTION_READY"}
+            )
+            assert response.status_code == HTTPStatus.OK
+
+            # make the feature online enabled
+            response = test_api_client.patch(
+                f"/feature/{feature_id}", json={"online_enabled": True}
+            )
+            assert response.status_code == HTTPStatus.OK
+
+        # deploy the feature list
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"deployed": True})
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["deployed"] is True
+
+        # disable deployment
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"deployed": False})
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["deployed"] is False
+
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""

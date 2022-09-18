@@ -154,7 +154,7 @@ class DeployService(BaseUpdateService):
                     document_id=feature_list_id,
                     data=FeatureListServiceUpdate(deployed=deployed),
                     document=document,
-                    return_document=return_document,
+                    return_document=True,
                 )
                 assert isinstance(feature_list, FeatureListModel)
                 await self.update_feature_list_namespace(
