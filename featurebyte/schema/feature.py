@@ -52,6 +52,7 @@ class FeatureUpdate(FeatureByteBaseModel):
     """
 
     readiness: Optional[FeatureReadiness]
+    online_enabled: Optional[bool]
 
 
 class FeatureServiceUpdate(FeatureUpdate):
@@ -60,6 +61,7 @@ class FeatureServiceUpdate(FeatureUpdate):
     """
 
     feature_list_ids: Optional[List[PydanticObjectId]]
+    deployed_feature_list_ids: Optional[List[PydanticObjectId]]
 
 
 class ReadinessComparison(FeatureByteBaseModel):

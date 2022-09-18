@@ -126,37 +126,37 @@ def event_data_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="feature_namespace_service")
-def feature_namespace_service_fixture(persistent, user):
+def feature_namespace_service_fixture(user, persistent):
     """FeatureNamespaceService fixture"""
     return FeatureNamespaceService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_service")
-def feature_service_fixture(persistent, user):
+def feature_service_fixture(user, persistent):
     """FeatureService fixture"""
     return FeatureService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_list_namespace_service")
-def feature_list_namespace_service_fixture(persistent, user):
+def feature_list_namespace_service_fixture(user, persistent):
     """FeatureListNamespaceService fixture"""
     return FeatureListNamespaceService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_list_service")
-def feature_list_service_fixture(persistent, user):
+def feature_list_service_fixture(user, persistent):
     """FeatureListService fixture"""
     return FeatureListService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_readiness_service")
-def feature_readiness_service_fixture(persistent, user):
+def feature_readiness_service_fixture(user, persistent):
     """FeatureReadinessService fixture"""
     return FeatureReadinessService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="default_version_mode_service")
-def default_version_mode_service_fixture(persistent, user):
+def default_version_mode_service_fixture(user, persistent):
     """DefaultVersionModeService fixture"""
     return DefaultVersionModeService(user=user, persistent=persistent)
 

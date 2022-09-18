@@ -54,7 +54,7 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         Variable type of the feature
     feature_ids: List[PydanticObjectId]
         List of feature version id
-    onlined_feature_ids: List[PydanticObjectId]
+    online_enabled_feature_ids: List[PydanticObjectId]
         List of online enabled feature version id
     readiness: FeatureReadiness
         Aggregated readiness across all feature versions of the same feature namespace
@@ -72,7 +72,9 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
 
     dtype: DBVarType = Field(allow_mutation=False)
     feature_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    onlined_feature_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    online_enabled_feature_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
+    )
     readiness: FeatureReadiness = Field(allow_mutation=False)
     default_feature_id: PydanticObjectId = Field(allow_mutation=False)
     default_version_mode: DefaultVersionMode = Field(
@@ -159,7 +161,9 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    deployed_feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    deployed_feature_list_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
+    )
 
     @validator("entity_ids", "event_data_ids")
     @classmethod

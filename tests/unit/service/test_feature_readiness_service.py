@@ -9,7 +9,7 @@ from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServic
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 
 
-async def check_states_readiness_change(
+async def check_states_after_readiness_change(
     feature_readiness_service,
     feature_namespace_service,
     feature_list_service,
@@ -70,7 +70,7 @@ async def test_update_document__auto_default_version_mode(
     new_feature_list = await feature_list_service.get_document(document_id=new_feature_list_id)
 
     # upgrade new feature's readiness level to production
-    await check_states_readiness_change(
+    await check_states_after_readiness_change(
         feature_readiness_service=feature_readiness_service,
         feature_namespace_service=feature_namespace_service,
         feature_list_service=feature_list_service,
@@ -90,7 +90,7 @@ async def test_update_document__auto_default_version_mode(
     )
 
     # downgrade new feature's readiness from production ready to deprecated
-    await check_states_readiness_change(
+    await check_states_after_readiness_change(
         feature_readiness_service=feature_readiness_service,
         feature_namespace_service=feature_namespace_service,
         feature_list_service=feature_list_service,
@@ -136,7 +136,7 @@ async def test_update_document__manual_default_version_mode__non_default_feature
     assert flist_namespace.default_feature_list_id == feature_list.id
 
     # upgrade new feature's readiness level to production
-    await check_states_readiness_change(
+    await check_states_after_readiness_change(
         feature_readiness_service=feature_readiness_service,
         feature_namespace_service=feature_namespace_service,
         feature_list_service=feature_list_service,
@@ -154,7 +154,7 @@ async def test_update_document__manual_default_version_mode__non_default_feature
     )
 
     # downgrade new feature's readiness level to deprecated
-    await check_states_readiness_change(
+    await check_states_after_readiness_change(
         feature_readiness_service=feature_readiness_service,
         feature_namespace_service=feature_namespace_service,
         feature_list_service=feature_list_service,
@@ -203,7 +203,7 @@ async def test_update_document__manual_default_version_mode__default_feature_rea
     assert flist_namespace.default_feature_list_id == new_feature_list_id
 
     # downgrade new feature's readiness level to deprecated
-    await check_states_readiness_change(
+    await check_states_after_readiness_change(
         feature_readiness_service=feature_readiness_service,
         feature_namespace_service=feature_namespace_service,
         feature_list_service=feature_list_service,
@@ -221,7 +221,7 @@ async def test_update_document__manual_default_version_mode__default_feature_rea
     )
 
     # upgrade new feature's readiness level to production ready
-    await check_states_readiness_change(
+    await check_states_after_readiness_change(
         feature_readiness_service=feature_readiness_service,
         feature_namespace_service=feature_namespace_service,
         feature_list_service=feature_list_service,

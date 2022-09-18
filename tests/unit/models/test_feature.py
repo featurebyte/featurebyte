@@ -20,7 +20,7 @@ def feature_name_space_dict_fixture():
         "name": "some_feature_name",
         "dtype": "FLOAT",
         "feature_ids": feature_ids,
-        "onlined_feature_ids": [],
+        "online_enabled_feature_ids": [],
         "readiness": "DRAFT",
         "created_at": datetime.now(),
         "updated_at": datetime.now(),

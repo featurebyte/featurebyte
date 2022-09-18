@@ -379,6 +379,8 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         Name of the feature list
     feature_ids: List[PydanticObjectId]
         List of feature IDs
+    online_enabled_feature_ids: List[PydanticObjectId]
+        List of online enabled feature version id
     readiness_distribution: List[Dict[str, Any]]
         Feature readiness distribution of this feature list
     version: FeatureListVersionIdentifier
@@ -392,6 +394,9 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     """
 
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
+    online_enabled_feature_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
+    )
     readiness_distribution: FeatureReadinessDistribution = Field(
         allow_mutation=False, default_factory=list
     )
