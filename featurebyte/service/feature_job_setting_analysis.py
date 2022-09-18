@@ -74,6 +74,7 @@ class FeatureJobSettingAnalysisService(BaseDocumentService[FeatureJobSettingAnal
         self,
         document_id: ObjectId,
         data: FeatureByteBaseModel,
+        exclude_none: bool = True,
         document: Optional[FeatureJobSettingAnalysisModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureJobSettingAnalysisModel]:

@@ -21,12 +21,13 @@ from featurebyte.models.base import (
 from featurebyte.models.persistent import AuditActionType, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.common.base import BaseInfo
+from featurebyte.service.mixin import OpsServiceMixin
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
 
 
-class BaseDocumentService(Generic[Document]):
+class BaseDocumentService(Generic[Document], OpsServiceMixin):
     """
     BaseService class
     """
@@ -526,6 +527,7 @@ class BaseDocumentService(Generic[Document]):
         self,
         document_id: ObjectId,
         data: FeatureByteBaseModel,
+        exclude_none: bool = True,
         document: Optional[FeatureByteBaseDocumentModel] = None,
         return_document: bool = True,
     ) -> Optional[Document]:
@@ -538,6 +540,8 @@ class BaseDocumentService(Generic[Document]):
             Document ID
         data: FeatureByteBaseModel
             Document update payload object
+        exclude_none: bool
+            Whether to exclude None value(s) from the data
         document: Optional[FeatureByteBaseDocumentModel]
             Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool

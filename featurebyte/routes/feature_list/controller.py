@@ -14,6 +14,7 @@ from featurebyte.schema.feature_list import (
     FeatureListPaginatedList,
 )
 from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_readiness import FeatureReadinessService
 
 
 class FeatureListController(
@@ -53,6 +54,14 @@ class FeatureListController(
         document = await cls.document_service_class(
             user=user, persistent=persistent
         ).create_document(data=data, get_credential=get_credential)
+
+        # update feature namespace readiness due to introduction of new feature list
+        readiness_service = FeatureReadinessService(user=user, persistent=persistent)
+        await readiness_service.update_feature_list_namespace(
+            feature_list_namespace_id=document.feature_list_namespace_id,
+            feature_list=document,
+            return_document=False,
+        )
         return document
 
     @classmethod

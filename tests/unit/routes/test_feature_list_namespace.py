@@ -1,12 +1,12 @@
 """
 Test for FeatureListNamespace route
 """
-import asyncio
 import time
 from http import HTTPStatus
 from unittest.mock import Mock, patch
 
 import pytest
+import pytest_asyncio
 from bson import ObjectId
 from requests import Response
 
@@ -48,8 +48,8 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
             payload["_id"] = str(ObjectId())
             yield payload
 
-    @pytest.fixture
-    def create_success_response(
+    @pytest_asyncio.fixture
+    async def create_success_response(
         self, test_api_client_persistent, user_id
     ):  # pylint: disable=arguments-differ
         """Post route success response object"""
@@ -59,10 +59,8 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
         feature_list_namespace_service = FeatureListNamespaceService(
             user=user, persistent=persistent
         )
-        document = asyncio.run(
-            feature_list_namespace_service.create_document(
-                data=FeatureListNamespaceModel(**self.payload)
-            )
+        document = await feature_list_namespace_service.create_document(
+            data=FeatureListNamespaceModel(**self.payload)
         )
         response = Response()
         response._content = bytes(document.json(by_alias=True), "utf-8")
@@ -95,8 +93,8 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
             response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
 
-    @pytest.fixture
-    def create_multiple_success_responses(
+    @pytest_asyncio.fixture
+    async def create_multiple_success_responses(
         self, test_api_client_persistent, user_id
     ):  # pylint: disable=arguments-differ
         """Post multiple success responses"""
@@ -110,10 +108,8 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
         for i, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
             # payload name is set here as we need the exact name value for test_list_200 test
             payload["name"] = f'{self.payload["name"]}_{i}'
-            document = asyncio.run(
-                feature_list_namespace_service.create_document(
-                    data=FeatureListNamespaceModel(**payload)
-                )
+            document = await feature_list_namespace_service.create_document(
+                data=FeatureListNamespaceModel(**payload)
             )
             output.append(document)
             time.sleep(0.05)
@@ -129,10 +125,13 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
             ("feature", "feature_sum_30m"),
             ("feature_list", "feature_list_single"),
         ]
+        feature_id = None
         for api_object, filename in api_object_filename_pairs:
             payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
             response = test_api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
+            if api_object == "feature":
+                feature_id = response.json()["_id"]
 
         payload = self.load_payload("tests/fixtures/request_payloads/feature_list_single.json")
         doc_id = payload["feature_list_namespace_id"]
@@ -142,6 +141,7 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
         response_dict = response.json()
         assert response_dict["default_version_mode"] == "MANUAL"
         assert response_dict["status"] == "DRAFT"
+        assert response_dict["readiness_distribution"] == [{"count": 1, "readiness": "DRAFT"}]
 
         response = test_api_client.patch(
             f"{self.base_route}/{doc_id}", json={"status": "PUBLISHED"}
@@ -149,6 +149,19 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
         response_dict = response.json()
         assert response_dict["default_version_mode"] == "MANUAL"
         assert response_dict["status"] == "PUBLISHED"
+        assert response_dict["readiness_distribution"] == [{"count": 1, "readiness": "DRAFT"}]
+
+        # upgrade default feature_sum_30m to production ready & check the default feature list
+        # readiness distribution get updated
+        response = test_api_client.patch(
+            f"feature/{feature_id}", json={"readiness": "PRODUCTION_READY"}
+        )
+        assert response.status_code == HTTPStatus.OK
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        response_dict = response.json()
+        assert response_dict["readiness_distribution"] == [
+            {"count": 1, "readiness": "PRODUCTION_READY"}
+        ]
 
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):

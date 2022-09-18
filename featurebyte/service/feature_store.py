@@ -42,6 +42,7 @@ class FeatureStoreService(
         self,
         document_id: ObjectId,
         data: FeatureByteBaseModel,
+        exclude_none: bool = True,
         document: Optional[FeatureStoreModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureStoreModel]:

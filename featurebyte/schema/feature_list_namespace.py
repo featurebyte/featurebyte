@@ -8,6 +8,7 @@ from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FeatureListStatus,
+    FeatureReadinessDistribution,
     FeatureTypeFeatureCount,
 )
 from featurebyte.routes.common.schema import PaginationMixin
@@ -36,7 +37,9 @@ class FeatureListNamespaceServiceUpdate(FeatureListNamespaceUpdate):
     FeatureListNamespace service update schema
     """
 
-    feature_list_id: Optional[PydanticObjectId]
+    feature_list_ids: Optional[List[PydanticObjectId]]
+    readiness_distribution: Optional[FeatureReadinessDistribution]
+    default_feature_list_id: Optional[PydanticObjectId]
 
 
 class FeatureListNamespaceInfo(NamespaceInfo):

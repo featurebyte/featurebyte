@@ -23,6 +23,47 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 
 
+async def validate_feature_list_version_and_namespace_consistency(
+    feature_list: FeatureListModel,
+    feature_list_namespace: FeatureListNamespaceModel,
+    feature_service: FeatureService,
+) -> None:
+    """
+    Validate whether the feature list & feature list namespace are consistent
+
+    Parameters
+    ----------
+    feature_list: FeatureListModel
+        Feature list object
+    feature_list_namespace: FeatureListNamespaceModel
+        Feature list namespace object
+    feature_service: FeatureService
+        Feature Service object
+
+    Raises
+    ------
+    DocumentInconsistencyError
+        If the inconsistency between version & namespace found
+    """
+    if feature_list.name != feature_list_namespace.name:
+        raise DocumentInconsistencyError(
+            f'FeatureList (name: "{feature_list.name}") object(s) within the same namespace '
+            f'must have the same "name" value (namespace: "{feature_list_namespace.name}", '
+            f'feature_list: "{feature_list.name}").'
+        )
+
+    feature_namespace_ids = []
+    for feature_id in feature_list.feature_ids:
+        feature = await feature_service.get_document(document_id=feature_id)
+        feature_namespace_ids.append(feature.feature_namespace_id)
+
+    if sorted(feature_namespace_ids) != sorted(feature_list_namespace.feature_namespace_ids):
+        raise DocumentInconsistencyError(
+            f'FeatureList (name: "{feature_list.name}") object(s) within the same namespace '
+            f"must share the same feature name(s)."
+        )
+
+
 class FeatureListService(
     BaseDocumentService[FeatureListModel], GetInfoServiceMixin[FeatureListInfo]
 ):
@@ -81,7 +122,11 @@ class FeatureListService(
         for feature in features:
             await feature_service.update_document(
                 document_id=feature.id,
-                data=FeatureServiceUpdate(feature_list_id=feature_list_id),
+                data=FeatureServiceUpdate(
+                    feature_list_ids=self.include_object_id(
+                        feature.feature_list_ids, feature_list_id
+                    ),
+                ),
                 document=feature,
                 return_document=False,
             )
@@ -121,11 +166,23 @@ class FeatureListService(
                 user=self.user, persistent=self.persistent
             )
             try:
-                # update feature list namespace
+                feature_list_namespace = await feature_list_namespace_service.get_document(
+                    document_id=document.feature_list_namespace_id,
+                )
+                await validate_feature_list_version_and_namespace_consistency(
+                    feature_list=document,
+                    feature_list_namespace=feature_list_namespace,
+                    feature_service=FeatureService(user=self.user, persistent=self.persistent),
+                )
                 feature_list_namespace = await feature_list_namespace_service.update_document(
                     document_id=document.feature_list_namespace_id,
-                    data=FeatureListNamespaceServiceUpdate(feature_list_id=document.id),
-                )
+                    data=FeatureListNamespaceServiceUpdate(
+                        feature_list_ids=self.include_object_id(
+                            feature_list_namespace.feature_list_ids, document.id
+                        ),
+                    ),
+                    return_document=True,
+                )  # type: ignore[assignment]
                 assert feature_list_namespace is not None
 
             except DocumentNotFoundError:
@@ -149,34 +206,23 @@ class FeatureListService(
         self,
         document_id: ObjectId,
         data: FeatureListServiceUpdate,
+        exclude_none: bool = True,
         document: Optional[FeatureListModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureListModel]:
+        # pylint: disable=duplicate-code
         if document is None:
-            document = await self.get_document(document_id=document_id)
+            await self.get_document(document_id=document_id)
 
-        if data.readiness_transition:
-            # update feature list readiness distribution
-            readiness_dist = document.readiness_distribution.update_readiness(
-                transition=data.readiness_transition
-            )
-            _ = await self.persistent.update_one(
-                collection_name=self.collection_name,
-                query_filter={"_id": document.id},
-                update={"$set": {"readiness_distribution": readiness_dist.dict()["__root__"]}},
-            )
-
-            # trigger feature list namespace to check whether to update default feature list
-            feature_list_namespace_service = FeatureListNamespaceService(
-                user=self.user, persistent=self.persistent
-            )
-            _ = await feature_list_namespace_service.update_document(
-                document_id=document.feature_list_namespace_id,
-                data=FeatureListNamespaceServiceUpdate(feature_list_id=document_id),
-            )
+        await self.persistent.update_one(
+            collection_name=self.collection_name,
+            query_filter=self._construct_get_query_filter(document_id=document_id),
+            update={"$set": data.dict(exclude_none=exclude_none)},
+            user_id=self.user.id,
+        )
 
         if return_document:
-            return document
+            return await self.get_document(document_id=document_id)
         return None
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureListInfo:

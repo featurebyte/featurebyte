@@ -1,10 +1,10 @@
 """
 Unit test for DatabaseSource
 """
-import asyncio
 from unittest.mock import patch
 
 import pytest
+import pytest_asyncio
 
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.feature_store import FeatureStore
@@ -101,8 +101,8 @@ def test_info(saved_snowflake_feature_store):
     assert "created_at" in info_dict, info_dict
 
 
-@pytest.fixture(name="saved_snowflake_feature_store")
-def saved_snowflake_feature_store_fixture(snowflake_feature_store, mock_get_persistent):
+@pytest_asyncio.fixture(name="saved_snowflake_feature_store")
+async def saved_snowflake_feature_store_fixture(snowflake_feature_store, mock_get_persistent):
     """
     Test saving feature store
     """
@@ -110,7 +110,7 @@ def saved_snowflake_feature_store_fixture(snowflake_feature_store, mock_get_pers
     assert snowflake_feature_store.created_at is None
     feature_store_id = snowflake_feature_store.id
     persistent = mock_get_persistent.return_value
-    docs, cnt = asyncio.run(persistent.find(collection_name="feature_store", query_filter={}))
+    docs, cnt = await persistent.find(collection_name="feature_store", query_filter={})
     assert cnt == 0 and docs == []
     assert snowflake_feature_store.saved is False
 
@@ -119,7 +119,7 @@ def saved_snowflake_feature_store_fixture(snowflake_feature_store, mock_get_pers
     assert snowflake_feature_store.saved is True
     assert snowflake_feature_store.id == feature_store_id
     assert snowflake_feature_store.created_at is not None
-    docs, cnt = asyncio.run(persistent.find(collection_name="feature_store", query_filter={}))
+    docs, cnt = await persistent.find(collection_name="feature_store", query_filter={})
     assert cnt == 1
     assert (
         docs[0].items()

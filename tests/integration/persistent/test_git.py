@@ -85,7 +85,7 @@ async def test_persistence(test_document, persistent_data):
 
     # use a dynamic name for the document
     doc_name = test_document["name"] = str(ObjectId())
-    await persistent.insert_one(collection_name="data", document=test_document)
+    await persistent.insert_one(collection_name="data", document=test_document, user_id=None)
 
     # create another GitDB instance and try to read the saved document
     persistent2 = GitDB(
@@ -103,10 +103,10 @@ async def test_persistence(test_document, persistent_data):
     async with persistent.start_transaction() as session:
         doc["_id"] = ObjectId()
         doc["name"] = str(doc["_id"])
-        doc1_id = await session.insert_one(collection_name="data1", document=doc)
+        doc1_id = await session.insert_one(collection_name="data1", document=doc, user_id=None)
         doc["_id"] = ObjectId()
         doc["name"] = str(doc["_id"])
-        doc2_id = await session.insert_one(collection_name="data2", document=doc)
+        doc2_id = await session.insert_one(collection_name="data2", document=doc, user_id=None)
 
     # When start a transaction, it did a shallow fetch first. Therefore, not all commits are kept.
     messages_second = _get_commit_messages(persistent.repo, branch)
@@ -126,8 +126,8 @@ async def test_persistence(test_document, persistent_data):
     # test transaction failure within the context
     with pytest.raises(AssertionError):
         async with persistent.start_transaction() as session:
-            await session.insert_one(collection_name="data3", document=doc)
-            await session.insert_one(collection_name="data4", document=doc)
+            await session.insert_one(collection_name="data3", document=doc, user_id=None)
+            await session.insert_one(collection_name="data4", document=doc, user_id=None)
             assert False
 
     # check no commit is written
@@ -141,8 +141,8 @@ async def test_persistence(test_document, persistent_data):
             # to simulate the push failure after context
             mock_push.side_effect = [None, None, AssertionError]
             async with persistent.start_transaction() as session:
-                await session.insert_one(collection_name="data3", document=doc)
-                await session.insert_one(collection_name="data4", document=doc)
+                await session.insert_one(collection_name="data3", document=doc, user_id=None)
+                await session.insert_one(collection_name="data4", document=doc, user_id=None)
 
     # check no commit is written
     assert _get_commit_messages(persistent.repo, branch) == messages_second[-1:]

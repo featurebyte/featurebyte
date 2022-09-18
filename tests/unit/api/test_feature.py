@@ -254,7 +254,6 @@ def test_info(saved_feature):
     info_dict = saved_feature.info()
     expected_info = {
         "name": "sum_1d",
-        "updated_at": None,
         "dtype": "FLOAT",
         "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
         "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],

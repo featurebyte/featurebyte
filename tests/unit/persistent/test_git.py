@@ -30,7 +30,9 @@ async def test_insert_one(git_persistent, test_document):
     with patch(
         "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
     ) as mock_reset:
-        inserted_id = await persistent.insert_one(collection_name="data", document=test_document)
+        inserted_id = await persistent.insert_one(
+            collection_name="data", document=test_document, user_id=None
+        )
     assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
 
     # check document is inserted
@@ -63,7 +65,9 @@ async def test_insert_one__no_id(git_persistent, test_document):
     Test inserting one document without id works, and id is added
     """
     persistent, repo = git_persistent
-    inserted_id = await persistent.insert_one(collection_name="data", document=test_document)
+    inserted_id = await persistent.insert_one(
+        collection_name="data", document=test_document, user_id=None
+    )
     assert "_id" in test_document
 
     # check document is inserted
@@ -99,7 +103,7 @@ async def test_insert_many(git_persistent, test_documents):
         "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
     ) as mock_reset:
         inserted_ids = await persistent.insert_many(
-            collection_name="data", documents=test_documents
+            collection_name="data", documents=test_documents, user_id=None
         )
     assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
 
@@ -141,7 +145,7 @@ async def test_find_one(git_persistent, test_documents):
     Test finding one document
     """
     persistent, repo = git_persistent
-    await persistent.insert_many(collection_name="data", documents=test_documents)
+    await persistent.insert_many(collection_name="data", documents=test_documents, user_id=None)
     with patch(
         "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
     ) as mock_reset:
@@ -178,7 +182,7 @@ async def test_find_many(git_persistent, test_documents):
     Test finding many documents
     """
     persistent, _ = git_persistent
-    await persistent.insert_many(collection_name="data", documents=test_documents)
+    await persistent.insert_many(collection_name="data", documents=test_documents, user_id=None)
     docs, total = await persistent.find(collection_name="data", query_filter={})
     assert list(docs) == test_documents
     assert total == 3
@@ -258,7 +262,7 @@ async def test_filter_values(git_persistent, test_document, query_filter, valid)
     Test find filter values validation
     """
     persistent, _ = git_persistent
-    await persistent.insert_one(collection_name="data", document=test_document)
+    await persistent.insert_one(collection_name="data", document=test_document, user_id=None)
 
     async def run_find():
         await persistent.find_one(collection_name="data", query_filter=query_filter)
@@ -277,13 +281,16 @@ async def test_update_one(git_persistent, test_documents):
     Test updating one document
     """
     persistent, repo = git_persistent
-    await persistent.insert_many(collection_name="data", documents=test_documents)
+    await persistent.insert_many(collection_name="data", documents=test_documents, user_id=None)
 
     with patch(
         "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
     ) as mock_reset:
         result = await persistent.update_one(
-            collection_name="data", query_filter={}, update={"$set": {"name": "apple"}}
+            collection_name="data",
+            query_filter={},
+            update={"$set": {"name": "apple"}},
+            user_id=None,
         )
     assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
 
@@ -358,12 +365,12 @@ async def test_update_many(git_persistent, test_documents):
     Test updating one document
     """
     persistent, repo = git_persistent
-    await persistent.insert_many(collection_name="data", documents=test_documents)
+    await persistent.insert_many(collection_name="data", documents=test_documents, user_id=None)
     with patch(
         "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
     ) as mock_reset:
         result = await persistent.update_many(
-            collection_name="data", query_filter={}, update={"$set": {"value": 1}}
+            collection_name="data", query_filter={}, update={"$set": {"value": 1}}, user_id=None
         )
     assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
 
@@ -438,7 +445,7 @@ async def test_replace_one(git_persistent, test_documents):
     Test replacing one document
     """
     persistent, repo = git_persistent
-    await persistent.insert_many(collection_name="data", documents=test_documents)
+    await persistent.insert_many(collection_name="data", documents=test_documents, user_id=None)
 
     before, _ = await persistent.find(collection_name="data", query_filter={})
 
@@ -446,7 +453,7 @@ async def test_replace_one(git_persistent, test_documents):
         "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
     ) as mock_reset:
         result = await persistent.replace_one(
-            collection_name="data", query_filter={}, replacement={"name": "apple"}
+            collection_name="data", query_filter={}, replacement={"name": "apple"}, user_id=None
         )
     assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
     assert result == 1
@@ -524,10 +531,13 @@ async def test_update_name_to_existing(git_persistent, test_documents):
     Test updating one document with name that already exists
     """
     persistent, _ = git_persistent
-    await persistent.insert_many(collection_name="data", documents=test_documents)
+    await persistent.insert_many(collection_name="data", documents=test_documents, user_id=None)
     with pytest.raises(DuplicateDocumentError) as exc:
         await persistent.update_one(
-            collection_name="data", query_filter={}, update={"$set": {"name": "Object 1"}}
+            collection_name="data",
+            query_filter={},
+            update={"$set": {"name": "Object 1"}},
+            user_id=None,
         )
     assert str(exc.value) == "Document data/Object 1 already exists"
 
@@ -551,10 +561,12 @@ async def test_update_values(git_persistent, test_document, update, valid):
     Test update values validation
     """
     persistent, _ = git_persistent
-    await persistent.insert_one(collection_name="data", document=test_document)
+    await persistent.insert_one(collection_name="data", document=test_document, user_id=None)
 
     async def run_update():
-        await persistent.update_one(collection_name="data", query_filter={}, update=update)
+        await persistent.update_one(
+            collection_name="data", query_filter={}, update=update, user_id=None
+        )
 
     if valid:
         await run_update()
@@ -570,11 +582,11 @@ async def test_delete_one(git_persistent, test_documents):
     Test deleting one document
     """
     persistent, repo = git_persistent
-    await persistent.insert_many(collection_name="data", documents=test_documents)
+    await persistent.insert_many(collection_name="data", documents=test_documents, user_id=None)
     with patch(
         "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
     ) as mock_reset:
-        result = await persistent.delete_one(collection_name="data", query_filter={})
+        result = await persistent.delete_one(collection_name="data", query_filter={}, user_id=None)
     assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
 
     # expect only one document to be deleted
@@ -636,11 +648,11 @@ async def test_delete_many(git_persistent, test_documents):
     Test deleting many documents
     """
     persistent, repo = git_persistent
-    await persistent.insert_many(collection_name="data", documents=test_documents)
+    await persistent.insert_many(collection_name="data", documents=test_documents, user_id=None)
     with patch(
         "featurebyte.persistent.git.GitDB._reset_branch", wraps=persistent._reset_branch
     ) as mock_reset:
-        result = await persistent.delete_many(collection_name="data", query_filter={})
+        result = await persistent.delete_many(collection_name="data", query_filter={}, user_id=None)
     assert mock_reset.call_args[1] == {"rate_limit_fetch": False}
     # expect all documents to be deleted
     assert result == 3
@@ -675,7 +687,9 @@ async def test_delete_one__collection_not_exist(git_persistent):
     Test document from non-existent collection should work with no effect
     """
     persistent, repo = git_persistent
-    result = await persistent.delete_one(collection_name="no_such_collection", query_filter={})
+    result = await persistent.delete_one(
+        collection_name="no_such_collection", query_filter={}, user_id=None
+    )
     assert result == 0
 
     # check commit messages, expect no message after initial commit
@@ -691,11 +705,14 @@ async def test_start_transaction__success(git_persistent):
     col = "test_col"
 
     async with persistent.start_transaction() as session:
-        await session.insert_one(collection_name=col, document={"_id": "1234", "key1": "value1"})
+        await session.insert_one(
+            collection_name=col, document={"_id": "1234", "key1": "value1"}, user_id=None
+        )
         await session.update_one(
             collection_name=col,
             query_filter={"_id": "1234"},
             update={"$set": {"key1": "value2"}},
+            user_id=None,
         )
 
     # check commit messages
@@ -725,12 +742,13 @@ async def test_start_transaction__exception_within_transaction(git_persistent):
             # set up an exception happens within the context
             async with persistent.start_transaction() as session:
                 await session.insert_one(
-                    collection_name=col, document={"_id": "1234", "key1": "value1"}
+                    collection_name=col, document={"_id": "1234", "key1": "value1"}, user_id=None
                 )
                 await session.update_one(
                     collection_name=col,
                     query_filter={"_id": "1234"},
                     update={"$set": {"key1": "value2"}},
+                    user_id=None,
                 )
                 assert False
 
@@ -747,18 +765,23 @@ async def test_get_audit_logs(git_persistent, test_document):
     persistent, _ = git_persistent
 
     # insert a doc
-    inserted_id = await persistent.insert_one(collection_name="data", document=test_document)
+    inserted_id = await persistent.insert_one(
+        collection_name="data", document=test_document, user_id=None
+    )
 
     # update the doc a few times
     for i in range(5):
         num_updated = await persistent.update_one(
-            collection_name="data", query_filter={"_id": inserted_id}, update={"$set": {"value": i}}
+            collection_name="data",
+            query_filter={"_id": inserted_id},
+            update={"$set": {"value": i}},
+            user_id=None,
         )
         assert num_updated == 1
 
     # delete the doc
     num_deleted = await persistent.delete_one(
-        collection_name="data", query_filter={"_id": inserted_id}
+        collection_name="data", query_filter={"_id": inserted_id}, user_id=None
     )
     assert num_deleted == 1
 

@@ -110,6 +110,7 @@ class TestFeatureListApi(BaseApiTestSuite):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["feature_ids"] = [new_feature_id]
+            payload["feature_list_namespace_id"] = str(ObjectId())
             yield payload
 
     @pytest.mark.asyncio
@@ -132,6 +133,7 @@ class TestFeatureListApi(BaseApiTestSuite):
                 "user_id": ObjectId(user_id),
                 "readiness": "PRODUCTION_READY",
             },
+            user_id=user_id,
         )
 
         # prepare a new payload with existing feature list namespace
@@ -283,7 +285,6 @@ class TestFeatureListApi(BaseApiTestSuite):
         )
         expected_info_response = {
             "name": "sf_feature_list",
-            "updated_at": None,
             "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
             "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
             "default_version_mode": "AUTO",

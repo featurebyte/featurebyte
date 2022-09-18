@@ -59,7 +59,7 @@ class FeatureServiceUpdate(FeatureUpdate):
     Feature service update schema
     """
 
-    feature_list_id: Optional[PydanticObjectId]
+    feature_list_ids: Optional[List[PydanticObjectId]]
 
 
 class ReadinessComparison(FeatureByteBaseModel):
