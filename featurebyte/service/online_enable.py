@@ -62,7 +62,7 @@ class OnlineEnableService(BaseUpdateService):
             document_id=feature_list_id,
             data=FeatureListServiceUpdate(
                 online_enabled_feature_ids=self._extract_online_enabled_feature_ids(
-                    feature, document
+                    feature=feature, document=document
                 ),
             ),
             document=document,
@@ -103,7 +103,7 @@ class OnlineEnableService(BaseUpdateService):
             document_id=feature_namespace_id,
             data=FeatureNamespaceServiceUpdate(
                 online_enabled_feature_ids=self._extract_online_enabled_feature_ids(
-                    feature, document
+                    feature=feature, document=document
                 ),
             ),
             document=document,

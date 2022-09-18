@@ -1,0 +1,74 @@
+"""
+Tests for DeployService
+"""
+import pytest
+
+from featurebyte.exception import DocumentUpdateError
+from featurebyte.models.feature_list import FeatureListModel
+
+
+@pytest.mark.asyncio
+async def test_update_feature_list__feature_not_online_enabled_error(deploy_service, feature_list):
+    """Test update feature list (not all features are online enabled validation error)"""
+    with pytest.raises(DocumentUpdateError) as exc:
+        await deploy_service.update_feature_list(feature_list_id=feature_list.id, deployed=True)
+    expected_msg = "Only FeatureList object will all features online enabled can be deployed."
+    assert expected_msg in str(exc.value)
+
+
+async def check_states_after_deployed_change(
+    feature_service,
+    feature_list_namespace_service,
+    feature_list_service,
+    feature_list,
+    expected_deployed,
+    expected_deployed_feature_list_ids,
+):
+    """Check states after deployed get changed"""
+    updated_feature_list = await feature_list_service.get_document(document_id=feature_list.id)
+    assert updated_feature_list.deployed == expected_deployed
+
+    namespace = await feature_list_namespace_service.get_document(
+        document_id=feature_list.feature_list_namespace_id
+    )
+    assert namespace.deployed_feature_list_ids == expected_deployed_feature_list_ids
+
+    for feature_id in feature_list.feature_ids:
+        feature = await feature_service.get_document(document_id=feature_id)
+        assert feature.deployed_feature_list_ids == expected_deployed_feature_list_ids
+
+
+async def test_update_feature_list(
+    feature_service,
+    feature_list_namespace_service,
+    feature_list_service,
+    feature_list,
+    production_ready_feature,
+    deploy_service,
+):
+    """Test update feature list"""
+    deployed_feature_list = await deploy_service.update_feature_list(
+        feature_list_id=feature_list.id, deployed=True, return_document=True
+    )
+    assert isinstance(deployed_feature_list, FeatureListModel)
+    await check_states_after_deployed_change(
+        feature_service=feature_service,
+        feature_list_namespace_service=feature_list_namespace_service,
+        feature_list_service=feature_list_service,
+        feature_list=deployed_feature_list,
+        expected_deployed=True,
+        expected_deployed_feature_list_ids=[feature_list.id],
+    )
+
+    deployed_disabled_feature_list = await deploy_service.update_feature_list(
+        feature_list_id=feature_list.id, deployed=False, return_document=True
+    )
+    assert isinstance(deployed_disabled_feature_list, FeatureListModel)
+    await check_states_after_deployed_change(
+        feature_service=feature_service,
+        feature_list_namespace_service=feature_list_namespace_service,
+        feature_list_service=feature_list_service,
+        feature_list=deployed_disabled_feature_list,
+        expected_deployed=False,
+        expected_deployed_feature_list_ids=[],
+    )

@@ -1,37 +1,46 @@
 """
-Test for OnlineEnableService
+Tests for OnlineEnableService
 """
 import pytest
-import pytest_asyncio
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature import FeatureModel
-from featurebyte.service.online_enable import OnlineEnableService
-
-
-@pytest.fixture(name="online_enable_service")
-def online_enable_service_fixture(user, persistent):
-    """OnlineEnableService fixture"""
-    return OnlineEnableService(user=user, persistent=persistent)
-
-
-@pytest_asyncio.fixture(name="production_ready_feature")
-async def production_ready_feature_fixture(feature_readiness_service, feature):
-    """Production ready readiness feature fixture"""
-    prod_feat = await feature_readiness_service.update_feature(
-        feature_id=feature.id, readiness="PRODUCTION_READY"
-    )
-    assert prod_feat.readiness == "PRODUCTION_READY"
-    return prod_feat
 
 
 @pytest.mark.asyncio
-async def test_update_feature__validation_error(online_enable_service, feature):
-    """Test update feature (validation error)"""
+async def test_update_feature__not_production_ready_enabling_error(online_enable_service, feature):
+    """Test update feature (online-enabling validation error)"""
     assert feature.readiness == "DRAFT"
     with pytest.raises(DocumentUpdateError) as exc:
         await online_enable_service.update_feature(feature_id=feature.id, online_enabled=True)
     expected_msg = "Only Feature object with PRODUCTION_READY readiness can be online enabled (readiness: DRAFT)."
+    assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_update_feature__with_deployed_feature_list_disabling_error(
+    feature_service,
+    online_enable_service,
+    deploy_service,
+    production_ready_feature,
+    feature_list,
+):
+    """Test update feature (online-disabling validation error)"""
+    # create a feature used by a deployed feature list
+    await online_enable_service.update_feature(
+        feature_id=production_ready_feature.id, online_enabled=True, return_document=False
+    )
+    deployed_feature_list = await deploy_service.update_feature_list(
+        feature_list_id=feature_list.id, deployed=True, return_document=True
+    )
+    assert deployed_feature_list.online_enabled_feature_ids == [production_ready_feature.id]
+    feature = await feature_service.get_document(document_id=production_ready_feature.id)
+    assert feature.deployed_feature_list_ids == [feature_list.id]
+
+    # attempt to online disabled the feature
+    with pytest.raises(DocumentUpdateError) as exc:
+        await online_enable_service.update_feature(feature_id=feature.id, online_enabled=False)
+    expected_msg = "Failed to online disable the feature as it has been used by at least one deployed FeatureList object."
     assert expected_msg in str(exc.value)
 
 
