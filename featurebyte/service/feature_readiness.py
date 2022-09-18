@@ -250,6 +250,7 @@ class FeatureReadinessService(BaseUpdateService):
         return await self.feature_namespace_service.update_document(
             document_id=feature_namespace_id,
             data=FeatureNamespaceServiceUpdate(**update_dict),
+            document=document,
             return_document=return_document,
         )
 
@@ -281,11 +282,12 @@ class FeatureReadinessService(BaseUpdateService):
         if document is None:
             document = await self.feature_service.get_document(document_id=feature_id)
 
-        async with self.persistent.start_transaction():
-            if document.readiness != readiness:
+        if document.readiness != readiness:
+            async with self.persistent.start_transaction():
                 feature = await self.feature_service.update_document(
                     document_id=feature_id,
                     data=FeatureServiceUpdate(readiness=readiness),
+                    document=document,
                     return_document=True,
                 )
                 assert isinstance(feature, FeatureModel)
