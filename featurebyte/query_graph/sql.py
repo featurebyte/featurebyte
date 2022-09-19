@@ -818,7 +818,7 @@ class CastNode(ExpressionNode):
             expr = expressions.Floor(this=self.expr.sql)
         elif self.from_dtype == DBVarType.BOOL and self.new_type == "float":
             # Casting to FLOAT from BOOL directly is not allowed
-            expr = expressions.Cast(this=self.expr.sql, to=parse_one("int"))
+            expr = expressions.Cast(this=self.expr.sql, to=parse_one("INTEGER"))
         else:
             expr = self.expr.sql
         type_expr = {
