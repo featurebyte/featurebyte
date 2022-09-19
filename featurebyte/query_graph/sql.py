@@ -816,6 +816,9 @@ class CastNode(ExpressionNode):
             # Casting to INTEGER performs rounding (could be up or down). Hence, apply FLOOR first
             # to mimic pandas astype(int)
             expr = expressions.Floor(this=self.expr.sql)
+        elif self.from_dtype == DBVarType.BOOL and self.new_type == "float":
+            # Casting to FLOAT from BOOL directly is not allowed
+            expr = expressions.Cast(this=self.expr.sql, to=parse_one("int"))
         else:
             expr = self.expr.sql
         type_expr = {
