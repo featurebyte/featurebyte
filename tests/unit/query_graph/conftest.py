@@ -397,6 +397,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
         {"name": "PRODUCT_ACTION", "dtype": DBVarType.VARCHAR},
         {"name": "VALUE", "dtype": DBVarType.FLOAT},
         {"name": "MASK", "dtype": DBVarType.BOOL},
+        {"name": "TIMESTAMP_VALUE", "dtype": DBVarType.TIMESTAMP},
     ]
     node = global_graph.add_operation(
         node_type=NodeType.INPUT,

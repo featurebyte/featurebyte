@@ -1164,6 +1164,10 @@ def make_assign_node(input_sql_nodes: list[SQLNode], parameters: dict[str, Any])
         List of input SQL nodes
     parameters : dict[str, Any]
         Query graph node parameters
+
+    Returns
+    -------
+    TableNode
     """
     input_table_node = input_sql_nodes[0]
     assert isinstance(input_table_node, TableNode)
