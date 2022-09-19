@@ -63,7 +63,6 @@ class FeatureController(
         readiness_service = FeatureReadinessService(user=user, persistent=persistent)
         await readiness_service.update_feature_namespace(
             feature_namespace_id=document.feature_namespace_id,
-            feature=document,
             return_document=False,
         )
         return document

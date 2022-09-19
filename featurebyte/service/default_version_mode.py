@@ -70,7 +70,6 @@ class DefaultVersionModeService(BaseUpdateService):
             )
             feature_namespace = await self.feature_readiness_service.update_feature_namespace(
                 feature_namespace_id=feature_namespace_id,
-                feature=None,
                 return_document=return_document,
             )
             return feature_namespace
@@ -114,7 +113,6 @@ class DefaultVersionModeService(BaseUpdateService):
             feature_list_namespace = (
                 await self.feature_readiness_service.update_feature_list_namespace(
                     feature_list_namespace_id=feature_list_namespace_id,
-                    feature_list=None,
                     return_document=return_document,
                 )
             )
