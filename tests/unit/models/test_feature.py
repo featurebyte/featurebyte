@@ -71,6 +71,13 @@ def test_feature_model(snowflake_event_view_with_entity, feature_model_dict):
             # therefore the graph & node could be different
             assert getattr(feature, key) == getattr(loaded_feature, key)
 
+    # DEV-556: check older record conversion
+    feature_model_dict = feature.dict(by_alias=True)
+    feature_model_dict["online_enabled"] = None
+    loaded_old_feature = FeatureModel.parse_obj(feature_model_dict)
+    assert loaded_old_feature.online_enabled is False
+    assert loaded_old_feature == loaded_feature
+
 
 def test_feature_name_space(feature_name_space_dict):
     """Test feature name space model"""
