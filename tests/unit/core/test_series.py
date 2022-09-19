@@ -883,6 +883,8 @@ def test_node_types_lineage(dataframe, float_series):
         (lambda s: s.abs(), NodeType.ABS, DBVarType.FLOAT, {}, 'ABS("VALUE")'),
         (lambda s: s.pow(2), NodeType.POWER, DBVarType.FLOAT, {"value": 2}, '(POW("VALUE", 2))'),
         (lambda s: s**2, NodeType.POWER, DBVarType.FLOAT, {"value": 2}, '(POW("VALUE", 2))'),
+        (lambda s: s.log(), NodeType.LOG, DBVarType.FLOAT, {}, 'LN("VALUE")'),
+        (lambda s: s.exp(), NodeType.EXP, DBVarType.FLOAT, {}, 'EXP("VALUE")'),
         (lambda s: s.floor(), NodeType.FLOOR, DBVarType.INT, {}, 'FLOOR("VALUE")'),
         (lambda s: s.ceil(), NodeType.CEIL, DBVarType.INT, {}, 'CEIL("VALUE")'),
     ],

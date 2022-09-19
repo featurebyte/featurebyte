@@ -659,6 +659,40 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         )
 
     @numeric_only
+    def log(self) -> Series:
+        """
+        Compute the natural logarithm of the Series
+
+        Returns
+        -------
+        Series
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.LOG,
+            output_var_type=DBVarType.FLOAT,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
+    def exp(self) -> Series:
+        """
+        Compute the exponential of the Series
+
+        Returns
+        -------
+        Series
+        """
+        return series_unary_operation(
+            input_series=self,
+            node_type=NodeType.EXP,
+            output_var_type=DBVarType.FLOAT,
+            node_params={},
+            **self.unary_op_series_params(),
+        )
+
+    @numeric_only
     def floor(self: Series) -> Series:
         """
         Round the Series to the nearest equal or smaller integer

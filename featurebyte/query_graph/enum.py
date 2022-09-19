@@ -35,6 +35,8 @@ class NodeType(str, Enum):
     SQRT = "sqrt"
     FLOOR = "floor"
     CEIL = "ceil"
+    LOG = "log"
+    EXP = "exp"
 
     # SQL operations
     PROJECT = "project"
