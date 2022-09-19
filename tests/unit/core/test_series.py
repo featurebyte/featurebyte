@@ -817,7 +817,10 @@ def test_astype__expected_parameters(series_fixture_name, request):
 
     def _check_converted_series(converted_series, expected_type_in_params):
         assert converted_series.node.type == NodeType.CAST
-        assert converted_series.node.parameters == {"type": expected_type_in_params}
+        assert converted_series.node.parameters == {
+            "type": expected_type_in_params,
+            "from_dtype": series.dtype,
+        }
         input_node_names = converted_series.graph.backward_edges[converted_series.node.name]
         assert input_node_names == [series.node.name]
 
@@ -851,6 +854,16 @@ def test_astype__invalid_type_cls(float_series):
         'type of argument "new_type" must be one of (Type[int], Type[float], Type[str],'
         " Literal[int, float, str]); got dict instead"
     )
+
+
+@pytest.mark.parametrize(
+    "series_fixture_name", ["timestamp_series", "timedelta_series", "timedelta_series"]
+)
+def test_astype__unsupported_dtype(series_fixture_name, request):
+    series = request.getfixturevalue(series_fixture_name)
+    with pytest.raises(TypeError) as exc:
+        series.astype(int)
+    assert str(exc.value) == f"astype not supported for {series.dtype}"
 
 
 def test_node_types_lineage(dataframe, float_series):

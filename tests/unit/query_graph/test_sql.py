@@ -6,6 +6,7 @@ import textwrap
 import pytest
 from sqlglot import parse_one
 
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph import sql
 from featurebyte.query_graph.enum import NodeType
 
@@ -203,9 +204,18 @@ def test_count_dict_transform(parameters, expected, input_node):
 @pytest.mark.parametrize(
     "parameters, expected",
     [
-        ({"type": "int"}, "CAST(FLOOR(val) AS INT)"),
-        ({"type": "float"}, "CAST(val AS FLOAT)"),
-        ({"type": "str"}, "CAST(val AS VARCHAR)"),
+        ({"type": "int", "from_dtype": DBVarType.BOOL}, "CAST(val AS INT)"),
+        ({"type": "int", "from_dtype": DBVarType.INT}, "CAST(val AS INT)"),
+        ({"type": "int", "from_dtype": DBVarType.FLOAT}, "CAST(FLOOR(val) AS INT)"),
+        ({"type": "int", "from_dtype": DBVarType.VARCHAR}, "CAST(val AS INT)"),
+        ({"type": "float", "from_dtype": DBVarType.BOOL}, "CAST(val AS FLOAT)"),
+        ({"type": "float", "from_dtype": DBVarType.INT}, "CAST(val AS FLOAT)"),
+        ({"type": "float", "from_dtype": DBVarType.FLOAT}, "CAST(val AS FLOAT)"),
+        ({"type": "float", "from_dtype": DBVarType.VARCHAR}, "CAST(val AS FLOAT)"),
+        ({"type": "str", "from_dtype": DBVarType.BOOL}, "CAST(val AS VARCHAR)"),
+        ({"type": "str", "from_dtype": DBVarType.INT}, "CAST(val AS VARCHAR)"),
+        ({"type": "str", "from_dtype": DBVarType.FLOAT}, "CAST(val AS VARCHAR)"),
+        ({"type": "str", "from_dtype": DBVarType.VARCHAR}, "CAST(val AS VARCHAR)"),
     ],
 )
 def test_cast(parameters, expected, input_node):
