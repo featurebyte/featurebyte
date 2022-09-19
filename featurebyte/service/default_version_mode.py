@@ -58,11 +58,9 @@ class DefaultVersionModeService(BaseUpdateService):
         -------
         Optional[FeatureNamespaceModel]
         """
-        if document is None:
-            document = await self.feature_namespace_service.get_document(
-                document_id=feature_namespace_id
-            )
-
+        document = await self.get_feature_namespace_document(
+            document_id=feature_namespace_id, document=document
+        )
         if document.default_version_mode != default_version_mode:
             await self.feature_namespace_service.update_document(
                 document_id=feature_namespace_id,
@@ -76,10 +74,7 @@ class DefaultVersionModeService(BaseUpdateService):
                 return_document=return_document,
             )
             return feature_namespace
-
-        if return_document:
-            return document
-        return None
+        return self.conditional_return(document=document, condition=return_document)
 
     async def update_feature_list_default_version_mode(
         self,
@@ -106,11 +101,9 @@ class DefaultVersionModeService(BaseUpdateService):
         -------
         Optional[FeatureListNamespaceModel]
         """
-        if document is None:
-            document = await self.feature_list_namespace_service.get_document(
-                document_id=feature_list_namespace_id
-            )
-
+        document = await self.get_feature_list_namespace_document(
+            document_id=feature_list_namespace_id, document=document
+        )
         if document.default_version_mode != default_version_mode:
             await self.feature_list_namespace_service.update_document(
                 document_id=feature_list_namespace_id,
@@ -126,7 +119,4 @@ class DefaultVersionModeService(BaseUpdateService):
                 )
             )
             return feature_list_namespace
-
-        if return_document:
-            return document
-        return None
+        return self.conditional_return(document=document, condition=return_document)

@@ -58,11 +58,9 @@ class FeatureReadinessService(BaseUpdateService):
         -------
         Optional[FeatureListNamespaceModel]
         """
-        if document is None:
-            document = await self.feature_list_namespace_service.get_document(
-                document_id=feature_list_namespace_id
-            )
-
+        document = await self.get_feature_list_namespace_document(
+            document_id=feature_list_namespace_id, document=document
+        )
         default_feature_list = await self.feature_list_service.get_document(
             document_id=document.default_feature_list_id
         )
@@ -149,9 +147,9 @@ class FeatureReadinessService(BaseUpdateService):
         -------
         Optional[FeatureListModel]
         """
-        if document is None:
-            document = await self.feature_list_service.get_document(document_id=feature_list_id)
-
+        document = await self.get_feature_list_document(
+            document_id=feature_list_id, document=document
+        )
         if from_readiness != to_readiness:
             readiness_dist = document.readiness_distribution.update_readiness(
                 transition=FeatureReadinessTransition(
@@ -164,10 +162,7 @@ class FeatureReadinessService(BaseUpdateService):
                 document=document,
                 return_document=return_document,
             )
-
-        if return_document:
-            return document
-        return None
+        return self.conditional_return(document=document, condition=return_document)
 
     async def update_feature_namespace(
         self,
@@ -194,11 +189,9 @@ class FeatureReadinessService(BaseUpdateService):
         -------
         Optional[FeatureNamespaceModel]
         """
-        if document is None:
-            document = await self.feature_namespace_service.get_document(
-                document_id=feature_namespace_id
-            )
-
+        document = await self.get_feature_namespace_document(
+            document_id=feature_namespace_id, document=document
+        )
         default_feature = await self.feature_service.get_document(
             document_id=document.default_feature_id
         )
@@ -279,9 +272,7 @@ class FeatureReadinessService(BaseUpdateService):
         -------
         Optional[FeatureModel]
         """
-        if document is None:
-            document = await self.feature_service.get_document(document_id=feature_id)
-
+        document = await self.get_feature_document(document_id=feature_id, document=document)
         if document.readiness != readiness:
             async with self.persistent.start_transaction():
                 feature = await self.feature_service.update_document(
@@ -309,9 +300,5 @@ class FeatureReadinessService(BaseUpdateService):
                         feature_list=feature_list,
                         return_document=False,
                     )
-                if return_document:
-                    return feature
-
-        if return_document:
-            return document
-        return None
+                return self.conditional_return(document=feature, condition=return_document)
+        return self.conditional_return(document=document, condition=return_document)
