@@ -77,6 +77,16 @@ def test_resolve_project_node(input_node):
     assert sql.resolve_project_node(expr_node) == expr_node
 
 
+def test_make_assign_node(input_node):
+    """Test make_assign_node"""
+    expr_node = sql.ParsedExpressionNode(input_node, parse_one("a + 1"))
+    result = sql.make_assign_node([input_node, expr_node], {"name": "new_col"})
+    # should create a copy and not modify the original input node
+    assert result is not input_node
+    assert input_node.get_column_node("new_col") is None
+    assert result.get_column_node("new_col") == expr_node
+
+
 @pytest.mark.parametrize(
     "node_type, expected",
     [

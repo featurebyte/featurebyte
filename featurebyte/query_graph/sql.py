@@ -1154,6 +1154,29 @@ def make_project_node(
     return sql_node
 
 
+def make_assign_node(input_sql_nodes: list[SQLNode], parameters: dict[str, Any]) -> TableNode:
+    """
+    Create a TableNode for an assign operation
+
+    Parameters
+    ----------
+    input_sql_nodes : list[SQLNode]
+        List of input SQL nodes
+    parameters : dict[str, Any]
+        Query graph node parameters
+    """
+    input_table_node = input_sql_nodes[0]
+    assert isinstance(input_table_node, TableNode)
+    if len(input_sql_nodes) == 2:
+        expr_node = input_sql_nodes[1]
+    else:
+        expr_node = ParsedExpressionNode(input_table_node, make_literal_value(parameters["value"]))
+    assert isinstance(expr_node, ExpressionNode)
+    sql_node = input_table_node.copy()
+    sql_node.assign_column(parameters["name"], expr_node)
+    return sql_node
+
+
 def handle_filter_node(
     input_sql_nodes: list[SQLNode], output_type: NodeOutputType
 ) -> TableNode | ExpressionNode:
