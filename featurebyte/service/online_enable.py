@@ -55,9 +55,9 @@ class OnlineEnableService(BaseUpdateService):
         -------
         Optional[FeatureListModel]
         """
-        if document is None:
-            document = await self.feature_list_service.get_document(document_id=feature_list_id)
-
+        document = await self.get_feature_list_document(
+            document_id=feature_list_id, document=document
+        )
         return await self.feature_list_service.update_document(
             document_id=feature_list_id,
             data=FeatureListServiceUpdate(
@@ -94,11 +94,9 @@ class OnlineEnableService(BaseUpdateService):
         -------
         Optional[FeatureNamespaceModel]
         """
-        if document is None:
-            document = await self.feature_namespace_service.get_document(
-                document_id=feature_namespace_id
-            )
-
+        document = await self.get_feature_namespace_document(
+            document_id=feature_namespace_id, document=document
+        )
         return await self.feature_namespace_service.update_document(
             document_id=feature_namespace_id,
             data=FeatureNamespaceServiceUpdate(
@@ -148,9 +146,7 @@ class OnlineEnableService(BaseUpdateService):
         -------
         Optional[FeatureModel]
         """
-        if document is None:
-            document = await self.feature_service.get_document(document_id=feature_id)
-
+        document = await self.get_feature_document(document_id=feature_id, document=document)
         if document.online_enabled != online_enabled:
             self._validate_online_enabled_operation(document, online_enabled)
             async with self.persistent.start_transaction():
@@ -172,10 +168,5 @@ class OnlineEnableService(BaseUpdateService):
                         feature=feature,
                         return_document=False,
                     )
-                if return_document:
-                    return feature
-                return None
-
-        if return_document:
-            return document
-        return None
+                return self.conditional_return(document=feature, condition=return_document)
+        return self.conditional_return(document=document, condition=return_document)
