@@ -3,7 +3,7 @@ This module contains the list of SQL operations to be used by the Query Graph In
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional, TypeVar, Union
 
 # pylint: disable=too-few-public-methods,too-many-lines
 from abc import ABC, abstractmethod
@@ -23,6 +23,8 @@ from featurebyte.query_graph.graph import Node
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 
 MISSING_VALUE_REPLACEMENT = "__MISSING__"
+
+TableNodeT = TypeVar("TableNodeT", bound="TableNode")
 
 
 class SQLType(Enum):
@@ -178,7 +180,7 @@ class TableNode(SQLNode, ABC):
         """
         self.columns_map = columns_map
 
-    def subset_columns(self, columns: list[str]) -> TableNode:
+    def subset_columns(self: TableNodeT, columns: list[str]) -> TableNodeT:
         """Create a new TableNode with subset of columns
 
         Parameters
@@ -206,7 +208,7 @@ class TableNode(SQLNode, ABC):
         subset_table.columns_node = subset_columns_node
         return subset_table
 
-    def copy(self) -> TableNode:
+    def copy(self: TableNodeT) -> TableNodeT:
         """Create a copy of this TableNode
 
         Returns
