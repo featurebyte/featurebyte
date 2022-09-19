@@ -669,7 +669,8 @@ def check_numeric_operations(event_view, limit=100):
     event_view["AMOUNT_FLOOR"] = event_view["AMOUNT"].floor()
     event_view["AMOUNT_CEIL"] = event_view["AMOUNT"].ceil()
     event_view["AMOUNT_INT_MOD_5"] = event_view["AMOUNT"].astype(int) % 5
-
+    event_view["AMOUNT_LOG"] = (event_view["AMOUNT"] + 1).log()
+    event_view["AMOUNT_LOG_EXP"] = event_view["AMOUNT_LOG"].exp()
     df = event_view.preview(limit=limit)
 
     pd.testing.assert_series_equal(df["AMOUNT_ABS"], (df["AMOUNT"] * (-1)).abs(), check_names=False)
@@ -679,6 +680,10 @@ def check_numeric_operations(event_view, limit=100):
     pd.testing.assert_series_equal(df["AMOUNT_CEIL"], np.ceil(df["AMOUNT"]), check_names=False)
     pd.testing.assert_series_equal(
         df["AMOUNT_INT_MOD_5"].astype(int), df["AMOUNT"].astype(int) % 5, check_names=False
+    )
+    pd.testing.assert_series_equal(df["AMOUNT_LOG"], np.log(df["AMOUNT"] + 1), check_names=False)
+    pd.testing.assert_series_equal(
+        df["AMOUNT_LOG_EXP"], np.exp(np.log(df["AMOUNT"] + 1)), check_names=False
     )
 
 

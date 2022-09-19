@@ -1390,6 +1390,8 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.ABS,
     NodeType.FLOOR,
     NodeType.CEIL,
+    NodeType.LOG,
+    NodeType.EXP,
 }
 
 
@@ -1457,6 +1459,8 @@ def make_expression_node(
         NodeType.CEIL: expressions.Ceil,
         NodeType.NOT: expressions.Not,
         NodeType.LENGTH: expressions.Length,
+        NodeType.LOG: expressions.Ln,
+        NodeType.EXP: expressions.Exp,
     }
     if node_type in node_type_to_expression_cls:
         cls = node_type_to_expression_cls[node_type]
