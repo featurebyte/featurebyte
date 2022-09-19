@@ -644,6 +644,8 @@ def check_cast_operations(event_view, limit=100):
     event_view["AMOUNT_INT"] = event_view["AMOUNT"].astype(int)
     event_view["AMOUNT_STR"] = event_view["AMOUNT"].astype(str)
     event_view["AMOUNT_FLOAT"] = event_view["AMOUNT"].astype(float)
+    event_view["INT_FROM_BOOL"] = (event_view["AMOUNT"] > 50).astype(int)
+    event_view["FLOAT_FROM_BOOL"] = (event_view["AMOUNT"] > 50).astype(float)
     df = event_view.preview(limit=limit)
 
     # compare string representation to make sure that the values are converted to int rather than
@@ -657,6 +659,9 @@ def check_cast_operations(event_view, limit=100):
     )
 
     assert df["AMOUNT_FLOAT"].tolist() == df["AMOUNT"].astype(float).tolist()
+
+    assert df["INT_FROM_BOOL"].tolist() == (df["AMOUNT"] > 50).astype(int).tolist()
+    assert df["FLOAT_FROM_BOOL"].tolist() == (df["AMOUNT"] > 50).astype(float).tolist()
 
 
 def check_numeric_operations(event_view, limit=100):

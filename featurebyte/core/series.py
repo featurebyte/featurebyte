@@ -575,7 +575,16 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         -------
         Series
             A new Series with converted variable type
+
+        Raises
+        ------
+        TypeError
+            if the Series dtype does not support type conversion
         """
+        supported_source_dtype = {DBVarType.BOOL, DBVarType.INT, DBVarType.FLOAT, DBVarType.VARCHAR}
+        if self.dtype not in supported_source_dtype:
+            raise TypeError(f"astype not supported for {self.dtype}")
+
         known_str_to_type = {
             "int": int,
             "float": float,
@@ -595,7 +604,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             type_name = "str"
             output_var_type = DBVarType.VARCHAR
 
-        node_params = {"type": type_name}
+        node_params = {"type": type_name, "from_dtype": self.dtype}
         return series_unary_operation(
             input_series=self,
             node_type=NodeType.CAST,

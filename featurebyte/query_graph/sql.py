@@ -15,7 +15,7 @@ import pandas as pd
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.common.typing import TimedeltaSupportedUnitType
-from featurebyte.enum import InternalName, SourceType
+from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.query_graph import expression as fb_expressions
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_common import AggregationSpec
@@ -808,13 +808,17 @@ class CastNode(ExpressionNode):
 
     expr: ExpressionNode
     new_type: Literal["int", "float", "str"]
+    from_dtype: DBVarType
 
     @property
     def sql(self) -> Expression:
-        if self.new_type == "int":
+        if self.from_dtype == DBVarType.FLOAT and self.new_type == "int":
             # Casting to INTEGER performs rounding (could be up or down). Hence, apply FLOOR first
             # to mimic pandas astype(int)
             expr = expressions.Floor(this=self.expr.sql)
+        elif self.from_dtype == DBVarType.BOOL and self.new_type == "float":
+            # Casting to FLOAT from BOOL directly is not allowed
+            expr = expressions.Cast(this=self.expr.sql, to=parse_one("INTEGER"))
         else:
             expr = self.expr.sql
         type_expr = {
@@ -1535,6 +1539,7 @@ def make_expression_node(
             table_node=table_node,
             expr=input_expr_node,
             new_type=parameters["type"],
+            from_dtype=parameters["from_dtype"],
         )
     elif node_type == NodeType.LAG:
         sql_node = LagNode(
