@@ -201,7 +201,7 @@ class TableNode(SQLNode, ABC):
             for (column_name, node) in self.columns_node.items()
             if column_name in columns_set
         }
-        subset_table = deepcopy(self)
+        subset_table = self.copy()
         subset_table.columns_map = subset_columns_map
         subset_table.columns_node = subset_columns_node
         return subset_table
@@ -1199,13 +1199,13 @@ def handle_filter_node(
     sql_node: TableNode | ExpressionNode
     if output_type == NodeOutputType.FRAME:
         assert isinstance(item, InputNode)
-        input_table_copy = deepcopy(item)
+        input_table_copy = item.copy()
         input_table_copy.update_where_condition(mask.sql)
         sql_node = input_table_copy
     else:
         assert isinstance(item, ExpressionNode)
         assert isinstance(item.table_node, InputNode)
-        input_table_copy = deepcopy(item.table_node)
+        input_table_copy = item.table_node.copy()
         input_table_copy.update_where_condition(mask.sql)
         sql_node = ParsedExpressionNode(input_table_copy, item.sql)
     return sql_node
