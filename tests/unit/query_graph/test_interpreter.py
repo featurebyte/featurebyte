@@ -80,6 +80,30 @@ def test_graph_interpreter_super_simple(graph, node_input):
     assert sql_tree.sql(pretty=True) == expected
 
 
+def test_graph_interpreter_assign_scalar(graph, node_input):
+    """Test using a simple query graph"""
+    assign = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "x", "value": 123},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input],
+    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
+    sql_tree = sql_graph.build(assign).sql
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          123 AS "x"
+        FROM "db"."public"."event_table"
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
+
+
 def test_graph_interpreter_multi_assign(graph, node_input):
     """Test using a slightly more complex graph (multiple assigns)"""
     proj_a = graph.add_operation(

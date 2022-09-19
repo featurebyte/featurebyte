@@ -94,6 +94,8 @@ class TableNode(SQLNode, ABC):
     ----------
     columns_map : dict[str, Expression]
         This mapping keeps track of the expression currently associated with each column name
+    columns_node : dict[str, ExpressionNode]
+        Mapping from column name to ExpressionNode for assigned columns
     """
 
     columns_map: dict[str, Expression]
@@ -203,6 +205,15 @@ class TableNode(SQLNode, ABC):
         subset_table.columns_map = subset_columns_map
         subset_table.columns_node = subset_columns_node
         return subset_table
+
+    def copy(self) -> TableNode:
+        """Create a copy of this TableNode
+
+        Returns
+        -------
+        TableNode
+        """
+        return deepcopy(self)
 
 
 @dataclass  # type: ignore

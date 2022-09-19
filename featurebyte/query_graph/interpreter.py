@@ -17,6 +17,7 @@ from featurebyte.query_graph.sql import (
     SUPPORTED_EXPRESSION_NODE_TYPES,
     AliasNode,
     ExpressionNode,
+    ParsedExpressionNode,
     SQLNode,
     SQLType,
     TableNode,
@@ -26,6 +27,7 @@ from featurebyte.query_graph.sql import (
     make_conditional_node,
     make_expression_node,
     make_input_node,
+    make_literal_value,
     make_project_node,
 )
 
@@ -118,8 +120,13 @@ class SQLOperationGraph:
             sql_node = make_input_node(parameters, self.sql_type, groupby_keys)
 
         elif node_type == NodeType.ASSIGN:
-            assert len(input_sql_nodes) == 2
-            input_table_node, expr_node = input_sql_nodes[0], input_sql_nodes[1]
+            if len(input_sql_nodes) == 2:
+                input_table_node, expr_node = input_sql_nodes[0], input_sql_nodes[1]
+            else:
+                input_table_node = input_sql_nodes[0]
+                expr_node = ParsedExpressionNode(
+                    input_table_node, make_literal_value(parameters["value"])
+                )
             assert isinstance(input_table_node, TableNode)
             assert isinstance(expr_node, ExpressionNode)
             input_table_node.assign_column(parameters["name"], expr_node)
