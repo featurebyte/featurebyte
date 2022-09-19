@@ -236,6 +236,12 @@ async def production_ready_feature_fixture(feature_readiness_service, feature):
     return prod_feat
 
 
+@pytest_asyncio.fixture(name="feature_namespace")
+async def feature_namespace_fixture(feature_namespace_service, feature):
+    """FeatureNamespace fixture"""
+    return await feature_namespace_service.get_document(document_id=feature.feature_namespace_id)
+
+
 @pytest_asyncio.fixture(name="feature_list")
 async def feature_list_fixture(feature, feature_list_service):
     """Feature list model"""
@@ -246,6 +252,14 @@ async def feature_list_fixture(feature, feature_list_service):
         payload = json.loads(fhandle.read())
         feature_list = await feature_list_service.create_document(data=FeatureListCreate(**payload))
         return feature_list
+
+
+@pytest_asyncio.fixture(name="feature_list_namespace")
+async def feature_list_namespace_fixture(feature_list_namespace_service, feature_list):
+    """FeatureListNamespace fixture"""
+    return await feature_list_namespace_service.get_document(
+        document_id=feature_list.feature_list_namespace_id
+    )
 
 
 async def insert_feature_into_persistent(user, persistent, version_suffix, readiness, name=None):

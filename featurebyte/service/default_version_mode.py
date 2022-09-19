@@ -33,7 +33,7 @@ class DefaultVersionModeService(BaseUpdateService):
         """
         return FeatureReadinessService(user=self.user, persistent=self.persistent)
 
-    async def update_feature_default_version_mode(
+    async def update_feature_namespace(
         self,
         feature_namespace_id: ObjectId,
         default_version_mode: DefaultVersionMode,
@@ -76,7 +76,7 @@ class DefaultVersionModeService(BaseUpdateService):
             return feature_namespace
         return self.conditional_return(document=document, condition=return_document)
 
-    async def update_feature_list_default_version_mode(
+    async def update_feature_list_namespace(
         self,
         feature_list_namespace_id: ObjectId,
         default_version_mode: DefaultVersionMode,

@@ -16,6 +16,44 @@ async def test_update_feature_list__feature_not_online_enabled_error(deploy_serv
     assert expected_msg in str(exc.value)
 
 
+@pytest.mark.asyncio
+async def test_update_feature_list__no_update(deploy_service, feature_list):
+    """Test update feature list when deployed status is the same"""
+    updated_feature_list = await deploy_service.update_feature_list(
+        feature_list_id=feature_list.id, deployed=feature_list.deployed
+    )
+    assert updated_feature_list == feature_list
+
+
+@pytest.mark.asyncio
+async def test_update_feature_list_namespace__no_update_except_updated_at(
+    deploy_service, feature_list, feature_list_namespace
+):
+    """Test update feature list namespace when deployed status is the same"""
+    updated_namespace = await deploy_service.update_feature_list_namespace(
+        feature_list_namespace_id=feature_list.feature_list_namespace_id,
+        feature_list=feature_list,
+    )
+    assert updated_namespace.dict(exclude={"updated_at": True}) == feature_list_namespace.dict(
+        exclude={"updated_at": True}
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_feature__no_update_except_updated_at(
+    deploy_service, feature_service, feature, feature_list
+):
+    """Test update feature when deployed status is the same"""
+    feature = await feature_service.get_document(document_id=feature.id)
+    updated_feature = await deploy_service.update_feature(
+        feature_id=feature.id,
+        feature_list=feature_list,
+    )
+    assert updated_feature.dict(exclude={"updated_at": True}) == feature.dict(
+        exclude={"updated_at": True}
+    )
+
+
 async def check_states_after_deployed_change(
     feature_service,
     feature_list_namespace_service,

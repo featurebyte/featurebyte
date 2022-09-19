@@ -40,7 +40,10 @@ async def test_update_feature__with_deployed_feature_list_disabling_error(
     # attempt to online disabled the feature
     with pytest.raises(DocumentUpdateError) as exc:
         await online_enable_service.update_feature(feature_id=feature.id, online_enabled=False)
-    expected_msg = "Failed to online disable the feature as it has been used by at least one deployed FeatureList object."
+    expected_msg = (
+        "Failed to online disable the feature as it has been used by at "
+        "least one deployed FeatureList object."
+    )
     assert expected_msg in str(exc.value)
 
 
