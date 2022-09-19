@@ -26,6 +26,7 @@ from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.service.default_version_mode import DefaultVersionModeService
+from featurebyte.service.deploy import DeployService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
@@ -34,6 +35,7 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.online_enable import OnlineEnableService
 
 
 def pytest_generate_tests(metafunc):
@@ -126,39 +128,51 @@ def event_data_service_fixture(user, persistent):
 
 
 @pytest.fixture(name="feature_namespace_service")
-def feature_namespace_service_fixture(persistent, user):
+def feature_namespace_service_fixture(user, persistent):
     """FeatureNamespaceService fixture"""
     return FeatureNamespaceService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_service")
-def feature_service_fixture(persistent, user):
+def feature_service_fixture(user, persistent):
     """FeatureService fixture"""
     return FeatureService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_list_namespace_service")
-def feature_list_namespace_service_fixture(persistent, user):
+def feature_list_namespace_service_fixture(user, persistent):
     """FeatureListNamespaceService fixture"""
     return FeatureListNamespaceService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_list_service")
-def feature_list_service_fixture(persistent, user):
+def feature_list_service_fixture(user, persistent):
     """FeatureListService fixture"""
     return FeatureListService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_readiness_service")
-def feature_readiness_service_fixture(persistent, user):
+def feature_readiness_service_fixture(user, persistent):
     """FeatureReadinessService fixture"""
     return FeatureReadinessService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="default_version_mode_service")
-def default_version_mode_service_fixture(persistent, user):
+def default_version_mode_service_fixture(user, persistent):
     """DefaultVersionModeService fixture"""
     return DefaultVersionModeService(user=user, persistent=persistent)
+
+
+@pytest.fixture(name="online_enable_service")
+def online_enable_service_fixture(user, persistent):
+    """OnlineEnableService fixture"""
+    return OnlineEnableService(user=user, persistent=persistent)
+
+
+@pytest.fixture(name="deploy_service")
+def deploy_service_fixture(user, persistent):
+    """DeployService fixture"""
+    return DeployService(user=user, persistent=persistent)
 
 
 @pytest_asyncio.fixture(name="feature_store")
@@ -212,6 +226,22 @@ async def feature_fixture(event_data, entity, feature_service, mock_insert_featu
         return feature
 
 
+@pytest_asyncio.fixture(name="production_ready_feature")
+async def production_ready_feature_fixture(feature_readiness_service, feature):
+    """Production ready readiness feature fixture"""
+    prod_feat = await feature_readiness_service.update_feature(
+        feature_id=feature.id, readiness="PRODUCTION_READY"
+    )
+    assert prod_feat.readiness == "PRODUCTION_READY"
+    return prod_feat
+
+
+@pytest_asyncio.fixture(name="feature_namespace")
+async def feature_namespace_fixture(feature_namespace_service, feature):
+    """FeatureNamespace fixture"""
+    return await feature_namespace_service.get_document(document_id=feature.feature_namespace_id)
+
+
 @pytest_asyncio.fixture(name="feature_list")
 async def feature_list_fixture(feature, feature_list_service):
     """Feature list model"""
@@ -222,6 +252,14 @@ async def feature_list_fixture(feature, feature_list_service):
         payload = json.loads(fhandle.read())
         feature_list = await feature_list_service.create_document(data=FeatureListCreate(**payload))
         return feature_list
+
+
+@pytest_asyncio.fixture(name="feature_list_namespace")
+async def feature_list_namespace_fixture(feature_list_namespace_service, feature_list):
+    """FeatureListNamespace fixture"""
+    return await feature_list_namespace_service.get_document(
+        document_id=feature_list.feature_list_namespace_id
+    )
 
 
 async def insert_feature_into_persistent(user, persistent, version_suffix, readiness, name=None):

@@ -3,9 +3,13 @@ This module contains mixin class(es) used in the service directory.
 """
 from __future__ import annotations
 
+from typing import Optional, TypeVar
+
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import PydanticObjectId
+
+Document = TypeVar("Document")
 
 
 class OpsServiceMixin:
@@ -52,3 +56,23 @@ class OpsServiceMixin:
         List of sorted document_ids
         """
         return sorted(ObjectId(doc_id) for doc_id in document_ids if doc_id != document_id)
+
+    @staticmethod
+    def conditional_return(document: Document, condition: bool) -> Optional[Document]:
+        """
+        Return output only if condition is True
+
+        Parameters
+        ----------
+        document: Document
+            Document to be returned
+        condition: bool
+            Flag to control whether to return document
+
+        Returns
+        -------
+        Optional[Document]
+        """
+        if condition:
+            return document
+        return None

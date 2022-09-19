@@ -55,6 +55,7 @@ class FeatureNamespaceServiceUpdate(FeatureNamespaceUpdate):
     """
 
     feature_ids: Optional[List[PydanticObjectId]]
+    online_enabled_feature_ids: Optional[List[PydanticObjectId]]
     readiness: Optional[FeatureReadiness]
     default_feature_id: Optional[PydanticObjectId]
 

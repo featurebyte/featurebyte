@@ -68,11 +68,13 @@ async def test_task_manager__long_running_tasks(task_manager, user_id):
 async def test_task_manager__not_found_task(task_manager, user_id):
     """Test task manager service on not found task"""
 
-    class NewTaskPlayload(BaseTaskPayload):
+    class NewTaskPayload(BaseTaskPayload):
+        """NewTaskPayload class"""
+
         output_collection_name = "random_collection"
         command = Command.UNKNOWN_TASK_COMMAND
 
-    task_id = await task_manager.submit(payload=NewTaskPlayload(user_id=user_id))
+    task_id = await task_manager.submit(payload=NewTaskPayload(user_id=user_id))
 
     # wait until task finishes
     process_data = await ProcessStore().get(user_id, task_id)

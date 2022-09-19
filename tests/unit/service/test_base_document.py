@@ -57,10 +57,18 @@ async def test_check_document_creation_conflict(
     """
 
     class Document(FeatureByteBaseDocumentModel):
+        """Document class"""
+
         class Settings(FeatureByteBaseDocumentModel.Settings):
+            """Settings class"""
+
             collection_name = "col"
 
     class DocumentService(BaseDocumentService):
+        """DocumentService class"""
+
+        # pylint: disable=abstract-method
+
         document_class = Document
 
     persistent = AsyncMock()

@@ -54,6 +54,8 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         Variable type of the feature
     feature_ids: List[PydanticObjectId]
         List of feature version id
+    online_enabled_feature_ids: List[PydanticObjectId]
+        List of online enabled feature version id
     readiness: FeatureReadiness
         Aggregated readiness across all feature versions of the same feature namespace
     created_at: datetime
@@ -70,6 +72,9 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
 
     dtype: DBVarType = Field(allow_mutation=False)
     feature_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    online_enabled_feature_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
+    )
     readiness: FeatureReadiness = Field(allow_mutation=False)
     default_feature_id: PydanticObjectId = Field(allow_mutation=False)
     default_version_mode: DefaultVersionMode = Field(
@@ -126,18 +131,22 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Feature readiness
     version: FeatureVersionIdentifier
         Feature version
-    is_default: Optional[bool]
-        Whether to this feature version default for the feature namespace
-    online_enabled: Optional[bool]
+    online_enabled: bool
         Whether to make this feature version online enabled
     entity_ids: List[PydanticObjectId]
         Entity IDs used by the feature
     event_data_ids: List[PydanticObjectId]
         EventData IDs used for the feature version
-    created_at: Optional[datetime]
-        Datetime when the Feature was first saved or published
     feature_namespace_id: PydanticObjectId
         Feature namespace id of the object
+    feature_list_ids: List[PydanticObjectId]
+        FeatureList versions which use this feature version
+    deployed_feature_list_ids: List[PydanticObjectId]
+        Deployed FeatureList versions which use this feature version
+    created_at: Optional[datetime]
+        Datetime when the Feature was first saved
+    updated_at: Optional[datetime]
+        When the Feature get updated
     """
 
     dtype: DBVarType = Field(allow_mutation=False)
@@ -147,17 +156,28 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     tabular_source: TabularSource = Field(allow_mutation=False)
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     version: FeatureVersionIdentifier = Field(default_factory=get_version, allow_mutation=False)
-    online_enabled: Optional[bool] = Field(allow_mutation=False)
+    online_enabled: bool = Field(allow_mutation=False, default=False)
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    deployed_feature_list_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
+    )
 
     @validator("entity_ids", "event_data_ids")
     @classmethod
     def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
         # make sure list of ids always sorted
         return sorted(value)
+
+    @validator("online_enabled", pre=True)
+    @classmethod
+    def _validate_online_enabled(cls, value: Optional[bool]) -> bool:
+        # DEV-556: converted older record `None` value to `False`
+        if value is None:
+            return False
+        return value
 
     class Settings:
         """

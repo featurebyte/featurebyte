@@ -19,6 +19,7 @@ from featurebyte.schema.feature import (
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService
+from featurebyte.service.online_enable import OnlineEnableService
 
 
 class FeatureController(
@@ -62,7 +63,6 @@ class FeatureController(
         readiness_service = FeatureReadinessService(user=user, persistent=persistent)
         await readiness_service.update_feature_namespace(
             feature_namespace_id=document.feature_namespace_id,
-            feature=document,
             return_document=False,
         )
         return document
@@ -99,6 +99,13 @@ class FeatureController(
             await readiness_service.update_feature(
                 feature_id=feature_id,
                 readiness=FeatureReadiness(data.readiness),
+                return_document=False,
+            )
+        if data.online_enabled is not None:
+            online_enable_service = OnlineEnableService(user=user, persistent=persistent)
+            await online_enable_service.update_feature(
+                feature_id=feature_id,
+                online_enabled=data.online_enabled,
                 return_document=False,
             )
         return await cls.get(user=user, persistent=persistent, document_id=feature_id)

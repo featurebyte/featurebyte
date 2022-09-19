@@ -23,8 +23,6 @@ from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.service.base_update import BaseUpdateService
-from featurebyte.service.feature import validate_feature_version_and_namespace_consistency
-from featurebyte.service.feature_list import validate_feature_list_version_and_namespace_consistency
 
 
 class FeatureReadinessService(BaseUpdateService):
@@ -36,7 +34,6 @@ class FeatureReadinessService(BaseUpdateService):
     async def update_feature_list_namespace(
         self,
         feature_list_namespace_id: ObjectId,
-        feature_list: Optional[FeatureListModel],
         document: Optional[FeatureListNamespaceModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureListNamespaceModel]:
@@ -47,8 +44,6 @@ class FeatureReadinessService(BaseUpdateService):
         ----------
         feature_list_namespace_id: ObjectId
             FeatureListNamespace ID
-        feature_list: Optional[FeatureListModel]
-            FeatureList
         document: Optional[FeatureListNamespaceModel]
             Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
@@ -58,41 +53,14 @@ class FeatureReadinessService(BaseUpdateService):
         -------
         Optional[FeatureListNamespaceModel]
         """
-        if document is None:
-            document = await self.feature_list_namespace_service.get_document(
-                document_id=feature_list_namespace_id
-            )
-
+        document = await self.get_feature_list_namespace_document(
+            document_id=feature_list_namespace_id, document=document
+        )
         default_feature_list = await self.feature_list_service.get_document(
             document_id=document.default_feature_list_id
         )
-        to_find_default_feature_list = document.default_version_mode == DefaultVersionMode.AUTO
-        found_default_feature_list = False
         update_dict: dict[str, Any] = {}
-        if feature_list:
-            await validate_feature_list_version_and_namespace_consistency(
-                feature_list=feature_list,
-                feature_list_namespace=document,
-                feature_service=self.feature_service,
-            )
-            if feature_list.id not in document.feature_list_ids:
-                # when a new feature list version is added to the namespace
-                update_dict["feature_list_ids"] = self.include_object_id(
-                    document.feature_list_ids, feature_list.id
-                )
-                if to_find_default_feature_list:
-                    # compare with the default readiness stored at the namespace is sufficient to find the default
-                    assert feature_list.created_at is not None
-                    assert default_feature_list.created_at is not None
-                    if (
-                        feature_list.readiness_distribution >= document.readiness_distribution  # type: ignore
-                        and feature_list.created_at > default_feature_list.created_at
-                    ):
-                        update_dict["readiness_distribution"] = feature_list.readiness_distribution
-                        update_dict["default_feature_list_id"] = feature_list.id
-                    found_default_feature_list = True
-
-        if to_find_default_feature_list and not found_default_feature_list:
+        if document.default_version_mode == DefaultVersionMode.AUTO:
             # when default version mode is AUTO & (feature is not specified or already in current namespace)
             readiness_distribution = document.readiness_distribution.worst_case()
             for feature_list_id in document.feature_list_ids:
@@ -115,11 +83,13 @@ class FeatureReadinessService(BaseUpdateService):
             # when feature readiness get updated and feature list namespace in manual default mode
             update_dict["readiness_distribution"] = default_feature_list.readiness_distribution
 
-        return await self.feature_list_namespace_service.update_document(
-            document_id=feature_list_namespace_id,
-            data=FeatureListNamespaceServiceUpdate(**update_dict),
-            return_document=return_document,
-        )
+        if update_dict:
+            document = await self.feature_list_namespace_service.update_document(
+                document_id=feature_list_namespace_id,
+                data=FeatureListNamespaceServiceUpdate(**update_dict),
+                return_document=return_document,
+            )
+        return self.conditional_return(document=document, condition=return_document)
 
     async def update_feature_list(
         self,
@@ -149,9 +119,9 @@ class FeatureReadinessService(BaseUpdateService):
         -------
         Optional[FeatureListModel]
         """
-        if document is None:
-            document = await self.feature_list_service.get_document(document_id=feature_list_id)
-
+        document = await self.get_feature_list_document(
+            document_id=feature_list_id, document=document
+        )
         if from_readiness != to_readiness:
             readiness_dist = document.readiness_distribution.update_readiness(
                 transition=FeatureReadinessTransition(
@@ -164,15 +134,11 @@ class FeatureReadinessService(BaseUpdateService):
                 document=document,
                 return_document=return_document,
             )
-
-        if return_document:
-            return document
-        return None
+        return self.conditional_return(document=document, condition=return_document)
 
     async def update_feature_namespace(
         self,
         feature_namespace_id: ObjectId,
-        feature: Optional[FeatureModel],
         document: Optional[FeatureNamespaceModel] = None,
         return_document: bool = True,
     ) -> Optional[FeatureNamespaceModel]:
@@ -183,8 +149,6 @@ class FeatureReadinessService(BaseUpdateService):
         ----------
         feature_namespace_id: ObjectId
             FeatureNamespace ID
-        feature: Optional[FeatureModel]
-            Feature
         document: Optional[FeatureNamespaceModel]
             Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
@@ -194,37 +158,14 @@ class FeatureReadinessService(BaseUpdateService):
         -------
         Optional[FeatureNamespaceModel]
         """
-        if document is None:
-            document = await self.feature_namespace_service.get_document(
-                document_id=feature_namespace_id
-            )
-
+        document = await self.get_feature_namespace_document(
+            document_id=feature_namespace_id, document=document
+        )
         default_feature = await self.feature_service.get_document(
             document_id=document.default_feature_id
         )
-        to_find_default_feature = document.default_version_mode == DefaultVersionMode.AUTO
-        found_default_feature = False
         update_dict: dict[str, Any] = {}
-        if feature:
-            await validate_feature_version_and_namespace_consistency(
-                feature=feature, feature_namespace=document
-            )
-            if feature.id not in document.feature_ids:
-                # when a new feature version is added to the namespace
-                update_dict["feature_ids"] = self.include_object_id(
-                    document.feature_ids, feature.id
-                )
-                if to_find_default_feature:
-                    # compare with the default readiness stored at the namespace is sufficient to find the default
-                    if (
-                        FeatureReadiness(feature.readiness) >= document.readiness
-                        and feature.created_at > default_feature.created_at  # type: ignore[operator]
-                    ):
-                        update_dict["readiness"] = feature.readiness
-                        update_dict["default_feature_id"] = feature.id
-                    found_default_feature = True
-
-        if to_find_default_feature and not found_default_feature:
+        if document.default_version_mode == DefaultVersionMode.AUTO:
             # when default version mode is AUTO & (feature is not specified or already in current namespace)
             readiness = min(FeatureReadiness)
             for feature_id in document.feature_ids:
@@ -247,12 +188,14 @@ class FeatureReadinessService(BaseUpdateService):
             # when feature readiness get updated and feature namespace in manual default mode
             update_dict["readiness"] = default_feature.readiness
 
-        return await self.feature_namespace_service.update_document(
-            document_id=feature_namespace_id,
-            data=FeatureNamespaceServiceUpdate(**update_dict),
-            document=document,
-            return_document=return_document,
-        )
+        if update_dict:
+            document = await self.feature_namespace_service.update_document(
+                document_id=feature_namespace_id,
+                data=FeatureNamespaceServiceUpdate(**update_dict),
+                document=document,
+                return_document=return_document,
+            )
+        return self.conditional_return(document=document, condition=return_document)
 
     async def update_feature(
         self,
@@ -279,9 +222,7 @@ class FeatureReadinessService(BaseUpdateService):
         -------
         Optional[FeatureModel]
         """
-        if document is None:
-            document = await self.feature_service.get_document(document_id=feature_id)
-
+        document = await self.get_feature_document(document_id=feature_id, document=document)
         if document.readiness != readiness:
             async with self.persistent.start_transaction():
                 feature = await self.feature_service.update_document(
@@ -293,7 +234,6 @@ class FeatureReadinessService(BaseUpdateService):
                 assert isinstance(feature, FeatureModel)
                 await self.update_feature_namespace(
                     feature_namespace_id=feature.feature_namespace_id,
-                    feature=feature,
                     return_document=False,
                 )
                 for feature_list_id in feature.feature_list_ids:
@@ -306,12 +246,7 @@ class FeatureReadinessService(BaseUpdateService):
                     assert isinstance(feature_list, FeatureListModel)
                     await self.update_feature_list_namespace(
                         feature_list_namespace_id=feature_list.feature_list_namespace_id,
-                        feature_list=feature_list,
                         return_document=False,
                     )
-                if return_document:
-                    return feature
-
-        if return_document:
-            return document
-        return None
+                return self.conditional_return(document=feature, condition=return_document)
+        return self.conditional_return(document=document, condition=return_document)

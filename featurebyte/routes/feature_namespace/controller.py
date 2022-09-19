@@ -61,7 +61,7 @@ class FeatureNamespaceController(
             default_version_mode_service = DefaultVersionModeService(
                 user=user, persistent=persistent
             )
-            await default_version_mode_service.update_feature_default_version_mode(
+            await default_version_mode_service.update_feature_namespace(
                 feature_namespace_id=feature_namespace_id,
                 default_version_mode=data.default_version_mode,
                 return_document=False,

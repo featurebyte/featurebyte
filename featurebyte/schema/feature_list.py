@@ -44,11 +44,20 @@ class FeatureListPaginatedList(PaginationMixin):
     data: List[FeatureListModel]
 
 
-class FeatureListServiceUpdate(FeatureByteBaseModel):
+class FeatureListUpdate(FeatureByteBaseModel):
+    """
+    FeatureList update schema
+    """
+
+    deployed: Optional[bool]
+
+
+class FeatureListServiceUpdate(FeatureListUpdate):
     """
     FeatureList service update schema
     """
 
+    online_enabled_feature_ids: Optional[List[PydanticObjectId]]
     readiness_distribution: Optional[FeatureReadinessDistribution]
 
 

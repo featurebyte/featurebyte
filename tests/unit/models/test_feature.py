@@ -20,6 +20,7 @@ def feature_name_space_dict_fixture():
         "name": "some_feature_name",
         "dtype": "FLOAT",
         "feature_ids": feature_ids,
+        "online_enabled_feature_ids": [],
         "readiness": "DRAFT",
         "created_at": datetime.now(),
         "updated_at": datetime.now(),
@@ -69,6 +70,13 @@ def test_feature_model(snowflake_event_view_with_entity, feature_model_dict):
             # feature_json uses pruned graph, feature uses global graph,
             # therefore the graph & node could be different
             assert getattr(feature, key) == getattr(loaded_feature, key)
+
+    # DEV-556: check older record conversion
+    feature_model_dict = feature.dict(by_alias=True)
+    feature_model_dict["online_enabled"] = None
+    loaded_old_feature = FeatureModel.parse_obj(feature_model_dict)
+    assert loaded_old_feature.online_enabled is False
+    assert loaded_old_feature == loaded_feature
 
 
 def test_feature_name_space(feature_name_space_dict):

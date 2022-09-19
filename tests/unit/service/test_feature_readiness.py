@@ -9,7 +9,53 @@ from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServic
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 
 
-async def check_states_readiness_change(
+@pytest.mark.asyncio
+async def test_update_feature__no_update(feature_readiness_service, feature):
+    """Test update_feature when the readiness is the same"""
+    updated_feature = await feature_readiness_service.update_feature(
+        feature_id=feature.id, readiness=feature.readiness
+    )
+    assert updated_feature == feature
+
+
+@pytest.mark.asyncio
+async def test_update_feature_namespace__no_update_except_updated_at(
+    feature_readiness_service, feature, feature_namespace
+):
+    """Test update_feature_namespace when the readiness is the same"""
+    updated_namespace = await feature_readiness_service.update_feature_namespace(
+        feature_namespace_id=feature.feature_namespace_id
+    )
+    assert updated_namespace.dict(exclude={"updated_at"}) == feature_namespace.dict(
+        exclude={"updated_at"}
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_feature_list__no_update(feature_readiness_service, feature_list):
+    """Test update_feature_list when the readiness distribution is the same"""
+    updated_feature_list = await feature_readiness_service.update_feature_list(
+        feature_list_id=feature_list.id,
+        from_readiness="DRAFT",
+        to_readiness="DRAFT",
+    )
+    assert updated_feature_list == feature_list
+
+
+@pytest.mark.asyncio
+async def test_update_feature_list_namespace__no_update_except_updated_at(
+    feature_readiness_service, feature_list, feature_list_namespace
+):
+    """Test update_feature_list_namespace when the readiness distribution is the same"""
+    updated_namespace = await feature_readiness_service.update_feature_list_namespace(
+        feature_list_namespace_id=feature_list.feature_list_namespace_id,
+    )
+    assert updated_namespace.dict(exclude={"updated_at": True}) == feature_list_namespace.dict(
+        exclude={"updated_at": True}
+    )
+
+
+async def check_states_after_readiness_change(
     feature_readiness_service,
     feature_namespace_service,
     feature_list_service,
@@ -24,6 +70,7 @@ async def check_states_readiness_change(
     expected_default_feature_list_readiness_distribution,
 ):
     """Check states after feature readiness get changed"""
+    # pylint: disable=too-many-arguments,too-many-locals
     new_feat = await feature_readiness_service.update_feature(
         feature_id=new_feature_id, readiness=new_feature_next_readiness, return_document=True
     )
@@ -63,14 +110,13 @@ async def test_update_document__auto_default_version_mode(
     feature_readiness_service,
     feature,
     feature_list,
-    user,
 ):
     """Test update document (auto default version mode)"""
     new_feature_id, new_feature_list_id = setup_for_feature_readiness
     new_feature_list = await feature_list_service.get_document(document_id=new_feature_list_id)
 
     # upgrade new feature's readiness level to production
-    await check_states_readiness_change(
+    await check_states_after_readiness_change(
         feature_readiness_service=feature_readiness_service,
         feature_namespace_service=feature_namespace_service,
         feature_list_service=feature_list_service,
@@ -90,7 +136,7 @@ async def test_update_document__auto_default_version_mode(
     )
 
     # downgrade new feature's readiness from production ready to deprecated
-    await check_states_readiness_change(
+    await check_states_after_readiness_change(
         feature_readiness_service=feature_readiness_service,
         feature_namespace_service=feature_namespace_service,
         feature_list_service=feature_list_service,
@@ -115,7 +161,6 @@ async def test_update_document__manual_default_version_mode__non_default_feature
     feature_readiness_service,
     feature,
     feature_list,
-    user,
 ):
     """Test update document (manual default version mode, upgrade non-default feature's readiness)"""
     new_feature_id, new_feature_list_id = setup_for_feature_readiness
@@ -136,7 +181,7 @@ async def test_update_document__manual_default_version_mode__non_default_feature
     assert flist_namespace.default_feature_list_id == feature_list.id
 
     # upgrade new feature's readiness level to production
-    await check_states_readiness_change(
+    await check_states_after_readiness_change(
         feature_readiness_service=feature_readiness_service,
         feature_namespace_service=feature_namespace_service,
         feature_list_service=feature_list_service,
@@ -154,7 +199,7 @@ async def test_update_document__manual_default_version_mode__non_default_feature
     )
 
     # downgrade new feature's readiness level to deprecated
-    await check_states_readiness_change(
+    await check_states_after_readiness_change(
         feature_readiness_service=feature_readiness_service,
         feature_namespace_service=feature_namespace_service,
         feature_list_service=feature_list_service,
@@ -179,7 +224,6 @@ async def test_update_document__manual_default_version_mode__default_feature_rea
     feature_readiness_service,
     feature,
     feature_list,
-    user,
 ):
     """Test update document (manual default version mode, upgrade non-default feature's readiness)"""
     new_feature_id, new_feature_list_id = setup_for_feature_readiness
@@ -203,7 +247,7 @@ async def test_update_document__manual_default_version_mode__default_feature_rea
     assert flist_namespace.default_feature_list_id == new_feature_list_id
 
     # downgrade new feature's readiness level to deprecated
-    await check_states_readiness_change(
+    await check_states_after_readiness_change(
         feature_readiness_service=feature_readiness_service,
         feature_namespace_service=feature_namespace_service,
         feature_list_service=feature_list_service,
@@ -221,7 +265,7 @@ async def test_update_document__manual_default_version_mode__default_feature_rea
     )
 
     # upgrade new feature's readiness level to production ready
-    await check_states_readiness_change(
+    await check_states_after_readiness_change(
         feature_readiness_service=feature_readiness_service,
         feature_namespace_service=feature_namespace_service,
         feature_list_service=feature_list_service,

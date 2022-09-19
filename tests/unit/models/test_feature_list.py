@@ -26,6 +26,8 @@ def feature_list_model_dict_fixture():
         "updated_at": None,
         "user_id": None,
         "feature_list_namespace_id": ObjectId(),
+        "deployed": False,
+        "online_enabled_feature_ids": [],
     }
 
 
@@ -44,6 +46,7 @@ def feature_list_namespace_model_dict_fixture():
         "feature_namespace_ids": feature_namespace_ids,
         "dtype_distribution": [{"dtype": "FLOAT", "count": 2}],
         "feature_list_ids": feature_list_ids,
+        "deployed_feature_list_ids": [],
         "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
         "status": "DRAFT",
         "default_feature_list_id": feature_list_ids[0],

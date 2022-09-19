@@ -219,6 +219,8 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         Feature name
     feature_list_ids: List[PydanticObjectId]
         List of feature list ids
+    deployed_feature_list_ids: List[PydanticObjectId]
+        List of deployed feature list ids
     feature_namespace_ids: List[PydanticObjectId]
         List of feature namespace ids
     dtype_distribution: List[FeatureTypeFeatureCount]
@@ -238,6 +240,9 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
     """
 
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    deployed_feature_list_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
+    )
     feature_namespace_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     dtype_distribution: List[FeatureTypeFeatureCount] = Field(allow_mutation=False)
     readiness_distribution: FeatureReadinessDistribution = Field(allow_mutation=False)
@@ -374,10 +379,14 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         Name of the feature list
     feature_ids: List[PydanticObjectId]
         List of feature IDs
+    online_enabled_feature_ids: List[PydanticObjectId]
+        List of online enabled feature version id
     readiness_distribution: List[Dict[str, Any]]
         Feature readiness distribution of this feature list
     version: FeatureListVersionIdentifier
         Feature list version
+    deployed: bool
+        Whether to deploy this feature list version
     feature_list_namespace_id: PydanticObjectId
         Feature list namespace id of the object
     created_at: Optional[datetime]
@@ -385,10 +394,14 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     """
 
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
+    online_enabled_feature_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
+    )
     readiness_distribution: FeatureReadinessDistribution = Field(
         allow_mutation=False, default_factory=list
     )
     version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)
+    deployed: bool = Field(allow_mutation=False, default=False)
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
     )
