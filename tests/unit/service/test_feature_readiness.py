@@ -71,6 +71,7 @@ async def check_states_after_readiness_change(
     expected_default_feature_list_readiness_distribution,
 ):
     """Check states after feature readiness get changed"""
+    # pylint: disable=too-many-arguments,too-many-locals
     new_feat = await feature_readiness_service.update_feature(
         feature_id=new_feature_id, readiness=new_feature_next_readiness, return_document=True
     )
@@ -110,7 +111,6 @@ async def test_update_document__auto_default_version_mode(
     feature_readiness_service,
     feature,
     feature_list,
-    user,
 ):
     """Test update document (auto default version mode)"""
     new_feature_id, new_feature_list_id = setup_for_feature_readiness
@@ -162,7 +162,6 @@ async def test_update_document__manual_default_version_mode__non_default_feature
     feature_readiness_service,
     feature,
     feature_list,
-    user,
 ):
     """Test update document (manual default version mode, upgrade non-default feature's readiness)"""
     new_feature_id, new_feature_list_id = setup_for_feature_readiness
@@ -226,7 +225,6 @@ async def test_update_document__manual_default_version_mode__default_feature_rea
     feature_readiness_service,
     feature,
     feature_list,
-    user,
 ):
     """Test update document (manual default version mode, upgrade non-default feature's readiness)"""
     new_feature_id, new_feature_list_id = setup_for_feature_readiness

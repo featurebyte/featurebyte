@@ -81,7 +81,6 @@ async def test_update_feature_list(
     feature_list_namespace_service,
     feature_list_service,
     feature_list,
-    production_ready_feature,
     deploy_service,
 ):
     """Test update feature list"""

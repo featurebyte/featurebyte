@@ -89,9 +89,6 @@ async def test_update_feature_list_namespace(
     setup_for_feature_readiness,
     default_version_mode_service,
     feature_list_namespace_service,
-    feature_list_service,
-    feature_namespace_service,
-    feature_service,
     feature_readiness_service,
     feature_list,
 ):
