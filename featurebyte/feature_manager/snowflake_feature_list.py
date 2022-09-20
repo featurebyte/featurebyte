@@ -65,12 +65,13 @@ class FeatureListManagerSnowflake(BaseModel):
         logger.debug(f"feature_list_versions: {feature_list_versions}")
         if len(feature_list_versions) == 0:
             logger.debug(
-                f"Inserting new FeatureList version for {feature_list.name} with version {feature_list.version}"
+                f"Inserting new FeatureList version for {feature_list.name} with version "
+                f"{feature_list.version.to_str()}"
             )
 
             if feature_list.feature_signatures:
                 feature_lst = [
-                    {"feature": f.name, "version": f.version}
+                    {"feature": f.name, "version": f.version.to_str()}
                     for f in feature_list.feature_signatures
                 ]
                 feature_lst_str = str(feature_lst).replace("'", '"')
@@ -84,7 +85,8 @@ class FeatureListManagerSnowflake(BaseModel):
             self._session.execute_query(sql)
         else:
             raise DuplicatedRegistryError(
-                f"FeatureList version already exist for {feature_list.name} with version {feature_list.version}"
+                f"FeatureList version already exist for {feature_list.name} with version "
+                f"{feature_list.version.to_str()}"
             )
 
     def retrieve_feature_list_registries(
@@ -107,7 +109,7 @@ class FeatureListManagerSnowflake(BaseModel):
         """
         sql = tm_select_feature_list_registry.render(feature_list_name=feature_list.name)
         if version:
-            sql += f" AND VERSION = '{version}'"
+            sql += f" AND VERSION = '{version.to_str()}'"
 
         return self._session.execute_query(sql)
 
@@ -130,7 +132,8 @@ class FeatureListManagerSnowflake(BaseModel):
         )
         if len(feature_list_versions) == 0:
             raise ValueError(
-                f"feature_list {new_feature_list.name} with version {new_feature_list.version} does not exist"
+                f"feature_list {new_feature_list.name} with version {new_feature_list.version.to_str()} "
+                f"does not exist"
             )
         logger.debug(f"feature_list_versions: {feature_list_versions}")
 

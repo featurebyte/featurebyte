@@ -14,7 +14,7 @@ tm_insert_feature_registry = Template(
     )
     SELECT
         '{{feature.name}}' as NAME,
-        '{{feature.version}}' as VERSION,
+        '{{feature.version.to_str()}}' as VERSION,
         '{{feature.readiness}}' as READINESS,
         parse_json('{{tile_specs_str}}') as TILE_SPECS,
         '{{event_ids_str}}' as EVENT_DATA_IDS
@@ -23,7 +23,7 @@ tm_insert_feature_registry = Template(
 
 tm_remove_feature_registry = Template(
     """
-    DELETE FROM FEATURE_REGISTRY WHERE NAME = '{{feature.name}}' AND VERSION = '{{feature.version}}'
+    DELETE FROM FEATURE_REGISTRY WHERE NAME = '{{feature.name}}' AND VERSION = '{{feature.version.to_str()}}'
 """
 )
 
@@ -41,7 +41,7 @@ tm_update_feature_registry = Template(
         IS_DEFAULT = {{feature.is_default}},
         ONLINE_ENABLED = {{online_enabled}}
     WHERE NAME = '{{feature.name}}'
-    AND VERSION = '{{feature.version}}'
+    AND VERSION = '{{feature.version.to_str()}}'
 """
 )
 
@@ -50,7 +50,7 @@ tm_select_feature_registry = Template(
     """
     SELECT * FROM FEATURE_REGISTRY WHERE NAME = '{{feature_name}}'
     {% if version is not none %}
-        AND VERSION = '{{version}}'
+        AND VERSION = '{{version.to_str()}}'
     {% endif %}
 """
 )
@@ -64,7 +64,7 @@ tm_last_tile_index = Template(
     FROM
         (
             SELECT value:tile_id as TILE_ID FROM FEATURE_REGISTRY, LATERAL FLATTEN(input => TILE_SPECS)
-            WHERE NAME = '{{feature.name}}' AND VERSION = '{{feature.version}}'
+            WHERE NAME = '{{feature.name}}' AND VERSION = '{{feature.version.to_str()}}'
         ) t_spec,
         TILE_REGISTRY t_reg
     WHERE t_reg.TILE_ID = t_spec.TILE_ID
@@ -81,7 +81,7 @@ tm_insert_feature_list_registry = Template(
     )
     SELECT
         '{{feature_list.name}}' as NAME,
-        '{{feature_list.version}}' as VERSION,
+        '{{feature_list.version.to_str()}}' as VERSION,
         '{{feature_list.status}}' as STATUS,
         parse_json('{{feature_lst_str}}') as FEATURE_VERSIONS
 """
@@ -99,7 +99,7 @@ tm_update_feature_list_registry = Template(
     SET
         STATUS = '{{feature_list.status}}'
     WHERE NAME = '{{feature_list.name}}'
-    AND VERSION = '{{feature_list.version}}'
+    AND VERSION = '{{feature_list.version.to_str()}}'
 """
 )
 

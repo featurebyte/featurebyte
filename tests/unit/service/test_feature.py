@@ -7,6 +7,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import FeatureStore, SourceType
+from featurebyte.common.model_util import get_version
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.exception import (
     CredentialsError,
@@ -15,6 +16,7 @@ from featurebyte.exception import (
     DuplicatedRegistryError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature_store import SQLiteDetails, TableDetails
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.service.feature import FeatureService
@@ -67,6 +69,7 @@ async def test_insert_feature_registry__non_snowflake_feature_store(
         "feature_store_id": feature_store.id,
         "table_details": TableDetails(table_name="some_table"),
     }
+    feature_model_dict["version"] = VersionIdentifier(name=get_version())
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=sqlite_feature_store)
     await FeatureService(user=Mock(), persistent=Mock())._insert_feature_registry(
         document=feature, get_credential=get_credential
@@ -87,6 +90,7 @@ async def test_insert_feature_registry(
     Test insert_feature_registry
     """
     _ = snowflake_connector
+    feature_model_dict["version"] = VersionIdentifier(name=get_version())
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
     await FeatureService(user=Mock(), persistent=Mock())._insert_feature_registry(
         document=feature,
@@ -115,6 +119,7 @@ async def test_insert_feature_registry__duplicated_feature_registry_exception(
     """
     _ = snowflake_connector
     mock_feature_manager.return_value.insert_feature_registry.side_effect = DuplicatedRegistryError
+    feature_model_dict["version"] = VersionIdentifier(name=get_version())
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
     with pytest.raises(DocumentConflictError) as exc:
         await FeatureService(user=Mock(), persistent=Mock())._insert_feature_registry(
@@ -142,6 +147,7 @@ async def test_insert_feature_registry__other_exception(
     """
     _ = snowflake_connector
     mock_feature_manager.return_value.insert_feature_registry.side_effect = ValueError
+    feature_model_dict["version"] = VersionIdentifier(name=get_version())
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
     with pytest.raises(ValueError):
         await FeatureService(user=Mock(), persistent=Mock())._insert_feature_registry(
@@ -170,6 +176,7 @@ async def test_insert_feature_registry__credentials_error(
 
     _ = snowflake_connector
     mock_feature_manager.return_value.insert_feature_registry.side_effect = ValueError
+    feature_model_dict["version"] = VersionIdentifier(name=get_version())
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
     with pytest.raises(CredentialsError):
         await FeatureService(user=Mock(), persistent=Mock())._insert_feature_registry(

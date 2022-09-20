@@ -18,11 +18,13 @@ from featurebyte.api.feature import DefaultVersionMode, Feature
 from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
+from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.feature_store import SnowflakeDetails
@@ -572,10 +574,16 @@ def mock_snowflake_feature_list_model(
     mock_feature_list = ExtendedFeatureListModel(
         name="feature_list1",
         feature_ids=[feature.id],
-        feature_signatures=[{"id": feature.id, "name": feature.name, "version": feature.version}],
+        feature_signatures=[
+            {
+                "id": feature.id,
+                "name": feature.name,
+                "version": VersionIdentifier(name=get_version()),
+            }
+        ],
         readiness=FeatureReadiness.DRAFT,
         status=FeatureListStatus.PUBLIC_DRAFT,
-        version="v1",
+        version=VersionIdentifier(name="v1"),
     )
 
     return mock_feature_list

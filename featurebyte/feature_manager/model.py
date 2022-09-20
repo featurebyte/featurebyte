@@ -22,6 +22,7 @@ class ExtendedFeatureModel(FeatureModel):
 
     is_default: Optional[bool] = Field(allow_mutation=False)
     feature_store: ExtendedFeatureStoreModel
+    version: VersionIdentifier
 
     @property
     def tile_specs(self) -> list[TileSpec]:

@@ -98,7 +98,7 @@ class FeatureManagerSnowflake(BaseModel):
             self._session.execute_query(sql)
         else:
             raise DuplicatedRegistryError(
-                f"Feature version already exist for {feature.name} with version {feature.version}"
+                f"Feature version already exist for {feature.name} with version {feature.version.to_str()}"
             )
 
     def remove_feature_registry(self, feature: ExtendedFeatureModel) -> None:
@@ -124,20 +124,22 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"feature_versions: {feature_versions}")
         if len(feature_versions) == 0:
             raise MissingFeatureRegistryError(
-                f"Feature version does not exist for {feature.name} with version {feature.version}"
+                f"Feature version does not exist for {feature.name} with version {feature.version.to_str()}"
             )
 
         feature_readiness = feature_versions["READINESS"].iloc[0]
         if feature_readiness != "DRAFT":
             raise InvalidFeatureRegistryOperationError(
-                f"Feature version {feature.name} with version {feature.version} cannot be deleted with readiness "
-                f"{feature_readiness}"
+                f"Feature version {feature.name} with version {feature.version.to_str()} "
+                f"cannot be deleted with readiness {feature_readiness}"
             )
 
         sql = tm_remove_feature_registry.render(feature=feature)
         logger.debug(f"generated remove sql: {sql}")
         self._session.execute_query(sql)
-        logger.debug(f"Done removing feature version {feature.name} with version {feature.version}")
+        logger.debug(
+            f"Done removing feature version {feature.name} with version {feature.version.to_str()}"
+        )
 
     def retrieve_feature_registries(
         self, feature: ExtendedFeatureModel, version: Optional[VersionIdentifier] = None
@@ -187,7 +189,7 @@ class FeatureManagerSnowflake(BaseModel):
         )
         if len(feature_versions) == 0:
             raise MissingFeatureRegistryError(
-                f"feature {new_feature.name} with version {new_feature.version} does not exist"
+                f"feature {new_feature.name} with version {new_feature.version.to_str()} does not exist"
             )
         logger.debug(f"feature_versions: {feature_versions}")
 
@@ -227,12 +229,12 @@ class FeatureManagerSnowflake(BaseModel):
 
             if len(feature_versions) == 0:
                 raise MissingFeatureRegistryError(
-                    f"feature {feature.name} with version {feature.version} does not exist"
+                    f"feature {feature.name} with version {feature.version.to_str()} does not exist"
                 )
 
             if feature_versions["ONLINE_ENABLED"].iloc[0]:
                 raise InvalidFeatureRegistryOperationError(
-                    f"feature {feature.name} with version {feature.version} is already online enabled"
+                    f"feature {feature.name} with version {feature.version.to_str()} is already online enabled"
                 )
 
             # insert Tile Specs
