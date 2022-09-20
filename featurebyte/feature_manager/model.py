@@ -69,7 +69,7 @@ class FeatureSignature(FeatureByteBaseModel):
 
     id: PydanticObjectId
     name: Optional[StrictStr]
-    version: Optional[VersionIdentifier]
+    version: VersionIdentifier
 
 
 class ExtendedFeatureListModel(FeatureListModel):
@@ -79,3 +79,4 @@ class ExtendedFeatureListModel(FeatureListModel):
 
     feature_signatures: List[FeatureSignature] = Field(default_factory=list)
     status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
+    version: VersionIdentifier

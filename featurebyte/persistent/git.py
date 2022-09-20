@@ -672,7 +672,7 @@ class GitDB(Persistent):
         """
         for key, value in nested_field_query_filter.items():
             field_path = key.split(".")
-            match = get_field_path_value(dict(doc), field_path) == value
+            match = bool(get_field_path_value(dict(doc), field_path) == value)
             if not match:
                 return match
         return True
