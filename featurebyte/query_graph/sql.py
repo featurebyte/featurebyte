@@ -3,7 +3,7 @@ This module contains the list of SQL operations to be used by the Query Graph In
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional, TypeVar, Union
 
 # pylint: disable=too-few-public-methods,too-many-lines
 from abc import ABC, abstractmethod
@@ -23,6 +23,8 @@ from featurebyte.query_graph.graph import Node
 from featurebyte.query_graph.tiling import TileSpec, get_aggregator
 
 MISSING_VALUE_REPLACEMENT = "__MISSING__"
+
+TableNodeT = TypeVar("TableNodeT", bound="TableNode")
 
 
 class SQLType(Enum):
@@ -94,6 +96,8 @@ class TableNode(SQLNode, ABC):
     ----------
     columns_map : dict[str, Expression]
         This mapping keeps track of the expression currently associated with each column name
+    columns_node : dict[str, ExpressionNode]
+        Mapping from column name to ExpressionNode for assigned columns
     """
 
     columns_map: dict[str, Expression]
@@ -176,7 +180,7 @@ class TableNode(SQLNode, ABC):
         """
         self.columns_map = columns_map
 
-    def subset_columns(self, columns: list[str]) -> TableNode:
+    def subset_columns(self: TableNodeT, columns: list[str]) -> TableNodeT:
         """Create a new TableNode with subset of columns
 
         Parameters
@@ -199,10 +203,19 @@ class TableNode(SQLNode, ABC):
             for (column_name, node) in self.columns_node.items()
             if column_name in columns_set
         }
-        subset_table = deepcopy(self)
+        subset_table = self.copy()
         subset_table.columns_map = subset_columns_map
         subset_table.columns_node = subset_columns_node
         return subset_table
+
+    def copy(self: TableNodeT) -> TableNodeT:
+        """Create a copy of this TableNode
+
+        Returns
+        -------
+        TableNode
+        """
+        return deepcopy(self)
 
 
 @dataclass  # type: ignore
@@ -1147,6 +1160,33 @@ def make_project_node(
     return sql_node
 
 
+def make_assign_node(input_sql_nodes: list[SQLNode], parameters: dict[str, Any]) -> TableNode:
+    """
+    Create a TableNode for an assign operation
+
+    Parameters
+    ----------
+    input_sql_nodes : list[SQLNode]
+        List of input SQL nodes
+    parameters : dict[str, Any]
+        Query graph node parameters
+
+    Returns
+    -------
+    TableNode
+    """
+    input_table_node = input_sql_nodes[0]
+    assert isinstance(input_table_node, TableNode)
+    if len(input_sql_nodes) == 2:
+        expr_node = input_sql_nodes[1]
+    else:
+        expr_node = ParsedExpressionNode(input_table_node, make_literal_value(parameters["value"]))
+    assert isinstance(expr_node, ExpressionNode)
+    sql_node = input_table_node.copy()
+    sql_node.assign_column(parameters["name"], expr_node)
+    return sql_node
+
+
 def handle_filter_node(
     input_sql_nodes: list[SQLNode], output_type: NodeOutputType
 ) -> TableNode | ExpressionNode:
@@ -1169,13 +1209,13 @@ def handle_filter_node(
     sql_node: TableNode | ExpressionNode
     if output_type == NodeOutputType.FRAME:
         assert isinstance(item, InputNode)
-        input_table_copy = deepcopy(item)
+        input_table_copy = item.copy()
         input_table_copy.update_where_condition(mask.sql)
         sql_node = input_table_copy
     else:
         assert isinstance(item, ExpressionNode)
         assert isinstance(item.table_node, InputNode)
-        input_table_copy = deepcopy(item.table_node)
+        input_table_copy = item.table_node.copy()
         input_table_copy.update_where_condition(mask.sql)
         sql_node = ParsedExpressionNode(input_table_copy, item.sql)
     return sql_node

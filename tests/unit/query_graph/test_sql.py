@@ -78,6 +78,16 @@ def test_resolve_project_node(input_node):
     assert sql.resolve_project_node(expr_node) == expr_node
 
 
+def test_make_assign_node(input_node):
+    """Test make_assign_node"""
+    expr_node = sql.ParsedExpressionNode(input_node, parse_one("a + 1"))
+    result = sql.make_assign_node([input_node, expr_node], {"name": "new_col"})
+    # should create a copy and not modify the original input node
+    assert result is not input_node
+    assert input_node.get_column_node("new_col") is None
+    assert result.get_column_node("new_col") == expr_node
+
+
 @pytest.mark.parametrize(
     "node_type, expected",
     [
@@ -336,3 +346,30 @@ def test_convert_timedelta_unit(input_node, input_unit, output_unit, expected):
         date_column.sql, input_unit, output_unit
     )
     assert converted.sql() == expected
+
+
+def test_datediff_resolves_correctly(dataframe):
+    """Test datediff node resolution works correctly even in weird case
+
+    It is important that assignment operation makes a copy of the involved TableNode
+    """
+    dataframe["diff"] = dataframe["TIMESTAMP_VALUE"] - dataframe["TIMESTAMP_VALUE"]
+    diff = dataframe["diff"]
+    dataframe["diff"] = 123
+    dataframe["NEW_TIMESTAMP"] = dataframe["TIMESTAMP_VALUE"] + diff
+    sql = dataframe.preview_sql()
+    expected_sql = textwrap.dedent(
+        """
+        SELECT
+          "CUST_ID" AS "CUST_ID",
+          "PRODUCT_ACTION" AS "PRODUCT_ACTION",
+          "VALUE" AS "VALUE",
+          "MASK" AS "MASK",
+          "TIMESTAMP_VALUE" AS "TIMESTAMP_VALUE",
+          123 AS "diff",
+          DATEADD(microsecond, DATEDIFF(microsecond, "TIMESTAMP_VALUE", "TIMESTAMP_VALUE"), "TIMESTAMP_VALUE") AS "NEW_TIMESTAMP"
+        FROM "db"."public"."transaction"
+        LIMIT 10
+        """
+    ).strip()
+    assert sql == expected_sql

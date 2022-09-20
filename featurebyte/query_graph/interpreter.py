@@ -22,6 +22,7 @@ from featurebyte.query_graph.sql import (
     TableNode,
     handle_filter_node,
     handle_groupby_node,
+    make_assign_node,
     make_binary_operation_node,
     make_conditional_node,
     make_expression_node,
@@ -118,12 +119,7 @@ class SQLOperationGraph:
             sql_node = make_input_node(parameters, self.sql_type, groupby_keys)
 
         elif node_type == NodeType.ASSIGN:
-            assert len(input_sql_nodes) == 2
-            input_table_node, expr_node = input_sql_nodes[0], input_sql_nodes[1]
-            assert isinstance(input_table_node, TableNode)
-            assert isinstance(expr_node, ExpressionNode)
-            input_table_node.assign_column(parameters["name"], expr_node)
-            sql_node = input_table_node
+            sql_node = make_assign_node(input_sql_nodes, parameters)
 
         elif node_type == NodeType.PROJECT:
             sql_node = make_project_node(input_sql_nodes, parameters, output_type)
