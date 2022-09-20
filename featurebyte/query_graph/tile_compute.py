@@ -132,7 +132,7 @@ class OnDemandTileComputePlan:
 
         return tile_sqls
 
-    def update_max_window_size(self, tile_info) -> None:
+    def update_max_window_size(self, tile_info: TileGenSql) -> None:
         """Update the maximum feature window size observed for each aggregation_id
 
         Parameters
@@ -149,7 +149,7 @@ class OnDemandTileComputePlan:
         ):
             self.max_window_size_by_agg_id[agg_id] = max_window
 
-    def get_max_window_size(self, aggregation_id) -> int:
+    def get_max_window_size(self, aggregation_id: str) -> int:
         """Get the maximum feature window size for a given aggregation_id
 
         Parameters
