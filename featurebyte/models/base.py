@@ -232,6 +232,7 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     def collection_name(cls) -> str:
         """
         Retrieve collection name
+
         Returns
         -------
         str
@@ -243,6 +244,7 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     def unique_constraints(cls) -> List[UniqueValuesConstraint]:
         """
         Retrieve unique_constraints
+
         Returns
         -------
         List[UniqueValuesConstraint]
@@ -257,3 +259,29 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
 
         collection_name: str
         unique_constraints: List[UniqueValuesConstraint]
+
+
+class VersionIdentifier(BaseModel):
+    """
+    VersionIdentifier model
+
+    name: str
+        Version name like `V220917`
+    suffix: Optional[int]
+        Suffix integer to differentiate multiple version with the same name
+    """
+
+    name: str
+    suffix: Optional[int] = Field(default=None)
+
+    def to_str(self) -> str:
+        """
+        Convert the VersionIdentifier object into string
+
+        Returns
+        -------
+        version string
+        """
+        if self.suffix:
+            return f"{self.name}_{self.suffix}"
+        return self.name

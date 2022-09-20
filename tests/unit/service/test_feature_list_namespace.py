@@ -23,13 +23,13 @@ async def test_update_document(
     # add new feature with the same feature namespace ID
     feat_dict = feature.dict(by_alias=True)
     feat_dict["_id"] = ObjectId()
-    feat_dict["version"] = "V220917"
+    feat_dict["version"] = {"name": "V220917"}
     new_feat = await feature_service.create_document(data=FeatureCreate(**feat_dict))
 
     # add new feature list with the same feature list namespace ID
     flist_dict = feature_list.dict(by_alias=True)
     flist_dict["_id"] = ObjectId()
-    flist_dict["version"] = "V220917"
+    flist_dict["version"] = {"name": "V220917"}
     flist_dict["feature_ids"] = [new_feat.id]
     new_flist = await feature_list_service.create_document(data=FeatureListCreate(**flist_dict))
 
@@ -51,7 +51,7 @@ async def test_update_document(
     flist_dict = feature_list.dict(by_alias=True)
     flist_dict["_id"] = ObjectId()
     flist_dict["name"] = "random_feature_list_name"
-    flist_dict["version"] = "V220917"
+    flist_dict["version"] = {"name": "V220917"}
     flist_dict["feature_ids"] = [new_feat.id]
     flist_dict["feature_list_namespace_id"] = ObjectId()
     new_flist = await feature_list_service.create_document(data=FeatureListCreate(**flist_dict))

@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.common.model_util import get_version
 from featurebyte.exception import CredentialsError
 from tests.unit.routes.base import BaseApiTestSuite
 
@@ -32,15 +33,9 @@ class TestFeatureApi(BaseApiTestSuite):
             f'Get the existing object by `Feature.get_by_id(id="{payload["_id"]}")`.',
         ),
         (
-            {**payload, "_id": str(ObjectId())},
-            f'Feature (name: "sum_30m", version: "{payload["version"]}") already exists. '
-            f'Get the existing object by `Feature.get_by_id(id="{payload["_id"]}")`.',
-        ),
-        (
             {
                 **payload,
                 "_id": str(ObjectId()),
-                "version": f'{payload["version"]}_1',
                 "feature_namespace_id": object_id,
             },
             'FeatureNamespace (name: "sum_30m") already exists. '
@@ -74,7 +69,6 @@ class TestFeatureApi(BaseApiTestSuite):
             {
                 **payload,
                 "_id": object_id,
-                "version": f"{payload['version']}_1",
                 "entity_ids": ["631161373527e8d21e4197ac"],
             },
             (
@@ -131,6 +125,7 @@ class TestFeatureApi(BaseApiTestSuite):
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
         response_dict = create_success_response.json()
         assert response_dict["readiness"] == "DRAFT"
+        assert response_dict["version"] == {"name": get_version(), "suffix": None}
 
         # check feature namespace
         test_api_client, persistent = test_api_client_persistent
@@ -152,11 +147,11 @@ class TestFeatureApi(BaseApiTestSuite):
         # create a new feature version with the same namespace
         new_payload = self.payload.copy()
         new_payload["_id"] = str(ObjectId())
-        new_payload["version"] = f'{self.payload["version"]}_1'
         new_response = test_api_client.post("/feature", json=new_payload)
         new_response_dict = new_response.json()
         assert new_response.status_code == HTTPStatus.CREATED
         assert new_response_dict.items() >= new_payload.items()
+        assert new_response_dict["version"] == {"name": get_version(), "suffix": 1}
 
         # check feature namespace with the new feature version
         feat_namespace_docs, match_count = await persistent.find(
@@ -292,6 +287,7 @@ class TestFeatureApi(BaseApiTestSuite):
         response = test_api_client.get(
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
+        version = get_version()
         expected_info_response = {
             "name": "sum_30m",
             "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
@@ -300,7 +296,7 @@ class TestFeatureApi(BaseApiTestSuite):
             "default_version_mode": "AUTO",
             "version_count": 1,
             "readiness": {"this": "DRAFT", "default": "DRAFT"},
-            "version": {"this": "V220906", "default": "V220906"},
+            "version": {"this": version, "default": version},
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

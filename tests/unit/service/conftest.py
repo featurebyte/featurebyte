@@ -262,13 +262,12 @@ async def feature_list_namespace_fixture(feature_list_namespace_service, feature
     )
 
 
-async def insert_feature_into_persistent(user, persistent, version_suffix, readiness, name=None):
+async def insert_feature_into_persistent(user, persistent, readiness, name=None):
     """Insert a feature into persistent"""
     with open("tests/fixtures/request_payloads/feature_sum_30m.json", encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         payload = FeatureCreate(**payload, user_id=user.id).dict(by_alias=True)
         payload["_id"] = ObjectId()
-        payload["version"] = f'{payload["version"]}_{version_suffix}'
         payload["readiness"] = readiness
         if name:
             payload["name"] = name
@@ -302,7 +301,6 @@ async def setup_for_feature_readiness_fixture(
     new_feature_id = await insert_feature_into_persistent(
         user=user,
         persistent=persistent,
-        version_suffix="_1",
         readiness="DEPRECATED",
     )
     feat_namespace = await feature_namespace_service.update_document(
@@ -321,7 +319,7 @@ async def setup_for_feature_readiness_fixture(
             feature_ids=[new_feature_id],
             feature_list_namespace_id=feature_list.feature_list_namespace_id,
             name="sf_feature_list",
-            version="V220914",
+            version={"name": "V220914"},
         )
     )
     flist_namespace = await feature_list_namespace_service.get_document(

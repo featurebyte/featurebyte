@@ -258,6 +258,7 @@ async def test_replace_one(mongo_persistent, test_document, test_documents):
     assert audit_docs[0]["previous_values"] == {
         "name": "Generic Document",
         "value": [{"key1": "value1", "key2": "value2"}],
+        "version": {"name": "name_val", "suffix": None},
     }
 
 

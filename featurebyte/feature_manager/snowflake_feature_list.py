@@ -16,7 +16,8 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_update_feature_list_registry,
 )
 from featurebyte.logger import logger
-from featurebyte.models.feature_list import FeatureListModel, FeatureListVersionIdentifier
+from featurebyte.models.base import VersionIdentifier
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
@@ -87,7 +88,7 @@ class FeatureListManagerSnowflake(BaseModel):
             )
 
     def retrieve_feature_list_registries(
-        self, feature_list: FeatureListModel, version: Optional[FeatureListVersionIdentifier] = None
+        self, feature_list: FeatureListModel, version: Optional[VersionIdentifier] = None
     ) -> pd.DataFrame:
         """
         Retrieve FeatureList instances. If version parameter is not presented, return all the FeatureList versions.

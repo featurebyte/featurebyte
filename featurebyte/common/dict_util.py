@@ -1,0 +1,38 @@
+"""
+Dictionary related common utility function
+"""
+from __future__ import annotations
+
+from typing import Any, overload
+
+
+@overload
+def get_field_path_value(doc_dict: dict[str, Any], field_path: list[str]) -> dict[str, Any]:
+    ...
+
+
+@overload
+def get_field_path_value(doc_dict: dict[str, Any], field_path: str) -> Any:
+    ...
+
+
+def get_field_path_value(
+    doc_dict: dict[str, Any], field_path: list[str] | str
+) -> dict[str, Any] | Any:
+    """
+    Traverse dictionary using the given field_path
+
+    Parameters
+    ----------
+    doc_dict: dict[str, Any]
+        Document in dictionary format
+    field_path: str | list[str]
+        List of str or int used to traverse the document
+
+    Returns
+    -------
+    Any
+    """
+    if field_path:
+        return get_field_path_value(doc_dict[field_path[0]], field_path[1:])
+    return doc_dict

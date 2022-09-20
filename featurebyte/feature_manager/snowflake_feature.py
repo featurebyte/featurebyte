@@ -26,7 +26,8 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_update_feature_registry_default_false,
 )
 from featurebyte.logger import logger
-from featurebyte.models.feature import FeatureReadiness, FeatureVersionIdentifier
+from featurebyte.models.base import VersionIdentifier
+from featurebyte.models.feature import FeatureReadiness
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
@@ -139,7 +140,7 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"Done removing feature version {feature.name} with version {feature.version}")
 
     def retrieve_feature_registries(
-        self, feature: ExtendedFeatureModel, version: Optional[FeatureVersionIdentifier] = None
+        self, feature: ExtendedFeatureModel, version: Optional[VersionIdentifier] = None
     ) -> pd.DataFrame:
         """
         Retrieve Feature instances. If version parameter is not presented, return all the feature versions.

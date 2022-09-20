@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
+import copy
+
 import pytest
 from bson import ObjectId
 
@@ -28,6 +30,7 @@ def test_document_fixture() -> Dict[str, Any]:
                 "key2": "value2",
             }
         ],
+        "version": {"name": "name_val", "suffix": None},
     }
 
 
@@ -41,4 +44,11 @@ def test_documents_fixture(test_document) -> List[Dict[str, Any]]:
     List[Dict[str, Any]]
         Document for testing
     """
-    return [{**test_document, **{"_id": ObjectId(), "name": f"Object {i}"}} for i in range(3)]
+    output = []
+    for i in range(3):
+        doc = copy.deepcopy(test_document)
+        doc["_id"] = ObjectId()
+        doc["name"] = f"Object {i}"
+        doc["version"]["suffix"] = i
+        output.append(doc)
+    return output

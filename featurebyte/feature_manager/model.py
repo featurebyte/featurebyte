@@ -8,8 +8,8 @@ from typing import List, Optional
 from pydantic import Field, StrictStr
 
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.feature import FeatureModel, FeatureVersionIdentifier
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
+from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.interpreter import GraphInterpreter
@@ -68,7 +68,7 @@ class FeatureSignature(FeatureByteBaseModel):
 
     id: PydanticObjectId
     name: Optional[StrictStr]
-    version: FeatureVersionIdentifier
+    version: Optional[VersionIdentifier]
 
 
 class ExtendedFeatureListModel(FeatureListModel):

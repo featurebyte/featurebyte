@@ -117,7 +117,7 @@ def feature_model_dict_feature():
             "output_type": "series",
         },
         "readiness": "DRAFT",
-        "version": "V220710",
+        "version": None,
         "online_enabled": False,
         "event_data_ids": [ObjectId()],
         "entity_ids": [ObjectId()],

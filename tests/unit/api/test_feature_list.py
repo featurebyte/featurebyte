@@ -411,7 +411,7 @@ def test_deserialization(production_ready_feature, draft_feature, quarantine_fea
     feature_list = FeatureList([feature_group, quarantine_feature], name="my_feature_list")
     feature_list_dict = feature_list.dict(by_alias=True)
     expected_status = FeatureListStatus.PUBLISHED
-    expected_version = "V220701"
+    expected_version = {"name": "V220701", "suffix": None}
     feature_list_dict["status"] = expected_status
     feature_list_dict["version"] = expected_version
 

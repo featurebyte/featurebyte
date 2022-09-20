@@ -33,6 +33,7 @@ from git import GitCommandError
 from git.remote import Remote
 from git.repo.base import Repo
 
+from featurebyte.common.dict_util import get_field_path_value
 from featurebyte.logger import logger
 from featurebyte.models.persistent import Document, DocumentUpdate, QueryFilter
 from featurebyte.persistent.base import DuplicateDocumentError, Persistent
@@ -474,6 +475,7 @@ class GitDB(Persistent):
 
         # check unsupported filters
         self._check_filter(query_filter)
+        nested_field_query_filter, query_filter = self._split_nested_field(query_filter)
         filter_items = query_filter.items()
 
         # check if we are doing search by id in a set
@@ -495,6 +497,9 @@ class GitDB(Persistent):
                 match = doc["_id"] in id_search_set
             else:
                 match = filter_items <= doc.items()
+
+            if match and nested_field_query_filter:
+                match &= self._check_nested_field(nested_field_query_filter, doc)
 
             if match:
                 if not multiple:
@@ -627,6 +632,52 @@ class GitDB(Persistent):
         return num_deleted
 
     @staticmethod
+    def _split_nested_field(query_filter: QueryFilter) -> tuple[QueryFilter, QueryFilter]:
+        """
+        Split the nested fields from the query_filter
+
+        Parameters
+        ----------
+        query_filter: QueryFilter
+            Input query_filter
+
+        Returns
+        -------
+        nested_query_filter, non_nested_query_filter
+        """
+        nested_query_filter: QueryFilter = {}
+        non_nested_query_filter: QueryFilter = {}
+        for key, value in query_filter.items():
+            if "." in key:
+                nested_query_filter[key] = value
+            else:
+                non_nested_query_filter[key] = value
+        return nested_query_filter, non_nested_query_filter
+
+    @staticmethod
+    def _check_nested_field(nested_field_query_filter: QueryFilter, doc: Document) -> bool:
+        """
+        Check existence of the nested field in the doc
+
+        Parameters
+        ----------
+        nested_field_query_filter: QueryFilter
+            Nested field query filter
+        doc: Document
+            Document to be checked
+
+        Returns
+        -------
+        bool
+        """
+        for key, value in nested_field_query_filter.items():
+            field_path = key.split(".")
+            match = get_field_path_value(dict(doc), field_path) == value
+            if not match:
+                return match
+        return True
+
+    @staticmethod
     def _check_filter(query_filter: QueryFilter) -> None:
         """
         Validate filter is supported
@@ -646,6 +697,9 @@ class GitDB(Persistent):
             id_filter = query_filter.get("_id")
             if isinstance(id_filter, dict) and id_filter.get("$in"):
                 return
+
+        # remove first level key with period
+        query_filter = {key: val for key, val in query_filter.items() if "." not in key}
 
         # no period or $ in query keys
         items = [query_filter]
