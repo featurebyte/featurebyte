@@ -213,23 +213,20 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
         # Input request table can have duplicated time points but aggregation should be done only on
         # distinct time points
         quoted_serving_names = escape_column_names(serving_names)
-        select_distinct_columns = ", ".join(
-            [SpecialColumnName.POINT_IN_TIME.value] + quoted_serving_names
+        select_distinct_expr = (
+            expressions.Select(distinct=True)
+            .select(SpecialColumnName.POINT_IN_TIME.value, *quoted_serving_names)
+            .from_(REQUEST_TABLE_NAME)
         )
-        select_serving_names = ", ".join([f"REQ.{col}" for col in quoted_serving_names])
         num_tiles = window_size // frequency
-        sql = f"""
-    SELECT
-        REQ.{SpecialColumnName.POINT_IN_TIME},
-        {select_serving_names},
-        DATE_PART(epoch, REQ.{SpecialColumnName.POINT_IN_TIME}) AS __FB_TS,
-        FLOOR((__FB_TS - {time_modulo_frequency}) / {frequency}) AS {InternalName.LAST_TILE_INDEX.value},
-        {InternalName.LAST_TILE_INDEX} - {num_tiles} AS {InternalName.FIRST_TILE_INDEX}
-    FROM (
-        SELECT DISTINCT {select_distinct_columns} FROM {REQUEST_TABLE_NAME}
-    ) REQ
-"""
-        return sql
+        expr = select(
+            SpecialColumnName.POINT_IN_TIME.value,
+            *quoted_serving_names,
+            f"DATE_PART(epoch, {SpecialColumnName.POINT_IN_TIME}) AS __FB_TS",
+            f"FLOOR((__FB_TS - {time_modulo_frequency}) / {frequency}) AS {InternalName.LAST_TILE_INDEX}",
+            f"{InternalName.LAST_TILE_INDEX} - {num_tiles} AS {InternalName.FIRST_TILE_INDEX}",
+        ).from_(select_distinct_expr.subquery())
+        return expr.sql(pretty=True)
 
 
 class AggregationSpecSet:
@@ -406,13 +403,14 @@ class FeatureExecutionPlan(ABC):
             SQL expressions that aggregates intermediate values stored in tile table
         agg_result_names : list[str]
             Column names of the aggregated results
+        num_tiles : int
+            Feature window size in terms of number of tiles (function of frequency)
 
         Returns
         -------
         expressions.Select
         """
         # pylint: disable=too-many-locals
-        # join_conditions_lst = ["REQ.REQ_TILE_INDEX = TILE.INDEX"]
         last_index_name = InternalName.LAST_TILE_INDEX.value
         range_join_condition = expressions.or_(
             f"FLOOR(REQ.{last_index_name} / {num_tiles}) = FLOOR(TILE.INDEX / {num_tiles})",
@@ -424,7 +422,7 @@ class FeatureExecutionPlan(ABC):
         join_conditions = expressions.and_(*join_conditions_lst)
 
         first_index_name = InternalName.FIRST_TILE_INDEX.value
-        where_conditions = [
+        range_join_where_conditions = [
             f"TILE.INDEX >= REQ.{first_index_name}",
             f"TILE.INDEX < REQ.{last_index_name}",
         ]
@@ -459,7 +457,7 @@ class FeatureExecutionPlan(ABC):
                 join_type="inner",
                 on=join_conditions,
             )
-            .where(*where_conditions)
+            .where(*range_join_where_conditions)
             .group_by(*inner_group_by_keys)
         )
 

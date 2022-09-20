@@ -88,23 +88,17 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
     assert cte[0] == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
     expected_sql = """
     SELECT
-        REQ.POINT_IN_TIME,
-        REQ."CID",
-        T.value::INTEGER AS REQ_TILE_INDEX
+      POINT_IN_TIME,
+      "CID",
+      DATE_PART(epoch, POINT_IN_TIME) AS __FB_TS,
+      FLOOR((__FB_TS - 1800) / 3600) AS __LAST_TILE_INDEX,
+      __LAST_TILE_INDEX - 24 AS __FIRST_TILE_INDEX
     FROM (
-        SELECT DISTINCT POINT_IN_TIME, "CID" FROM REQUEST_TABLE
-    ) REQ,
-    Table(
-        Flatten(
-            SELECT F_COMPUTE_TILE_INDICES(
-                DATE_PART(epoch, REQ.POINT_IN_TIME),
-                86400,
-                3600,
-                120,
-                1800
-            )
-        )
-    ) T
+        SELECT DISTINCT
+          POINT_IN_TIME,
+          "CID"
+        FROM REQUEST_TABLE
+    )
     """
     assert_sql_equal(cte[1], expected_sql)
 
@@ -132,23 +126,17 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     assert name == '"REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"'
     expected_sql = """
     SELECT
-        REQ.POINT_IN_TIME,
-        REQ."CID",
-        T.value::INTEGER AS REQ_TILE_INDEX
+      POINT_IN_TIME,
+      "CID",
+      DATE_PART(epoch, POINT_IN_TIME) AS __FB_TS,
+      FLOOR((__FB_TS - 1800) / 3600) AS __LAST_TILE_INDEX,
+      __LAST_TILE_INDEX - 2 AS __FIRST_TILE_INDEX
     FROM (
-        SELECT DISTINCT POINT_IN_TIME, "CID" FROM REQUEST_TABLE
-    ) REQ,
-    Table(
-        Flatten(
-            SELECT F_COMPUTE_TILE_INDICES(
-                DATE_PART(epoch, REQ.POINT_IN_TIME),
-                7200,
-                3600,
-                120,
-                1800
-            )
-        )
-    ) T
+        SELECT DISTINCT
+          POINT_IN_TIME,
+          "CID"
+        FROM REQUEST_TABLE
+    )
     """
     assert_sql_equal(sql, expected_sql)
 
@@ -157,23 +145,17 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     assert name == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
     expected_sql = """
     SELECT
-        REQ.POINT_IN_TIME,
-        REQ."CID",
-        T.value::INTEGER AS REQ_TILE_INDEX
+      POINT_IN_TIME,
+      "CID",
+      DATE_PART(epoch, POINT_IN_TIME) AS __FB_TS,
+      FLOOR((__FB_TS - 1800) / 3600) AS __LAST_TILE_INDEX,
+      __LAST_TILE_INDEX - 24 AS __FIRST_TILE_INDEX
     FROM (
-        SELECT DISTINCT POINT_IN_TIME, "CID" FROM REQUEST_TABLE
-    ) REQ,
-    Table(
-        Flatten(
-            SELECT F_COMPUTE_TILE_INDICES(
-                DATE_PART(epoch, REQ.POINT_IN_TIME),
-                86400,
-                3600,
-                120,
-                1800
-            )
-        )
-    ) T
+        SELECT DISTINCT
+          POINT_IN_TIME,
+          "CID"
+        FROM REQUEST_TABLE
+    )
     """
     assert_sql_equal(sql, expected_sql)
 
