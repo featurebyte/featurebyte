@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 from sqlglot import expressions, select
 
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.feature_common import (
     REQUEST_TABLE_NAME,
     AggregationSpec,
@@ -217,25 +217,17 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
             [SpecialColumnName.POINT_IN_TIME.value] + quoted_serving_names
         )
         select_serving_names = ", ".join([f"REQ.{col}" for col in quoted_serving_names])
+        num_tiles = window_size // frequency
         sql = f"""
     SELECT
         REQ.{SpecialColumnName.POINT_IN_TIME},
         {select_serving_names},
-        T.value::INTEGER AS REQ_TILE_INDEX
+        DATE_PART(epoch, REQ.{SpecialColumnName.POINT_IN_TIME}) AS __FB_TS,
+        FLOOR((__FB_TS - {time_modulo_frequency}) / {frequency}) AS {InternalName.LAST_TILE_INDEX.value},
+        {InternalName.LAST_TILE_INDEX} - {num_tiles} AS {InternalName.FIRST_TILE_INDEX}
     FROM (
         SELECT DISTINCT {select_distinct_columns} FROM {REQUEST_TABLE_NAME}
-    ) REQ,
-    Table(
-        Flatten(
-            SELECT F_COMPUTE_TILE_INDICES(
-                DATE_PART(epoch, REQ.{SpecialColumnName.POINT_IN_TIME}),
-                {window_size},
-                {frequency},
-                {blind_spot},
-                {time_modulo_frequency}
-            )
-        )
-    ) T
+    ) REQ
 """
         return sql
 
@@ -364,6 +356,7 @@ class FeatureExecutionPlan(ABC):
         value_by: str | None,
         merge_exprs: list[str],
         agg_result_names: list[str],
+        num_tiles: int,
     ) -> expressions.Select:
         """Construct SQL code for one specific aggregation
 
@@ -419,10 +412,22 @@ class FeatureExecutionPlan(ABC):
         expressions.Select
         """
         # pylint: disable=too-many-locals
-        join_conditions_lst = ["REQ.REQ_TILE_INDEX = TILE.INDEX"]
+        # join_conditions_lst = ["REQ.REQ_TILE_INDEX = TILE.INDEX"]
+        last_index_name = InternalName.LAST_TILE_INDEX.value
+        range_join_condition = expressions.or_(
+            f"FLOOR(REQ.{last_index_name} / {num_tiles}) = FLOOR(TILE.INDEX / {num_tiles})",
+            f"FLOOR(REQ.{last_index_name} / {num_tiles}) - 1 = FLOOR(TILE.INDEX / {num_tiles})",
+        )
+        join_conditions_lst = [range_join_condition]
         for serving_name, key in zip(escape_column_names(serving_names), escape_column_names(keys)):
             join_conditions_lst.append(f"REQ.{serving_name} = TILE.{key}")
         join_conditions = expressions.and_(*join_conditions_lst)
+
+        first_index_name = InternalName.FIRST_TILE_INDEX.value
+        where_conditions = [
+            f"TILE.INDEX >= REQ.{first_index_name}",
+            f"TILE.INDEX < REQ.{last_index_name}",
+        ]
 
         group_by_keys = [f"REQ.{point_in_time_column}"]
         for serving_name in escape_column_names(serving_names):
@@ -454,6 +459,7 @@ class FeatureExecutionPlan(ABC):
                 join_type="inner",
                 on=join_conditions,
             )
+            .where(*where_conditions)
             .group_by(*inner_group_by_keys)
         )
 
@@ -596,6 +602,7 @@ class FeatureExecutionPlan(ABC):
                 value_by=agg_spec.value_by,
                 merge_exprs=merge_exprs,
                 agg_result_names=agg_result_names,
+                num_tiles=agg_spec.window // agg_spec.frequency,
             )
             table_expr, agg_result_name_aliases = self.construct_left_join_sql(
                 index=i,
