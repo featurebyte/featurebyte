@@ -15,6 +15,12 @@ from featurebyte.query_graph.sql import escape_column_name
 class OnDemandTileComputePlan:
     """Responsible for generating SQL to compute tiles for preview purpose
 
+    Feature preview uses the same SQL query as historical feature requests. As a result, we need to
+    build temporary tile tables that are required by the feature query. Actual tile tables are wide
+    and consist of tile values from different transforms (aggregation_id). Based on the current
+    implementation, for feature preview each groupby node has its own tile SQLs, so we need to
+    perform some manipulation to construct the wide tile tables.
+
     Parameters
     ----------
     point_in_time : str
@@ -23,9 +29,9 @@ class OnDemandTileComputePlan:
 
     def __init__(self, point_in_time: str):
         self.point_in_time = point_in_time
-        self.tile_sqls: dict[str, expressions.Expression] = {}
-        self.prev_aliases: dict[str, str] = {}
         self.processed_agg_ids: set[str] = set()
+        self.max_window_size_by_agg_id: dict[str, int] = {}
+        self.tile_infos: list[TileGenSql] = []
 
     def process_node(self, graph: QueryGraph, node: Node) -> None:
         """Update state given a query graph node
@@ -41,9 +47,30 @@ class OnDemandTileComputePlan:
 
         for tile_info in tile_gen_info_lst:
 
+            # The date range of each tile table depends on the feature window sizes.
+            self.update_max_window_size(tile_info)
+
             if tile_info.aggregation_id in self.processed_agg_ids:
+                # The same aggregation_id can appear more than once. For example, two groupby
+                # operations with the same parameters except windows will have the same
+                # aggregation_id.
                 continue
 
+            self.tile_infos.append(tile_info)
+            self.processed_agg_ids.add(tile_info.aggregation_id)
+
+    def construct_tile_sqls(self) -> dict[str, expressions.Expression]:
+        """Construct SQL expressions for all the required tile tables
+
+        Returns
+        -------
+        dict[str, expressions.Expression]
+        """
+
+        tile_sqls: dict[str, expressions.Expression] = {}
+        prev_aliases: dict[str, str] = {}
+
+        for tile_info in self.tile_infos:
             # Convert template SQL with concrete start and end timestamps, based on the requested
             # point-in-time and feature window sizes
             tile_sql_with_start_end = get_tile_sql_from_point_in_time(
@@ -52,7 +79,7 @@ class OnDemandTileComputePlan:
                 frequency=tile_info.frequency,
                 time_modulo_frequency=tile_info.time_modulo_frequency,
                 blind_spot=tile_info.blind_spot,
-                windows=tile_info.windows,
+                window=self.get_max_window_size(tile_info.aggregation_id),
             )
             # Include global tile index that would have been computed by F_TIMESTAMP_TO_INDEX UDF
             # during scheduled tile jobs
@@ -69,7 +96,7 @@ class OnDemandTileComputePlan:
             tile_sql_expr = parse_one(final_tile_sql)
             assert isinstance(tile_sql_expr, expressions.Subqueryable)
 
-            if tile_table_id not in self.tile_sqls:
+            if tile_table_id not in tile_sqls:
                 # New tile table - get the tile index column, entity columns and tile value columns
                 keys = [f"{agg_id}.{escape_column_name(key)}" for key in tile_info.entity_columns]
                 if tile_info.value_by_column is not None:
@@ -77,11 +104,11 @@ class OnDemandTileComputePlan:
                 tile_sql = select(f"{agg_id}.INDEX", *keys, *tile_info.tile_value_columns).from_(
                     tile_sql_expr.subquery(alias=agg_id)
                 )
-                self.tile_sqls[tile_table_id] = tile_sql
+                tile_sqls[tile_table_id] = tile_sql
             else:
                 # Tile table already exist - get the new tile value columns by doing a join. Tile
                 # index column and entity columns exist already.
-                prev_alias = self.prev_aliases[tile_table_id]
+                prev_alias = prev_aliases[tile_table_id]
                 join_conditions = [f"{prev_alias}.INDEX = {agg_id}.INDEX"]
                 for key in tile_info.entity_columns:
                     key = escape_column_name(key)
@@ -90,8 +117,8 @@ class OnDemandTileComputePlan:
                 # tile indices and entity columns (they are derived from the same event data using
                 # the same entity columns and feature job settings). Hence, any join_type will work
                 # and "inner" is used for simplicity.
-                self.tile_sqls[tile_table_id] = (
-                    self.tile_sqls[tile_table_id]
+                tile_sqls[tile_table_id] = (
+                    tile_sqls[tile_table_id]
                     .join(
                         tile_sql_expr.subquery(),
                         join_type="inner",
@@ -101,8 +128,40 @@ class OnDemandTileComputePlan:
                     .select(*tile_info.tile_value_columns)
                 )
 
-            self.prev_aliases[tile_table_id] = agg_id
-            self.processed_agg_ids.add(agg_id)
+            prev_aliases[tile_table_id] = agg_id
+
+        return tile_sqls
+
+    def update_max_window_size(self, tile_info) -> None:
+        """Update the maximum feature window size observed for each aggregation_id
+
+        Parameters
+        ----------
+        tile_info : TileGenSql
+            Tile table information
+        """
+        agg_id = tile_info.aggregation_id
+        max_window = max(int(pd.Timedelta(x).total_seconds()) for x in tile_info.windows)
+        assert max_window % tile_info.frequency == 0
+        if (
+            agg_id not in self.max_window_size_by_agg_id
+            or max_window > self.max_window_size_by_agg_id[agg_id]
+        ):
+            self.max_window_size_by_agg_id[agg_id] = max_window
+
+    def get_max_window_size(self, aggregation_id) -> int:
+        """Get the maximum feature window size for a given aggregation_id
+
+        Parameters
+        ----------
+        aggregation_id : str
+            Aggregation identifier
+
+        Returns
+        -------
+        int
+        """
+        return self.max_window_size_by_agg_id[aggregation_id]
 
     def construct_on_demand_tile_ctes(self) -> list[tuple[str, str]]:
         """Construct the CTE statements that would compute all the required tiles
@@ -112,7 +171,8 @@ class OnDemandTileComputePlan:
         list[tuple[str, str]]
         """
         cte_statements = []
-        for tile_table_id, tile_sql_expr in self.tile_sqls.items():
+        tile_sqls = self.construct_tile_sqls()
+        for tile_table_id, tile_sql_expr in tile_sqls.items():
             cte_statements.append((tile_table_id, tile_sql_expr.sql(pretty=True)))
         return cte_statements
 
@@ -214,7 +274,7 @@ def get_tile_sql_from_point_in_time(
     frequency: int,
     time_modulo_frequency: int,
     blind_spot: int,
-    windows: list[int],
+    window: int,
 ) -> str:
     """Fill in start date and end date placeholders for template tile SQL
 
@@ -230,16 +290,14 @@ def get_tile_sql_from_point_in_time(
         Time modulo frequency in feature job setting
     blind_spot : int
         Blind spot in feature job setting
-    windows : list[int]
-        List of window sizes
+    window : int
+        Window size
 
     Returns
     -------
     sql
     """
-    max_window = max(pd.Timedelta(x).total_seconds() for x in windows)
-    assert max_window % frequency == 0
-    num_tiles = int(max_window // frequency)
+    num_tiles = int(window // frequency)
     start_date, end_date = compute_start_end_date_from_point_in_time(
         point_in_time,
         frequency=frequency,
