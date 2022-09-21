@@ -22,7 +22,7 @@ SOURCE_TYPE_SESSION_MAP = {
 }
 
 
-@cached(cache=TTLCache(maxsize=1024, ttl=1800))
+@cached(cache=TTLCache(maxsize=1024, ttl=900))
 def get_session(item: str, credential_params: str) -> BaseSession:
     """
     Retrieve or create a new session for the given database source key
