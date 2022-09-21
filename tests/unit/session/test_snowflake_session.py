@@ -134,7 +134,6 @@ def test_snowflake_session__fetch_pandas_all(
 
 
 EXPECTED_FUNCTIONS = [
-    "F_COMPUTE_TILE_INDICES",
     "F_INDEX_TO_TIMESTAMP",
     "F_TIMESTAMP_TO_INDEX",
     "F_COUNT_DICT_ENTROPY",
@@ -250,11 +249,6 @@ def test_schema_initializer__sql_objects():
             "filename": "SP_TILE_TRIGGER_GENERATE_SCHEDULE.sql",
             "identifier": "SP_TILE_TRIGGER_GENERATE_SCHEDULE",
             "type": "procedure",
-        },
-        {
-            "filename": "F_COMPUTE_TILE_INDICES.sql",
-            "identifier": "F_COMPUTE_TILE_INDICES",
-            "type": "function",
         },
         {
             "filename": "F_INDEX_TO_TIMESTAMP.sql",
