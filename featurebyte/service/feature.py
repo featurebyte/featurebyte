@@ -20,8 +20,8 @@ from featurebyte.exception import (
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.models.base import VersionIdentifier
 from featurebyte.logger import logger
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import (
     DefaultVersionMode,
