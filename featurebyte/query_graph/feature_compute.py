@@ -42,8 +42,8 @@ class RequestTablePlan(ABC):
     """SQL generation for expanded request tables
 
     An expanded request table has the same number of rows as the original request table but with new
-    columns added: __LAST_TILE_INDEX and __FIRST_TILE_INDEX. This corresponds to the first and last
-    (exclusive) tile index when joining with the tile table.
+    columns added: __FB_LAST_TILE_INDEX and __FB_FIRST_TILE_INDEX. This corresponds to the first and
+    last (exclusive) tile index when joining with the tile table.
 
     Since the required tile indices depend on feature job setting and not the specific
     aggregation method or input, an expanded table can be pre-computed (in the SQL as a common
@@ -60,12 +60,12 @@ class RequestTablePlan(ABC):
     ----------------------
 
     Then an expanded request table would be similar to:
-    -------------------------------------------------------------
-    POINT_IN_TIME  CUST_ID  __FIRST_TILE_INDEX  __LAST_TILE_INDEX
-    -------------------------------------------------------------
-    2022-04-01     C1       1000                1010
-    2022-04-10     C2       1105                1115
-    -------------------------------------------------------------
+    -------------------------------------------------------------------
+    POINT_IN_TIME  CUST_ID  __FB_FIRST_TILE_INDEX  __FB_LAST_TILE_INDEX
+    -------------------------------------------------------------------
+    2022-04-01     C1       1000                   1010
+    2022-04-10     C2       1105                   1115
+    -------------------------------------------------------------------
     """
 
     def __init__(self) -> None:
