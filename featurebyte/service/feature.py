@@ -139,8 +139,10 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                 ) from exc
             except Exception as exc:
                 # for other exceptions, cleanup feature registry record & persistent record
-                feature_manager.remove_feature_registry(document)
-                raise exc
+                try:
+                    feature_manager.remove_feature_registry(document)
+                except Exception as remove_exc:
+                    raise remove_exc from exc
 
     async def _get_feature_version(self, name: str) -> VersionIdentifier:
         version_name = get_version()
