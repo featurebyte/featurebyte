@@ -131,9 +131,9 @@ class FeatureListManagerSnowflake(BaseModel):
             feature_list=new_feature_list, version=new_feature_list.version
         )
         if len(feature_list_versions) == 0:
-            version = new_feature_list.version.to_str() if new_feature_list.version else None
             raise ValueError(
-                f"feature_list {new_feature_list.name} with version {version} does not exist"
+                f"feature_list {new_feature_list.name} with version "
+                f"{new_feature_list.version.to_str()} does not exist"
             )
         logger.debug(f"feature_list_versions: {feature_list_versions}")
 

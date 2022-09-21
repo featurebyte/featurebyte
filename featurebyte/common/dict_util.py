@@ -20,7 +20,7 @@ def get_field_path_value(
     doc_dict: dict[str, Any], field_path: list[str] | str
 ) -> dict[str, Any] | Any:
     """
-    Traverse dictionary using the given field_path
+    Traverse dictionary to retrieve value using the given field_path parameter
 
     Parameters
     ----------

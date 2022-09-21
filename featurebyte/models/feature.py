@@ -128,7 +128,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Tabular source used to construct this feature
     readiness: FeatureReadiness
         Feature readiness
-    version: FeatureVersionIdentifier
+    version: VersionIdentifier
         Feature version
     online_enabled: bool
         Whether to make this feature version online enabled

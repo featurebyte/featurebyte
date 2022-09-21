@@ -22,7 +22,6 @@ class ExtendedFeatureModel(FeatureModel):
 
     is_default: Optional[bool] = Field(allow_mutation=False)
     feature_store: ExtendedFeatureStoreModel
-    version: VersionIdentifier
 
     @property
     def tile_specs(self) -> list[TileSpec]:
@@ -63,7 +62,7 @@ class FeatureSignature(FeatureByteBaseModel):
         Feature id of the object
     name: str
         Name of the feature
-    version: FeatureVersionIdentifier
+    version: VersionIdentifier
         Feature version
     """
 
@@ -79,4 +78,3 @@ class ExtendedFeatureListModel(FeatureListModel):
 
     feature_signatures: List[FeatureSignature] = Field(default_factory=list)
     status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
-    version: VersionIdentifier

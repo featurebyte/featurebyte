@@ -4,7 +4,7 @@ This module contains Feature list related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List
 
 import functools
 from collections import defaultdict
@@ -400,7 +400,7 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     readiness_distribution: FeatureReadinessDistribution = Field(
         allow_mutation=False, default_factory=list
     )
-    version: Optional[VersionIdentifier] = Field(allow_mutation=False, default=None)
+    version: VersionIdentifier = Field(allow_mutation=False)
     deployed: bool = Field(allow_mutation=False, default=False)
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
