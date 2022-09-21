@@ -12,6 +12,7 @@ from featurebyte.config import Configurations
 LOGGER_FORMAT = (
     "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
     "<level>{level: <8}</level> | "
+    "<level>{name}:{function}:{line}</level> | "
     "<level>{message}</level> | {extra}"
 )
 

@@ -77,17 +77,20 @@ class FeatureManagerSnowflake(BaseModel):
             update_sql = tm_update_feature_registry_default_false.render(feature=feature)
             self._session.execute_query(update_sql)
             logger.debug("Done updating is_default of other versions to false")
-
+            logger.debug(f"feature.tile_specs: {feature.tile_specs}")
             if feature.tile_specs:
+                logger.debug("Start processing tile_specs")
                 tile_specs_lst = [tile_spec.dict() for tile_spec in feature.tile_specs]
                 tile_specs_str = json.dumps(tile_specs_lst)
                 # This JSON encoded string will be embedded in Snowflake SQL, which has its own
                 # escape sequence, so we need to escape one more time
                 tile_specs_str = tile_specs_str.replace("\\", "\\\\")
                 tile_specs_str = tile_specs_str.replace("'", "''")
+                logger.debug("End processing tile_specs")
             else:
                 tile_specs_str = "[]"
 
+            logger.debug("Start inserting feature registry")
             event_ids = [str(e_id) for e_id in feature.event_data_ids]
             sql = tm_insert_feature_registry.render(
                 feature=feature,
@@ -96,6 +99,7 @@ class FeatureManagerSnowflake(BaseModel):
             )
             logger.debug(f"generated insert sql: {sql}")
             self._session.execute_query(sql)
+            logger.debug("Done inserting feature registry")
         else:
             raise DuplicatedRegistryError(
                 f"Feature version already exist for {feature.name} with version {feature.version.to_str()}"
