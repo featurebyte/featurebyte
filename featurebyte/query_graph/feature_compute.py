@@ -3,7 +3,7 @@ Module with logic related to feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional, Tuple, cast
 
 from abc import ABC, abstractmethod
 
@@ -41,9 +41,11 @@ AggregationSpecIdType = Tuple[TileIdType, Window, AggSpecEntityIDs]
 class RequestTablePlan(ABC):
     """SQL generation for expanded request tables
 
-    An expanded request table contains a tile index column (REQ_TILE_INDEX) representing the
-    required tiles for a windowed aggregation. It will be used as a join key when joining with the
-    tile table. Since the required tile indices depend on feature job setting and not the specific
+    An expanded request table has the same number of rows as the original request table but with new
+    columns added: __LAST_TILE_INDEX and __FIRST_TILE_INDEX. This corresponds to the first and last
+    (exclusive) tile index when joining with the tile table.
+
+    Since the required tile indices depend on feature job setting and not the specific
     aggregation method or input, an expanded table can be pre-computed (in the SQL as a common
     table) and shared with different features with the same feature job setting.
 
@@ -58,22 +60,12 @@ class RequestTablePlan(ABC):
     ----------------------
 
     Then an expanded request table would be similar to:
-    --------------------------------------
-    POINT_IN_TIME  CUST_ID  REQ_TILE_INDEX
-    --------------------------------------
-    2022-04-01     C1       2500000
-    2022-04-01     C1       2500001
-    2022-04-01     C1       2500002
-    2022-04-01     C1       2500003
-    2022-04-01     C1       2500004
-    2022-04-10     C2       2500010
-    2022-04-10     C2       2500011
-    2022-04-10     C2       2500012
-    2022-04-10     C2       2500013
-    2022-04-10     C2       2500014
-    --------------------------------------
-
-    The REQ_TILE_INDEX column will be used as a join key when joining with the tile table.
+    -------------------------------------------------------------
+    POINT_IN_TIME  CUST_ID  __FIRST_TILE_INDEX  __LAST_TILE_INDEX
+    -------------------------------------------------------------
+    2022-04-01     C1       1000                1010
+    2022-04-10     C2       1105                1115
+    -------------------------------------------------------------
     """
 
     def __init__(self) -> None:
@@ -226,7 +218,8 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
             f"FLOOR((__FB_TS - {time_modulo_frequency}) / {frequency}) AS {InternalName.LAST_TILE_INDEX}",
             f"{InternalName.LAST_TILE_INDEX} - {num_tiles} AS {InternalName.FIRST_TILE_INDEX}",
         ).from_(select_distinct_expr.subquery())
-        return expr.sql(pretty=True)
+        expr_str = cast(str, expr.sql(pretty=True))
+        return expr_str
 
 
 class AggregationSpecSet:
@@ -648,8 +641,7 @@ class FeatureExecutionPlan(ABC):
         table_expr = select(*request_table_column_names, *qualified_feature_names).from_(
             f"{self.AGGREGATION_TABLE_NAME} AS AGG"
         )
-        sql = table_expr.sql(pretty=True)
-        assert isinstance(sql, str)
+        sql = cast(str, table_expr.sql(pretty=True))
         return sql
 
     def construct_combined_sql(
