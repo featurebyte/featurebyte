@@ -11,8 +11,8 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.feature import FeatureModel, FeatureReadiness, FeatureVersionIdentifier
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
+from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.routes.common.schema import PaginationMixin
@@ -32,7 +32,6 @@ class FeatureCreate(FeatureByteBaseModel):
     graph: QueryGraph
     node: Node
     tabular_source: TabularSource
-    version: Optional[FeatureVersionIdentifier]
     event_data_ids: List[PydanticObjectId] = Field(min_items=1)
     entity_ids: List[PydanticObjectId] = Field(min_items=1)
     feature_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
@@ -78,8 +77,28 @@ class VersionComparison(FeatureByteBaseModel):
     Readiness comparison schema
     """
 
-    this: FeatureVersionIdentifier
-    default: FeatureVersionIdentifier
+    this: str
+    default: str
+
+    @classmethod
+    def from_version_identifier(
+        cls, this: VersionIdentifier, default: VersionIdentifier
+    ) -> VersionComparison:
+        """
+        Construct VersionComparison object using VersionIdentifier objects
+
+        Parameters
+        ----------
+        this: VersionIdentifier
+            Current object version ID
+        default: VersionIdentifier
+            Default object version ID
+
+        Returns
+        -------
+        VersionIdentifier
+        """
+        return cls(this=this.to_str(), default=default.to_str())
 
 
 class FeatureBriefInfo(FeatureByteBaseModel):
@@ -87,7 +106,7 @@ class FeatureBriefInfo(FeatureByteBaseModel):
     Feature brief info schema
     """
 
-    version: FeatureVersionIdentifier
+    version: VersionIdentifier
     readiness: FeatureReadiness
     created_at: datetime
 

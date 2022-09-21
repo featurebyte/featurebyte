@@ -85,7 +85,7 @@ def check_feature_and_remove_registry(feature, feature_manager):
     feat_reg_df = feature_manager.retrieve_feature_registries(extended_feature_model)
     assert len(feat_reg_df) == 1
     assert feat_reg_df.iloc[0]["NAME"] == feature.name
-    assert feat_reg_df.iloc[0]["VERSION"] == feature.version
+    assert feat_reg_df.iloc[0]["VERSION"] == feature.version.to_str()
     assert feat_reg_df.iloc[0]["READINESS"] == "DRAFT"
     feature_manager.remove_feature_registry(extended_feature_model)
 

@@ -9,6 +9,7 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import InternalName
 from featurebyte.exception import DuplicatedRegistryError
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature_list import FeatureListStatus
 
 
@@ -64,7 +65,8 @@ def test_insert_feature_list_registry_duplicate(
 
     assert (
         str(excinfo.value)
-        == f"FeatureList version already exist for {snowflake_feature_list.name} with version {snowflake_feature_list.version}"
+        == f"FeatureList version already exist for {snowflake_feature_list.name} with version "
+        f"{snowflake_feature_list.version.to_str()}"
     )
 
 
@@ -79,7 +81,8 @@ def test_retrieve_feature_list_registry(snowflake_feature_list, feature_list_man
     assert f_reg_df.iloc[0]["VERSION"] == "v1"
 
     f_reg_df = feature_list_manager.retrieve_feature_list_registries(
-        feature_list=snowflake_feature_list, version="v1"
+        feature_list=snowflake_feature_list,
+        version=VersionIdentifier(name="v1"),
     )
     assert len(f_reg_df) == 1
     assert f_reg_df.iloc[0]["NAME"] == "feature_list1"
@@ -92,7 +95,7 @@ def test_retrieve_feature_list_registry_multiple(snowflake_feature_list, feature
     """
     feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
 
-    snowflake_feature_list.__dict__["version"] = "v2"
+    snowflake_feature_list.__dict__["version"] = VersionIdentifier(name="v2")
     feature_list_manager.insert_feature_list_registry(snowflake_feature_list)
 
     f_reg_df = feature_list_manager.retrieve_feature_list_registries(snowflake_feature_list)

@@ -10,11 +10,10 @@ from datetime import datetime
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListStatus,
-    FeatureListVersionIdentifier,
     FeatureReadinessDistribution,
     FeatureTypeFeatureCount,
 )
@@ -32,7 +31,6 @@ class FeatureListCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: StrictStr
     feature_ids: List[PydanticObjectId] = Field(min_items=1)
-    version: Optional[FeatureListVersionIdentifier]
     feature_list_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
 
 
@@ -75,7 +73,7 @@ class FeatureListBriefInfo(FeatureByteBaseModel):
     FeatureList brief info schema
     """
 
-    version: FeatureListVersionIdentifier
+    version: VersionIdentifier
     readiness_distribution: FeatureReadinessDistribution
     created_at: datetime
     production_ready_fraction: Optional[float] = Field(default=None)

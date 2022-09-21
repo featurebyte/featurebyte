@@ -266,23 +266,6 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
 
 
 @pytest.mark.parametrize(
-    "doc, field_path, expected",
-    [
-        ({"a": [1]}, [], {"a": [1]}),
-        ({"a": [1]}, ["a"], [1]),
-        ({"a": [1]}, ["a", 0], 1),
-        ({"a": {"b": {"c": {"d": [123]}}}}, ["a", "b", "c", "d", 0], 123),
-        ({"a": [{"b": {"c": [{"d": [123]}]}}]}, ["a", 0, "b", "c", 0, "d", 0], 123),
-    ],
-)
-def test_field_path_value(doc, field_path, expected):
-    """Test field_path_value logic"""
-    assert (
-        BaseDocumentService._get_field_path_value(doc_dict=doc, field_path=field_path) == expected
-    )
-
-
-@pytest.mark.parametrize(
     "kwargs, expected",
     [
         ({}, {}),

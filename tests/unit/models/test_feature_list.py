@@ -21,7 +21,7 @@ def feature_list_model_dict_fixture():
         "name": "my_feature_list",
         "feature_ids": feature_ids,
         "readiness_distribution": [{"readiness": "DRAFT", "count": 2}],
-        "version": "V220710",
+        "version": {"name": "V220710", "suffix": None},
         "created_at": None,
         "updated_at": None,
         "user_id": None,
@@ -79,6 +79,13 @@ def test_feature_list_model(feature_list_model_dict):
     ]
     updated_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
     assert updated_feature_list.readiness_distribution.derive_production_ready_fraction() == 1.0
+
+    # DEV-556: check older record conversion
+    feature_list_model_dict["_id"] = updated_feature_list.id
+    feature_list_model_dict["version"] = "V220710"
+    loaded_old_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
+    assert loaded_old_feature_list.version == {"name": "V220710", "suffix": None}
+    assert loaded_old_feature_list == updated_feature_list
 
 
 def test_feature_list_namespace_model(feature_list_namespace_model_dict):

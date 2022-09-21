@@ -1,7 +1,6 @@
 """
 Tests for FeatureList route
 """
-import json
 from collections import defaultdict
 from http import HTTPStatus
 from unittest.mock import patch
@@ -9,7 +8,7 @@ from unittest.mock import patch
 import pytest
 from bson.objectid import ObjectId
 
-from featurebyte.feature_manager.model import ExtendedFeatureListModel
+from featurebyte.common.model_util import get_version
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -32,11 +31,6 @@ class TestFeatureListApi(BaseApiTestSuite):
             payload,
             f'FeatureList (id: "{payload["_id"]}") already exists. '
             'Get the existing object by `FeatureList.get(name="sf_feature_list")`.',
-        ),
-        (
-            {**payload, "_id": object_id},
-            'FeatureList (name: "sf_feature_list", version: "V220906") already exists. '
-            'Get the existing object by `FeatureList.get_by_id(id="6317467bb72b797bd08f7300")`.',
         ),
         (
             {**payload, "_id": object_id, "name": "other_name"},
@@ -91,7 +85,7 @@ class TestFeatureListApi(BaseApiTestSuite):
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
-        for i in range(3):
+        for _ in range(3):
             # make a new feature from feature_sum_30m & create a new feature_ids
             feature_payload = self.load_payload(
                 "tests/fixtures/request_payloads/feature_sum_30m.json"
@@ -102,7 +96,6 @@ class TestFeatureListApi(BaseApiTestSuite):
                 json={
                     **feature_payload,
                     "_id": new_feature_id,
-                    "version": f'{feature_payload["version"]}_{i}',
                 },
             )
             assert response.status_code == HTTPStatus.CREATED
@@ -124,7 +117,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         test_api_client, persistent = test_api_client_persistent
         # create a new feature
         feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
-        feature_payload["version"] = f'{feature_payload["version"]}_1'
+        feature_payload["version"] = {"name": get_version(), "suffix": 1}
         feature_id = await persistent.insert_one(
             collection_name="feature",
             document={
@@ -139,7 +132,6 @@ class TestFeatureListApi(BaseApiTestSuite):
         # prepare a new payload with existing feature list namespace
         new_payload = self.payload.copy()
         new_payload["_id"] = str(ObjectId())
-        new_payload["version"] = f'{new_payload["version"]}_1'
         new_payload["feature_ids"] = [str(feature_id)]
         new_payload["feature_list_namespace_id"] = result["feature_list_namespace_id"]
         expected_readiness_dist = [{"count": 1, "readiness": "PRODUCTION_READY"}]
@@ -235,7 +227,6 @@ class TestFeatureListApi(BaseApiTestSuite):
         feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_30m.json")
         new_feature_id = str(ObjectId())
         feature_payload["_id"] = new_feature_id
-        feature_payload["version"] = f"{feature_payload['version']}_1"
         response = test_api_client.post("/feature", json=feature_payload)
         assert response.status_code == HTTPStatus.CREATED, response.text
 
@@ -312,6 +303,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         response = test_api_client.get(
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
+        version = get_version()
         expected_info_response = {
             "name": "sf_feature_list",
             "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
@@ -320,7 +312,7 @@ class TestFeatureListApi(BaseApiTestSuite):
             "dtype_distribution": [{"count": 1, "dtype": "FLOAT"}],
             "version_count": 1,
             "feature_count": 1,
-            "version": {"this": "V220906", "default": "V220906"},
+            "version": {"this": version, "default": version},
             "production_ready_fraction": {"this": 0, "default": 0},
         }
         assert response.status_code == HTTPStatus.OK, response.text
@@ -337,22 +329,3 @@ class TestFeatureListApi(BaseApiTestSuite):
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
         assert "created_at" in verbose_response_dict
         assert verbose_response_dict["versions_info"] is not None
-
-
-@pytest.fixture(name="feature_list_model")
-def feature_list_model_fixture():
-    """FeatureList model fixture"""
-    with open("tests/fixtures/request_payloads/feature_sum_30m.json") as fhandle:
-        feature_dict = json.loads(fhandle.read())
-
-    with open("tests/fixtures/request_payloads/feature_list_single.json") as fhandle:
-        feature_list_dict = json.loads(fhandle.read())
-        feature_list_dict["feature_signatures"] = [
-            {
-                "id": feature_dict["_id"],
-                "name": feature_list_dict["name"],
-                "version": feature_list_dict["version"],
-            }
-        ]
-        feature_list = ExtendedFeatureListModel(**feature_list_dict)
-    return feature_list

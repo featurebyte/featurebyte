@@ -8,6 +8,7 @@ from typing import Any, Optional
 from bson.objectid import ObjectId
 from pydantic import ValidationError
 
+from featurebyte.common.model_util import get_version
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import SourceType
 from featurebyte.exception import (
@@ -19,6 +20,7 @@ from featurebyte.exception import (
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import (
     DefaultVersionMode,
@@ -140,11 +142,24 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                 feature_manager.remove_feature_registry(document)
                 raise exc
 
+    async def _get_feature_version(self, name: str) -> VersionIdentifier:
+        version_name = get_version()
+        _, count = await self.persistent.find(
+            collection_name=self.collection_name,
+            query_filter={"name": name, "version.name": version_name},
+        )
+        return VersionIdentifier(name=version_name, suffix=count or None)
+
     async def create_document(  # type: ignore[override]
         self, data: FeatureCreate, get_credential: Any = None
     ) -> FeatureModel:
         document = FeatureModel(
-            **{**data.json_dict(), "readiness": FeatureReadiness.DRAFT, "user_id": self.user.id}
+            **{
+                **data.json_dict(),
+                "readiness": FeatureReadiness.DRAFT,
+                "version": await self._get_feature_version(data.name),
+                "user_id": self.user.id,
+            }
         )
 
         async with self.persistent.start_transaction() as session:
@@ -263,7 +278,7 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
 
         return FeatureInfo(
             **namespace_info.dict(),
-            version={"this": feature.version, "default": default_feature.version},
+            version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
             readiness={"this": feature.readiness, "default": default_feature.readiness},
             versions_info=versions_info,
         )

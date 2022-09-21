@@ -12,11 +12,13 @@ import numpy as np
 import pandas as pd
 from bson.objectid import ObjectId
 
+from featurebyte.common.dict_util import get_field_path_value
 from featurebyte.exception import DocumentConflictError, DocumentNotFoundError
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
     UniqueConstraintResolutionSignature,
+    VersionIdentifier,
 )
 from featurebyte.models.persistent import AuditActionType, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
@@ -436,26 +438,6 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
             raise DocumentConflictError(exception_detail)
 
     @classmethod
-    def _get_field_path_value(cls, doc_dict: Any, field_path: Any) -> Any:
-        """
-        Traverse document dictionary using the given field_path
-
-        Parameters
-        ----------
-        doc_dict: Any
-            Document in dictionary format
-        field_path: Any
-            List of str or int used to traverse the document
-
-        Returns
-        -------
-        Any
-        """
-        if field_path:
-            return cls._get_field_path_value(doc_dict[field_path[0]], field_path[1:])
-        return doc_dict
-
-    @classmethod
     def _get_unique_constraints(
         cls, document: FeatureByteBaseDocumentModel
     ) -> Iterator[
@@ -478,9 +460,13 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         for constraint in cls.document_class.Settings.unique_constraints:
             query_filter = {field: doc_dict[field] for field in constraint.fields}
             conflict_signature = {
-                name: cls._get_field_path_value(doc_dict, fields)
+                name: get_field_path_value(doc_dict, fields)
                 for name, fields in constraint.conflict_fields_signature.items()
             }
+            if conflict_signature.get("version"):
+                conflict_signature["version"] = VersionIdentifier(
+                    **conflict_signature["version"]
+                ).to_str()
             yield query_filter, conflict_signature, constraint.resolution_signature
 
     async def _check_document_unique_constraints(

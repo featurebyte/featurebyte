@@ -4,14 +4,14 @@ This module contains Feature related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from enum import Enum
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
-from featurebyte.common.model_util import get_version
+from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.enum import DBVarType, OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -19,11 +19,10 @@ from featurebyte.models.base import (
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
+    VersionIdentifier,
 )
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import Node, QueryGraph
-
-FeatureVersionIdentifier = StrictStr
 
 
 class FeatureReadiness(OrderedStrEnum):
@@ -129,7 +128,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Tabular source used to construct this feature
     readiness: FeatureReadiness
         Feature readiness
-    version: FeatureVersionIdentifier
+    version: VersionIdentifier
         Feature version
     online_enabled: bool
         Whether to make this feature version online enabled
@@ -155,7 +154,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     node: Node = Field(allow_mutation=False)
     tabular_source: TabularSource = Field(allow_mutation=False)
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
-    version: FeatureVersionIdentifier = Field(default_factory=get_version, allow_mutation=False)
+    version: VersionIdentifier = Field(allow_mutation=False, default=None)
     online_enabled: bool = Field(allow_mutation=False, default=False)
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
@@ -177,6 +176,14 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         # DEV-556: converted older record `None` value to `False`
         if value is None:
             return False
+        return value
+
+    @validator("version", pre=True)
+    @classmethod
+    def _validate_version(cls, value: Any) -> Any:
+        # DEV-556: converted older record string value to dictionary format
+        if isinstance(value, str):
+            return convert_version_string_to_dict(value)
         return value
 
     class Settings:
@@ -207,10 +214,10 @@ class FeatureSignature(FeatureByteBaseModel):
         Feature id of the object
     name: str
         Name of the feature
-    version: FeatureVersionIdentifier
+    version: VersionIdentifier
         Feature version
     """
 
     id: PydanticObjectId
     name: Optional[StrictStr]
-    version: FeatureVersionIdentifier
+    version: VersionIdentifier

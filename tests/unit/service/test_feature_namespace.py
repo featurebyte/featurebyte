@@ -18,7 +18,7 @@ async def test_update_document(feature_namespace_service, feature_service, featu
     # add new feature with the same feature namespace ID
     feat_dict = feature.dict(by_alias=True)
     feat_dict["_id"] = ObjectId()
-    feat_dict["version"] = "V220917"
+    feat_dict["version"] = {"name": "V220917"}
     new_feat = await feature_service.create_document(data=FeatureCreate(**feat_dict))
 
     # check updated namespace

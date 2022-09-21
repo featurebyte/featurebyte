@@ -20,7 +20,7 @@ from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.logger import logger
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
@@ -212,6 +212,8 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     name : str
         Name of the FeatureList
     """
+
+    version: VersionIdentifier = Field(allow_mutation=False, default=None)
 
     # class variables
     _route = "/feature_list"

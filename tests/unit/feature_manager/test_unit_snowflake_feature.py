@@ -7,6 +7,7 @@ from unittest import mock
 import pandas as pd
 import pytest
 
+from featurebyte.common.model_util import get_version
 from featurebyte.exception import InvalidFeatureRegistryOperationError, MissingFeatureRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
@@ -27,7 +28,9 @@ def mock_snowflake_feature_fixture(mock_snowflake_feature):
     ExtendedFeatureModel object fixture
     """
     return ExtendedFeatureModel(
-        **mock_snowflake_feature.dict(), feature_store=mock_snowflake_feature.feature_store
+        **mock_snowflake_feature.dict(exclude={"version": True}),
+        feature_store=mock_snowflake_feature.feature_store,
+        version=get_version(),
     )
 
 
@@ -98,9 +101,9 @@ def test_remove_feature_registry_no_feature(
     with pytest.raises(MissingFeatureRegistryError) as excinfo:
         feature_manager.remove_feature_registry(mock_snowflake_feature)
 
-    assert (
-        str(excinfo.value)
-        == f"Feature version does not exist for {mock_snowflake_feature.name} with version {mock_snowflake_feature.version}"
+    assert str(excinfo.value) == (
+        f"Feature version does not exist for {mock_snowflake_feature.name} with version "
+        f"{mock_snowflake_feature.version.to_str()}"
     )
 
 
@@ -123,9 +126,8 @@ def test_remove_feature_registry_feature_version_not_draft(
     with pytest.raises(InvalidFeatureRegistryOperationError) as excinfo:
         feature_manager.remove_feature_registry(mock_snowflake_feature)
 
-    assert (
-        str(excinfo.value)
-        == f"Feature version {mock_snowflake_feature.name} with version {mock_snowflake_feature.version} "
+    assert str(excinfo.value) == (
+        f"Feature version {mock_snowflake_feature.name} with version {mock_snowflake_feature.version.to_str()} "
         f"cannot be deleted with readiness PRODUCTION_READY"
     )
 

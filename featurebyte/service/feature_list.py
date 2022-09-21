@@ -3,12 +3,14 @@ FeatureListService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from bson.objectid import ObjectId
 
+from featurebyte.common.model_util import get_version
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
-from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureSignature
+from featurebyte.models.base import VersionIdentifier
+from featurebyte.models.feature import DefaultVersionMode, FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import (
@@ -75,19 +77,13 @@ class FeatureListService(
 
     async def _extract_feature_data(self, document: FeatureListModel) -> Dict[str, Any]:
         feature_store_id: Optional[ObjectId] = None
-        feature_signatures: List[FeatureSignature] = []
         feature_namespace_ids = set()
         features = []
         feature_service = FeatureService(user=self.user, persistent=self.persistent)
         for feature_id in document.feature_ids:
             # retrieve feature from the persistent
             feature = await feature_service.get_document(document_id=feature_id)
-
-            # compute data required to create feature list record
             features.append(feature)
-            feature_signatures.append(
-                FeatureSignature(id=feature.id, name=feature.name, version=feature.version)
-            )
 
             # validate the feature list
             if feature_store_id and (feature_store_id != feature.tabular_source.feature_store_id):
@@ -108,11 +104,7 @@ class FeatureListService(
             # store previous feature store id
             feature_store_id = feature.tabular_source.feature_store_id
 
-        derived_output = {
-            "feature_store_id": feature_store_id,
-            "feature_signatures": feature_signatures,
-            "features": features,
-        }
+        derived_output = {"feature_store_id": feature_store_id, "features": features}
         return derived_output
 
     async def _update_features(
@@ -131,6 +123,14 @@ class FeatureListService(
                 return_document=False,
             )
 
+    async def _get_feature_list_version(self, name: str) -> VersionIdentifier:
+        version_name = get_version()
+        _, count = await self.persistent.find(
+            collection_name=self.collection_name,
+            query_filter={"name": name, "version.name": version_name},
+        )
+        return VersionIdentifier(name=version_name, suffix=count or None)
+
     async def create_document(  # type: ignore[override]
         self, data: FeatureListCreate, get_credential: Any = None
     ) -> FeatureListModel:
@@ -139,6 +139,7 @@ class FeatureListService(
             **{
                 **data.json_dict(),
                 "feature_ids": sorted(data.feature_ids),
+                "version": await self._get_feature_list_version(data.name),
                 "user_id": self.user.id,
             }
         )
@@ -252,7 +253,12 @@ class FeatureListService(
 
         return FeatureListInfo(
             **namespace_info.dict(),
-            version={"this": feature_list.version, "default": default_feature_list.version},
+            version={
+                "this": feature_list.version.to_str() if feature_list.version else None,
+                "default": default_feature_list.version.to_str()
+                if default_feature_list.version
+                else None,
+            },
             production_ready_fraction={
                 "this": feature_list.readiness_distribution.derive_production_ready_fraction(),
                 "default": default_feature_list.readiness_distribution.derive_production_ready_fraction(),

@@ -242,22 +242,24 @@ def test_aggregation(
     # Test cases listed here. This is written this way instead of parametrized test is so that all
     # features can be retrieved in one historical request
     feature_parameters = [
-        ("AMOUNT", "avg", "avg_24h", lambda x: x.mean(), None),
-        ("AMOUNT", "min", "min_24h", lambda x: x.min(), None),
-        ("AMOUNT", "max", "max_24h", lambda x: x.max(), None),
-        ("AMOUNT", "sum", "sum_24h", sum_func, None),
-        (None, "count", "count_24h", lambda x: len(x), None),
-        ("AMOUNT", "na_count", "na_count_24h", lambda x: x.isnull().sum(), None),
-        (None, "count", "count_by_action_24h", lambda x: len(x), "PRODUCT_ACTION"),
-        ("PREV_AMOUNT_BY_CUST_ID", "avg", "prev_amount_avg_24h", lambda x: x.mean(), None),
+        ("AMOUNT", "avg", "2h", "avg_2h", lambda x: x.mean(), None),
+        ("AMOUNT", "avg", "24h", "avg_24h", lambda x: x.mean(), None),
+        ("AMOUNT", "min", "24h", "min_24h", lambda x: x.min(), None),
+        ("AMOUNT", "max", "24h", "max_24h", lambda x: x.max(), None),
+        ("AMOUNT", "sum", "24h", "sum_24h", sum_func, None),
+        (None, "count", "24h", "count_24h", lambda x: len(x), None),
+        ("AMOUNT", "na_count", "24h", "na_count_24h", lambda x: x.isnull().sum(), None),
+        (None, "count", "24h", "count_by_action_24h", lambda x: len(x), "PRODUCT_ACTION"),
+        ("PREV_AMOUNT_BY_CUST_ID", "avg", "24h", "prev_amount_avg_24h", lambda x: x.mean(), None),
         (
             "TIME_SINCE_PREVIOUS_EVENT_BY_CUST_ID",
             "avg",
+            "24h",
             "event_interval_avg_24h",
             lambda x: x.mean(),
             None,
         ),
-        ("AMOUNT", "std", "std_24h", lambda x: x.std(ddof=0), None),
+        ("AMOUNT", "std", "24h", "std_24h", lambda x: x.std(ddof=0), None),
     ]
 
     event_view = EventView.from_event_data(event_data)
@@ -270,7 +272,6 @@ def test_aggregation(
 
     # Some fixed parameters
     entity_column_name = "USER ID"
-    window_size = 3600 * 24
     event_timestamp_column_name = "EVENT_TIMESTAMP"
 
     # Apply a filter condition
@@ -295,6 +296,7 @@ def test_aggregation(
     for (
         variable_column_name,
         agg_name,
+        window,
         feature_name,
         agg_func_callable,
         category,
@@ -303,12 +305,13 @@ def test_aggregation(
         feature_group = event_view.groupby(entity_column_name, category=category).aggregate(
             variable_column_name,
             agg_name,
-            windows=["24h"],
+            windows=[window],
             feature_names=[feature_name],
         )
         features.append(feature_group[feature_name])
 
         tic = time.time()
+        window_size = pd.Timedelta(window).total_seconds()
         df_expected = get_expected_feature_values(
             training_events,
             feature_name,
