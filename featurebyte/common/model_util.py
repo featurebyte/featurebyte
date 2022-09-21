@@ -3,7 +3,7 @@ This module contains the implementation of feature job setting validation
 """
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Any, Tuple
 
 from datetime import datetime
 
@@ -86,3 +86,24 @@ def get_version() -> str:
     """
     creation_date = datetime.today().strftime("%y%m%d")
     return f"V{creation_date}"
+
+
+def convert_version_string_to_dict(version: str) -> dict[str, Any]:
+    """
+    Convert version string to dictionary format
+
+    Parameters
+    ----------
+    version: str
+        Version string value
+
+    Returns
+    -------
+    dict[str, Any]
+    """
+    name = version
+    suffix = None
+    if "_" in version:
+        name, suffix_str = version.rsplit("_", 1)
+        suffix = int(suffix_str) if suffix_str else None
+    return {"name": name, "suffix": suffix}

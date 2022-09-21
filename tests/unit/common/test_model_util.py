@@ -2,7 +2,10 @@
 """
 import pytest
 
-from featurebyte.common.model_util import validate_job_setting_parameters
+from featurebyte.common.model_util import (
+    convert_version_string_to_dict,
+    validate_job_setting_parameters,
+)
 
 
 def test_time_modulo_frequency_larger_than_frequency():
@@ -29,3 +32,15 @@ def test_frequency_should_at_least_one_minute():
         validate_job_setting_parameters(frequency="5s", time_modulo_frequency="1s", blind_spot="2s")
     expected = "Duration specified is too small: 5s"
     assert expected in str(exc_info)
+
+
+@pytest.mark.parametrize(
+    "input_value, expected",
+    [
+        ("V220920", {"name": "V220920", "suffix": None}),
+        ("V220920_1", {"name": "V220920", "suffix": 1}),
+    ],
+)
+def test_convert_version_string_to_dict(input_value, expected):
+    """Test convert version string to dictionary"""
+    assert convert_version_string_to_dict(input_value) == expected

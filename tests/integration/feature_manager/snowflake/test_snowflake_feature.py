@@ -14,6 +14,7 @@ from featurebyte.exception import (
     InvalidFeatureRegistryOperationError,
     MissingFeatureRegistryError,
 )
+from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 
 
@@ -69,9 +70,9 @@ def test_insert_feature_registry_duplicate(snowflake_session, snowflake_feature,
     with pytest.raises(DuplicatedRegistryError) as excinfo:
         feature_manager.insert_feature_registry(snowflake_feature)
 
-    assert (
-        str(excinfo.value)
-        == f"Feature version already exist for {snowflake_feature.name} with version {snowflake_feature.version}"
+    assert str(excinfo.value) == (
+        f"Feature version already exist for {snowflake_feature.name} with version "
+        f"{snowflake_feature.version.to_str()}"
     )
 
 
@@ -98,9 +99,9 @@ def test_remove_feature_registry_no_feature(snowflake_feature, feature_manager):
     with pytest.raises(MissingFeatureRegistryError) as excinfo:
         feature_manager.remove_feature_registry(snowflake_feature)
 
-    assert (
-        str(excinfo.value)
-        == f"Feature version does not exist for {snowflake_feature.name} with version {snowflake_feature.version}"
+    assert str(excinfo.value) == (
+        f"Feature version does not exist for {snowflake_feature.name} with version "
+        f"{snowflake_feature.version.to_str()}"
     )
 
 
@@ -115,8 +116,8 @@ def test_remove_feature_registry_feature_version_not_draft(snowflake_feature, fe
         feature_manager.remove_feature_registry(snowflake_feature)
 
     assert str(excinfo.value) == (
-        f"Feature version {snowflake_feature.name} with version {snowflake_feature.version} cannot be deleted with "
-        f"readiness PRODUCTION_READY"
+        f"Feature version {snowflake_feature.name} with version {snowflake_feature.version.to_str()} "
+        f"cannot be deleted with readiness PRODUCTION_READY"
     )
 
 
@@ -157,7 +158,9 @@ def test_retrieve_features(snowflake_feature, feature_manager):
     assert f_reg_df.iloc[0]["VERSION"] == "v1"
     assert f_reg_df.iloc[0]["READINESS"] == "DRAFT"
 
-    f_reg_df = feature_manager.retrieve_feature_registries(feature=snowflake_feature, version="v1")
+    f_reg_df = feature_manager.retrieve_feature_registries(
+        feature=snowflake_feature, version=VersionIdentifier(name="v1")
+    )
     assert len(f_reg_df) == 1
     assert f_reg_df.iloc[0]["NAME"] == "sum_30m"
     assert f_reg_df.iloc[0]["VERSION"] == "v1"
@@ -170,7 +173,7 @@ def test_retrieve_features_multiple(snowflake_feature, feature_manager):
     """
     feature_manager.insert_feature_registry(snowflake_feature)
 
-    snowflake_feature.__dict__["version"] = "v2"
+    snowflake_feature.__dict__["version"] = VersionIdentifier(name="v2")
     snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
     feature_manager.insert_feature_registry(snowflake_feature)
 
@@ -194,7 +197,7 @@ def test_online_enable_no_feature(snowflake_feature, feature_manager):
 
     assert (
         str(excinfo.value)
-        == f"feature {snowflake_feature.name} with version {snowflake_feature.version} does not exist"
+        == f"feature {snowflake_feature.name} with version {snowflake_feature.version.to_str()} does not exist"
     )
 
 
@@ -220,9 +223,9 @@ def test_online_enable_already_online_enabled(snowflake_feature, feature_manager
     with pytest.raises(InvalidFeatureRegistryOperationError) as excinfo:
         feature_manager.online_enable(snowflake_feature)
 
-    assert (
-        str(excinfo.value)
-        == f"feature {snowflake_feature.name} with version {snowflake_feature.version} is already online enabled"
+    assert str(excinfo.value) == (
+        f"feature {snowflake_feature.name} with version {snowflake_feature.version.to_str()} "
+        f"is already online enabled"
     )
 
 

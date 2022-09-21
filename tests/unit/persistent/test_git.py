@@ -242,6 +242,39 @@ async def test_find_many(git_persistent, test_documents):
         assert results[0]["previous_values"] == {}
 
 
+@pytest.mark.asyncio
+async def test_find_many_with_nested_field_filtering(git_persistent, test_documents):
+    """
+    Test finding many documents (with nested field filtering)
+    """
+    persistent, _ = git_persistent
+    await persistent.insert_many(collection_name="data", documents=test_documents, user_id=None)
+    docs, total = await persistent.find(collection_name="data", query_filter={})
+    assert list(docs) == test_documents
+    assert total == 3
+
+    results, _ = await persistent.find(
+        collection_name="data",
+        query_filter={"version.name": "name_val"},
+    )
+    assert len(results) == 3
+    assert results == test_documents
+
+    results, _ = await persistent.find(
+        collection_name="data",
+        query_filter={"version.suffix": 2},
+    )
+    assert len(results) == 1
+    result = results[0]
+    assert result == {
+        "_id": result["_id"],
+        "name": "Object 2",
+        "value": [{"key1": "value1", "key2": "value2"}],
+        "version": {"name": "name_val", "suffix": 2},
+        "created_at": result["created_at"],
+    }
+
+
 @pytest.mark.parametrize(
     "query_filter,valid",
     [
@@ -251,7 +284,6 @@ async def test_find_many(git_persistent, test_documents):
         ({"key": "Object 1", "key with $": None}, False),
         ({"key": {"key": "Object 1", "key with $": None}}, False),
         ({"key": {"key": {"key": "Object 1", "key with $": None}}}, False),
-        ({"key": "Object 1", "key.with.period": None}, False),
         ({"key": {"key": "Object 1", "key.with.period": None}}, False),
         ({"key": {"key": {"key": "Object 1", "key.with.period": None}}}, False),
     ],
@@ -340,6 +372,7 @@ async def test_update_one(git_persistent, test_documents):
             "current_values": {
                 "name": "Object 0",
                 "value": [{"key1": "value1", "key2": "value2"}],
+                "version": {"name": "name_val", "suffix": 0},
                 "created_at": datetime(2022, 8, 1),
             },
             "user_id": None,
@@ -420,6 +453,7 @@ async def test_update_many(git_persistent, test_documents):
                 "current_values": {
                     "name": f"Object {i}",
                     "value": [{"key1": "value1", "key2": "value2"}],
+                    "version": {"name": "name_val", "suffix": i},
                     "created_at": datetime(2022, 8, 1),
                 },
                 "user_id": None,
@@ -507,6 +541,7 @@ async def test_replace_one(git_persistent, test_documents):
             "current_values": {
                 "name": "Object 0",
                 "value": [{"key1": "value1", "key2": "value2"}],
+                "version": {"name": "name_val", "suffix": 0},
                 "created_at": datetime(2022, 8, 1),
             },
             "user_id": None,
@@ -627,6 +662,7 @@ async def test_delete_one(git_persistent, test_documents):
             "current_values": {
                 "name": "Object 0",
                 "value": [{"key1": "value1", "key2": "value2"}],
+                "version": {"name": "name_val", "suffix": 0},
                 "created_at": datetime(2022, 8, 1),
             },
             "user_id": None,

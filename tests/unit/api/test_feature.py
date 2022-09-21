@@ -424,7 +424,6 @@ def test_feature__default_version_info_retrieval(saved_feature):
 
     new_feature = feature.copy()
     new_feature.__dict__["_id"] = ObjectId()
-    new_feature.__dict__["version"] = f"{new_feature.version}_1"
     new_feature.__dict__["saved"] = False
     new_feature.save()
     assert new_feature.is_default is True

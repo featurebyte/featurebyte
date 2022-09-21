@@ -4,15 +4,16 @@ This module contains Feature list related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List
 
 import functools
 from collections import defaultdict
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, root_validator, validator
+from pydantic import Field, root_validator, validator
 from typeguard import typechecked
 
+from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.enum import DBVarType, OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -20,10 +21,9 @@ from featurebyte.models.base import (
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
+    VersionIdentifier,
 )
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel, FeatureReadiness
-
-FeatureListVersionIdentifier = StrictStr
 
 
 class FeatureListStatus(OrderedStrEnum):
@@ -383,7 +383,7 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
         List of online enabled feature version id
     readiness_distribution: List[Dict[str, Any]]
         Feature readiness distribution of this feature list
-    version: FeatureListVersionIdentifier
+    version: VersionIdentifier
         Feature list version
     deployed: bool
         Whether to deploy this feature list version
@@ -400,7 +400,7 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
     readiness_distribution: FeatureReadinessDistribution = Field(
         allow_mutation=False, default_factory=list
     )
-    version: Optional[FeatureListVersionIdentifier] = Field(allow_mutation=False)
+    version: VersionIdentifier = Field(allow_mutation=False)
     deployed: bool = Field(allow_mutation=False, default=False)
     feature_list_namespace_id: PydanticObjectId = Field(
         allow_mutation=False, default_factory=ObjectId
@@ -453,6 +453,14 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
             raise ValueError(
                 "readiness_distribution total count is different from total feature ids."
             )
+        return value
+
+    @validator("version", pre=True)
+    @classmethod
+    def _validate_version(cls, value: Any) -> Any:
+        # DEV-556: converted older record string value to dictionary format
+        if isinstance(value, str):
+            return convert_version_string_to_dict(value)
         return value
 
     class Settings:
