@@ -3,22 +3,10 @@ Dictionary related common utility function
 """
 from __future__ import annotations
 
-from typing import Any, overload
+from typing import Any
 
 
-@overload
-def get_field_path_value(doc_dict: dict[str, Any], field_path: list[str]) -> dict[str, Any]:
-    ...
-
-
-@overload
-def get_field_path_value(doc_dict: dict[str, Any], field_path: str) -> Any:
-    ...
-
-
-def get_field_path_value(
-    doc_dict: dict[str, Any], field_path: list[str] | str
-) -> dict[str, Any] | Any:
+def get_field_path_value(doc_dict: dict[str, Any], field_path: list[str]) -> dict[str, Any] | Any:
     """
     Traverse dictionary to retrieve value using the given field_path parameter
 
@@ -26,7 +14,7 @@ def get_field_path_value(
     ----------
     doc_dict: dict[str, Any]
         Document in dictionary format
-    field_path: str | list[str]
+    field_path: list[str]
         List of str or int used to traverse the document
 
     Returns
