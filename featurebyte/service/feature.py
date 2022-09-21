@@ -137,11 +137,11 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                     f'Feature (name: "{document.name}") has been registered by '
                     f"other feature at Snowflake feature store."
                 ) from exc
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-except
                 # for other exceptions, cleanup feature registry record & persistent record
                 try:
                     feature_manager.remove_feature_registry(document)
-                except Exception as remove_exc:
+                except Exception as remove_exc:  # pylint: disable=broad-except
                     raise remove_exc from exc
 
     async def _get_feature_version(self, name: str) -> VersionIdentifier:
