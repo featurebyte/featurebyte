@@ -3,7 +3,7 @@ Common utilities related to typing
 """
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import pandas as pd
 from pandas.api.types import is_scalar
@@ -33,4 +33,4 @@ def is_scalar_nan(value: Any) -> bool:
     """
     if not is_scalar(value):
         return False
-    return pd.isna(value)
+    return cast(bool, pd.isna(value))
