@@ -64,9 +64,13 @@ from featurebyte.query_graph.tiling import AggFunc, TileSpec, get_aggregator
                 TileSpec(tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"),
             ],
             (
-                "SQRT((SUM(sum_value_squared_1234beef) / SUM(count_value_1234beef))"
-                " - ((SUM(sum_value_1234beef) / SUM(count_value_1234beef))"
-                " * (SUM(sum_value_1234beef) / SUM(count_value_1234beef))))"
+                "SQRT(CASE WHEN ({variance}) < 0 THEN 0 ELSE ({variance}) END)".format(
+                    variance=(
+                        "(SUM(sum_value_squared_1234beef) / SUM(count_value_1234beef)) - "
+                        "((SUM(sum_value_1234beef) / SUM(count_value_1234beef)) * "
+                        "(SUM(sum_value_1234beef) / SUM(count_value_1234beef)))"
+                    )
+                )
             ),
         ),
     ],
