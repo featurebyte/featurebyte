@@ -3,6 +3,7 @@ Unit test for Series
 """
 import textwrap
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -75,6 +76,10 @@ def test__getitem__type_not_supported(int_series):
         ("PRODUCT_ACTION", "string_val"),
         ("VALUE", 10),
         ("VALUE", 1.23),
+        ("VALUE", float("nan")),
+        ("VALUE", np.nan),
+        ("CUST_ID", np.nan),
+        ("CUST_ID", None),
     ],
 )
 def test__setitem__bool_series_key_scalar_value(dataframe, bool_series, column, value):
@@ -204,8 +209,11 @@ def test__setitem__value_type_not_correct(int_series, bool_series):
     """
     with pytest.raises(ValueError) as exc:
         int_series[bool_series] = "abc"
-    expected_msg = f"Setting key 'Series[BOOL](name=MASK, node.name={bool_series.node.name})' with value 'abc' not supported!"
-    assert expected_msg in str(exc.value)
+    expected_msg = (
+        f"Conditionally updating 'Series[INT](name=CUST_ID, node.name=project_1)' with value 'abc' "
+        f"not supported!"
+    )
+    assert expected_msg == str(exc.value)
 
 
 def test__setitem__non_boolean_series_type_not_supported(int_series, bool_series):

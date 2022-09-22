@@ -3,6 +3,7 @@ Tests for the featurebyte.query_graph.sql module
 """
 import textwrap
 
+import numpy as np
 import pytest
 from sqlglot import parse_one
 
@@ -373,3 +374,22 @@ def test_datediff_resolves_correctly(dataframe):
         """
     ).strip()
     assert sql == expected_sql
+
+
+@pytest.mark.parametrize(
+    "value, expected_sql",
+    [
+        (123, "123"),
+        (123.0, "123.0"),
+        ("some_string", "'some_string'"),
+        (float("nan"), "NULL"),
+        (np.nan, "NULL"),
+        (None, "NULL"),
+    ],
+)
+def test_make_literal_value(value, expected_sql):
+    """
+    Test make_literal_value helper function
+    """
+    expr = sql.make_literal_value(value)
+    assert expr.sql() == expected_sql
