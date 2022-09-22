@@ -211,7 +211,7 @@ def test__setitem__value_type_not_correct(int_series, bool_series):
         int_series[bool_series] = "abc"
     expected_msg = (
         f"Conditionally updating 'Series[INT](name=CUST_ID, node.name=project_1)' with value 'abc' "
-        f"not supported!"
+        f"is not supported!"
     )
     assert expected_msg == str(exc.value)
 

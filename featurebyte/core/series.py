@@ -138,7 +138,9 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         if key.dtype != DBVarType.BOOL:
             raise TypeError("Only boolean Series filtering is supported!")
         if not self._is_assignment_valid(self.dtype, value) and not is_scalar_nan(value):
-            raise ValueError(f"Conditionally updating '{self}' with value '{value}' not supported!")
+            raise ValueError(
+                f"Conditionally updating '{self}' with value '{value}' is not supported!"
+            )
 
         self.node = self.graph.add_operation(
             node_type=NodeType.CONDITIONAL,
