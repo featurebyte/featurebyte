@@ -32,9 +32,8 @@ async def create_entity(request: Request, data: EntityCreate) -> EntityModel:
     """
     Create Entity
     """
-    entity: EntityModel = await request.state.controller.create_entity(
-        user=request.state.user, persistent=request.state.persistent, data=data
-    )
+    controller = request.state.app_container.entity_controller
+    entity: EntityModel = await controller.create_entity(data=data)
     return entity
 
 
@@ -43,7 +42,8 @@ async def get_entity(request: Request, entity_id: PydanticObjectId) -> EntityMod
     """
     Get Entity
     """
-    entity: EntityModel = await request.state.controller.get(
+    controller = request.state.app_container.entity_controller
+    entity: EntityModel = await controller.get(
         user=request.state.user, persistent=request.state.persistent, document_id=entity_id
     )
     return entity
@@ -62,7 +62,8 @@ async def list_entities(
     """
     List Entity
     """
-    entity_list: EntityList = await request.state.controller.list(
+    controller = request.state.app_container.entity_controller
+    entity_list: EntityList = await controller.list(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,
@@ -82,9 +83,8 @@ async def update_entity(
     """
     Update Entity
     """
-    entity: EntityModel = await request.state.controller.update_entity(
-        user=request.state.user,
-        persistent=request.state.persistent,
+    controller = request.state.app_container.entity_controller
+    entity: EntityModel = await controller.update_entity(
         entity_id=entity_id,
         data=data,
     )
@@ -104,7 +104,8 @@ async def list_entity_audit_logs(
     """
     List Entity audit logs
     """
-    audit_doc_list: AuditDocumentList = await request.state.controller.list_audit(
+    controller = request.state.app_container.entity_controller
+    audit_doc_list: AuditDocumentList = await controller.list_audit(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=entity_id,
@@ -128,7 +129,8 @@ async def list_name_history(
     """
     List Entity name history
     """
-    history_values = await request.state.controller.list_field_history(
+    controller = request.state.app_container.entity_controller
+    history_values = await controller.list_field_history(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=entity_id,
@@ -153,7 +155,8 @@ async def get_entity_info(
     """
     Retrieve EventData info
     """
-    info = await request.state.controller.get_info(
+    controller = request.state.app_container.entity_controller
+    info = await controller.get_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=entity_id,

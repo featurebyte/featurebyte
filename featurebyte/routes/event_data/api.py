@@ -40,9 +40,8 @@ async def create_event_data(
     """
     Create Event Data
     """
-    event_data: EventDataModel = await request.state.controller.create_event_data(
-        user=request.state.user, persistent=request.state.persistent, data=data
-    )
+    controller = request.state.app_container.event_data_controller
+    event_data: EventDataModel = await controller.create_event_data(data=data)
     return event_data
 
 
@@ -59,7 +58,8 @@ async def list_event_data(
     """
     List Event Datas
     """
-    event_data_list: EventDataList = await request.state.controller.list(
+    controller = request.state.app_container.event_data_controller
+    event_data_list: EventDataList = await controller.list(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,
@@ -77,7 +77,8 @@ async def get_event_data(request: Request, event_data_id: PydanticObjectId) -> E
     """
     Retrieve Event Data
     """
-    event_data: EventDataModel = await request.state.controller.get(
+    controller = request.state.app_container.event_data_controller
+    event_data: EventDataModel = await controller.get(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=event_data_id,
@@ -94,9 +95,8 @@ async def update_event_data(
     """
     Update scheduled task
     """
-    event_data: EventDataModel = await request.state.controller.update_event_data(
-        user=request.state.user,
-        persistent=request.state.persistent,
+    controller = request.state.app_container.event_data_controller
+    event_data: EventDataModel = await controller.update_event_data(
         event_data_id=event_data_id,
         data=data,
     )
@@ -116,7 +116,8 @@ async def list_event_data_audit_logs(
     """
     List Event Data audit logs
     """
-    audit_doc_list: AuditDocumentList = await request.state.controller.list_audit(
+    controller = request.state.app_container.event_data_controller
+    audit_doc_list: AuditDocumentList = await controller.list_audit(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=event_data_id,
@@ -140,7 +141,8 @@ async def list_default_feature_job_setting_history(
     """
     List Event Data default feature job settings history
     """
-    history_values = await request.state.controller.list_field_history(
+    controller = request.state.app_container.event_data_controller
+    history_values = await controller.list_field_history(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=event_data_id,
@@ -165,7 +167,8 @@ async def get_event_data_info(
     """
     Retrieve EventData info
     """
-    info = await request.state.controller.get_info(
+    controller = request.state.app_container.event_data_controller
+    info = await controller.get_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=event_data_id,

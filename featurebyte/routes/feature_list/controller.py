@@ -32,19 +32,24 @@ class FeatureListController(
     paginated_document_class = FeatureListPaginatedList
     document_service_class: Type[FeatureListService] = FeatureListService  # type: ignore[assignment]
 
-    @classmethod
+    def __init__(
+        self,
+        service: FeatureListService,
+        feature_readiness_service: FeatureReadinessService,
+        deploy_service: DeployService,
+    ):
+        self.service = service
+        self.feature_readiness_service = feature_readiness_service
+        self.deploy_service = deploy_service
+
     async def create_feature_list(
-        cls, user: Any, persistent: Persistent, get_credential: Any, data: FeatureListCreate
+        self, get_credential: Any, data: FeatureListCreate
     ) -> FeatureListModel:
         """
         Create FeatureList at persistent (GitDB or MongoDB)
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Object that feature list will be saved to
         get_credential: Any
             Get credential handler function
         data: FeatureListCreate
@@ -55,21 +60,17 @@ class FeatureListController(
         FeatureListModel
             Newly created feature list object
         """
-        document = await cls.document_service_class(
-            user=user, persistent=persistent
-        ).create_document(data=data, get_credential=get_credential)
+        document = await self.service.create_document(data=data, get_credential=get_credential)
 
         # update feature namespace readiness due to introduction of new feature list
-        readiness_service = FeatureReadinessService(user=user, persistent=persistent)
-        await readiness_service.update_feature_list_namespace(
+        await self.feature_readiness_service.update_feature_list_namespace(
             feature_list_namespace_id=document.feature_list_namespace_id,
             return_document=False,
         )
         return document
 
-    @classmethod
     async def update_feature_list(
-        cls,
+        self,
         user: Any,
         persistent: Persistent,
         feature_list_id: ObjectId,
@@ -95,17 +96,15 @@ class FeatureListController(
             FeatureList object with updated attribute(s)
         """
         if data.deployed is not None:
-            deploy_service = DeployService(user=user, persistent=persistent)
-            await deploy_service.update_feature_list(
+            await self.deploy_service.update_feature_list(
                 feature_list_id=feature_list_id,
                 deployed=data.deployed,
                 return_document=False,
             )
-        return await cls.get(user=user, persistent=persistent, document_id=feature_list_id)
+        return await self.get(user=user, persistent=persistent, document_id=feature_list_id)
 
-    @classmethod
-    async def list(
-        cls,
+    async def list_feature_lists(
+        self,
         user: Any,
         persistent: Persistent,
         page: int = 1,
@@ -114,6 +113,31 @@ class FeatureListController(
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,
     ) -> FeatureListPaginatedList:
+        """
+        List documents stored at persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Persistent that the document will be saved to
+        page: int
+            Page number
+        page_size: int
+            Number of items per page
+        sort_by: str | None
+            Key used to sort the returning documents
+        sort_dir: "asc" or "desc"
+            Sorting the returning documents in ascending order or descending order
+        kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        FeatureListPaginatedList
+            List of documents fulfilled the filtering condition
+        """
         params = kwargs.copy()
         feature_list_namespace_id = params.pop("feature_list_namespace_id")
         if feature_list_namespace_id:
@@ -121,7 +145,7 @@ class FeatureListController(
             query_filter["feature_list_namespace_id"] = feature_list_namespace_id
             params["query_filter"] = query_filter
 
-        return await super().list(
+        return await self.list(
             user=user,
             persistent=persistent,
             page=page,

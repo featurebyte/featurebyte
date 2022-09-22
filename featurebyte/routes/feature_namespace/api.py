@@ -36,7 +36,8 @@ async def get_feature_namespace(
     """
     Retrieve Feature Namespace
     """
-    feature_namespace: FeatureNamespaceModel = await request.state.controller.get(
+    controller = request.state.app_container.feature_namespace_controller
+    feature_namespace: FeatureNamespaceModel = await controller.get(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_namespace_id,
@@ -54,7 +55,8 @@ async def update_feature(
     """
     Update FeatureNamespace
     """
-    feature: FeatureNamespaceModel = await request.state.controller.update_feature_namespace(
+    controller = request.state.app_container.feature_namespace_controller
+    feature: FeatureNamespaceModel = await controller.update_feature_namespace(
         user=request.state.user,
         persistent=request.state.persistent,
         feature_namespace_id=feature_namespace_id,
@@ -76,7 +78,8 @@ async def list_feature_namespaces(
     """
     List FeatureNamespace
     """
-    feature_namespace_list: FeatureNamespaceList = await request.state.controller.list(
+    controller = request.state.app_container.feature_namespace_controller
+    feature_namespace_list: FeatureNamespaceList = await controller.list(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,
@@ -102,7 +105,8 @@ async def list_feature_namespace_audit_logs(
     """
     List Feature Namespace audit logs
     """
-    audit_doc_list: AuditDocumentList = await request.state.controller.list_audit(
+    controller = request.state.app_container.feature_namespace_controller
+    audit_doc_list: AuditDocumentList = await controller.list_audit(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_namespace_id,
@@ -124,8 +128,8 @@ async def get_feature_namespace_info(
     """
     Retrieve FeatureNamespace info
     """
-
-    info = await request.state.controller.get_info(
+    controller = request.state.app_container.feature_namespace_controller
+    info = await controller.get_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_namespace_id,
