@@ -38,9 +38,8 @@ async def create_feature_list(request: Request, data: FeatureListCreate) -> Feat
     """
     Create FeatureList
     """
-    feature_list: FeatureListModel = await request.state.controller.create_feature_list(
-        user=request.state.user,
-        persistent=request.state.persistent,
+    controller = request.state.app_container.feature_list_controller
+    feature_list: FeatureListModel = await controller.create_feature_list(
         get_credential=request.state.get_credential,
         data=data,
     )
@@ -52,7 +51,8 @@ async def get_feature_list(request: Request, feature_list_id: PydanticObjectId) 
     """
     Get FeatureList
     """
-    feature_list: FeatureListModel = await request.state.controller.get(
+    controller = request.state.app_container.feature_list_controller
+    feature_list: FeatureListModel = await controller.get(
         user=request.state.user, persistent=request.state.persistent, document_id=feature_list_id
     )
     return feature_list
@@ -65,7 +65,8 @@ async def update_feature_list(
     """
     Update FeatureList
     """
-    feature_list: FeatureListModel = await request.state.controller.update_feature_list(
+    controller = request.state.app_container.feature_list_controller
+    feature_list: FeatureListModel = await controller.update_feature_list(
         user=request.state.user,
         persistent=request.state.persistent,
         feature_list_id=feature_list_id,
@@ -88,7 +89,8 @@ async def list_feature_list(
     """
     List FeatureLists
     """
-    feature_list_paginated_list: FeatureListPaginatedList = await request.state.controller.list(
+    controller = request.state.app_container.feature_list_controller
+    feature_list_paginated_list: FeatureListPaginatedList = await controller.list_feature_lists(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,
@@ -115,7 +117,8 @@ async def list_feature_list_audit_logs(
     """
     List FeatureList audit logs
     """
-    audit_doc_list: AuditDocumentList = await request.state.controller.list_audit(
+    controller = request.state.app_container.feature_list_controller
+    audit_doc_list: AuditDocumentList = await controller.list_audit(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_list_id,
@@ -137,7 +140,8 @@ async def get_feature_list_info(
     """
     Retrieve FeatureList info
     """
-    info = await request.state.controller.get_info(
+    controller = request.state.app_container.feature_list_controller
+    info = await controller.get_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_list_id,

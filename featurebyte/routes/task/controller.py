@@ -18,15 +18,15 @@ class TaskController:
     TaskController
     """
 
-    @classmethod
-    async def get_task(cls, task_manager: AbstractTaskManager, task_id: str) -> Task:
+    def __init__(self, task_manager: AbstractTaskManager):
+        self.task_manager = task_manager
+
+    async def get_task(self, task_id: str) -> Task:
         """
         Check task status
 
         Parameters
         ----------
-        task_manager: AbstractTaskManager
-            Task manager
         task_id: str
             Task ID
 
@@ -39,7 +39,7 @@ class TaskController:
         HTTPException
             When the task status not found
         """
-        task_status = await task_manager.get_task(task_id=task_id)
+        task_status = await self.task_manager.get_task(task_id=task_id)
         if task_status is None:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
@@ -47,10 +47,8 @@ class TaskController:
             )
         return task_status
 
-    @classmethod
     async def list_tasks(
-        cls,
-        task_manager: AbstractTaskManager,
+        self,
         page: int = 1,
         page_size: int = 10,
         sort_dir: Literal["asc", "desc"] = "desc",
@@ -60,8 +58,6 @@ class TaskController:
 
         Parameters
         ----------
-        task_manager: AbstractTaskManager
-            Task manager
         page: int
             Page number
         page_size: int
@@ -73,7 +69,7 @@ class TaskController:
         -------
         TaskList
         """
-        task_statuses, total = await task_manager.list_tasks(
+        task_statuses, total = await self.task_manager.list_tasks(
             page=page, page_size=page_size, ascending=(sort_dir == "asc")
         )
         return TaskList(page=page, page_size=page_size, total=total, data=task_statuses)

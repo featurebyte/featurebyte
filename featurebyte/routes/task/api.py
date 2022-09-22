@@ -18,9 +18,8 @@ async def get_task(request: Request, task_id: str) -> Task:
     """
     Retrieve TaskStatus
     """
-    task: Task = await request.state.controller.get_task(
-        task_manager=request.state.task_manager, task_id=task_id
-    )
+    controller = request.state.app_container.task_controller
+    task: Task = await controller.get_task(task_id=task_id)
     return task
 
 
@@ -33,8 +32,8 @@ async def list_tasks(
 ) -> TaskList:
     """
     List TaskStatus"""
-    task_list: TaskList = await request.state.controller.list_tasks(
-        task_manager=request.state.task_manager,
+    controller = request.state.app_container.task_controller
+    task_list: TaskList = await controller.list_tasks(
         page=page,
         page_size=page_size,
         sort_dir=sort_dir,

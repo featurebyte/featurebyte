@@ -30,9 +30,16 @@ class FeatureNamespaceController(
     paginated_document_class = FeatureNamespaceList
     document_service_class: Type[FeatureNamespaceService] = FeatureNamespaceService  # type: ignore[assignment]
 
-    @classmethod
+    def __init__(
+        self,
+        service: FeatureNamespaceService,
+        default_version_mode_service: DefaultVersionModeService,
+    ):
+        self.service = service
+        self.default_version_mode_service = default_version_mode_service
+
     async def update_feature_namespace(
-        cls,
+        self,
         user: Any,
         persistent: Persistent,
         feature_namespace_id: ObjectId,
@@ -58,12 +65,9 @@ class FeatureNamespaceController(
             FeatureNamespace object with updated attribute(s)
         """
         if data.default_version_mode:
-            default_version_mode_service = DefaultVersionModeService(
-                user=user, persistent=persistent
-            )
-            await default_version_mode_service.update_feature_namespace(
+            await self.default_version_mode_service.update_feature_namespace(
                 feature_namespace_id=feature_namespace_id,
                 default_version_mode=data.default_version_mode,
                 return_document=False,
             )
-        return await cls.get(user=user, persistent=persistent, document_id=feature_namespace_id)
+        return await self.get(user=user, persistent=persistent, document_id=feature_namespace_id)

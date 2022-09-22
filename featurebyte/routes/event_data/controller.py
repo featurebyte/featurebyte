@@ -3,12 +3,11 @@ EventData API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Type
+from typing import Type
 
 from bson.objectid import ObjectId
 
 from featurebyte.models.event_data import EventDataModel
-from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
 from featurebyte.schema.event_data import (
     EventDataCreate,
@@ -29,11 +28,11 @@ class EventDataController(
     paginated_document_class = EventDataList
     document_service_class: Type[EventDataService] = EventDataService  # type: ignore[assignment]
 
-    @classmethod
+    def __init__(self, service: EventDataService):
+        self.service = service
+
     async def create_event_data(
-        cls,
-        user: Any,
-        persistent: Persistent,
+        self,
         data: EventDataCreate,
     ) -> EventDataModel:
         """
@@ -41,10 +40,6 @@ class EventDataController(
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Object that entity will be saved to
         data: EventDataCreate
             EventData creation payload
 
@@ -53,16 +48,11 @@ class EventDataController(
         EventDataModel
             Newly created event data object
         """
-        document = await cls.document_service_class(
-            user=user, persistent=persistent
-        ).create_document(data)
+        document = await self.service.create_document(data)
         return document
 
-    @classmethod
     async def update_event_data(
-        cls,
-        user: Any,
-        persistent: Persistent,
+        self,
         event_data_id: ObjectId,
         data: EventDataUpdate,
     ) -> EventDataModel:
@@ -71,10 +61,6 @@ class EventDataController(
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Object that entity will be saved to
         event_data_id: ObjectId
             EventData ID
         data: EventDataUpdate
@@ -85,8 +71,6 @@ class EventDataController(
         EventDataModel
             EventData object with updated attribute(s)
         """
-        document = await cls.document_service_class(
-            user=user, persistent=persistent
-        ).update_document(document_id=event_data_id, data=data)
+        document = await self.service.update_document(document_id=event_data_id, data=data)
         assert document is not None
         return document

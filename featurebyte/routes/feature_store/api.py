@@ -32,9 +32,8 @@ async def create_feature_store(request: Request, data: FeatureStoreCreate) -> Fe
     """
     Create Feature Store
     """
-    feature_store: FeatureStoreModel = await request.state.controller.create_feature_store(
-        user=request.state.user, persistent=request.state.persistent, data=data
-    )
+    controller = request.state.app_container.feature_store_controller
+    feature_store: FeatureStoreModel = await controller.create_feature_store(data=data)
     return feature_store
 
 
@@ -45,7 +44,8 @@ async def get_feature_store(
     """
     Retrieve Feature Store
     """
-    feature_store: FeatureStoreModel = await request.state.controller.get(
+    controller = request.state.app_container.feature_store_controller
+    feature_store: FeatureStoreModel = await controller.get(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_store_id,
@@ -66,7 +66,8 @@ async def list_feature_stores(
     """
     List FeatureStore
     """
-    feature_store_list: FeatureStoreList = await request.state.controller.list(
+    controller = request.state.app_container.feature_store_controller
+    feature_store_list: FeatureStoreList = await controller.list(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,
@@ -92,7 +93,8 @@ async def list_feature_store_audit_logs(
     """
     List Feature Store audit logs
     """
-    audit_doc_list: AuditDocumentList = await request.state.controller.list_audit(
+    controller = request.state.app_container.feature_store_controller
+    audit_doc_list: AuditDocumentList = await controller.list_audit(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_store_id,
@@ -114,7 +116,8 @@ async def get_feature_store_info(
     """
     Retrieve FeatureStore info
     """
-    info = await request.state.controller.get_info(
+    controller = request.state.app_container.feature_store_controller
+    info = await controller.get_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_store_id,

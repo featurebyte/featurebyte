@@ -37,7 +37,8 @@ async def get_feature_list_namespace(
     """
     Get FeatureListNamespace
     """
-    feature_list_namespace: FeatureListNamespaceModel = await request.state.controller.get(
+    controller = request.state.app_container.feature_list_namespace_controller
+    feature_list_namespace: FeatureListNamespaceModel = await controller.get(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_list_namespace_id,
@@ -56,8 +57,9 @@ async def update_feature_list_namespace(
     """
     Update FeatureListNamespace
     """
+    controller = request.state.app_container.feature_list_namespace_controller
     feature_list_namespace: FeatureListNamespaceModel = (
-        await request.state.controller.update_feature_list_namespace(
+        await controller.update_feature_list_namespace(
             user=request.state.user,
             persistent=request.state.persistent,
             feature_list_namespace_id=feature_list_namespace_id,
@@ -80,7 +82,8 @@ async def list_feature_list_namespace(
     """
     List FeatureListNamespaces
     """
-    feature_list_paginated_list: FeatureListNamespaceList = await request.state.controller.list(
+    controller = request.state.app_container.feature_list_namespace_controller
+    feature_list_paginated_list: FeatureListNamespaceList = await controller.list(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,
@@ -106,7 +109,8 @@ async def list_feature_list_namespace_audit_logs(
     """
     List FeatureListNamespace audit logs
     """
-    audit_doc_list: AuditDocumentList = await request.state.controller.list_audit(
+    controller = request.state.app_container.feature_list_namespace_controller
+    audit_doc_list: AuditDocumentList = await controller.list_audit(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_list_namespace_id,
@@ -128,7 +132,8 @@ async def get_feature_list_namespace_info(
     """
     Retrieve FeatureListNamespace info
     """
-    info = await request.state.controller.get_info(
+    controller = request.state.app_container.feature_list_namespace_controller
+    info = await controller.get_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_list_namespace_id,

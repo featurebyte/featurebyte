@@ -37,9 +37,8 @@ async def create_feature(request: Request, data: FeatureCreate) -> FeatureModel:
     """
     Create Feature
     """
-    feature: FeatureModel = await request.state.controller.create_feature(
-        user=request.state.user,
-        persistent=request.state.persistent,
+    controller = request.state.app_container.feature_controller
+    feature: FeatureModel = await controller.create_feature(
         get_credential=request.state.get_credential,
         data=data,
     )
@@ -51,7 +50,8 @@ async def get_feature(request: Request, feature_id: PydanticObjectId) -> Feature
     """
     Get Feature
     """
-    feature: FeatureModel = await request.state.controller.get(
+    controller = request.state.app_container.feature_controller
+    feature: FeatureModel = await controller.get(
         user=request.state.user, persistent=request.state.persistent, document_id=feature_id
     )
     return feature
@@ -64,7 +64,8 @@ async def update_feature(
     """
     Update Feature
     """
-    feature: FeatureModel = await request.state.controller.update_feature(
+    controller = request.state.app_container.feature_controller
+    feature: FeatureModel = await controller.update_feature(
         user=request.state.user,
         persistent=request.state.persistent,
         feature_id=feature_id,
@@ -88,7 +89,8 @@ async def list_features(
     """
     List Features
     """
-    feature_list: FeaturePaginatedList = await request.state.controller.list(
+    controller = request.state.app_container.feature_controller
+    feature_list: FeaturePaginatedList = await controller.list_features(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,
@@ -116,7 +118,8 @@ async def list_feature_audit_logs(
     """
     List Feature audit logs
     """
-    audit_doc_list: AuditDocumentList = await request.state.controller.list_audit(
+    controller = request.state.app_container.feature_controller
+    audit_doc_list: AuditDocumentList = await controller.list_audit(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_id,
@@ -138,7 +141,8 @@ async def get_feature_info(
     """
     Retrieve Feature info
     """
-    info = await request.state.controller.get_info(
+    controller = request.state.app_container.feature_controller
+    info = await controller.get_info(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_id,

@@ -39,10 +39,8 @@ async def create_feature_job_setting_analysis(
     """
     Create Feature Job Setting Analysis
     """
-    task_submit: Task = await request.state.controller.create_feature_job_setting_analysis(
-        user=request.state.user,
-        persistent=request.state.persistent,
-        task_manager=request.state.task_manager,
+    controller = request.state.app_container.feature_job_setting_analysis_controller
+    task_submit: Task = await controller.create_feature_job_setting_analysis(
         data=data,
     )
     return task_submit
@@ -61,7 +59,8 @@ async def list_feature_job_setting_analysis(
     """
     List Feature Job Setting Analysis
     """
-    analysis_list: FeatureJobSettingAnalysisList = await request.state.controller.list(
+    controller = request.state.app_container.feature_job_setting_analysis_controller
+    analysis_list: FeatureJobSettingAnalysisList = await controller.list(
         user=request.state.user,
         persistent=request.state.persistent,
         page=page,
@@ -82,7 +81,8 @@ async def get_feature_job_setting_analysis(
     """
     Retrieve Feature Job Setting Analysis
     """
-    analysis: FeatureJobSettingAnalysisModel = await request.state.controller.get(
+    controller = request.state.app_container.feature_job_setting_analysis_controller
+    analysis: FeatureJobSettingAnalysisModel = await controller.get(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_job_setting_analysis_id,
@@ -103,7 +103,8 @@ async def list_feature_job_setting_analysis_audit_logs(
     """
     List Feature Job Setting Analysis audit logs
     """
-    audit_doc_list: AuditDocumentList = await request.state.controller.list_audit(
+    controller = request.state.app_container.feature_job_setting_analysis_controller
+    audit_doc_list: AuditDocumentList = await controller.list_audit(
         user=request.state.user,
         persistent=request.state.persistent,
         document_id=feature_job_setting_analysis_id,
@@ -128,10 +129,8 @@ async def run_backtest(
     """
     Run Backtest on Feature Job Setting Analysis
     """
-    task_submit: Task = await request.state.controller.backtest(
-        user=request.state.user,
-        persistent=request.state.persistent,
-        task_manager=request.state.task_manager,
+    controller = request.state.app_container.feature_job_setting_analysis_controller
+    task_submit: Task = await controller.backtest(
         data=data,
     )
     return task_submit
