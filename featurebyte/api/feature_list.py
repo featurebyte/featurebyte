@@ -53,7 +53,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     )
 
     @property
-    def features(self) -> list[Feature]:
+    def _features(self) -> list[Feature]:
         """
         Retrieve list of features in the FeatureGroup object
 
@@ -191,7 +191,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         -------
         str
         """
-        pruned_graph, mapped_nodes = get_prune_graph_and_nodes(feature_objects=self.features)
+        pruned_graph, mapped_nodes = get_prune_graph_and_nodes(feature_objects=self._features)
         return get_feature_preview_sql(
             graph=pruned_graph,
             nodes=mapped_nodes,
@@ -223,7 +223,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         preview_sql = self.preview_sql(
             point_in_time_and_serving_name=point_in_time_and_serving_name
         )
-        session = self.features[0].get_session(credentials)
+        session = self._features[0].get_session(credentials)
         result = session.execute_query(preview_sql)
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
@@ -376,7 +376,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         validate_request_schema(training_events)
         training_events = validate_historical_requests_point_in_time(training_events)
         return get_historical_features_sql(
-            feature_objects=self.features,
+            feature_objects=self._features,
             request_table_columns=training_events.columns.tolist(),
             serving_names_mapping=serving_names_mapping,
         )
@@ -408,7 +408,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         if credentials is None:
             credentials = Configurations().credentials
         return get_historical_features(
-            feature_objects=self.features,
+            feature_objects=self._features,
             training_events=training_events,
             credentials=credentials,
             serving_names_mapping=serving_names_mapping,
