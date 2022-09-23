@@ -3,8 +3,6 @@ FeatureJobSettingAnalysis API route controller
 """
 from __future__ import annotations
 
-from typing import Type
-
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.routes.task.controller import TaskController
@@ -25,16 +23,13 @@ class FeatureJobSettingAnalysisController(
     """
 
     paginated_document_class = FeatureJobSettingAnalysisList
-    document_service_class: Type[
-        FeatureJobSettingAnalysisService
-    ] = FeatureJobSettingAnalysisService  # type: ignore[assignment]
 
     def __init__(
         self,
         service: FeatureJobSettingAnalysisService,
         task_controller: TaskController,
     ):
-        self.service = service
+        super().__init__(service)  # type: ignore[arg-type]
         self.task_controller = task_controller
 
     async def create_feature_job_setting_analysis(
@@ -54,7 +49,7 @@ class FeatureJobSettingAnalysisController(
         Task
             Task object for the submitted task
         """
-        task_id = await self.service.create_document_creation_task(
+        task_id = await self.service.create_document_creation_task(  # type: ignore[attr-defined]
             data=data, task_manager=self.task_controller.task_manager
         )
         return await self.task_controller.get_task(task_id=str(task_id))
@@ -76,7 +71,7 @@ class FeatureJobSettingAnalysisController(
         Task
             Task object for the submitted task
         """
-        task_id = await self.service.create_backtest_task(
+        task_id = await self.service.create_backtest_task(  # type: ignore[attr-defined]
             data=data, task_manager=self.task_controller.task_manager
         )
         return await self.task_controller.get_task(task_id=str(task_id))

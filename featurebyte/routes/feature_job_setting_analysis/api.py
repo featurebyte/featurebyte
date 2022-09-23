@@ -61,8 +61,6 @@ async def list_feature_job_setting_analysis(
     """
     controller = request.state.app_container.feature_job_setting_analysis_controller
     analysis_list: FeatureJobSettingAnalysisList = await controller.list(
-        user=request.state.user,
-        persistent=request.state.persistent,
         page=page,
         page_size=page_size,
         sort_by=sort_by,
@@ -83,8 +81,6 @@ async def get_feature_job_setting_analysis(
     """
     controller = request.state.app_container.feature_job_setting_analysis_controller
     analysis: FeatureJobSettingAnalysisModel = await controller.get(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_job_setting_analysis_id,
     )
     return analysis
@@ -105,8 +101,6 @@ async def list_feature_job_setting_analysis_audit_logs(
     """
     controller = request.state.app_container.feature_job_setting_analysis_controller
     audit_doc_list: AuditDocumentList = await controller.list_audit(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_job_setting_analysis_id,
         page=page,
         page_size=page_size,

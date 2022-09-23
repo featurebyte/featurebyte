@@ -38,8 +38,6 @@ async def get_feature_namespace(
     """
     controller = request.state.app_container.feature_namespace_controller
     feature_namespace: FeatureNamespaceModel = await controller.get(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_namespace_id,
         exception_detail=(
             f'FeatureNamespace (id: "{feature_namespace_id}") not found. Please save the Feature object first.'
@@ -57,8 +55,6 @@ async def update_feature(
     """
     controller = request.state.app_container.feature_namespace_controller
     feature: FeatureNamespaceModel = await controller.update_feature_namespace(
-        user=request.state.user,
-        persistent=request.state.persistent,
         feature_namespace_id=feature_namespace_id,
         data=data,
     )
@@ -80,8 +76,6 @@ async def list_feature_namespaces(
     """
     controller = request.state.app_container.feature_namespace_controller
     feature_namespace_list: FeatureNamespaceList = await controller.list(
-        user=request.state.user,
-        persistent=request.state.persistent,
         page=page,
         page_size=page_size,
         sort_by=sort_by,
@@ -107,8 +101,6 @@ async def list_feature_namespace_audit_logs(
     """
     controller = request.state.app_container.feature_namespace_controller
     audit_doc_list: AuditDocumentList = await controller.list_audit(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_namespace_id,
         page=page,
         page_size=page_size,
@@ -130,8 +122,6 @@ async def get_feature_namespace_info(
     """
     controller = request.state.app_container.feature_namespace_controller
     info = await controller.get_info(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_namespace_id,
         verbose=verbose,
     )

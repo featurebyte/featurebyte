@@ -39,8 +39,6 @@ async def get_feature_list_namespace(
     """
     controller = request.state.app_container.feature_list_namespace_controller
     feature_list_namespace: FeatureListNamespaceModel = await controller.get(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_list_namespace_id,
         exception_detail=(
             f'FeatureListNamespace (id: "{feature_list_namespace_id}") not found. '
@@ -60,8 +58,6 @@ async def update_feature_list_namespace(
     controller = request.state.app_container.feature_list_namespace_controller
     feature_list_namespace: FeatureListNamespaceModel = (
         await controller.update_feature_list_namespace(
-            user=request.state.user,
-            persistent=request.state.persistent,
             feature_list_namespace_id=feature_list_namespace_id,
             data=data,
         )
@@ -84,8 +80,6 @@ async def list_feature_list_namespace(
     """
     controller = request.state.app_container.feature_list_namespace_controller
     feature_list_paginated_list: FeatureListNamespaceList = await controller.list(
-        user=request.state.user,
-        persistent=request.state.persistent,
         page=page,
         page_size=page_size,
         sort_by=sort_by,
@@ -111,8 +105,6 @@ async def list_feature_list_namespace_audit_logs(
     """
     controller = request.state.app_container.feature_list_namespace_controller
     audit_doc_list: AuditDocumentList = await controller.list_audit(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_list_namespace_id,
         page=page,
         page_size=page_size,
@@ -134,8 +126,6 @@ async def get_feature_list_namespace_info(
     """
     controller = request.state.app_container.feature_list_namespace_controller
     info = await controller.get_info(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_list_namespace_id,
         verbose=verbose,
     )
