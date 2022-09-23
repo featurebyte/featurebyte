@@ -14,7 +14,7 @@ from enum import Enum
 import pandas as pd
 from sqlglot import Expression, expressions, parse_one, select
 
-from featurebyte.common.typing import TimedeltaSupportedUnitType
+from featurebyte.common.typing import TimedeltaSupportedUnitType, is_scalar_nan
 from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.query_graph import expression as fb_expressions
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -992,7 +992,7 @@ def resolve_project_node(expr_node: ExpressionNode) -> Optional[ExpressionNode]:
     return assigned_node
 
 
-def make_literal_value(value: Any) -> expressions.Literal:
+def make_literal_value(value: Any) -> expressions.Literal | expressions.Null:
     """Create a sqlglot literal value
 
     Parameters
@@ -1002,10 +1002,12 @@ def make_literal_value(value: Any) -> expressions.Literal:
 
     Returns
     -------
-    expressions.Literal
+    expressions.Literal | expressions.Null
     """
     if isinstance(value, str):
         return expressions.Literal.string(value)
+    if is_scalar_nan(value):
+        return expressions.Null()
     return expressions.Literal.number(value)
 
 

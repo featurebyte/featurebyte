@@ -11,6 +11,7 @@ import pandas as pd
 from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
+from featurebyte.common.typing import is_scalar_nan
 from featurebyte.core.accessor.datetime import DtAccessorMixin
 from featurebyte.core.accessor.string import StrAccessorMixin
 from featurebyte.core.generic import QueryObject
@@ -131,13 +132,15 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return isinstance(right_value, valid_assignment_map[left_dbtype])
 
     @typechecked
-    def __setitem__(self, key: Series, value: Union[int, float, str, bool]) -> None:
+    def __setitem__(self, key: Series, value: Union[int, float, str, bool, None]) -> None:
         if self.row_index_lineage != key.row_index_lineage:
             raise ValueError(f"Row indices between '{self}' and '{key}' are not aligned!")
         if key.dtype != DBVarType.BOOL:
             raise TypeError("Only boolean Series filtering is supported!")
-        if not self._is_assignment_valid(self.dtype, value):
-            raise ValueError(f"Setting key '{key}' with value '{value}' not supported!")
+        if not self._is_assignment_valid(self.dtype, value) and not is_scalar_nan(value):
+            raise ValueError(
+                f"Conditionally updating '{self}' with value '{value}' is not supported!"
+            )
 
         self.node = self.graph.add_operation(
             node_type=NodeType.CONDITIONAL,
