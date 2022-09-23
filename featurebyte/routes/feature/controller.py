@@ -32,19 +32,24 @@ class FeatureController(
     paginated_document_class = FeaturePaginatedList
     document_service_class: Type[FeatureService] = FeatureService  # type: ignore[assignment]
 
-    @classmethod
-    async def create_feature(
-        cls, user: Any, persistent: Persistent, get_credential: Any, data: FeatureCreate
-    ) -> FeatureModel:
+    def __init__(
+        self,
+        service: FeatureService,
+        feature_list_service: FeatureListService,
+        feature_readiness_service: FeatureReadinessService,
+        online_enable_service: OnlineEnableService,
+    ):
+        self.service = service
+        self.feature_list_service = feature_list_service
+        self.feature_readiness_service = feature_readiness_service
+        self.online_enable_service = online_enable_service
+
+    async def create_feature(self, get_credential: Any, data: FeatureCreate) -> FeatureModel:
         """
         Create Feature at persistent (GitDB or MongoDB)
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Object that feature will be saved to
         get_credential: Any
             Get credential handler function
         data: FeatureCreate
@@ -55,21 +60,17 @@ class FeatureController(
         FeatureModel
             Newly created feature object
         """
-        document = await cls.document_service_class(
-            user=user, persistent=persistent
-        ).create_document(data=data, get_credential=get_credential)
+        document = await self.service.create_document(data=data, get_credential=get_credential)
 
         # update feature namespace readiness due to introduction of new feature
-        readiness_service = FeatureReadinessService(user=user, persistent=persistent)
-        await readiness_service.update_feature_namespace(
+        await self.feature_readiness_service.update_feature_namespace(
             feature_namespace_id=document.feature_namespace_id,
             return_document=False,
         )
         return document
 
-    @classmethod
     async def update_feature(
-        cls,
+        self,
         user: Any,
         persistent: Persistent,
         feature_id: ObjectId,
@@ -95,24 +96,21 @@ class FeatureController(
             Feature object with updated attribute(s)
         """
         if data.readiness:
-            readiness_service = FeatureReadinessService(user=user, persistent=persistent)
-            await readiness_service.update_feature(
+            await self.feature_readiness_service.update_feature(
                 feature_id=feature_id,
                 readiness=FeatureReadiness(data.readiness),
                 return_document=False,
             )
         if data.online_enabled is not None:
-            online_enable_service = OnlineEnableService(user=user, persistent=persistent)
-            await online_enable_service.update_feature(
+            await self.online_enable_service.update_feature(
                 feature_id=feature_id,
                 online_enabled=data.online_enabled,
                 return_document=False,
             )
-        return await cls.get(user=user, persistent=persistent, document_id=feature_id)
+        return await self.get(user=user, persistent=persistent, document_id=feature_id)
 
-    @classmethod
-    async def list(
-        cls,
+    async def list_features(
+        self,
         user: Any,
         persistent: Persistent,
         page: int = 1,
@@ -121,12 +119,37 @@ class FeatureController(
         sort_dir: Literal["asc", "desc"] = "desc",
         **kwargs: Any,
     ) -> FeaturePaginatedList:
+        """
+        List documents stored at persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        user: Any
+            User class to provide user identifier
+        persistent: Persistent
+            Persistent that the document will be saved to
+        page: int
+            Page number
+        page_size: int
+            Number of items per page
+        sort_by: str | None
+            Key used to sort the returning documents
+        sort_dir: "asc" or "desc"
+            Sorting the returning documents in ascending order or descending order
+        kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        FeaturePaginatedList
+            List of documents fulfilled the filtering condition
+        """
         params = kwargs.copy()
         feature_list_id = params.pop("feature_list_id")
         if feature_list_id:
-            feature_list_document = await FeatureListService(
-                user=user, persistent=persistent
-            ).get_document(document_id=feature_list_id)
+            feature_list_document = await self.feature_list_service.get_document(
+                document_id=feature_list_id
+            )
             params["query_filter"] = {"_id": {"$in": feature_list_document.feature_ids}}
 
         feature_namespace_id = params.pop("feature_namespace_id")
@@ -135,7 +158,7 @@ class FeatureController(
             query_filter["feature_namespace_id"] = feature_namespace_id
             params["query_filter"] = query_filter
 
-        return await super().list(
+        return await self.list(
             user=user,
             persistent=persistent,
             page=page,

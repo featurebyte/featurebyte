@@ -20,6 +20,7 @@ from featurebyte.exception import (
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
+from featurebyte.logger import logger
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import (
@@ -137,10 +138,13 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                     f'Feature (name: "{document.name}") has been registered by '
                     f"other feature at Snowflake feature store."
                 ) from exc
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.error(f"error with insert_feature_registry: {exc}")
                 # for other exceptions, cleanup feature registry record & persistent record
-                feature_manager.remove_feature_registry(document)
-                raise exc
+                try:
+                    feature_manager.remove_feature_registry(document)
+                except Exception as remove_exc:  # pylint: disable=broad-except
+                    raise remove_exc from exc
 
     async def _get_feature_version(self, name: str) -> VersionIdentifier:
         version_name = get_version()

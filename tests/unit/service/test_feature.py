@@ -14,6 +14,8 @@ from featurebyte.exception import (
     DocumentConflictError,
     DocumentInconsistencyError,
     DuplicatedRegistryError,
+    InvalidFeatureRegistryOperationError,
+    MissingFeatureRegistryError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
@@ -135,7 +137,61 @@ async def test_insert_feature_registry__duplicated_feature_registry_exception(
 
 @pytest.mark.asyncio
 @patch("featurebyte.service.feature.FeatureManagerSnowflake")
-async def test_insert_feature_registry__other_exception(
+async def test_insert_feature_registry__fail_remove_feature_registry_missing_registry(
+    mock_feature_manager,
+    feature_model_dict,
+    get_credential,
+    snowflake_connector,
+    snowflake_feature_store,
+):
+    """
+    Test insert_feature_registry with duplicated_registry exception
+    """
+    _ = snowflake_connector
+    mock_feature_manager.return_value.insert_feature_registry.side_effect = ValueError
+    mock_feature_manager.return_value.remove_feature_registry.side_effect = (
+        MissingFeatureRegistryError("Feature version does not exist")
+    )
+    feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
+    with pytest.raises(MissingFeatureRegistryError) as exc:
+        await FeatureService(user=Mock(), persistent=Mock())._insert_feature_registry(
+            document=feature, get_credential=get_credential
+        )
+    expected_msg = "Feature version does not exist"
+    assert expected_msg in str(exc)
+    assert mock_feature_manager.return_value.remove_feature_registry.called
+
+
+@pytest.mark.asyncio
+@patch("featurebyte.service.feature.FeatureManagerSnowflake")
+async def test_insert_feature_registry__fail_remove_feature_registry_invalid_registry(
+    mock_feature_manager,
+    feature_model_dict,
+    get_credential,
+    snowflake_connector,
+    snowflake_feature_store,
+):
+    """
+    Test insert_feature_registry with duplicated_registry exception
+    """
+    _ = snowflake_connector
+    mock_feature_manager.return_value.insert_feature_registry.side_effect = ValueError
+    mock_feature_manager.return_value.remove_feature_registry.side_effect = (
+        InvalidFeatureRegistryOperationError("Feature version cannot be deleted")
+    )
+    feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
+    with pytest.raises(InvalidFeatureRegistryOperationError) as exc:
+        await FeatureService(user=Mock(), persistent=Mock())._insert_feature_registry(
+            document=feature, get_credential=get_credential
+        )
+    expected_msg = "Feature version cannot be deleted"
+    assert expected_msg in str(exc)
+    assert mock_feature_manager.return_value.remove_feature_registry.called
+
+
+@pytest.mark.asyncio
+@patch("featurebyte.service.feature.FeatureManagerSnowflake")
+async def test_insert_feature_registry__fail_remove_feature_registry_other_exception(
     mock_feature_manager,
     feature_model_dict,
     get_credential,
@@ -147,6 +203,8 @@ async def test_insert_feature_registry__other_exception(
     """
     _ = snowflake_connector
     mock_feature_manager.return_value.insert_feature_registry.side_effect = ValueError
+    mock_feature_manager.return_value.remove_feature_registry.side_effect = ValueError
+
     feature_model_dict["version"] = VersionIdentifier(name=get_version())
     feature = ExtendedFeatureModel(**feature_model_dict, feature_store=snowflake_feature_store)
     with pytest.raises(ValueError):

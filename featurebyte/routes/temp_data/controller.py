@@ -18,10 +18,11 @@ class TempDataController:  # pylint: disable=too-few-public-methods
     TempDataController
     """
 
-    @classmethod
+    def __init__(self, temp_storage: Storage):
+        self.temp_storage = temp_storage
+
     async def get_data(
-        cls,
-        temp_storage: Storage,
+        self,
         path: Path,
     ) -> StreamingResponse:
         """
@@ -29,8 +30,6 @@ class TempDataController:  # pylint: disable=too-few-public-methods
 
         Parameters
         ----------
-        temp_storage: Storage
-            Storage object
         path: Path
             Path of remote data object to retrieve
 
@@ -46,7 +45,7 @@ class TempDataController:  # pylint: disable=too-few-public-methods
         """
         media_type = mimetypes.types_map.get(path.suffix, "application/octet-stream")
         try:
-            bytestream = temp_storage.get_file_stream(remote_path=path)
+            bytestream = self.temp_storage.get_file_stream(remote_path=path)
         except FileNotFoundError as exc:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Invalid path") from exc
         return StreamingResponse(

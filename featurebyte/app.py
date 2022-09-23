@@ -4,10 +4,9 @@ FastAPI Application
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Callable
 
 import signal
-from enum import Enum
 
 from fastapi import Depends, FastAPI, Request
 
@@ -22,20 +21,7 @@ import featurebyte.routes.feature_store.api as feature_store_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
 from featurebyte.middleware import request_handler
-from featurebyte.routes.common.base import BaseDocumentController
-from featurebyte.routes.entity.controller import EntityController
-from featurebyte.routes.event_data.controller import EventDataController
-from featurebyte.routes.feature.controller import FeatureController
-from featurebyte.routes.feature_job_setting_analysis.controller import (
-    FeatureJobSettingAnalysisController,
-)
-from featurebyte.routes.feature_list.controller import FeatureListController
-from featurebyte.routes.feature_list_namespace.controller import FeatureListNamespaceController
-from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
-from featurebyte.routes.feature_store.controller import FeatureStoreController
-from featurebyte.routes.task.controller import TaskController
-from featurebyte.routes.temp_data.controller import TempDataController
-from featurebyte.service.task_manager import TaskManager
+from featurebyte.routes.app_container import AppContainer
 from featurebyte.utils.credential import get_credential
 from featurebyte.utils.persistent import cleanup_persistent, get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
@@ -51,14 +37,9 @@ class User:
     id = None
 
 
-def _get_api_deps(controller: type) -> Callable[[Request], None]:
+def _get_api_deps() -> Callable[[Request], None]:
     """
     Get API dependency injection function
-
-    Parameters
-    ----------
-    controller: type
-        Controller class
 
     Returns
     -------
@@ -75,45 +56,38 @@ def _get_api_deps(controller: type) -> Callable[[Request], None]:
         request: Request
             Request object to be updated
         """
+
         request.state.persistent = get_persistent()
         request.state.user = User()
-        request.state.task_manager = TaskManager(user_id=request.state.user.id)
         request.state.get_credential = get_credential
         request.state.get_storage = get_storage
         request.state.get_temp_storage = get_temp_storage
-        request.state.controller = controller
+
+        request.state.app_container = AppContainer.get_instance(
+            user=request.state.user, persistent=get_persistent(), temp_storage=get_temp_storage()
+        )
 
     return _dep_injection_func
 
 
 # add routers into the app
-resource_api_controller_pairs: list[tuple[Any, type[BaseDocumentController[Any, Any]]]] = [
-    (event_data_api, EventDataController),
-    (entity_api, EntityController),
-    (feature_api, FeatureController),
-    (feature_job_setting_analysis_api, FeatureJobSettingAnalysisController),
-    (feature_list_api, FeatureListController),
-    (feature_list_namespace_api, FeatureListNamespaceController),
-    (feature_namespace_api, FeatureNamespaceController),
-    (feature_store_api, FeatureStoreController),
+resource_api_controller_pairs = [
+    event_data_api,
+    entity_api,
+    feature_api,
+    feature_job_setting_analysis_api,
+    feature_list_api,
+    feature_list_namespace_api,
+    feature_namespace_api,
+    feature_store_api,
+    task_api,
+    temp_data_api,
 ]
-for resource_api, resource_controller in resource_api_controller_pairs:
+for resource_api in resource_api_controller_pairs:
     app.include_router(
         resource_api.router,
-        dependencies=[Depends(_get_api_deps(resource_controller))],
-        tags=[resource_controller.document_service_class.document_class.collection_name()],
-    )
-
-# add non-persistent-storage route
-non_resource_api_controller_pairs: list[tuple[Any, Any, list[str | Enum]]] = [
-    (task_api, TaskController, ["task"]),
-    (temp_data_api, TempDataController, ["temp_data"]),
-]
-for non_resource_api, non_resource_controller, tags in non_resource_api_controller_pairs:
-    app.include_router(
-        non_resource_api.router,
-        dependencies=[Depends(_get_api_deps(non_resource_controller))],
-        tags=tags,
+        dependencies=[Depends(_get_api_deps())],
+        tags=[resource_api.router.prefix[1:]],
     )
 
 app.middleware("http")(request_handler)

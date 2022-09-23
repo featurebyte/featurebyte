@@ -29,13 +29,6 @@ class TestTaskStatusApi:
         with patch("featurebyte.service.task_manager.ProcessStore", wraps=ProcessStore):
             return TaskManager(user_id=user_id)
 
-    @pytest.fixture(autouse=True)
-    def patch_controller_task_manager(self, task_manager):
-        """Patch task manager in task status controller"""
-        with patch("featurebyte.app.TaskManager") as mock_task_manager:
-            mock_task_manager.return_value = task_manager
-            yield
-
     @pytest_asyncio.fixture
     async def task_status_id(self, user_id, task_manager):
         """Task status id"""
