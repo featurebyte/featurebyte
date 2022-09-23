@@ -1,6 +1,8 @@
 """
 Tests QueryObject
 """
+from __future__ import annotations
+
 import copy
 
 import pytest
@@ -9,7 +11,20 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.core.generic import QueryObject
 from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
+
+
+class ConcreteQueryObject(QueryObject):
+    """ConcreteQueryObject class"""
+
+    def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
+        """Extract pruned graph & node from the global query graph"""
+        pruned_graph, node_name_map = GlobalQueryGraph().prune(
+            target_node=self.node,
+            target_columns=set(),
+        )
+        mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
+        return pruned_graph, mapped_node
 
 
 def check_graph_state(graph1, graph2):
@@ -64,7 +79,7 @@ def query_object1_fixture(feature_store_tabular_source):
         input_nodes=[],
     )
     feature_store, tabular_source = feature_store_tabular_source
-    query_obj1 = QueryObject(
+    query_obj1 = ConcreteQueryObject(
         feature_store=feature_store,
         node=node_proj1,
         row_index_lineage=(node_proj1.name,),
@@ -88,7 +103,7 @@ def query_object2_fixture(feature_store_tabular_source, query_object1):
         input_nodes=[node_proj1],
     )
     feature_store, tabular_source = feature_store_tabular_source
-    query_obj2 = QueryObject(
+    query_obj2 = ConcreteQueryObject(
         feature_store=feature_store,
         node=node_proj2,
         row_index_lineage=(node_proj1.name, node_proj2.name),
