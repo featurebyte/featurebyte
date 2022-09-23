@@ -288,13 +288,6 @@ def snowflake_event_data_with_entity_fixture(snowflake_event_data, cust_id_entit
     Entity fixture that sets cust_id in snowflake_event_data as an Entity
     """
     snowflake_event_data.cust_id.as_entity(cust_id_entity.name)
-    snowflake_event_data.update_default_feature_job_setting(
-        feature_job_setting={
-            "blind_spot": "30m",
-            "frequency": "1h",
-            "time_modulo_frequency": "30m",
-        }
-    )
     yield snowflake_event_data
 
 

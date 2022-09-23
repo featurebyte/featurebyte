@@ -249,6 +249,11 @@ def test_event_view_copy(snowflake_event_view):
 def test_event_view_groupby__prune(snowflake_event_view_with_entity):
     """Test event view groupby pruning algorithm"""
     event_view = snowflake_event_view_with_entity
+    feature_job_setting = {
+        "blind_spot": "30m",
+        "frequency": "1h",
+        "time_modulo_frequency": "30m",
+    }
     group_by_col = "cust_id"
     a = event_view["a"] = event_view["cust_id"] + 10
     event_view["a_plus_one"] = a + 1
@@ -257,14 +262,20 @@ def test_event_view_groupby__prune(snowflake_event_view_with_entity):
         method="sum",
         windows=["24h"],
         feature_names=["sum_a_24h"],
+        feature_job_setting=feature_job_setting,
     )["sum_a_24h"]
     feature = (
         event_view.groupby(group_by_col).aggregate(
-            "a_plus_one", method="sum", windows=["24h"], feature_names=["sum_a_plus_one_24h"]
+            "a_plus_one",
+            method="sum",
+            windows=["24h"],
+            feature_names=["sum_a_plus_one_24h"],
+            feature_job_setting=feature_job_setting,
         )["sum_a_plus_one_24h"]
         * b
     )
     pruned_graph, mappped_node = feature.extract_pruned_graph_and_node()
+    # assign 1 & assign 2 dependency are kept
     assert pruned_graph.edges == {
         "add_1": ["assign_1", "add_2"],
         "add_2": ["assign_2"],

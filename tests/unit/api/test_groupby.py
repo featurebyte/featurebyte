@@ -336,13 +336,6 @@ def test_groupby__prune(snowflake_event_view_with_entity):
     )
     feature = feature_group["feat_30m"]
     feature_dict = feature.dict()
-    assert feature_dict["graph"]["edges"] == {
-        "assign_1": ["assign_2"],
-        "assign_2": ["groupby_1"],
-        "groupby_1": ["project_3"],
-        "input_1": ["project_1", "assign_1", "project_2"],
-        "mul_1": ["assign_1"],
-        "mul_2": ["assign_2"],
-        "project_1": ["mul_1"],
-        "project_2": ["mul_2"],
-    }
+    graph_edges = feature_dict["graph"]["edges"]
+    # check that the two assign nodes not get pruned
+    assert {"assign_1", "assign_2"}.issubset(graph_edges)
