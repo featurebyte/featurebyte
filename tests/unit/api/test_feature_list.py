@@ -553,7 +553,7 @@ def test_list(saved_feature_list):
     assert FeatureList.list() == [saved_feature_list.name] == ["my_feature_list"]
 
 
-def test_preview_historical_feature_sql(saved_feature_list):
+def test_get_historical_feature_sql(saved_feature_list):
     """Test get_historical_features_sql method (check it can be triggered without any error)"""
     point_in_time = pd.date_range("2001-01-01", "2001-01-02", freq="d")
     training_events = pd.DataFrame(
