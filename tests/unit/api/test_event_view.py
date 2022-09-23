@@ -244,3 +244,39 @@ def test_event_view_copy(snowflake_event_view):
     assert deep_view_column == view_column
     assert deep_view_column.parent == view_column.parent
     assert id(deep_view_column.graph.nodes) == id(view_column.graph.nodes)
+
+
+def test_event_view_groupby__prune(snowflake_event_view_with_entity):
+    """Test event view groupby pruning algorithm"""
+    event_view = snowflake_event_view_with_entity
+    group_by_col = "cust_id"
+    a = event_view["a"] = event_view["cust_id"] + 10
+    event_view["a_plus_one"] = a + 1
+    b = event_view.groupby(group_by_col).aggregate(
+        "a",
+        method="sum",
+        windows=["24h"],
+        feature_names=["sum_a_24h"],
+    )["sum_a_24h"]
+    feature = (
+        event_view.groupby(group_by_col).aggregate(
+            "a_plus_one", method="sum", windows=["24h"], feature_names=["sum_a_plus_one_24h"]
+        )["sum_a_plus_one_24h"]
+        * b
+    )
+    pruned_graph, mappped_node = feature.extract_pruned_graph_and_node()
+    assert pruned_graph.edges == {
+        "add_1": ["assign_1", "add_2"],
+        "add_2": ["assign_2"],
+        "assign_1": ["project_2", "groupby_1", "assign_2"],
+        "assign_2": ["project_5", "groupby_2"],
+        "groupby_1": ["project_4"],
+        "groupby_2": ["project_6"],
+        "input_1": ["project_1", "assign_1", "project_3"],
+        "project_1": ["add_1", "groupby_1", "groupby_2"],
+        "project_2": ["groupby_1"],
+        "project_3": ["groupby_1", "groupby_2"],
+        "project_4": ["mul_1"],
+        "project_5": ["groupby_2"],
+        "project_6": ["mul_1"],
+    }

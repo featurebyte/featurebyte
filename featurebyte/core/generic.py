@@ -69,32 +69,20 @@ class QueryObject(FeatureByteBaseModel):
     def __str__(self) -> str:
         return repr(self)
 
-    def _preview_sql(self, columns: list[str], limit: int = 10) -> str:
+    def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
         """
-        Preview SQL query
-
-        Parameters
-        ----------
-        columns: list[str]
-            list of columns used to prune the query graph
-        limit: int
-            maximum number of return rows
+        Extract pruned graph & node from the global query graph
 
         Returns
         -------
-        str
+        QueryGraph & mapped Node object (within the pruned graph)
         """
-        if isinstance(self.graph, GlobalQueryGraph):
-            pruned_graph, node_name_map = self.graph.prune(
-                target_node=self.node, target_columns=set(columns)
-            )
-            mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
-            return GraphInterpreter(pruned_graph).construct_preview_sql(
-                node_name=mapped_node.name, num_rows=limit
-            )
-        return GraphInterpreter(self.graph).construct_preview_sql(
-            node_name=self.node.name, num_rows=limit
+        pruned_graph, node_name_map = GlobalQueryGraph().prune(
+            target_node=self.node,
+            target_columns=set(),
         )
+        mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
+        return pruned_graph, mapped_node
 
     @typechecked
     def preview_sql(self, limit: int = 10) -> str:
@@ -110,7 +98,10 @@ class QueryObject(FeatureByteBaseModel):
         -------
         str
         """
-        return self._preview_sql(columns=[], limit=limit)
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        return GraphInterpreter(pruned_graph).construct_preview_sql(
+            node_name=mapped_node.name, num_rows=limit
+        )
 
     @typechecked
     def preview(self, limit: int = 10, credentials: Optional[Credentials] = None) -> pd.DataFrame:

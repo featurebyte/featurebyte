@@ -6,7 +6,7 @@ from decimal import Decimal
 import numpy as np
 import pandas as pd
 
-from featurebyte import EventData, EventView, FeatureList, to_timedelta
+from featurebyte import AggFunc, EventData, EventView, FeatureList, to_timedelta
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.feature import FeatureReadiness
 from tests.util.helper import get_lagged_series_pandas
@@ -88,6 +88,74 @@ def check_feature_and_remove_registry(feature, feature_manager):
     assert feat_reg_df.iloc[0]["VERSION"] == feature.version.to_str()
     assert feat_reg_df.iloc[0]["READINESS"] == "DRAFT"
     feature_manager.remove_feature_registry(extended_feature_model)
+
+
+def iet_entropy(view, group_by_col, window, name):
+    """Create feature to capture the entropy of inter-event interval time"""
+    view = view.copy()
+    ts_col = view[view.timestamp_column]
+    a = view["a"] = (ts_col - ts_col.lag(group_by_col)).dt.day
+    view["a * log(a)"] = a * (a + 0.1).log()  # add 0.1 to avoid log(0.0)
+    b = view.groupby(group_by_col).aggregate(
+        "a",
+        method=AggFunc.SUM,
+        windows=[window],
+        feature_names=[f"sum(a) ({window})"],
+    )[f"sum(a) ({window})"]
+
+    feature = (
+        view.groupby(group_by_col).aggregate(
+            "a * log(a)",
+            method=AggFunc.SUM,
+            windows=[window],
+            feature_names=["sum(a * log(a))"],
+        )["sum(a * log(a))"]
+        * -1
+        / b
+        + (b + 0.1).log()  # add 0.1 to avoid log(0.0)
+    )
+
+    feature.name = name
+    return feature
+
+
+def pyramid_sum(event_view, group_by_col, window, numeric_column, name):
+    """Create a list of assign operations to check the pruning algorithm works properly"""
+    column_num = 3
+    columns = []
+    event_view = event_view.copy()
+    for i in range(1, column_num + 1):
+        col_name = f"column_{i}"
+        columns.append(col_name)
+        event_view[col_name] = i * event_view[numeric_column]
+        if i % 2 == 0:
+            event_view[col_name] = (1 / i) * event_view[col_name]
+        else:
+            temp_col_name = f"{col_name}_tmp"
+            event_view[temp_col_name] = (2 / i) * event_view[col_name]
+            event_view[col_name] = 0.5 * event_view[temp_col_name]
+
+    # construct a geometric series [1, 2, 4, ...]
+    for r in range(column_num - 1):
+        for idx in reversed(range(r, column_num - 1)):
+            col_idx = idx + 1
+            event_view[f"column_{col_idx+1}"] = (
+                event_view[f"column_{col_idx}"] + event_view[f"column_{col_idx+1}"]
+            )
+
+    output = None
+    for idx in range(column_num):
+        col_idx = idx + 1
+        feat = event_view.groupby(group_by_col).aggregate(
+            f"column_{col_idx}", method="sum", windows=[window], feature_names=[f"column_{col_idx}"]
+        )[f"column_{col_idx}"]
+        if output is None:
+            output = feat
+        else:
+            output = output + feat
+
+    output.name = name
+    return output
 
 
 def test_query_object_operation_on_snowflake_source(
@@ -268,24 +336,51 @@ def test_query_object_operation_on_snowflake_source(
     special_feature.save()  # pylint: disable=no-member
     check_feature_and_remove_registry(special_feature, feature_manager)
 
+    # add iet entropy
+    feature_group["iet_entropy_24h"] = iet_entropy(
+        event_view, "USER ID", window="24h", name="iet_entropy_24h"
+    )
+    feature_group["pyramid_sum_24h"] = pyramid_sum(
+        event_view, "USER ID", window="24h", numeric_column="AMOUNT", name="pyramid_sum_24h"
+    )
+    feature_group["amount_sum_24h"] = event_view.groupby("USER ID").aggregate(
+        "AMOUNT", method="sum", windows=["24h"], feature_names=["amount_sum_24h"]
+    )["amount_sum_24h"]
+
     # preview a more complex feature group (multiple group by, some have the same tile_id)
     feature_group_combined = FeatureList(
         [
             feature_group["COUNT_2h"],
+            feature_group["iet_entropy_24h"],
+            feature_group["pyramid_sum_24h"],
+            feature_group["amount_sum_24h"],
             feature_group_per_category["COUNT_BY_ACTION_24h"],
             special_feature,
         ],
         name="My FeatureList",
-    )[["COUNT_2h", "COUNT_BY_ACTION_24h", "NUM_PURCHASE_7d"]]
+    )[
+        [
+            "COUNT_2h",
+            "COUNT_BY_ACTION_24h",
+            "NUM_PURCHASE_7d",
+            "iet_entropy_24h",
+            "pyramid_sum_24h",
+            "amount_sum_24h",
+        ]
+    ]
     df_feature_preview = feature_group_combined.preview(
         preview_param, credentials=config.credentials
     )
+    expected_amount_sum_24h = 220.18
     assert df_feature_preview.iloc[0].to_dict() == {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "user id": 1,
         "COUNT_2h": Decimal("2"),
         "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
         "NUM_PURCHASE_7d": Decimal("4"),
+        "iet_entropy_24h": 0.697122134639394,
+        "pyramid_sum_24h": 7 * expected_amount_sum_24h,  # 1 + 2 + 4 = 7
+        "amount_sum_24h": expected_amount_sum_24h,
     }
 
     # Check using a derived numeric column as category

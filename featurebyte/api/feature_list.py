@@ -26,6 +26,7 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FeatureListStatus,
 )
+from featurebyte.query_graph.feature_common import get_prune_graph_and_nodes
 from featurebyte.query_graph.feature_historical import get_historical_features
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 from featurebyte.schema.feature_list import FeatureListCreate
@@ -178,15 +179,15 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         """
 
         tic = time.time()
-        nodes = [feature.node for feature in self.feature_objects.values()]
-        if nodes:
-            first_feature = next(iter(self.feature_objects.values()))
+        features: list[Feature] = list(self.feature_objects.values())
+        if features:
+            pruned_graph, mapped_nodes = get_prune_graph_and_nodes(feature_objects=features)
             preview_sql = get_feature_preview_sql(
-                graph=first_feature.graph,
-                nodes=nodes,
+                graph=pruned_graph,
+                nodes=mapped_nodes,
                 point_in_time_and_serving_name=point_in_time_and_serving_name,
             )
-            session = first_feature.get_session(credentials)
+            session = features[0].get_session(credentials)
             result = session.execute_query(preview_sql)
             elapsed = time.time() - tic
             logger.debug(f"Preview took {elapsed:.2f}s")

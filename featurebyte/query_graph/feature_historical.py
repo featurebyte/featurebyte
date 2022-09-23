@@ -20,9 +20,8 @@ from featurebyte.exception import (
     TooRecentPointInTimeError,
 )
 from featurebyte.logger import logger
-from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME, get_prune_graph_and_nodes
 from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
-from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import SnowflakeTileCache
 
@@ -151,23 +150,8 @@ def get_historical_features_sql(
     MissingServingNameError
         If any required serving name is not provided
     """
-    # pylint: disable=too-many-locals
-    # construct a local graph by combining multiple pruned graphs
-    global_query_graph = GlobalQueryGraph()
-    local_query_graph = QueryGraph()
-    feature_nodes = []
-    for feature in feature_objects:
-        target_columns = {feature.name} if feature.name else set()
-        pruned_graph, node_name_map = global_query_graph.prune(
-            target_node=feature.node, target_columns=target_columns
-        )
-        pruned_node_name = node_name_map[feature.node.name]
-        local_query_graph, local_name_map = local_query_graph.load(pruned_graph)
-        feature_nodes.append(local_query_graph.get_node_by_name(local_name_map[pruned_node_name]))
-
-    planner = FeatureExecutionPlanner(
-        local_query_graph, serving_names_mapping=serving_names_mapping
-    )
+    pruned_graph, feature_nodes = get_prune_graph_and_nodes(feature_objects)
+    planner = FeatureExecutionPlanner(pruned_graph, serving_names_mapping=serving_names_mapping)
     plan = planner.generate_plan(feature_nodes)
 
     missing_serving_names = plan.required_serving_names.difference(request_table_columns)

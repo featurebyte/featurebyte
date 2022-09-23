@@ -3,13 +3,18 @@ Common helpers and data structures for feature SQL generation
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from dataclasses import dataclass
 
 import pandas as pd
 import sqlglot
 
-from featurebyte.query_graph.graph import Node
+from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.query_graph.tiling import get_aggregator
+
+if TYPE_CHECKING:
+    from featurebyte.api.feature import Feature
 
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
 
@@ -159,3 +164,24 @@ class FeatureSpec:
 
     feature_name: str
     feature_expr: str
+
+
+def get_prune_graph_and_nodes(feature_objects: list[Feature]) -> tuple[QueryGraph, list[Node]]:
+    """Construct the pruned graph which contains list of pruned feature graph
+
+    Parameters
+    ----------
+    feature_objects: List[Feature]
+        List of feature objects
+
+    Returns
+    -------
+    QueryGraph, List[Node]
+    """
+    local_query_graph = QueryGraph()
+    feature_nodes = []
+    for feature in feature_objects:
+        pruned_graph, mapped_node = feature.extract_pruned_graph_and_node()
+        local_query_graph, local_name_map = local_query_graph.load(pruned_graph)
+        feature_nodes.append(local_query_graph.get_node_by_name(local_name_map[mapped_node.name]))
+    return local_query_graph, feature_nodes
