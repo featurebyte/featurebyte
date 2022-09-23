@@ -68,6 +68,22 @@ def escape_column_names(column_names: list[str]) -> list[str]:
     return [escape_column_name(x) for x in column_names]
 
 
+def has_window_function(expression: Expression) -> bool:
+    """
+    Returns whether the expression contains a window function
+
+    Parameters
+    ----------
+    expression : Expression
+        Expression to check
+
+    Returns
+    -------
+    bool
+    """
+    return len(list(expression.find_all(expressions.Window))) > 0
+
+
 class SQLNode(ABC):
     """Base class of a node in the SQL operations tree
 
@@ -98,13 +114,21 @@ class TableNode(SQLNode, ABC):
         This mapping keeps track of the expression currently associated with each column name
     columns_node : dict[str, ExpressionNode]
         Mapping from column name to ExpressionNode for assigned columns
+    where_condition : Optional[Expression]
+        Expression to be used in WHERE clause
+    qualify_condition : Optional[Expression]
+        Expression to be used in QUALIFY clause
     """
 
     columns_map: dict[str, Expression]
     columns_node: dict[str, ExpressionNode] = field(init=False)
+    where_condition: Optional[Expression] = field(init=False)
+    qualify_condition: Optional[Expression] = field(init=False)
 
     def __post_init__(self) -> None:
         self.columns_node = {}
+        self.where_condition = None
+        self.qualify_condition = None
 
     @property
     def columns(self) -> list[str]:
@@ -208,6 +232,29 @@ class TableNode(SQLNode, ABC):
         subset_table.columns_node = subset_columns_node
         return subset_table
 
+    def subset_rows(self: TableNodeT, condition: Expression) -> TableNodeT:
+        """Return a new InputNode with rows filtered
+
+        Parameters
+        ----------
+        condition : Expression
+            Condition expression to be used for filtering
+
+        Returns
+        -------
+        TableNodeT
+        """
+        out = self.copy()
+        if has_window_function(condition):
+            assert self.qualify_condition is None
+            out.qualify_condition = condition
+        else:
+            if self.where_condition is not None:
+                out.where_condition = expressions.and_(self.where_condition, condition)
+            else:
+                out.where_condition = condition
+        return out
+
     def copy(self: TableNodeT) -> TableNodeT:
         """Create a copy of this TableNode
 
@@ -259,13 +306,23 @@ class ParsedExpressionNode(ExpressionNode):
 
 
 @dataclass
+class AndNode(ExpressionNode):
+    """And node"""
+
+    left_node: ExpressionNode
+    right_node: ExpressionNode
+
+    @property
+    def sql(self) -> Expression:
+        return expressions.and_(self.left_node.sql, self.right_node.sql)
+
+
+@dataclass
 class InputNode(TableNode):
     """Input data node"""
 
-    column_names: list[str]
     dbtable: dict[str, str]
     feature_store: dict[str, Any]
-    where_condition: Optional[Expression]
 
     @property
     def sql(self) -> Expression:
@@ -276,11 +333,21 @@ class InputNode(TableNode):
         Expression
             A sqlglot Expression object
         """
+        # QUALIFY part
+        if self.qualify_condition is not None:
+            qualify_expr = expressions.Qualify(this=self.qualify_condition)
+            select_expr = expressions.Select(qualify=qualify_expr)
+        else:
+            select_expr = select()
+
+        # SELECT part
         select_args = []
         for col, expr in self.columns_map.items():
             col = expressions.Identifier(this=col, quoted=True)
             select_args.append(expressions.alias_(expr, col))
-        select_expr = select(*select_args)
+        select_expr = select_expr.select(*select_args)
+
+        # FROM part
         if self.feature_store["type"] == SourceType.SNOWFLAKE:
             database = self.dbtable["database_name"]
             schema = self.dbtable["schema_name"]
@@ -288,23 +355,13 @@ class InputNode(TableNode):
             dbtable = f'"{database}"."{schema}"."{table}"'
         else:
             dbtable = escape_column_name(self.dbtable["table_name"])
+
+        # WHERE part
         select_expr = select_expr.from_(dbtable)
         if self.where_condition is not None:
             select_expr = select_expr.where(self.where_condition)
+
         return select_expr
-
-    def update_where_condition(self, condition: Expression) -> None:
-        """Update the node's where condition
-
-        Parameters
-        ----------
-        condition : Expression
-            Condition expression to be used in the WHERE clause
-        """
-        if self.where_condition is not None:
-            self.where_condition = expressions.and_(self.where_condition, condition)
-        else:
-            self.where_condition = condition
 
 
 @dataclass
@@ -1209,14 +1266,11 @@ def handle_filter_node(
     sql_node: TableNode | ExpressionNode
     if output_type == NodeOutputType.FRAME:
         assert isinstance(item, InputNode)
-        input_table_copy = item.copy()
-        input_table_copy.update_where_condition(mask.sql)
-        sql_node = input_table_copy
+        sql_node = item.subset_rows(mask.sql)
     else:
         assert isinstance(item, ExpressionNode)
         assert isinstance(item.table_node, InputNode)
-        input_table_copy = item.table_node.copy()
-        input_table_copy.update_where_condition(mask.sql)
+        input_table_copy = item.table_node.subset_rows(mask.sql)
         sql_node = ParsedExpressionNode(input_table_copy, item.sql)
     return sql_node
 
@@ -1294,8 +1348,6 @@ def make_input_node(
     if sql_type == SQLType.BUILD_TILE:
         sql_node = BuildTileInputNode(
             columns_map=columns_map,
-            where_condition=None,
-            column_names=parameters["columns"],
             timestamp=parameters["timestamp"],
             dbtable=parameters["dbtable"],
             feature_store=feature_store,
@@ -1304,8 +1356,6 @@ def make_input_node(
         assert groupby_keys is not None
         sql_node = SelectedEntityBuildTileInputNode(
             columns_map=columns_map,
-            where_condition=None,
-            column_names=parameters["columns"],
             timestamp=parameters["timestamp"],
             dbtable=parameters["dbtable"],
             feature_store=feature_store,
@@ -1314,8 +1364,6 @@ def make_input_node(
     else:
         sql_node = InputNode(
             columns_map=columns_map,
-            where_condition=None,
-            column_names=parameters["columns"],
             dbtable=parameters["dbtable"],
             feature_store=feature_store,
         )

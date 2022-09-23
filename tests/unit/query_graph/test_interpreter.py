@@ -1118,3 +1118,149 @@ def test_window_function(graph, node_input):
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
+
+
+def test_window_function__as_filter(graph, node_input):
+    """Test when condition derived from window function is used as filter"""
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    lagged_a = graph.add_operation(
+        node_type=NodeType.LAG,
+        node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a],
+    )
+    assign_node = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "prev_a"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, lagged_a],
+    )
+    proj_lagged_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["prev_a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[assign_node],
+    )
+    binary_node = graph.add_operation(
+        node_type=NodeType.GT,
+        node_params={"value": 0},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_lagged_a],
+    )
+    filtered_node = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node, binary_node],
+    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
+    sql_tree = sql_graph.build(filtered_node).sql
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
+        FROM "db"."public"."event_table"
+        QUALIFY
+          (LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") > 0)
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
+
+
+def test_window_function__multiple_filters(graph, node_input):
+    """Test when condition derived from window function is used as filter"""
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    non_window_based_condition = graph.add_operation(
+        node_type=NodeType.EQ,
+        node_params={"value": 123},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a],
+    )
+    filtered_node = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, non_window_based_condition],
+    )
+    lagged_a = graph.add_operation(
+        node_type=NodeType.LAG,
+        node_params={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_a],
+    )
+    window_based_condition = graph.add_operation(
+        node_type=NodeType.GT,
+        node_params={"value": 0},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[lagged_a],
+    )
+    assign_node = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "prev_a"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[filtered_node, lagged_a],
+    )
+    filtered_node_2 = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[assign_node, window_based_condition],
+    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
+    sql_tree = sql_graph.build(filtered_node_2).sql
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
+        FROM "db"."public"."event_table"
+        WHERE
+          ("a" = 123)
+        QUALIFY
+          (LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") > 0)
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
+
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE)
+    sql_tree = sql_graph.build(filtered_node_2).sql
+    expected = textwrap.dedent(
+        """
+        SELECT
+          *
+        FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b",
+              LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
+            FROM "db"."public"."event_table"
+            WHERE
+              ("a" = 123)
+            QUALIFY
+              (LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") > 0)
+        )
+        WHERE
+          "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+          AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
