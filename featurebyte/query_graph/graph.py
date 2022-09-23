@@ -392,12 +392,18 @@ class GlobalQueryGraph(QueryGraph):
                 to_prune_target_node = True
                 input_node_names = input_node_names[:1]
 
-        # remove fulfilled condition
+        # If the current target node produces a new column, we should remove it from the target_columns
+        # (as the condition has been matched). If it is not removed, the pruning algorithm may keep the unused
+        # assign operation that generate the same column name.
         target_columns = target_columns.difference(
             self._get_node_generate_new_column_names(target_node)
         )
 
-        # reverse topological sort to make sure "target_columns" get filled properly before pruning ASSIGN node
+        # reverse topological sort to make sure "target_columns" get filled properly. Example:
+        # edges = {"assign_1": ["groupby_1", "project_1"], "project_1", ["groupby_1"], ...}
+        # Here, "groupby_1" node have 2 input_node_names ("assign_1" and "project_1"), reverse topological
+        # sort makes sure we travel "project_1" first (filled up target_columns) and then travel assign node.
+        # If the assign node's new columns are not in "target_columns", we can safely remove the node.
         for input_node_name in sorted(input_node_names, key=lambda x: index_map[x], reverse=True):
             input_node = self.get_node_by_name(input_node_name)
             pruned_graph = self._prune(
