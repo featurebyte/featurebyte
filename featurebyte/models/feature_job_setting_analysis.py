@@ -178,7 +178,6 @@ class MissingJobsInfo(BaseMissingJobsInfo):
         """
         if isinstance(value, str):
             return np.array(json.loads(value))
-        assert isinstance(value, np.ndarray)
         return value
 
     @validator("late_event_index", "affected_event_index", pre=True)
