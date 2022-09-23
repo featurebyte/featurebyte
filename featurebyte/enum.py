@@ -152,6 +152,9 @@ class InternalName(str, Enum):
     ENTITY_TABLE_START_DATE = "__FB_ENTITY_TABLE_START_DATE"
     ENTITY_TABLE_END_DATE = "__FB_ENTITY_TABLE_END_DATE"
 
+    LAST_TILE_INDEX = "__FB_LAST_TILE_INDEX"
+    FIRST_TILE_INDEX = "__FB_FIRST_TILE_INDEX"
+
 
 class WorkerCommand(str, Enum):
     """

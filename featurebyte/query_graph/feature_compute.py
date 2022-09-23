@@ -3,13 +3,13 @@ Module with logic related to feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional, Tuple, cast
 
 from abc import ABC, abstractmethod
 
 from sqlglot import expressions, select
 
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.feature_common import (
     REQUEST_TABLE_NAME,
     AggregationSpec,
@@ -41,9 +41,11 @@ AggregationSpecIdType = Tuple[TileIdType, Window, AggSpecEntityIDs]
 class RequestTablePlan(ABC):
     """SQL generation for expanded request tables
 
-    An expanded request table contains a tile index column (REQ_TILE_INDEX) representing the
-    required tiles for a windowed aggregation. It will be used as a join key when joining with the
-    tile table. Since the required tile indices depend on feature job setting and not the specific
+    An expanded request table has the same number of rows as the original request table but with new
+    columns added: __FB_LAST_TILE_INDEX and __FB_FIRST_TILE_INDEX. This corresponds to the first and
+    last (exclusive) tile index when joining with the tile table.
+
+    Since the required tile indices depend on feature job setting and not the specific
     aggregation method or input, an expanded table can be pre-computed (in the SQL as a common
     table) and shared with different features with the same feature job setting.
 
@@ -58,22 +60,12 @@ class RequestTablePlan(ABC):
     ----------------------
 
     Then an expanded request table would be similar to:
-    --------------------------------------
-    POINT_IN_TIME  CUST_ID  REQ_TILE_INDEX
-    --------------------------------------
-    2022-04-01     C1       2500000
-    2022-04-01     C1       2500001
-    2022-04-01     C1       2500002
-    2022-04-01     C1       2500003
-    2022-04-01     C1       2500004
-    2022-04-10     C2       2500010
-    2022-04-10     C2       2500011
-    2022-04-10     C2       2500012
-    2022-04-10     C2       2500013
-    2022-04-10     C2       2500014
-    --------------------------------------
-
-    The REQ_TILE_INDEX column will be used as a join key when joining with the tile table.
+    -------------------------------------------------------------------
+    POINT_IN_TIME  CUST_ID  __FB_FIRST_TILE_INDEX  __FB_LAST_TILE_INDEX
+    -------------------------------------------------------------------
+    2022-04-01     C1       1000                   1010
+    2022-04-10     C2       1105                   1115
+    -------------------------------------------------------------------
     """
 
     def __init__(self) -> None:
@@ -213,31 +205,21 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
         # Input request table can have duplicated time points but aggregation should be done only on
         # distinct time points
         quoted_serving_names = escape_column_names(serving_names)
-        select_distinct_columns = ", ".join(
-            [SpecialColumnName.POINT_IN_TIME.value] + quoted_serving_names
+        select_distinct_expr = (
+            expressions.Select(distinct=True)
+            .select(SpecialColumnName.POINT_IN_TIME.value, *quoted_serving_names)
+            .from_(REQUEST_TABLE_NAME)
         )
-        select_serving_names = ", ".join([f"REQ.{col}" for col in quoted_serving_names])
-        sql = f"""
-    SELECT
-        REQ.{SpecialColumnName.POINT_IN_TIME},
-        {select_serving_names},
-        T.value::INTEGER AS REQ_TILE_INDEX
-    FROM (
-        SELECT DISTINCT {select_distinct_columns} FROM {REQUEST_TABLE_NAME}
-    ) REQ,
-    Table(
-        Flatten(
-            SELECT F_COMPUTE_TILE_INDICES(
-                DATE_PART(epoch, REQ.{SpecialColumnName.POINT_IN_TIME}),
-                {window_size},
-                {frequency},
-                {blind_spot},
-                {time_modulo_frequency}
-            )
-        )
-    ) T
-"""
-        return sql
+        num_tiles = window_size // frequency
+        expr = select(
+            SpecialColumnName.POINT_IN_TIME.value,
+            *quoted_serving_names,
+            f"DATE_PART(epoch, {SpecialColumnName.POINT_IN_TIME}) AS __FB_TS",
+            f"FLOOR((__FB_TS - {time_modulo_frequency}) / {frequency}) AS {InternalName.LAST_TILE_INDEX}",
+            f"{InternalName.LAST_TILE_INDEX} - {num_tiles} AS {InternalName.FIRST_TILE_INDEX}",
+        ).from_(select_distinct_expr.subquery())
+        expr_str = cast(str, expr.sql(pretty=True))
+        return expr_str
 
 
 class AggregationSpecSet:
@@ -364,6 +346,7 @@ class FeatureExecutionPlan(ABC):
         value_by: str | None,
         merge_exprs: list[str],
         agg_result_names: list[str],
+        num_tiles: int,
     ) -> expressions.Select:
         """Construct SQL code for one specific aggregation
 
@@ -413,16 +396,29 @@ class FeatureExecutionPlan(ABC):
             SQL expressions that aggregates intermediate values stored in tile table
         agg_result_names : list[str]
             Column names of the aggregated results
+        num_tiles : int
+            Feature window size in terms of number of tiles (function of frequency)
 
         Returns
         -------
         expressions.Select
         """
         # pylint: disable=too-many-locals
-        join_conditions_lst = ["REQ.REQ_TILE_INDEX = TILE.INDEX"]
+        last_index_name = InternalName.LAST_TILE_INDEX.value
+        range_join_condition = expressions.or_(
+            f"FLOOR(REQ.{last_index_name} / {num_tiles}) = FLOOR(TILE.INDEX / {num_tiles})",
+            f"FLOOR(REQ.{last_index_name} / {num_tiles}) - 1 = FLOOR(TILE.INDEX / {num_tiles})",
+        )
+        join_conditions_lst = [range_join_condition]
         for serving_name, key in zip(escape_column_names(serving_names), escape_column_names(keys)):
             join_conditions_lst.append(f"REQ.{serving_name} = TILE.{key}")
         join_conditions = expressions.and_(*join_conditions_lst)
+
+        first_index_name = InternalName.FIRST_TILE_INDEX.value
+        range_join_where_conditions = [
+            f"TILE.INDEX >= REQ.{first_index_name}",
+            f"TILE.INDEX < REQ.{last_index_name}",
+        ]
 
         group_by_keys = [f"REQ.{point_in_time_column}"]
         for serving_name in escape_column_names(serving_names):
@@ -454,6 +450,7 @@ class FeatureExecutionPlan(ABC):
                 join_type="inner",
                 on=join_conditions,
             )
+            .where(*range_join_where_conditions)
             .group_by(*inner_group_by_keys)
         )
 
@@ -596,6 +593,7 @@ class FeatureExecutionPlan(ABC):
                 value_by=agg_spec.value_by,
                 merge_exprs=merge_exprs,
                 agg_result_names=agg_result_names,
+                num_tiles=agg_spec.window // agg_spec.frequency,
             )
             table_expr, agg_result_name_aliases = self.construct_left_join_sql(
                 index=i,
@@ -643,8 +641,7 @@ class FeatureExecutionPlan(ABC):
         table_expr = select(*request_table_column_names, *qualified_feature_names).from_(
             f"{self.AGGREGATION_TABLE_NAME} AS AGG"
         )
-        sql = table_expr.sql(pretty=True)
-        assert isinstance(sql, str)
+        sql = cast(str, table_expr.sql(pretty=True))
         return sql
 
     def construct_combined_sql(
