@@ -263,6 +263,32 @@ class Feature(
                     raise KeyError(f"Serving name not provided: {col}")
 
     @typechecked
+    def preview_sql(  # type: ignore[override]  # pylint: disable=arguments-renamed
+        self,
+        point_in_time_and_serving_name: Dict[str, Any],
+    ) -> str:
+        """
+        Generate SQL query to preview a feature
+
+        Parameters
+        ----------
+        point_in_time_and_serving_name : Dict[str, Any]
+            Dictionary consisting the point in time and serving names based on which the feature
+            preview will be computed
+
+        Returns
+        -------
+        str
+        """
+        self._validate_point_in_time_and_serving_name(point_in_time_and_serving_name)
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        return get_feature_preview_sql(
+            graph=pruned_graph,
+            nodes=[mapped_node],
+            point_in_time_and_serving_name=point_in_time_and_serving_name,
+        )
+
+    @typechecked
     def preview(  # type: ignore[override]  # pylint: disable=arguments-renamed
         self,
         point_in_time_and_serving_name: Dict[str, Any],
@@ -284,14 +310,10 @@ class Feature(
         pd.DataFrame
         """
         tic = time.time()
-        self._validate_point_in_time_and_serving_name(point_in_time_and_serving_name)
-        preview_sql = get_feature_preview_sql(
-            graph=self.graph,
-            nodes=[self.node],
-            point_in_time_and_serving_name=point_in_time_and_serving_name,
-        )
         session = self.get_session(credentials)
-        result = session.execute_query(preview_sql)
+        result = session.execute_query(
+            self.preview_sql(point_in_time_and_serving_name=point_in_time_and_serving_name)
+        )
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
         return result

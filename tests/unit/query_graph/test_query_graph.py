@@ -123,23 +123,23 @@ def test_prune__multiple_non_redundant_assign_nodes__interactive_pattern(datafra
     )
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
     assert pruned_graph.edges == {
-        "input_1": ["project_1", "assign_1", "project_3"],
-        "project_1": ["div_1"],
-        "div_1": ["assign_1"],
-        "assign_1": ["project_2", "assign_2"],
-        "project_3": ["add_1"],
-        "add_1": ["assign_2"],
-        "assign_2": ["project_4", "assign_3"],
+        "input_1": ["project_1", "assign_1", "project_3", "assign_2"],
+        "project_1": ["add_1"],
         "project_2": ["mul_1"],
+        "project_3": ["div_1"],
         "project_4": ["mul_1"],
+        "add_1": ["assign_1"],
+        "assign_1": ["project_2", "assign_3"],
+        "assign_2": ["project_4"],
+        "div_1": ["assign_2"],
         "mul_1": ["assign_3"],
     }
-    assert pruned_graph.nodes["assign_1"]["parameters"]["name"] == "requiredA"
-    assert pruned_graph.nodes["assign_2"]["parameters"]["name"] == "requiredB"
-    assert pruned_graph.nodes["project_1"]["parameters"]["columns"] == ["CUST_ID"]
-    assert pruned_graph.nodes["project_3"]["parameters"]["columns"] == ["VALUE"]
-    assert pruned_graph.nodes["project_2"]["parameters"]["columns"] == ["requiredA"]
-    assert pruned_graph.nodes["project_4"]["parameters"]["columns"] == ["requiredB"]
+    assert pruned_graph.nodes["assign_1"]["parameters"]["name"] == "requiredB"
+    assert pruned_graph.nodes["assign_2"]["parameters"]["name"] == "requiredA"
+    assert pruned_graph.nodes["project_1"]["parameters"]["columns"] == ["VALUE"]
+    assert pruned_graph.nodes["project_2"]["parameters"]["columns"] == ["requiredB"]
+    assert pruned_graph.nodes["project_3"]["parameters"]["columns"] == ["CUST_ID"]
+    assert pruned_graph.nodes["project_4"]["parameters"]["columns"] == ["requiredA"]
     assert mapped_node.name == "assign_3"
 
 

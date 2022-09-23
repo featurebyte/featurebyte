@@ -138,7 +138,6 @@ def transaction_dataframe():
     rng = np.random.RandomState(1234)
     product_actions = ["detail", "add", "purchase", "remove", None]
     timestamps = pd.date_range("2001-01-01", freq="1h", periods=24 * 366).to_series()
-    timestamps += np.random.randint(0, 3600, len(timestamps)) * pd.Timedelta(seconds=1)
 
     # add more points to the first one month
     first_one_month_point_num = 24 * 31
@@ -171,6 +170,9 @@ def transaction_dataframe():
     data["created_at"] += rng.randint(1, 100, row_number).cumsum() * pd.Timedelta(seconds=1)
     data["created_at"] = data["created_at"].astype(int)
     data["session_id"] = data["session_id"].sample(frac=1.0).reset_index(drop=True)
+
+    # add some second-level variation to the event timestamp
+    data["event_timestamp"] += rng.randint(0, 3600, len(timestamps)) * pd.Timedelta(seconds=1)
     yield data
 
 

@@ -156,8 +156,8 @@ def test__setitem__cond_assign_consecutive(dataframe, bool_series):
     assert dict(series_dict["graph"]["backward_edges"]) == {
         "assign_1": ["input_1", "conditional_1"],
         "assign_2": ["assign_1", "conditional_2"],
-        "conditional_1": ["project_1", "project_2"],
-        "conditional_2": ["project_3", "project_2"],
+        "conditional_1": ["project_2", "project_1"],
+        "conditional_2": ["project_3", "project_1"],
         "project_1": ["input_1"],
         "project_2": ["input_1"],
         "project_3": ["assign_1"],

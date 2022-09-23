@@ -738,25 +738,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             **self.unary_op_series_params(),
         )
 
-    @typechecked
-    def preview_sql(self, limit: int = 10) -> str:
-        """
-        Generate SQL query to preview the transformed column
-
-        Parameters
-        ----------
-        limit: int
-            maximum number of return rows
-
-        Returns
-        -------
-        SQL query
-        """
-        columns = []
-        if self.name:
-            columns.append(self.name)
-        return self._preview_sql(columns=columns, limit=limit)
-
     @property
     def node_types_lineage(self) -> list[NodeType]:
         """
@@ -806,3 +787,11 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             new_object.__dict__["graph"] = pruned_graph
             return new_object.dict(*args, **kwargs)
         return super().dict(*args, **kwargs)
+
+    def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
+        pruned_graph, node_name_map = GlobalQueryGraph().prune(
+            target_node=self.node,
+            target_columns={self.name} if self.name else set(),
+        )
+        mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
+        return pruned_graph, mapped_node

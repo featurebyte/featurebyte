@@ -28,8 +28,21 @@ def float_feature_dict_fixture(float_feature):
     feat_dict = float_feature.dict()
 
     # after serialization, pruned query graph is used
-    assert set(feat_dict["graph"]["nodes"]) == {"input_1", "groupby_1", "project_1"}
-    assert feat_dict["graph"]["edges"] == {"input_1": ["groupby_1"], "groupby_1": ["project_1"]}
+    assert set(feat_dict["graph"]["nodes"]) == {
+        "input_1",
+        "groupby_1",
+        "project_1",
+        "project_2",
+        "project_3",
+        "project_4",
+    }
+    assert feat_dict["graph"]["edges"] == {
+        "input_1": ["project_1", "project_2", "project_3", "groupby_1"],
+        "project_1": ["groupby_1"],
+        "project_2": ["groupby_1"],
+        "project_3": ["groupby_1"],
+        "groupby_1": ["project_4"],
+    }
     yield feat_dict
 
 
@@ -71,11 +84,14 @@ def test_feature__bool_series_key_scalar_value(float_feature, bool_feature):
         "output_type": "series",
     }
     assert float_feature_dict["graph"]["backward_edges"] == {
-        "groupby_1": ["input_1"],
-        "project_1": ["groupby_1"],
-        "gt_1": ["project_1"],
-        "conditional_1": ["project_1", "gt_1"],
         "alias_1": ["conditional_1"],
+        "conditional_1": ["project_4", "gt_1"],
+        "groupby_1": ["input_1", "project_1", "project_2", "project_3"],
+        "gt_1": ["project_4"],
+        "project_1": ["input_1"],
+        "project_2": ["input_1"],
+        "project_3": ["input_1"],
+        "project_4": ["groupby_1"],
     }
 
 
@@ -100,11 +116,14 @@ def test_feature__cond_assign_unnamed(float_feature, bool_feature):
     }
     # No assignment occurred
     assert temp_feature_dict["graph"]["backward_edges"] == {
-        "add_1": ["project_1"],
+        "project_1": ["input_1"],
+        "project_2": ["input_1"],
+        "project_3": ["input_1"],
+        "groupby_1": ["input_1", "project_1", "project_2", "project_3"],
+        "project_4": ["groupby_1"],
+        "gt_1": ["project_4"],
+        "add_1": ["project_4"],
         "conditional_1": ["add_1", "gt_1"],
-        "groupby_1": ["input_1"],
-        "gt_1": ["project_1"],
-        "project_1": ["groupby_1"],
     }
 
 

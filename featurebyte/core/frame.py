@@ -15,7 +15,7 @@ from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
 
 
 class BaseFrame(QueryObject):
@@ -58,21 +58,13 @@ class BaseFrame(QueryObject):
         """
         return list(self.column_var_type_map)
 
-    @typechecked
-    def preview_sql(self, limit: int = 10) -> str:
-        """
-        Generate SQL query to preview the transformed table
-
-        Parameters
-        ----------
-        limit: int
-            maximum number of return rows
-
-        Returns
-        -------
-        SQL query
-        """
-        return self._preview_sql(columns=self.columns, limit=limit)
+    def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
+        pruned_graph, node_name_map = GlobalQueryGraph().prune(
+            target_node=self.node,
+            target_columns=set(self.columns),
+        )
+        mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
+        return pruned_graph, mapped_node
 
 
 class Frame(BaseFrame, OpsMixin, GetAttrMixin):

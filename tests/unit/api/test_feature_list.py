@@ -551,3 +551,13 @@ def test_pre_save_operations(mock_is_notebook, mock_alive_bar, saved_feature_lis
 def test_list(saved_feature_list):
     """Test listing feature list"""
     assert FeatureList.list() == [saved_feature_list.name] == ["my_feature_list"]
+
+
+def test_get_historical_feature_sql(saved_feature_list):
+    """Test get_historical_features_sql method (check it can be triggered without any error)"""
+    point_in_time = pd.date_range("2001-01-01", "2001-01-02", freq="d")
+    training_events = pd.DataFrame(
+        {"POINT_IN_TIME": point_in_time, "cust_id": [1234] * len(point_in_time)}
+    )
+    sql = saved_feature_list.get_historical_features_sql(training_events=training_events)
+    assert 'WITH "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS' in sql

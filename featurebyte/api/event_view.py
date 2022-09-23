@@ -12,10 +12,9 @@ from featurebyte.api.event_data import EventData
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
-from featurebyte.core.util import series_unary_operation
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
-from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import EventViewGroupBy
@@ -76,15 +75,30 @@ class EventViewColumn(Series):
         if NodeType.LAG in self.node_types_lineage:
             raise ValueError("lag can only be applied once per column")
         assert self._parent is not None
-        return series_unary_operation(
-            input_series=self,
+
+        timestamp_column = self._parent.timestamp_column
+        required_columns = entity_columns + [timestamp_column]
+        input_nodes = [self.node]
+        for col in required_columns:
+            input_nodes.append(self._parent[col].node)
+
+        node = self.graph.add_operation(
             node_type=NodeType.LAG,
-            output_var_type=self.dtype,
             node_params={
                 "entity_columns": entity_columns,
                 "timestamp_column": self._parent.timestamp_column,
                 "offset": offset,
             },
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=input_nodes,
+        )
+        return type(self)(
+            feature_store=self.feature_store,
+            tabular_source=self.tabular_source,
+            node=node,
+            name=None,
+            dtype=self.dtype,
+            row_index_lineage=self.row_index_lineage,
             **self.unary_op_series_params(),
         )
 

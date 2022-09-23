@@ -26,7 +26,13 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FeatureListStatus,
 )
-from featurebyte.query_graph.feature_historical import get_historical_features
+from featurebyte.query_graph.feature_common import get_prune_graph_and_nodes
+from featurebyte.query_graph.feature_historical import (
+    get_historical_features,
+    get_historical_features_sql,
+    validate_historical_requests_point_in_time,
+    validate_request_schema,
+)
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 from featurebyte.schema.feature_list import FeatureListCreate
 
@@ -47,6 +53,26 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     )
 
     @property
+    def _features(self) -> list[Feature]:
+        """
+        Retrieve list of features in the FeatureGroup object
+
+        Returns
+        -------
+        List[Feature]
+
+
+        Raises
+        ------
+        ValueError
+            When the FeatureGroup object is empty
+        """
+        features: list[Feature] = list(self.feature_objects.values())
+        if features:
+            return features
+        raise ValueError("There is no feature in the FeatureGroup object.")
+
+    @property
     def feature_names(self) -> list[str]:
         """
         List of feature names
@@ -57,7 +83,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         """
         return list(self.feature_objects)
 
-    @root_validator()
+    @root_validator
     @classmethod
     def _set_feature_objects(cls, values: dict[str, Any]) -> dict[str, Any]:
         feature_objects = collections.OrderedDict()
@@ -151,6 +177,28 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
 
     @typechecked
+    def preview_sql(self, point_in_time_and_serving_name: Dict[str, Any]) -> str:
+        """
+        Get the SQL code for previewing a FeatureGroup object
+
+        Parameters
+        ----------
+        point_in_time_and_serving_name : Dict[str, Any]
+            Dictionary consisting the point in time and serving names based on which the feature
+            preview will be computed
+
+        Returns
+        -------
+        str
+        """
+        pruned_graph, mapped_nodes = get_prune_graph_and_nodes(feature_objects=self._features)
+        return get_feature_preview_sql(
+            graph=pruned_graph,
+            nodes=mapped_nodes,
+            point_in_time_and_serving_name=point_in_time_and_serving_name,
+        )
+
+    @typechecked
     def preview(
         self,
         point_in_time_and_serving_name: Dict[str, Any],
@@ -170,28 +218,16 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         Returns
         -------
         pd.DataFrame
-
-        Raises
-        ------
-        ValueError
-            When the FeatureGroup object is empty
         """
-
         tic = time.time()
-        nodes = [feature.node for feature in self.feature_objects.values()]
-        if nodes:
-            first_feature = next(iter(self.feature_objects.values()))
-            preview_sql = get_feature_preview_sql(
-                graph=first_feature.graph,
-                nodes=nodes,
-                point_in_time_and_serving_name=point_in_time_and_serving_name,
-            )
-            session = first_feature.get_session(credentials)
-            result = session.execute_query(preview_sql)
-            elapsed = time.time() - tic
-            logger.debug(f"Preview took {elapsed:.2f}s")
-            return result
-        raise ValueError("There is no feature in the FeatureGroup object.")
+        preview_sql = self.preview_sql(
+            point_in_time_and_serving_name=point_in_time_and_serving_name
+        )
+        session = self._features[0].get_session(credentials)
+        result = session.execute_query(preview_sql)
+        elapsed = time.time() - tic
+        logger.debug(f"Preview took {elapsed:.2f}s")
+        return result
 
 
 class FeatureListNamespace(FeatureListNamespaceModel, ApiGetObject):
@@ -315,6 +351,37 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         return FeatureListNamespace.list()
 
     @typechecked
+    def get_historical_features_sql(
+        self,
+        training_events: pd.DataFrame,
+        serving_names_mapping: Optional[Dict[str, str]] = None,
+    ) -> str:
+        """
+        Retrieve partial SQL statements used to retrieved historical features (for debugging / understanding purposes)
+
+        Parameters
+        ----------
+        training_events : pd.DataFrame
+            Training events DataFrame
+        serving_names_mapping : Optional[Dict[str, str]]
+            Optional serving names mapping if the training events data has different serving name
+            columns than those defined in Entities. Mapping from original serving name to new
+            serving name.
+
+        Returns
+        -------
+        str
+        """
+        # Validate request
+        validate_request_schema(training_events)
+        training_events = validate_historical_requests_point_in_time(training_events)
+        return get_historical_features_sql(
+            feature_objects=self._features,
+            request_table_columns=training_events.columns.tolist(),
+            serving_names_mapping=serving_names_mapping,
+        )
+
+    @typechecked
     def get_historical_features(
         self,
         training_events: pd.DataFrame,
@@ -340,10 +407,9 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         """
         if credentials is None:
             credentials = Configurations().credentials
-        features: list[Feature] = list(self.feature_objects.values())
         return get_historical_features(
-            features,
-            training_events,
+            feature_objects=self._features,
+            training_events=training_events,
             credentials=credentials,
             serving_names_mapping=serving_names_mapping,
         )

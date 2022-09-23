@@ -50,6 +50,8 @@ def test_feature_model(snowflake_event_view_with_entity, feature_model_dict):
     feature = feature_group["sum_30m"]
     feature_model_dict.pop("event_data_ids")
     feature_model_dict.pop("entity_ids")
+    feature_model_dict.pop("graph")
+    feature_model_dict.pop("node")
     assert (
         feature.dict(
             exclude={
@@ -58,6 +60,8 @@ def test_feature_model(snowflake_event_view_with_entity, feature_model_dict):
                 "entity_ids": True,
                 "tabular_source": True,
                 "feature_namespace_id": True,
+                "graph": True,
+                "node": True,
             }
         )
         == feature_model_dict

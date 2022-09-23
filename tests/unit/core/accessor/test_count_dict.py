@@ -51,16 +51,15 @@ def test_cosine_similarity(count_per_category_feature, count_per_category_featur
     """
     result = count_per_category_feature.cd.cosine_similarity(count_per_category_feature_2h)
     pruned_graph = result.dict()["graph"]
-    assert (
-        pruned_graph["backward_edges"]
-        == pruned_graph["backward_edges"]
-        == {
-            "groupby_1": ["input_1"],
-            "project_1": ["groupby_1"],
-            "project_2": ["groupby_1"],
-            "cosine_similarity_1": ["project_1", "project_2"],
-        }
-    )
+    assert pruned_graph["backward_edges"] == {
+        "groupby_1": ["input_1", "project_1", "project_2", "project_3"],
+        "project_1": ["input_1"],
+        "project_2": ["input_1"],
+        "project_3": ["input_1"],
+        "project_4": ["groupby_1"],
+        "project_5": ["groupby_1"],
+        "cosine_similarity_1": ["project_5", "project_4"],
+    }
     assert pruned_graph["nodes"]["cosine_similarity_1"] == {
         "name": "cosine_similarity_1",
         "type": NodeType.COSINE_SIMILARITY,

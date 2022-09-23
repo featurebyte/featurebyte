@@ -355,6 +355,16 @@ class GlobalQueryGraph(QueryGraph):
         _ = args, kwargs
         return GlobalQueryGraph()
 
+    @staticmethod
+    def _get_node_generate_new_column_names(node: Node) -> list[str]:
+        # this method is used to track the whether the operation generate a new column name(s)
+        # TODO: refactor this to move the logic to specific Node level
+        if node.type in {NodeType.ASSIGN, NodeType.ASSIGN}:
+            return [node.parameters["name"]]
+        if node.type == NodeType.GROUPBY:
+            return list(node.parameters["names"])
+        return []
+
     def _prune(
         self,
         target_node: Node,
@@ -362,11 +372,16 @@ class GlobalQueryGraph(QueryGraph):
         pruned_graph: QueryGraph,
         processed_node_names: set[str],
         node_name_map: dict[str, str],
+        index_map: dict[str, int],
     ) -> QueryGraph:
         # pylint: disable=too-many-locals
         # pruning: move backward from target node to the input node
         to_prune_target_node = False
         input_node_names = self.backward_edges.get(target_node.name, [])
+        if target_node.type == NodeType.PROJECT:
+            # required columns information is generated through project operation
+            target_columns.update(target_node.parameters["columns"])
+
         if target_node.type == NodeType.ASSIGN:
             assign_column_name = target_node.parameters["name"]
             if assign_column_name in target_columns:
@@ -376,19 +391,20 @@ class GlobalQueryGraph(QueryGraph):
                 # remove series path if exists
                 to_prune_target_node = True
                 input_node_names = input_node_names[:1]
-        elif target_node.type == NodeType.PROJECT:
-            # if columns are needed for projection, add them to the target_columns
-            target_columns.update(target_node.parameters["columns"])
-        elif target_node.type == NodeType.GROUPBY:
-            # if columns are needed in groupby node, add them to the target_columns
-            required_columns = list(target_node.parameters["keys"])
-            required_columns.append(target_node.parameters["parent"])
-            value_by_col = target_node.parameters.get("value_by")
-            if value_by_col:
-                required_columns.append(value_by_col)
-            target_columns.update(required_columns)
 
-        for input_node_name in input_node_names:
+        # If the current target node produces a new column, we should remove it from the target_columns
+        # (as the condition has been matched). If it is not removed, the pruning algorithm may keep the unused
+        # assign operation that generate the same column name.
+        target_columns = target_columns.difference(
+            self._get_node_generate_new_column_names(target_node)
+        )
+
+        # reverse topological sort to make sure "target_columns" get filled properly. Example:
+        # edges = {"assign_1": ["groupby_1", "project_1"], "project_1", ["groupby_1"], ...}
+        # Here, "groupby_1" node have 2 input_node_names ("assign_1" and "project_1"), reverse topological
+        # sort makes sure we travel "project_1" first (filled up target_columns) and then travel assign node.
+        # If the assign node's new columns are not in "target_columns", we can safely remove the node.
+        for input_node_name in sorted(input_node_names, key=lambda x: index_map[x], reverse=True):
             input_node = self.get_node_by_name(input_node_name)
             pruned_graph = self._prune(
                 target_node=input_node,
@@ -396,6 +412,7 @@ class GlobalQueryGraph(QueryGraph):
                 pruned_graph=pruned_graph,
                 processed_node_names=processed_node_names,
                 node_name_map=node_name_map,
+                index_map=index_map,
             )
 
         if to_prune_target_node:
@@ -452,11 +469,13 @@ class GlobalQueryGraph(QueryGraph):
         QueryGraph, node_name_map
         """
         node_name_map: dict[str, str] = {}
+        index_map = {value: idx for idx, value in enumerate(topological_sort(self))}
         pruned_graph = self._prune(
             target_node=target_node,
             target_columns=target_columns,
             pruned_graph=QueryGraph(),
             processed_node_names=set(),
             node_name_map=node_name_map,
+            index_map=index_map,
         )
         return pruned_graph, node_name_map
