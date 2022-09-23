@@ -22,6 +22,7 @@ import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
 from featurebyte.middleware import request_handler
 from featurebyte.routes.app_container import AppContainer
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.credential import get_credential
 from featurebyte.utils.persistent import cleanup_persistent, get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
@@ -64,14 +65,17 @@ def _get_api_deps() -> Callable[[Request], None]:
         request.state.get_temp_storage = get_temp_storage
 
         request.state.app_container = AppContainer.get_instance(
-            user=request.state.user, persistent=get_persistent(), temp_storage=get_temp_storage()
+            user=request.state.user,
+            persistent=get_persistent(),
+            temp_storage=get_temp_storage(),
+            task_manager=TaskManager(user_id=request.state.user.id),
         )
 
     return _dep_injection_func
 
 
 # add routers into the app
-resource_api_controller_pairs = [
+resource_apis = [
     event_data_api,
     entity_api,
     feature_api,
@@ -83,7 +87,7 @@ resource_api_controller_pairs = [
     task_api,
     temp_data_api,
 ]
-for resource_api in resource_api_controller_pairs:
+for resource_api in resource_apis:
     app.include_router(
         resource_api.router,
         dependencies=[Depends(_get_api_deps())],
