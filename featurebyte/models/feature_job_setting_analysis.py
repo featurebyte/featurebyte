@@ -4,7 +4,7 @@ This module contains FeatureJobSettingAnalysis related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import json
 
@@ -162,7 +162,9 @@ class MissingJobsInfo(BaseMissingJobsInfo):
 
     @validator("late_job_index", "jobs_after_missing_jobs_index", "affected_jobs_index", pre=True)
     @classmethod
-    def convert_to_ndarray(cls, value: Any) -> npt.NDArray[Any]:
+    def convert_to_ndarray(
+        cls, value: Optional[Union[npt.NDArray[Any], str]]
+    ) -> Optional[npt.NDArray[Any]]:
         """
         Convert json to ndarray
 
@@ -173,7 +175,7 @@ class MissingJobsInfo(BaseMissingJobsInfo):
 
         Returns
         -------
-        npt.NDArray[Any]
+        Optional[npt.NDArray[Any]]
             NDArray object
         """
         if isinstance(value, str):
@@ -182,7 +184,7 @@ class MissingJobsInfo(BaseMissingJobsInfo):
 
     @validator("late_event_index", "affected_event_index", pre=True)
     @classmethod
-    def convert_to_series(cls, value: Any) -> pd.Series:
+    def convert_to_series(cls, value: Optional[Union[pd.Series, str]]) -> Optional[pd.Series]:
         """
         Convert json to Series
 
@@ -193,7 +195,7 @@ class MissingJobsInfo(BaseMissingJobsInfo):
 
         Returns
         -------
-        Series
+        Optional[pd.Series]
             Series object
         """
         if isinstance(value, str):
