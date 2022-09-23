@@ -53,6 +53,26 @@ class BaseFeatureGroup(FeatureByteBaseModel):
     )
 
     @property
+    def features(self) -> list[Feature]:
+        """
+        Retrieve list of features in the FeatureGroup object
+
+        Returns
+        -------
+        List[Feature]
+
+
+        Raises
+        ------
+        ValueError
+            When the FeatureGroup object is empty
+        """
+        features: list[Feature] = list(self.feature_objects.values())
+        if features:
+            return features
+        raise ValueError("There is no feature in the FeatureGroup object.")
+
+    @property
     def feature_names(self) -> list[str]:
         """
         List of feature names
@@ -63,22 +83,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         """
         return list(self.feature_objects)
 
-    @property
-    def features(self) -> list[Feature]:
-        """
-        Retrieve list of features in the FeatureGroup object
-
-        Returns
-        -------
-        List[Feature]
-        """
-
-        features: list[Feature] = list(self.feature_objects.values())
-        if features:
-            return features
-        raise ValueError("There is no feature in the FeatureGroup object.")
-
-    @root_validator()
+    @root_validator
     @classmethod
     def _set_feature_objects(cls, values: dict[str, Any]) -> dict[str, Any]:
         feature_objects = collections.OrderedDict()
