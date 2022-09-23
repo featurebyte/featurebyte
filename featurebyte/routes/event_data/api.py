@@ -60,8 +60,6 @@ async def list_event_data(
     """
     controller = request.state.app_container.event_data_controller
     event_data_list: EventDataList = await controller.list(
-        user=request.state.user,
-        persistent=request.state.persistent,
         page=page,
         page_size=page_size,
         sort_by=sort_by,
@@ -79,8 +77,6 @@ async def get_event_data(request: Request, event_data_id: PydanticObjectId) -> E
     """
     controller = request.state.app_container.event_data_controller
     event_data: EventDataModel = await controller.get(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=event_data_id,
     )
     return event_data
@@ -118,8 +114,6 @@ async def list_event_data_audit_logs(
     """
     controller = request.state.app_container.event_data_controller
     audit_doc_list: AuditDocumentList = await controller.list_audit(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=event_data_id,
         page=page,
         page_size=page_size,
@@ -143,8 +137,6 @@ async def list_default_feature_job_setting_history(
     """
     controller = request.state.app_container.event_data_controller
     history_values = await controller.list_field_history(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=event_data_id,
         field="default_feature_job_setting",
     )
@@ -169,8 +161,6 @@ async def get_event_data_info(
     """
     controller = request.state.app_container.event_data_controller
     info = await controller.get_info(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=event_data_id,
         verbose=verbose,
     )

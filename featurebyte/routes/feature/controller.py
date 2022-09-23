@@ -3,12 +3,11 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Type
+from typing import Any, Literal, cast
 
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
-from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
 from featurebyte.schema.feature import (
     FeatureCreate,
@@ -22,7 +21,7 @@ from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.online_enable import OnlineEnableService
 
 
-class FeatureController(
+class FeatureController(  # type: ignore[misc]
     BaseDocumentController[FeatureModel, FeaturePaginatedList], GetInfoControllerMixin[FeatureInfo]
 ):
     """
@@ -30,7 +29,6 @@ class FeatureController(
     """
 
     paginated_document_class = FeaturePaginatedList
-    document_service_class: Type[FeatureService] = FeatureService  # type: ignore[assignment]
 
     def __init__(
         self,
@@ -39,7 +37,8 @@ class FeatureController(
         feature_readiness_service: FeatureReadinessService,
         online_enable_service: OnlineEnableService,
     ):
-        self.service = service
+        super().__init__(service)  # type: ignore[arg-type]
+        self.service = service  # type: ignore[assignment]
         self.feature_list_service = feature_list_service
         self.feature_readiness_service = feature_readiness_service
         self.online_enable_service = online_enable_service
@@ -60,7 +59,10 @@ class FeatureController(
         FeatureModel
             Newly created feature object
         """
-        document = await self.service.create_document(data=data, get_credential=get_credential)
+        document = cast(
+            FeatureModel,
+            await self.service.create_document(data=data, get_credential=get_credential),
+        )
 
         # update feature namespace readiness due to introduction of new feature
         await self.feature_readiness_service.update_feature_namespace(
@@ -71,8 +73,6 @@ class FeatureController(
 
     async def update_feature(
         self,
-        user: Any,
-        persistent: Persistent,
         feature_id: ObjectId,
         data: FeatureUpdate,
     ) -> FeatureModel:
@@ -81,10 +81,6 @@ class FeatureController(
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Object that entity will be saved to
         feature_id: ObjectId
             Feature ID
         data: FeatureUpdate
@@ -107,12 +103,10 @@ class FeatureController(
                 online_enabled=data.online_enabled,
                 return_document=False,
             )
-        return await self.get(user=user, persistent=persistent, document_id=feature_id)
+        return await self.get(document_id=feature_id)
 
     async def list_features(
         self,
-        user: Any,
-        persistent: Persistent,
         page: int = 1,
         page_size: int = 10,
         sort_by: str | None = "created_at",
@@ -124,10 +118,6 @@ class FeatureController(
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Persistent that the document will be saved to
         page: int
             Page number
         page_size: int
@@ -159,8 +149,6 @@ class FeatureController(
             params["query_filter"] = query_filter
 
         return await self.list(
-            user=user,
-            persistent=persistent,
             page=page,
             page_size=page_size,
             sort_by=sort_by,

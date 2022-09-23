@@ -46,8 +46,6 @@ async def get_feature_store(
     """
     controller = request.state.app_container.feature_store_controller
     feature_store: FeatureStoreModel = await controller.get(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_store_id,
     )
     return feature_store
@@ -68,8 +66,6 @@ async def list_feature_stores(
     """
     controller = request.state.app_container.feature_store_controller
     feature_store_list: FeatureStoreList = await controller.list(
-        user=request.state.user,
-        persistent=request.state.persistent,
         page=page,
         page_size=page_size,
         sort_by=sort_by,
@@ -95,8 +91,6 @@ async def list_feature_store_audit_logs(
     """
     controller = request.state.app_container.feature_store_controller
     audit_doc_list: AuditDocumentList = await controller.list_audit(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_store_id,
         page=page,
         page_size=page_size,
@@ -118,8 +112,6 @@ async def get_feature_store_info(
     """
     controller = request.state.app_container.feature_store_controller
     info = await controller.get_info(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_store_id,
         verbose=verbose,
     )

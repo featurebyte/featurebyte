@@ -3,7 +3,7 @@ FeatureStore API route controller
 """
 from __future__ import annotations
 
-from typing import Type
+from typing import cast
 
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
@@ -11,7 +11,7 @@ from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreInf
 from featurebyte.service.feature_store import FeatureStoreService
 
 
-class FeatureStoreController(
+class FeatureStoreController(  # type: ignore[misc]
     BaseDocumentController[FeatureStoreModel, FeatureStoreList],
     GetInfoControllerMixin[FeatureStoreInfo],
 ):
@@ -20,10 +20,9 @@ class FeatureStoreController(
     """
 
     paginated_document_class = FeatureStoreList
-    document_service_class: Type[FeatureStoreService] = FeatureStoreService  # type: ignore[assignment]
 
     def __init__(self, service: FeatureStoreService):
-        self.service = service
+        super().__init__(service)  # type: ignore[arg-type]
 
     async def create_feature_store(
         self,
@@ -43,4 +42,4 @@ class FeatureStoreController(
             Newly created feature store document
         """
         document = await self.service.create_document(data)
-        return document
+        return cast(FeatureStoreModel, document)

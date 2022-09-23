@@ -3,7 +3,7 @@ Entity API routes
 """
 from __future__ import annotations
 
-from typing import Type
+from typing import cast
 
 from bson.objectid import ObjectId
 
@@ -13,7 +13,7 @@ from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityList, Enti
 from featurebyte.service.entity import EntityService
 
 
-class EntityController(
+class EntityController(  # type: ignore[misc]
     GetInfoControllerMixin[EntityInfo],
     BaseDocumentController[EntityModel, EntityList],
 ):
@@ -22,9 +22,9 @@ class EntityController(
     """
 
     paginated_document_class = EntityList
-    document_service_class: Type[EntityService] = EntityService  # type: ignore[assignment]
 
     def __init__(self, service: EntityService):
+        super().__init__(service)
         self.service = service
 
     async def create_entity(
@@ -44,8 +44,8 @@ class EntityController(
         EntityModel
             Newly created entity object
         """
-        document = await self.service.create_document(data)
-        return document
+        document = await self.service.create_document(data)  # type: ignore[attr-defined]
+        return cast(EntityModel, document)
 
     async def update_entity(self, entity_id: ObjectId, data: EntityUpdate) -> EntityModel:
         """
@@ -63,6 +63,6 @@ class EntityController(
         EntityModel
             Entity object with updated attribute(s)
         """
-        document = await self.service.update_document(document_id=entity_id, data=data)
+        document: EntityModel = await self.service.update_document(document_id=entity_id, data=data)  # type: ignore[attr-defined]
         assert document is not None
         return document

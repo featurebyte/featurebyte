@@ -3,12 +3,9 @@ FeatureNamespace API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Type
-
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature import FeatureNamespaceModel
-from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceInfo,
@@ -19,7 +16,7 @@ from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 
 
-class FeatureNamespaceController(
+class FeatureNamespaceController(  # type: ignore[misc]
     BaseDocumentController[FeatureNamespaceModel, FeatureNamespaceList],
     GetInfoControllerMixin[FeatureNamespaceInfo],
 ):
@@ -28,20 +25,18 @@ class FeatureNamespaceController(
     """
 
     paginated_document_class = FeatureNamespaceList
-    document_service_class: Type[FeatureNamespaceService] = FeatureNamespaceService  # type: ignore[assignment]
 
     def __init__(
         self,
         service: FeatureNamespaceService,
         default_version_mode_service: DefaultVersionModeService,
     ):
-        self.service = service
+        super().__init__(service)  # type: ignore[arg-type]
+        self.service = service  # type: ignore[assignment]
         self.default_version_mode_service = default_version_mode_service
 
     async def update_feature_namespace(
         self,
-        user: Any,
-        persistent: Persistent,
         feature_namespace_id: ObjectId,
         data: FeatureNamespaceUpdate,
     ) -> FeatureNamespaceModel:
@@ -50,10 +45,6 @@ class FeatureNamespaceController(
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Object that entity will be saved to
         feature_namespace_id: ObjectId
             FeatureNamespace ID
         data: FeatureNamespaceUpdate
@@ -70,4 +61,4 @@ class FeatureNamespaceController(
                 default_version_mode=data.default_version_mode,
                 return_document=False,
             )
-        return await self.get(user=user, persistent=persistent, document_id=feature_namespace_id)
+        return await self.get(document_id=feature_namespace_id)

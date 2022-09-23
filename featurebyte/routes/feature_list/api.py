@@ -52,9 +52,7 @@ async def get_feature_list(request: Request, feature_list_id: PydanticObjectId) 
     Get FeatureList
     """
     controller = request.state.app_container.feature_list_controller
-    feature_list: FeatureListModel = await controller.get(
-        user=request.state.user, persistent=request.state.persistent, document_id=feature_list_id
-    )
+    feature_list: FeatureListModel = await controller.get(document_id=feature_list_id)
     return feature_list
 
 
@@ -67,8 +65,6 @@ async def update_feature_list(
     """
     controller = request.state.app_container.feature_list_controller
     feature_list: FeatureListModel = await controller.update_feature_list(
-        user=request.state.user,
-        persistent=request.state.persistent,
         feature_list_id=feature_list_id,
         data=data,
     )
@@ -91,8 +87,6 @@ async def list_feature_list(
     """
     controller = request.state.app_container.feature_list_controller
     feature_list_paginated_list: FeatureListPaginatedList = await controller.list_feature_lists(
-        user=request.state.user,
-        persistent=request.state.persistent,
         page=page,
         page_size=page_size,
         sort_by=sort_by,
@@ -119,8 +113,6 @@ async def list_feature_list_audit_logs(
     """
     controller = request.state.app_container.feature_list_controller
     audit_doc_list: AuditDocumentList = await controller.list_audit(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_list_id,
         page=page,
         page_size=page_size,
@@ -142,8 +134,6 @@ async def get_feature_list_info(
     """
     controller = request.state.app_container.feature_list_controller
     info = await controller.get_info(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=feature_list_id,
         verbose=verbose,
     )

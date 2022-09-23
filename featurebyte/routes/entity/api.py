@@ -43,9 +43,7 @@ async def get_entity(request: Request, entity_id: PydanticObjectId) -> EntityMod
     Get Entity
     """
     controller = request.state.app_container.entity_controller
-    entity: EntityModel = await controller.get(
-        user=request.state.user, persistent=request.state.persistent, document_id=entity_id
-    )
+    entity: EntityModel = await controller.get(document_id=entity_id)
     return entity
 
 
@@ -64,8 +62,6 @@ async def list_entities(
     """
     controller = request.state.app_container.entity_controller
     entity_list: EntityList = await controller.list(
-        user=request.state.user,
-        persistent=request.state.persistent,
         page=page,
         page_size=page_size,
         sort_by=sort_by,
@@ -106,8 +102,6 @@ async def list_entity_audit_logs(
     """
     controller = request.state.app_container.entity_controller
     audit_doc_list: AuditDocumentList = await controller.list_audit(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=entity_id,
         page=page,
         page_size=page_size,
@@ -131,8 +125,6 @@ async def list_name_history(
     """
     controller = request.state.app_container.entity_controller
     history_values = await controller.list_field_history(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=entity_id,
         field="name",
     )
@@ -157,8 +149,6 @@ async def get_entity_info(
     """
     controller = request.state.app_container.entity_controller
     info = await controller.get_info(
-        user=request.state.user,
-        persistent=request.state.persistent,
         document_id=entity_id,
         verbose=verbose,
     )

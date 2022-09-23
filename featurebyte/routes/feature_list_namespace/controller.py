@@ -3,12 +3,9 @@ FeatureListNamespace API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Type
-
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature_list import FeatureListNamespaceModel
-from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceInfo,
@@ -20,7 +17,7 @@ from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 
 
-class FeatureListNamespaceController(
+class FeatureListNamespaceController(  # type: ignore[misc]
     BaseDocumentController[FeatureListNamespaceModel, FeatureListNamespaceList],
     GetInfoControllerMixin[FeatureListNamespaceInfo],
 ):
@@ -29,20 +26,18 @@ class FeatureListNamespaceController(
     """
 
     paginated_document_class = FeatureListNamespaceList
-    document_service_class: Type[FeatureListNamespaceService] = FeatureListNamespaceService  # type: ignore[assignment]
 
     def __init__(
         self,
         service: FeatureListNamespaceService,
         default_version_mode_service: DefaultVersionModeService,
     ):
-        self.service = service
+        super().__init__(service)  # type: ignore[arg-type]
+        self.service = service  # type: ignore[assignment]
         self.default_version_mode_service = default_version_mode_service
 
     async def update_feature_list_namespace(
         self,
-        user: Any,
-        persistent: Persistent,
         feature_list_namespace_id: ObjectId,
         data: FeatureListNamespaceUpdate,
     ) -> FeatureListNamespaceModel:
@@ -51,10 +46,6 @@ class FeatureListNamespaceController(
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Object that entity will be saved to
         feature_list_namespace_id: ObjectId
             FeatureListNamespace ID
         data: FeatureListNamespaceUpdate
@@ -77,6 +68,4 @@ class FeatureListNamespaceController(
                 data=FeatureListNamespaceServiceUpdate(status=data.status),
                 return_document=False,
             )
-        return await self.get(
-            user=user, persistent=persistent, document_id=feature_list_namespace_id
-        )
+        return await self.get(document_id=feature_list_namespace_id)

@@ -9,7 +9,6 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
-from featurebyte.persistent.base import Persistent
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.service.base_document import (
     BaseDocumentService,
@@ -27,13 +26,12 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
     """
 
     paginated_document_class: Type[PaginationMixin] = PaginationMixin
-    document_service_class: Type[BaseDocumentService[FeatureByteBaseDocumentModel]]
 
-    @classmethod
+    def __init__(self, service: BaseDocumentService[FeatureByteBaseDocumentModel]):
+        self.service = service
+
     async def get(
-        cls,
-        user: Any,
-        persistent: Persistent,
+        self,
         document_id: ObjectId,
         exception_detail: str | None = None,
     ) -> Document:
@@ -42,10 +40,6 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Persistent that the document will be saved to
         document_id: ObjectId
             Document ID
         exception_detail: str | None
@@ -60,17 +54,14 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
         HTTPException
             If the object not found
         """
-        document = await cls.document_service_class(user=user, persistent=persistent).get_document(
+        document = await self.service.get_document(
             document_id=document_id,
             exception_detail=exception_detail,
         )
         return cast(Document, document)
 
-    @classmethod
     async def list(
-        cls,
-        user: Any,
-        persistent: Persistent,
+        self,
         page: int = 1,
         page_size: int = 10,
         sort_by: str | None = "created_at",
@@ -82,10 +73,6 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Persistent that the document will be saved to
         page: int
             Page number
         page_size: int
@@ -102,22 +89,17 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
         dict[str, Any]
             List of documents fulfilled the filtering condition
         """
-        document_data = await cls.document_service_class(
-            user=user, persistent=persistent
-        ).list_documents(
+        document_data = await self.service.list_documents(
             page=page,
             page_size=page_size,
             sort_by=sort_by,
             sort_dir=sort_dir,
             **kwargs,
         )
-        return cast(PaginatedDocument, cls.paginated_document_class(**document_data))
+        return cast(PaginatedDocument, self.paginated_document_class(**document_data))
 
-    @classmethod
     async def list_audit(
-        cls,
-        user: Any,
-        persistent: Persistent,
+        self,
         document_id: ObjectId,
         query_filter: Optional[QueryFilter] = None,
         page: int = 1,
@@ -155,9 +137,7 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
         AuditDocumentList
             List of documents fulfilled the filtering condition
         """
-        document_data = await cls.document_service_class(
-            user=user, persistent=persistent
-        ).list_document_audits(
+        document_data = await self.service.list_document_audits(
             document_id=document_id,
             query_filter=query_filter,
             page=page,
@@ -168,11 +148,8 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
         )
         return AuditDocumentList(**document_data)
 
-    @classmethod
     async def list_field_history(
-        cls,
-        user: Any,
-        persistent: Persistent,
+        self,
         document_id: ObjectId,
         field: str,
     ) -> List[FieldValueHistory]:
@@ -195,9 +172,9 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
         List[FieldValueHistory]
             List of historical values for a field in the document
         """
-        document_data = await cls.document_service_class(
-            user=user, persistent=persistent
-        ).list_document_field_history(document_id=document_id, field=field)
+        document_data = await self.service.list_document_field_history(
+            document_id=document_id, field=field
+        )
         return document_data
 
 
@@ -208,13 +185,11 @@ class GetInfoControllerMixin(Generic[InfoDocument]):
 
     # pylint: disable=too-few-public-methods
 
-    document_service_class: Type[GetInfoServiceMixin[InfoDocument]]
+    def __init__(self, service: GetInfoServiceMixin[InfoDocument]):
+        self.service = service
 
-    @classmethod
     async def get_info(
-        cls,
-        user: Any,
-        persistent: Persistent,
+        self,
         document_id: ObjectId,
         verbose: bool,
     ) -> InfoDocument:
@@ -223,10 +198,6 @@ class GetInfoControllerMixin(Generic[InfoDocument]):
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Persistent that the document will be saved to
         document_id: ObjectId
             Document ID
         verbose: bool
@@ -236,6 +207,5 @@ class GetInfoControllerMixin(Generic[InfoDocument]):
         -------
         InfoDocument
         """
-        document_service = cls.document_service_class(user=user, persistent=persistent)  # type: ignore
-        info_document = await document_service.get_info(document_id=document_id, verbose=verbose)
-        return cast(InfoDocument, info_document)
+        info_document = await self.service.get_info(document_id=document_id, verbose=verbose)
+        return info_document

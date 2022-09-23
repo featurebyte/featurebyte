@@ -3,12 +3,11 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Type
+from typing import Any, Literal, cast
 
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature_list import FeatureListModel
-from featurebyte.persistent import Persistent
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
@@ -21,7 +20,7 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 
 
-class FeatureListController(
+class FeatureListController(  # type: ignore[misc]
     BaseDocumentController[FeatureListModel, FeatureListPaginatedList],
     GetInfoControllerMixin[FeatureListInfo],
 ):
@@ -30,7 +29,6 @@ class FeatureListController(
     """
 
     paginated_document_class = FeatureListPaginatedList
-    document_service_class: Type[FeatureListService] = FeatureListService  # type: ignore[assignment]
 
     def __init__(
         self,
@@ -38,7 +36,8 @@ class FeatureListController(
         feature_readiness_service: FeatureReadinessService,
         deploy_service: DeployService,
     ):
-        self.service = service
+        super().__init__(service)  # type: ignore[arg-type]
+        self.service = service  # type: ignore[assignment]
         self.feature_readiness_service = feature_readiness_service
         self.deploy_service = deploy_service
 
@@ -60,7 +59,10 @@ class FeatureListController(
         FeatureListModel
             Newly created feature list object
         """
-        document = await self.service.create_document(data=data, get_credential=get_credential)
+        document = cast(
+            FeatureListModel,
+            await self.service.create_document(data=data, get_credential=get_credential),
+        )
 
         # update feature namespace readiness due to introduction of new feature list
         await self.feature_readiness_service.update_feature_list_namespace(
@@ -71,8 +73,6 @@ class FeatureListController(
 
     async def update_feature_list(
         self,
-        user: Any,
-        persistent: Persistent,
         feature_list_id: ObjectId,
         data: FeatureListUpdate,
     ) -> FeatureListModel:
@@ -81,10 +81,6 @@ class FeatureListController(
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Object that entity will be saved to
         feature_list_id: ObjectId
             FeatureList ID
         data: FeatureListUpdate
@@ -101,12 +97,10 @@ class FeatureListController(
                 deployed=data.deployed,
                 return_document=False,
             )
-        return await self.get(user=user, persistent=persistent, document_id=feature_list_id)
+        return await self.get(document_id=feature_list_id)
 
     async def list_feature_lists(
         self,
-        user: Any,
-        persistent: Persistent,
         page: int = 1,
         page_size: int = 10,
         sort_by: str | None = "created_at",
@@ -118,10 +112,6 @@ class FeatureListController(
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Persistent that the document will be saved to
         page: int
             Page number
         page_size: int
@@ -146,8 +136,6 @@ class FeatureListController(
             params["query_filter"] = query_filter
 
         return await self.list(
-            user=user,
-            persistent=persistent,
             page=page,
             page_size=page_size,
             sort_by=sort_by,
