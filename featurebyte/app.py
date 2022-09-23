@@ -69,6 +69,7 @@ def _get_api_deps() -> Callable[[Request], None]:
             persistent=get_persistent(),
             temp_storage=get_temp_storage(),
             task_manager=TaskManager(user_id=request.state.user.id),
+            storage=get_storage(),
         )
 
     return _dep_injection_func

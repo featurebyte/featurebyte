@@ -147,6 +147,7 @@ class AppContainer:
         persistent: Persistent,
         temp_storage: Storage,
         task_manager: AbstractTaskManager,
+        storage: Storage,
         app_config: Dict[str, Any],
     ):
         """
@@ -162,9 +163,13 @@ class AppContainer:
             temp storage
         task_manager: AbstractTaskManager
             task manager
+        storage: Storage
+            permanent storage
         app_config: Dict[str, Any]
             input app config dict, default to app_container_config
         """
+        _ = storage  # not used in the app_container bean yet
+
         self.instance_map: Dict[str, Any] = {
             "task_controller": TaskController(task_manager=task_manager),
             "tempdata_controller": TempDataController(temp_storage=temp_storage),
@@ -197,6 +202,7 @@ class AppContainer:
         persistent: Persistent,
         temp_storage: Storage,
         task_manager: AbstractTaskManager,
+        storage: Storage,
     ) -> Any:
         """
         Get instance of AppContainer
@@ -211,6 +217,8 @@ class AppContainer:
             temp storage
         task_manager: AbstractTaskManager
             task manager
+        storage: Storage
+            permanent storage
 
         Returns
         -------
@@ -222,5 +230,6 @@ class AppContainer:
             persistent=persistent,
             temp_storage=temp_storage,
             task_manager=task_manager,
+            storage=storage,
             app_config=app_container_config,
         )
