@@ -362,7 +362,7 @@ class GlobalQueryGraph(QueryGraph):
         if node.type in {NodeType.ASSIGN, NodeType.ASSIGN}:
             return [node.parameters["name"]]
         if node.type == NodeType.GROUPBY:
-            return node.parameters["names"]
+            return list(node.parameters["names"])
         return []
 
     def _prune(
