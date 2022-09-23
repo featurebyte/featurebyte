@@ -30,7 +30,6 @@ class FeatureJobSettingAnalysisController(
         task_controller: TaskController,
     ):
         super().__init__(service)  # type: ignore[arg-type]
-        self.service = service  # type: ignore[assignment]
         self.task_controller = task_controller
 
     async def create_feature_job_setting_analysis(

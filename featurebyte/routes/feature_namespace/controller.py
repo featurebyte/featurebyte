@@ -32,7 +32,6 @@ class FeatureNamespaceController(  # type: ignore[misc]
         default_version_mode_service: DefaultVersionModeService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
-        self.service = service  # type: ignore[assignment]
         self.default_version_mode_service = default_version_mode_service
 
     async def update_feature_namespace(

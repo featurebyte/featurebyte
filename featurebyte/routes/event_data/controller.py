@@ -29,7 +29,6 @@ class EventDataController(  # type: ignore[misc]
 
     def __init__(self, service: EventDataService):
         super().__init__(service)  # type: ignore[arg-type]
-        self.service = service  # type: ignore[assignment]
 
     async def create_event_data(
         self,

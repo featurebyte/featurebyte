@@ -38,7 +38,6 @@ class FeatureController(  # type: ignore[misc]
         online_enable_service: OnlineEnableService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
-        self.service = service  # type: ignore[assignment]
         self.feature_list_service = feature_list_service
         self.feature_readiness_service = feature_readiness_service
         self.online_enable_service = online_enable_service

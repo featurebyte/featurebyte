@@ -37,7 +37,6 @@ class FeatureListController(  # type: ignore[misc]
         deploy_service: DeployService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
-        self.service = service  # type: ignore[assignment]
         self.feature_readiness_service = feature_readiness_service
         self.deploy_service = deploy_service
 

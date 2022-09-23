@@ -25,7 +25,6 @@ class EntityController(  # type: ignore[misc]
 
     def __init__(self, service: EntityService):
         super().__init__(service)
-        self.service = service
 
     async def create_entity(
         self,
