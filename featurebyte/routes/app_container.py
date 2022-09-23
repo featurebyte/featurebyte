@@ -1,7 +1,7 @@
 """
 Container for Controller objects to enable Dependency Injection
 """
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from featurebyte.persistent import Persistent
 from featurebyte.routes.entity.controller import EntityController
@@ -28,7 +28,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_enable import OnlineEnableService
-from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.task_manager import AbstractTaskManager
 from featurebyte.storage import Storage
 
 app_container_config = {
@@ -142,7 +142,13 @@ class AppContainer:
     """
 
     def __init__(
-        self, user: Any, persistent: Persistent, temp_storage: Storage, app_config: Dict[str, Any]
+        self,
+        user: Any,
+        persistent: Persistent,
+        temp_storage: Storage,
+        task_manager: AbstractTaskManager,
+        storage: Storage,
+        app_config: Dict[str, Any],
     ):
         """
         Initialize services and controller instances
@@ -153,11 +159,19 @@ class AppContainer:
             normal user
         persistent: Persistent
             persistent instance
+        temp_storage: Storage
+            temp storage
+        task_manager: AbstractTaskManager
+            task manager
+        storage: Storage
+            permanent storage
         app_config: Dict[str, Any]
             input app config dict, default to app_container_config
         """
+        _ = storage  # not used in the app_container bean yet
+
         self.instance_map: Dict[str, Any] = {
-            "task_controller": TaskController(task_manager=TaskManager(user_id=user.id)),
+            "task_controller": TaskController(task_manager=task_manager),
             "tempdata_controller": TempDataController(temp_storage=temp_storage),
         }
 
@@ -187,7 +201,8 @@ class AppContainer:
         user: Any,
         persistent: Persistent,
         temp_storage: Storage,
-        app_config: Optional[Dict[str, Any]] = None,
+        task_manager: AbstractTaskManager,
+        storage: Storage,
     ) -> Any:
         """
         Get instance of AppContainer
@@ -198,16 +213,23 @@ class AppContainer:
             normal user
         persistent: Persistent
             persistent instance
-        app_config: Optional[Dict[str, Any]]
-            input app config dict, default to app_container_config
+        temp_storage: Storage
+            temp storage
+        task_manager: AbstractTaskManager
+            task manager
+        storage: Storage
+            permanent storage
 
         Returns
         -------
         AppContainer instance
         """
-        if app_config is None:
-            app_config = app_container_config
 
-        container = AppContainer(user, persistent, temp_storage, app_config)
-
-        return container
+        return AppContainer(
+            user=user,
+            persistent=persistent,
+            temp_storage=temp_storage,
+            task_manager=task_manager,
+            storage=storage,
+            app_config=app_container_config,
+        )
