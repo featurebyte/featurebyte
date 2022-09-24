@@ -1230,7 +1230,7 @@ def test_window_function__multiple_filters(graph, node_input):
           "a" AS "a",
           "b" AS "b",
           LAG("a", 1) OVER(PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
-        FROM "db"."public"."event_table"
+        FROE "db"."public"."event_table"
         WHERE
           ("a" = 123)
         QUALIFY

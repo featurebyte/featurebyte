@@ -355,9 +355,9 @@ class InputNode(TableNode):
             dbtable = f'"{database}"."{schema}"."{table}"'
         else:
             dbtable = escape_column_name(self.dbtable["table_name"])
+        select_expr = select_expr.from_(dbtable)
 
         # WHERE part
-        select_expr = select_expr.from_(dbtable)
         if self.where_condition is not None:
             select_expr = select_expr.where(self.where_condition)
 
