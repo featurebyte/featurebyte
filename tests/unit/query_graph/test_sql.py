@@ -21,7 +21,6 @@ def input_node_fixture():
     }
     return sql.InputNode(
         columns_map=columns_map,
-        where_condition=None,
         dbtable={
             "database_name": "my_database",
             "schema_name": "my_schema",
