@@ -306,18 +306,6 @@ class ParsedExpressionNode(ExpressionNode):
 
 
 @dataclass
-class AndNode(ExpressionNode):
-    """And node"""
-
-    left_node: ExpressionNode
-    right_node: ExpressionNode
-
-    @property
-    def sql(self) -> Expression:
-        return expressions.and_(self.left_node.sql, self.right_node.sql)
-
-
-@dataclass
 class InputNode(TableNode):
     """Input data node"""
 
@@ -333,21 +321,21 @@ class InputNode(TableNode):
         Expression
             A sqlglot Expression object
         """
-        # QUALIFY part
+        # QUALIFY clause
         if self.qualify_condition is not None:
             qualify_expr = expressions.Qualify(this=self.qualify_condition)
             select_expr = expressions.Select(qualify=qualify_expr)
         else:
             select_expr = select()
 
-        # SELECT part
+        # SELECT clause
         select_args = []
         for col, expr in self.columns_map.items():
             col = expressions.Identifier(this=col, quoted=True)
             select_args.append(expressions.alias_(expr, col))
         select_expr = select_expr.select(*select_args)
 
-        # FROM part
+        # FROM clause
         if self.feature_store["type"] == SourceType.SNOWFLAKE:
             database = self.dbtable["database_name"]
             schema = self.dbtable["schema_name"]
@@ -357,7 +345,7 @@ class InputNode(TableNode):
             dbtable = escape_column_name(self.dbtable["table_name"])
         select_expr = select_expr.from_(dbtable)
 
-        # WHERE part
+        # WHERE clause
         if self.where_condition is not None:
             select_expr = select_expr.where(self.where_condition)
 
