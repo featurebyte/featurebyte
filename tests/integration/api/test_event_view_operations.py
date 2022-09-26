@@ -663,6 +663,11 @@ def check_datetime_operations(event_view, column_name, limit=100):
     event_view["timestamp_added_constant"] = datetime_series + pd.Timedelta("1d")
     event_view["timedelta_hour"] = timedelta.dt.hour
 
+    # filter on event_interval
+    event_view_filtered = event_view[event_view["event_interval_second"] > 500000]
+    df_filtered = event_view_filtered.preview(limit=limit)
+    assert (df_filtered["event_interval_second"] > 500000).all()
+
     # check datetime extracted properties
     dt_df = event_view.preview(limit=limit)
     pandas_series = dt_df[column_name]
