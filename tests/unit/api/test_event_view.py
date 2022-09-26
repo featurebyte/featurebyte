@@ -7,7 +7,6 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
-from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
@@ -177,6 +176,28 @@ def test_unary_op_params(snowflake_event_view):
     column = snowflake_event_view["cust_id"]
     output = column.isnull()
     assert output.event_data_id == column.event_data_id
+
+
+def test_event_view_column_getitem_series(snowflake_event_view):
+    """
+    Test EventViewColumn filter by boolean mask
+    """
+    column = snowflake_event_view["col_float"]
+    mask = snowflake_event_view["col_boolean"]
+    output = column[mask]
+    assert output.event_data_id == column.event_data_id
+    assert output.name == column.name
+    assert output.dtype == column.dtype
+    output_dict = output.dict()
+    assert (
+        output_dict["node"].items()
+        >= {"type": "filter", "parameters": {}, "output_type": "series"}.items()
+    )
+    assert dict(output_dict["graph"]["edges"]) == {
+        "input_1": ["project_1", "project_2"],
+        "project_1": ["filter_1"],
+        "project_2": ["filter_1"],
+    }
 
 
 @pytest.mark.parametrize(

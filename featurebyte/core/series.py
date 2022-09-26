@@ -75,6 +75,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             name=self.name,
             dtype=self.dtype,
             row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
+            **self.unary_op_series_params(),
         )
 
     def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
