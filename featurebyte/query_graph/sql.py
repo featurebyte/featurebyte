@@ -14,7 +14,11 @@ from enum import Enum
 import pandas as pd
 from sqlglot import Expression, expressions, parse_one, select
 
-from featurebyte.common.typing import TimedeltaSupportedUnitType, is_scalar_nan
+from featurebyte.common.typing import (
+    DatetimeSupportedPropertyType,
+    TimedeltaSupportedUnitType,
+    is_scalar_nan,
+)
 from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.query_graph import expression as fb_expressions
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -633,9 +637,7 @@ class DatetimeExtractNode(ExpressionNode):
     """Node for extract datetime properties operation"""
 
     expr: ExpressionNode
-    dt_property: Literal[
-        "year", "quarter", "month", "week", "day", "dayofweek", "hour", "minute", "second"
-    ]
+    dt_property: DatetimeSupportedPropertyType
 
     @property
     def sql(self) -> Expression:

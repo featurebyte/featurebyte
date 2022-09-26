@@ -3,21 +3,19 @@ This module contains string accessor class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional, TypeVar
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 from typeguard import typechecked
 
 from featurebyte.core.util import series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.string import Side
 
 if TYPE_CHECKING:
     from featurebyte.core.series import Series
 else:
     Series = TypeVar("Series")
-
-
-Side = Literal["left", "right", "both"]
 
 
 class StrAccessorMixin:
