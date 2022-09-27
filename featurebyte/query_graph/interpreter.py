@@ -13,7 +13,7 @@ from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.sql import GroupbyNode
+from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql import (
     BINARY_OPERATION_NODE_TYPES,
     SUPPORTED_EXPRESSION_NODE_TYPES,

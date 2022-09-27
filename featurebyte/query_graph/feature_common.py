@@ -12,7 +12,7 @@ import sqlglot
 
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.sql import GroupbyNode
+from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.tiling import get_aggregator
 
 if TYPE_CHECKING:

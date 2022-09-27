@@ -31,7 +31,7 @@ from featurebyte.query_graph.node.date import (
     TimeDelta,
     TimeDeltaExtractNode,
 )
-from featurebyte.query_graph.node.sql import (
+from featurebyte.query_graph.node.generic import (
     AliasNode,
     AssignNode,
     CastNode,

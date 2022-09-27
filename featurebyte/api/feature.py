@@ -28,7 +28,7 @@ from featurebyte.models.feature import (
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
-from featurebyte.query_graph.node.sql import AliasNode, GroupbyNode, ProjectNode
+from featurebyte.query_graph.node.generic import AliasNode, GroupbyNode, ProjectNode
 from featurebyte.schema.feature import FeatureCreate
 
 
