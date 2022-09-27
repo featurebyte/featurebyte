@@ -5,14 +5,13 @@ import json
 import os
 from datetime import datetime
 
-import freezegun
 import pytest
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel, FeatureReadiness
 
 
-@pytest.fixture(name="feature_name_space_dict")
+@pytest.fixture(name="feature_namespace_dict")
 def feature_name_space_dict_fixture():
     """Fixture for a FixtureNameSpace dict"""
     feature_ids = [ObjectId("631b00277280fc9aa9522794"), ObjectId("631b00277280fc9aa9522793")]
@@ -42,15 +41,48 @@ def feature_model_dict_feature(test_dir):
         return json.load(file_handle)
 
 
-@freezegun.freeze_time("2022-07-10")
 def test_feature_model(feature_model_dict):
     """Test feature model serialize & deserialize"""
     # pylint: disable=duplicate-code
     feature = FeatureModel(**feature_model_dict)
     feature_json = feature.json(by_alias=True)
     loaded_feature = FeatureModel.parse_raw(feature_json)
+    feature_dict = feature.dict()
     assert loaded_feature.id == feature.id
-    assert loaded_feature.dict() == feature.dict()
+    assert loaded_feature.dict() == feature_dict
+    assert feature_dict == {
+        "created_at": None,
+        "deployed_feature_list_ids": [],
+        "dtype": "FLOAT",
+        "entity_ids": [ObjectId("6332fdb21e8f0eeccc414513")],
+        "event_data_ids": [ObjectId("6332fdb21e8f0eeccc414512")],
+        "feature_list_ids": [],
+        "feature_namespace_id": ObjectId("6332fdb31e8f0eeccc414516"),
+        "graph": {
+            "edges": [
+                {"source": "input_1", "target": "groupby_1"},
+                {"source": "groupby_1", "target": "project_1"},
+            ],
+            "nodes": feature_dict["graph"]["nodes"],
+        },
+        "id": ObjectId("6332fdb31e8f0eeccc414515"),
+        "name": "sum_30m",
+        "node_name": "project_1",
+        "online_enabled": False,
+        "readiness": "DRAFT",
+        "row_index_lineage": ("groupby_1",),
+        "tabular_source": {
+            "feature_store_id": ObjectId("6332fdb21e8f0eeccc414510"),
+            "table_details": {
+                "database_name": "sf_database",
+                "schema_name": "sf_schema",
+                "table_name": "sf_table",
+            },
+        },
+        "updated_at": None,
+        "user_id": None,
+        "version": None,
+    }
 
     # DEV-556: check older record conversion
     feature_model_dict = feature.dict(by_alias=True)
@@ -60,13 +92,13 @@ def test_feature_model(feature_model_dict):
     assert loaded_old_feature == loaded_feature
 
 
-def test_feature_name_space(feature_name_space_dict):
-    """Test feature name space model"""
-    feature_name_space = FeatureNamespaceModel.parse_obj(feature_name_space_dict)
+def test_feature_name_space(feature_namespace_dict):
+    """Test feature namespace model"""
+    feature_name_space = FeatureNamespaceModel.parse_obj(feature_namespace_dict)
     serialized_feature_name_space = feature_name_space.dict(exclude={"id": True})
     feature_name_space_dict_sorted_ids = {
         key: sorted(value) if key.endswith("_ids") else value
-        for key, value in feature_name_space_dict.items()
+        for key, value in feature_namespace_dict.items()
     }
     assert serialized_feature_name_space == feature_name_space_dict_sorted_ids
     loaded_feature_name_space = FeatureNamespaceModel.parse_raw(
