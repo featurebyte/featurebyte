@@ -751,7 +751,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         out = []
         series_dict = self.dict()
         pruned_graph = QueryGraph(**series_dict["graph"])
-        pruned_node = parse_obj_as(Node, series_dict["node"])
+        pruned_node = parse_obj_as(Node, series_dict["node"])  # type: ignore
         for node in dfs_traversal(pruned_graph, pruned_node):
             out.append(node.type)
         return out

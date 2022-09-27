@@ -10,7 +10,9 @@ from dataclasses import dataclass
 import pandas as pd
 import sqlglot
 
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.sql import GroupbyNode
 from featurebyte.query_graph.tiling import get_aggregator
 
 if TYPE_CHECKING:
@@ -128,9 +130,12 @@ class AggregationSpec:
         list[AggregationSpec]
             List of AggregationSpec
         """
+        assert isinstance(groupby_node, GroupbyNode)
         tile_table_id = groupby_node.parameters.tile_id
         aggregation_id = groupby_node.parameters.aggregation_id
         params = groupby_node.parameters.dict()
+        assert tile_table_id is not None
+        assert aggregation_id is not None
 
         serving_names = params["serving_names"]
         if serving_names_mapping is not None:

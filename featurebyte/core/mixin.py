@@ -10,7 +10,8 @@ from pydantic import BaseModel, PrivateAttr, StrictStr
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, Node
+from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.node import Node
 
 if TYPE_CHECKING:
     from featurebyte.core.frame import Frame

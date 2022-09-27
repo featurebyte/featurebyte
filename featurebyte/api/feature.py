@@ -28,6 +28,7 @@ from featurebyte.models.feature import (
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
+from featurebyte.query_graph.node.sql import AliasNode, GroupbyNode, ProjectNode
 from featurebyte.schema.feature import FeatureCreate
 
 
@@ -115,10 +116,11 @@ class Feature(
         name = value
         node = self.node
         if node.type in {NodeType.PROJECT, NodeType.ALIAS}:
-            if node.type == NodeType.PROJECT:
+            if isinstance(node, ProjectNode):
                 existing_name = node.parameters.columns[0]
             else:
-                existing_name = node.parameters.name
+                assert isinstance(node, AliasNode)
+                existing_name = node.parameters.name  # type: ignore
             if name != existing_name:
                 raise ValueError(f'Feature "{existing_name}" cannot be renamed to "{name}"')
             # FeatureGroup sets name unconditionally, so we allow this here
@@ -155,7 +157,8 @@ class Feature(
         -------
         List[str]
         """
-        entity_ids: list[str] = self.inception_node.parameters.keys
+        assert isinstance(self.inception_node, GroupbyNode)
+        entity_ids: list[str] = self.inception_node.parameters.keys  # type: ignore
         return entity_ids
 
     @property
@@ -167,6 +170,7 @@ class Feature(
         -------
         List[str]
         """
+        assert isinstance(self.inception_node, GroupbyNode)
         serving_names: list[str] = self.inception_node.parameters.serving_names
         return serving_names
 

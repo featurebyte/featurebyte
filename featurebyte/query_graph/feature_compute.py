@@ -16,8 +16,9 @@ from featurebyte.query_graph.feature_common import (
     FeatureSpec,
     construct_cte_sql,
 )
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.interpreter import SQLOperationGraph, find_parent_groupby_nodes
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql import (
     MISSING_VALUE_REPLACEMENT,
     AliasNode,

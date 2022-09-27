@@ -17,7 +17,8 @@ from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, Node
+from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
 

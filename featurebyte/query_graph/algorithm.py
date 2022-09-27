@@ -6,7 +6,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterator
 
 if TYPE_CHECKING:
-    from featurebyte.query_graph.graph import Node, QueryGraph
+    from featurebyte.query_graph.graph import QueryGraph
+    from featurebyte.query_graph.node import Node
 
 
 def dfs_traversal(query_graph: QueryGraph, node: Node) -> Iterator[Node]:

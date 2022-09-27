@@ -1,7 +1,7 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Dict, List, Set, Tuple, TypedDict
+from typing import Any, Dict, List, Set, Tuple, TypedDict, cast
 
 import json
 from collections import defaultdict
@@ -13,6 +13,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.sql import AssignNode
 from featurebyte.query_graph.util import hash_node
 
 
@@ -88,9 +89,9 @@ class Graph(FeatureByteBaseModel):
             "parameters": node_params,
             "output_type": node_output_type,
         }
-        node = parse_obj_as(Node, node)
-        self.nodes[node.name] = node.dict()
-        return node
+        node = parse_obj_as(Node, node)  # type: ignore
+        self.nodes[node.name] = node.dict()  # type: ignore
+        return cast(Node, node)
 
     def __repr__(self) -> str:
         return json.dumps(self.dict(), indent=4)
@@ -130,7 +131,8 @@ class QueryGraph(Graph):
         -------
         Node
         """
-        return parse_obj_as(Node, self.nodes[node_name])
+        node = parse_obj_as(Node, self.nodes[node_name])  # type: ignore
+        return cast(Node, node)
 
     def add_operation(
         self,
@@ -169,7 +171,7 @@ class QueryGraph(Graph):
             self.node_name_to_ref[node.name] = node_ref
         else:
             name = self.ref_to_node_name[node_ref]
-            node = parse_obj_as(Node, self.nodes[name])
+            node = parse_obj_as(Node, self.nodes[name])  # type: ignore
         return node
 
     def load(self, graph: "QueryGraph") -> Tuple["QueryGraph", Dict[str, str]]:
@@ -357,11 +359,9 @@ class GlobalQueryGraph(QueryGraph):
         # pruning: move backward from target node to the input node
         to_prune_target_node = False
         input_node_names = self.backward_edges.get(target_node.name, [])
-        if target_node.type == NodeType.PROJECT:
-            # required columns information is generated through project operation
-            target_columns.update(target_node.parameters.columns)
 
-        if target_node.type == NodeType.ASSIGN:
+        if isinstance(target_node, AssignNode):
+            # check whether to keep the current assign node
             assign_column_name = target_node.parameters.name
             if assign_column_name in target_columns:
                 # remove matched name from the target_columns
@@ -370,6 +370,9 @@ class GlobalQueryGraph(QueryGraph):
                 # remove series path if exists
                 to_prune_target_node = True
                 input_node_names = input_node_names[:1]
+        else:
+            # Update target_columns to include list of required columns for the current node operations
+            target_columns.update(target_node.get_required_input_columns())
 
         # If the current target node produces a new column, we should remove it from the target_columns
         # (as the condition has been matched). If it is not removed, the pruning algorithm may keep the unused

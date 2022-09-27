@@ -4,7 +4,6 @@ Base classes required for constructing query graph nodes
 from typing import TYPE_CHECKING, Any, List, Type, Union
 
 from pydantic import BaseModel
-from pydantic.fields import ModelField
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 

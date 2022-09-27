@@ -3,7 +3,7 @@ Utility functions
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import Any, Dict, List
 
 import hashlib
 import json
@@ -11,9 +11,6 @@ import json
 from bson import json_util
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-
-if TYPE_CHECKING:
-    from featurebyte.query_graph.graph import Node, QueryGraph
 
 
 def hash_node(

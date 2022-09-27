@@ -7,8 +7,9 @@ import pandas as pd
 from sqlglot import expressions, parse_one, select
 
 from featurebyte.enum import InternalName
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter, TileGenSql
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql import escape_column_name
 
 
