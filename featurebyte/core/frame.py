@@ -15,7 +15,8 @@ from featurebyte.core.series import Series
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
+from featurebyte.query_graph.node import Node
 
 
 class BaseFrame(QueryObject):

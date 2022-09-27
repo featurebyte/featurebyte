@@ -52,6 +52,8 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
             "feature_store": {
                 "type": "snowflake",
                 "details": {
+                    "account": "sf_account",
+                    "warehouse": "sf_warehouse",
                     "database": "db",
                     "sf_schema": "public",
                 },

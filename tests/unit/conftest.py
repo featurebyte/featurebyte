@@ -31,7 +31,8 @@ from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, Node
+from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.node import construct_node
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
 from featurebyte.session.manager import SessionManager, get_session
@@ -298,7 +299,7 @@ def snowflake_event_view_fixture(snowflake_event_data):
     """
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
     assert isinstance(event_view, EventView)
-    expected_inception_node = Node(
+    expected_inception_node = construct_node(
         name="input_2",
         type=NodeType.INPUT,
         parameters={

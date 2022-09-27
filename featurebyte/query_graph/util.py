@@ -3,15 +3,14 @@ Utility functions
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import Any, Dict, List
 
 import hashlib
 import json
 
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from bson import json_util
 
-if TYPE_CHECKING:
-    from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
 def hash_node(
@@ -39,7 +38,7 @@ def hash_node(
     str
     """
     hasher = hashlib.shake_128()
-    hash_data = json.dumps(
+    hash_data = json_util.dumps(
         (
             node_type,
             node_params,

@@ -22,7 +22,8 @@ from featurebyte.models.base import (
     VersionIdentifier,
 )
 from featurebyte.models.feature_store import TabularSource
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node import Node
 
 
 class FeatureReadiness(OrderedStrEnum):
@@ -151,7 +152,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     dtype: DBVarType = Field(allow_mutation=False)
     row_index_lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
     graph: QueryGraph = Field(allow_mutation=False)
-    node: Node = Field(allow_mutation=False)
+    node: Node
     tabular_source: TabularSource = Field(allow_mutation=False)
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     version: VersionIdentifier = Field(allow_mutation=False, default=None)

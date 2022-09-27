@@ -33,7 +33,7 @@ def test_transformation(
     assert new_feature.node.output_type == NodeOutputType.SERIES
     assert new_feature.dtype == expected_var_type
     assert new_feature.node.type == NodeType.COUNT_DICT_TRANSFORM
-    assert new_feature.node.parameters == expected_parameters
+    assert new_feature.node.parameters.dict(exclude_none=True) == expected_parameters
     assert new_feature.event_data_ids == count_per_category_feature.event_data_ids
     assert new_feature.entity_ids == count_per_category_feature.entity_ids
 
@@ -52,13 +52,10 @@ def test_cosine_similarity(count_per_category_feature, count_per_category_featur
     result = count_per_category_feature.cd.cosine_similarity(count_per_category_feature_2h)
     pruned_graph = result.dict()["graph"]
     assert pruned_graph["backward_edges"] == {
-        "groupby_1": ["input_1", "project_1", "project_2", "project_3"],
-        "project_1": ["input_1"],
-        "project_2": ["input_1"],
-        "project_3": ["input_1"],
-        "project_4": ["groupby_1"],
-        "project_5": ["groupby_1"],
-        "cosine_similarity_1": ["project_5", "project_4"],
+        "cosine_similarity_1": ["project_2", "project_1"],
+        "groupby_1": ["input_1"],
+        "project_1": ["groupby_1"],
+        "project_2": ["groupby_1"],
     }
     assert pruned_graph["nodes"]["cosine_similarity_1"] == {
         "name": "cosine_similarity_1",

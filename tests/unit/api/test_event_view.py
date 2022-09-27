@@ -152,7 +152,7 @@ def test_setitem__str_key_series_value(snowflake_event_view):
     snowflake_event_view["double_value"] = double_value
     assert snowflake_event_view.node.dict(exclude={"name": True}) == {
         "type": NodeType.ASSIGN,
-        "parameters": {"name": "double_value"},
+        "parameters": {"name": "double_value", "value": None},
         "output_type": NodeOutputType.FRAME,
     }
     assert snowflake_event_view.column_lineage_map == {
@@ -300,15 +300,12 @@ def test_event_view_groupby__prune(snowflake_event_view_with_entity):
     assert pruned_graph.edges == {
         "add_1": ["assign_1", "add_2"],
         "add_2": ["assign_2"],
-        "assign_1": ["project_2", "groupby_1", "assign_2"],
-        "assign_2": ["project_5", "groupby_2"],
-        "groupby_1": ["project_4"],
-        "groupby_2": ["project_6"],
-        "input_1": ["project_1", "assign_1", "project_3"],
-        "project_1": ["add_1", "groupby_1", "groupby_2"],
-        "project_2": ["groupby_1"],
-        "project_3": ["groupby_1", "groupby_2"],
-        "project_4": ["mul_1"],
-        "project_5": ["groupby_2"],
-        "project_6": ["mul_1"],
+        "assign_1": ["groupby_1", "assign_2"],
+        "assign_2": ["groupby_2"],
+        "groupby_1": ["project_2"],
+        "groupby_2": ["project_3"],
+        "input_1": ["project_1", "assign_1"],
+        "project_1": ["add_1"],
+        "project_2": ["mul_1"],
+        "project_3": ["mul_1"],
     }

@@ -6,7 +6,8 @@ import pytest
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node
+from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState
+from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
 
@@ -38,6 +39,8 @@ def query_graph_and_assign_node_fixture(global_graph):
                 "details": {
                     "database": "db",
                     "sf_schema": "public",
+                    "account": "account",
+                    "warehouse": "warehouse",
                 },
             },
         },
@@ -133,6 +136,15 @@ def query_graph_with_groupby_fixture(query_graph_and_assign_node, groupby_node_p
         input_nodes=[assign_node],
     )
     return graph
+
+
+@pytest.fixture(name="groupby_node_aggregation_id")
+def groupby_node_aggregation_id_fixture(query_graph_with_groupby):
+    """Groupby node the aggregation id (without aggregation method part)"""
+    groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
+    aggregation_id = groupby_node.parameters.aggregation_id.split("_")[1]
+    assert aggregation_id == "b647baae652ff22a24cf67a57f030067f33ba204"
+    return aggregation_id
 
 
 @pytest.fixture(name="query_graph_with_category_groupby")
@@ -258,7 +270,23 @@ def query_graph_single_node(global_graph):
     """
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
-        node_params={},
+        node_params={
+            "columns": ["column"],
+            "dbtable": {
+                "database_name": "db",
+                "schema_name": "public",
+                "table_name": "transaction",
+            },
+            "feature_store": {
+                "type": "snowflake",
+                "details": {
+                    "account": "sf_account",
+                    "warehouse": "sf_warehouse",
+                    "database": "db",
+                    "sf_schema": "public",
+                },
+            },
+        },
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
@@ -271,12 +299,29 @@ def query_graph_single_node(global_graph):
         "input_1": {
             "name": "input_1",
             "type": "input",
-            "parameters": {},
+            "parameters": {
+                "columns": ["column"],
+                "dbtable": {
+                    "database_name": "db",
+                    "schema_name": "public",
+                    "table_name": "transaction",
+                },
+                "feature_store": {
+                    "type": "snowflake",
+                    "details": {
+                        "account": "sf_account",
+                        "warehouse": "sf_warehouse",
+                        "database": "db",
+                        "sf_schema": "public",
+                    },
+                },
+                "timestamp": None,
+            },
             "output_type": "frame",
         }
     }
     assert graph_dict["edges"] == {}
-    assert node_input == Node(name="input_1", type="input", parameters={}, output_type="frame")
+    assert node_input.type == "input"
     yield global_graph, node_input
 
 
@@ -297,17 +342,9 @@ def query_graph_two_nodes(graph_single_node):
     assert mapped_node.name == "project_1"
     graph_dict = graph.dict()
     assert graph_dict == pruned_graph.dict()
-    assert graph_dict["nodes"] == {
-        "input_1": {"name": "input_1", "type": "input", "parameters": {}, "output_type": "frame"},
-        "project_1": {
-            "name": "project_1",
-            "type": "project",
-            "parameters": {"columns": ["a"]},
-            "output_type": "series",
-        },
-    }
+    assert set(graph_dict["nodes"].keys()) == {"input_1", "project_1"}
     assert graph_dict["edges"] == {"input_1": ["project_1"]}
-    assert node_proj == Node(
+    assert node_proj == construct_node(
         name="project_1", type="project", parameters={"columns": ["a"]}, output_type="series"
     )
     yield graph, node_input, node_proj
@@ -330,18 +367,11 @@ def query_graph_three_nodes(graph_two_nodes):
     assert mapped_node.name == "eq_1"
     graph_dict = graph.dict()
     assert graph_dict == pruned_graph.dict()
-    assert graph_dict["nodes"] == {
-        "input_1": {"name": "input_1", "type": "input", "parameters": {}, "output_type": "frame"},
-        "project_1": {
-            "name": "project_1",
-            "type": "project",
-            "parameters": {"columns": ["a"]},
-            "output_type": "series",
-        },
-        "eq_1": {"name": "eq_1", "type": "eq", "parameters": {"value": 1}, "output_type": "series"},
-    }
+    assert set(graph_dict["nodes"].keys()) == {"input_1", "project_1", "eq_1"}
     assert graph_dict["edges"] == {"input_1": ["project_1"], "project_1": ["eq_1"]}
-    assert node_eq == Node(name="eq_1", type="eq", parameters={"value": 1}, output_type="series")
+    assert node_eq == construct_node(
+        name="eq_1", type="eq", parameters={"value": 1}, output_type="series"
+    )
     yield graph, node_input, node_proj, node_eq
 
 
@@ -362,28 +392,15 @@ def query_graph_four_nodes(graph_three_nodes):
     assert mapped_node.name == "filter_1"
     graph_dict = graph.dict()
     assert graph_dict == pruned_graph.dict()
-    assert graph_dict["nodes"] == {
-        "input_1": {"name": "input_1", "type": "input", "parameters": {}, "output_type": "frame"},
-        "project_1": {
-            "name": "project_1",
-            "type": "project",
-            "parameters": {"columns": ["a"]},
-            "output_type": "series",
-        },
-        "eq_1": {"name": "eq_1", "type": "eq", "parameters": {"value": 1}, "output_type": "series"},
-        "filter_1": {
-            "name": "filter_1",
-            "type": "filter",
-            "parameters": {},
-            "output_type": "frame",
-        },
-    }
+    assert set(graph_dict["nodes"].keys()) == {"input_1", "project_1", "eq_1", "filter_1"}
     assert graph_dict["edges"] == {
         "input_1": ["project_1", "filter_1"],
         "project_1": ["eq_1"],
         "eq_1": ["filter_1"],
     }
-    assert node_filter == Node(name="filter_1", type="filter", parameters={}, output_type="frame")
+    assert node_filter == construct_node(
+        name="filter_1", type="filter", parameters={}, output_type="frame"
+    )
     yield graph, node_input, node_proj, node_eq, node_filter
 
 
@@ -414,6 +431,8 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
                 "details": {
                     "database": "db",
                     "sf_schema": "public",
+                    "account": "account",
+                    "warehouse": "warehouse",
                 },
             },
         },

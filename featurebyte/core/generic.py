@@ -15,8 +15,9 @@ from typeguard import typechecked
 from featurebyte.config import Configurations, Credentials
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel, TabularSource
-from featurebyte.query_graph.graph import GlobalQueryGraph, Node, QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
+from featurebyte.query_graph.node import Node
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
 

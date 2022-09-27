@@ -11,7 +11,9 @@ import sqlglot
 
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql import (
     BINARY_OPERATION_NODE_TYPES,
     SUPPORTED_EXPRESSION_NODE_TYPES,
@@ -62,11 +64,11 @@ class SQLOperationGraph:
         -------
         SQLNode
         """
-        if target_node.type == NodeType.GROUPBY:
-            groupby_keys = target_node.parameters["keys"]
+        if isinstance(target_node, GroupbyNode):
+            groupby_keys = target_node.parameters.keys
         else:
             groupby_keys = None
-        sql_node = self._construct_sql_nodes(target_node, groupby_keys=groupby_keys)
+        sql_node = self._construct_sql_nodes(target_node, groupby_keys=groupby_keys)  # type: ignore
         return sql_node
 
     def _construct_sql_nodes(self, cur_node: Node, groupby_keys: list[str] | None) -> Any:
@@ -102,8 +104,8 @@ class SQLOperationGraph:
                 # Note: In the lineage leading to any features or intermediate outputs, there can be
                 # only one groupby operation (there can be parallel groupby operations, but not
                 # consecutive ones)
-                if groupby_keys is None and input_node.type == NodeType.GROUPBY:
-                    groupby_keys = input_node.parameters["keys"]
+                if groupby_keys is None and isinstance(input_node, GroupbyNode):
+                    groupby_keys = input_node.parameters.keys  # type: ignore
                 self._construct_sql_nodes(input_node, groupby_keys=groupby_keys)
             input_sql_node = self.sql_nodes[input_node_id]
             input_sql_nodes.append(input_sql_node)
@@ -111,7 +113,7 @@ class SQLOperationGraph:
         # Now that input sql nodes are ready, build the current sql node
         node_id = cur_node.name
         node_type = cur_node.type
-        parameters = cur_node.parameters
+        parameters = cur_node.parameters.dict()
         output_type = cur_node.output_type
 
         sql_node: Any
@@ -193,7 +195,7 @@ class TileGenSql:
     time_modulo_frequency: int
     frequency: int
     blind_spot: int
-    windows: list[int]
+    windows: list[str]
 
 
 def find_parent_groupby_nodes(query_graph: QueryGraph, starting_node: Node) -> Iterator[Node]:
@@ -247,6 +249,7 @@ class TileSQLGenerator:
         # Groupby operations requires building tiles (assuming the aggregation type supports tiling)
         tile_generating_nodes = {}
         for node in find_parent_groupby_nodes(self.query_graph, starting_node):
+            assert isinstance(node, GroupbyNode)
             tile_generating_nodes[node.name] = node
 
         sqls = []
@@ -256,12 +259,12 @@ class TileSQLGenerator:
 
         return sqls
 
-    def make_one_tile_sql(self, groupby_node: Node) -> TileGenSql:
+    def make_one_tile_sql(self, groupby_node: GroupbyNode) -> TileGenSql:
         """Construct tile building SQL for a specific groupby query graph node
 
         Parameters
         ----------
-        groupby_node: Node
+        groupby_node: GroupbyNode
             Groupby query graph node
 
         Returns
@@ -276,28 +279,25 @@ class TileSQLGenerator:
             groupby_node
         )
         sql = groupby_sql_node.sql
-        frequency = groupby_node.parameters["frequency"]
-        blind_spot = groupby_node.parameters["blind_spot"]
-        time_modulo_frequency = groupby_node.parameters["time_modulo_frequency"]
-        windows = groupby_node.parameters["windows"]
-        tile_table_id = groupby_node.parameters["tile_id"]
+        tile_table_id = groupby_node.parameters.tile_id
+        aggregation_id = groupby_node.parameters.aggregation_id
         entity_columns = groupby_sql_node.keys
-        serving_names = groupby_node.parameters["serving_names"]
-        value_by_column = groupby_node.parameters["value_by"]
         tile_value_columns = [spec.tile_column_name for spec in groupby_sql_node.tile_specs]
+        assert tile_table_id is not None
+        assert aggregation_id is not None
         info = TileGenSql(
             tile_table_id=tile_table_id,
-            aggregation_id=groupby_node.parameters["aggregation_id"],
+            aggregation_id=aggregation_id,
             sql=sql.sql(pretty=True),
             columns=groupby_sql_node.columns,
             entity_columns=entity_columns,
             tile_value_columns=tile_value_columns,
-            time_modulo_frequency=time_modulo_frequency,
-            frequency=frequency,
-            blind_spot=blind_spot,
-            windows=windows,
-            serving_names=serving_names,
-            value_by_column=value_by_column,
+            time_modulo_frequency=groupby_node.parameters.time_modulo_frequency,
+            frequency=groupby_node.parameters.frequency,
+            blind_spot=groupby_node.parameters.blind_spot,
+            windows=groupby_node.parameters.windows,
+            serving_names=groupby_node.parameters.serving_names,
+            value_by_column=groupby_node.parameters.value_by,
         )
         return info
 

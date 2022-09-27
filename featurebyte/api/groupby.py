@@ -17,7 +17,8 @@ from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, Node
+from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
 
@@ -183,21 +184,11 @@ class EventViewGroupBy(OpsMixin):
         dict[str, tuple[str, ...]]
             Column to lineage mapping
         """
-        input_nodes = [self.obj.node]
-        # prepare required columns
-        required_columns = node_params["keys"].copy()
-        for key in ["parent", "value_by", "timestamp"]:
-            value = node_params.get(key)
-            if value:
-                required_columns.append(value)
-        # do projection for all the required column(s) and like them to the groupby node
-        for col in required_columns:
-            input_nodes.append(self.obj[col].node)
         node = self.obj.graph.add_operation(
             node_type=NodeType.GROUPBY,
             node_params={**node_params, "tile_id": tile_id, "aggregation_id": aggregation_id},
             node_output_type=NodeOutputType.FRAME,
-            input_nodes=input_nodes,
+            input_nodes=[self.obj.node],
         )
         column_var_type_map = {}
         column_lineage_map: dict[str, tuple[str, ...]] = {}

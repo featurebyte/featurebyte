@@ -8,6 +8,17 @@ from typing import Any, Literal, cast
 import pandas as pd
 from pandas.api.types import is_scalar
 
+DatetimeSupportedPropertyType = Literal[
+    "year",
+    "quarter",
+    "month",
+    "week",
+    "day",
+    "dayofweek",
+    "hour",
+    "minute",
+    "second",
+]
 TimedeltaSupportedUnitType = Literal[
     "day",
     "hour",
