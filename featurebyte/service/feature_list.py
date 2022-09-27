@@ -5,18 +5,23 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+import pandas as pd
 from bson.objectid import ObjectId
 
 from featurebyte.common.model_util import get_version
+from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import DocumentError, DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import DefaultVersionMode, FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
+from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import (
     FeatureListBriefInfoList,
     FeatureListCreate,
     FeatureListInfo,
+    FeatureListPreview,
     FeatureListServiceUpdate,
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
@@ -265,3 +270,51 @@ class FeatureListService(
             },
             versions_info=versions_info,
         )
+
+    async def preview(self, featurelist_preview: FeatureListPreview, get_credential: Any) -> str:
+        """
+        Preview a Feature
+
+        Parameters
+        ----------
+        featurelist_preview: FeatureListPreview
+            FeatureListPreview object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        str
+            Dataframe converted to json string
+
+        Raises
+        ------
+        KeyError
+            Invalid point_in_time_and_serving_name payload
+        """
+        point_in_time_and_serving_name = featurelist_preview.point_in_time_and_serving_name
+        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
+            raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
+
+        result: pd.DataFrame = None
+        group_join_keys = list(point_in_time_and_serving_name.keys())
+        for preview_group in featurelist_preview.preview_groups:
+            feature_store_dict = preview_group.graph.nodes["input_1"]["parameters"]["feature_store"]
+            db_session = await self._get_feature_store_session(
+                feature_store=FeatureStoreModel(
+                    **feature_store_dict, name=preview_group.feature_store_name
+                ),
+                get_credential=get_credential,
+            )
+            preview_sql = get_feature_preview_sql(
+                graph=preview_group.graph,
+                nodes=preview_group.nodes,
+                point_in_time_and_serving_name=point_in_time_and_serving_name,
+            )
+            _result = db_session.execute_query(preview_sql)
+            if result is None:
+                result = _result
+            else:
+                result = result.merge(_result, on=group_join_keys)
+
+        return self._convert_dataframe_as_json(result)

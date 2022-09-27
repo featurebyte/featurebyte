@@ -7,12 +7,15 @@ from typing import Any, List, Optional, Type
 
 from bson.objectid import ObjectId
 
-from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
-from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreInfo
+from featurebyte.query_graph.interpreter import GraphInterpreter
+from featurebyte.schema.feature_store import (
+    FeatureStoreCreate,
+    FeatureStoreInfo,
+    FeatureStorePreview,
+)
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
-from featurebyte.session.base import BaseSession
 
 
 class FeatureStoreService(
@@ -67,30 +70,6 @@ class FeatureStoreService(
             database_details=feature_store.details,
         )
 
-    async def _get_session(
-        self, feature_store: FeatureStoreModel, get_credential: Any
-    ) -> BaseSession:
-        """
-        Get session for feature store
-
-        Parameters
-        ----------
-        feature_store: FeatureStoreModel
-            FeatureStoreModel object
-        get_credential: Any
-            Get credential handler function
-
-        Returns
-        -------
-        BaseSession
-            BaseSession object
-        """
-        feature_store = ExtendedFeatureStoreModel(**feature_store.dict())
-        return await self._get_feature_store_session(
-            feature_store=feature_store,
-            get_credential=get_credential,
-        )
-
     async def list_databases(
         self, feature_store: FeatureStoreModel, get_credential: Any
     ) -> List[str]:
@@ -109,7 +88,7 @@ class FeatureStoreService(
         List[str]
             List of database names
         """
-        db_session = await self._get_session(
+        db_session = await self._get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
         return db_session.list_databases()
@@ -137,7 +116,7 @@ class FeatureStoreService(
         List[str]
             List of schema names
         """
-        db_session = await self._get_session(
+        db_session = await self._get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
         return db_session.list_schemas(database_name=database_name)
@@ -168,7 +147,7 @@ class FeatureStoreService(
         List[str]
             List of table names
         """
-        db_session = await self._get_session(
+        db_session = await self._get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
         return db_session.list_tables(database_name=database_name, schema_name=schema_name)
@@ -202,10 +181,40 @@ class FeatureStoreService(
         List[ColumnSpec]
             List of ColumnSpec object
         """
-        db_session = await self._get_session(
+        db_session = await self._get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
         table_schema = db_session.list_table_schema(
             database_name=database_name, schema_name=schema_name, table_name=table_name
         )
         return [ColumnSpec(name=name, dtype=dtype) for name, dtype in table_schema.items()]
+
+    async def preview(self, preview: FeatureStorePreview, limit: int, get_credential: Any) -> str:
+        """
+        Preview a Feature
+
+        Parameters
+        ----------
+        preview: FeatureStorePreview
+            FeatureStorePreview object
+        limit: int
+            Row limit on preview results
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        str
+            Dataframe converted to json string
+        """
+        feature_store_dict = preview.graph.nodes["input_1"]["parameters"]["feature_store"]
+        db_session = await self._get_feature_store_session(
+            feature_store=FeatureStoreModel(**feature_store_dict, name=preview.feature_store_name),
+            get_credential=get_credential,
+        )
+
+        preview_sql = GraphInterpreter(preview.graph).construct_preview_sql(
+            node_name=preview.node.name, num_rows=limit
+        )
+        result = db_session.execute_query(preview_sql)
+        return self._convert_dataframe_as_json(result)

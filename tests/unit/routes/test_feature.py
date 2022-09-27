@@ -6,8 +6,10 @@ from datetime import datetime
 from http import HTTPStatus
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 from bson.objectid import ObjectId
+from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import CredentialsError
@@ -312,3 +314,81 @@ class TestFeatureApi(BaseApiTestSuite):
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text
         assert "created_at" in verbose_response_dict
         assert verbose_response_dict["versions_info"] is not None
+
+    @pytest.fixture(name="feature_preview_payload")
+    def feature_preview_payload_fixture(self, create_success_response, test_api_client_persistent):
+        """
+        feature_preview_payload fixture
+        """
+        test_api_client, _ = test_api_client_persistent
+        feature = create_success_response.json()
+
+        feature_store_id = feature["tabular_source"]["feature_store_id"]
+        response = test_api_client.get(f"/feature_store/{feature_store_id}")
+        assert response.status_code == HTTPStatus.OK
+        feature_store = response.json()
+
+        return {
+            "feature_store_name": feature_store["name"],
+            "feature": feature,
+            "point_in_time_and_serving_name": {
+                "cust_id": "C1",
+                "POINT_IN_TIME": "2022-04-01",
+            },
+        }
+
+    def test_preview_200(self, test_api_client_persistent, feature_preview_payload):
+        """Test list (success) using feature_list_id to filter"""
+        test_api_client, _ = test_api_client_persistent
+        with patch(
+            "featurebyte.core.generic.ExtendedFeatureStoreModel.get_session"
+        ) as mock_get_session:
+            expected_df = pd.DataFrame({"a": [0, 1, 2]})
+            mock_get_session.return_value.execute_query.return_value = expected_df
+            response = test_api_client.post(
+                f"{self.base_route}/preview", json=feature_preview_payload
+            )
+        assert response.status_code == HTTPStatus.OK
+        assert_frame_equal(pd.read_json(response.json(), orient="table"), expected_df)
+
+    def test_preview_missing_point_in_time(
+        self, test_api_client_persistent, feature_preview_payload
+    ):
+        """
+        Test feature preview validation missing point in time
+        """
+        test_api_client, _ = test_api_client_persistent
+        feature_preview_payload["point_in_time_and_serving_name"] = {
+            "cust_id": "C1",
+        }
+        response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == "Point in time column not provided: POINT_IN_TIME"
+
+    def test_preview_missing_entity_id(self, test_api_client_persistent, feature_preview_payload):
+        """
+        Test feature preview validation missing point in time
+        """
+        test_api_client, _ = test_api_client_persistent
+        feature_preview_payload["point_in_time_and_serving_name"] = {
+            "POINT_IN_TIME": "2022-04-01",
+        }
+        response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == "Serving name not provided: cust_id"
+
+    def test_preview_not_a_dict(self, test_api_client_persistent, feature_preview_payload):
+        """
+        Test feature preview validation but dict is not provided
+        """
+        test_api_client, _ = test_api_client_persistent
+        feature_preview_payload["point_in_time_and_serving_name"] = tuple(["2022-04-01", "C1"])
+        response = test_api_client.post(f"{self.base_route}/preview", json=feature_preview_payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == [
+            {
+                "loc": ["body", "point_in_time_and_serving_name"],
+                "msg": "value is not a valid dict",
+                "type": "type_error.dict",
+            }
+        ]

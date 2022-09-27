@@ -5,7 +5,10 @@ from __future__ import annotations
 
 from typing import Any, Literal, cast
 
+from http import HTTPStatus
+
 from bson.objectid import ObjectId
+from fastapi.exceptions import HTTPException
 
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
@@ -13,6 +16,7 @@ from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListInfo,
     FeatureListPaginatedList,
+    FeatureListPreview,
     FeatureListUpdate,
 )
 from featurebyte.service.deploy import DeployService
@@ -141,3 +145,35 @@ class FeatureListController(  # type: ignore[misc]
             sort_dir=sort_dir,
             **params,
         )
+
+    async def preview(self, featurelist_preview: FeatureListPreview, get_credential: Any) -> str:
+        """
+        Preview a Feature
+
+        Parameters
+        ----------
+        featurelist_preview: FeatureListPreview
+            FeaturePreview object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        str
+            Dataframe converted to json string
+
+        Raises
+        ------
+        HTTPException
+            Invalid request payload
+        """
+        service = cast(FeatureListService, self.service)
+
+        try:
+            return await service.preview(
+                featurelist_preview=featurelist_preview, get_credential=get_credential
+            )
+        except KeyError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
+            ) from exc

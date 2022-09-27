@@ -7,7 +7,7 @@ from typing import List, Optional, cast
 
 from http import HTTPStatus
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
@@ -22,7 +22,12 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreInfo, FeatureStoreList
+from featurebyte.schema.feature_store import (
+    FeatureStoreCreate,
+    FeatureStoreInfo,
+    FeatureStoreList,
+    FeatureStorePreview,
+)
 
 router = APIRouter(prefix="/feature_store")
 
@@ -192,3 +197,21 @@ async def list_columns_in_database_table(
         get_credential=request.state.get_credential,
     )
     return result
+
+
+@router.post("/preview", response_model=str)
+async def get_generic_preview(
+    request: Request,
+    preview: FeatureStorePreview,
+    limit: int = Query(default=10, gt=0, le=10000),
+) -> str:
+    """
+    Retrieve generic preview
+    """
+    controller = request.state.app_container.feature_store_controller
+    return cast(
+        str,
+        await controller.preview(
+            preview=preview, limit=limit, get_credential=request.state.get_credential
+        ),
+    )

@@ -7,6 +7,7 @@ from typing import Any, Dict, Generic, Iterator, List, Literal, Optional, Type, 
 
 import copy
 from abc import abstractmethod
+from decimal import Decimal
 
 import numpy as np
 import pandas as pd
@@ -22,6 +23,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     VersionIdentifier,
 )
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditActionType, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.common.base import BaseInfo
@@ -542,14 +544,14 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         """
 
     async def _get_feature_store_session(
-        self, feature_store: ExtendedFeatureStoreModel, get_credential: Any
+        self, feature_store: FeatureStoreModel, get_credential: Any
     ) -> BaseSession:
         """
         Get session for feature store
 
         Parameters
         ----------
-        feature_store: ExtendedFeatureStoreModel
+        feature_store: FeatureStoreModel
             ExtendedFeatureStoreModel object
         get_credential: Any
             Get credential handler function
@@ -565,6 +567,7 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
             When the credentials used to access the feature store is missing or invalid
         """
         try:
+            feature_store = ExtendedFeatureStoreModel(**feature_store.dict())
             return feature_store.get_session(
                 credentials={
                     feature_store.name: await get_credential(
@@ -576,6 +579,31 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
             raise CredentialsError(
                 f'Credential used to access FeatureStore (name: "{feature_store.name}") is missing or invalid.'
             ) from exc
+
+    def _convert_dataframe_as_json(self, dataframe: pd.DataFrame) -> str:
+        """
+        Comvert pandas dataframe to json
+
+        Parameters
+        ----------
+        dataframe: pd.DataFrame
+            Dataframe object
+
+        Returns
+        -------
+        str
+            JSON string
+        """
+        dataframe.reset_index(drop=True, inplace=True)
+        for name in dataframe.columns:
+            # Decimal with integer values becomes float during conversion to json
+            if (
+                dataframe[name].dtype == object
+                and isinstance(dataframe[name].iloc[0], Decimal)
+                and (dataframe[name] % 1 == 0).all()
+            ):
+                dataframe[name] = dataframe[name].astype(int)
+        return str(dataframe.to_json(orient="table", date_unit="ns", double_precision=15))
 
 
 class GetInfoServiceMixin(Generic[InfoDocument]):

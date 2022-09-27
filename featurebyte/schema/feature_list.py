@@ -3,7 +3,7 @@ FeatureList API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 
@@ -17,6 +17,7 @@ from featurebyte.models.feature_list import (
     FeatureReadinessDistribution,
     FeatureTypeFeatureCount,
 )
+from featurebyte.query_graph.graph import Node, QueryGraph
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.feature import VersionComparison
@@ -124,3 +125,32 @@ class FeatureListInfo(NamespaceInfo):
     version: VersionComparison
     production_ready_fraction: ProductionReadyFractionComparison
     versions_info: Optional[FeatureListBriefInfoList]
+
+
+class FeatureListPreviewGroup(FeatureByteBaseModel):
+    """
+    FeatureList preview schema for a group of features from the same feature store
+    """
+
+    feature_store_name: str
+    graph: QueryGraph
+    nodes: List[Node]
+
+
+class FeatureListPreview(FeatureByteBaseModel):
+    """
+    FeatureList preview schema
+    """
+
+    preview_groups: List[FeatureListPreviewGroup]
+    point_in_time_and_serving_name: Dict[str, Any]
+
+
+class FeatureListHistorical(FeatureByteBaseModel):
+    """
+    FeatureList preview schema
+    """
+
+    graph: QueryGraph
+    nodes: List[Node]
+    point_in_time_and_serving_name: Dict[str, Any]

@@ -5,9 +5,18 @@ from __future__ import annotations
 
 from typing import Any, List, cast
 
+from http import HTTPStatus
+
+from fastapi.exceptions import HTTPException
+
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
-from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreInfo, FeatureStoreList
+from featurebyte.schema.feature_store import (
+    FeatureStoreCreate,
+    FeatureStoreInfo,
+    FeatureStoreList,
+    FeatureStorePreview,
+)
 from featurebyte.service.feature_store import FeatureStoreService
 
 
@@ -170,3 +179,37 @@ class FeatureStoreController(  # type: ignore[misc]
             table_name=table_name,
             get_credential=get_credential,
         )
+
+    async def preview(self, preview: FeatureStorePreview, limit: int, get_credential: Any) -> str:
+        """
+        Preview generic graph node
+
+        Parameters
+        ----------
+        preview: FeatureStorePreview
+            FeatureStorePreview object
+        limit: int
+            Row limit on preview results
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        str
+            Dataframe converted to json string
+
+        Raises
+        ------
+        HTTPException
+            Invalid request payload
+        """
+        service = cast(FeatureStoreService, self.service)
+
+        try:
+            return await service.preview(
+                preview=preview, limit=limit, get_credential=get_credential
+            )
+        except KeyError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
+            ) from exc
