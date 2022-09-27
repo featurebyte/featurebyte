@@ -49,6 +49,9 @@ class InColumnStr(ColumnStr):
     """
 
 
+NODE_TYPES = []
+
+
 class BaseNode(BaseModel):
     """
     BaseNode class
@@ -66,6 +69,11 @@ class BaseNode(BaseModel):
         assert self.__fields__["type"].field_info.const is True
         assert repr(self.__fields__["type"].type_).startswith("typing.Literal")
         assert self.__fields__["output_type"].type_ is NodeOutputType
+
+    def __init_subclass__(cls, **kwargs: Any):
+        if repr(cls.__fields__["type"].type_).startswith("typing.Literal"):
+            # only add node type class to NODE_TYPES if the type variable is a literal (to filter out base classes)
+            NODE_TYPES.append(cls)
 
     @classmethod
     def _extract_column_str_values(
