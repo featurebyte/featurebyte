@@ -1,6 +1,7 @@
 """
 Base classes required for constructing query graph nodes
 """
+# DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import TYPE_CHECKING, Any, List, Type, Union
 
 from pydantic import BaseModel
