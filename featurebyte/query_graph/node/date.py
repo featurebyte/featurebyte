@@ -2,7 +2,7 @@
 This module contains datetime operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -64,4 +64,10 @@ class TimeDelta(BaseDatetimeOpNode):
 class DateAdd(BaseDatetimeOpNode):
     """DateAdd class"""
 
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        value: Optional[int]
+
     type: Literal[NodeType.DATE_ADD] = Field(NodeType.DATE_ADD, const=True)
+    parameters: Parameters
