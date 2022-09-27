@@ -41,6 +41,13 @@ class QueryGraph(FeatureByteBaseModel):
 
     @property
     def nodes_map(self) -> Dict[str, Node]:
+        """
+        Graph node name to node mapping
+
+        Returns
+        -------
+        Dict[str, Node]
+        """
         output = {}
         for node in self.nodes:
             output[node.name] = node
@@ -48,6 +55,13 @@ class QueryGraph(FeatureByteBaseModel):
 
     @property
     def edges_map(self) -> Dict[str, List[str]]:
+        """
+        Graph parent node name to child node names mapping
+
+        Returns
+        -------
+        Dict[str, List[str]]
+        """
         output = defaultdict(list)
         for edge in self.edges:
             output[edge.source].append(edge.target)
@@ -55,6 +69,13 @@ class QueryGraph(FeatureByteBaseModel):
 
     @property
     def backward_edges_map(self) -> Dict[str, List[str]]:
+        """
+        Graph child node name to parent node names mapping
+
+        Returns
+        -------
+        Dict[str, List[str]]
+        """
         output = defaultdict(list)
         for edge in self.edges:
             output[edge.target].append(edge.source)

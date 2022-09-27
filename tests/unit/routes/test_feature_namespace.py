@@ -161,7 +161,6 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
         response = test_api_client.get(
             f"{self.base_route}/{doc_id}/info", params={"verbose": False}
         )
-        expected_info_response = {}
 
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

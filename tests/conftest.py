@@ -6,7 +6,6 @@ import os
 from unittest.mock import patch
 
 import pytest
-from bson.objectid import ObjectId
 
 
 def pytest_configure(config):

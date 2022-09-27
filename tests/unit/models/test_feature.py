@@ -33,7 +33,7 @@ def feature_name_space_dict_fixture():
 
 
 @freezegun.freeze_time("2022-07-10")
-def test_feature_model(snowflake_event_view_with_entity, feature_model_dict):
+def test_feature_model(feature_model_dict):
     """Test feature model serialize & deserialize"""
     # pylint: disable=duplicate-code
     feature = FeatureModel(**feature_model_dict)
