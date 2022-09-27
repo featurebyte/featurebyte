@@ -39,8 +39,8 @@ def test_topological_sort__0(global_graph):
     """
     Test topological sort on empty graph edge case
     """
-    assert global_graph.nodes == {}
-    assert global_graph.edges == {}
+    assert global_graph.nodes_map == {}
+    assert global_graph.edges_map == {}
     assert not topological_sort(global_graph)
 
 

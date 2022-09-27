@@ -106,7 +106,7 @@ def get_parent_nodes(query_graph, node):
     """
     Retrieve parent nodes from the graph
     """
-    parent_node_names = query_graph.backward_edges[node.name]
+    parent_node_names = query_graph.backward_edges_map[node.name]
     return [query_graph.get_node_by_name(name) for name in parent_node_names]
 
 

@@ -47,7 +47,7 @@ def dfs_inner(query_graph: QueryGraph, node: Node, visited: dict[str, bool]) -> 
     """
     visited[node.name] = True
     yield node
-    for parent_name in query_graph.backward_edges[node.name]:
+    for parent_name in query_graph.backward_edges_map[node.name]:
         if visited.get(parent_name):
             continue
         parent_node = query_graph.get_node_by_name(parent_name)
@@ -61,7 +61,7 @@ def _topological_sort_util(
     visited[node_name] = True
 
     # recur for all the vertices adjacent to this vertex
-    for adj_node_name in query_graph.edges.get(node_name, []):
+    for adj_node_name in query_graph.edges_map.get(node_name, []):
         if not visited[adj_node_name]:
             _topological_sort_util(query_graph, adj_node_name, visited, stack)
     stack.append(node_name)
@@ -82,9 +82,9 @@ def topological_sort(query_graph: QueryGraph) -> list[str]:
         List of node names in topological sorted order
     """
 
-    visited = {node_name: False for node_name in query_graph.nodes}
+    visited = {node_name: False for node_name in query_graph.nodes_map}
     stack: list[str] = []
-    for node_name in query_graph.nodes:
+    for node_name in query_graph.nodes_map:
         if not visited[node_name]:
             _topological_sort_util(query_graph, node_name, visited, stack)
 

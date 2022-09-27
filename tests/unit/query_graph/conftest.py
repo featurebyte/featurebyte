@@ -295,8 +295,8 @@ def query_graph_single_node(global_graph):
     assert mapped_node.name == "input_1"
     graph_dict = global_graph.dict()
     assert graph_dict == pruned_graph.dict()
-    assert graph_dict["nodes"] == {
-        "input_1": {
+    assert graph_dict["nodes"] == [
+        {
             "name": "input_1",
             "type": "input",
             "parameters": {
@@ -319,8 +319,8 @@ def query_graph_single_node(global_graph):
             },
             "output_type": "frame",
         }
-    }
-    assert graph_dict["edges"] == {}
+    ]
+    assert graph_dict["edges"] == []
     assert node_input.type == "input"
     yield global_graph, node_input
 
@@ -342,8 +342,8 @@ def query_graph_two_nodes(graph_single_node):
     assert mapped_node.name == "project_1"
     graph_dict = graph.dict()
     assert graph_dict == pruned_graph.dict()
-    assert set(graph_dict["nodes"].keys()) == {"input_1", "project_1"}
-    assert graph_dict["edges"] == {"input_1": ["project_1"]}
+    assert set(node["name"] for node in graph_dict["nodes"]) == {"input_1", "project_1"}
+    assert graph_dict["edges"] == [{"source": "input_1", "target": "project_1"}]
     assert node_proj == construct_node(
         name="project_1", type="project", parameters={"columns": ["a"]}, output_type="series"
     )
@@ -367,8 +367,11 @@ def query_graph_three_nodes(graph_two_nodes):
     assert mapped_node.name == "eq_1"
     graph_dict = graph.dict()
     assert graph_dict == pruned_graph.dict()
-    assert set(graph_dict["nodes"].keys()) == {"input_1", "project_1", "eq_1"}
-    assert graph_dict["edges"] == {"input_1": ["project_1"], "project_1": ["eq_1"]}
+    assert set(node["name"] for node in graph_dict["nodes"]) == {"input_1", "project_1", "eq_1"}
+    assert graph_dict["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "eq_1"},
+    ]
     assert node_eq == construct_node(
         name="eq_1", type="eq", parameters={"value": 1}, output_type="series"
     )
@@ -392,12 +395,18 @@ def query_graph_four_nodes(graph_three_nodes):
     assert mapped_node.name == "filter_1"
     graph_dict = graph.dict()
     assert graph_dict == pruned_graph.dict()
-    assert set(graph_dict["nodes"].keys()) == {"input_1", "project_1", "eq_1", "filter_1"}
-    assert graph_dict["edges"] == {
-        "input_1": ["project_1", "filter_1"],
-        "project_1": ["eq_1"],
-        "eq_1": ["filter_1"],
+    assert set(node["name"] for node in graph_dict["nodes"]) == {
+        "input_1",
+        "project_1",
+        "eq_1",
+        "filter_1",
     }
+    assert graph_dict["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "eq_1"},
+        {"source": "input_1", "target": "filter_1"},
+        {"source": "eq_1", "target": "filter_1"},
+    ]
     assert node_filter == construct_node(
         name="filter_1", type="filter", parameters={}, output_type="frame"
     )

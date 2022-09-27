@@ -34,10 +34,10 @@ def check_graph_state(graph1, graph2):
     assert isinstance(graph1, GlobalQueryGraph)
     assert isinstance(graph2, GlobalQueryGraph)
     assert id(graph1.edges) == id(graph2.edges)
-    assert id(graph1.backward_edges) == id(graph2.backward_edges)
     assert id(graph1.nodes) == id(graph2.nodes)
     assert id(graph1.node_type_counter) == id(graph2.node_type_counter)
     assert id(graph1.ref_to_node_name) == id(graph2.ref_to_node_name)
+    assert id(graph1.node_name_to_ref) == id(graph2.node_name_to_ref)
 
 
 @pytest.fixture(name="feature_store_tabular_source")

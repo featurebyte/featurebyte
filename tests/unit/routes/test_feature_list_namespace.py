@@ -171,21 +171,21 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
         await self.setup_get_info(test_api_client)
         doc_id = create_response_dict["_id"]
         response = test_api_client.get(f"{self.base_route}/{doc_id}/info")
-        expected_info_response = {
+        assert response.status_code == HTTPStatus.OK, response.text
+        response_dict = response.json()
+        assert response_dict == {
             "name": "sf_feature_list_multiple",
+            "created_at": response_dict["created_at"],
             "updated_at": None,
             "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
             "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
             "default_version_mode": "AUTO",
-            "default_feature_list_id": "6317467bb72b797bd08f7302",
+            "default_feature_list_id": response_dict["default_feature_list_id"],
             "dtype_distribution": [{"count": 2, "dtype": "FLOAT"}],
             "version_count": 1,
             "feature_count": 2,
+            "status": "DRAFT",
         }
-        assert response.status_code == HTTPStatus.OK, response.text
-        response_dict = response.json()
-        assert response_dict.items() > expected_info_response.items(), response_dict
-        assert "created_at" in response_dict
 
         verbose_response = test_api_client.get(
             f"{self.base_route}/{doc_id}/info", params={"verbose": True}

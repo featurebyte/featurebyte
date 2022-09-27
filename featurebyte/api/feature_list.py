@@ -117,7 +117,7 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         # sanity check: make sure we don't make a copy on global query graph
         for item_origin, item in zip(items, self.items):
             if isinstance(item_origin, Feature) and isinstance(item, Feature):
-                assert id(item_origin.graph.nodes) == id(item.graph.nodes)
+                assert id(item_origin.graph.nodes_map) == id(item.graph.nodes_map)
 
     def _subset_single_column(self, column: str) -> Feature:
         return self.feature_objects[column]
@@ -174,7 +174,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         value.name = key
         self.feature_objects[key] = value
         # sanity check: make sure we don't copy global query graph
-        assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
+        assert id(self.feature_objects[key].graph.nodes_map) == id(value.graph.nodes_map)
 
     @typechecked
     def preview_sql(self, point_in_time_and_serving_name: Dict[str, Any]) -> str:

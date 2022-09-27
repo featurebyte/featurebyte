@@ -25,11 +25,12 @@ def test__getitem__series_key(int_series, bool_series):
     )
     assert series_dict["name"] == int_series.name
     assert series_dict["dtype"] == int_series.dtype
-    assert dict(series_dict["graph"]["edges"]) == {
-        "input_1": ["project_1", "project_2"],
-        "project_1": ["filter_1"],
-        "project_2": ["filter_1"],
-    }
+    assert series_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "project_2"},
+        {"source": "project_1", "target": "filter_1"},
+        {"source": "project_2", "target": "filter_1"},
+    ]
 
 
 def test__getitem__non_boolean_series_type_not_supported(int_series, bool_series):
@@ -97,13 +98,16 @@ def test__setitem__bool_series_key_scalar_value(dataframe, bool_series, column, 
         "parameters": {"columns": [column]},
         "output_type": "series",
     }
-    assert series_dict["graph"]["nodes"]["conditional_1"] == {
+    cond_node = next(
+        node for node in series_dict["graph"]["nodes"] if node["name"] == "conditional_1"
+    )
+    assert cond_node == {
         "name": "conditional_1",
         "type": "conditional",
         "parameters": {"value": value},
         "output_type": "series",
     }
-    assert dict(series.graph.edges) == {
+    assert dict(series.graph.edges_map) == {
         "input_1": ["project_1", "project_2", "assign_1"],
         "project_1": ["conditional_1"],
         "project_2": ["conditional_1"],
@@ -119,18 +123,14 @@ def test__setitem__cond_assign_with_same_input_nodes(bool_series):
     bool_series[bool_series] = True
     assert bool_series.parent is not None
     bool_series_dict = bool_series.dict()
-    assert dict(bool_series_dict["graph"]["edges"]) == {
-        "assign_1": ["project_2"],
-        "conditional_1": ["assign_1"],
-        "input_1": ["project_1", "assign_1"],
-        "project_1": ["conditional_1", "conditional_1"],
-    }
-    assert dict(bool_series_dict["graph"]["backward_edges"]) == {
-        "assign_1": ["input_1", "conditional_1"],
-        "conditional_1": ["project_1", "project_1"],
-        "project_1": ["input_1"],
-        "project_2": ["assign_1"],
-    }
+    assert bool_series_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "conditional_1"},
+        {"source": "project_1", "target": "conditional_1"},
+        {"source": "input_1", "target": "assign_1"},
+        {"source": "conditional_1", "target": "assign_1"},
+        {"source": "assign_1", "target": "project_2"},
+    ]
 
 
 def test__setitem__cond_assign_consecutive(dataframe, bool_series):
@@ -141,28 +141,38 @@ def test__setitem__cond_assign_consecutive(dataframe, bool_series):
     series[bool_series] = 100
     series[bool_series] = 200
     series_dict = series.dict()
-    assert series_dict["graph"]["nodes"]["conditional_1"] == {
+    cond1_node = next(
+        node for node in series_dict["graph"]["nodes"] if node["name"] == "conditional_1"
+    )
+    cond2_node = next(
+        node for node in series_dict["graph"]["nodes"] if node["name"] == "conditional_2"
+    )
+    assert cond1_node == {
         "name": "conditional_1",
         "type": "conditional",
         "parameters": {"value": 100},
         "output_type": "series",
     }
-    assert series_dict["graph"]["nodes"]["conditional_2"] == {
+    assert cond2_node == {
         "name": "conditional_2",
         "type": "conditional",
         "parameters": {"value": 200},
         "output_type": "series",
     }
-    assert dict(series_dict["graph"]["backward_edges"]) == {
-        "assign_1": ["input_1", "conditional_1"],
-        "assign_2": ["assign_1", "conditional_2"],
-        "conditional_1": ["project_2", "project_1"],
-        "conditional_2": ["project_3", "project_1"],
-        "project_1": ["input_1"],
-        "project_2": ["input_1"],
-        "project_3": ["assign_1"],
-        "project_4": ["assign_2"],
-    }
+    assert series_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "project_2"},
+        {"source": "project_2", "target": "conditional_1"},
+        {"source": "project_1", "target": "conditional_1"},
+        {"source": "input_1", "target": "assign_1"},
+        {"source": "conditional_1", "target": "assign_1"},
+        {"source": "assign_1", "target": "project_3"},
+        {"source": "project_3", "target": "conditional_2"},
+        {"source": "project_1", "target": "conditional_2"},
+        {"source": "assign_1", "target": "assign_2"},
+        {"source": "conditional_2", "target": "assign_2"},
+        {"source": "assign_2", "target": "project_4"},
+    ]
 
 
 def test__setitem__conditional_assign_unnamed_series(int_series, bool_series):
@@ -180,12 +190,13 @@ def test__setitem__conditional_assign_unnamed_series(int_series, bool_series):
         "type": "conditional",
     }
     # No assignment occurred
-    assert temp_series_dict["graph"]["backward_edges"] == {
-        "add_1": ["project_1"],
-        "conditional_1": ["add_1", "project_2"],
-        "project_1": ["input_1"],
-        "project_2": ["input_1"],
-    }
+    assert temp_series_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "add_1"},
+        {"source": "input_1", "target": "project_2"},
+        {"source": "add_1", "target": "conditional_1"},
+        {"source": "project_2", "target": "conditional_1"},
+    ]
 
 
 def test__setitem__row_index_not_aligned(int_series, bool_series):
@@ -250,14 +261,11 @@ def test_logical_operators(bool_series, int_series):
         "parameters": {"value": None},
         "output_type": NodeOutputType.SERIES,
     }
-    assert dict(output_and_series_dict["graph"]["edges"]) == {
-        "input_1": ["project_1"],
-        "project_1": ["and_1", "and_1"],
-    }
-    assert dict(output_and_series_dict["graph"]["backward_edges"]) == {
-        "project_1": ["input_1"],
-        "and_1": ["project_1", "project_1"],
-    }
+    assert output_and_series_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "and_1"},
+        {"source": "project_1", "target": "and_1"},
+    ]
 
     output_or_scalar = bool_series | False
     assert output_or_scalar.name is None
@@ -271,14 +279,10 @@ def test_logical_operators(bool_series, int_series):
             "output_type": NodeOutputType.SERIES,
         }.items()
     )
-    assert dict(output_or_scalar_dict["graph"]["edges"]) == {
-        "input_1": ["project_1"],
-        "project_1": ["or_1"],
-    }
-    assert dict(output_or_scalar_dict["graph"]["backward_edges"]) == {
-        "project_1": ["input_1"],
-        "or_1": ["project_1"],
-    }
+    assert output_or_scalar_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "or_1"},
+    ]
 
     with pytest.raises(TypeError) as exc:
         _ = bool_series & "string"
@@ -663,12 +667,14 @@ def test_date_add_operator__date_diff_timedelta(timestamp_series, timedelta_seri
         exclude={"name": True},
     )
     series_dict = new_series.dict()
-    assert series_dict["graph"]["backward_edges"] == {
-        "project_1": ["input_1"],
-        "project_2": ["input_1"],
-        "date_diff_1": ["project_1", "project_2"],
-        "date_add_1": ["project_1", "date_diff_1"],
-    }
+    assert series_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "project_2"},
+        {"source": "project_1", "target": "date_diff_1"},
+        {"source": "project_2", "target": "date_diff_1"},
+        {"source": "project_1", "target": "date_add_1"},
+        {"source": "date_diff_1", "target": "date_add_1"},
+    ]
 
 
 def test_date_add_operator__constructed_timedelta(timestamp_series, timedelta_series_from_int):
@@ -688,12 +694,13 @@ def test_date_add_operator__constructed_timedelta(timestamp_series, timedelta_se
         exclude={"name": True},
     )
     series_dict = new_series.dict()
-    assert series_dict["graph"]["backward_edges"] == {
-        "project_1": ["input_1"],
-        "project_2": ["input_1"],
-        "timedelta_1": ["project_2"],
-        "date_add_1": ["project_1", "timedelta_1"],
-    }
+    assert series_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "project_2"},
+        {"source": "project_2", "target": "timedelta_1"},
+        {"source": "project_1", "target": "date_add_1"},
+        {"source": "timedelta_1", "target": "date_add_1"},
+    ]
 
 
 @pytest.mark.parametrize("right_side_op", [False, True])
@@ -717,10 +724,10 @@ def test_date_add_operator__scalar_timedelta(timestamp_series, right_side_op):
         exclude={"name": True},
     )
     series_dict = new_series.dict()
-    assert series_dict["graph"]["backward_edges"] == {
-        "date_add_1": ["project_1"],
-        "project_1": ["input_1"],
-    }
+    assert series_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "date_add_1"},
+    ]
 
 
 def assert_series_attributes_equal(left, right):
@@ -772,13 +779,15 @@ def test_fillna(float_series):
     """
     float_series.fillna(0.0)
     float_series_dict = float_series.dict()
-    assert float_series_dict["graph"]["backward_edges"] == {
-        "project_1": ["input_1"],
-        "is_null_1": ["project_1"],
-        "conditional_1": ["project_1", "is_null_1"],
-        "assign_1": ["input_1", "conditional_1"],
-        "project_2": ["assign_1"],
-    }
+    assert float_series_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "is_null_1"},
+        {"source": "project_1", "target": "conditional_1"},
+        {"source": "is_null_1", "target": "conditional_1"},
+        {"source": "input_1", "target": "assign_1"},
+        {"source": "conditional_1", "target": "assign_1"},
+        {"source": "assign_1", "target": "project_2"},
+    ]
 
 
 def test_series_copy(float_series):
@@ -846,7 +855,7 @@ def test_astype__expected_parameters(series_fixture_name, request):
             "type": expected_type_in_params,
             "from_dtype": series.dtype,
         }
-        input_node_names = converted_series.graph.backward_edges[converted_series.node.name]
+        input_node_names = converted_series.graph.backward_edges_map[converted_series.node.name]
         assert input_node_names == [series.node.name]
 
     _check_converted_series(series.astype(int), "int")

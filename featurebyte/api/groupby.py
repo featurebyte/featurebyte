@@ -254,7 +254,7 @@ class EventViewGroupBy(OpsMixin):
             target_node=temp_groupby_node,
             target_columns=set(column_var_type_map.keys()),
         )
-        input_nodes = pruned_graph.backward_edges[node_name_map[temp_groupby_node.name]]
+        input_nodes = pruned_graph.backward_edges_map[node_name_map[temp_groupby_node.name]]
         table_details_dict = self.obj.tabular_source.table_details.dict()
         tile_id = get_tile_table_identifier(
             table_details_dict=table_details_dict,

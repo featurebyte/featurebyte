@@ -1,64 +1,26 @@
 {
-    "_id": "6317467bb72b797bd08f72fa",
+    "_id": "6332dfc6d9532cdb02748f89",
     "dtype": "FLOAT",
     "entity_ids": [
-        "6317467bb72b797bd08f72f8"
+        "6332dfc6d9532cdb02748f87"
     ],
     "event_data_ids": [
-        "6317467bb72b797bd08f72f7"
+        "6332dfc6d9532cdb02748f86"
     ],
-    "feature_namespace_id": "6317467bb72b797bd08f72fb",
+    "feature_namespace_id": "6332dfc6d9532cdb02748f8a",
     "graph": {
-        "backward_edges": {
-            "groupby_1": [
-                "input_1"
-            ],
-            "project_1": [
-                "groupby_1"
-            ]
-        },
-        "edges": {
-            "groupby_1": [
-                "project_1"
-            ],
-            "input_1": [
-                "groupby_1"
-            ]
-        },
-        "nodes": {
-            "groupby_1": {
-                "name": "groupby_1",
-                "output_type": "frame",
-                "parameters": {
-                    "agg_func": "sum",
-                    "aggregation_id": "sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
-                    "blind_spot": 600,
-                    "frequency": 1800,
-                    "keys": [
-                        "cust_id"
-                    ],
-                    "names": [
-                        "sum_30m",
-                        "sum_2h",
-                        "sum_1d"
-                    ],
-                    "parent": "col_float",
-                    "serving_names": [
-                        "cust_id"
-                    ],
-                    "tile_id": "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
-                    "time_modulo_frequency": 300,
-                    "timestamp": "event_timestamp",
-                    "value_by": null,
-                    "windows": [
-                        "30m",
-                        "2h",
-                        "1d"
-                    ]
-                },
-                "type": "groupby"
+        "edges": [
+            {
+                "source": "input_1",
+                "target": "groupby_1"
             },
-            "input_1": {
+            {
+                "source": "groupby_1",
+                "target": "project_1"
+            }
+        ],
+        "nodes": [
+            {
                 "name": "input_1",
                 "output_type": "frame",
                 "parameters": {
@@ -91,7 +53,39 @@
                 },
                 "type": "input"
             },
-            "project_1": {
+            {
+                "name": "groupby_1",
+                "output_type": "frame",
+                "parameters": {
+                    "agg_func": "sum",
+                    "aggregation_id": "sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
+                    "blind_spot": 600,
+                    "frequency": 1800,
+                    "keys": [
+                        "cust_id"
+                    ],
+                    "names": [
+                        "sum_30m",
+                        "sum_2h",
+                        "sum_1d"
+                    ],
+                    "parent": "col_float",
+                    "serving_names": [
+                        "cust_id"
+                    ],
+                    "tile_id": "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
+                    "time_modulo_frequency": 300,
+                    "timestamp": "event_timestamp",
+                    "value_by": null,
+                    "windows": [
+                        "30m",
+                        "2h",
+                        "1d"
+                    ]
+                },
+                "type": "groupby"
+            },
+            {
                 "name": "project_1",
                 "output_type": "series",
                 "parameters": {
@@ -101,7 +95,7 @@
                 },
                 "type": "project"
             }
-        }
+        ]
     },
     "name": "sum_30m",
     "node": {
@@ -118,7 +112,7 @@
         "groupby_1"
     ],
     "tabular_source": {
-        "feature_store_id": "6317467bb72b797bd08f72f5",
+        "feature_store_id": "6332dfc6d9532cdb02748f84",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

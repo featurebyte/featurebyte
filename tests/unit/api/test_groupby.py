@@ -183,7 +183,7 @@ def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_enti
     # check node params
     feature = feature_group["feat_30m"]
     feature_node_name = feature.node.name
-    groupby_node_name = feature.graph.backward_edges[feature_node_name][0]
+    groupby_node_name = feature.graph.backward_edges_map[feature_node_name][0]
     groupby_node = feature.graph.get_node_by_name(groupby_node_name)
     assert groupby_node.parameters == {
         "keys": ["cust_id"],
@@ -218,7 +218,7 @@ def test_groupby__category(snowflake_event_view_with_entity):
     # check node params
     feature = feature_group["feat_30m"]
     feature_node_name = feature.node.name
-    groupby_node_name = feature.graph.backward_edges[feature_node_name][0]
+    groupby_node_name = feature.graph.backward_edges_map[feature_node_name][0]
     groupby_node = feature.graph.get_node_by_name(groupby_node_name)
     assert groupby_node.parameters == {
         "keys": ["cust_id"],
@@ -338,4 +338,15 @@ def test_groupby__prune(snowflake_event_view_with_entity):
     feature_dict = feature.dict()
     graph_edges = feature_dict["graph"]["edges"]
     # check that the two assign nodes not get pruned
-    assert {"assign_1", "assign_2"}.issubset(graph_edges)
+    assert graph_edges == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "mul_1"},
+        {"source": "input_1", "target": "assign_1"},
+        {"source": "mul_1", "target": "assign_1"},
+        {"source": "input_1", "target": "project_2"},
+        {"source": "project_2", "target": "mul_2"},
+        {"source": "assign_1", "target": "assign_2"},
+        {"source": "mul_2", "target": "assign_2"},
+        {"source": "assign_2", "target": "groupby_1"},
+        {"source": "groupby_1", "target": "project_3"},
+    ]

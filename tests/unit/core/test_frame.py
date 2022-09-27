@@ -35,7 +35,7 @@ def test__getitem__str_key(dataframe, item, expected_type):
         }.items()
     )
     assert series_dict["row_index_lineage"] == ("input_1",)
-    assert dict(series_dict["graph"]["edges"]) == {"input_1": ["project_1"]}
+    assert series_dict["graph"]["edges"] == [{"source": "input_1", "target": "project_1"}]
 
 
 def test__getitem__str_not_found(dataframe):
@@ -71,7 +71,7 @@ def test__getitem__list_of_str_key(dataframe):
         "VALUE": ("input_1", "project_1"),
     }
     assert sub_dataframe_dict["row_index_lineage"] == ("input_1",)
-    assert dict(sub_dataframe_dict["graph"]["edges"]) == {"input_1": ["project_1"]}
+    assert sub_dataframe_dict["graph"]["edges"] == [{"source": "input_1", "target": "project_1"}]
 
 
 def test__getitem__list_of_str_not_found(dataframe):
@@ -108,10 +108,11 @@ def test__getitem__series_key(dataframe, bool_series):
         "PROMOTION_START_DATE": ("input_1", "filter_1"),
     }
     assert sub_dataframe_dict["row_index_lineage"] == ("input_1", "filter_1")
-    assert dict(sub_dataframe_dict["graph"]["edges"]) == {
-        "input_1": ["project_1", "filter_1"],
-        "project_1": ["filter_1"],
-    }
+    assert sub_dataframe_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "filter_1"},
+        {"source": "project_1", "target": "filter_1"},
+    ]
 
 
 def test__getitem__non_boolean_series_type_not_supported(dataframe, int_series):
@@ -174,7 +175,7 @@ def test__setitem__str_key_scalar_value(
         }.items()
     )
     assert len(dataframe.column_var_type_map.keys()) == expected_column_count
-    assert dict(dataframe_dict["graph"]["edges"]) == {"input_1": ["assign_1"]}
+    assert dataframe_dict["graph"]["edges"] == [{"source": "input_1", "target": "assign_1"}]
 
 
 @pytest.mark.parametrize(
@@ -206,10 +207,11 @@ def test__setitem__str_key_series_value(
         }.items()
     )
     assert len(dataframe.column_var_type_map.keys()) == expected_column_count
-    assert dict(dataframe_dict["graph"]["edges"]) == {
-        "input_1": ["project_1", "assign_1"],
-        "project_1": ["assign_1"],
-    }
+    assert dataframe_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "assign_1"},
+        {"source": "project_1", "target": "assign_1"},
+    ]
 
 
 def test__setitem__str_key_series_value__row_index_not_aligned(dataframe, bool_series):
@@ -298,19 +300,24 @@ def test_multiple_statements(dataframe):
         "vip_customer": ("assign_2",),
     }
     assert dataframe_dict["row_index_lineage"] == ("input_1", "filter_1")
-    assert dict(dataframe_dict["graph"]["edges"]) == {
-        "input_1": ["project_1", "filter_1"],
-        "project_1": ["filter_1"],
-        "filter_1": ["project_2", "project_3", "assign_1"],
-        "project_2": ["add_1", "lt_1"],
-        "project_3": ["add_1"],
-        "add_1": ["assign_1"],
-        "assign_1": ["project_4", "assign_2"],
-        "project_4": ["gt_1"],
-        "lt_1": ["and_1"],
-        "gt_1": ["and_1"],
-        "and_1": ["assign_2"],
-    }
+    assert dataframe_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "filter_1"},
+        {"source": "project_1", "target": "filter_1"},
+        {"source": "filter_1", "target": "project_2"},
+        {"source": "filter_1", "target": "project_3"},
+        {"source": "project_2", "target": "add_1"},
+        {"source": "project_3", "target": "add_1"},
+        {"source": "filter_1", "target": "assign_1"},
+        {"source": "add_1", "target": "assign_1"},
+        {"source": "assign_1", "target": "project_4"},
+        {"source": "project_4", "target": "gt_1"},
+        {"source": "project_2", "target": "lt_1"},
+        {"source": "lt_1", "target": "and_1"},
+        {"source": "gt_1", "target": "and_1"},
+        {"source": "assign_1", "target": "assign_2"},
+        {"source": "and_1", "target": "assign_2"},
+    ]
 
 
 def test_frame_column_order(dataframe):
