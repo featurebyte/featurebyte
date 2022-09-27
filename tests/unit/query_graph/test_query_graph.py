@@ -6,7 +6,7 @@ from collections import defaultdict
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
-from tests.util.helper import get_node
+from featurebyte.query_graph.node import construct_node
 
 
 def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
@@ -59,7 +59,7 @@ def test_prune__redundant_assign_nodes(dataframe):
     dataframe["redundantA"] = dataframe["CUST_ID"] / 10
     dataframe["redundantB"] = dataframe["VALUE"] + 10
     dataframe["target"] = dataframe["CUST_ID"] * dataframe["VALUE"]
-    assert dataframe.node == get_node(
+    assert dataframe.node == construct_node(
         name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
     )
     pruned_graph, node_name_map = dataframe.graph.prune(

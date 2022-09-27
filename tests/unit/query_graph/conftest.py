@@ -7,8 +7,8 @@ from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState
+from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
-from tests.util.helper import get_node
 
 
 @pytest.fixture(name="global_graph")
@@ -344,7 +344,7 @@ def query_graph_two_nodes(graph_single_node):
     assert graph_dict == pruned_graph.dict()
     assert set(graph_dict["nodes"].keys()) == {"input_1", "project_1"}
     assert graph_dict["edges"] == {"input_1": ["project_1"]}
-    assert node_proj == get_node(
+    assert node_proj == construct_node(
         name="project_1", type="project", parameters={"columns": ["a"]}, output_type="series"
     )
     yield graph, node_input, node_proj
@@ -369,7 +369,7 @@ def query_graph_three_nodes(graph_two_nodes):
     assert graph_dict == pruned_graph.dict()
     assert set(graph_dict["nodes"].keys()) == {"input_1", "project_1", "eq_1"}
     assert graph_dict["edges"] == {"input_1": ["project_1"], "project_1": ["eq_1"]}
-    assert node_eq == get_node(
+    assert node_eq == construct_node(
         name="eq_1", type="eq", parameters={"value": 1}, output_type="series"
     )
     yield graph, node_input, node_proj, node_eq
@@ -398,7 +398,7 @@ def query_graph_four_nodes(graph_three_nodes):
         "project_1": ["eq_1"],
         "eq_1": ["filter_1"],
     }
-    assert node_filter == get_node(
+    assert node_filter == construct_node(
         name="filter_1", type="filter", parameters={}, output_type="frame"
     )
     yield graph, node_input, node_proj, node_eq, node_filter

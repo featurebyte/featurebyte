@@ -2,10 +2,10 @@
 Query graph node related classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Union
+from typing import Any, Union
 from typing_extensions import Annotated
 
-from pydantic import Field
+from pydantic import Field, parse_obj_as
 
 from featurebyte.query_graph.node.binary import (
     AddNode,
@@ -114,3 +114,20 @@ Node = Annotated[
     ],
     Field(discriminator="type"),
 ]
+
+
+def construct_node(**kwargs: Any) -> Node:
+    """
+    Construct node based on input keyword arguments
+
+    Parameters
+    ----------
+    **kwargs: Any
+        Keyword arguments used to construct the Node object
+
+    Returns
+    -------
+    Node
+    """
+    node: Node = parse_obj_as(Node, kwargs)  # type: ignore
+    return node

@@ -8,7 +8,7 @@ from typing import Any, Callable, Literal, Optional, Type, TypeVar, Union
 from functools import wraps
 
 import pandas as pd
-from pydantic import Field, StrictStr, parse_obj_as, root_validator
+from pydantic import Field, StrictStr, root_validator
 from typeguard import typechecked
 
 from featurebyte.common.typing import is_scalar_nan
@@ -21,7 +21,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
-from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node import Node, construct_node
 
 FuncT = TypeVar("FuncT", bound=Callable[..., "Series"])
 
@@ -751,7 +751,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         out = []
         series_dict = self.dict()
         pruned_graph = QueryGraph(**series_dict["graph"])
-        pruned_node = parse_obj_as(Node, series_dict["node"])  # type: ignore
+        pruned_node = construct_node(**series_dict["node"])
         for node in dfs_traversal(pruned_graph, pruned_node):
             out.append(node.type)
         return out

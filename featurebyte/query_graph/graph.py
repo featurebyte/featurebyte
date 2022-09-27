@@ -1,18 +1,18 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Dict, List, Set, Tuple, TypedDict, cast
+from typing import Any, Dict, List, Set, Tuple, TypedDict
 
 import json
 from collections import defaultdict
 
-from pydantic import Field, parse_obj_as, validator
+from pydantic import Field, validator
 
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node import Node, construct_node
 from featurebyte.query_graph.node.sql import AssignNode
 from featurebyte.query_graph.util import hash_node
 
@@ -83,15 +83,15 @@ class Graph(FeatureByteBaseModel):
         -------
         node: Node
         """
-        node = {
+        node_dict = {
             "name": self._generate_node_name(node_type),
             "type": node_type,
             "parameters": node_params,
             "output_type": node_output_type,
         }
-        node = parse_obj_as(Node, node)  # type: ignore
-        self.nodes[node.name] = node.dict()  # type: ignore
-        return cast(Node, node)
+        node = construct_node(**node_dict)
+        self.nodes[node.name] = node.dict()
+        return node
 
     def __repr__(self) -> str:
         return json.dumps(self.dict(), indent=4)
@@ -131,8 +131,7 @@ class QueryGraph(Graph):
         -------
         Node
         """
-        node = parse_obj_as(Node, self.nodes[node_name])  # type: ignore
-        return cast(Node, node)
+        return construct_node(**self.nodes[node_name])
 
     def add_operation(
         self,
@@ -171,7 +170,7 @@ class QueryGraph(Graph):
             self.node_name_to_ref[node.name] = node_ref
         else:
             name = self.ref_to_node_name[node_ref]
-            node = parse_obj_as(Node, self.nodes[name])  # type: ignore
+            node = construct_node(**self.nodes[name])
         return node
 
     def load(self, graph: "QueryGraph") -> Tuple["QueryGraph", Dict[str, str]]:

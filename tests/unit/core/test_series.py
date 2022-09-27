@@ -9,7 +9,7 @@ import pytest
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from tests.util.helper import get_node
+from featurebyte.query_graph.node import construct_node
 
 
 def test__getitem__series_key(int_series, bool_series):
@@ -323,35 +323,43 @@ def test_relational_operators__series_other(bool_series, int_series, float_serie
     node_kwargs = {"parameters": {}, "output_type": NodeOutputType.SERIES}
     exclude = {"name": True}
     _check_node_equality(
-        series_bool_eq.node, get_node(name="eq_1", type=NodeType.EQ, **node_kwargs), exclude=exclude
+        series_bool_eq.node,
+        construct_node(name="eq_1", type=NodeType.EQ, **node_kwargs),
+        exclude=exclude,
     )
     _check_node_equality(
-        series_int_ne.node, get_node(name="ne_1", type=NodeType.NE, **node_kwargs), exclude=exclude
+        series_int_ne.node,
+        construct_node(name="ne_1", type=NodeType.NE, **node_kwargs),
+        exclude=exclude,
     )
     _check_node_equality(
         series_float_lt.node,
-        get_node(name="lt_1", type=NodeType.LT, **node_kwargs),
+        construct_node(name="lt_1", type=NodeType.LT, **node_kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         series_float_lt_int.node,
-        get_node(name="lt_2", type=NodeType.LT, **node_kwargs),
+        construct_node(name="lt_2", type=NodeType.LT, **node_kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         series_varchar_le.node,
-        get_node(name="le_1", type=NodeType.LE, **node_kwargs),
+        construct_node(name="le_1", type=NodeType.LE, **node_kwargs),
         exclude=exclude,
     )
     _check_node_equality(
-        series_bool_gt.node, get_node(name="gt_1", type=NodeType.GT, **node_kwargs), exclude=exclude
+        series_bool_gt.node,
+        construct_node(name="gt_1", type=NodeType.GT, **node_kwargs),
+        exclude=exclude,
     )
     _check_node_equality(
-        series_int_ge.node, get_node(name="ge_1", type=NodeType.GE, **node_kwargs), exclude=exclude
+        series_int_ge.node,
+        construct_node(name="ge_1", type=NodeType.GE, **node_kwargs),
+        exclude=exclude,
     )
     _check_node_equality(
         series_int_ge_float.node,
-        get_node(name="ge_2", type=NodeType.GE, **node_kwargs),
+        construct_node(name="ge_2", type=NodeType.GE, **node_kwargs),
         exclude=exclude,
     )
 
@@ -378,42 +386,42 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
     exclude = {"name": True}
     _check_node_equality(
         scalar_float_eq.node,
-        get_node(name="eq_1", type=NodeType.EQ, parameters={"value": 1.234}, **kwargs),
+        construct_node(name="eq_1", type=NodeType.EQ, parameters={"value": 1.234}, **kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_varchar_ne.node,
-        get_node(name="ne_1", type=NodeType.NE, parameters={"value": "hello"}, **kwargs),
+        construct_node(name="ne_1", type=NodeType.NE, parameters={"value": "hello"}, **kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_bool_lt.node,
-        get_node(name="lt_1", type=NodeType.LT, parameters={"value": True}, **kwargs),
+        construct_node(name="lt_1", type=NodeType.LT, parameters={"value": True}, **kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_int_le.node,
-        get_node(name="le_1", type=NodeType.LE, parameters={"value": 100}, **kwargs),
+        construct_node(name="le_1", type=NodeType.LE, parameters={"value": 100}, **kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_int_le_float.node,
-        get_node(name="le_2", type=NodeType.LE, parameters={"value": 100.0}, **kwargs),
+        construct_node(name="le_2", type=NodeType.LE, parameters={"value": 100.0}, **kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_float_gt.node,
-        get_node(name="gt_1", type=NodeType.GT, parameters={"value": 1.234}, **kwargs),
+        construct_node(name="gt_1", type=NodeType.GT, parameters={"value": 1.234}, **kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_float_gt_int.node,
-        get_node(name="gt_2", type=NodeType.GT, parameters={"value": 1}, **kwargs),
+        construct_node(name="gt_2", type=NodeType.GT, parameters={"value": 1}, **kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_varchar_ge.node,
-        get_node(name="ge_1", type=NodeType.GE, parameters={"value": "world"}, **kwargs),
+        construct_node(name="ge_1", type=NodeType.GE, parameters={"value": "world"}, **kwargs),
         exclude=exclude,
     )
 
@@ -446,32 +454,32 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
     exclude = {"name": True}
     _check_node_equality(
         series_int_float_add.node,
-        get_node(name="add_1", type=NodeType.ADD, **node_kwargs),
+        construct_node(name="add_1", type=NodeType.ADD, **node_kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         series_int_int_sub.node,
-        get_node(name="sub_1", type=NodeType.SUB, **node_kwargs),
+        construct_node(name="sub_1", type=NodeType.SUB, **node_kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         series_float_int_mul.node,
-        get_node(name="mul_1", type=NodeType.MUL, **node_kwargs),
+        construct_node(name="mul_1", type=NodeType.MUL, **node_kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         series_float_float_div.node,
-        get_node(name="div_1", type=NodeType.DIV, **node_kwargs),
+        construct_node(name="div_1", type=NodeType.DIV, **node_kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         series_varchar_varchar_add.node,
-        get_node(name="concat_1", type=NodeType.CONCAT, **node_kwargs),
+        construct_node(name="concat_1", type=NodeType.CONCAT, **node_kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         series_int_int_mod.node,
-        get_node(name="mod_1", type=NodeType.MOD, **node_kwargs),
+        construct_node(name="mod_1", type=NodeType.MOD, **node_kwargs),
         exclude=exclude,
     )
 
@@ -490,32 +498,34 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
     kwargs = {"output_type": NodeOutputType.SERIES}
     _check_node_equality(
         scalar_int_float_add.node,
-        get_node(name="add_2", type=NodeType.ADD, parameters={"value": 1.23}, **kwargs),
+        construct_node(name="add_2", type=NodeType.ADD, parameters={"value": 1.23}, **kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_int_int_sub.node,
-        get_node(name="sub_2", type=NodeType.SUB, parameters={"value": 1}, **kwargs),
+        construct_node(name="sub_2", type=NodeType.SUB, parameters={"value": 1}, **kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_float_int_mul.node,
-        get_node(name="mul_2", type=NodeType.MUL, parameters={"value": 2}, **kwargs),
+        construct_node(name="mul_2", type=NodeType.MUL, parameters={"value": 2}, **kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_float_float_div.node,
-        get_node(name="div_2", type=NodeType.DIV, parameters={"value": 2.34}, **kwargs),
+        construct_node(name="div_2", type=NodeType.DIV, parameters={"value": 2.34}, **kwargs),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_varchar_varchar_add.node,
-        get_node(name="concat_2", type=NodeType.CONCAT, parameters={"value": "hello"}, **kwargs),
+        construct_node(
+            name="concat_2", type=NodeType.CONCAT, parameters={"value": "hello"}, **kwargs
+        ),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_int_int_mod.node,
-        get_node(name="mod_2", type=NodeType.MOD, parameters={"value": 3}, **kwargs),
+        construct_node(name="mod_2", type=NodeType.MOD, parameters={"value": 3}, **kwargs),
         exclude=exclude,
     )
 
@@ -539,35 +549,35 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
     exclude = {"name": True}
     _check_node_equality(
         scalar_int_float_add.node,
-        get_node(
+        construct_node(
             name="add_1", type=NodeType.ADD, parameters={"value": 1.23, "right_op": True}, **kwargs
         ),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_int_int_sub.node,
-        get_node(
+        construct_node(
             name="sub_1", type=NodeType.SUB, parameters={"value": 1, "right_op": True}, **kwargs
         ),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_float_int_mul.node,
-        get_node(
+        construct_node(
             name="mul_1", type=NodeType.MUL, parameters={"value": 2, "right_op": True}, **kwargs
         ),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_float_float_div.node,
-        get_node(
+        construct_node(
             name="div_1", type=NodeType.DIV, parameters={"value": 2.34, "right_op": True}, **kwargs
         ),
         exclude=exclude,
     )
     _check_node_equality(
         scalar_varchar_varchar_add.node,
-        get_node(
+        construct_node(
             name="concat_2",
             type=NodeType.CONCAT,
             parameters={"value": "abc", "right_op": True},
@@ -577,7 +587,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
     )
     _check_node_equality(
         scalar_int_int_mod.node,
-        get_node(
+        construct_node(
             name="mod_2",
             type=NodeType.MOD,
             parameters={"value": 1234, "right_op": True},
@@ -617,7 +627,7 @@ def test_date_difference_operator(timestamp_series, timestamp_series_2):
     assert date_diff_series.dtype == DBVarType.TIMEDELTA
     _check_node_equality(
         date_diff_series.node,
-        get_node(
+        construct_node(
             name="date_diff_1",
             type=NodeType.DATE_DIFF,
             parameters={},
@@ -644,7 +654,7 @@ def test_date_add_operator__date_diff_timedelta(timestamp_series, timedelta_seri
     assert new_series.dtype == DBVarType.TIMESTAMP
     _check_node_equality(
         new_series.node,
-        get_node(
+        construct_node(
             name="date_add_1",
             type=NodeType.DATE_ADD,
             parameters={},
@@ -669,7 +679,7 @@ def test_date_add_operator__constructed_timedelta(timestamp_series, timedelta_se
     assert new_series.dtype == DBVarType.TIMESTAMP
     _check_node_equality(
         new_series.node,
-        get_node(
+        construct_node(
             name="date_add_1",
             type=NodeType.DATE_ADD,
             parameters={},
@@ -698,7 +708,7 @@ def test_date_add_operator__scalar_timedelta(timestamp_series, right_side_op):
     assert new_series.dtype == DBVarType.TIMESTAMP
     _check_node_equality(
         new_series.node,
-        get_node(
+        construct_node(
             name="date_add_1",
             type=NodeType.DATE_ADD,
             parameters={"value": 86400},
@@ -733,7 +743,7 @@ def test_isnull(bool_series):
     exclude = {"name": True}
     _check_node_equality(
         result.node,
-        get_node(name="is_null_1", type=NodeType.IS_NULL, **node_kwargs),
+        construct_node(name="is_null_1", type=NodeType.IS_NULL, **node_kwargs),
         exclude=exclude,
     )
 
@@ -749,7 +759,7 @@ def test_notnull(bool_series, expression_sql_template):
     exclude = {"name": True}
     _check_node_equality(
         result.node,
-        get_node(name="not_1", type=NodeType.NOT, **node_kwargs),
+        construct_node(name="not_1", type=NodeType.NOT, **node_kwargs),
         exclude=exclude,
     )
     expected_sql = expression_sql_template.format(expression='NOT "MASK" IS NULL')
