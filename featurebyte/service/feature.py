@@ -29,6 +29,7 @@ from featurebyte.models.feature import (
 )
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.feature_preview import get_feature_preview_sql
+from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.schema.feature import (
     FeatureBriefInfoList,
     FeatureCreate,
@@ -304,6 +305,7 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
             raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
 
         inception_node = graph.get_node_by_name(feature_preview.feature.row_index_lineage[0])
+        assert isinstance(inception_node, GroupbyNode)
         serving_names = inception_node.parameters.serving_names
         if serving_names is not None:
             for col in serving_names:

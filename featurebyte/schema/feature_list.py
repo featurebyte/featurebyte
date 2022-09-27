@@ -17,7 +17,8 @@ from featurebyte.models.feature_list import (
     FeatureReadinessDistribution,
     FeatureTypeFeatureCount,
 )
-from featurebyte.query_graph.graph import Node, QueryGraph
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node import Node
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.feature import VersionComparison
