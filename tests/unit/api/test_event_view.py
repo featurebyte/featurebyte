@@ -189,15 +189,20 @@ def test_event_view_column_getitem_series(snowflake_event_view):
     assert output.name == column.name
     assert output.dtype == column.dtype
     output_dict = output.dict()
-    assert (
-        output_dict["node"].items()
-        >= {"type": "filter", "parameters": {}, "output_type": "series"}.items()
-    )
-    assert dict(output_dict["graph"]["edges"]) == {
-        "input_1": ["project_1", "project_2"],
-        "project_1": ["filter_1"],
-        "project_2": ["filter_1"],
+    assert output_dict["node_name"] == "filter_1"
+    filter_node = next(node for node in output_dict["graph"]["nodes"] if node["name"] == "filter_1")
+    assert filter_node == {
+        "name": "filter_1",
+        "type": "filter",
+        "parameters": {},
+        "output_type": "series",
     }
+    assert output_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "project_2"},
+        {"source": "project_1", "target": "filter_1"},
+        {"source": "project_2", "target": "filter_1"},
+    ]
 
 
 @pytest.mark.parametrize(
