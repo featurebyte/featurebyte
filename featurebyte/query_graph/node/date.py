@@ -51,8 +51,14 @@ class DateDifference(BaseDatetimeOpNode):
 class TimeDelta(BaseDatetimeOpNode):
     """TimeDelta class"""
 
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        unit: TimedeltaSupportedUnitType
+
     # FIXME: should we rename TimeDelta to TO_TIMEDELTA?
     type: Literal[NodeType.TIMEDELTA] = Field(NodeType.TIMEDELTA, const=True)
+    parameters: Parameters
 
 
 class DateAdd(BaseDatetimeOpNode):

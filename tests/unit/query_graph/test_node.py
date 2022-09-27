@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.base import BaseNode, InColumnStr, OutColumnStr
+from featurebyte.query_graph.node.count_dict import CountDictTransformNode
 
 
 @pytest.fixture(name="node")
@@ -48,3 +49,23 @@ def test_get_new_output_columns(node):
     """Test get_new_output_columns"""
     required_in_cols = node.get_new_output_columns()
     assert set(required_in_cols) == {"new_output_column", "new_output_columns"}
+
+
+@pytest.mark.parametrize(
+    "parameters",
+    [
+        {
+            "name": "count_dict_node",
+            "parameters": {"transform_type": "entropy"},
+            "output_type": "series",
+        },
+        {
+            "name": "count_dict_node",
+            "parameters": {"transform_type": "unique_count", "include_missing": True},
+            "output_type": "series",
+        },
+    ],
+)
+def test_count_dict_transform_node(parameters):
+    """Test CountDitTransformNode not introducing additional param for unique_count transform type"""
+    assert CountDictTransformNode(**parameters).dict(exclude={"type": True}) == parameters

@@ -160,7 +160,7 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     assert_sql_equal(sql, expected_sql)
 
 
-def test_feature_execution_planner(query_graph_with_groupby):
+def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggregation_id):
     """Test FeatureExecutionPlanner generates the correct plan from groupby node"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     planner = FeatureExecutionPlanner(query_graph_with_groupby)
@@ -173,11 +173,14 @@ def test_feature_execution_planner(query_graph_with_groupby):
                 blind_spot=900,
                 time_modulo_frequency=1800,
                 tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
-                aggregation_id="avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+                aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["CUSTOMER_ID"],
                 value_by=None,
-                merge_expr="SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f)",
+                merge_expr=(
+                    f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
+                    f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+                ),
                 feature_name="a_2h_average",
             )
         ],
@@ -188,11 +191,14 @@ def test_feature_execution_planner(query_graph_with_groupby):
                 blind_spot=900,
                 time_modulo_frequency=1800,
                 tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
-                aggregation_id="avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+                aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["CUSTOMER_ID"],
                 value_by=None,
-                merge_expr="SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f)",
+                merge_expr=(
+                    f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
+                    f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+                ),
                 feature_name="a_48h_average",
             )
         ],
@@ -200,16 +206,18 @@ def test_feature_execution_planner(query_graph_with_groupby):
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
-            feature_expr='"agg_w7200_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
+            feature_expr=f'"agg_w7200_avg_{groupby_node_aggregation_id}"',
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
-            feature_expr='"agg_w172800_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
+            feature_expr=f'"agg_w172800_avg_{groupby_node_aggregation_id}"',
         ),
     }
 
 
-def test_feature_execution_planner__serving_names_mapping(query_graph_with_groupby):
+def test_feature_execution_planner__serving_names_mapping(
+    query_graph_with_groupby, groupby_node_aggregation_id
+):
     """Test FeatureExecutionPlanner with serving names mapping provided"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     mapping = {"CUSTOMER_ID": "NEW_CUST_ID"}
@@ -223,11 +231,14 @@ def test_feature_execution_planner__serving_names_mapping(query_graph_with_group
                 blind_spot=900,
                 time_modulo_frequency=1800,
                 tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
-                aggregation_id="avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+                aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["NEW_CUST_ID"],
                 value_by=None,
-                merge_expr="SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f)",
+                merge_expr=(
+                    f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
+                    f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+                ),
                 feature_name="a_2h_average",
             )
         ],
@@ -238,11 +249,14 @@ def test_feature_execution_planner__serving_names_mapping(query_graph_with_group
                 blind_spot=900,
                 time_modulo_frequency=1800,
                 tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
-                aggregation_id="avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+                aggregation_id=f"avg_{groupby_node_aggregation_id}",
                 keys=["cust_id"],
                 serving_names=["NEW_CUST_ID"],
                 value_by=None,
-                merge_expr="SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f)",
+                merge_expr=(
+                    f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
+                    f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+                ),
                 feature_name="a_48h_average",
             )
         ],
@@ -250,10 +264,10 @@ def test_feature_execution_planner__serving_names_mapping(query_graph_with_group
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
-            feature_expr='"agg_w7200_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
+            feature_expr=f'"agg_w7200_avg_{groupby_node_aggregation_id}"',
         ),
         "a_48h_average": FeatureSpec(
             feature_name="a_48h_average",
-            feature_expr='"agg_w172800_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f"',
+            feature_expr=f'"agg_w172800_avg_{groupby_node_aggregation_id}"',
         ),
     }

@@ -6,8 +6,8 @@ from typing import Any, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from featurebyte.enum import DBVarType
-from featurebyte.models.feature_store import FeatureStoreModel, TableDetails
+from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.models.feature_store import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode, InColumnStr, OutColumnStr
 
@@ -20,8 +20,8 @@ class InputNode(BaseNode):
 
         columns: List[InColumnStr]
         dbtable: TableDetails
-        feature_store: FeatureStoreModel
-        timestamp: InColumnStr
+        feature_store: FeatureStoreDetails
+        timestamp: Optional[InColumnStr]
 
     type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
@@ -44,7 +44,7 @@ class FilterNode(BaseNode):
     """FilterNode class"""
 
     type: Literal[NodeType.FILTER] = Field(NodeType.FILTER, const=True)
-    parameters: BaseModel = Field(default_factory=BaseModel, const=True)
+    parameters: BaseModel = Field(default=BaseModel(), const=True)
 
 
 class AssignNode(BaseNode):
@@ -67,7 +67,7 @@ class ConditionalNode(BaseNode):
     class Parameters(BaseModel):
         """Parameters"""
 
-        value: Optional[Union[int, float, str, bool]]
+        value: Optional[Any]
 
     type: Literal[NodeType.CONDITIONAL] = Field(NodeType.CONDITIONAL, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
@@ -83,7 +83,7 @@ class AliasNode(BaseNode):
         # FIXME: should we include input column name also?
         name: OutColumnStr
 
-    type: Literal[NodeType.ALIAS] = Field(NodeType.CONDITIONAL, const=True)
+    type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: Parameters
 
@@ -114,4 +114,28 @@ class LagNode(BaseNode):
 
     type: Literal[NodeType.LAG] = Field(NodeType.LAG, const=True)
     output_type = NodeOutputType = Field(NodeOutputType.SERIES, const=True)
+    parameters: Parameters
+
+
+class GroupbyNode(BaseNode):
+    """GroupbyNode class"""
+
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        keys: List[InColumnStr]
+        parent: Optional[InColumnStr]
+        agg_func: AggFunc
+        value_by: Optional[InColumnStr]
+        windows: List[str]
+        timestamp: InColumnStr
+        blind_spot: int
+        time_modulo_frequency: int
+        frequency: int
+        names: List[str]
+        serving_names: List[str]
+        tile_id: Optional[str]
+        aggregation_id: Optional[str]
+
+    type: Literal[NodeType.GROUPBY] = Field(NodeType.GROUPBY, const=True)
     parameters: Parameters

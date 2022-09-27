@@ -74,7 +74,7 @@ def query_object1_fixture(feature_store_tabular_source):
     global_graph = GlobalQueryGraph()
     node_proj1 = global_graph.add_operation(
         node_type=NodeType.PROJECT,
-        node_params={},
+        node_params={"columns": ["column"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[],
     )
@@ -98,7 +98,7 @@ def query_object2_fixture(feature_store_tabular_source, query_object1):
     node_proj1 = query_object1.node
     node_proj2 = global_graph.add_operation(
         node_type=NodeType.PROJECT,
-        node_params={"other": "column"},
+        node_params={"columns": ["column_name"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_proj1],
     )

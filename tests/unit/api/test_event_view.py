@@ -153,7 +153,7 @@ def test_setitem__str_key_series_value(snowflake_event_view):
     snowflake_event_view["double_value"] = double_value
     assert snowflake_event_view.node.dict(exclude={"name": True}) == {
         "type": NodeType.ASSIGN,
-        "parameters": {"name": "double_value"},
+        "parameters": {"name": "double_value", "value": None},
         "output_type": NodeOutputType.FRAME,
     }
     assert snowflake_event_view.column_lineage_map == {

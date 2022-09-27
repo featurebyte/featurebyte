@@ -116,9 +116,9 @@ class Feature(
         node = self.node
         if node.type in {NodeType.PROJECT, NodeType.ALIAS}:
             if node.type == NodeType.PROJECT:
-                existing_name = node.parameters["columns"][0]
+                existing_name = node.parameters.columns[0]
             else:
-                existing_name = node.parameters["name"]
+                existing_name = node.parameters.name
             if name != existing_name:
                 raise ValueError(f'Feature "{existing_name}" cannot be renamed to "{name}"')
             # FeatureGroup sets name unconditionally, so we allow this here
@@ -155,7 +155,7 @@ class Feature(
         -------
         List[str]
         """
-        entity_ids: list[str] = self.inception_node.parameters["keys"]
+        entity_ids: list[str] = self.inception_node.parameters.keys
         return entity_ids
 
     @property
@@ -167,7 +167,7 @@ class Feature(
         -------
         List[str]
         """
-        serving_names: list[str] = self.inception_node.parameters["serving_names"]
+        serving_names: list[str] = self.inception_node.parameters.serving_names
         return serving_names
 
     @property

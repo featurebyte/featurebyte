@@ -150,7 +150,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         -------
         str
         """
-        timestamp_col: str = self.inception_node.parameters["timestamp"]
+        timestamp_col: str = self.inception_node.parameters.timestamp
         return timestamp_col
 
     @property

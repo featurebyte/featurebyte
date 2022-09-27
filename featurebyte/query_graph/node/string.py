@@ -23,7 +23,7 @@ class LengthNode(BaseStringOpNode):
     """LengthNode class"""
 
     type: Literal[NodeType.LENGTH] = Field(NodeType.LENGTH, const=True)
-    parameters: BaseModel = Field(default_factory=BaseModel, const=True)
+    parameters: BaseModel = Field(default=BaseModel(), const=True)
 
 
 class TrimNode(BaseStringOpNode):
@@ -99,7 +99,7 @@ class SubStringNode(BaseStringOpNode):
         """Parameters"""
 
         start: Optional[int]
-        length: int = Field(default=1, ge=1)
+        length: Optional[int] = Field(default=1, ge=1)
 
     type: Literal[NodeType.SUBSTRING] = Field(NodeType.SUBSTRING, const=True)
     parameters: Parameters

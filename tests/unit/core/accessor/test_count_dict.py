@@ -33,7 +33,7 @@ def test_transformation(
     assert new_feature.node.output_type == NodeOutputType.SERIES
     assert new_feature.dtype == expected_var_type
     assert new_feature.node.type == NodeType.COUNT_DICT_TRANSFORM
-    assert new_feature.node.parameters == expected_parameters
+    assert new_feature.node.parameters.dict(exclude_none=True) == expected_parameters
     assert new_feature.event_data_ids == count_per_category_feature.event_data_ids
     assert new_feature.entity_ids == count_per_category_feature.entity_ids
 

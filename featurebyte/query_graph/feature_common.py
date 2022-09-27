@@ -128,9 +128,9 @@ class AggregationSpec:
         list[AggregationSpec]
             List of AggregationSpec
         """
-        tile_table_id = groupby_node.parameters["tile_id"]
-        aggregation_id = groupby_node.parameters["aggregation_id"]
-        params = groupby_node.parameters
+        tile_table_id = groupby_node.parameters.tile_id
+        aggregation_id = groupby_node.parameters.aggregation_id
+        params = groupby_node.parameters.dict()
 
         serving_names = params["serving_names"]
         if serving_names_mapping is not None:
@@ -138,7 +138,7 @@ class AggregationSpec:
 
         aggregation_specs = []
         for window, feature_name in zip(params["windows"], params["names"]):
-            params = groupby_node.parameters
+            params = groupby_node.parameters.dict()
             window = int(pd.Timedelta(window).total_seconds())
             agg_spec = cls(
                 window=window,

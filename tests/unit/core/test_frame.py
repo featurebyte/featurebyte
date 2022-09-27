@@ -201,7 +201,7 @@ def test__setitem__str_key_series_value(
         dataframe_dict["node"].items()
         >= {
             "type": "assign",
-            "parameters": {"name": key},
+            "parameters": {"name": key, "value": None},
             "output_type": NodeOutputType.FRAME,
         }.items()
     )
@@ -283,7 +283,7 @@ def test_multiple_statements(dataframe):
         dataframe_dict["node"].items()
         >= {
             "type": NodeType.ASSIGN,
-            "parameters": {"name": "vip_customer"},
+            "parameters": {"name": "vip_customer", "value": None},
             "output_type": NodeOutputType.FRAME,
         }.items()
     )

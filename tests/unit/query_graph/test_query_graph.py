@@ -4,8 +4,9 @@ Unit test for query graph
 from collections import defaultdict
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, Node, QueryGraph
+from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
+from tests.util.helper import get_node
 
 
 def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
@@ -20,14 +21,18 @@ def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
         input_nodes=[node_input],
     )
     graph_dict = graph.dict()
-    assert graph_dict["nodes"] == {
-        "input_1": {"name": "input_1", "type": "input", "parameters": {}, "output_type": "frame"},
-        "project_1": {
-            "name": "project_1",
-            "type": "project",
-            "parameters": {"columns": ["a"]},
-            "output_type": "series",
-        },
+
+    assert graph_dict["nodes"]["input_1"] == {
+        "name": "input_1",
+        "type": "input",
+        "parameters": graph_dict["nodes"]["input_1"]["parameters"],
+        "output_type": "frame",
+    }
+    assert graph_dict["nodes"]["project_1"] == {
+        "name": "project_1",
+        "type": "project",
+        "parameters": {"columns": ["a"]},
+        "output_type": "series",
     }
     assert graph_dict["edges"] == {"input_1": ["project_1"]}
     assert node_duplicated == node_proj
@@ -54,7 +59,7 @@ def test_prune__redundant_assign_nodes(dataframe):
     dataframe["redundantA"] = dataframe["CUST_ID"] / 10
     dataframe["redundantB"] = dataframe["VALUE"] + 10
     dataframe["target"] = dataframe["CUST_ID"] * dataframe["VALUE"]
-    assert dataframe.node == Node(
+    assert dataframe.node == get_node(
         name="assign_3", type="assign", parameters={"name": "target"}, output_type="frame"
     )
     pruned_graph, node_name_map = dataframe.graph.prune(
@@ -70,7 +75,7 @@ def test_prune__redundant_assign_nodes(dataframe):
     assert pruned_graph.nodes["assign_1"] == {
         "name": "assign_1",
         "type": "assign",
-        "parameters": {"name": "target"},
+        "parameters": {"name": "target", "value": None},
         "output_type": "frame",
     }
     assert mapped_node.name == "assign_1"
@@ -93,7 +98,7 @@ def test_prune__redundant_assign_node_with_same_target_column_name(dataframe):
         target_node=dataframe.node, target_columns={"VALUE"}
     )
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
-    assert pruned_graph.nodes["assign_1"]["parameters"] == {"name": "VALUE"}
+    assert pruned_graph.nodes["assign_1"]["parameters"] == {"name": "VALUE", "value": None}
     assert mapped_node.name == "assign_1"
 
 

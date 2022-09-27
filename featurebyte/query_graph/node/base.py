@@ -4,6 +4,7 @@ Base classes required for constructing query graph nodes
 from typing import TYPE_CHECKING, Any, List, Type, Union
 
 from pydantic import BaseModel
+from pydantic.fields import ModelField
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
@@ -65,7 +66,6 @@ class BaseNode(BaseModel):
         # make sure subclass set certain properties correctly
         assert self.__fields__["type"].field_info.const is True
         assert repr(self.__fields__["type"].type_).startswith("typing.Literal")
-        assert issubclass(self.__fields__["parameters"].type_, BaseModel)
         assert self.__fields__["output_type"].type_ is NodeOutputType
 
     @classmethod

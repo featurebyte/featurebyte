@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, Any, Dict, List
 import hashlib
 import json
 
+from bson import json_util
+
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 if TYPE_CHECKING:
@@ -39,7 +41,7 @@ def hash_node(
     str
     """
     hasher = hashlib.shake_128()
-    hash_data = json.dumps(
+    hash_data = json_util.dumps(
         (
             node_type,
             node_params,

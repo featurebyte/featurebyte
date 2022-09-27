@@ -63,7 +63,7 @@ class SQLOperationGraph:
         SQLNode
         """
         if target_node.type == NodeType.GROUPBY:
-            groupby_keys = target_node.parameters["keys"]
+            groupby_keys = target_node.parameters.keys
         else:
             groupby_keys = None
         sql_node = self._construct_sql_nodes(target_node, groupby_keys=groupby_keys)
@@ -103,7 +103,7 @@ class SQLOperationGraph:
                 # only one groupby operation (there can be parallel groupby operations, but not
                 # consecutive ones)
                 if groupby_keys is None and input_node.type == NodeType.GROUPBY:
-                    groupby_keys = input_node.parameters["keys"]
+                    groupby_keys = input_node.parameters.keys
                 self._construct_sql_nodes(input_node, groupby_keys=groupby_keys)
             input_sql_node = self.sql_nodes[input_node_id]
             input_sql_nodes.append(input_sql_node)
@@ -111,7 +111,7 @@ class SQLOperationGraph:
         # Now that input sql nodes are ready, build the current sql node
         node_id = cur_node.name
         node_type = cur_node.type
-        parameters = cur_node.parameters
+        parameters = cur_node.parameters.dict()
         output_type = cur_node.output_type
 
         sql_node: Any
@@ -276,18 +276,18 @@ class TileSQLGenerator:
             groupby_node
         )
         sql = groupby_sql_node.sql
-        frequency = groupby_node.parameters["frequency"]
-        blind_spot = groupby_node.parameters["blind_spot"]
-        time_modulo_frequency = groupby_node.parameters["time_modulo_frequency"]
-        windows = groupby_node.parameters["windows"]
-        tile_table_id = groupby_node.parameters["tile_id"]
+        frequency = groupby_node.parameters.frequency
+        blind_spot = groupby_node.parameters.blind_spot
+        time_modulo_frequency = groupby_node.parameters.time_modulo_frequency
+        windows = groupby_node.parameters.windows
+        tile_table_id = groupby_node.parameters.tile_id
         entity_columns = groupby_sql_node.keys
-        serving_names = groupby_node.parameters["serving_names"]
-        value_by_column = groupby_node.parameters["value_by"]
+        serving_names = groupby_node.parameters.serving_names
+        value_by_column = groupby_node.parameters.value_by
         tile_value_columns = [spec.tile_column_name for spec in groupby_sql_node.tile_specs]
         info = TileGenSql(
             tile_table_id=tile_table_id,
-            aggregation_id=groupby_node.parameters["aggregation_id"],
+            aggregation_id=groupby_node.parameters.aggregation_id,
             sql=sql.sql(pretty=True),
             columns=groupby_sql_node.columns,
             entity_columns=entity_columns,

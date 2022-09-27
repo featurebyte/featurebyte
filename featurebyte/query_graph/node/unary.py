@@ -14,7 +14,7 @@ class BaseUnaryOpNode(BaseNode):
     """Base class for unary operation node"""
 
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-    parameters: BaseModel = Field(default_factory=BaseModel, const=True)
+    parameters: BaseModel = Field(default=BaseModel(), const=True)
 
 
 class NotNode(BaseUnaryOpNode):

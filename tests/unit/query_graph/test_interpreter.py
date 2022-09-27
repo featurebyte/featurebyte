@@ -38,6 +38,8 @@ def node_input_fixture(graph):
             "details": {
                 "database": "db",
                 "sf_schema": "public",
+                "account": "account",
+                "warehouse": "warehouse",
             },
         },
     }
@@ -247,7 +249,7 @@ def test_graph_interpreter_project_multiple_columns(graph, node_input):
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_graph_interpreter_tile_gen(query_graph_with_groupby):
+def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggregation_id):
     """Test tile building SQL"""
     interpreter = GraphInterpreter(query_graph_with_groupby)
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
@@ -259,18 +261,18 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
     info_dict.pop("sql")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
-        "aggregation_id": "avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+        "aggregation_id": f"avg_{groupby_node_aggregation_id}",
         "columns": [
             InternalName.TILE_START_DATE.value,
             "cust_id",
-            "sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
-            "count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+            f"sum_value_avg_{groupby_node_aggregation_id}",
+            f"count_value_avg_{groupby_node_aggregation_id}",
         ],
         "time_modulo_frequency": 1800,
         "entity_columns": ["cust_id"],
         "tile_value_columns": [
-            "sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
-            "count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+            f"sum_value_avg_{groupby_node_aggregation_id}",
+            f"count_value_avg_{groupby_node_aggregation_id}",
         ],
         "frequency": 3600,
         "blind_spot": 900,
@@ -280,7 +282,9 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby):
     }
 
 
-def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
+def test_graph_interpreter_on_demand_tile_gen(
+    query_graph_with_groupby, groupby_node_aggregation_id
+):
     """Test tile building SQL with on-demand tile generation
 
     Note that the input table query contains a left-join with an entity table to filter only data
@@ -296,12 +300,12 @@ def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
 
     sql = info_dict.pop("sql")
     expected_sql = textwrap.dedent(
-        """
+        f"""
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("a") AS sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f,
-          COUNT("a") AS count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f
+          SUM("a") AS sum_value_avg_{groupby_node_aggregation_id},
+          COUNT("a") AS count_value_avg_{groupby_node_aggregation_id}
         FROM (
             SELECT
               *,
@@ -339,18 +343,18 @@ def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby):
     assert sql == expected_sql
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
-        "aggregation_id": "avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+        "aggregation_id": f"avg_{groupby_node_aggregation_id}",
         "columns": [
             InternalName.TILE_START_DATE.value,
             "cust_id",
-            "sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
-            "count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+            f"sum_value_avg_{groupby_node_aggregation_id}",
+            f"count_value_avg_{groupby_node_aggregation_id}",
         ],
         "time_modulo_frequency": 1800,
         "entity_columns": ["cust_id"],
         "tile_value_columns": [
-            "sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
-            "count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+            f"sum_value_avg_{groupby_node_aggregation_id}",
+            f"count_value_avg_{groupby_node_aggregation_id}",
         ],
         "frequency": 3600,
         "blind_spot": 900,
@@ -370,15 +374,16 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
 
+    aggregation_id = "304c21a009828509aefca1c267231015ae4655e6"
     sql = info_dict.pop("sql")
     expected_sql = textwrap.dedent(
-        """
+        f"""
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           "product_type",
-          SUM("a") AS sum_value_avg_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2,
-          COUNT("a") AS count_value_avg_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2
+          SUM("a") AS sum_value_avg_{aggregation_id},
+          COUNT("a") AS count_value_avg_{aggregation_id}
         FROM (
             SELECT
               *,
@@ -411,18 +416,18 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     assert sql == expected_sql
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_422275c11ff21e200f4c47e66149f25c404b7178",
-        "aggregation_id": "avg_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2",
+        "aggregation_id": f"avg_{aggregation_id}",
         "columns": [
             InternalName.TILE_START_DATE.value,
             "cust_id",
-            "sum_value_avg_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2",
-            "count_value_avg_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2",
+            f"sum_value_avg_{aggregation_id}",
+            f"count_value_avg_{aggregation_id}",
         ],
         "time_modulo_frequency": 1800,
         "entity_columns": ["cust_id"],
         "tile_value_columns": [
-            "sum_value_avg_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2",
-            "count_value_avg_d62da870cdbe97bbfdb6a7ad61e62089e5f7e1e2",
+            f"sum_value_avg_{aggregation_id}",
+            f"count_value_avg_{aggregation_id}",
         ],
         "frequency": 3600,
         "blind_spot": 900,
@@ -432,7 +437,9 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     }
 
 
-def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_graph):
+def test_graph_interpreter_on_demand_tile_gen_two_groupby(
+    complex_feature_query_graph, groupby_node_aggregation_id
+):
     """Test case for a complex feature that depends on two groupby nodes"""
     complex_feature_node, graph = complex_feature_query_graph
     interpreter = GraphInterpreter(graph)
@@ -445,19 +452,19 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
     sql = info_dict.pop("sql")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
-        "aggregation_id": "avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+        "aggregation_id": f"avg_{groupby_node_aggregation_id}",
         "columns": [
             "__FB_TILE_START_DATE_COLUMN",
             "cust_id",
-            "sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
-            "count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+            f"sum_value_avg_{groupby_node_aggregation_id}",
+            f"count_value_avg_{groupby_node_aggregation_id}",
         ],
         "entity_columns": ["cust_id"],
         "serving_names": ["CUSTOMER_ID"],
         "value_by_column": None,
         "tile_value_columns": [
-            "sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
-            "count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+            f"sum_value_avg_{groupby_node_aggregation_id}",
+            f"count_value_avg_{groupby_node_aggregation_id}",
         ],
         "time_modulo_frequency": 1800,
         "frequency": 3600,
@@ -465,12 +472,12 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
         "windows": ["2h", "48h"],
     }
     expected = textwrap.dedent(
-        """
+        f"""
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("a") AS sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f,
-          COUNT("a") AS count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f
+          SUM("a") AS sum_value_avg_{groupby_node_aggregation_id},
+          COUNT("a") AS count_value_avg_{groupby_node_aggregation_id}
         FROM (
             SELECT
               *,
@@ -508,32 +515,33 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_
     assert sql == expected
 
     # Check required tile 2 (groupby keys: biz_id)
+    aggregation_id = "b96663babb133dc80c00e34062fde2784b57a72e"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
     sql = info_dict.pop("sql")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_6df75fa33c5905ea927c25219b178c8848027e3c",
-        "aggregation_id": "sum_1a10fa8ac42309f34d1cf11eb15ed0e65e120de1",
+        "aggregation_id": f"sum_{aggregation_id}",
         "columns": [
             "__FB_TILE_START_DATE_COLUMN",
             "biz_id",
-            "value_sum_1a10fa8ac42309f34d1cf11eb15ed0e65e120de1",
+            f"value_sum_{aggregation_id}",
         ],
         "entity_columns": ["biz_id"],
         "serving_names": ["BUSINESS_ID"],
         "value_by_column": None,
-        "tile_value_columns": ["value_sum_1a10fa8ac42309f34d1cf11eb15ed0e65e120de1"],
+        "tile_value_columns": [f"value_sum_{aggregation_id}"],
         "time_modulo_frequency": 1800,
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["7d"],
     }
     expected = textwrap.dedent(
-        """
+        f"""
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_ENTITY_TABLE_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "biz_id",
-          SUM("a") AS value_sum_1a10fa8ac42309f34d1cf11eb15ed0e65e120de1
+          SUM("a") AS value_sum_{aggregation_id}
         FROM (
             SELECT
               *,
@@ -588,6 +596,8 @@ def test_graph_interpreter_snowflake(graph):
                 "details": {
                     "database": "FB_SIMULATE",
                     "sf_schema": "PUBLIC",
+                    "account": "account",
+                    "warehouse": "warehouse",
                 },
             },
         },
@@ -605,6 +615,7 @@ def test_graph_interpreter_snowflake(graph):
         "timestamp": "SERVER_TIMESTAMP",
         "windows": ["1d"],
         "serving_names": ["CUSTOMER_ID"],
+        "names": ["feature_name"],
     }
     _groupby_node = graph.add_operation(
         node_type=NodeType.GROUPBY,
@@ -625,11 +636,11 @@ def test_graph_interpreter_snowflake(graph):
     assert len(tile_gen_sql) == 1
     sql_template = tile_gen_sql[0].sql
     expected = textwrap.dedent(
-        """
+        f"""
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "CUST_ID",
-          COUNT(*) AS value_count_07101aa29bcf50c2a319dba72525736adeb29446
+          COUNT(*) AS value_count_9d357194883a2d9ab9d4c15da39f33733f80ac15
         FROM (
             SELECT
               *,
@@ -961,7 +972,7 @@ def test_conditional_assign__project_named(graph, node_input):
     conditional_node = graph.add_operation(
         node_type=NodeType.CONDITIONAL,
         node_params={"value": 0},
-        node_output_type=NodeOutputType.FRAME,
+        node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a, mask_node],
     )
     assign_node = graph.add_operation(

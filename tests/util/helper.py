@@ -5,6 +5,10 @@ import sys
 from contextlib import contextmanager
 from unittest.mock import Mock
 
+from pydantic import parse_obj_as
+
+from featurebyte.query_graph.node import Node
+
 
 def assert_equal_with_expected_fixture(actual, fixture_filename, update_fixture=False):
     """Utility to check that actual is the same as the pre-generated fixture
@@ -61,3 +65,8 @@ def get_lagged_series_pandas(df, column, timestamp, groupby_key):
     df_sorted = df.sort_values(timestamp)
     df[column] = df_sorted.groupby(groupby_key)[column].shift(1)
     return df[column]
+
+
+def get_node(**kwargs):
+    """Construct the node based on given parameters"""
+    return parse_obj_as(Node, kwargs)

@@ -136,12 +136,12 @@ def run_groupby_and_get_tile_table_identifier(
     feature_names = set(aggregate_kwargs["feature_names"])
     features = event_view.groupby(**groupby_kwargs).aggregate(**aggregate_kwargs)
     groupby_node = get_parent_nodes(event_view.graph, features[list(feature_names)[0]].node)[0]
-    tile_id = groupby_node.parameters["tile_id"]
-    agg_id = groupby_node.parameters["aggregation_id"]
+    tile_id = groupby_node.parameters.tile_id
+    agg_id = groupby_node.parameters.aggregation_id
     pruned_graph, node_name_map = GlobalQueryGraph().prune(groupby_node, feature_names)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
-    tile_id_pruned = mapped_node.parameters["tile_id"]
-    agg_id_pruned = mapped_node.parameters["aggregation_id"]
+    tile_id_pruned = mapped_node.parameters.tile_id
+    agg_id_pruned = mapped_node.parameters.aggregation_id
     assert tile_id == tile_id_pruned
     assert agg_id == agg_id_pruned
     return tile_id, agg_id
@@ -260,7 +260,7 @@ def test_tile_table_id__transformations(snowflake_event_view_with_entity, aggreg
     )
     assert (tile_id, agg_id) == (
         "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
-        "sum_657dcf96c117cdfe5928aaff963eb1eeb6d11027",
+        "sum_883db19145c4e8d96bb7ab17a8b5235675b76060",
     )
 
     # Note that this is different from above
@@ -271,5 +271,5 @@ def test_tile_table_id__transformations(snowflake_event_view_with_entity, aggreg
     )
     assert (tile_id, agg_id) == (
         "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
-        "sum_81483c0c3e2b4a1dc86100ce26c99012aa937bd5",
+        "sum_f3bc1b1d42f78c1d95245161984a2cf488958a80",
     )

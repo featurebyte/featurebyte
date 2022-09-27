@@ -5,7 +5,9 @@ Tests for featurebyte.query_graph.feature_common
 from featurebyte.query_graph.feature_common import AggregationSpec
 
 
-def test_aggregation_spec__from_groupby_query_node(query_graph_with_groupby):
+def test_aggregation_spec__from_groupby_query_node(
+    query_graph_with_groupby, groupby_node_aggregation_id
+):
     """
     Test constructing list of AggregationSpec from groupby query graph node
     """
@@ -18,11 +20,14 @@ def test_aggregation_spec__from_groupby_query_node(query_graph_with_groupby):
             blind_spot=900,
             time_modulo_frequency=1800,
             tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
-            aggregation_id="avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+            aggregation_id=f"avg_{groupby_node_aggregation_id}",
             keys=["cust_id"],
             serving_names=["CUSTOMER_ID"],
             value_by=None,
-            merge_expr="SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f)",
+            merge_expr=(
+                f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
+                f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+            ),
             feature_name="a_2h_average",
         ),
         AggregationSpec(
@@ -31,18 +36,23 @@ def test_aggregation_spec__from_groupby_query_node(query_graph_with_groupby):
             blind_spot=900,
             time_modulo_frequency=1800,
             tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
-            aggregation_id="avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+            aggregation_id=f"avg_{groupby_node_aggregation_id}",
             keys=["cust_id"],
             serving_names=["CUSTOMER_ID"],
             value_by=None,
-            merge_expr="SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f)",
+            merge_expr=(
+                f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
+                f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+            ),
             feature_name="a_48h_average",
         ),
     ]
     assert agg_specs == expected_agg_specs
 
 
-def test_aggregation_spec__override_serving_names(query_graph_with_groupby):
+def test_aggregation_spec__override_serving_names(
+    query_graph_with_groupby, groupby_node_aggregation_id
+):
     """
     Test constructing list of AggregationSpec with serving names mapping provided
     """
@@ -60,11 +70,14 @@ def test_aggregation_spec__override_serving_names(query_graph_with_groupby):
             blind_spot=900,
             time_modulo_frequency=1800,
             tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
-            aggregation_id="avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+            aggregation_id=f"avg_{groupby_node_aggregation_id}",
             keys=["cust_id"],
             serving_names=["NEW_CUST_ID"],
             value_by=None,
-            merge_expr="SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f)",
+            merge_expr=(
+                f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
+                f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+            ),
             feature_name="a_2h_average",
         ),
         AggregationSpec(
@@ -73,11 +86,14 @@ def test_aggregation_spec__override_serving_names(query_graph_with_groupby):
             blind_spot=900,
             time_modulo_frequency=1800,
             tile_table_id="fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
-            aggregation_id="avg_53307fe1790a553cf1ca703e44b92619ad86dc8f",
+            aggregation_id=f"avg_{groupby_node_aggregation_id}",
             keys=["cust_id"],
             serving_names=["NEW_CUST_ID"],
             value_by=None,
-            merge_expr="SUM(sum_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f) / SUM(count_value_avg_53307fe1790a553cf1ca703e44b92619ad86dc8f)",
+            merge_expr=(
+                f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
+                f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+            ),
             feature_name="a_48h_average",
         ),
     ]

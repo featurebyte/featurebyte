@@ -1403,7 +1403,7 @@ def make_conditional_node(input_sql_nodes: list[SQLNode], node: Node) -> Conditi
     Conditional
     """
     assert len(input_sql_nodes) == 2
-    parameters = node.parameters
+    parameters = node.parameters.dict()
 
     series_node = input_sql_nodes[0]
     mask = input_sql_nodes[1]
