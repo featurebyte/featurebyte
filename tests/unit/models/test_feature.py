@@ -1,6 +1,8 @@
 """
 Tests for Feature related models
 """
+import json
+import os
 from datetime import datetime
 
 import freezegun
@@ -30,6 +32,14 @@ def feature_name_space_dict_fixture():
         "event_data_ids": event_data_ids,
         "user_id": None,
     }
+
+
+@pytest.fixture(name="feature_model_dict")
+def feature_model_dict_feature(test_dir):
+    """Fixture for a Feature dict"""
+    feature_fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
+    with open(feature_fixture_path) as file_handle:
+        return json.load(file_handle)
 
 
 @freezegun.freeze_time("2022-07-10")

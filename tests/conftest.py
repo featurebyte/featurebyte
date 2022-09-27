@@ -1,7 +1,6 @@
 """
 Common fixture for both unit and integration tests
 """
-import json
 import os
 from unittest.mock import patch
 
@@ -37,10 +36,3 @@ def test_directory_fixture():
     """Test directory"""
     path = os.path.dirname(os.path.abspath(__file__))
     return path
-
-
-@pytest.fixture(name="feature_model_dict")
-def feature_model_dict_feature(test_dir):
-    """Fixture for a Feature dict"""
-    feature_fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
-    return json.load(open(feature_fixture_path))

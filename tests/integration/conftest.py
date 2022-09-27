@@ -1,6 +1,7 @@
 """
 Common test fixtures used across files in integration directory
 """
+import json
 import os
 import sqlite3
 import tempfile
@@ -267,6 +268,14 @@ def tile_manager(snowflake_session):
     Feature Manager fixture
     """
     return TileManagerSnowflake(session=snowflake_session)
+
+
+@pytest.fixture(name="feature_model_dict")
+def feature_model_dict_feature(test_dir):
+    """Fixture for a Feature dict"""
+    feature_fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
+    with open(feature_fixture_path) as file_handle:
+        return json.load(file_handle)
 
 
 @pytest.fixture

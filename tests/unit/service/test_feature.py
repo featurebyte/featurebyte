@@ -1,6 +1,8 @@
 """
 Test FeatureService
 """
+import json
+import os
 from unittest.mock import Mock, patch
 
 import pytest
@@ -25,20 +27,13 @@ from featurebyte.service.feature import FeatureService
 
 
 @pytest.fixture(name="feature_model_dict")
-def feature_model_dict_fixture(feature_model_dict):
+def feature_model_dict_fixture(test_dir):
     """
     Feature model dict fixture
     """
-    feature_model_dict["_id"] = str(ObjectId())
-    feature_model_dict["tabular_source"] = {
-        "feature_store_id": str(ObjectId()),
-        "table_details": {
-            "database_name": "sf_database",
-            "schema_name": "sf_schema",
-            "table_name": "sf_table",
-        },
-    }
-    return feature_model_dict
+    feature_model_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
+    with open(feature_model_path) as file_handle:
+        return json.load(file_handle)
 
 
 @pytest.fixture(name="sqlite_feature_store")
