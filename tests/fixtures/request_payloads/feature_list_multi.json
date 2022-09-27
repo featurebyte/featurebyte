@@ -1,9 +1,9 @@
 {
-    "_id": "6332dfc6d9532cdb02748f91",
+    "_id": "6332fdb31e8f0eeccc41451d",
     "feature_ids": [
-        "6332dfc6d9532cdb02748f89",
-        "6332dfc6d9532cdb02748f8b"
+        "6332fdb31e8f0eeccc414515",
+        "6332fdb31e8f0eeccc414517"
     ],
-    "feature_list_namespace_id": "6332dfc6d9532cdb02748f92",
+    "feature_list_namespace_id": "6332fdb31e8f0eeccc41451e",
     "name": "sf_feature_list_multiple"
 }

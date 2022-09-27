@@ -287,7 +287,7 @@ class EventViewGroupBy(OpsMixin):
                 name=feature_name,
                 feature_store=self.obj.feature_store,
                 tabular_source=self.obj.tabular_source,
-                node=feature_node,
+                node_name=feature_node.name,
                 dtype=var_type,
                 lineage=self._append_to_lineage(
                     column_lineage_map[feature_name], feature_node.name

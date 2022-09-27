@@ -96,7 +96,7 @@ class EventViewColumn(Series):
         return type(self)(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
-            node=node,
+            node_name=node.name,
             name=None,
             dtype=self.dtype,
             row_index_lineage=self.row_index_lineage,
@@ -188,7 +188,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
             feature_store=event_data.feature_store,
             tabular_source=event_data.tabular_source,
             columns_info=event_data.columns_info,
-            node=event_data.node,
+            node_name=event_data.node_name,
             column_lineage_map={
                 col.name: (event_data.node.name,) for col in event_data.columns_info
             },

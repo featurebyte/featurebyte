@@ -1,7 +1,7 @@
 {
-    "_id": "6332dfc6d9532cdb02748f94",
+    "_id": "6332fdb31e8f0eeccc414520",
     "created_at": null,
-    "default_feature_list_id": "6332dfc6d9532cdb02748f91",
+    "default_feature_list_id": "6332fdb31e8f0eeccc41451d",
     "default_version_mode": "AUTO",
     "deployed_feature_list_ids": [],
     "dtype_distribution": [
@@ -11,17 +11,17 @@
         }
     ],
     "entity_ids": [
-        "6332dfc6d9532cdb02748f87"
+        "6332fdb21e8f0eeccc414513"
     ],
     "event_data_ids": [
-        "6332dfc6d9532cdb02748f86"
+        "6332fdb21e8f0eeccc414512"
     ],
     "feature_list_ids": [
-        "6332dfc6d9532cdb02748f91"
+        "6332fdb31e8f0eeccc41451d"
     ],
     "feature_namespace_ids": [
-        "6332dfc6d9532cdb02748f8a",
-        "6332dfc6d9532cdb02748f8c"
+        "6332fdb31e8f0eeccc414516",
+        "6332fdb31e8f0eeccc414518"
     ],
     "name": "sf_feature_list_multiple",
     "readiness_distribution": [

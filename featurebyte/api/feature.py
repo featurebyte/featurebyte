@@ -134,7 +134,7 @@ class Feature(
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[node],
         )
-        self.node = new_node
+        self.node_name = new_node.name
         return super().__setattr__(key, value)
 
     @property

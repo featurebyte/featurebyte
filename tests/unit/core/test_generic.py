@@ -81,7 +81,7 @@ def query_object1_fixture(feature_store_tabular_source):
     feature_store, tabular_source = feature_store_tabular_source
     query_obj1 = ConcreteQueryObject(
         feature_store=feature_store,
-        node=node_proj1,
+        node_name=node_proj1.name,
         row_index_lineage=(node_proj1.name,),
         tabular_source=tabular_source,
     )
@@ -105,7 +105,7 @@ def query_object2_fixture(feature_store_tabular_source, query_object1):
     feature_store, tabular_source = feature_store_tabular_source
     query_obj2 = ConcreteQueryObject(
         feature_store=feature_store,
-        node=node_proj2,
+        node_name=node_proj2.name,
         row_index_lineage=(node_proj1.name, node_proj2.name),
         tabular_source=tabular_source,
     )

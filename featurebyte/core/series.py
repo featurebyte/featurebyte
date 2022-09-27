@@ -21,7 +21,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
-from featurebyte.query_graph.node import Node, construct_node
+from featurebyte.query_graph.node import Node
 
 FuncT = TypeVar("FuncT", bound=Callable[..., "Series"])
 
@@ -59,7 +59,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
     dtype: DBVarType = Field(allow_mutation=False)
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}[{self.dtype}](name={self.name}, node.name={self.node.name})"
+        return f"{type(self).__name__}[{self.dtype}](name={self.name}, node_name={self.node_name})"
 
     def __str__(self) -> str:
         return repr(self)
@@ -72,7 +72,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return type(self)(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
-            node=node,
+            node_name=node.name,
             name=self.name,
             dtype=self.dtype,
             row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
@@ -144,12 +144,13 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
                 f"Conditionally updating '{self}' with value '{value}' is not supported!"
             )
 
-        self.node = self.graph.add_operation(
+        node = self.graph.add_operation(
             node_type=NodeType.CONDITIONAL,
             node_params={"value": value},
             node_output_type=NodeOutputType.SERIES,
             input_nodes=[self.node, key.node],
         )
+        self.node_name = node.name
 
         # For Series with a parent, apply the change to the parent (either an EventView or a
         # FeatureGroup)
@@ -158,7 +159,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             self.parent[self.name] = self
             # Update the current node as a PROJECT / ALIAS from the parent. This is to allow
             # readable column name during series preview
-            self.node = self.parent[self.name].node
+            self.node_name = self.parent[self.name].node_name
 
     @staticmethod
     def _is_a_series_of_var_type(
@@ -752,7 +753,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         out = []
         series_dict = self.dict()
         pruned_graph = QueryGraph(**series_dict["graph"])
-        pruned_node = construct_node(**series_dict["node"])
+        pruned_node = pruned_graph.get_node_by_name(series_dict["node_name"])
         for node in dfs_traversal(pruned_graph, pruned_node):
             out.append(node.type)
         return out
@@ -763,7 +764,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         if not isinstance(values["graph"], GlobalQueryGraph):
             global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
             values["graph"] = global_graph
-            values["node"] = global_graph.get_node_by_name(node_name_map[values["node"].name])
+            values["node_name"] = node_name_map[values["node_name"]]
             values["row_index_lineage"] = tuple(
                 node_name_map[node_name] for node_name in values["row_index_lineage"]
             )
@@ -779,7 +780,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             )
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
-            new_object.node = mapped_node
+            new_object.node_name = mapped_node.name
             new_object.row_index_lineage = tuple(
                 node_name_map[node_name] for node_name in new_object.row_index_lineage
             )

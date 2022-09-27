@@ -24,7 +24,11 @@ def test_to_timedelta(int_series, unit):
     timedelta_series = to_timedelta(int_series, unit=unit)
     assert timedelta_series.dtype == DBVarType.TIMEDELTA
     series_dict = timedelta_series.dict()
-    assert series_dict["node"] == {
+    assert series_dict["node_name"] == "timedelta_1"
+    timedelta_node = next(
+        node for node in series_dict["graph"]["nodes"] if node["name"] == "timedelta_1"
+    )
+    assert timedelta_node == {
         "name": "timedelta_1",
         "output_type": "series",
         "parameters": {"unit": unit},

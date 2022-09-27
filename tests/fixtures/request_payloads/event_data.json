@@ -1,5 +1,5 @@
 {
-    "_id": "6332dfc6d9532cdb02748f86",
+    "_id": "6332fdb21e8f0eeccc414512",
     "columns_info": [
         {
             "dtype": "INT",
@@ -43,7 +43,7 @@
         },
         {
             "dtype": "INT",
-            "entity_id": "6332dfc6d9532cdb02748f87",
+            "entity_id": "6332fdb21e8f0eeccc414513",
             "name": "cust_id"
         }
     ],
@@ -52,7 +52,7 @@
     "name": "sf_event_data",
     "record_creation_date_column": "created_at",
     "tabular_source": {
-        "feature_store_id": "6332dfc6d9532cdb02748f84",
+        "feature_store_id": "6332fdb21e8f0eeccc414510",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",

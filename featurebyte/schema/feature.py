@@ -15,7 +15,6 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, Vers
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node import Node
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.feature_namespace import FeatureNamespaceInfo
@@ -31,7 +30,7 @@ class FeatureCreate(FeatureByteBaseModel):
     dtype: DBVarType
     row_index_lineage: Tuple[StrictStr, ...]
     graph: QueryGraph
-    node: Node
+    node_name: str
     tabular_source: TabularSource
     event_data_ids: List[PydanticObjectId] = Field(min_items=1)
     entity_ids: List[PydanticObjectId] = Field(min_items=1)

@@ -95,6 +95,7 @@ def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
     assert event_data._ipython_key_completions_() == set(event_data.columns)
 
     event_data_dict["id"] = event_data.id
+    event_data_dict["node_name"] = "input_2"
     assert event_data.dict() == event_data_dict
 
     # user input validation

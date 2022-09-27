@@ -19,10 +19,7 @@ def test__getitem__series_key(int_series, bool_series):
     series = int_series[bool_series]
     assert series.parent is None
     series_dict = series.dict()
-    assert (
-        series_dict["node"].items()
-        >= {"type": "filter", "parameters": {}, "output_type": "series"}.items()
-    )
+    assert series_dict["node_name"] == "filter_1"
     assert series_dict["name"] == int_series.name
     assert series_dict["dtype"] == int_series.dtype
     assert series_dict["graph"]["edges"] == [
@@ -52,8 +49,8 @@ def test__getitem__row_index_not_aligned(int_series, bool_series):
     with pytest.raises(ValueError) as exc:
         _ = int_series[filtered_bool_series]
     expected_msg = (
-        f"Row indices between 'Series[INT](name=CUST_ID, node.name={int_series.node.name})' and "
-        f"'Series[BOOL](name=MASK, node.name={filtered_bool_series.node.name})' are not aligned!"
+        f"Row indices between 'Series[INT](name=CUST_ID, node_name={int_series.node.name})' and "
+        f"'Series[BOOL](name=MASK, node_name={filtered_bool_series.node.name})' are not aligned!"
     )
     assert expected_msg in str(exc.value)
 
@@ -92,12 +89,7 @@ def test__setitem__bool_series_key_scalar_value(dataframe, bool_series, column, 
     series[bool_series] = value
     assert series.parent is dataframe
     series_dict = series.dict()
-    assert series_dict["node"] == {
-        "name": "project_3",
-        "type": "project",
-        "parameters": {"columns": [column]},
-        "output_type": "series",
-    }
+    assert series_dict["node_name"] == "project_3"
     cond_node = next(
         node for node in series_dict["graph"]["nodes"] if node["name"] == "conditional_1"
     )
@@ -183,7 +175,11 @@ def test__setitem__conditional_assign_unnamed_series(int_series, bool_series):
     temp_series[bool_series] = 0
     temp_series_dict = temp_series.dict()
     # Unnamed series stays unnamed (not a PROJECT node)
-    assert temp_series_dict["node"] == {
+    assert temp_series_dict["node_name"] == "conditional_1"
+    cond_node = next(
+        node for node in temp_series_dict["graph"]["nodes"] if node["name"] == "conditional_1"
+    )
+    assert cond_node == {
         "name": "conditional_1",
         "output_type": "series",
         "parameters": {"value": 0},
@@ -208,8 +204,8 @@ def test__setitem__row_index_not_aligned(int_series, bool_series):
     with pytest.raises(ValueError) as exc:
         int_series[filtered_bool_series] = 1
     expected_msg = (
-        f"Row indices between 'Series[INT](name=CUST_ID, node.name={int_series.node.name})' and "
-        f"'Series[BOOL](name=MASK, node.name={filtered_bool_series.node.name})' are not aligned!"
+        f"Row indices between 'Series[INT](name=CUST_ID, node_name={int_series.node.name})' and "
+        f"'Series[BOOL](name=MASK, node_name={filtered_bool_series.node.name})' are not aligned!"
     )
     assert expected_msg in str(exc.value)
 
@@ -221,7 +217,7 @@ def test__setitem__value_type_not_correct(int_series, bool_series):
     with pytest.raises(ValueError) as exc:
         int_series[bool_series] = "abc"
     expected_msg = (
-        f"Conditionally updating 'Series[INT](name=CUST_ID, node.name=project_1)' with value 'abc' "
+        f"Conditionally updating 'Series[INT](name=CUST_ID, node_name=project_1)' with value 'abc' "
         f"is not supported!"
     )
     assert expected_msg == str(exc.value)
@@ -255,7 +251,11 @@ def test_logical_operators(bool_series, int_series):
     assert output_and_series.parent is None
     output_and_series_dict = output_and_series.dict()
 
-    assert output_and_series_dict["node"] == {
+    assert output_and_series_dict["node_name"] == "and_1"
+    and_node = next(
+        node for node in output_and_series_dict["graph"]["nodes"] if node["name"] == "and_1"
+    )
+    assert and_node == {
         "name": "and_1",
         "type": NodeType.AND,
         "parameters": {"value": None},
@@ -271,14 +271,7 @@ def test_logical_operators(bool_series, int_series):
     assert output_or_scalar.name is None
     assert output_or_scalar.parent is None
     output_or_scalar_dict = output_or_scalar.dict()
-    assert (
-        output_or_scalar_dict["node"].items()
-        >= {
-            "type": NodeType.OR,
-            "parameters": {"value": False},
-            "output_type": NodeOutputType.SERIES,
-        }.items()
-    )
+    assert output_or_scalar_dict["node_name"] == "or_1"
     assert output_or_scalar_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "project_1", "target": "or_1"},
@@ -292,8 +285,8 @@ def test_logical_operators(bool_series, int_series):
     with pytest.raises(TypeError) as exc:
         _ = bool_series | int_series
     expected_msg = (
-        f"Not supported operation 'or' between 'Series[BOOL](name=MASK, node.name={bool_series.node.name})' and "
-        f"'Series[INT](name=CUST_ID, node.name={int_series.node.name})'!"
+        f"Not supported operation 'or' between 'Series[BOOL](name=MASK, node_name={bool_series.node.name})' and "
+        f"'Series[INT](name=CUST_ID, node_name={int_series.node.name})'!"
     )
     assert expected_msg in str(exc.value)
 
@@ -432,8 +425,8 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
     with pytest.raises(TypeError) as exc:
         _ = int_series > varchar_series
     expected_msg = (
-        f"Not supported operation 'gt' between 'Series[INT](name=CUST_ID, node.name={int_series.node.name})' and "
-        f"'Series[VARCHAR](name=PRODUCT_ACTION, node.name={varchar_series.node.name})'!"
+        f"Not supported operation 'gt' between 'Series[INT](name=CUST_ID, node_name={int_series.node.name})' and "
+        f"'Series[VARCHAR](name=PRODUCT_ACTION, node_name={varchar_series.node.name})'!"
     )
     assert expected_msg in str(exc.value)
 
@@ -608,7 +601,7 @@ def test_arithmetic_operators__types_not_supported(varchar_series, int_series):
     with pytest.raises(TypeError) as exc:
         _ = varchar_series * 1
     expected_msg = (
-        f"Series[VARCHAR](name=PRODUCT_ACTION, node.name={varchar_series.node.name}) "
+        f"Series[VARCHAR](name=PRODUCT_ACTION, node_name={varchar_series.node.name}) "
         f"does not support operation 'mul'."
     )
     assert expected_msg in str(exc.value)
@@ -617,8 +610,8 @@ def test_arithmetic_operators__types_not_supported(varchar_series, int_series):
         _ = int_series * varchar_series
     expected_msg = (
         f"Not supported operation 'mul' between "
-        f"'Series[INT](name=CUST_ID, node.name={int_series.node.name})' and "
-        f"'Series[VARCHAR](name=PRODUCT_ACTION, node.name={varchar_series.node.name})'!"
+        f"'Series[INT](name=CUST_ID, node_name={int_series.node.name})' and "
+        f"'Series[VARCHAR](name=PRODUCT_ACTION, node_name={varchar_series.node.name})'!"
     )
     assert expected_msg in str(exc.value)
 

@@ -23,7 +23,6 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node import Node
 
 
 class FeatureReadiness(OrderedStrEnum):
@@ -123,8 +122,8 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Tuple of transformation step node names which affect the row number of the feature
     graph: QueryGraph
         Graph contains steps of transformation to generate the feature
-    node: Node
-        Node of the graph which represent the feature
+    node_name: str
+        Node name of the graph which represent the feature
     tabular_source: TabularSource
         Tabular source used to construct this feature
     readiness: FeatureReadiness
@@ -152,7 +151,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     dtype: DBVarType = Field(allow_mutation=False)
     row_index_lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
     graph: QueryGraph = Field(allow_mutation=False)
-    node: Node
+    node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     version: VersionIdentifier = Field(allow_mutation=False, default=None)

@@ -1,13 +1,13 @@
 {
-    "_id": "6332dfc6d9532cdb02748f8b",
+    "_id": "6332fdb31e8f0eeccc414517",
     "dtype": "FLOAT",
     "entity_ids": [
-        "6332dfc6d9532cdb02748f87"
+        "6332fdb21e8f0eeccc414513"
     ],
     "event_data_ids": [
-        "6332dfc6d9532cdb02748f86"
+        "6332fdb21e8f0eeccc414512"
     ],
-    "feature_namespace_id": "6332dfc6d9532cdb02748f8c",
+    "feature_namespace_id": "6332fdb31e8f0eeccc414518",
     "graph": {
         "edges": [
             {
@@ -98,21 +98,12 @@
         ]
     },
     "name": "sum_2h",
-    "node": {
-        "name": "project_1",
-        "output_type": "series",
-        "parameters": {
-            "columns": [
-                "sum_2h"
-            ]
-        },
-        "type": "project"
-    },
+    "node_name": "project_1",
     "row_index_lineage": [
         "groupby_1"
     ],
     "tabular_source": {
-        "feature_store_id": "6332dfc6d9532cdb02748f84",
+        "feature_store_id": "6332fdb21e8f0eeccc414510",
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
