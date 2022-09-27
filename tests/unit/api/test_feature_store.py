@@ -32,14 +32,12 @@ def test_get_session(snowflake_connector, snowflake_execute_query, snowflake_fea
     }
 
 
-def test_list_databases(
-    snowflake_connector, snowflake_execute_query, snowflake_feature_store, config
-):
+def test_list_databases(snowflake_connector, snowflake_execute_query, snowflake_feature_store):
     """
     Test list_databases return expected results
     """
     _ = snowflake_connector, snowflake_execute_query
-    output = snowflake_feature_store.list_databases(credentials=config.credentials)
+    output = snowflake_feature_store.list_databases()
     assert output == ["sf_database"]
 
 
@@ -48,9 +46,7 @@ def test_list_schema(snowflake_connector, snowflake_execute_query, snowflake_fea
     Test test_list_schema return expected results
     """
     _ = snowflake_connector, snowflake_execute_query
-    output = snowflake_feature_store.list_schemas(
-        credentials=config.credentials, database_name="sf_database"
-    )
+    output = snowflake_feature_store.list_schemas(database_name="sf_database")
     assert output == ["sf_schema"]
 
 
@@ -60,7 +56,7 @@ def test_list_tables(snowflake_connector, snowflake_execute_query, snowflake_fea
     """
     _ = snowflake_connector, snowflake_execute_query
     output = snowflake_feature_store.list_tables(
-        credentials=config.credentials, database_name="sf_database", schema_name="sf_schema"
+        database_name="sf_database", schema_name="sf_schema"
     )
     assert output == ["sf_table", "sf_view"]
 
@@ -76,7 +72,6 @@ def test__getitem__retrieve_database_table(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="sf_table",
-        credentials=config.credentials,
     )
     assert isinstance(database_table, DatabaseTable)
 

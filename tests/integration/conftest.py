@@ -419,20 +419,18 @@ def feature_list_manager(snowflake_session):
 
 
 @pytest.fixture(name="event_data", scope="session")
-def event_data_fixture(config, snowflake_session, snowflake_feature_store):
+def event_data_fixture(snowflake_session, snowflake_feature_store):
     """Fixture for an EventData in integration tests"""
     table_name = "TEST_TABLE"
     assert table_name in snowflake_feature_store.list_tables(
         database_name=snowflake_session.database,
         schema_name=snowflake_session.sf_schema,
-        credentials=config.credentials,
     )
 
     snowflake_database_table = snowflake_feature_store.get_table(
         database_name=snowflake_session.database,
         schema_name=snowflake_session.sf_schema,
         table_name=table_name,
-        credentials=config.credentials,
     )
     expected_dtypes = pd.Series(
         {
@@ -452,7 +450,6 @@ def event_data_fixture(config, snowflake_session, snowflake_feature_store):
         tabular_source=snowflake_database_table,
         name="snowflake_event_data",
         event_timestamp_column="EVENT_TIMESTAMP",
-        credentials=config.credentials,
     )
     event_data.update_default_feature_job_setting(
         feature_job_setting={

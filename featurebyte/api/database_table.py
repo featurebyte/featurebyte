@@ -3,15 +3,18 @@ DatabaseTable class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
+
+from http import HTTPStatus
 
 from pydantic import Field, root_validator
 
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.config import Configurations, Credentials
+from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.exception import TableSchemaHasBeenChangedError
+from featurebyte.enum import DBVarType
+from featurebyte.exception import RecordRetrievalException, TableSchemaHasBeenChangedError
 from featurebyte.models.feature_store import ColumnInfo, DatabaseTableModel, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -24,7 +27,6 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
 
     # pylint: disable=too-few-public-methods
 
-    credentials: Optional[Credentials] = Field(default=None, allow_mutation=False, exclude=True)
     feature_store: ExtendedFeatureStoreModel = Field(allow_mutation=False, exclude=True)
 
     class Config:
@@ -74,12 +76,9 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         ------
         TableSchemaHasBeenChangedError
             When table schema has been changed
+        RecordRetrievalException
+            Failed to retrieve table schema
         """
-        credentials = values.get("credentials")
-        config = Configurations()
-        if credentials is None:
-            credentials = config.credentials
-
         tabular_source = dict(values["tabular_source"])
         table_details = tabular_source["table_details"]
         if "feature_store" not in values:
@@ -90,12 +89,23 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         if isinstance(table_details, dict):
             table_details = TableDetails(**table_details)
 
-        session = feature_store.get_session(credentials=credentials)
-        recent_schema = session.list_table_schema(
-            database_name=table_details.database_name,
-            schema_name=table_details.schema_name,
-            table_name=table_details.table_name,
+        client = Configurations().get_client()
+        response = client.post(
+            url=(
+                f"/feature_store/column?"
+                f"database_name={table_details.database_name}&"
+                f"schema_name={table_details.schema_name}&"
+                f"table_name={table_details.table_name}"
+            ),
+            json=feature_store.json_dict(),
         )
+        if response.status_code == HTTPStatus.OK:
+            column_specs = response.json()
+            recent_schema = {
+                column_spec["name"]: DBVarType(column_spec["dtype"]) for column_spec in column_specs
+            }
+        else:
+            raise RecordRetrievalException(response)
 
         if "columns_info" in values:
             columns_info = [ColumnInfo(**dict(col)) for col in values["columns_info"]]

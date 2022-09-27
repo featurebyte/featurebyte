@@ -3,13 +3,16 @@ FeatureStore class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, List, Optional, TypeVar, cast
+
+from http import HTTPStatus
 
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
-from featurebyte.config import Credentials
+from featurebyte.config import Configurations
 from featurebyte.core.generic import ExtendedFeatureStoreModel
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import TableDetails, TabularSource
 from featurebyte.schema.feature_store import FeatureStoreCreate
 
@@ -32,25 +35,27 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
         return data.json_dict()
 
     @typechecked
-    def list_databases(self, credentials: Optional[Credentials] = None) -> List[str]:
+    def list_databases(self) -> List[str]:
         """
         List databases accessible by the feature store
-
-        Parameters
-        ----------
-        credentials: Optional[Credentials]
-            configuration contains data source settings & credentials
 
         Returns
         -------
         list databases
+
+        Raises
+        ------
+        RecordRetrievalException
+            Failed to retrieve database list
         """
-        return self.get_session(credentials=credentials).list_databases()
+        client = Configurations().get_client()
+        response = client.post(url="/feature_store/database", json=self.json_dict())
+        if response.status_code == HTTPStatus.OK:
+            return cast(List[str], response.json())
+        raise RecordRetrievalException(response)
 
     @typechecked
-    def list_schemas(
-        self, database_name: Optional[str] = None, credentials: Optional[Credentials] = None
-    ) -> List[str]:
+    def list_schemas(self, database_name: Optional[str] = None) -> List[str]:
         """
         List schemas in the database
 
@@ -58,22 +63,29 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
         ----------
         database_name: Optional[str]
             Database name
-        credentials: Optional[Credentials]
-            configuration contains data source settings & credentials
-
 
         Returns
         -------
         list schemas
+
+        Raises
+        ------
+        RecordRetrievalException
+            Failed to retrieve database schema list
         """
-        return self.get_session(credentials=credentials).list_schemas(database_name=database_name)
+        client = Configurations().get_client()
+        response = client.post(
+            url=f"/feature_store/schema?database_name={database_name}", json=self.json_dict()
+        )
+        if response.status_code == HTTPStatus.OK:
+            return cast(List[str], response.json())
+        raise RecordRetrievalException(response)
 
     @typechecked
     def list_tables(
         self,
         database_name: Optional[str] = None,
         schema_name: Optional[str] = None,
-        credentials: Optional[Credentials] = None,
     ) -> List[str]:
         """
         List tables in the schema
@@ -84,16 +96,24 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
             Database name
         schema_name: Optional[str]
             Schema name
-        credentials: Optional[Credentials]
-            configuration contains data source settings & credentials
 
         Returns
         -------
         list tables
+
+        Raises
+        ------
+        RecordRetrievalException
+            Failed to retrieve database table list
         """
-        return self.get_session(credentials=credentials).list_tables(
-            database_name=database_name, schema_name=schema_name
+        client = Configurations().get_client()
+        response = client.post(
+            url=f"/feature_store/table?database_name={database_name}&schema_name={schema_name}",
+            json=self.json_dict(),
         )
+        if response.status_code == HTTPStatus.OK:
+            return cast(List[str], response.json())
+        raise RecordRetrievalException(response)
 
     @typechecked
     def get_table(
@@ -101,7 +121,6 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
         table_name: str,
         database_name: Optional[str] = None,
         schema_name: Optional[str] = None,
-        credentials: Optional[Credentials] = None,
     ) -> DatabaseTable:
         """
         Get table from the feature store
@@ -114,8 +133,6 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
             Database name
         schema_name: Optional[str]
             Schema name
-        credentials: Optional[Credentials]
-            configuration contains data source settings & credentials
 
         Returns
         -------
@@ -134,5 +151,4 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
                     table_name=table_name,
                 ),
             ),
-            credentials=credentials,
         )

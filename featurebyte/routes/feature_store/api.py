@@ -3,14 +3,14 @@ FeatureStore API routes
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import List, Optional, cast
 
 from http import HTTPStatus
 
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -116,3 +116,79 @@ async def get_feature_store_info(
         verbose=verbose,
     )
     return cast(FeatureStoreInfo, info)
+
+
+@router.post("/database", response_model=List[str])
+async def list_databases_in_feature_store(
+    request: Request,
+    feature_store: FeatureStoreModel,
+) -> List[str]:
+    """
+    List databases
+    """
+    controller = request.state.app_container.feature_store_controller
+    result: List[str] = await controller.list_databases(
+        feature_store=feature_store,
+        get_credential=request.state.get_credential,
+    )
+    return result
+
+
+@router.post("/schema", response_model=List[str])
+async def list_schemas_in_database(
+    request: Request,
+    database_name: str,
+    feature_store: FeatureStoreModel,
+) -> List[str]:
+    """
+    List schemas
+    """
+    controller = request.state.app_container.feature_store_controller
+    result: List[str] = await controller.list_schemas(
+        feature_store=feature_store,
+        database_name=database_name,
+        get_credential=request.state.get_credential,
+    )
+    return result
+
+
+@router.post("/table", response_model=List[str])
+async def list_tables_in_database_schema(
+    request: Request,
+    database_name: str,
+    schema_name: str,
+    feature_store: FeatureStoreModel,
+) -> List[str]:
+    """
+    List schemas
+    """
+    controller = request.state.app_container.feature_store_controller
+    result: List[str] = await controller.list_tables(
+        feature_store=feature_store,
+        database_name=database_name,
+        schema_name=schema_name,
+        get_credential=request.state.get_credential,
+    )
+    return result
+
+
+@router.post("/column", response_model=List[ColumnSpec])
+async def list_columns_in_database_table(
+    request: Request,
+    database_name: str,
+    schema_name: str,
+    table_name: str,
+    feature_store: FeatureStoreModel,
+) -> List[ColumnSpec]:
+    """
+    List columns
+    """
+    controller = request.state.app_container.feature_store_controller
+    result: List[ColumnSpec] = await controller.list_columns(
+        feature_store=feature_store,
+        database_name=database_name,
+        schema_name=schema_name,
+        table_name=table_name,
+        get_credential=request.state.get_credential,
+    )
+    return result
