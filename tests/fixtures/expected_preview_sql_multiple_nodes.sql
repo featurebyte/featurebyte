@@ -42,7 +42,7 @@ FROM (
           tile_index
     )
 ) AS avg_b647baae652ff22a24cf67a57f030067f33ba204
-INNER JOIN (
+RIGHT JOIN (
     SELECT
       *,
       F_TIMESTAMP_TO_INDEX(__FB_TILE_START_DATE_COLUMN, 1800, 900, 60) AS "INDEX"
