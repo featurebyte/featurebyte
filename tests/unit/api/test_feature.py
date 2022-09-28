@@ -72,7 +72,7 @@ def test_feature__bool_series_key_scalar_value(float_feature, bool_feature):
         "output_type": "series",
     }
     float_feature_dict = float_feature.dict()
-    cond_node = get_node(float_feature_dict, "conditional_1")
+    cond_node = get_node(float_feature_dict["graph"], "conditional_1")
     assert cond_node == {
         "name": "conditional_1",
         "type": "conditional",
@@ -96,7 +96,7 @@ def test_feature__cond_assign_unnamed(float_feature, bool_feature):
     temp_feature = float_feature + 123.0
     temp_feature[bool_feature] = 0.0
     temp_feature_dict = temp_feature.dict()
-    cond_node = get_node(temp_feature_dict, node_name="conditional_1")
+    cond_node = get_node(temp_feature_dict["graph"], node_name="conditional_1")
     assert cond_node == {
         "name": "conditional_1",
         "output_type": "series",

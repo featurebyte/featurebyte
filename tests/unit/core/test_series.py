@@ -91,7 +91,7 @@ def test__setitem__bool_series_key_scalar_value(dataframe, bool_series, column, 
     assert series.parent is dataframe
     series_dict = series.dict()
     assert series_dict["node_name"] == "project_3"
-    cond_node = get_node(series_dict, "conditional_1")
+    cond_node = get_node(series_dict["graph"], "conditional_1")
     assert cond_node == {
         "name": "conditional_1",
         "type": "conditional",
@@ -132,8 +132,8 @@ def test__setitem__cond_assign_consecutive(dataframe, bool_series):
     series[bool_series] = 100
     series[bool_series] = 200
     series_dict = series.dict()
-    cond1_node = get_node(series_dict, "conditional_1")
-    cond2_node = get_node(series_dict, "conditional_2")
+    cond1_node = get_node(series_dict["graph"], "conditional_1")
+    cond2_node = get_node(series_dict["graph"], "conditional_2")
     assert cond1_node == {
         "name": "conditional_1",
         "type": "conditional",
@@ -171,7 +171,7 @@ def test__setitem__conditional_assign_unnamed_series(int_series, bool_series):
     temp_series_dict = temp_series.dict()
     # Unnamed series stays unnamed (not a PROJECT node)
     assert temp_series_dict["node_name"] == "conditional_1"
-    cond_node = get_node(temp_series_dict, "conditional_1")
+    cond_node = get_node(temp_series_dict["graph"], "conditional_1")
     assert cond_node == {
         "name": "conditional_1",
         "output_type": "series",
@@ -245,7 +245,7 @@ def test_logical_operators(bool_series, int_series):
     output_and_series_dict = output_and_series.dict()
 
     assert output_and_series_dict["node_name"] == "and_1"
-    and_node = get_node(output_and_series_dict, "and_1")
+    and_node = get_node(output_and_series_dict["graph"], "and_1")
     assert and_node == {
         "name": "and_1",
         "type": NodeType.AND,
@@ -263,7 +263,7 @@ def test_logical_operators(bool_series, int_series):
     assert output_or_scalar.parent is None
     output_or_scalar_dict = output_or_scalar.dict()
     assert output_or_scalar_dict["node_name"] == "or_1"
-    node = get_node(output_or_scalar_dict, "or_1")
+    node = get_node(output_or_scalar_dict["graph"], "or_1")
     assert node == {
         "name": "or_1",
         "type": NodeType.OR,

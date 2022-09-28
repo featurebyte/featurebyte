@@ -167,6 +167,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     @root_validator(pre=True)
     @classmethod
     def _convert_graph_format(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # DEV-556: converted older record (graph) into a newer format
         if isinstance(values.get("graph"), dict):
             if isinstance(values.get("graph", {}).get("nodes"), dict):
                 # in the old format, nodes is a dictionary but not a list

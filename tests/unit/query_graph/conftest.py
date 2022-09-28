@@ -331,12 +331,24 @@ def query_graph_two_nodes(graph_single_node):
     Query graph with two nodes
     """
     graph, node_input = graph_single_node
+
+    # check internal variables before add_operation
+    assert graph._nodes_map is not None
+    assert graph._edges_map is not None
+    assert graph._backward_edges_map is not None
+
     node_proj = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
+
+    # check internal variables after add_operation
+    assert graph._nodes_map is None
+    assert graph._edges_map is None
+    assert graph._backward_edges_map is None
+
     pruned_graph, node_name_map = graph.prune(target_node=node_proj, target_columns={"a"})
     mapped_node = pruned_graph.get_node_by_name(node_name_map[node_proj.name])
     assert mapped_node.name == "project_1"

@@ -26,7 +26,7 @@ def test_to_timedelta(int_series, unit):
     assert timedelta_series.dtype == DBVarType.TIMEDELTA
     series_dict = timedelta_series.dict()
     assert series_dict["node_name"] == "timedelta_1"
-    timedelta_node = get_node(series_dict, "timedelta_1")
+    timedelta_node = get_node(series_dict["graph"], "timedelta_1")
     assert timedelta_node == {
         "name": "timedelta_1",
         "output_type": "series",

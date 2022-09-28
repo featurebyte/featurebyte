@@ -51,7 +51,7 @@ class QueryGraph(FeatureByteBaseModel):
         -------
         Dict[str, Node]
         """
-        if self._nodes_map is None:
+        if self._nodes_map is None or len(self._nodes_map) != len(self.nodes):
             self._nodes_map = {}
             for node in self.nodes:
                 self._nodes_map[node.name] = node
