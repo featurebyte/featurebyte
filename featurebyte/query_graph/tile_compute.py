@@ -69,7 +69,7 @@ class OnDemandTileComputePlan:
         """
 
         tile_sqls: dict[str, expressions.Expression] = {}
-        prev_aliases: dict[str, str] = {}
+        aliases: dict[str, str] = {}
 
         for tile_info in self.tile_infos:
             # Convert template SQL with concrete start and end timestamps, based on the requested
@@ -106,10 +106,11 @@ class OnDemandTileComputePlan:
                     tile_sql_expr.subquery(alias=agg_id)
                 )
                 tile_sqls[tile_table_id] = tile_sql
+                aliases[tile_table_id] = agg_id
             else:
                 # Tile table already exist - get the new tile value columns by doing a join. Tile
                 # index column and entity columns exist already.
-                prev_alias = prev_aliases[tile_table_id]
+                prev_alias = aliases[tile_table_id]
                 join_conditions = [f"{prev_alias}.INDEX = {agg_id}.INDEX"]
                 for key in tile_info.entity_columns:
                     key = escape_column_name(key)
@@ -122,14 +123,12 @@ class OnDemandTileComputePlan:
                     tile_sqls[tile_table_id]
                     .join(
                         tile_sql_expr.subquery(),
-                        join_type="inner",
+                        join_type="right",
                         join_alias=agg_id,
                         on=expressions.and_(*join_conditions),
                     )
                     .select(*tile_info.tile_value_columns)
                 )
-
-            prev_aliases[tile_table_id] = agg_id
 
         return tile_sqls
 
