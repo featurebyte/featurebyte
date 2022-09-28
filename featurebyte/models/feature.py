@@ -9,7 +9,7 @@ from typing import Any, List, Optional, Tuple
 from enum import Enum
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.enum import DBVarType, OrderedStrEnum
@@ -163,6 +163,22 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     deployed_feature_list_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
+
+    @root_validator(pre=True)
+    @classmethod
+    def _convert_graph_format(cls, values: dict[str, Any]) -> dict[str, Any]:
+        if isinstance(values.get("graph", {}).get("nodes"), dict):
+            # in the old format, nodes is a dictionary but not a list
+            graph = {"nodes": [], "edges": []}
+            for node in values["graph"]["nodes"].values():
+                graph["nodes"].append(node)
+            for parent, children in values["graph"]["edges"].items():
+                for child in children:
+                    graph["edges"].append({"source": parent, "target": child})
+            values["graph"] = graph
+        if isinstance(values.get("node"), dict):
+            values["node_name"] = values["node"]["name"]
+        return values
 
     @validator("entity_ids", "event_data_ids")
     @classmethod

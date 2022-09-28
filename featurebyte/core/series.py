@@ -758,7 +758,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             out.append(node.type)
         return out
 
-    @root_validator()
+    @root_validator
     @classmethod
     def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(values["graph"], GlobalQueryGraph):

@@ -41,7 +41,7 @@ def feature_model_dict_feature(test_dir):
         return json.load(file_handle)
 
 
-def test_feature_model(feature_model_dict):
+def test_feature_model(feature_model_dict, test_dir):
     """Test feature model serialize & deserialize"""
     # pylint: disable=duplicate-code
     feature = FeatureModel(**feature_model_dict)
@@ -84,12 +84,15 @@ def test_feature_model(feature_model_dict):
         "version": None,
     }
 
-    # DEV-556: check older record conversion
-    feature_model_dict = feature.dict(by_alias=True)
-    feature_model_dict["online_enabled"] = None
-    loaded_old_feature = FeatureModel.parse_obj(feature_model_dict)
-    assert loaded_old_feature.online_enabled is False
-    assert loaded_old_feature == loaded_feature
+    # DEV-556: check older record can be loaded
+    with open(
+        os.path.join(test_dir, "fixtures/backward_compatibility/feature_sum_2h.json")
+    ) as file_handle:
+        old_feat_dict = json.load(file_handle)
+        old_feat_dict["online_enabled"] = None
+        loaded_old_feature = FeatureModel.parse_obj(old_feat_dict)
+        assert loaded_old_feature.online_enabled is False
+        assert loaded_old_feature.node_name == "project_1"
 
 
 def test_feature_name_space(feature_namespace_dict):
