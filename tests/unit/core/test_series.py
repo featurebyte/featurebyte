@@ -272,6 +272,13 @@ def test_logical_operators(bool_series, int_series):
     assert output_or_scalar.parent is None
     output_or_scalar_dict = output_or_scalar.dict()
     assert output_or_scalar_dict["node_name"] == "or_1"
+    node = next(node for node in output_or_scalar_dict["graph"]["nodes"] if node["name"] == "or_1")
+    assert node == {
+        "name": "or_1",
+        "type": NodeType.OR,
+        "parameters": {"value": False},
+        "output_type": NodeOutputType.SERIES,
+    }
     assert output_or_scalar_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "project_1", "target": "or_1"},

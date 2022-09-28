@@ -27,6 +27,13 @@ def test__getitem__str_key(dataframe, item, expected_type):
     assert series_dict["name"] == item
     assert series_dict["dtype"] == expected_type
     assert series_dict["node_name"] == "project_1"
+    node = next(node for node in series_dict["graph"]["nodes"] if node["name"] == "project_1")
+    assert node == {
+        "name": "project_1",
+        "type": NodeType.PROJECT,
+        "parameters": {"columns": [item]},
+        "output_type": NodeOutputType.SERIES,
+    }
     assert series_dict["row_index_lineage"] == ("input_1",)
     assert series_dict["graph"]["edges"] == [{"source": "input_1", "target": "project_1"}]
 
@@ -52,6 +59,15 @@ def test__getitem__list_of_str_key(dataframe):
         {"name": "VALUE", "dtype": DBVarType.FLOAT, "entity_id": None},
     ]
     assert sub_dataframe_dict["node_name"] == "project_1"
+    node = next(
+        node for node in sub_dataframe_dict["graph"]["nodes"] if node["name"] == "project_1"
+    )
+    assert node == {
+        "name": "project_1",
+        "type": NodeType.PROJECT,
+        "parameters": {"columns": ["CUST_ID", "VALUE"]},
+        "output_type": NodeOutputType.FRAME,
+    }
     assert sub_dataframe_dict["column_lineage_map"] == {
         "CUST_ID": ("input_1", "project_1"),
         "VALUE": ("input_1", "project_1"),
@@ -78,6 +94,13 @@ def test__getitem__series_key(dataframe, bool_series):
     assert isinstance(sub_dataframe, Frame)
     sub_dataframe_dict = sub_dataframe.dict()
     assert sub_dataframe_dict["node_name"] == "filter_1"
+    node = next(node for node in sub_dataframe_dict["graph"]["nodes"] if node["name"] == "filter_1")
+    assert node == {
+        "name": "filter_1",
+        "type": NodeType.FILTER,
+        "parameters": {},
+        "output_type": NodeOutputType.FRAME,
+    }
     assert sub_dataframe_dict["column_lineage_map"] == {
         "CUST_ID": ("input_1", "filter_1"),
         "PRODUCT_ACTION": ("input_1", "filter_1"),
@@ -146,6 +169,13 @@ def test__setitem__str_key_scalar_value(
     dataframe_dict = dataframe.dict()
     assert dataframe.column_var_type_map[key] == expected_type
     assert dataframe_dict["node_name"] == "assign_1"
+    node = next(node for node in dataframe_dict["graph"]["nodes"] if node["name"] == "assign_1")
+    assert node == {
+        "name": "assign_1",
+        "type": "assign",
+        "parameters": {"value": value, "name": key},
+        "output_type": NodeOutputType.FRAME,
+    }
     assert len(dataframe.column_var_type_map.keys()) == expected_column_count
     assert dataframe_dict["graph"]["edges"] == [{"source": "input_1", "target": "assign_1"}]
 
@@ -171,6 +201,13 @@ def test__setitem__str_key_series_value(
     dataframe_dict = dataframe.dict()
     assert dataframe.column_var_type_map[key] == expected_type
     assert dataframe_dict["node_name"] == "assign_1"
+    node = next(node for node in dataframe_dict["graph"]["nodes"] if node["name"] == "assign_1")
+    assert node == {
+        "name": "assign_1",
+        "type": "assign",
+        "parameters": {"name": key, "value": None},
+        "output_type": NodeOutputType.FRAME,
+    }
     assert len(dataframe.column_var_type_map.keys()) == expected_column_count
     assert dataframe_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
@@ -218,6 +255,13 @@ def test_multiple_statements(dataframe):
 
     assert cust_id_dict["name"] == "CUST_ID"
     assert cust_id_dict["node_name"] == "project_2"
+    node = next(node for node in cust_id_dict["graph"]["nodes"] if node["name"] == "project_2")
+    assert node == {
+        "name": "project_2",
+        "type": NodeType.PROJECT,
+        "parameters": {"columns": ["CUST_ID"]},
+        "output_type": NodeOutputType.SERIES,
+    }
     assert cust_id_dict["row_index_lineage"] == ("input_1", "filter_1")
     assert dataframe_dict["columns_info"] == [
         {"name": "CUST_ID", "dtype": DBVarType.INT, "entity_id": None},
@@ -240,6 +284,13 @@ def test_multiple_statements(dataframe):
         "vip_customer",
     ]
     assert dataframe_dict["node_name"] == "assign_2"
+    node = next(node for node in dataframe_dict["graph"]["nodes"] if node["name"] == "assign_2")
+    assert node == {
+        "name": "assign_2",
+        "type": NodeType.ASSIGN,
+        "parameters": {"name": "vip_customer", "value": None},
+        "output_type": NodeOutputType.FRAME,
+    }
     assert dataframe_dict["column_lineage_map"] == {
         "CUST_ID": ("input_1", "filter_1"),
         "PRODUCT_ACTION": ("input_1", "filter_1"),
