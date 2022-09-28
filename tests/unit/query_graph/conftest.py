@@ -93,8 +93,8 @@ def groupby_node_params_fixture():
     return node_params
 
 
-@pytest.fixture(name="groupby_node_params_sum_agg")
-def groupby_node_params_sum_agg_fixture():
+@pytest.fixture(name="groupby_node_params_max_agg")
+def groupby_node_params_max_agg_fixture():
     """Fixture groupby node parameters
 
     Same feature job settings as groupby_node_params_fixture, but with different aggregation and
@@ -111,6 +111,29 @@ def groupby_node_params_sum_agg_fixture():
         "blind_spot": 900,  # 15m
         "timestamp": "ts",
         "names": ["a_2h_max", "a_36h_max"],
+        "windows": ["2h", "36h"],
+    }
+    return node_params
+
+
+@pytest.fixture(name="groupby_node_params_sum_agg")
+def groupby_node_params_sum_agg_fixture():
+    """Fixture groupby node parameters
+
+    Same feature job settings as groupby_node_params_fixture, but with different aggregation and
+    different feature windows
+    """
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "sum",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["a_2h_sum", "a_36h_sum"],
         "windows": ["2h", "36h"],
     }
     return node_params
@@ -170,15 +193,11 @@ def query_graph_with_category_groupby_fixture(query_graph_and_assign_node, group
     return graph
 
 
-@pytest.fixture(name="query_graph_with_similar_groupby_nodes")
-def query_graph_with_similar_groupby_nodes(
-    query_graph_and_assign_node, groupby_node_params, groupby_node_params_sum_agg
-):
-    """Fixture of a query graph with two similar groupby operations (identical job settings and
-    entity columns)
+def add_groupby_operation(graph, groupby_node_params, input_node):
     """
-    graph, assign_node = query_graph_and_assign_node
-    node1 = graph.add_operation(
+    Helper function to add a groupby node
+    """
+    node = graph.add_operation(
         node_type=NodeType.GROUPBY,
         node_params={
             **groupby_node_params,
@@ -186,27 +205,30 @@ def query_graph_with_similar_groupby_nodes(
                 {"table_name": "fake_transactions_table"}, groupby_node_params
             ),
             "aggregation_id": get_aggregation_identifier(
-                graph.node_name_to_ref[assign_node.name], groupby_node_params
+                graph.node_name_to_ref[input_node.name], groupby_node_params
             ),
         },
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[assign_node],
+        input_nodes=[input_node],
     )
-    node2 = graph.add_operation(
-        node_type=NodeType.GROUPBY,
-        node_params={
-            **groupby_node_params_sum_agg,
-            "tile_id": get_tile_table_identifier(
-                {"table_name": "fake_transactions_table"}, groupby_node_params_sum_agg
-            ),
-            "aggregation_id": get_aggregation_identifier(
-                graph.node_name_to_ref[assign_node.name], groupby_node_params_sum_agg
-            ),
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[assign_node],
-    )
-    return [node1, node2], graph
+    return node
+
+
+@pytest.fixture(name="query_graph_with_similar_groupby_nodes")
+def query_graph_with_similar_groupby_nodes(
+    query_graph_and_assign_node,
+    groupby_node_params,
+    groupby_node_params_sum_agg,
+    groupby_node_params_max_agg,
+):
+    """Fixture of a query graph with two similar groupby operations (identical job settings and
+    entity columns)
+    """
+    graph, assign_node = query_graph_and_assign_node
+    node1 = add_groupby_operation(graph, groupby_node_params, assign_node)
+    node2 = add_groupby_operation(graph, groupby_node_params_max_agg, assign_node)
+    node3 = add_groupby_operation(graph, groupby_node_params_sum_agg, assign_node)
+    return [node1, node2, node3], graph
 
 
 @pytest.fixture(name="complex_feature_query_graph")
