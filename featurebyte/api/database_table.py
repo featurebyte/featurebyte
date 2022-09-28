@@ -34,7 +34,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
 
         fields = {
             "graph": {"exclude": True},
-            "node": {"exclude": True},
+            "node_name": {"exclude": True},
             "row_index_lineage": {"exclude": True},
         }
 
