@@ -6,6 +6,7 @@ import pytest
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
+from tests.util.helper import get_node
 
 
 @pytest.mark.parametrize(
@@ -25,9 +26,7 @@ def test_to_timedelta(int_series, unit):
     assert timedelta_series.dtype == DBVarType.TIMEDELTA
     series_dict = timedelta_series.dict()
     assert series_dict["node_name"] == "timedelta_1"
-    timedelta_node = next(
-        node for node in series_dict["graph"]["nodes"] if node["name"] == "timedelta_1"
-    )
+    timedelta_node = get_node(series_dict, "timedelta_1")
     assert timedelta_node == {
         "name": "timedelta_1",
         "output_type": "series",

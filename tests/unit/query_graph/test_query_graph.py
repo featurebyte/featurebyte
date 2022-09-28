@@ -7,6 +7,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.query_graph.node import construct_node
+from tests.util.helper import get_node
 
 
 def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
@@ -21,9 +22,8 @@ def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
         input_nodes=[node_input],
     )
     graph_dict = graph.dict()
-    nodes = graph_dict["nodes"]
-    input_node = next(node for node in nodes if node["name"] == "input_1")
-    project_node = next(node for node in nodes if node["name"] == "project_1")
+    input_node = get_node(graph_dict, "input_1")
+    project_node = get_node(graph_dict, "project_1")
     assert input_node == {
         "name": "input_1",
         "type": "input",

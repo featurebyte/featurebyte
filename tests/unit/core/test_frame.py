@@ -6,6 +6,7 @@ import pytest
 from featurebyte.core.frame import Frame, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from tests.util.helper import get_node
 
 
 @pytest.mark.parametrize(
@@ -27,7 +28,7 @@ def test__getitem__str_key(dataframe, item, expected_type):
     assert series_dict["name"] == item
     assert series_dict["dtype"] == expected_type
     assert series_dict["node_name"] == "project_1"
-    node = next(node for node in series_dict["graph"]["nodes"] if node["name"] == "project_1")
+    node = get_node(series_dict, "project_1")
     assert node == {
         "name": "project_1",
         "type": NodeType.PROJECT,
@@ -59,9 +60,7 @@ def test__getitem__list_of_str_key(dataframe):
         {"name": "VALUE", "dtype": DBVarType.FLOAT, "entity_id": None},
     ]
     assert sub_dataframe_dict["node_name"] == "project_1"
-    node = next(
-        node for node in sub_dataframe_dict["graph"]["nodes"] if node["name"] == "project_1"
-    )
+    node = get_node(sub_dataframe_dict, "project_1")
     assert node == {
         "name": "project_1",
         "type": NodeType.PROJECT,
@@ -94,7 +93,7 @@ def test__getitem__series_key(dataframe, bool_series):
     assert isinstance(sub_dataframe, Frame)
     sub_dataframe_dict = sub_dataframe.dict()
     assert sub_dataframe_dict["node_name"] == "filter_1"
-    node = next(node for node in sub_dataframe_dict["graph"]["nodes"] if node["name"] == "filter_1")
+    node = get_node(sub_dataframe_dict, "filter_1")
     assert node == {
         "name": "filter_1",
         "type": NodeType.FILTER,
@@ -169,7 +168,7 @@ def test__setitem__str_key_scalar_value(
     dataframe_dict = dataframe.dict()
     assert dataframe.column_var_type_map[key] == expected_type
     assert dataframe_dict["node_name"] == "assign_1"
-    node = next(node for node in dataframe_dict["graph"]["nodes"] if node["name"] == "assign_1")
+    node = get_node(dataframe_dict, "assign_1")
     assert node == {
         "name": "assign_1",
         "type": "assign",
@@ -201,7 +200,7 @@ def test__setitem__str_key_series_value(
     dataframe_dict = dataframe.dict()
     assert dataframe.column_var_type_map[key] == expected_type
     assert dataframe_dict["node_name"] == "assign_1"
-    node = next(node for node in dataframe_dict["graph"]["nodes"] if node["name"] == "assign_1")
+    node = get_node(dataframe_dict, "assign_1")
     assert node == {
         "name": "assign_1",
         "type": "assign",
@@ -255,7 +254,7 @@ def test_multiple_statements(dataframe):
 
     assert cust_id_dict["name"] == "CUST_ID"
     assert cust_id_dict["node_name"] == "project_2"
-    node = next(node for node in cust_id_dict["graph"]["nodes"] if node["name"] == "project_2")
+    node = get_node(cust_id_dict, "project_2")
     assert node == {
         "name": "project_2",
         "type": NodeType.PROJECT,
@@ -284,7 +283,7 @@ def test_multiple_statements(dataframe):
         "vip_customer",
     ]
     assert dataframe_dict["node_name"] == "assign_2"
-    node = next(node for node in dataframe_dict["graph"]["nodes"] if node["name"] == "assign_2")
+    node = get_node(dataframe_dict, "assign_2")
     assert node == {
         "name": "assign_2",
         "type": NodeType.ASSIGN,

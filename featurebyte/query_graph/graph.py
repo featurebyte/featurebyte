@@ -1,12 +1,12 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Dict, List, Set, Tuple, TypedDict
+from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
 
 import json
 from collections import defaultdict
 
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.models.base import FeatureByteBaseModel
@@ -38,6 +38,9 @@ class QueryGraph(FeatureByteBaseModel):
     node_type_counter: Dict[str, int] = Field(default=defaultdict(int), exclude=True)
     node_name_to_ref: Dict[str, str] = Field(default_factory=dict, exclude=True)
     ref_to_node_name: Dict[str, str] = Field(default_factory=dict, exclude=True)
+    _nodes_map: Optional[Dict[str, Any]] = PrivateAttr(default=None)
+    _edges_map: Optional[Dict[str, Any]] = PrivateAttr(default=None)
+    _backward_edges_map: Optional[Dict[str, Any]] = PrivateAttr(default=None)
 
     @property
     def nodes_map(self) -> Dict[str, Node]:
@@ -48,10 +51,11 @@ class QueryGraph(FeatureByteBaseModel):
         -------
         Dict[str, Node]
         """
-        output = {}
-        for node in self.nodes:
-            output[node.name] = node
-        return output
+        if self._nodes_map is None:
+            self._nodes_map = {}
+            for node in self.nodes:
+                self._nodes_map[node.name] = node
+        return self._nodes_map
 
     @property
     def edges_map(self) -> Dict[str, List[str]]:
@@ -62,10 +66,11 @@ class QueryGraph(FeatureByteBaseModel):
         -------
         Dict[str, List[str]]
         """
-        output = defaultdict(list)
-        for edge in self.edges:
-            output[edge.source].append(edge.target)
-        return output
+        if self._edges_map is None:
+            self._edges_map = defaultdict(list)
+            for edge in self.edges:
+                self._edges_map[edge.source].append(edge.target)
+        return self._edges_map
 
     @property
     def backward_edges_map(self) -> Dict[str, List[str]]:
@@ -76,15 +81,16 @@ class QueryGraph(FeatureByteBaseModel):
         -------
         Dict[str, List[str]]
         """
-        output = defaultdict(list)
-        for edge in self.edges:
-            output[edge.target].append(edge.source)
-        return output
+        if self._backward_edges_map is None:
+            self._backward_edges_map = defaultdict(list)
+            for edge in self.edges:
+                self._backward_edges_map[edge.target].append(edge.source)
+        return self._backward_edges_map
 
     def __repr__(self) -> str:
         return json.dumps(self.dict(), indent=4)
 
-    def add_edge(self, parent: Node, child: Node) -> None:
+    def _add_edge(self, parent: Node, child: Node) -> None:
         """
         Add edge to the graph by specifying a parent node & a child node
 
@@ -102,7 +108,7 @@ class QueryGraph(FeatureByteBaseModel):
         self.node_type_counter[node_type] += 1
         return f"{node_type}_{self.node_type_counter[node_type]}"
 
-    def add_node(
+    def _add_node(
         self, node_type: NodeType, node_params: Dict[str, Any], node_output_type: NodeOutputType
     ) -> Node:
         """
@@ -175,14 +181,19 @@ class QueryGraph(FeatureByteBaseModel):
         input_node_refs = [self.node_name_to_ref[node.name] for node in input_nodes]
         node_ref = hash_node(node_type, node_params, node_output_type, input_node_refs)
         if node_ref not in self.ref_to_node_name:
-            node = self.add_node(node_type, node_params, node_output_type)
+            node = self._add_node(node_type, node_params, node_output_type)
             for input_node in input_nodes:
-                self.add_edge(input_node, node)
+                self._add_edge(input_node, node)
 
             self.ref_to_node_name[node_ref] = node.name
             self.node_name_to_ref[node.name] = node_ref
         else:
             node = self.nodes_map[self.ref_to_node_name[node_ref]]
+
+        # remove cached maps
+        self._nodes_map = None
+        self._edges_map = None
+        self._backward_edges_map = None
         return node
 
     def load(self, graph: "QueryGraph") -> Tuple["QueryGraph", Dict[str, str]]:
@@ -348,13 +359,11 @@ class GlobalQueryGraph(QueryGraph):
         processed_node_names: Set[str],
         node_name_map: Dict[str, str],
         index_map: Dict[str, int],
-        backward_edges_map: Dict[str, List[str]],
-        nodes_map: Dict[str, Node],
     ) -> QueryGraph:
         # pylint: disable=too-many-locals
         # pruning: move backward from target node to the input node
         to_prune_target_node = False
-        input_node_names = backward_edges_map.get(target_node.name, [])
+        input_node_names = self.backward_edges_map.get(target_node.name, [])
 
         if isinstance(target_node, AssignNode):
             # check whether to keep the current assign node
@@ -381,7 +390,7 @@ class GlobalQueryGraph(QueryGraph):
         # sort makes sure we travel "project_1" first (filled up target_columns) and then travel assign node.
         # If the assign node's new columns are not in "target_columns", we can safely remove the node.
         for input_node_name in sorted(input_node_names, key=lambda x: index_map[x], reverse=True):
-            input_node = nodes_map[input_node_name]
+            input_node = self.nodes_map[input_node_name]
             pruned_graph = self._prune(
                 target_node=input_node,
                 target_columns=target_columns,
@@ -389,8 +398,6 @@ class GlobalQueryGraph(QueryGraph):
                 processed_node_names=processed_node_names,
                 node_name_map=node_name_map,
                 index_map=index_map,
-                backward_edges_map=backward_edges_map,
-                nodes_map=nodes_map,
             )
 
         if to_prune_target_node:
@@ -405,7 +412,7 @@ class GlobalQueryGraph(QueryGraph):
             # currently only ASSIGN node could get pruned, the first input node is the frame node.
             # it is used to replace the pruned assigned node
             while input_node_name not in processed_node_names:
-                input_node_name = backward_edges_map[input_node_name][0]
+                input_node_name = self.backward_edges_map[input_node_name][0]
             mapped_input_node_names.append(input_node_name)
 
         # add the node back to the pruned graph
@@ -448,8 +455,6 @@ class GlobalQueryGraph(QueryGraph):
         """
         node_name_map: Dict[str, str] = {}
         index_map = {value: idx for idx, value in enumerate(topological_sort(self))}
-        backward_edges_map = self.backward_edges_map
-        nodes_map = self.nodes_map
         pruned_graph = self._prune(
             target_node=target_node,
             target_columns=target_columns,
@@ -457,7 +462,5 @@ class GlobalQueryGraph(QueryGraph):
             processed_node_names=set(),
             node_name_map=node_name_map,
             index_map=index_map,
-            backward_edges_map=backward_edges_map,
-            nodes_map=nodes_map,
         )
         return pruned_graph, node_name_map

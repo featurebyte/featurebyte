@@ -5,6 +5,7 @@ import pytest
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from tests.util.helper import get_node
 
 
 @pytest.mark.parametrize(
@@ -50,7 +51,7 @@ def test_cosine_similarity(count_per_category_feature, count_per_category_featur
     Test cosine_similarity operation
     """
     result = count_per_category_feature.cd.cosine_similarity(count_per_category_feature_2h)
-    pruned_graph = result.dict()["graph"]
+    pruned_graph = result.dict()
     assert pruned_graph["edges"] == [
         {"source": "input_1", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_1"},
@@ -58,9 +59,7 @@ def test_cosine_similarity(count_per_category_feature, count_per_category_featur
         {"source": "project_2", "target": "cosine_similarity_1"},
         {"source": "project_1", "target": "cosine_similarity_1"},
     ]
-    cos_sim_node = next(
-        node for node in pruned_graph["nodes"] if node["name"] == "cosine_similarity_1"
-    )
+    cos_sim_node = get_node(pruned_graph, "cosine_similarity_1")
     assert cos_sim_node == {
         "name": "cosine_similarity_1",
         "type": NodeType.COSINE_SIMILARITY,
