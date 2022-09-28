@@ -69,7 +69,7 @@ class OnDemandTileComputePlan:
         """
 
         tile_sqls: dict[str, expressions.Expression] = {}
-        aliases: dict[str, str] = {}
+        prev_aliases: dict[str, str] = {}
 
         for tile_info in self.tile_infos:
             # Convert template SQL with concrete start and end timestamps, based on the requested
@@ -106,19 +106,20 @@ class OnDemandTileComputePlan:
                     tile_sql_expr.subquery(alias=agg_id)
                 )
                 tile_sqls[tile_table_id] = tile_sql
-                aliases[tile_table_id] = agg_id
+                prev_aliases[tile_table_id] = agg_id
             else:
                 # Tile table already exist - get the new tile value columns by doing a join. Tile
                 # index column and entity columns exist already.
-                prev_alias = aliases[tile_table_id]
+                prev_alias = prev_aliases[tile_table_id]
                 join_conditions = [f"{prev_alias}.INDEX = {agg_id}.INDEX"]
                 for key in tile_info.entity_columns:
                     key = escape_column_name(key)
                     join_conditions.append(f"{prev_alias}.{key} = {agg_id}.{key}")
                 # Tile sqls with the same tile_table_id should generate output with identical set of
                 # tile indices and entity columns (they are derived from the same event data using
-                # the same entity columns and feature job settings). Hence, any join_type will work
-                # and "inner" is used for simplicity.
+                # the same entity columns and feature job settings). However, using "right" join
+                # allows the filter on entity columns to be pushed down to TableScan in the
+                # optimized query.
                 tile_sqls[tile_table_id] = (
                     tile_sqls[tile_table_id]
                     .join(
