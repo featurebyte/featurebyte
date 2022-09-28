@@ -646,6 +646,10 @@ def test_save_payload_fixtures(
         default_version_mode=DefaultVersionMode.AUTO,
         entity_ids=feature_sum_30m.entity_ids,
         event_data_ids=feature_sum_30m.event_data_ids,
+        feature_namespace_ids=[
+            feature_sum_30m.feature_namespace_id,
+            feature_sum_2h.feature_namespace_id,
+        ],
     )
     feature_job_setting_analysis = FeatureJobSettingAnalysisCreate(
         _id="62f301e841b73757c9ff879a",

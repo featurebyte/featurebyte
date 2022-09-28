@@ -73,7 +73,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
             },
         },
         columns_info=columns_info,
-        node=node,
+        node_name=node.name,
         column_lineage_map={col["name"]: (node.name,) for col in columns_info},
         row_index_lineage=(node.name,),
     )

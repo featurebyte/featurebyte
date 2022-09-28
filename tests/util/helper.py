@@ -61,3 +61,8 @@ def get_lagged_series_pandas(df, column, timestamp, groupby_key):
     df_sorted = df.sort_values(timestamp)
     df[column] = df_sorted.groupby(groupby_key)[column].shift(1)
     return df[column]
+
+
+def get_node(graph_dict, node_name):
+    """Get node from the data dictionary"""
+    return next(node for node in graph_dict["nodes"] if node["name"] == node_name)

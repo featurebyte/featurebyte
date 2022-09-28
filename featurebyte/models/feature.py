@@ -9,7 +9,7 @@ from typing import Any, List, Optional, Tuple
 from enum import Enum
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.enum import DBVarType, OrderedStrEnum
@@ -23,7 +23,6 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node import Node
 
 
 class FeatureReadiness(OrderedStrEnum):
@@ -123,8 +122,8 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Tuple of transformation step node names which affect the row number of the feature
     graph: QueryGraph
         Graph contains steps of transformation to generate the feature
-    node: Node
-        Node of the graph which represent the feature
+    node_name: str
+        Node name of the graph which represent the feature
     tabular_source: TabularSource
         Tabular source used to construct this feature
     readiness: FeatureReadiness
@@ -152,7 +151,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     dtype: DBVarType = Field(allow_mutation=False)
     row_index_lineage: Tuple[StrictStr, ...] = Field(allow_mutation=False)
     graph: QueryGraph = Field(allow_mutation=False)
-    node: Node
+    node_name: str
     tabular_source: TabularSource = Field(allow_mutation=False)
     readiness: FeatureReadiness = Field(allow_mutation=False, default=FeatureReadiness.DRAFT)
     version: VersionIdentifier = Field(allow_mutation=False, default=None)
@@ -164,6 +163,24 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     deployed_feature_list_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
+
+    @root_validator(pre=True)
+    @classmethod
+    def _convert_graph_format(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # DEV-556: converted older record (graph) into a newer format
+        if isinstance(values.get("graph"), dict):
+            if isinstance(values.get("graph", {}).get("nodes"), dict):
+                # in the old format, nodes is a dictionary but not a list
+                graph: dict[str, Any] = {"nodes": [], "edges": []}
+                for node in values["graph"]["nodes"].values():
+                    graph["nodes"].append(node)
+                for parent, children in values["graph"]["edges"].items():
+                    for child in children:
+                        graph["edges"].append({"source": parent, "target": child})
+                values["graph"] = graph
+            if isinstance(values.get("node"), dict):
+                values["node_name"] = values["node"]["name"]
+        return values
 
     @validator("entity_ids", "event_data_ids")
     @classmethod

@@ -34,7 +34,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
 
         fields = {
             "graph": {"exclude": True},
-            "node": {"exclude": True},
+            "node_name": {"exclude": True},
             "row_index_lineage": {"exclude": True},
         }
 
@@ -119,6 +119,6 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[],
         )
-        values["node"] = node
+        values["node_name"] = node.name
         values["row_index_lineage"] = (node.name,)
         return values

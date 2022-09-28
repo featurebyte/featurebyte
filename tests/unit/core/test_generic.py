@@ -34,10 +34,10 @@ def check_graph_state(graph1, graph2):
     assert isinstance(graph1, GlobalQueryGraph)
     assert isinstance(graph2, GlobalQueryGraph)
     assert id(graph1.edges) == id(graph2.edges)
-    assert id(graph1.backward_edges) == id(graph2.backward_edges)
     assert id(graph1.nodes) == id(graph2.nodes)
     assert id(graph1.node_type_counter) == id(graph2.node_type_counter)
     assert id(graph1.ref_to_node_name) == id(graph2.ref_to_node_name)
+    assert id(graph1.node_name_to_ref) == id(graph2.node_name_to_ref)
 
 
 @pytest.fixture(name="feature_store_tabular_source")
@@ -81,7 +81,7 @@ def query_object1_fixture(feature_store_tabular_source):
     feature_store, tabular_source = feature_store_tabular_source
     query_obj1 = ConcreteQueryObject(
         feature_store=feature_store,
-        node=node_proj1,
+        node_name=node_proj1.name,
         row_index_lineage=(node_proj1.name,),
         tabular_source=tabular_source,
     )
@@ -105,7 +105,7 @@ def query_object2_fixture(feature_store_tabular_source, query_object1):
     feature_store, tabular_source = feature_store_tabular_source
     query_obj2 = ConcreteQueryObject(
         feature_store=feature_store,
-        node=node_proj2,
+        node_name=node_proj2.name,
         row_index_lineage=(node_proj1.name, node_proj2.name),
         tabular_source=tabular_source,
     )

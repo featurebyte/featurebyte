@@ -59,13 +59,24 @@ class QueryObject(FeatureByteBaseModel):
     """
 
     graph: QueryGraph = Field(default_factory=GlobalQueryGraph)
-    node: Node
+    node_name: str
     row_index_lineage: Tuple[StrictStr, ...]
     tabular_source: TabularSource = Field(allow_mutation=False)
     feature_store: ExtendedFeatureStoreModel = Field(exclude=True, allow_mutation=False)
 
+    @property
+    def node(self) -> Node:
+        """
+        Representative of the current object in the graph
+
+        Returns
+        -------
+        Node
+        """
+        return self.graph.get_node_by_name(self.node_name)
+
     def __repr__(self) -> str:
-        return f"{type(self).__name__}(node.name={self.node.name})"
+        return f"{type(self).__name__}(node_name={self.node_name})"
 
     def __str__(self) -> str:
         return repr(self)
@@ -189,7 +200,7 @@ class QueryObject(FeatureByteBaseModel):
         dict_object = json.loads(json_object)
         if "graph" in dict_object:
             pruned_dict_object = self.dict()
-            for key in ["graph", "node", "column_lineage_map", "row_index_lineage"]:
+            for key in ["graph", "node_name", "column_lineage_map", "row_index_lineage"]:
                 if key in dict_object:
                     dict_object[key] = pruned_dict_object[key]
             json_object = self.__config__.json_dumps(dict_object, default=encoder, **dumps_kwargs)

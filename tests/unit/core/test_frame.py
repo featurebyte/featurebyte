@@ -6,6 +6,7 @@ import pytest
 from featurebyte.core.frame import Frame, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from tests.util.helper import get_node
 
 
 @pytest.mark.parametrize(
@@ -26,16 +27,16 @@ def test__getitem__str_key(dataframe, item, expected_type):
     series_dict = series.dict()
     assert series_dict["name"] == item
     assert series_dict["dtype"] == expected_type
-    assert (
-        series_dict["node"].items()
-        >= {
-            "type": NodeType.PROJECT,
-            "parameters": {"columns": [item]},
-            "output_type": NodeOutputType.SERIES,
-        }.items()
-    )
+    assert series_dict["node_name"] == "project_1"
+    node = get_node(series_dict["graph"], "project_1")
+    assert node == {
+        "name": "project_1",
+        "type": NodeType.PROJECT,
+        "parameters": {"columns": [item]},
+        "output_type": NodeOutputType.SERIES,
+    }
     assert series_dict["row_index_lineage"] == ("input_1",)
-    assert dict(series_dict["graph"]["edges"]) == {"input_1": ["project_1"]}
+    assert series_dict["graph"]["edges"] == [{"source": "input_1", "target": "project_1"}]
 
 
 def test__getitem__str_not_found(dataframe):
@@ -58,20 +59,20 @@ def test__getitem__list_of_str_key(dataframe):
         {"name": "CUST_ID", "dtype": DBVarType.INT, "entity_id": None},
         {"name": "VALUE", "dtype": DBVarType.FLOAT, "entity_id": None},
     ]
-    assert (
-        sub_dataframe_dict["node"].items()
-        >= {
-            "type": NodeType.PROJECT,
-            "parameters": {"columns": ["CUST_ID", "VALUE"]},
-            "output_type": NodeOutputType.FRAME,
-        }.items()
-    )
+    assert sub_dataframe_dict["node_name"] == "project_1"
+    node = get_node(sub_dataframe_dict["graph"], "project_1")
+    assert node == {
+        "name": "project_1",
+        "type": NodeType.PROJECT,
+        "parameters": {"columns": ["CUST_ID", "VALUE"]},
+        "output_type": NodeOutputType.FRAME,
+    }
     assert sub_dataframe_dict["column_lineage_map"] == {
         "CUST_ID": ("input_1", "project_1"),
         "VALUE": ("input_1", "project_1"),
     }
     assert sub_dataframe_dict["row_index_lineage"] == ("input_1",)
-    assert dict(sub_dataframe_dict["graph"]["edges"]) == {"input_1": ["project_1"]}
+    assert sub_dataframe_dict["graph"]["edges"] == [{"source": "input_1", "target": "project_1"}]
 
 
 def test__getitem__list_of_str_not_found(dataframe):
@@ -91,14 +92,14 @@ def test__getitem__series_key(dataframe, bool_series):
     assert sub_dataframe.columns_info == dataframe.columns_info
     assert isinstance(sub_dataframe, Frame)
     sub_dataframe_dict = sub_dataframe.dict()
-    assert (
-        sub_dataframe_dict["node"].items()
-        >= {
-            "type": NodeType.FILTER,
-            "parameters": {},
-            "output_type": NodeOutputType.FRAME,
-        }.items()
-    )
+    assert sub_dataframe_dict["node_name"] == "filter_1"
+    node = get_node(sub_dataframe_dict["graph"], "filter_1")
+    assert node == {
+        "name": "filter_1",
+        "type": NodeType.FILTER,
+        "parameters": {},
+        "output_type": NodeOutputType.FRAME,
+    }
     assert sub_dataframe_dict["column_lineage_map"] == {
         "CUST_ID": ("input_1", "filter_1"),
         "PRODUCT_ACTION": ("input_1", "filter_1"),
@@ -108,10 +109,11 @@ def test__getitem__series_key(dataframe, bool_series):
         "PROMOTION_START_DATE": ("input_1", "filter_1"),
     }
     assert sub_dataframe_dict["row_index_lineage"] == ("input_1", "filter_1")
-    assert dict(sub_dataframe_dict["graph"]["edges"]) == {
-        "input_1": ["project_1", "filter_1"],
-        "project_1": ["filter_1"],
-    }
+    assert sub_dataframe_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "filter_1"},
+        {"source": "project_1", "target": "filter_1"},
+    ]
 
 
 def test__getitem__non_boolean_series_type_not_supported(dataframe, int_series):
@@ -131,8 +133,8 @@ def test__getitem__series_type_row_index_not_aligned(dataframe, bool_series):
     with pytest.raises(ValueError) as exc:
         _ = dataframe[filtered_bool_series]
     expected_msg = (
-        f"Row indices between 'Frame(node.name={dataframe.node.name})' and "
-        f"'Series[BOOL](name=MASK, node.name={filtered_bool_series.node.name})' are not aligned!"
+        f"Row indices between 'Frame(node_name={dataframe.node_name})' and "
+        f"'Series[BOOL](name=MASK, node_name={filtered_bool_series.node_name})' are not aligned!"
     )
     assert expected_msg in str(exc.value)
 
@@ -165,16 +167,16 @@ def test__setitem__str_key_scalar_value(
     dataframe[key] = value
     dataframe_dict = dataframe.dict()
     assert dataframe.column_var_type_map[key] == expected_type
-    assert (
-        dataframe_dict["node"].items()
-        >= {
-            "type": "assign",
-            "parameters": {"value": value, "name": key},
-            "output_type": NodeOutputType.FRAME,
-        }.items()
-    )
+    assert dataframe_dict["node_name"] == "assign_1"
+    node = get_node(dataframe_dict["graph"], "assign_1")
+    assert node == {
+        "name": "assign_1",
+        "type": "assign",
+        "parameters": {"value": value, "name": key},
+        "output_type": NodeOutputType.FRAME,
+    }
     assert len(dataframe.column_var_type_map.keys()) == expected_column_count
-    assert dict(dataframe_dict["graph"]["edges"]) == {"input_1": ["assign_1"]}
+    assert dataframe_dict["graph"]["edges"] == [{"source": "input_1", "target": "assign_1"}]
 
 
 @pytest.mark.parametrize(
@@ -197,19 +199,20 @@ def test__setitem__str_key_series_value(
     dataframe[key] = value
     dataframe_dict = dataframe.dict()
     assert dataframe.column_var_type_map[key] == expected_type
-    assert (
-        dataframe_dict["node"].items()
-        >= {
-            "type": "assign",
-            "parameters": {"name": key, "value": None},
-            "output_type": NodeOutputType.FRAME,
-        }.items()
-    )
-    assert len(dataframe.column_var_type_map.keys()) == expected_column_count
-    assert dict(dataframe_dict["graph"]["edges"]) == {
-        "input_1": ["project_1", "assign_1"],
-        "project_1": ["assign_1"],
+    assert dataframe_dict["node_name"] == "assign_1"
+    node = get_node(dataframe_dict["graph"], "assign_1")
+    assert node == {
+        "name": "assign_1",
+        "type": "assign",
+        "parameters": {"name": key, "value": None},
+        "output_type": NodeOutputType.FRAME,
     }
+    assert len(dataframe.column_var_type_map.keys()) == expected_column_count
+    assert dataframe_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "assign_1"},
+        {"source": "project_1", "target": "assign_1"},
+    ]
 
 
 def test__setitem__str_key_series_value__row_index_not_aligned(dataframe, bool_series):
@@ -223,8 +226,8 @@ def test__setitem__str_key_series_value__row_index_not_aligned(dataframe, bool_s
     with pytest.raises(ValueError) as exc:
         dataframe["new_column"] = value
     expected_msg = (
-        f"Row indices between 'Frame(node.name={dataframe.node.name})' and "
-        f"'Series[VARCHAR](name=PRODUCT_ACTION, node.name={value.node.name})' are not aligned!"
+        f"Row indices between 'Frame(node_name={dataframe.node.name})' and "
+        f"'Series[VARCHAR](name=PRODUCT_ACTION, node_name={value.node.name})' are not aligned!"
     )
     assert expected_msg in str(exc.value)
 
@@ -250,14 +253,14 @@ def test_multiple_statements(dataframe):
     dataframe_dict = dataframe.dict()
 
     assert cust_id_dict["name"] == "CUST_ID"
-    assert (
-        cust_id_dict["node"].items()
-        >= {
-            "type": NodeType.PROJECT,
-            "parameters": {"columns": ["CUST_ID"]},
-            "output_type": NodeOutputType.SERIES,
-        }.items()
-    )
+    assert cust_id_dict["node_name"] == "project_2"
+    node = get_node(cust_id_dict["graph"], "project_2")
+    assert node == {
+        "name": "project_2",
+        "type": NodeType.PROJECT,
+        "parameters": {"columns": ["CUST_ID"]},
+        "output_type": NodeOutputType.SERIES,
+    }
     assert cust_id_dict["row_index_lineage"] == ("input_1", "filter_1")
     assert dataframe_dict["columns_info"] == [
         {"name": "CUST_ID", "dtype": DBVarType.INT, "entity_id": None},
@@ -279,14 +282,14 @@ def test_multiple_statements(dataframe):
         "amount",
         "vip_customer",
     ]
-    assert (
-        dataframe_dict["node"].items()
-        >= {
-            "type": NodeType.ASSIGN,
-            "parameters": {"name": "vip_customer", "value": None},
-            "output_type": NodeOutputType.FRAME,
-        }.items()
-    )
+    assert dataframe_dict["node_name"] == "assign_2"
+    node = get_node(dataframe_dict["graph"], "assign_2")
+    assert node == {
+        "name": "assign_2",
+        "type": NodeType.ASSIGN,
+        "parameters": {"name": "vip_customer", "value": None},
+        "output_type": NodeOutputType.FRAME,
+    }
     assert dataframe_dict["column_lineage_map"] == {
         "CUST_ID": ("input_1", "filter_1"),
         "PRODUCT_ACTION": ("input_1", "filter_1"),
@@ -298,19 +301,24 @@ def test_multiple_statements(dataframe):
         "vip_customer": ("assign_2",),
     }
     assert dataframe_dict["row_index_lineage"] == ("input_1", "filter_1")
-    assert dict(dataframe_dict["graph"]["edges"]) == {
-        "input_1": ["project_1", "filter_1"],
-        "project_1": ["filter_1"],
-        "filter_1": ["project_2", "project_3", "assign_1"],
-        "project_2": ["add_1", "lt_1"],
-        "project_3": ["add_1"],
-        "add_1": ["assign_1"],
-        "assign_1": ["project_4", "assign_2"],
-        "project_4": ["gt_1"],
-        "lt_1": ["and_1"],
-        "gt_1": ["and_1"],
-        "and_1": ["assign_2"],
-    }
+    assert dataframe_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "input_1", "target": "filter_1"},
+        {"source": "project_1", "target": "filter_1"},
+        {"source": "filter_1", "target": "project_2"},
+        {"source": "filter_1", "target": "project_3"},
+        {"source": "project_2", "target": "add_1"},
+        {"source": "project_3", "target": "add_1"},
+        {"source": "filter_1", "target": "assign_1"},
+        {"source": "add_1", "target": "assign_1"},
+        {"source": "assign_1", "target": "project_4"},
+        {"source": "project_4", "target": "gt_1"},
+        {"source": "project_2", "target": "lt_1"},
+        {"source": "lt_1", "target": "and_1"},
+        {"source": "gt_1", "target": "and_1"},
+        {"source": "assign_1", "target": "assign_2"},
+        {"source": "and_1", "target": "assign_2"},
+    ]
 
 
 def test_frame_column_order(dataframe):

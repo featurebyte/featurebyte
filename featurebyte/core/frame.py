@@ -166,7 +166,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             output = self._series_class(
                 feature_store=self.feature_store,
                 tabular_source=self.tabular_source,
-                node=node,
+                node_name=node.name,
                 name=item,
                 dtype=self.column_var_type_map[item],
                 row_index_lineage=self.row_index_lineage,
@@ -190,7 +190,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 feature_store=self.feature_store,
                 tabular_source=self.tabular_source,
                 columns_info=[col for col in self.columns_info if col.name in item],
-                node=node,
+                node_name=node.name,
                 column_lineage_map=column_lineage_map,
                 row_index_lineage=self.row_index_lineage,
                 **self._getitem_frame_params,
@@ -206,7 +206,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,
             columns_info=self.columns_info,
-            node=node,
+            node_name=node.name,
             column_lineage_map=column_lineage_map,
             row_index_lineage=self._append_to_lineage(self.row_index_lineage, node.name),
             **self._getitem_frame_params,
@@ -232,7 +232,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         if isinstance(value, Series):
             if self.row_index_lineage != value.row_index_lineage:
                 raise ValueError(f"Row indices between '{self}' and '{value}' are not aligned!")
-            self.node = self.graph.add_operation(
+            node = self.graph.add_operation(
                 node_type=NodeType.ASSIGN,
                 node_params={"name": key},
                 node_output_type=NodeOutputType.FRAME,
@@ -240,10 +240,10 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             )
             self.columns_info.append(ColumnInfo(name=key, dtype=value.dtype))
             self.column_lineage_map[key] = self._append_to_lineage(
-                self.column_lineage_map.get(key, tuple()), self.node.name
+                self.column_lineage_map.get(key, tuple()), node.name
             )
         else:
-            self.node = self.graph.add_operation(
+            node = self.graph.add_operation(
                 node_type=NodeType.ASSIGN,
                 node_params={"value": value, "name": key},
                 node_output_type=NodeOutputType.FRAME,
@@ -253,8 +253,11 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
                 ColumnInfo(name=key, dtype=self.pytype_dbtype_map[type(value)])
             )
             self.column_lineage_map[key] = self._append_to_lineage(
-                self.column_lineage_map.get(key, tuple()), self.node.name
+                self.column_lineage_map.get(key, tuple()), node.name
             )
+
+        # update node_name
+        self.node_name = node.name
 
     @root_validator()
     @classmethod
@@ -262,7 +265,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
         if not isinstance(values["graph"], GlobalQueryGraph):
             global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
             values["graph"] = global_graph
-            values["node"] = global_graph.get_node_by_name(node_name_map[values["node"].name])
+            values["node_name"] = node_name_map[values["node_name"]]
             column_lineage_map = {}
             for col, lineage in values["column_lineage_map"].items():
                 column_lineage_map[col] = tuple(node_name_map[node_name] for node_name in lineage)
@@ -280,7 +283,7 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             )
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
             new_object = self.copy()
-            new_object.node = mapped_node
+            new_object.node_name = mapped_node.name
             column_lineage_map = {}
             for col, lineage in new_object.column_lineage_map.items():
                 column_lineage_map[col] = tuple(

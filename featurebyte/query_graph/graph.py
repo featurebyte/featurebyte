@@ -1,12 +1,12 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Dict, List, Set, Tuple, TypedDict
+from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
 
 import json
 from collections import defaultdict
 
-from pydantic import Field, validator
+from pydantic import Field, PrivateAttr
 
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.models.base import FeatureByteBaseModel
@@ -17,35 +17,80 @@ from featurebyte.query_graph.node.generic import AssignNode
 from featurebyte.query_graph.util import hash_node
 
 
-class Graph(FeatureByteBaseModel):
+class Edge(FeatureByteBaseModel):
+    """
+    Graph Edge
+    """
+
+    source: str
+    target: str
+
+
+class QueryGraph(FeatureByteBaseModel):
     """
     Graph data structure
     """
 
-    edges: Dict[str, List[str]] = Field(default=defaultdict(list))
-    backward_edges: Dict[str, List[str]] = Field(default=defaultdict(list))
-    nodes: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
-    node_type_counter: Dict[str, int] = Field(default=defaultdict(int))
+    edges: List[Edge] = Field(default_factory=list)
+    nodes: List[Node] = Field(default_factory=list)
 
-    @validator("edges", "backward_edges")
-    @classmethod
-    def _convert_to_defaultdict_list(cls, value: Dict[str, List[str]]) -> Dict[str, List[str]]:
-        if not isinstance(value, defaultdict):
-            new_value: Dict[str, List[str]] = defaultdict(list)
-            new_value.update(value)
-            return new_value
-        return value
+    # non-serialized variables
+    node_type_counter: Dict[str, int] = Field(default=defaultdict(int), exclude=True)
+    node_name_to_ref: Dict[str, str] = Field(default_factory=dict, exclude=True)
+    ref_to_node_name: Dict[str, str] = Field(default_factory=dict, exclude=True)
+    _nodes_map: Optional[Dict[str, Any]] = PrivateAttr(default=None)
+    _edges_map: Optional[Dict[str, Any]] = PrivateAttr(default=None)
+    _backward_edges_map: Optional[Dict[str, Any]] = PrivateAttr(default=None)
 
-    @validator("node_type_counter")
-    @classmethod
-    def _convert_to_defaultdict_int(cls, value: Dict[str, int]) -> Dict[str, int]:
-        if not isinstance(value, defaultdict):
-            new_value: Dict[str, int] = defaultdict(int)
-            new_value.update(value)
-            return new_value
-        return value
+    @property
+    def nodes_map(self) -> Dict[str, Node]:
+        """
+        Graph node name to node mapping
 
-    def add_edge(self, parent: Node, child: Node) -> None:
+        Returns
+        -------
+        Dict[str, Node]
+        """
+        if self._nodes_map is None or len(self._nodes_map) != len(self.nodes):
+            self._nodes_map = {}
+            for node in self.nodes:
+                self._nodes_map[node.name] = node
+        return self._nodes_map
+
+    @property
+    def edges_map(self) -> Dict[str, List[str]]:
+        """
+        Graph parent node name to child node names mapping
+
+        Returns
+        -------
+        Dict[str, List[str]]
+        """
+        if self._edges_map is None:
+            self._edges_map = defaultdict(list)
+            for edge in self.edges:
+                self._edges_map[edge.source].append(edge.target)
+        return self._edges_map
+
+    @property
+    def backward_edges_map(self) -> Dict[str, List[str]]:
+        """
+        Graph child node name to parent node names mapping
+
+        Returns
+        -------
+        Dict[str, List[str]]
+        """
+        if self._backward_edges_map is None:
+            self._backward_edges_map = defaultdict(list)
+            for edge in self.edges:
+                self._backward_edges_map[edge.target].append(edge.source)
+        return self._backward_edges_map
+
+    def __repr__(self) -> str:
+        return json.dumps(self.dict(), indent=4)
+
+    def _add_edge(self, parent: Node, child: Node) -> None:
         """
         Add edge to the graph by specifying a parent node & a child node
 
@@ -57,14 +102,13 @@ class Graph(FeatureByteBaseModel):
             child node
 
         """
-        self.edges[parent.name].append(child.name)
-        self.backward_edges[child.name].append(parent.name)
+        self.edges.append(Edge(source=parent.name, target=child.name))
 
     def _generate_node_name(self, node_type: NodeType) -> str:
         self.node_type_counter[node_type] += 1
         return f"{node_type}_{self.node_type_counter[node_type]}"
 
-    def add_node(
+    def _add_node(
         self, node_type: NodeType, node_params: Dict[str, Any], node_output_type: NodeOutputType
     ) -> Node:
         """
@@ -90,33 +134,8 @@ class Graph(FeatureByteBaseModel):
             "output_type": node_output_type,
         }
         node = construct_node(**node_dict)
-        self.nodes[node.name] = node.dict()
+        self.nodes.append(node)
         return node
-
-    def __repr__(self) -> str:
-        return json.dumps(self.dict(), indent=4)
-
-
-class QueryGraph(Graph):
-    """
-    Query graph object
-    """
-
-    # pylint: disable=too-few-public-methods
-
-    node_name_to_ref: Dict[str, str] = Field(default_factory=dict)
-    ref_to_node_name: Dict[str, str] = Field(default_factory=dict)
-
-    class Config:
-        """
-        Pydantic Config class
-        """
-
-        fields = {
-            "node_name_to_ref": {"exclude": True},
-            "ref_to_node_name": {"exclude": True},
-            "node_type_counter": {"exclude": True},
-        }
 
     def get_node_by_name(self, node_name: str) -> Node:
         """
@@ -131,7 +150,7 @@ class QueryGraph(Graph):
         -------
         Node
         """
-        return construct_node(**self.nodes[node_name])
+        return self.nodes_map[node_name]
 
     def add_operation(
         self,
@@ -162,15 +181,19 @@ class QueryGraph(Graph):
         input_node_refs = [self.node_name_to_ref[node.name] for node in input_nodes]
         node_ref = hash_node(node_type, node_params, node_output_type, input_node_refs)
         if node_ref not in self.ref_to_node_name:
-            node = self.add_node(node_type, node_params, node_output_type)
+            node = self._add_node(node_type, node_params, node_output_type)
             for input_node in input_nodes:
-                self.add_edge(input_node, node)
+                self._add_edge(input_node, node)
 
             self.ref_to_node_name[node_ref] = node.name
             self.node_name_to_ref[node.name] = node_ref
         else:
-            name = self.ref_to_node_name[node_ref]
-            node = construct_node(**self.nodes[name])
+            node = self.nodes_map[self.ref_to_node_name[node_ref]]
+
+        # remove cached maps
+        self._nodes_map = None
+        self._edges_map = None
+        self._backward_edges_map = None
         return node
 
     def load(self, graph: "QueryGraph") -> Tuple["QueryGraph", Dict[str, str]]:
@@ -192,7 +215,7 @@ class QueryGraph(Graph):
             node = graph.get_node_by_name(node_name)
             input_nodes = [
                 self.get_node_by_name(node_name_map[input_node_name])
-                for input_node_name in graph.backward_edges[node_name]
+                for input_node_name in graph.backward_edges_map[node_name]
             ]
             node_global = self.add_operation(
                 node_type=NodeType(node.type),
@@ -209,9 +232,8 @@ class GraphState(TypedDict):
     Typed dictionary for graph state
     """
 
-    edges: Dict[str, List[str]]
-    backward_edges: Dict[str, List[str]]
-    nodes: Dict[str, Dict[str, Any]]
+    edges: List[Edge]
+    nodes: List[Node]
     node_type_counter: Dict[str, int]
     node_name_to_ref: Dict[str, int]
     ref_to_node_name: Dict[int, str]
@@ -223,9 +245,8 @@ class GlobalQueryGraphState(metaclass=SingletonMeta):
     """
 
     _state: GraphState = {
-        "edges": defaultdict(list),
-        "backward_edges": defaultdict(list),
-        "nodes": {},
+        "edges": [],
+        "nodes": [],
         "node_type_counter": defaultdict(int),
         "node_name_to_ref": {},
         "ref_to_node_name": {},
@@ -236,15 +257,14 @@ class GlobalQueryGraphState(metaclass=SingletonMeta):
         """
         Reset the global query graph state to clean state
         """
-        cls._state["edges"] = defaultdict(list)
-        cls._state["backward_edges"] = defaultdict(list)
-        cls._state["nodes"] = {}
+        cls._state["edges"] = []
+        cls._state["nodes"] = []
         cls._state["node_type_counter"] = defaultdict(int)
         cls._state["node_name_to_ref"] = {}
         cls._state["ref_to_node_name"] = {}
 
     @classmethod
-    def get_edges(cls) -> Dict[str, List[str]]:
+    def get_edges(cls) -> List[Edge]:
         """
         Get global query graph edges
 
@@ -255,18 +275,7 @@ class GlobalQueryGraphState(metaclass=SingletonMeta):
         return cls._state["edges"]
 
     @classmethod
-    def get_backward_edges(cls) -> Dict[str, List[str]]:
-        """
-        Get global query graph backward edges
-
-        Returns
-        -------
-        dict[str, list[str]]
-        """
-        return cls._state["backward_edges"]
-
-    @classmethod
-    def get_nodes(cls) -> Dict[str, Dict[str, Any]]:
+    def get_nodes(cls) -> List[Node]:
         """
         Get global query graph nodes
 
@@ -315,19 +324,16 @@ class GlobalQueryGraph(QueryGraph):
     Global query graph used to store the core like operations for the SQL query construction
     """
 
-    edges: Dict[str, List[str]] = Field(default_factory=GlobalQueryGraphState.get_edges)
-    backward_edges: Dict[str, List[str]] = Field(
-        default_factory=GlobalQueryGraphState.get_backward_edges
-    )
-    nodes: Dict[str, Dict[str, Any]] = Field(default_factory=GlobalQueryGraphState.get_nodes)
+    edges: List[Edge] = Field(default_factory=GlobalQueryGraphState.get_edges)
+    nodes: List[Node] = Field(default_factory=GlobalQueryGraphState.get_nodes)
     node_type_counter: Dict[str, int] = Field(
-        default_factory=GlobalQueryGraphState.get_node_type_counter
+        default_factory=GlobalQueryGraphState.get_node_type_counter, exclude=True
     )
     node_name_to_ref: Dict[str, str] = Field(
-        default_factory=GlobalQueryGraphState.get_node_name_to_ref
+        default_factory=GlobalQueryGraphState.get_node_name_to_ref, exclude=True
     )
     ref_to_node_name: Dict[str, str] = Field(
-        default_factory=GlobalQueryGraphState.get_ref_to_node_name
+        default_factory=GlobalQueryGraphState.get_ref_to_node_name, exclude=True
     )
 
     def copy(self, *args: Any, **kwargs: Any) -> "GlobalQueryGraph":
@@ -357,7 +363,7 @@ class GlobalQueryGraph(QueryGraph):
         # pylint: disable=too-many-locals
         # pruning: move backward from target node to the input node
         to_prune_target_node = False
-        input_node_names = self.backward_edges.get(target_node.name, [])
+        input_node_names = self.backward_edges_map.get(target_node.name, [])
 
         if isinstance(target_node, AssignNode):
             # check whether to keep the current assign node
@@ -384,7 +390,7 @@ class GlobalQueryGraph(QueryGraph):
         # sort makes sure we travel "project_1" first (filled up target_columns) and then travel assign node.
         # If the assign node's new columns are not in "target_columns", we can safely remove the node.
         for input_node_name in sorted(input_node_names, key=lambda x: index_map[x], reverse=True):
-            input_node = self.get_node_by_name(input_node_name)
+            input_node = self.nodes_map[input_node_name]
             pruned_graph = self._prune(
                 target_node=input_node,
                 target_columns=target_columns,
@@ -406,12 +412,12 @@ class GlobalQueryGraph(QueryGraph):
             # currently only ASSIGN node could get pruned, the first input node is the frame node.
             # it is used to replace the pruned assigned node
             while input_node_name not in processed_node_names:
-                input_node_name = self.backward_edges[input_node_name][0]
+                input_node_name = self.backward_edges_map[input_node_name][0]
             mapped_input_node_names.append(input_node_name)
 
         # add the node back to the pruned graph
         input_nodes = [
-            pruned_graph.get_node_by_name(node_name_map[node_name])
+            pruned_graph.nodes_map[node_name_map[node_name]]
             for node_name in mapped_input_node_names
         ]
         node_pruned = pruned_graph.add_operation(

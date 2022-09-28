@@ -50,7 +50,7 @@ def series_unary_operation(
     return type(input_series)(
         feature_store=input_series.feature_store,
         tabular_source=input_series.tabular_source,
-        node=node,
+        node_name=node.name,
         name=None,
         dtype=output_var_type,
         row_index_lineage=input_series.row_index_lineage,
@@ -104,7 +104,7 @@ def series_binary_operation(
         return type(input_series)(
             feature_store=input_series.feature_store,
             tabular_source=input_series.tabular_source,
-            node=node,
+            node_name=node.name,
             name=None,
             dtype=output_var_type,
             row_index_lineage=input_series.row_index_lineage,
@@ -120,7 +120,7 @@ def series_binary_operation(
     return type(input_series)(
         feature_store=input_series.feature_store,
         tabular_source=input_series.tabular_source,
-        node=node,
+        node_name=node.name,
         name=None,
         dtype=output_var_type,
         row_index_lineage=input_series.row_index_lineage,

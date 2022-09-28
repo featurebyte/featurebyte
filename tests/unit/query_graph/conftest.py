@@ -295,8 +295,8 @@ def query_graph_single_node(global_graph):
     assert mapped_node.name == "input_1"
     graph_dict = global_graph.dict()
     assert graph_dict == pruned_graph.dict()
-    assert graph_dict["nodes"] == {
-        "input_1": {
+    assert graph_dict["nodes"] == [
+        {
             "name": "input_1",
             "type": "input",
             "parameters": {
@@ -319,8 +319,8 @@ def query_graph_single_node(global_graph):
             },
             "output_type": "frame",
         }
-    }
-    assert graph_dict["edges"] == {}
+    ]
+    assert graph_dict["edges"] == []
     assert node_input.type == "input"
     yield global_graph, node_input
 
@@ -331,19 +331,31 @@ def query_graph_two_nodes(graph_single_node):
     Query graph with two nodes
     """
     graph, node_input = graph_single_node
+
+    # check internal variables before add_operation
+    assert graph._nodes_map is not None
+    assert graph._edges_map is not None
+    assert graph._backward_edges_map is not None
+
     node_proj = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
+
+    # check internal variables after add_operation
+    assert graph._nodes_map is None
+    assert graph._edges_map is None
+    assert graph._backward_edges_map is None
+
     pruned_graph, node_name_map = graph.prune(target_node=node_proj, target_columns={"a"})
     mapped_node = pruned_graph.get_node_by_name(node_name_map[node_proj.name])
     assert mapped_node.name == "project_1"
     graph_dict = graph.dict()
     assert graph_dict == pruned_graph.dict()
-    assert set(graph_dict["nodes"].keys()) == {"input_1", "project_1"}
-    assert graph_dict["edges"] == {"input_1": ["project_1"]}
+    assert set(node["name"] for node in graph_dict["nodes"]) == {"input_1", "project_1"}
+    assert graph_dict["edges"] == [{"source": "input_1", "target": "project_1"}]
     assert node_proj == construct_node(
         name="project_1", type="project", parameters={"columns": ["a"]}, output_type="series"
     )
@@ -367,8 +379,11 @@ def query_graph_three_nodes(graph_two_nodes):
     assert mapped_node.name == "eq_1"
     graph_dict = graph.dict()
     assert graph_dict == pruned_graph.dict()
-    assert set(graph_dict["nodes"].keys()) == {"input_1", "project_1", "eq_1"}
-    assert graph_dict["edges"] == {"input_1": ["project_1"], "project_1": ["eq_1"]}
+    assert set(node["name"] for node in graph_dict["nodes"]) == {"input_1", "project_1", "eq_1"}
+    assert graph_dict["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "eq_1"},
+    ]
     assert node_eq == construct_node(
         name="eq_1", type="eq", parameters={"value": 1}, output_type="series"
     )
@@ -392,12 +407,18 @@ def query_graph_four_nodes(graph_three_nodes):
     assert mapped_node.name == "filter_1"
     graph_dict = graph.dict()
     assert graph_dict == pruned_graph.dict()
-    assert set(graph_dict["nodes"].keys()) == {"input_1", "project_1", "eq_1", "filter_1"}
-    assert graph_dict["edges"] == {
-        "input_1": ["project_1", "filter_1"],
-        "project_1": ["eq_1"],
-        "eq_1": ["filter_1"],
+    assert set(node["name"] for node in graph_dict["nodes"]) == {
+        "input_1",
+        "project_1",
+        "eq_1",
+        "filter_1",
     }
+    assert graph_dict["edges"] == [
+        {"source": "input_1", "target": "project_1"},
+        {"source": "project_1", "target": "eq_1"},
+        {"source": "input_1", "target": "filter_1"},
+        {"source": "eq_1", "target": "filter_1"},
+    ]
     assert node_filter == construct_node(
         name="filter_1", type="filter", parameters={}, output_type="frame"
     )
@@ -450,7 +471,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
             },
         },
         columns_info=columns_info,
-        node=node,
+        node_name=node.name,
         column_lineage_map={col["name"]: (node.name,) for col in columns_info},
         row_index_lineage=(node.name,),
     )

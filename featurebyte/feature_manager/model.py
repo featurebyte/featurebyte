@@ -33,7 +33,8 @@ class ExtendedFeatureModel(FeatureModel):
         list[TileSpec]
         """
         interpreter = GraphInterpreter(self.graph)
-        tile_infos = interpreter.construct_tile_gen_sql(self.node, is_on_demand=False)
+        node = self.graph.get_node_by_name(self.node_name)
+        tile_infos = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
         out = []
         for info in tile_infos:
             entity_column_names = info.entity_columns[:]

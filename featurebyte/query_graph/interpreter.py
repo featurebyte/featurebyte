@@ -96,7 +96,7 @@ class SQLOperationGraph:
         assert cur_node_id not in self.sql_nodes
 
         # Recursively build input sql nodes first
-        inputs = self.query_graph.backward_edges[cur_node_id]
+        inputs = self.query_graph.backward_edges_map[cur_node_id]
         input_sql_nodes = []
         for input_node_id in inputs:
             if input_node_id not in self.sql_nodes:

@@ -15,6 +15,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from tests.util.helper import get_node
 
 
 @pytest.fixture(name="float_feature_dict")
@@ -28,8 +29,15 @@ def float_feature_dict_fixture(float_feature):
     feat_dict = float_feature.dict()
 
     # after serialization, pruned query graph is used
-    assert set(feat_dict["graph"]["nodes"]) == {"input_1", "groupby_1", "project_1"}
-    assert feat_dict["graph"]["edges"] == {"input_1": ["groupby_1"], "groupby_1": ["project_1"]}
+    assert set(node["name"] for node in feat_dict["graph"]["nodes"]) == {
+        "input_1",
+        "groupby_1",
+        "project_1",
+    }
+    assert feat_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "groupby_1"},
+        {"source": "groupby_1", "target": "project_1"},
+    ]
     yield feat_dict
 
 
@@ -64,19 +72,21 @@ def test_feature__bool_series_key_scalar_value(float_feature, bool_feature):
         "output_type": "series",
     }
     float_feature_dict = float_feature.dict()
-    assert float_feature_dict["graph"]["nodes"]["conditional_1"] == {
+    cond_node = get_node(float_feature_dict["graph"], "conditional_1")
+    assert cond_node == {
         "name": "conditional_1",
         "type": "conditional",
         "parameters": {"value": 10},
         "output_type": "series",
     }
-    assert float_feature_dict["graph"]["backward_edges"] == {
-        "alias_1": ["conditional_1"],
-        "conditional_1": ["project_1", "gt_1"],
-        "groupby_1": ["input_1"],
-        "gt_1": ["project_1"],
-        "project_1": ["groupby_1"],
-    }
+    assert float_feature_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "groupby_1"},
+        {"source": "groupby_1", "target": "project_1"},
+        {"source": "project_1", "target": "gt_1"},
+        {"source": "project_1", "target": "conditional_1"},
+        {"source": "gt_1", "target": "conditional_1"},
+        {"source": "conditional_1", "target": "alias_1"},
+    ]
 
 
 def test_feature__cond_assign_unnamed(float_feature, bool_feature):
@@ -86,26 +96,22 @@ def test_feature__cond_assign_unnamed(float_feature, bool_feature):
     temp_feature = float_feature + 123.0
     temp_feature[bool_feature] = 0.0
     temp_feature_dict = temp_feature.dict()
-    assert temp_feature_dict["node"] == {
-        "name": "conditional_1",
-        "output_type": "series",
-        "parameters": {"value": 0.0},
-        "type": "conditional",
-    }
-    assert temp_feature_dict["graph"]["nodes"]["conditional_1"] == {
+    cond_node = get_node(temp_feature_dict["graph"], node_name="conditional_1")
+    assert cond_node == {
         "name": "conditional_1",
         "output_type": "series",
         "parameters": {"value": 0.0},
         "type": "conditional",
     }
     # No assignment occurred
-    assert temp_feature_dict["graph"]["backward_edges"] == {
-        "add_1": ["project_1"],
-        "conditional_1": ["add_1", "gt_1"],
-        "groupby_1": ["input_1"],
-        "gt_1": ["project_1"],
-        "project_1": ["groupby_1"],
-    }
+    assert temp_feature_dict["graph"]["edges"] == [
+        {"source": "input_1", "target": "groupby_1"},
+        {"source": "groupby_1", "target": "project_1"},
+        {"source": "project_1", "target": "gt_1"},
+        {"source": "project_1", "target": "add_1"},
+        {"source": "add_1", "target": "conditional_1"},
+        {"source": "gt_1", "target": "conditional_1"},
+    ]
 
 
 def test_feature__preview_missing_point_in_time(float_feature):
@@ -166,7 +172,7 @@ def test_feature_deserialization(
     assert deserialized_float_feature.tabular_source == float_feature.tabular_source
     assert deserialized_float_feature.graph == global_graph
     assert id(deserialized_float_feature.graph.nodes) == id(global_graph.nodes)
-    tile_id1 = float_feature.graph.nodes["groupby_1"]["parameters"]["tile_id"]
+    tile_id1 = float_feature.graph.nodes_map["groupby_1"].parameters.tile_id
 
     # construct another identical float feature with an additional unused column,
     # check that the tile_ids are different before serialization, serialized object are the same
@@ -188,7 +194,7 @@ def test_feature_deserialization(
     same_float_feature_dict = feature_group["sum_1d"].dict(
         exclude={"id": True, "feature_namespace_id": True}
     )
-    tile_id2 = float_feature.graph.nodes["groupby_2"]["parameters"]["tile_id"]
+    tile_id2 = float_feature.graph.nodes_map["groupby_2"].parameters.tile_id
     assert tile_id1 != tile_id2
     float_feature_dict.pop("_id")
     float_feature_dict.pop("feature_store")
@@ -327,7 +333,7 @@ def test_feature_name__set_name_when_unnamed(float_feature):
         "parameters": {"name": "my_feature_1234"},
         "output_type": "series",
     }
-    assert new_feature.graph.backward_edges[new_feature.node.name] == [old_node_name]
+    assert new_feature.graph.backward_edges_map[new_feature.node.name] == [old_node_name]
 
 
 def test_feature_name__set_name_invalid_from_project(float_feature):
