@@ -167,17 +167,18 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     @root_validator(pre=True)
     @classmethod
     def _convert_graph_format(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if isinstance(values.get("graph", {}).get("nodes"), dict):
-            # in the old format, nodes is a dictionary but not a list
-            graph: dict[str, Any] = {"nodes": [], "edges": []}
-            for node in values["graph"]["nodes"].values():
-                graph["nodes"].append(node)
-            for parent, children in values["graph"]["edges"].items():
-                for child in children:
-                    graph["edges"].append({"source": parent, "target": child})
-            values["graph"] = graph
-        if isinstance(values.get("node"), dict):
-            values["node_name"] = values["node"]["name"]
+        if isinstance(values.get("graph"), dict):
+            if isinstance(values.get("graph", {}).get("nodes"), dict):
+                # in the old format, nodes is a dictionary but not a list
+                graph: dict[str, Any] = {"nodes": [], "edges": []}
+                for node in values["graph"]["nodes"].values():
+                    graph["nodes"].append(node)
+                for parent, children in values["graph"]["edges"].items():
+                    for child in children:
+                        graph["edges"].append({"source": parent, "target": child})
+                values["graph"] = graph
+            if isinstance(values.get("node"), dict):
+                values["node_name"] = values["node"]["name"]
         return values
 
     @validator("entity_ids", "event_data_ids")
