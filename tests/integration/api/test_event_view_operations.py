@@ -448,6 +448,12 @@ def run_test_conditional_assign_feature(config, feature_group):
     result = get_feature_preview_as_dict(feature_group, preview_param, config)
     assert result == {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14}
 
+    # Assign to copied Series should not be reflected in FeatureGroup
+    cloned_feature = feature_group["COUNT_24h"].copy()
+    cloned_feature[cloned_feature == 14] = 0
+    result = get_feature_preview_as_dict(feature_group, preview_param, config)
+    assert result == {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14}
+
 
 def run_and_test_get_historical_features(config, feature_group, feature_group_per_category):
     """Test getting historical features from FeatureList"""
