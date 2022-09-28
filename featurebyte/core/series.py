@@ -798,5 +798,6 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         return pruned_graph, mapped_node
 
     def copy(self, *args: Any, **kwargs: Any) -> Series:
+        # Copying a Series should prevent it from modifying the parent Frame
         kwargs.pop("deep", None)
         return super().copy(*args, **kwargs, deep=True)
