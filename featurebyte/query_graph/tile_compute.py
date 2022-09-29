@@ -106,6 +106,7 @@ class OnDemandTileComputePlan:
                     tile_sql_expr.subquery(alias=agg_id)
                 )
                 tile_sqls[tile_table_id] = tile_sql
+                prev_aliases[tile_table_id] = agg_id
             else:
                 # Tile table already exist - get the new tile value columns by doing a join. Tile
                 # index column and entity columns exist already.
@@ -116,20 +117,19 @@ class OnDemandTileComputePlan:
                     join_conditions.append(f"{prev_alias}.{key} = {agg_id}.{key}")
                 # Tile sqls with the same tile_table_id should generate output with identical set of
                 # tile indices and entity columns (they are derived from the same event data using
-                # the same entity columns and feature job settings). Hence, any join_type will work
-                # and "inner" is used for simplicity.
+                # the same entity columns and feature job settings). Any join type will work, but
+                # using "right" join allows the filter on entity columns to be pushed down to
+                # TableScan in the optimized query.
                 tile_sqls[tile_table_id] = (
                     tile_sqls[tile_table_id]
                     .join(
                         tile_sql_expr.subquery(),
-                        join_type="inner",
+                        join_type="right",
                         join_alias=agg_id,
                         on=expressions.and_(*join_conditions),
                     )
                     .select(*tile_info.tile_value_columns)
                 )
-
-            prev_aliases[tile_table_id] = agg_id
 
         return tile_sqls
 
