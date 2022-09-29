@@ -162,8 +162,8 @@ def test_make_input_node_escape_special_characters():
     """Test input node quotes all identifiers to handle special characters"""
     parameters = {
         "columns": ["SUM(a)", "b", "c"],
-        "dbtable": {"database_name": "db", "schema_name": "public", "table_name": "my_table"},
-        "feature_store": {
+        "table_details": {"database_name": "db", "schema_name": "public", "table_name": "my_table"},
+        "feature_store_details": {
             "type": "snowflake",
             "details": {
                 "database": "db",

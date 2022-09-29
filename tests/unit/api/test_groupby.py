@@ -194,11 +194,10 @@ def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_enti
         "frequency": 360,
         "time_modulo_frequency": 180,
         "tile_id": "sf_table_f360_m180_b90_6779d772dcc5c83e10a93ca08923844041ded978",
-        "aggregation_id": "sum_90e86c3bbbf907df40feec947372b975bd94cf21",
+        "aggregation_id": "sum_138f2d458d38ffc1b018608fb3fbb4535d99a8df",
         "timestamp": "event_timestamp",
         "value_by": None,
         "serving_names": ["cust_id"],
-        "event_data_id": event_view.event_data_id,
     }
 
 
@@ -230,11 +229,10 @@ def test_groupby__category(snowflake_event_view_with_entity):
         "frequency": 360,
         "time_modulo_frequency": 180,
         "tile_id": "sf_table_f360_m180_b90_995fb463dce4af3f8384b1d76cd5575e9e9c9a39",
-        "aggregation_id": "sum_e26e8c735e5f25faec286a17ba3c7120df7a28ad",
+        "aggregation_id": "sum_0fbfd9bd0fa57c8a6537b35faea91850aeff997f",
         "timestamp": "event_timestamp",
         "value_by": "col_int",
         "serving_names": ["cust_id"],
-        "event_data_id": snowflake_event_view_with_entity.event_data_id,
     }
 
 

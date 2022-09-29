@@ -1336,12 +1336,12 @@ def make_input_node(
     for colname in parameters["columns"]:
         columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
     sql_node: BuildTileInputNode | SelectedEntityBuildTileInputNode | InputNode
-    feature_store = parameters["feature_store"]
+    feature_store = parameters["feature_store_details"]
     if sql_type == SQLType.BUILD_TILE:
         sql_node = BuildTileInputNode(
             columns_map=columns_map,
             timestamp=parameters["timestamp"],
-            dbtable=parameters["dbtable"],
+            dbtable=parameters["table_details"],
             feature_store=feature_store,
         )
     elif sql_type == SQLType.BUILD_TILE_ON_DEMAND:
@@ -1349,14 +1349,14 @@ def make_input_node(
         sql_node = SelectedEntityBuildTileInputNode(
             columns_map=columns_map,
             timestamp=parameters["timestamp"],
-            dbtable=parameters["dbtable"],
+            dbtable=parameters["table_details"],
             feature_store=feature_store,
             entity_columns=groupby_keys,
         )
     else:
         sql_node = InputNode(
             columns_map=columns_map,
-            dbtable=parameters["dbtable"],
+            dbtable=parameters["table_details"],
             feature_store=feature_store,
         )
     return sql_node

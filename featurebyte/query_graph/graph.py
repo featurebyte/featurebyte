@@ -179,7 +179,19 @@ class QueryGraph(FeatureByteBaseModel):
             operation node of the given input
         """
         input_node_refs = [self.node_name_to_ref[node.name] for node in input_nodes]
-        node_ref = hash_node(node_type, node_params, node_output_type, input_node_refs)
+        # create a temp_node to validate the node parameters & use only the required parameters to hash
+        temp_node = construct_node(
+            name=str(node_type),
+            type=node_type,
+            parameters=node_params,
+            output_type=node_output_type,
+        )
+        node_ref = hash_node(
+            temp_node.type,
+            temp_node.parameters.dict(),
+            temp_node.output_type,
+            input_node_refs,
+        )
         if node_ref not in self.ref_to_node_name:
             node = self._add_node(node_type, node_params, node_output_type)
             for input_node in input_nodes:

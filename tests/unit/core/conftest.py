@@ -44,12 +44,12 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
         node_params={
             "columns": [col["name"] for col in columns_info],
             "timestamp": "VALUE",
-            "dbtable": {
+            "table_details": {
                 "database_name": "db",
                 "schema_name": "public",
                 "table_name": "transaction",
             },
-            "feature_store": {
+            "feature_store_details": {
                 "type": "snowflake",
                 "details": {
                     "account": "sf_account",

@@ -12,12 +12,13 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
         feature_store=snowflake_feature_store,
         version=VersionIdentifier(name=get_version()),
     )
+    aggregation_id = "9b3973191f893fcce4eb8bf640bc33b34fd9078b"
     expected_sql = textwrap.dedent(
-        """
+        f"""
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 1800) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
-          SUM("col_float") AS value_sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512
+          SUM("col_float") AS value_sum_{aggregation_id}
         FROM (
             SELECT
               *,
@@ -57,9 +58,9 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
             frequency_minute=30,
             tile_sql=expected_sql,
             entity_column_names=["cust_id"],
-            value_column_names=["value_sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512"],
+            value_column_names=[f"value_sum_{aggregation_id}"],
             tile_id="sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
-            aggregation_id="sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512",
+            aggregation_id=f"sum_{aggregation_id}",
         )
     ]
     assert model.tile_specs == expected_tile_specs
@@ -74,13 +75,14 @@ def test_extended_feature_model__agg_per_category_feature(
         feature_store=snowflake_feature_store,
         version=VersionIdentifier(name=get_version()),
     )
+    aggregation_id = "b71a197bdf176244cd4ff8af8362eef54bc58a38"
     expected_sql = textwrap.dedent(
-        """
+        f"""
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 1800) AS __FB_TILE_START_DATE_COLUMN,
           "cust_id",
           "col_int",
-          SUM("col_float") AS value_sum_b2cfe14613c88a50946d1b99fa0ae3ca5d89849d
+          SUM("col_float") AS value_sum_{aggregation_id}
         FROM (
             SELECT
               *,
@@ -121,9 +123,9 @@ def test_extended_feature_model__agg_per_category_feature(
             frequency_minute=30,
             tile_sql=expected_sql,
             entity_column_names=["cust_id", "col_int"],
-            value_column_names=["value_sum_b2cfe14613c88a50946d1b99fa0ae3ca5d89849d"],
+            value_column_names=[f"value_sum_{aggregation_id}"],
             tile_id="sf_table_f1800_m300_b600_24dd90a763a6368c29540f4d8151f25da40456f3",
-            aggregation_id="sum_b2cfe14613c88a50946d1b99fa0ae3ca5d89849d",
+            aggregation_id=f"sum_{aggregation_id}",
             category_column_name="col_int",
         )
     ]

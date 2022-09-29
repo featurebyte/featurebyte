@@ -50,12 +50,12 @@ def query_graph_and_assign_node_fixture(global_graph):
         node_params={
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
-            "dbtable": {
+            "table_details": {
                 "database_name": "db",
                 "schema_name": "public",
                 "table_name": "event_table",
             },
-            "feature_store": {
+            "feature_store_details": {
                 "type": "snowflake",
                 "details": {
                     "database": "db",
@@ -174,7 +174,7 @@ def groupby_node_aggregation_id_fixture(query_graph_with_groupby):
     """Groupby node the aggregation id (without aggregation method part)"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     aggregation_id = groupby_node.parameters.aggregation_id.split("_")[1]
-    assert aggregation_id == "b647baae652ff22a24cf67a57f030067f33ba204"
+    assert aggregation_id == "edade899e2fad6f29dfd3cad353742ff31964e12"
     return aggregation_id
 
 
@@ -255,12 +255,12 @@ def query_graph_single_node(global_graph):
         node_type=NodeType.INPUT,
         node_params={
             "columns": ["column"],
-            "dbtable": {
+            "table_details": {
                 "database_name": "db",
                 "schema_name": "public",
                 "table_name": "transaction",
             },
-            "feature_store": {
+            "feature_store_details": {
                 "type": "snowflake",
                 "details": {
                     "account": "sf_account",
@@ -283,13 +283,14 @@ def query_graph_single_node(global_graph):
             "name": "input_1",
             "type": "input",
             "parameters": {
+                "type": "event_data",
                 "columns": ["column"],
-                "dbtable": {
+                "table_details": {
                     "database_name": "db",
                     "schema_name": "public",
                     "table_name": "transaction",
                 },
-                "feature_store": {
+                "feature_store_details": {
                     "type": "snowflake",
                     "details": {
                         "account": "sf_account",
@@ -299,6 +300,7 @@ def query_graph_single_node(global_graph):
                     },
                 },
                 "timestamp": None,
+                "id": None,
             },
             "output_type": "frame",
         }
@@ -425,12 +427,12 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
         node_params={
             "columns": [col["name"] for col in columns_info],
             "timestamp": "VALUE",
-            "dbtable": {
+            "table_details": {
                 "database_name": "db",
                 "schema_name": "public",
                 "table_name": "transaction",
             },
-            "feature_store": {
+            "feature_store_details": {
                 "type": "snowflake",
                 "details": {
                     "database": "db",

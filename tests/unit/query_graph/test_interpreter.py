@@ -28,12 +28,12 @@ def node_input_fixture(graph):
     node_params = {
         "columns": ["ts", "cust_id", "a", "b"],
         "timestamp": "ts",
-        "dbtable": {
+        "table_details": {
             "database_name": "db",
             "schema_name": "public",
             "table_name": "event_table",
         },
-        "feature_store": {
+        "feature_store_details": {
             "type": "snowflake",
             "details": {
                 "database": "db",
@@ -374,7 +374,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
 
-    aggregation_id = "304c21a009828509aefca1c267231015ae4655e6"
+    aggregation_id = "639a7b70cdfe06f5c2270c167e3ebf139dcb1725"
     sql = info_dict.pop("sql")
     expected_sql = textwrap.dedent(
         f"""
@@ -515,7 +515,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     assert sql == expected
 
     # Check required tile 2 (groupby keys: biz_id)
-    aggregation_id = "b96663babb133dc80c00e34062fde2784b57a72e"
+    aggregation_id = "3c43724b30c443ac5ac9049578e0e6061173bb69"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
     sql = info_dict.pop("sql")
@@ -586,12 +586,12 @@ def test_graph_interpreter_snowflake(graph):
         node_params={
             "columns": ["SERVER_TIMESTAMP", "CUST_ID"],
             "timestamp": "SERVER_TIMESTAMP",
-            "dbtable": {
+            "table_details": {
                 "database_name": "FB_SIMULATE",
                 "schema_name": "PUBLIC",
                 "table_name": "BROWSING_TS",
             },
-            "feature_store": {
+            "feature_store_details": {
                 "type": "snowflake",
                 "details": {
                     "database": "FB_SIMULATE",
@@ -640,7 +640,7 @@ def test_graph_interpreter_snowflake(graph):
         SELECT
           TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           "CUST_ID",
-          COUNT(*) AS value_count_9d357194883a2d9ab9d4c15da39f33733f80ac15
+          COUNT(*) AS value_count_b77ab5589880bbe509c57a49d70631deb3aadc7d
         FROM (
             SELECT
               *,

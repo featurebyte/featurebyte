@@ -24,6 +24,8 @@
                 "name": "input_1",
                 "output_type": "frame",
                 "parameters": {
+                    "type": "event_data",
+                    "id": "6332fdb21e8f0eeccc414512",
                     "columns": [
                         "col_int",
                         "col_float",
@@ -81,8 +83,7 @@
                         "30m",
                         "2h",
                         "1d"
-                    ],
-                    "event_data_id": "6332fdb21e8f0eeccc414512"
+                    ]
                 },
                 "type": "groupby"
             },
