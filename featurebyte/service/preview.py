@@ -178,7 +178,9 @@ class PreviewService(OpsServiceMixin):
             )
             preview_sql = get_feature_preview_sql(
                 graph=preview_group.graph,
-                nodes=preview_group.nodes,
+                nodes=[
+                    preview_group.graph.get_node_by_name(name) for name in preview_group.node_names
+                ],
                 point_in_time_and_serving_name=point_in_time_and_serving_name,
             )
             _result = db_session.execute_query(preview_sql)

@@ -133,9 +133,9 @@ class FeatureListPreviewGroup(FeatureByteBaseModel):
     FeatureList preview schema for a group of features from the same feature store
     """
 
-    feature_store_name: str
+    feature_store_name: StrictStr
     graph: QueryGraph
-    nodes: List[Node]
+    node_names: List[StrictStr]
 
 
 class FeatureListPreview(FeatureByteBaseModel):

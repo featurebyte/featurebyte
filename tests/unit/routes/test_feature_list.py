@@ -357,7 +357,7 @@ class TestFeatureListApi(BaseApiTestSuite):
                 {
                     "feature_store_name": feature_store["name"],
                     "graph": feature["graph"],
-                    "nodes": [feature["node"]],
+                    "node_names": [feature["node_name"]],
                 }
             ],
             "point_in_time_and_serving_name": {

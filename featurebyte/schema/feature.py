@@ -152,6 +152,6 @@ class FeaturePreview(FeatureByteBaseModel):
     Feature Preview schema
     """
 
-    feature_store_name: str
+    feature_store_name: StrictStr
     feature: FeatureModel
     point_in_time_and_serving_name: Dict[str, Any]

@@ -222,7 +222,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
                 FeatureListPreviewGroup(
                     feature_store_name=feature_store_name,
                     graph=pruned_graph,
-                    nodes=mapped_nodes,
+                    node_names=[node.name for node in mapped_nodes],
                 )
             )
 
