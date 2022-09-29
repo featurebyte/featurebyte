@@ -32,11 +32,6 @@ class TestFeatureListApi(BaseApiTestSuite):
             f'FeatureList (id: "{payload["_id"]}") already exists. '
             'Get the existing object by `FeatureList.get(name="sf_feature_list")`.',
         ),
-        (
-            {**payload, "_id": object_id, "name": "other_name"},
-            "FeatureList (feature_ids: \"[ObjectId('6332fdb31e8f0eeccc414515')]\") already exists. "
-            'Get the existing object by `FeatureList.get(name="sf_feature_list")`.',
-        ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (

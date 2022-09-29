@@ -480,9 +480,4 @@ class FeatureListModel(FeatureByteBaseDocumentModel):
                 conflict_fields_signature={"name": ["name"], "version": ["version"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
-            UniqueValuesConstraint(
-                fields=("feature_ids",),
-                conflict_fields_signature={"feature_ids": ["feature_ids"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
         ]
