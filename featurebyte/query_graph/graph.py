@@ -1,7 +1,7 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, TypedDict
 
 import json
 from collections import defaultdict
@@ -10,7 +10,7 @@ from pydantic import Field, PrivateAttr
 
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.query_graph.algorithm import topological_sort
+from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node, construct_node
 from featurebyte.query_graph.node.generic import AssignNode
@@ -198,7 +198,7 @@ class QueryGraph(FeatureByteBaseModel):
 
     def load(self, graph: "QueryGraph") -> Tuple["QueryGraph", Dict[str, str]]:
         """
-        Load the query graph into the global query graph
+        Load the query graph into the query graph
 
         Parameters
         ----------
@@ -225,6 +225,24 @@ class QueryGraph(FeatureByteBaseModel):
             )
             node_name_map[node_name] = node_global.name
         return self, node_name_map
+
+    def iterate_grouby_nodes(self, target_node: Node) -> Iterator[Node]:
+        """
+        Iterate all groupby nodes in this query graph
+
+        Parameters
+        ----------
+        target_node: Node
+            Node from which to start the backward search
+
+        Yields
+        ------
+        Node
+            Query graph nodes of groupby type
+        """
+        for node in dfs_traversal(self, target_node):
+            if node.type == NodeType.GROUPBY:
+                yield node
 
 
 class GraphState(TypedDict):

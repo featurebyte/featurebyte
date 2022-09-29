@@ -17,7 +17,7 @@ from featurebyte.query_graph.feature_common import (
     construct_cte_sql,
 )
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.interpreter import SQLOperationGraph, find_parent_groupby_nodes
+from featurebyte.query_graph.interpreter import SQLOperationGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql import (
     MISSING_VALUE_REPLACEMENT,
@@ -765,7 +765,7 @@ class FeatureExecutionPlanner:
         node : Node
             Query graph node
         """
-        for groupby_node in find_parent_groupby_nodes(self.graph, node):
+        for groupby_node in self.graph.iterate_grouby_nodes(node):
             self.parse_and_update_specs_from_groupby(groupby_node)
         self.update_feature_specs(node)
 
