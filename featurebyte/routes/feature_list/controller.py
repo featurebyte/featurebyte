@@ -22,6 +22,7 @@ from featurebyte.schema.feature_list import (
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService
+from featurebyte.service.preview import PreviewService
 
 
 class FeatureListController(  # type: ignore[misc]
@@ -39,10 +40,12 @@ class FeatureListController(  # type: ignore[misc]
         service: FeatureListService,
         feature_readiness_service: FeatureReadinessService,
         deploy_service: DeployService,
+        preview_service: PreviewService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.feature_readiness_service = feature_readiness_service
         self.deploy_service = deploy_service
+        self.preview_service = preview_service
 
     async def create_feature_list(
         self, get_credential: Any, data: FeatureListCreate
@@ -167,10 +170,8 @@ class FeatureListController(  # type: ignore[misc]
         HTTPException
             Invalid request payload
         """
-        service = cast(FeatureListService, self.service)
-
         try:
-            return await service.preview(
+            return await self.preview_service.preview_featurelist(
                 featurelist_preview=featurelist_preview, get_credential=get_credential
             )
         except KeyError as exc:

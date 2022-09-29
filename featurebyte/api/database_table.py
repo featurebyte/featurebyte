@@ -89,23 +89,32 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         if isinstance(table_details, dict):
             table_details = TableDetails(**table_details)
 
-        client = Configurations().get_client()
-        response = client.post(
-            url=(
-                f"/feature_store/column?"
-                f"database_name={table_details.database_name}&"
-                f"schema_name={table_details.schema_name}&"
-                f"table_name={table_details.table_name}"
-            ),
-            json=feature_store.json_dict(),
-        )
-        if response.status_code == HTTPStatus.OK:
-            column_specs = response.json()
-            recent_schema = {
-                column_spec["name"]: DBVarType(column_spec["dtype"]) for column_spec in column_specs
-            }
+        if feature_store.details.is_local_source:
+            session = feature_store.get_session()
+            recent_schema = session.list_table_schema(
+                database_name=table_details.database_name,
+                schema_name=table_details.schema_name,
+                table_name=table_details.table_name,
+            )
         else:
-            raise RecordRetrievalException(response)
+            client = Configurations().get_client()
+            response = client.post(
+                url=(
+                    f"/feature_store/column?"
+                    f"database_name={table_details.database_name}&"
+                    f"schema_name={table_details.schema_name}&"
+                    f"table_name={table_details.table_name}"
+                ),
+                json=feature_store.json_dict(),
+            )
+            if response.status_code == HTTPStatus.OK:
+                column_specs = response.json()
+                recent_schema = {
+                    column_spec["name"]: DBVarType(column_spec["dtype"])
+                    for column_spec in column_specs
+                }
+            else:
+                raise RecordRetrievalException(response)
 
         if "columns_info" in values:
             columns_info = [ColumnInfo(**dict(col)) for col in values["columns_info"]]

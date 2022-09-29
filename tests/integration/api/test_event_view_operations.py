@@ -424,7 +424,7 @@ def run_test_conditional_assign_feature(feature_group):
     # Assign to copied Series should not be reflected in FeatureGroup
     cloned_feature = feature_group["COUNT_24h"].copy()
     cloned_feature[cloned_feature == 14] = 0
-    result = get_feature_preview_as_dict(feature_group, preview_param, config)
+    result = get_feature_preview_as_dict(feature_group, preview_param)
     assert result == {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14}
 
 

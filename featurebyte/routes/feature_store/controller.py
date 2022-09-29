@@ -18,6 +18,7 @@ from featurebyte.schema.feature_store import (
     FeatureStorePreview,
 )
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.preview import PreviewService
 
 
 class FeatureStoreController(  # type: ignore[misc]
@@ -30,8 +31,9 @@ class FeatureStoreController(  # type: ignore[misc]
 
     paginated_document_class = FeatureStoreList
 
-    def __init__(self, service: FeatureStoreService):
+    def __init__(self, service: FeatureStoreService, preview_service: PreviewService):
         super().__init__(service)  # type: ignore[arg-type]
+        self.preview_service = preview_service
 
     async def create_feature_store(
         self,
@@ -203,10 +205,8 @@ class FeatureStoreController(  # type: ignore[misc]
         HTTPException
             Invalid request payload
         """
-        service = cast(FeatureStoreService, self.service)
-
         try:
-            return await service.preview(
+            return await self.preview_service.preview(
                 preview=preview, limit=limit, get_credential=get_credential
             )
         except KeyError as exc:

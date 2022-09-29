@@ -9,12 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
-from featurebyte.query_graph.interpreter import GraphInterpreter
-from featurebyte.schema.feature_store import (
-    FeatureStoreCreate,
-    FeatureStoreInfo,
-    FeatureStorePreview,
-)
+from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreInfo
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 
 
@@ -188,33 +183,3 @@ class FeatureStoreService(
             database_name=database_name, schema_name=schema_name, table_name=table_name
         )
         return [ColumnSpec(name=name, dtype=dtype) for name, dtype in table_schema.items()]
-
-    async def preview(self, preview: FeatureStorePreview, limit: int, get_credential: Any) -> str:
-        """
-        Preview a Feature
-
-        Parameters
-        ----------
-        preview: FeatureStorePreview
-            FeatureStorePreview object
-        limit: int
-            Row limit on preview results
-        get_credential: Any
-            Get credential handler function
-
-        Returns
-        -------
-        str
-            Dataframe converted to json string
-        """
-        feature_store_dict = preview.graph.nodes["input_1"]["parameters"]["feature_store"]
-        db_session = await self._get_feature_store_session(
-            feature_store=FeatureStoreModel(**feature_store_dict, name=preview.feature_store_name),
-            get_credential=get_credential,
-        )
-
-        preview_sql = GraphInterpreter(preview.graph).construct_preview_sql(
-            node_name=preview.node.name, num_rows=limit
-        )
-        result = db_session.execute_query(preview_sql)
-        return self._convert_dataframe_as_json(result)

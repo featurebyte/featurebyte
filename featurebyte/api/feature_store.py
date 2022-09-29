@@ -48,6 +48,10 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
         RecordRetrievalException
             Failed to retrieve database list
         """
+        if self.details.is_local_source:
+            session = self.get_session()
+            return session.list_databases()
+
         client = Configurations().get_client()
         response = client.post(url="/feature_store/database", json=self.json_dict())
         if response.status_code == HTTPStatus.OK:
@@ -73,6 +77,10 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
         RecordRetrievalException
             Failed to retrieve database schema list
         """
+        if self.details.is_local_source:
+            session = self.get_session()
+            return session.list_schemas(database_name=database_name)
+
         client = Configurations().get_client()
         response = client.post(
             url=f"/feature_store/schema?database_name={database_name}", json=self.json_dict()
@@ -106,6 +114,10 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
         RecordRetrievalException
             Failed to retrieve database table list
         """
+        if self.details.is_local_source:
+            session = self.get_session()
+            return session.list_tables(database_name=database_name, schema_name=schema_name)
+
         client = Configurations().get_client()
         response = client.post(
             url=f"/feature_store/table?database_name={database_name}&schema_name={schema_name}",

@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.common.model_util import get_version
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.enum import SourceType, SpecialColumnName
+from featurebyte.enum import SourceType
 from featurebyte.exception import (
     DocumentConflictError,
     DocumentInconsistencyError,
@@ -28,13 +28,10 @@ from featurebyte.models.feature import (
     FeatureReadiness,
 )
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.feature_preview import get_feature_preview_sql
-from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.schema.feature import (
     FeatureBriefInfoList,
     FeatureCreate,
     FeatureInfo,
-    FeaturePreview,
     FeatureServiceUpdate,
 )
 from featurebyte.schema.feature_namespace import (
@@ -276,53 +273,3 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
             readiness={"this": feature.readiness, "default": default_feature.readiness},
             versions_info=versions_info,
         )
-
-    async def preview(self, feature_preview: FeaturePreview, get_credential: Any) -> str:
-        """
-        Preview a Feature
-
-        Parameters
-        ----------
-        feature_preview: FeaturePreview
-            FeaturePreview object
-        get_credential: Any
-            Get credential handler function
-
-        Returns
-        -------
-        str
-            Dataframe converted to json string
-
-        Raises
-        ------
-        KeyError
-            Invalid point_in_time_and_serving_name payload
-        """
-        graph = feature_preview.feature.graph
-        point_in_time_and_serving_name = feature_preview.point_in_time_and_serving_name
-
-        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
-            raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
-
-        inception_node = graph.get_node_by_name(feature_preview.feature.row_index_lineage[0])
-        assert isinstance(inception_node, GroupbyNode)
-        serving_names = inception_node.parameters.serving_names
-        if serving_names is not None:
-            for col in serving_names:
-                if col not in point_in_time_and_serving_name:
-                    raise KeyError(f"Serving name not provided: {col}")
-
-        feature_store_dict = graph.nodes["input_1"]["parameters"]["feature_store"]
-        db_session = await self._get_feature_store_session(
-            feature_store=FeatureStoreModel(
-                **feature_store_dict, name=feature_preview.feature_store_name
-            ),
-            get_credential=get_credential,
-        )
-        preview_sql = get_feature_preview_sql(
-            graph=graph,
-            nodes=[feature_preview.feature.node],
-            point_in_time_and_serving_name=feature_preview.point_in_time_and_serving_name,
-        )
-        result = db_session.execute_query(preview_sql)
-        return self._convert_dataframe_as_json(result)

@@ -4,7 +4,7 @@ This module contains DatabaseSource related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import ClassVar, List, Optional, Union
 
 from pydantic import Field, StrictStr
 
@@ -18,7 +18,13 @@ from featurebyte.models.base import (
 )
 
 
-class SnowflakeDetails(FeatureByteBaseModel):
+class BaseDatabaseDetails(FeatureByteBaseModel):
+    """Model for data source information"""
+
+    is_local_source: ClassVar[bool] = False
+
+
+class SnowflakeDetails(BaseDatabaseDetails):
     """Model for Snowflake data source information"""
 
     account: StrictStr
@@ -27,10 +33,11 @@ class SnowflakeDetails(FeatureByteBaseModel):
     sf_schema: StrictStr  # schema shadows a BaseModel attribute
 
 
-class SQLiteDetails(FeatureByteBaseModel):
+class SQLiteDetails(BaseDatabaseDetails):
     """Model for SQLite data source information"""
 
     filename: StrictStr
+    is_local_source: ClassVar[bool] = True
 
 
 DatabaseDetails = Union[SnowflakeDetails, SQLiteDetails]

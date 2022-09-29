@@ -132,8 +132,11 @@ class QueryObject(FeatureByteBaseModel):
         RecordRetrievalException
             Preview request failed
         """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        if self.feature_store.details.is_local_source:
+            session = self.feature_store.get_session()
+            return session.execute_query(self.preview_sql(limit=limit))
 
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = FeatureStorePreview(
             feature_store_name=self.feature_store.name,
             graph=pruned_graph,

@@ -7,28 +7,23 @@ from typing import Any, Dict, Generic, Iterator, List, Literal, Optional, Type, 
 
 import copy
 from abc import abstractmethod
-from decimal import Decimal
 
 import numpy as np
 import pandas as pd
 from bson.objectid import ObjectId
-from pydantic import ValidationError
 
 from featurebyte.common.dict_util import get_field_path_value
-from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.exception import CredentialsError, DocumentConflictError, DocumentNotFoundError
+from featurebyte.exception import DocumentConflictError, DocumentNotFoundError
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
     UniqueConstraintResolutionSignature,
     VersionIdentifier,
 )
-from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditActionType, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.common.base import BaseInfo
 from featurebyte.service.mixin import OpsServiceMixin
-from featurebyte.session.base import BaseSession
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
@@ -542,68 +537,6 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         -------
         Optional[Document]
         """
-
-    async def _get_feature_store_session(
-        self, feature_store: FeatureStoreModel, get_credential: Any
-    ) -> BaseSession:
-        """
-        Get session for feature store
-
-        Parameters
-        ----------
-        feature_store: FeatureStoreModel
-            ExtendedFeatureStoreModel object
-        get_credential: Any
-            Get credential handler function
-
-        Returns
-        -------
-        BaseSession
-            BaseSession object
-
-        Raises
-        ------
-        CredentialsError
-            When the credentials used to access the feature store is missing or invalid
-        """
-        try:
-            feature_store = ExtendedFeatureStoreModel(**feature_store.dict())
-            return feature_store.get_session(
-                credentials={
-                    feature_store.name: await get_credential(
-                        user_id=self.user.id, feature_store_name=feature_store.name
-                    )
-                }
-            )
-        except ValidationError as exc:
-            raise CredentialsError(
-                f'Credential used to access FeatureStore (name: "{feature_store.name}") is missing or invalid.'
-            ) from exc
-
-    def _convert_dataframe_as_json(self, dataframe: pd.DataFrame) -> str:
-        """
-        Comvert pandas dataframe to json
-
-        Parameters
-        ----------
-        dataframe: pd.DataFrame
-            Dataframe object
-
-        Returns
-        -------
-        str
-            JSON string
-        """
-        dataframe.reset_index(drop=True, inplace=True)
-        for name in dataframe.columns:
-            # Decimal with integer values becomes float during conversion to json
-            if (
-                dataframe[name].dtype == object
-                and isinstance(dataframe[name].iloc[0], Decimal)
-                and (dataframe[name] % 1 == 0).all()
-            ):
-                dataframe[name] = dataframe[name].astype(int)
-        return str(dataframe.to_json(orient="table", date_unit="ns", double_precision=15))
 
 
 class GetInfoServiceMixin(Generic[InfoDocument]):

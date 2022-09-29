@@ -41,6 +41,8 @@ from featurebyte.schema.feature_list import (
     FeatureListPreview,
     FeatureListPreviewGroup,
 )
+from featurebyte.service.preview import PreviewService
+from featurebyte.utils.credential import get_credential
 
 
 class BaseFeatureGroup(FeatureByteBaseModel):
@@ -228,15 +230,21 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
             preview_groups=preview_groups,
             point_in_time_and_serving_name=point_in_time_and_serving_name,
         )
-        client = Configurations().get_client()
-        response = client.post(url="/feature_list/preview", json=payload.json_dict())
-        if response.status_code != HTTPStatus.OK:
-            raise RecordRetrievalException(response)
-        result = pd.read_json(response.json(), orient="table", convert_dates=False)
+
+        if self._features[0].feature_store.details.is_local_source:
+            result = PreviewService(user=None, persistent=None).preview_featurelist(
+                featurelist_preview=payload, get_credential=get_credential
+            )
+        else:
+            client = Configurations().get_client()
+            response = client.post(url="/feature_list/preview", json=payload.json_dict())
+            if response.status_code != HTTPStatus.OK:
+                raise RecordRetrievalException(response)
+            result = response.json()
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return result
+        return pd.read_json(result, orient="table", convert_dates=False)
 
 
 class FeatureListNamespace(FeatureListNamespaceModel, ApiGetObject):

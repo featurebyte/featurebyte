@@ -29,6 +29,8 @@ from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.generic import AliasNode, GroupbyNode, ProjectNode
 from featurebyte.schema.feature import FeatureCreate, FeaturePreview
+from featurebyte.service.preview import PreviewService
+from featurebyte.utils.credential import get_credential
 
 
 class FeatureNamespace(FeatureNamespaceModel, ApiGetObject):
@@ -288,12 +290,18 @@ class Feature(
             feature=FeatureModel(**feature_dict),
             point_in_time_and_serving_name=point_in_time_and_serving_name,
         )
-        client = Configurations().get_client()
-        response = client.post(url="/feature/preview", json=payload.json_dict())
-        if response.status_code != HTTPStatus.OK:
-            raise RecordRetrievalException(response)
-        result = pd.read_json(response.json(), orient="table", convert_dates=False)
+
+        if self.feature_store.details.is_local_source:
+            result = PreviewService(user=None, persistent=None).preview_feature(
+                feature_preview=payload, get_credential=get_credential
+            )
+        else:
+            client = Configurations().get_client()
+            response = client.post(url="/feature/preview", json=payload.json_dict())
+            if response.status_code != HTTPStatus.OK:
+                raise RecordRetrievalException(response)
+            result = response.json()
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return result
+        return pd.read_json(result, orient="table", convert_dates=False)
