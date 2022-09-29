@@ -121,7 +121,7 @@ def test_feature__preview_missing_point_in_time(float_feature):
     invalid_params = {
         "cust_id": "C1",
     }
-    with pytest.raises(KeyError) as exc_info:
+    with pytest.raises(RecordRetrievalException) as exc_info:
         float_feature.preview(invalid_params)
     assert "Point in time column not provided: POINT_IN_TIME" in str(exc_info.value)
 
@@ -133,7 +133,7 @@ def test_feature__preview_missing_entity_id(float_feature):
     invalid_params = {
         "POINT_IN_TIME": "2022-04-01",
     }
-    with pytest.raises(KeyError) as exc_info:
+    with pytest.raises(RecordRetrievalException) as exc_info:
         float_feature.preview(invalid_params)
     assert "Serving name not provided: cust_id" in str(exc_info.value)
 

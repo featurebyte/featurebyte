@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import time
 from http import HTTPStatus
@@ -13,11 +13,11 @@ from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiGetObject, ApiObject
-from featurebyte.config import Configurations, Credentials
+from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
-from featurebyte.enum import SpecialColumnName
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.feature import (
     DefaultVersionMode,
@@ -27,9 +27,10 @@ from featurebyte.models.feature import (
 )
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.node.generic import AliasNode, GroupbyNode, ProjectNode
-from featurebyte.schema.feature import FeatureCreate
+from featurebyte.schema.feature import FeatureCreate, FeaturePreview
+from featurebyte.service.preview import PreviewService
+from featurebyte.utils.credential import get_credential
 
 
 class FeatureNamespace(FeatureNamespaceModel, ApiGetObject):
@@ -254,49 +255,10 @@ class Feature(
     def unary_op_series_params(self) -> dict[str, Any]:
         return {"event_data_ids": self.event_data_ids, "entity_ids": self.entity_ids}
 
-    def _validate_point_in_time_and_serving_name(
-        self, point_in_time_and_serving_name: dict[str, Any]
-    ) -> None:
-
-        if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
-            raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
-
-        if self.serving_names is not None:
-            for col in self.serving_names:
-                if col not in point_in_time_and_serving_name:
-                    raise KeyError(f"Serving name not provided: {col}")
-
-    @typechecked
-    def preview_sql(  # type: ignore[override]  # pylint: disable=arguments-renamed
-        self,
-        point_in_time_and_serving_name: Dict[str, Any],
-    ) -> str:
-        """
-        Generate SQL query to preview a feature
-
-        Parameters
-        ----------
-        point_in_time_and_serving_name : Dict[str, Any]
-            Dictionary consisting the point in time and serving names based on which the feature
-            preview will be computed
-
-        Returns
-        -------
-        str
-        """
-        self._validate_point_in_time_and_serving_name(point_in_time_and_serving_name)
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
-        return get_feature_preview_sql(
-            graph=pruned_graph,
-            nodes=[mapped_node],
-            point_in_time_and_serving_name=point_in_time_and_serving_name,
-        )
-
     @typechecked
     def preview(  # type: ignore[override]  # pylint: disable=arguments-renamed
         self,
         point_in_time_and_serving_name: Dict[str, Any],
-        credentials: Optional[Credentials] = None,
     ) -> pd.DataFrame:
         """
         Preview a Feature
@@ -306,18 +268,40 @@ class Feature(
         point_in_time_and_serving_name : Dict[str, Any]
             Dictionary consisting the point in time and serving names based on which the feature
             preview will be computed
-        credentials: Optional[Credentials]
-            credentials to create a database session
 
         Returns
         -------
         pd.DataFrame
+
+        Raises
+        ------
+        RecordRetrievalException
+            Failed to preview feature
         """
         tic = time.time()
-        session = self.get_session(credentials)
-        result = session.execute_query(
-            self.preview_sql(point_in_time_and_serving_name=point_in_time_and_serving_name)
+
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        feature_dict = self.dict()
+        feature_dict["graph"] = pruned_graph
+        feature_dict["node"] = mapped_node
+
+        payload = FeaturePreview(
+            feature_store_name=self.feature_store.name,
+            feature=FeatureModel(**feature_dict),
+            point_in_time_and_serving_name=point_in_time_and_serving_name,
         )
+
+        if self.feature_store.details.is_local_source:
+            result = PreviewService(user=None, persistent=None).preview_feature(
+                feature_preview=payload, get_credential=get_credential
+            )
+        else:
+            client = Configurations().get_client()
+            response = client.post(url="/feature/preview", json=payload.json_dict())
+            if response.status_code != HTTPStatus.OK:
+                raise RecordRetrievalException(response)
+            result = response.json()
+
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return result
+        return pd.read_json(result, orient="table", convert_dates=False)

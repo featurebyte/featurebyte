@@ -44,7 +44,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture(name="snowflake_database_table_from_config")
 def snowflake_database_table_from_config_fixture(
-    snowflake_connector, snowflake_execute_query, snowflake_feature_store, config
+    snowflake_connector, snowflake_execute_query, snowflake_feature_store
 ):
     """
     DatabaseTable object fixture (using config object)
@@ -54,7 +54,6 @@ def snowflake_database_table_from_config_fixture(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="sf_table",
-        credentials=config.credentials,
     )
 
 
@@ -81,7 +80,7 @@ def snowflake_database_table_fixture(
 
 @pytest.fixture(name="snowflake_event_data_from_config")
 def snowflake_event_data_from_config_fixture(
-    snowflake_database_table_from_config, config, mock_get_persistent
+    snowflake_database_table_from_config, mock_get_persistent
 ):
     """
     Snowflake EventData object fixture (using config object)
@@ -92,7 +91,6 @@ def snowflake_event_data_from_config_fixture(
         name="sf_event_data",
         event_timestamp_column="event_timestamp",
         record_creation_date_column="created_at",
-        credentials=config.credentials,
     )
 
 

@@ -3,12 +3,12 @@ FeatureStoreService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Type
+from typing import Any, List, Optional, Type
 
 from bson.objectid import ObjectId
 
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
 from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreInfo
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 
@@ -64,3 +64,122 @@ class FeatureStoreService(
             source=feature_store.type,
             database_details=feature_store.details,
         )
+
+    async def list_databases(
+        self, feature_store: FeatureStoreModel, get_credential: Any
+    ) -> List[str]:
+        """
+        List databases in feature store
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            FeatureStoreModel object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        List[str]
+            List of database names
+        """
+        db_session = await self._get_feature_store_session(
+            feature_store=feature_store, get_credential=get_credential
+        )
+        return db_session.list_databases()
+
+    async def list_schemas(
+        self,
+        feature_store: FeatureStoreModel,
+        database_name: str,
+        get_credential: Any,
+    ) -> List[str]:
+        """
+        List schemas in feature store
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            FeatureStoreModel object
+        database_name: str
+            Name of database to use
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        List[str]
+            List of schema names
+        """
+        db_session = await self._get_feature_store_session(
+            feature_store=feature_store, get_credential=get_credential
+        )
+        return db_session.list_schemas(database_name=database_name)
+
+    async def list_tables(
+        self,
+        feature_store: FeatureStoreModel,
+        database_name: str,
+        schema_name: str,
+        get_credential: Any,
+    ) -> List[str]:
+        """
+        List tables in feature store
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            FeatureStoreModel object
+        database_name: str
+            Name of database to use
+        schema_name: str
+            Name of schema to use
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        List[str]
+            List of table names
+        """
+        db_session = await self._get_feature_store_session(
+            feature_store=feature_store, get_credential=get_credential
+        )
+        return db_session.list_tables(database_name=database_name, schema_name=schema_name)
+
+    async def list_columns(
+        self,
+        feature_store: FeatureStoreModel,
+        database_name: str,
+        schema_name: str,
+        table_name: str,
+        get_credential: Any,
+    ) -> List[ColumnSpec]:
+        """
+        List columns in database table
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            FeatureStoreModel object
+        database_name: str
+            Name of database to use
+        schema_name: str
+            Name of schema to use
+        table_name: str
+            Name of table to use
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        List[ColumnSpec]
+            List of ColumnSpec object
+        """
+        db_session = await self._get_feature_store_session(
+            feature_store=feature_store, get_credential=get_credential
+        )
+        table_schema = db_session.list_table_schema(
+            database_name=database_name, schema_name=schema_name, table_name=table_name
+        )
+        return [ColumnSpec(name=name, dtype=dtype) for name, dtype in table_schema.items()]

@@ -3,7 +3,7 @@ Feature API payload schema
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from datetime import datetime
 
@@ -145,3 +145,13 @@ class FeatureInfo(FeatureNamespaceInfo):
     version: VersionComparison
     readiness: ReadinessComparison
     versions_info: Optional[FeatureBriefInfoList]
+
+
+class FeaturePreview(FeatureByteBaseModel):
+    """
+    Feature Preview schema
+    """
+
+    feature_store_name: StrictStr
+    feature: FeatureModel
+    point_in_time_and_serving_name: Dict[str, Any]

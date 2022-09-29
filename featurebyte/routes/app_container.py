@@ -28,6 +28,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_enable import OnlineEnableService
+from featurebyte.service.preview import PreviewService
 from featurebyte.service.task_manager import AbstractTaskManager
 from featurebyte.storage import Storage
 
@@ -81,6 +82,10 @@ app_container_config = {
             "name": "feature_store_service",
             "clazz": FeatureStoreService,
         },
+        {
+            "name": "preview_service",
+            "clazz": PreviewService,
+        },
     ],
     "controllers": [
         {
@@ -91,7 +96,9 @@ app_container_config = {
         {
             "name": "event_data_controller",
             "clazz": EventDataController,
-            "depends": ["event_data_service"],
+            "depends": [
+                "event_data_service",
+            ],
         },
         {
             "name": "feature_controller",
@@ -101,6 +108,7 @@ app_container_config = {
                 "feature_list_service",
                 "feature_readiness_service",
                 "online_enable_service",
+                "preview_service",
             ],
         },
         {
@@ -110,6 +118,7 @@ app_container_config = {
                 "feature_list_service",
                 "feature_readiness_service",
                 "deploy_service",
+                "preview_service",
             ],
         },
         {
@@ -130,7 +139,10 @@ app_container_config = {
         {
             "name": "feature_store_controller",
             "clazz": FeatureStoreController,
-            "depends": ["feature_store_service"],
+            "depends": [
+                "feature_store_service",
+                "preview_service",
+            ],
         },
     ],
 }

@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional, OrderedDict, Union
 
 import collections
 import time
+from collections import defaultdict
+from http import HTTPStatus
 
 import pandas as pd
 from alive_progress import alive_bar
@@ -19,6 +21,7 @@ from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel, VersionIdentifier
 from featurebyte.models.feature_list import (
@@ -33,8 +36,13 @@ from featurebyte.query_graph.feature_historical import (
     validate_historical_requests_point_in_time,
     validate_request_schema,
 )
-from featurebyte.query_graph.feature_preview import get_feature_preview_sql
-from featurebyte.schema.feature_list import FeatureListCreate
+from featurebyte.schema.feature_list import (
+    FeatureListCreate,
+    FeatureListPreview,
+    FeatureListPreviewGroup,
+)
+from featurebyte.service.preview import PreviewService
+from featurebyte.utils.credential import get_credential
 
 
 class BaseFeatureGroup(FeatureByteBaseModel):
@@ -177,32 +185,9 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
 
     @typechecked
-    def preview_sql(self, point_in_time_and_serving_name: Dict[str, Any]) -> str:
-        """
-        Get the SQL code for previewing a FeatureGroup object
-
-        Parameters
-        ----------
-        point_in_time_and_serving_name : Dict[str, Any]
-            Dictionary consisting the point in time and serving names based on which the feature
-            preview will be computed
-
-        Returns
-        -------
-        str
-        """
-        pruned_graph, mapped_nodes = get_prune_graph_and_nodes(feature_objects=self._features)
-        return get_feature_preview_sql(
-            graph=pruned_graph,
-            nodes=mapped_nodes,
-            point_in_time_and_serving_name=point_in_time_and_serving_name,
-        )
-
-    @typechecked
     def preview(
         self,
         point_in_time_and_serving_name: Dict[str, Any],
-        credentials: Optional[Credentials] = None,
     ) -> pd.DataFrame:
         """
         Preview a FeatureGroup
@@ -212,22 +197,54 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         point_in_time_and_serving_name : Dict[str, Any]
             Dictionary consisting the point in time and serving names based on which the feature
             preview will be computed
-        credentials: Optional[Credentials]
-            credentials to create a database session
 
         Returns
         -------
         pd.DataFrame
+
+        Raises
+        ------
+        RecordRetrievalException
+            Preview request failed
         """
         tic = time.time()
-        preview_sql = self.preview_sql(
-            point_in_time_and_serving_name=point_in_time_and_serving_name
+
+        # split features into groups that share the same feature store
+        groups = defaultdict(list)
+        for feature in self._features:
+            groups[feature.feature_store.name].append(feature)
+
+        # create preview group for each group
+        preview_groups = []
+        for feature_store_name, features in groups.items():
+            pruned_graph, mapped_nodes = get_prune_graph_and_nodes(feature_objects=features)
+            preview_groups.append(
+                FeatureListPreviewGroup(
+                    feature_store_name=feature_store_name,
+                    graph=pruned_graph,
+                    node_names=[node.name for node in mapped_nodes],
+                )
+            )
+
+        payload = FeatureListPreview(
+            preview_groups=preview_groups,
+            point_in_time_and_serving_name=point_in_time_and_serving_name,
         )
-        session = self._features[0].get_session(credentials)
-        result = session.execute_query(preview_sql)
+
+        if self._features[0].feature_store.details.is_local_source:
+            result = PreviewService(user=None, persistent=None).preview_featurelist(
+                featurelist_preview=payload, get_credential=get_credential
+            )
+        else:
+            client = Configurations().get_client()
+            response = client.post(url="/feature_list/preview", json=payload.json_dict())
+            if response.status_code != HTTPStatus.OK:
+                raise RecordRetrievalException(response)
+            result = response.json()
+
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return result
+        return pd.read_json(result, orient="table", convert_dates=False)
 
 
 class FeatureListNamespace(FeatureListNamespaceModel, ApiGetObject):

@@ -16,7 +16,7 @@ from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.entity import Entity
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import validate_job_setting_parameters
-from featurebyte.config import Configurations, Credentials
+from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
@@ -69,7 +69,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
     _update_schema_class = EventDataUpdate
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
-        return {"feature_store": self.feature_store, "credentials": self.credentials}
+        return {"feature_store": self.feature_store}
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = EventDataCreate(**self.json_dict())
@@ -87,7 +87,6 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         name: str,
         event_timestamp_column: str,
         record_creation_date_column: Optional[str] = None,
-        credentials: Optional[Credentials] = None,
     ) -> EventData:
         """
         Create EventData object from tabular source
@@ -102,8 +101,6 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
             Event timestamp column from the given tabular source
         record_creation_date_column: str
             Record creation datetime column from the given tabular source
-        credentials: Optional[Credentials]
-            Credentials dictionary mapping from the config file
 
         Returns
         -------
@@ -132,7 +129,6 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
                 return EventData(
                     **data.dict(),
                     feature_store=tabular_source.feature_store,
-                    credentials=credentials,
                 )
             raise DuplicatedRecordException(
                 response, f'EventData (event_data.name: "{name}") exists in saved record.'

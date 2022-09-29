@@ -243,7 +243,6 @@ def snowflake_database_table_fixture(
     snowflake_connector,
     snowflake_execute_query,
     snowflake_feature_store,
-    config,
 ):
     """
     DatabaseTable object fixture
@@ -253,14 +252,13 @@ def snowflake_database_table_fixture(
         database_name="sf_database",
         schema_name="sf_schema",
         table_name="sf_table",
-        credentials=config.credentials,
     )
     assert isinstance(snowflake_table.feature_store, FeatureStore)
     yield snowflake_table
 
 
 @pytest.fixture(name="snowflake_event_data")
-def snowflake_event_data_fixture(snowflake_database_table, config):
+def snowflake_event_data_fixture(snowflake_database_table):
     """
     EventData object fixture
     """
@@ -269,7 +267,6 @@ def snowflake_event_data_fixture(snowflake_database_table, config):
         name="sf_event_data",
         event_timestamp_column="event_timestamp",
         record_creation_date_column="created_at",
-        credentials=config.credentials,
     )
 
 

@@ -23,6 +23,7 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node import Node
 
 
 class FeatureReadiness(OrderedStrEnum):
@@ -163,6 +164,19 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     deployed_feature_list_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
+
+    @property
+    def node(self) -> Node:
+        """
+        Retrieve node
+
+        Returns
+        -------
+        Node
+            Node object
+        """
+
+        return self.graph.get_node_by_name(self.node_name)
 
     @root_validator(pre=True)
     @classmethod

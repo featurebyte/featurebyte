@@ -15,6 +15,7 @@ from featurebyte.exception import (
     DocumentError,
     DocumentNotFoundError,
 )
+from featurebyte.logger import logger
 
 
 class ExecutionContext:
@@ -188,6 +189,7 @@ async def request_handler(
         async with ExecutionContext(request, call_next) as executor:
             response: Response = await executor.execute()
     except Exception as exc:  # pylint: disable=broad-except
+        logger.exception(str(exc))
         response = JSONResponse(
             content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )

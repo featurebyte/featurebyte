@@ -142,7 +142,8 @@ def assert_dict_equal(s1, s2):
     """
 
     def _json_normalize(x):
-        if x is None:
+        # json conversion during preview changed None to nan
+        if x is None or np.nan:
             return None
         return json.loads(x)
 
@@ -208,7 +209,7 @@ def add_inter_events_derived_columns(df, event_view):
     return df
 
 
-def check_feature_preview(feature_list, df_expected, credentials, dict_like_columns, n_points=10):
+def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points=10):
     """
     Check correctness of feature preview result
     """
@@ -219,9 +220,7 @@ def check_feature_preview(feature_list, df_expected, credentials, dict_like_colu
             "POINT_IN_TIME": preview_time_point["POINT_IN_TIME"],
             "user id": preview_time_point["USER ID"],
         }
-        output = feature_list[feature_list.feature_names].preview(
-            preview_param, credentials=credentials
-        )
+        output = feature_list[feature_list.feature_names].preview(preview_param)
         output.rename({"user id": "USER ID"}, axis=1, inplace=True)
         df_expected = pd.DataFrame([preview_time_point], index=output.index)
         fb_assert_frame_equal(output, df_expected, dict_like_columns)
@@ -334,12 +333,11 @@ def test_aggregation(
     feature_list = FeatureList(features)
 
     dict_like_columns = ["count_by_action_24h"]
-    check_feature_preview(feature_list, df_expected, config.credentials, dict_like_columns)
+    check_feature_preview(feature_list, df_expected, dict_like_columns)
 
     tic = time.time()
     df_historical_features = feature_list.get_historical_features(
         training_events,
-        credentials=config.credentials,
         serving_names_mapping={"user id": "USER ID"},
     )
     elapsed_historical = time.time() - tic

@@ -5,7 +5,10 @@ from __future__ import annotations
 
 from typing import Any, Literal, cast
 
+from http import HTTPStatus
+
 from bson.objectid import ObjectId
+from fastapi.exceptions import HTTPException
 
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
@@ -13,11 +16,13 @@ from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListInfo,
     FeatureListPaginatedList,
+    FeatureListPreview,
     FeatureListUpdate,
 )
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService
+from featurebyte.service.preview import PreviewService
 
 
 class FeatureListController(  # type: ignore[misc]
@@ -35,10 +40,12 @@ class FeatureListController(  # type: ignore[misc]
         service: FeatureListService,
         feature_readiness_service: FeatureReadinessService,
         deploy_service: DeployService,
+        preview_service: PreviewService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.feature_readiness_service = feature_readiness_service
         self.deploy_service = deploy_service
+        self.preview_service = preview_service
 
     async def create_feature_list(
         self, get_credential: Any, data: FeatureListCreate
@@ -141,3 +148,33 @@ class FeatureListController(  # type: ignore[misc]
             sort_dir=sort_dir,
             **params,
         )
+
+    async def preview(self, featurelist_preview: FeatureListPreview, get_credential: Any) -> str:
+        """
+        Preview a Feature
+
+        Parameters
+        ----------
+        featurelist_preview: FeatureListPreview
+            FeaturePreview object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        str
+            Dataframe converted to json string
+
+        Raises
+        ------
+        HTTPException
+            Invalid request payload
+        """
+        try:
+            return await self.preview_service.preview_featurelist(
+                featurelist_preview=featurelist_preview, get_credential=get_credential
+            )
+        except KeyError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
+            ) from exc

@@ -3,21 +3,24 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar
 
 import json
 from abc import abstractmethod
+from http import HTTPStatus
 
 import pandas as pd
 from pydantic import Field, StrictStr
 from typeguard import typechecked
 
 from featurebyte.config import Configurations, Credentials
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel, TabularSource
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.query_graph.node import Node
+from featurebyte.schema.feature_store import FeatureStorePreview
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
 
@@ -111,7 +114,7 @@ class QueryObject(FeatureByteBaseModel):
         )
 
     @typechecked
-    def preview(self, limit: int = 10, credentials: Optional[Credentials] = None) -> pd.DataFrame:
+    def preview(self, limit: int = 10) -> pd.DataFrame:
         """
         Preview transformed table/column partial output
 
@@ -119,15 +122,33 @@ class QueryObject(FeatureByteBaseModel):
         ----------
         limit: int
             maximum number of return rows
-        credentials: Credentials | None
-            credentials to create a database session
 
         Returns
         -------
         pd.DataFrame
+
+        Raises
+        ------
+        RecordRetrievalException
+            Preview request failed
         """
-        session = self.get_session(credentials)
-        return session.execute_query(self.preview_sql(limit=limit))
+        if self.feature_store.details.is_local_source:
+            session = self.feature_store.get_session()
+            return session.execute_query(self.preview_sql(limit=limit))
+
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        payload = FeatureStorePreview(
+            feature_store_name=self.feature_store.name,
+            graph=pruned_graph,
+            node=mapped_node,
+        )
+        client = Configurations().get_client()
+        response = client.post(
+            url=f"/feature_store/preview?limit={limit}", json=payload.json_dict()
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        return pd.read_json(response.json(), orient="table", convert_dates=False)
 
     def get_session(self, credentials: Credentials | None = None) -> BaseSession:
         """

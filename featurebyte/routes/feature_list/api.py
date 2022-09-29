@@ -27,6 +27,7 @@ from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListInfo,
     FeatureListPaginatedList,
+    FeatureListPreview,
     FeatureListUpdate,
 )
 
@@ -138,3 +139,20 @@ async def get_feature_list_info(
         verbose=verbose,
     )
     return cast(FeatureListInfo, info)
+
+
+@router.post("/preview", response_model=str)
+async def get_feature_preview(
+    request: Request,
+    featurelist_preview: FeatureListPreview,
+) -> str:
+    """
+    Retrieve Feature preview
+    """
+    controller = request.state.app_container.feature_list_controller
+    return cast(
+        str,
+        await controller.preview(
+            featurelist_preview=featurelist_preview, get_credential=request.state.get_credential
+        ),
+    )

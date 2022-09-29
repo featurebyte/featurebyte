@@ -78,7 +78,7 @@ def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
     yield snowflake_event_data
 
 
-def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
+def test_from_tabular_source(snowflake_database_table, event_data_dict):
     """
     Test EventData creation using tabular source
     """
@@ -87,7 +87,6 @@ def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
         name="sf_event_data",
         event_timestamp_column="event_timestamp",
         record_creation_date_column="created_at",
-        credentials=config.credentials,
     )
 
     # check that event data columns for autocompletion
@@ -104,12 +103,11 @@ def test_from_tabular_source(snowflake_database_table, config, event_data_dict):
             name=123,
             event_timestamp_column=234,
             record_creation_date_column=345,
-            credentials=config.credentials,
         )
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
 
-def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_database_table, config):
+def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_database_table):
     """
     Test EventData creation failure due to duplicated event data name
     """
@@ -120,12 +118,11 @@ def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_data
             name="sf_event_data",
             event_timestamp_column="event_timestamp",
             record_creation_date_column="created_at",
-            credentials=config.credentials,
         )
     assert 'EventData (event_data.name: "sf_event_data") exists in saved record.' in str(exc.value)
 
 
-def test_from_tabular_source__retrieval_exception(snowflake_database_table, config):
+def test_from_tabular_source__retrieval_exception(snowflake_database_table):
     """
     Test EventData creation failure due to retrieval exception
     """
@@ -136,13 +133,11 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table, conf
                 name="sf_event_data",
                 event_timestamp_column="event_timestamp",
                 record_creation_date_column="created_at",
-                credentials=config.credentials,
             )
 
 
 def test_deserialization(
     event_data_dict,
-    config,
     snowflake_feature_store,
     snowflake_execute_query,
     expected_snowflake_table_preview_query,
@@ -152,20 +147,18 @@ def test_deserialization(
     """
     _ = snowflake_execute_query
     # setup proper configuration to deserialize the event data object
-    event_data_dict["credentials"] = config.credentials
     event_data_dict["feature_store"] = snowflake_feature_store
     event_data = EventData.parse_obj(event_data_dict)
     assert event_data.preview_sql() == expected_snowflake_table_preview_query
 
 
 def test_deserialization__column_name_not_found(
-    event_data_dict, config, snowflake_feature_store, snowflake_execute_query
+    event_data_dict, snowflake_feature_store, snowflake_execute_query
 ):
     """
     Test column not found during deserialize event data
     """
     _ = snowflake_execute_query
-    event_data_dict["credentials"] = config.credentials
     event_data_dict["feature_store"] = snowflake_feature_store
     event_data_dict["record_creation_date_column"] = "some_random_name"
     with pytest.raises(ValueError) as exc:
@@ -520,13 +513,12 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure(
     assert "ValueError: Event Data not found" in str(exc.value)
 
 
-def test_update_record_creation_date_column__unsaved_object(snowflake_database_table, config):
+def test_update_record_creation_date_column__unsaved_object(snowflake_database_table):
     """Test update record creation date column (unsaved event data)"""
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="event_data",
         event_timestamp_column="event_timestamp",
-        credentials=config.credentials,
     )
     assert event_data.record_creation_date_column is None
     event_data.update_record_creation_date_column("created_at")
@@ -568,7 +560,7 @@ def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_conf
     assert expected_msg in str(exc.value)
 
 
-@patch("featurebyte.api.database_table.FeatureStore.get_session")
+@patch("featurebyte.service.mixin.ExtendedFeatureStoreModel.get_session")
 def test_get_event_data__schema_has_been_changed(mock_get_session, saved_event_data):
     """
     Test retrieving event data after table schema has been changed
