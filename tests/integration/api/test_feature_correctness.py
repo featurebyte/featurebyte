@@ -223,10 +223,7 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
         output = feature_list[feature_list.feature_names].preview(preview_param)
         output.rename({"user id": "USER ID"}, axis=1, inplace=True)
         df_expected = pd.DataFrame([preview_time_point], index=output.index)
-        try:
-            fb_assert_frame_equal(output, df_expected, dict_like_columns)
-        except:
-            raise
+        fb_assert_frame_equal(output, df_expected, dict_like_columns)
     elapsed = time.time() - tic
     print(f"elapsed check_feature_preview: {elapsed:.2f}s")
 
