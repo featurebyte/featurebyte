@@ -117,9 +117,9 @@ class OnDemandTileComputePlan:
                     join_conditions.append(f"{prev_alias}.{key} = {agg_id}.{key}")
                 # Tile sqls with the same tile_table_id should generate output with identical set of
                 # tile indices and entity columns (they are derived from the same event data using
-                # the same entity columns and feature job settings). However, using "right" join
-                # allows the filter on entity columns to be pushed down to TableScan in the
-                # optimized query.
+                # the same entity columns and feature job settings). Any join type will work, but
+                # using "right" join allows the filter on entity columns to be pushed down to
+                # TableScan in the optimized query.
                 tile_sqls[tile_table_id] = (
                     tile_sqls[tile_table_id]
                     .join(
