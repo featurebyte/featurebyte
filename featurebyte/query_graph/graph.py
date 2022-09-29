@@ -1,7 +1,7 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, TypedDict
+from typing import Any, Callable, Dict, Iterator, List, Literal, Optional, Set, Tuple, TypedDict
 
 import json
 from collections import defaultdict
@@ -269,6 +269,16 @@ class GraphState(TypedDict):
     ref_to_node_name: Dict[int, str]
 
 
+# query state field values
+StateField = Literal[
+    "edges",
+    "nodes",
+    "node_type_counter",
+    "node_name_to_ref",
+    "ref_to_node_name",
+]
+
+
 class GlobalQueryGraphState(metaclass=SingletonMeta):
     """
     Global singleton to store query graph related attributes
@@ -294,59 +304,31 @@ class GlobalQueryGraphState(metaclass=SingletonMeta):
         cls._state["ref_to_node_name"] = {}
 
     @classmethod
-    def get_edges(cls) -> List[Edge]:
+    def construct_getter_func(cls, field: StateField) -> Callable[[], Any]:
         """
-        Get global query graph edges
+        Construct getter function
+
+        Parameters
+        ----------
+        field: StateField
+            Global state field value
 
         Returns
         -------
-        dict[str, list[str]]
+        Getter function to retrieve global state value
         """
-        return cls._state["edges"]
 
-    @classmethod
-    def get_nodes(cls) -> List[Node]:
-        """
-        Get global query graph nodes
+        def getter() -> Any:
+            """
+            Getter function
 
-        Returns
-        -------
-        dict[str, Any]
-        """
-        return cls._state["nodes"]
+            Returns
+            -------
+            Field value stored at global state
+            """
+            return cls._state[field]
 
-    @classmethod
-    def get_node_type_counter(cls) -> Dict[str, int]:
-        """
-        Get global query node type counter
-
-        Returns
-        -------
-        dict[str, int]
-        """
-        return cls._state["node_type_counter"]
-
-    @classmethod
-    def get_node_name_to_ref(cls) -> Dict[str, int]:
-        """
-        Get global query node name to node hash dictionary
-
-        Returns
-        -------
-        dict[str, int]
-        """
-        return cls._state["node_name_to_ref"]
-
-    @classmethod
-    def get_ref_to_node_name(cls) -> Dict[int, str]:
-        """
-        Get global query node hash to node name dictionary
-
-        Returns
-        -------
-        dict[int, str]
-        """
-        return cls._state["ref_to_node_name"]
+        return getter
 
 
 class GlobalQueryGraph(QueryGraph):
@@ -354,16 +336,19 @@ class GlobalQueryGraph(QueryGraph):
     Global query graph used to store the core like operations for the SQL query construction
     """
 
-    edges: List[Edge] = Field(default_factory=GlobalQueryGraphState.get_edges)
-    nodes: List[Node] = Field(default_factory=GlobalQueryGraphState.get_nodes)
+    edges: List[Edge] = Field(default_factory=GlobalQueryGraphState.construct_getter_func("edges"))
+    nodes: List[Node] = Field(default_factory=GlobalQueryGraphState.construct_getter_func("nodes"))
     node_type_counter: Dict[str, int] = Field(
-        default_factory=GlobalQueryGraphState.get_node_type_counter, exclude=True
+        default_factory=GlobalQueryGraphState.construct_getter_func("node_type_counter"),
+        exclude=True,
     )
     node_name_to_ref: Dict[str, str] = Field(
-        default_factory=GlobalQueryGraphState.get_node_name_to_ref, exclude=True
+        default_factory=GlobalQueryGraphState.construct_getter_func("node_name_to_ref"),
+        exclude=True,
     )
     ref_to_node_name: Dict[str, str] = Field(
-        default_factory=GlobalQueryGraphState.get_ref_to_node_name, exclude=True
+        default_factory=GlobalQueryGraphState.construct_getter_func("ref_to_node_name"),
+        exclude=True,
     )
 
     def copy(self, *args: Any, **kwargs: Any) -> "GlobalQueryGraph":
