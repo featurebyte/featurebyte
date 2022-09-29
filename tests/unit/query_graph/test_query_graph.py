@@ -15,12 +15,25 @@ def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
     Test add operation by adding a duplicated node on a 2-node graph
     """
     graph, node_input, node_proj = graph_two_nodes
+
+    # check no new nodes are added
+    node_num = len(graph.nodes)
     node_duplicated = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
+    assert len(graph.nodes) == node_num
+    node_another_duplicated = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"], "unknown": "whatever"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    assert node_duplicated == node_another_duplicated
+    assert len(graph.nodes) == node_num
+
     graph_dict = graph.dict()
     input_node = get_node(graph_dict, "input_1")
     project_node = get_node(graph_dict, "project_1")
