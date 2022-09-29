@@ -7,6 +7,7 @@ from typing import Any, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode, InColumnStr, OutColumnStr
@@ -136,6 +137,9 @@ class GroupbyNode(BaseNode):
         serving_names: List[str]
         tile_id: Optional[str]
         aggregation_id: Optional[str]
+        event_data_id: Optional[PydanticObjectId] = Field(
+            default=None
+        )  # DEV-556: should make this non-optional after migration
 
     type: Literal[NodeType.GROUPBY] = Field(NodeType.GROUPBY, const=True)
     parameters: Parameters

@@ -158,6 +158,7 @@ class EventViewGroupBy(OpsMixin):
             "frequency": frequency_seconds,
             "names": feature_names,
             "serving_names": self.serving_names,
+            "event_data_id": self.obj.event_data_id,
         }
 
     def _prepare_node_and_column_metadata(

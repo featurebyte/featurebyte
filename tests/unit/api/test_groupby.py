@@ -7,7 +7,6 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.enum import NodeType
 
 
 @pytest.mark.parametrize(
@@ -199,6 +198,7 @@ def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_enti
         "timestamp": "event_timestamp",
         "value_by": None,
         "serving_names": ["cust_id"],
+        "event_data_id": event_view.event_data_id,
     }
 
 
@@ -234,6 +234,7 @@ def test_groupby__category(snowflake_event_view_with_entity):
         "timestamp": "event_timestamp",
         "value_by": "col_int",
         "serving_names": ["cust_id"],
+        "event_data_id": snowflake_event_view_with_entity.event_data_id,
     }
 
 

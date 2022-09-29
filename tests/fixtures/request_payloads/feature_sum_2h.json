@@ -81,7 +81,8 @@
                         "30m",
                         "2h",
                         "1d"
-                    ]
+                    ],
+                    "event_data_id": "6332fdb21e8f0eeccc414512"
                 },
                 "type": "groupby"
             },
