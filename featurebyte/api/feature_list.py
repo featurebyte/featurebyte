@@ -29,7 +29,7 @@ from featurebyte.models.feature_list import (
     FeatureListNamespaceModel,
     FeatureListStatus,
 )
-from featurebyte.query_graph.sql.feature_common import get_prune_graph_and_nodes
+from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
 from featurebyte.query_graph.sql.feature_historical import (
     get_historical_features,
     get_historical_features_sql,

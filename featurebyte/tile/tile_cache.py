@@ -16,10 +16,7 @@ from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec
-from featurebyte.query_graph.sql.feature_common import (
-    REQUEST_TABLE_NAME,
-    apply_serving_names_mapping,
-)
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, apply_serving_names_mapping
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.query_graph.sql.sql import escape_column_name
 from featurebyte.session.base import BaseSession

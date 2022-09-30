@@ -12,7 +12,7 @@ from sqlglot import expressions, select
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.feature_common import (
+from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     AggregationSpec,
     FeatureSpec,
