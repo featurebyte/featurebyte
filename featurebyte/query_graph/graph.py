@@ -1,16 +1,16 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
+from typing import Any, Callable, Dict, Iterator, List, Literal, Optional, Set, Tuple, TypedDict
 
 import json
 from collections import defaultdict
 
-from pydantic import Field, PrivateAttr
+from pydantic import Field, root_validator
 
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.query_graph.algorithm import topological_sort
+from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node, construct_node
 from featurebyte.query_graph.node.generic import AssignNode
@@ -34,58 +34,133 @@ class QueryGraph(FeatureByteBaseModel):
     edges: List[Edge] = Field(default_factory=list)
     nodes: List[Node] = Field(default_factory=list)
 
-    # non-serialized variables
+    # non-serialized attributes (will be derived during deserialization)
+    # NEVER store a non-serialized attributes that CAN'T BE DERIVED from serialized attributes
+    nodes_map: Dict[str, Node] = Field(default_factory=dict, exclude=True)
+    edges_map: Dict[str, List[str]] = Field(default=defaultdict(list), exclude=True)
+    backward_edges_map: Dict[str, List[str]] = Field(default=defaultdict(list), exclude=True)
     node_type_counter: Dict[str, int] = Field(default=defaultdict(int), exclude=True)
     node_name_to_ref: Dict[str, str] = Field(default_factory=dict, exclude=True)
     ref_to_node_name: Dict[str, str] = Field(default_factory=dict, exclude=True)
-    _nodes_map: Optional[Dict[str, Any]] = PrivateAttr(default=None)
-    _edges_map: Optional[Dict[str, Any]] = PrivateAttr(default=None)
-    _backward_edges_map: Optional[Dict[str, Any]] = PrivateAttr(default=None)
 
-    @property
-    def nodes_map(self) -> Dict[str, Node]:
-        """
-        Graph node name to node mapping
+    @staticmethod
+    def _derive_nodes_map(
+        nodes: List[Node], nodes_map: Optional[Dict[str, Node]]
+    ) -> Dict[str, Node]:
+        if nodes_map is None:
+            nodes_map = {}
+        for node in nodes:
+            nodes_map[node.name] = node
+        return nodes_map
 
-        Returns
-        -------
-        Dict[str, Node]
-        """
-        if self._nodes_map is None or len(self._nodes_map) != len(self.nodes):
-            self._nodes_map = {}
-            for node in self.nodes:
-                self._nodes_map[node.name] = node
-        return self._nodes_map
+    @staticmethod
+    def _derive_edges_map(
+        edges: List[Edge], edges_map: Optional[Dict[str, List[str]]]
+    ) -> Dict[str, List[str]]:
+        if edges_map is None:
+            edges_map = defaultdict(list)
+        for edge in edges:
+            edges_map[edge.source].append(edge.target)
+        return edges_map
 
-    @property
-    def edges_map(self) -> Dict[str, List[str]]:
-        """
-        Graph parent node name to child node names mapping
+    @staticmethod
+    def _derive_backward_edges_map(
+        edges: List[Edge], backward_edges_map: Optional[Dict[str, List[str]]]
+    ) -> Dict[str, List[str]]:
+        if backward_edges_map is None:
+            backward_edges_map = defaultdict(list)
+        for edge in edges:
+            backward_edges_map[edge.target].append(edge.source)
+        return backward_edges_map
 
-        Returns
-        -------
-        Dict[str, List[str]]
-        """
-        if self._edges_map is None:
-            self._edges_map = defaultdict(list)
-            for edge in self.edges:
-                self._edges_map[edge.source].append(edge.target)
-        return self._edges_map
+    @staticmethod
+    def _derive_node_type_counter(
+        nodes: List[Node], node_type_counter: Optional[Dict[str, int]]
+    ) -> Dict[str, int]:
+        if node_type_counter is None:
+            node_type_counter = defaultdict(int)
+        for node in nodes:
+            node_type_counter[node.type] += 1
+        return node_type_counter
 
-    @property
-    def backward_edges_map(self) -> Dict[str, List[str]]:
-        """
-        Graph child node name to parent node names mapping
+    @staticmethod
+    def _derive_node_name_to_ref(
+        nodes_map: Dict[str, Node],
+        edges_map: Dict[str, List[str]],
+        backward_edges_map: Dict[str, List[str]],
+        node_name_to_ref: Optional[Dict[str, str]],
+    ) -> Dict[str, str]:
+        if node_name_to_ref is None:
+            node_name_to_ref = {}
+        sorted_node_names = topological_sort(list(nodes_map), edges_map)
+        for node_name in sorted_node_names:
+            input_node_refs = [
+                node_name_to_ref[input_node_name]
+                for input_node_name in backward_edges_map.get(node_name, [])
+            ]
+            node = nodes_map[node_name]
+            node_name_to_ref[node_name] = hash_node(
+                node.type,
+                node.parameters.dict(),
+                node.output_type,
+                input_node_refs,
+            )
+        return node_name_to_ref
 
-        Returns
-        -------
-        Dict[str, List[str]]
-        """
-        if self._backward_edges_map is None:
-            self._backward_edges_map = defaultdict(list)
-            for edge in self.edges:
-                self._backward_edges_map[edge.target].append(edge.source)
-        return self._backward_edges_map
+    @staticmethod
+    def _derive_ref_to_node_name(
+        node_name_to_ref: Dict[str, str], ref_to_node_name: Optional[Dict[str, str]]
+    ) -> Dict[str, str]:
+        if ref_to_node_name is None:
+            ref_to_node_name = {}
+        for node_name, ref in node_name_to_ref.items():
+            ref_to_node_name[ref] = node_name
+        return ref_to_node_name
+
+    @root_validator
+    @classmethod
+    def _set_internal_variables(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        # NOTE: During graph instantiation, this method will get called (including graph query graph).
+        # Only create a new dictionary/object when the value is None. Otherwise, it will cause issue
+        # for the global query graph.
+        nodes_map = values.get("nodes_map")
+        if not nodes_map:
+            values["nodes_map"] = cls._derive_nodes_map(values["nodes"], nodes_map)
+
+        edges_map = values.get("edges_map")
+        if not edges_map:
+            values["edges_map"] = cls._derive_edges_map(values["edges"], edges_map)
+
+        backward_edges_map = values.get("backward_edges_map")
+        if not backward_edges_map:
+            values["backward_edges_map"] = cls._derive_backward_edges_map(
+                values["edges"], backward_edges_map
+            )
+
+        node_type_counter = values.get("node_type_counter")
+        if not node_type_counter:
+            values["node_type_counter"] = cls._derive_node_type_counter(
+                values["nodes"], node_type_counter
+            )
+
+        node_name_to_ref = values.get("node_name_to_ref")
+        if not node_name_to_ref:
+            # backward_edges_map is a defaultdict, accessing a new key will have side effect
+            # construct a new backward_edges_map dictionary to avoid introducing side effect
+            values["node_name_to_ref"] = cls._derive_node_name_to_ref(
+                nodes_map=values["nodes_map"],
+                edges_map=values["edges_map"],
+                backward_edges_map=dict(values["backward_edges_map"]),
+                node_name_to_ref=node_name_to_ref,
+            )
+
+        ref_to_node_name = values.get("ref_to_node_name")
+        if not ref_to_node_name:
+            values["ref_to_node_name"] = cls._derive_ref_to_node_name(
+                node_name_to_ref=values["node_name_to_ref"], ref_to_node_name=ref_to_node_name
+            )
+
+        return values
 
     def __repr__(self) -> str:
         return json.dumps(self.dict(), indent=4)
@@ -103,6 +178,8 @@ class QueryGraph(FeatureByteBaseModel):
 
         """
         self.edges.append(Edge(source=parent.name, target=child.name))
+        self.edges_map[parent.name].append(child.name)
+        self.backward_edges_map[child.name].append(parent.name)
 
     def _generate_node_name(self, node_type: NodeType) -> str:
         self.node_type_counter[node_type] += 1
@@ -135,6 +212,7 @@ class QueryGraph(FeatureByteBaseModel):
         }
         node = construct_node(**node_dict)
         self.nodes.append(node)
+        self.nodes_map[node.name] = node
         return node
 
     def get_node_by_name(self, node_name: str) -> Node:
@@ -179,7 +257,19 @@ class QueryGraph(FeatureByteBaseModel):
             operation node of the given input
         """
         input_node_refs = [self.node_name_to_ref[node.name] for node in input_nodes]
-        node_ref = hash_node(node_type, node_params, node_output_type, input_node_refs)
+        # create a temp_node to validate the node parameters & use only the required parameters to hash
+        temp_node = construct_node(
+            name=str(node_type),
+            type=node_type,
+            parameters=node_params,
+            output_type=node_output_type,
+        )
+        node_ref = hash_node(
+            temp_node.type,
+            temp_node.parameters.dict(),
+            temp_node.output_type,
+            input_node_refs,
+        )
         if node_ref not in self.ref_to_node_name:
             node = self._add_node(node_type, node_params, node_output_type)
             for input_node in input_nodes:
@@ -189,16 +279,11 @@ class QueryGraph(FeatureByteBaseModel):
             self.node_name_to_ref[node.name] = node_ref
         else:
             node = self.nodes_map[self.ref_to_node_name[node_ref]]
-
-        # remove cached maps
-        self._nodes_map = None
-        self._edges_map = None
-        self._backward_edges_map = None
         return node
 
     def load(self, graph: "QueryGraph") -> Tuple["QueryGraph", Dict[str, str]]:
         """
-        Load the query graph into the global query graph
+        Load the query graph into the query graph
 
         Parameters
         ----------
@@ -211,7 +296,8 @@ class QueryGraph(FeatureByteBaseModel):
             updated query graph with the node name mapping between input query graph & output query graph
         """
         node_name_map: Dict[str, str] = {}
-        for node_name in topological_sort(graph):
+        sorted_node_names = topological_sort(list(graph.nodes_map), graph.edges_map)
+        for node_name in sorted_node_names:
             node = graph.get_node_by_name(node_name)
             input_nodes = [
                 self.get_node_by_name(node_name_map[input_node_name])
@@ -226,6 +312,24 @@ class QueryGraph(FeatureByteBaseModel):
             node_name_map[node_name] = node_global.name
         return self, node_name_map
 
+    def iterate_grouby_nodes(self, target_node: Node) -> Iterator[Node]:
+        """
+        Iterate all groupby nodes in this query graph
+
+        Parameters
+        ----------
+        target_node: Node
+            Node from which to start the backward search
+
+        Yields
+        ------
+        Node
+            Query graph nodes of groupby type
+        """
+        for node in dfs_traversal(self, target_node):
+            if node.type == NodeType.GROUPBY:
+                yield node
+
 
 class GraphState(TypedDict):
     """
@@ -234,12 +338,28 @@ class GraphState(TypedDict):
 
     edges: List[Edge]
     nodes: List[Node]
+    nodes_map: Dict[str, Node]
+    edges_map: Dict[str, List[str]]
+    backward_edges_map: Dict[str, List[str]]
     node_type_counter: Dict[str, int]
     node_name_to_ref: Dict[str, int]
     ref_to_node_name: Dict[int, str]
 
 
-class GlobalQueryGraphState(metaclass=SingletonMeta):
+# query state field values
+StateField = Literal[
+    "edges",
+    "nodes",
+    "nodes_map",
+    "edges_map",
+    "backward_edges_map",
+    "node_type_counter",
+    "node_name_to_ref",
+    "ref_to_node_name",
+]
+
+
+class GlobalGraphState(metaclass=SingletonMeta):
     """
     Global singleton to store query graph related attributes
     """
@@ -247,6 +367,9 @@ class GlobalQueryGraphState(metaclass=SingletonMeta):
     _state: GraphState = {
         "edges": [],
         "nodes": [],
+        "nodes_map": {},
+        "edges_map": defaultdict(list),
+        "backward_edges_map": defaultdict(list),
         "node_type_counter": defaultdict(int),
         "node_name_to_ref": {},
         "ref_to_node_name": {},
@@ -259,64 +382,39 @@ class GlobalQueryGraphState(metaclass=SingletonMeta):
         """
         cls._state["edges"] = []
         cls._state["nodes"] = []
+        cls._state["nodes_map"] = {}
+        cls._state["edges_map"] = defaultdict(list)
+        cls._state["backward_edges_map"] = defaultdict(list)
         cls._state["node_type_counter"] = defaultdict(int)
         cls._state["node_name_to_ref"] = {}
         cls._state["ref_to_node_name"] = {}
 
     @classmethod
-    def get_edges(cls) -> List[Edge]:
+    def construct_getter_func(cls, field: StateField) -> Callable[[], Any]:
         """
-        Get global query graph edges
+        Construct getter function
+
+        Parameters
+        ----------
+        field: StateField
+            Global state field value
 
         Returns
         -------
-        dict[str, list[str]]
+        Getter function to retrieve global state value
         """
-        return cls._state["edges"]
 
-    @classmethod
-    def get_nodes(cls) -> List[Node]:
-        """
-        Get global query graph nodes
+        def getter() -> Any:
+            """
+            Getter function
 
-        Returns
-        -------
-        dict[str, Any]
-        """
-        return cls._state["nodes"]
+            Returns
+            -------
+            Field value stored at global state
+            """
+            return cls._state[field]
 
-    @classmethod
-    def get_node_type_counter(cls) -> Dict[str, int]:
-        """
-        Get global query node type counter
-
-        Returns
-        -------
-        dict[str, int]
-        """
-        return cls._state["node_type_counter"]
-
-    @classmethod
-    def get_node_name_to_ref(cls) -> Dict[str, int]:
-        """
-        Get global query node name to node hash dictionary
-
-        Returns
-        -------
-        dict[str, int]
-        """
-        return cls._state["node_name_to_ref"]
-
-    @classmethod
-    def get_ref_to_node_name(cls) -> Dict[int, str]:
-        """
-        Get global query node hash to node name dictionary
-
-        Returns
-        -------
-        dict[int, str]
-        """
-        return cls._state["ref_to_node_name"]
+        return getter
 
 
 class GlobalQueryGraph(QueryGraph):
@@ -324,16 +422,31 @@ class GlobalQueryGraph(QueryGraph):
     Global query graph used to store the core like operations for the SQL query construction
     """
 
-    edges: List[Edge] = Field(default_factory=GlobalQueryGraphState.get_edges)
-    nodes: List[Node] = Field(default_factory=GlobalQueryGraphState.get_nodes)
+    # all the attributes (including non-serialized) should be stored at GlobalGraphState
+    edges: List[Edge] = Field(default_factory=GlobalGraphState.construct_getter_func("edges"))
+    nodes: List[Node] = Field(default_factory=GlobalGraphState.construct_getter_func("nodes"))
+
+    # non-serialized attributes
+    nodes_map: Dict[str, Node] = Field(
+        default_factory=GlobalGraphState.construct_getter_func("nodes_map"), exclude=True
+    )
+    edges_map: Dict[str, List[str]] = Field(
+        default_factory=GlobalGraphState.construct_getter_func("edges_map"), exclude=True
+    )
+    backward_edges_map: Dict[str, List[str]] = Field(
+        default_factory=GlobalGraphState.construct_getter_func("backward_edges_map"), exclude=True
+    )
     node_type_counter: Dict[str, int] = Field(
-        default_factory=GlobalQueryGraphState.get_node_type_counter, exclude=True
+        default_factory=GlobalGraphState.construct_getter_func("node_type_counter"),
+        exclude=True,
     )
     node_name_to_ref: Dict[str, str] = Field(
-        default_factory=GlobalQueryGraphState.get_node_name_to_ref, exclude=True
+        default_factory=GlobalGraphState.construct_getter_func("node_name_to_ref"),
+        exclude=True,
     )
     ref_to_node_name: Dict[str, str] = Field(
-        default_factory=GlobalQueryGraphState.get_ref_to_node_name, exclude=True
+        default_factory=GlobalGraphState.construct_getter_func("ref_to_node_name"),
+        exclude=True,
     )
 
     def copy(self, *args: Any, **kwargs: Any) -> "GlobalQueryGraph":
@@ -454,7 +567,8 @@ class GlobalQueryGraph(QueryGraph):
         QueryGraph, node_name_map
         """
         node_name_map: Dict[str, str] = {}
-        index_map = {value: idx for idx, value in enumerate(topological_sort(self))}
+        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
+        index_map = {value: idx for idx, value in enumerate(sorted_node_names)}
         pruned_graph = self._prune(
             target_node=target_node,
             target_columns=target_columns,

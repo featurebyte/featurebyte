@@ -312,7 +312,7 @@ def snowflake_event_view_fixture(snowflake_event_data):
                 "cust_id",
             ],
             "timestamp": "event_timestamp",
-            "feature_store": {
+            "feature_store_details": {
                 "type": "snowflake",
                 "details": {
                     "account": "sf_account",
@@ -321,7 +321,7 @@ def snowflake_event_view_fixture(snowflake_event_data):
                     "warehouse": "sf_warehouse",
                 },
             },
-            "dbtable": {
+            "table_details": {
                 "database_name": "sf_database",
                 "schema_name": "sf_schema",
                 "table_name": "sf_table",

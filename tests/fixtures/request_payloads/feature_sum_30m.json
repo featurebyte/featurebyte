@@ -24,6 +24,8 @@
                 "name": "input_1",
                 "output_type": "frame",
                 "parameters": {
+                    "type": "event_data",
+                    "id": "6332fdb21e8f0eeccc414512",
                     "columns": [
                         "col_int",
                         "col_float",
@@ -35,12 +37,12 @@
                         "created_at",
                         "cust_id"
                     ],
-                    "dbtable": {
+                    "table_details": {
                         "database_name": "sf_database",
                         "schema_name": "sf_schema",
                         "table_name": "sf_table"
                     },
-                    "feature_store": {
+                    "feature_store_details": {
                         "details": {
                             "account": "sf_account",
                             "database": "sf_database",

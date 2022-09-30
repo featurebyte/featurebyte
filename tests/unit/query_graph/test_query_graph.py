@@ -4,10 +4,33 @@ Unit test for query graph
 from collections import defaultdict
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState, QueryGraph
+from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.query_graph.node import construct_node
 from tests.util.helper import get_node
+
+
+def check_internal_state_after_deserialization(graph):
+    """Check internal state after deserialization"""
+    # extract internal variables
+    internal_fields = [
+        "node_type_counter",
+        "node_name_to_ref",
+        "ref_to_node_name",
+        "nodes_map",
+        "edges_map",
+        "backward_edges_map",
+    ]
+    internal_vars = {}
+    for field in internal_fields:
+        internal_vars[field] = getattr(graph, field).copy()
+
+    # convert global graph to query graph first
+    query_graph = QueryGraph(**graph.dict())
+
+    # check whether the internal variables are set properly
+    for field in internal_fields:
+        assert getattr(query_graph, field) == internal_vars[field]
 
 
 def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
@@ -15,12 +38,26 @@ def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
     Test add operation by adding a duplicated node on a 2-node graph
     """
     graph, node_input, node_proj = graph_two_nodes
+    check_internal_state_after_deserialization(graph)
+
+    # check no new nodes are added
+    node_num = len(graph.nodes)
     node_duplicated = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
+    assert len(graph.nodes) == node_num
+    node_another_duplicated = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"], "unknown": "whatever"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    assert node_duplicated == node_another_duplicated
+    assert len(graph.nodes) == node_num
+
     graph_dict = graph.dict()
     input_node = get_node(graph_dict, "input_1")
     project_node = get_node(graph_dict, "project_1")
@@ -45,6 +82,7 @@ def test_add_operation__add_duplicated_node_on_four_nodes_graph(graph_four_nodes
     Test add operation by adding a duplicated node on a 4-node graph
     """
     graph, _, node_proj, node_eq, _ = graph_four_nodes
+    check_internal_state_after_deserialization(graph)
     node_duplicated = graph.add_operation(
         node_type=NodeType.EQ,
         node_params={"value": 1},
@@ -186,12 +224,13 @@ def test_serialization_deserialization__clean_global_graph(graph_four_nodes):
     Test serialization & deserialization of query graph object (clean global query graph)
     """
     graph, _, _, _, _ = graph_four_nodes
+    check_internal_state_after_deserialization(graph)
     graph_dict = graph.dict()
     deserialized_graph = QueryGraph.parse_obj(graph_dict)
     assert graph == deserialized_graph
 
     # clean up global query graph state & load the deserialized graph to the clean global query graph
-    GlobalQueryGraphState.reset()
+    GlobalGraphState.reset()
     new_global_graph = GlobalQueryGraph()
     assert new_global_graph.nodes == []
     new_global_graph.load(graph)
@@ -261,3 +300,16 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
         mapped_node_before_load.name
     )
     assert query_before_load == query_after_load
+
+
+def test_global_graph_attributes():
+    """Test global graph attributes shared across different global graph instances"""
+    graph1 = GlobalQueryGraph()
+    graph2 = GlobalQueryGraph()
+    assert id(graph1.nodes) == id(graph2.nodes)
+    assert id(graph1.edges) == id(graph2.edges)
+    assert id(graph1.nodes_map) == id(graph2.nodes_map)
+    assert id(graph1.edges_map) == id(graph2.edges_map)
+    assert id(graph1.backward_edges_map) == id(graph2.backward_edges_map)
+    assert id(graph1.node_type_counter) == id(graph2.node_type_counter)
+    assert id(graph1.node_name_to_ref) == id(graph2.node_name_to_ref)

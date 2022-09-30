@@ -163,3 +163,11 @@ class WorkerCommand(str, Enum):
 
     FEATURE_JOB_SETTING_ANALYSIS_CREATE = "FEATURE_JOB_SETTING_ANALYSIS_CREATE"
     FEATURE_JOB_SETTING_ANALYSIS_BACKTEST = "FEATURE_JOB_SETTING_ANALYSIS_BACKTEST"
+
+
+class TableDataType(str, Enum):
+    """
+    TableDataType enum
+    """
+
+    EVENT_DATA = "event_data"

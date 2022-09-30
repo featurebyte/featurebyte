@@ -2,11 +2,12 @@
 This module contains SQL operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
 
-from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.enum import AggFunc, DBVarType, TableDataType
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.base import BaseNode, InColumnStr, OutColumnStr
@@ -15,17 +16,33 @@ from featurebyte.query_graph.node.base import BaseNode, InColumnStr, OutColumnSt
 class InputNode(BaseNode):
     """InputNode class"""
 
-    class Parameters(BaseModel):
-        """Parameters"""
+    class BaseParameters(BaseModel):
+        """BaseParameters"""
 
         columns: List[InColumnStr]
-        dbtable: TableDetails
-        feature_store: FeatureStoreDetails
+        table_details: TableDetails
+        feature_store_details: FeatureStoreDetails
+        id: Optional[PydanticObjectId] = Field(default=None)
+
+    class EventDataParameters(BaseParameters):
+        """EventDataParameters"""
+
+        type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
         timestamp: Optional[InColumnStr]
+
+        @root_validator(pre=True)
+        @classmethod
+        def _convert_node_parameters_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+            # DEV-556: converted older record (parameters) into a newer format
+            if "dbtable" in values:
+                values["table_details"] = values["dbtable"]
+            if "feature_store" in values:
+                values["feature_store_details"] = values["feature_store"]
+            return values
 
     type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    parameters: Parameters
+    parameters: EventDataParameters
 
 
 class ProjectNode(BaseNode):

@@ -3,13 +3,12 @@ This module contains the Query Graph Interpreter
 """
 from __future__ import annotations
 
-from typing import Any, Iterator
+from typing import Any
 
 from dataclasses import dataclass
 
 import sqlglot
 
-from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -198,26 +197,6 @@ class TileGenSql:
     windows: list[str]
 
 
-def find_parent_groupby_nodes(query_graph: QueryGraph, starting_node: Node) -> Iterator[Node]:
-    """Helper function to find all groupby nodes in a Query Graph
-
-    Parameters
-    ----------
-    query_graph : QueryGraph
-        Query graph
-    starting_node : Node
-        Node from which to start the search
-
-    Yields
-    ------
-    Node
-        Query graph nodes of groupby type
-    """
-    for node in dfs_traversal(query_graph, starting_node):
-        if node.type == NodeType.GROUPBY:
-            yield node
-
-
 class TileSQLGenerator:
     """Generator for Tile-building SQL
 
@@ -248,7 +227,7 @@ class TileSQLGenerator:
         """
         # Groupby operations requires building tiles (assuming the aggregation type supports tiling)
         tile_generating_nodes = {}
-        for node in find_parent_groupby_nodes(self.query_graph, starting_node):
+        for node in self.query_graph.iterate_grouby_nodes(starting_node):
             assert isinstance(node, GroupbyNode)
             tile_generating_nodes[node.name] = node
 

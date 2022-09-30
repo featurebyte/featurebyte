@@ -3,7 +3,7 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar, cast
 
 import json
 from abc import abstractmethod
@@ -218,6 +218,7 @@ class QueryObject(FeatureByteBaseModel):
             models_as_dict=models_as_dict,
             **dumps_kwargs,
         )
+        encoder = cast(Callable[[Any], Any], encoder or self.__json_encoder__)
         dict_object = json.loads(json_object)
         if "graph" in dict_object:
             pruned_dict_object = self.dict()

@@ -131,8 +131,10 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             node_type=NodeType.INPUT,
             node_params={
                 "columns": [col.name for col in columns_info],
-                "dbtable": table_details.dict(),
-                "feature_store": feature_store.dict(include={"type": True, "details": True}),
+                "table_details": table_details.dict(),
+                "feature_store_details": feature_store.dict(
+                    include={"type": True, "details": True}
+                ),
                 **cls._get_other_input_node_parameters(values),
             },
             node_output_type=NodeOutputType.FRAME,
