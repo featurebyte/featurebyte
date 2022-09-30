@@ -120,7 +120,7 @@ class QueryGraph(FeatureByteBaseModel):
     @root_validator
     @classmethod
     def _set_internal_variables(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        # NOTE: During graph instantiation, this method will get called (including graph query graph).
+        # NOTE: During graph instantiation, this method will get called (including global query graph).
         # Only create a new dictionary/object when the value is None. Otherwise, it will cause issue
         # for the global query graph.
         nodes_map = values.get("nodes_map")
@@ -145,11 +145,11 @@ class QueryGraph(FeatureByteBaseModel):
 
         node_name_to_ref = values.get("node_name_to_ref")
         if not node_name_to_ref:
-            # backward_edges_map is a defaultdict, accessing a new key will have side effect
+            # edges_map & backward_edges_map is a defaultdict, accessing a new key will have side effect
             # construct a new backward_edges_map dictionary to avoid introducing side effect
             values["node_name_to_ref"] = cls._derive_node_name_to_ref(
                 nodes_map=values["nodes_map"],
-                edges_map=values["edges_map"],
+                edges_map=dict(values["edges_map"]),
                 backward_edges_map=dict(values["backward_edges_map"]),
                 node_name_to_ref=node_name_to_ref,
             )
