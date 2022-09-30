@@ -46,20 +46,21 @@ def snowflake_session_dict_fixture(snowflake_session_dict_without_credentials):
 
 
 @pytest.mark.usefixtures("snowflake_connector", "snowflake_execute_query")
-def test_snowflake_session__credential_from_config(snowflake_session_dict):
+@pytest.mark.asyncio
+async def test_snowflake_session__credential_from_config(snowflake_session_dict):
     """
     Test snowflake session
     """
     session = SnowflakeSession(**snowflake_session_dict)
     assert session.username == "username"
     assert session.password == "password"
-    assert session.list_databases() == ["sf_database"]
-    assert session.list_schemas(database_name="sf_database") == ["sf_schema"]
-    assert session.list_tables(database_name="sf_database", schema_name="sf_schema") == [
+    assert await session.list_databases() == ["sf_database"]
+    assert await session.list_schemas(database_name="sf_database") == ["sf_schema"]
+    assert await session.list_tables(database_name="sf_database", schema_name="sf_schema") == [
         "sf_table",
         "sf_view",
     ]
-    assert session.list_table_schema(
+    assert await session.list_table_schema(
         database_name="sf_database", schema_name="sf_schema", table_name="sf_table"
     ) == {
         "col_int": DBVarType.INT,
@@ -72,7 +73,7 @@ def test_snowflake_session__credential_from_config(snowflake_session_dict):
         "cust_id": DBVarType.INT,
         "event_timestamp": DBVarType.TIMESTAMP,
     }
-    assert session.list_table_schema(
+    assert await session.list_table_schema(
         database_name="sf_database", schema_name="sf_schema", table_name="sf_view"
     ) == {
         "col_date": DBVarType.DATE,
@@ -108,7 +109,8 @@ def mock_schema_initializer_fixture():
 
 @pytest.mark.usefixtures("mock_schema_initializer")
 @pytest.mark.parametrize("is_fetch_pandas_all_available", [False, True])
-def test_snowflake_session__fetch_pandas_all(
+@pytest.mark.asyncio
+async def test_snowflake_session__fetch_pandas_all(
     snowflake_session_dict,
     mock_snowflake_cursor,
     is_fetch_pandas_all_available,
@@ -117,7 +119,7 @@ def test_snowflake_session__fetch_pandas_all(
     Test snowflake session fetch query result
     """
     session = SnowflakeSession(**snowflake_session_dict)
-    result = session.execute_query("SELECT * FROM T")
+    result = await session.execute_query("SELECT * FROM T")
     assert mock_snowflake_cursor.fetch_pandas_all.call_count == 1
     if is_fetch_pandas_all_available:
         assert mock_snowflake_cursor.fetchall.call_count == 0
@@ -313,16 +315,17 @@ def check_create_commands(mock_session):
         "functions": 0,
         "procedures": 0,
     }
-    for call_args in mock_session.execute_query.call_args_list:
-        args = call_args[0]
-        if args[0].startswith("CREATE SCHEMA"):
-            counts["schema"] += 1
-        if args[0].startswith("CREATE OR REPLACE PROCEDURE"):
-            counts["procedures"] += 1
-        elif args[0].startswith("CREATE OR REPLACE FUNCTION"):
-            counts["functions"] += 1
-        elif args[0].startswith("CREATE TABLE"):
-            counts["tables"] += 1
+    for exec_calls in [mock_session.make_async_query_request, mock_session.execute_query]:
+        for call_args in exec_calls.call_args_list:
+            args = call_args[0]
+            if args[0].startswith("CREATE SCHEMA"):
+                counts["schema"] += 1
+            if args[0].startswith("CREATE OR REPLACE PROCEDURE"):
+                counts["procedures"] += 1
+            elif args[0].startswith("CREATE OR REPLACE FUNCTION"):
+                counts["functions"] += 1
+            elif args[0].startswith("CREATE TABLE"):
+                counts["tables"] += 1
     return counts
 
 
@@ -330,7 +333,8 @@ def check_create_commands(mock_session):
 @pytest.mark.parametrize("is_functions_missing", [False])
 @pytest.mark.parametrize("is_procedures_missing", [False])
 @pytest.mark.parametrize("is_tables_missing", [False])
-def test_schema_initializer__everything_exists(
+@pytest.mark.asyncio
+async def test_schema_initializer__everything_exists(
     patched_snowflake_session_cls,
     is_schema_missing,
     is_functions_missing,
@@ -345,7 +349,7 @@ def test_schema_initializer__everything_exists(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    SchemaInitializer(session).initialize()
+    await SchemaInitializer(session).initialize()
     # Nothing to do except checking schemas and existing objects
     assert session.execute_query.call_args_list == [
         call("SHOW SCHEMAS"),
@@ -361,7 +365,8 @@ def test_schema_initializer__everything_exists(
 @pytest.mark.parametrize("is_functions_missing", [True])
 @pytest.mark.parametrize("is_procedures_missing", [True])
 @pytest.mark.parametrize("is_tables_missing", [True])
-def test_schema_initializer__all_missing(
+@pytest.mark.asyncio
+async def test_schema_initializer__all_missing(
     patched_snowflake_session_cls,
     is_schema_missing,
     is_functions_missing,
@@ -376,7 +381,7 @@ def test_schema_initializer__all_missing(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    SchemaInitializer(session).initialize()
+    await SchemaInitializer(session).initialize()
     # Should create schema if not exists
     assert session.execute_query.call_args_list[:2] == [
         call("SHOW SCHEMAS"),
@@ -396,7 +401,8 @@ def test_schema_initializer__all_missing(
 @pytest.mark.parametrize("is_functions_missing", [True, False])
 @pytest.mark.parametrize("is_procedures_missing", [True, False])
 @pytest.mark.parametrize("is_tables_missing", [True, False])
-def test_schema_initializer__partial_missing(
+@pytest.mark.asyncio
+async def test_schema_initializer__partial_missing(
     patched_snowflake_session_cls,
     is_schema_missing,
     is_functions_missing,
@@ -410,7 +416,7 @@ def test_schema_initializer__partial_missing(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    SchemaInitializer(session).initialize()
+    await SchemaInitializer(session).initialize()
     # Should register custom functions and procedures
     counts = check_create_commands(session)
     expected_counts = {"schema": 0, "functions": 0, "procedures": 0, "tables": 0}

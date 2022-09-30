@@ -117,7 +117,7 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
             )
             feature_manager = FeatureManagerSnowflake(session=db_session)
             try:
-                feature_manager.insert_feature_registry(document)
+                await feature_manager.insert_feature_registry(document)
             except DuplicatedRegistryError as exc:
                 # someone else already registered the feature at snowflake
                 # do not remove the current registry & raise error to remove persistent record
@@ -129,7 +129,7 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                 logger.error(f"error with insert_feature_registry: {exc}")
                 # for other exceptions, cleanup feature registry record & persistent record
                 try:
-                    feature_manager.remove_feature_registry(document)
+                    await feature_manager.remove_feature_registry(document)
                 except Exception as remove_exc:  # pylint: disable=broad-except
                     raise remove_exc from exc
 

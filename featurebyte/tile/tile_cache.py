@@ -40,7 +40,7 @@ class TileCache(ABC):
         self.session = session
 
     @abstractmethod
-    def compute_tiles_on_demand(self, features: list[Feature]) -> None:
+    async def compute_tiles_on_demand(self, features: list[Feature]) -> None:
         """Check tile status for the provided features and compute missing tiles if required
 
         Parameters
@@ -93,7 +93,7 @@ class SnowflakeTileCache(TileCache):
         super().__init__(*args, **kwargs)
         self._materialized_temp_table_names: set[str] = set()
 
-    def compute_tiles_on_demand(
+    async def compute_tiles_on_demand(
         self, features: list[Feature], serving_names_mapping: dict[str, str] | None = None
     ) -> None:
         """Compute missing tiles for the given list of Features
@@ -106,7 +106,7 @@ class SnowflakeTileCache(TileCache):
             Optional mapping from original serving name to new serving name
         """
         tic = time.time()
-        required_requests = self.get_required_computation(
+        required_requests = await self.get_required_computation(
             features, serving_names_mapping=serving_names_mapping
         )
         elapsed = time.time() - tic
@@ -116,15 +116,15 @@ class SnowflakeTileCache(TileCache):
 
         if required_requests:
             tic = time.time()
-            self.invoke_tile_manager(required_requests)
+            await self.invoke_tile_manager(required_requests)
             elapsed = time.time() - tic
             logger.debug(f"Compute tiles on demand took {elapsed:.2f}s")
         else:
             logger.debug("All required tiles can be reused")
 
-        self.cleanup_temp_tables()
+        await self.cleanup_temp_tables()
 
-    def invoke_tile_manager(
+    async def invoke_tile_manager(
         self, required_requests: list[SnowflakeOnDemandTileComputeRequest]
     ) -> None:
         """Interacts with FeatureListManagerSnowflake to compute tiles and update cache
@@ -139,15 +139,15 @@ class SnowflakeTileCache(TileCache):
         for request in required_requests:
             tile_input = request.to_tile_manager_input()
             tile_inputs.append(tile_input)
-        tile_manager.generate_tiles_on_demand(tile_inputs=tile_inputs)
+        await tile_manager.generate_tiles_on_demand(tile_inputs=tile_inputs)
 
-    def cleanup_temp_tables(self) -> None:
+    async def cleanup_temp_tables(self) -> None:
         """Drops all the temp tables that was created by SnowflakeTileCache"""
         for temp_table_name in self._materialized_temp_table_names:
-            self.session.execute_query(f"DROP TABLE IF EXISTS {temp_table_name}")
+            await self.session.execute_query(f"DROP TABLE IF EXISTS {temp_table_name}")
         self._materialized_temp_table_names = set()
 
-    def get_required_computation(
+    async def get_required_computation(
         self,
         features: list[Feature],
         serving_names_mapping: dict[str, str] | None = None,
@@ -169,12 +169,14 @@ class SnowflakeTileCache(TileCache):
         unique_tile_infos = SnowflakeTileCache._get_unique_tile_infos(
             features, serving_names_mapping=serving_names_mapping
         )
-        tile_ids_with_tracker = self._filter_tile_ids_with_tracker(list(unique_tile_infos.keys()))
+        tile_ids_with_tracker = await self._filter_tile_ids_with_tracker(
+            list(unique_tile_infos.keys())
+        )
         tile_ids_without_tracker = list(set(unique_tile_infos.keys()) - set(tile_ids_with_tracker))
 
         # Construct a temp table and query from it whether each tile has updated cache
         tic = time.time()
-        self._register_working_table(
+        await self._register_working_table(
             unique_tile_infos=unique_tile_infos,
             tile_ids_with_tracker=tile_ids_with_tracker,
             tile_ids_no_tracker=tile_ids_without_tracker,
@@ -185,7 +187,7 @@ class SnowflakeTileCache(TileCache):
         for tile_id in tile_ids_without_tracker:
             tile_cache_validity[tile_id] = False
         if tile_ids_with_tracker:
-            existing_validity = self._get_tile_cache_validity_from_working_table(
+            existing_validity = await self._get_tile_cache_validity_from_working_table(
                 tile_ids=tile_ids_with_tracker
             )
             tile_cache_validity.update(existing_validity)
@@ -236,7 +238,7 @@ class SnowflakeTileCache(TileCache):
                     out[info.aggregation_id] = info
         return out
 
-    def _filter_tile_ids_with_tracker(self, tile_ids: list[str]) -> list[str]:
+    async def _filter_tile_ids_with_tracker(self, tile_ids: list[str]) -> list[str]:
         """Query tracker tables in Snowflake to identify tile IDs with existing tracking tables
 
         Parameters
@@ -256,7 +258,7 @@ class SnowflakeTileCache(TileCache):
             WHERE TABLE_SCHEMA = '{working_schema}'
             AND TABLE_NAME LIKE '%{InternalName.TILE_ENTITY_TRACKER_SUFFIX}'
             """
-        existing_tracker_tables = session.execute_query(query)
+        existing_tracker_tables = await session.execute_query(query)
         if existing_tracker_tables is not None:
             all_trackers = set(existing_tracker_tables["TABLE_NAME"].tolist())
         else:
@@ -272,7 +274,7 @@ class SnowflakeTileCache(TileCache):
     def _get_tracker_name_from_tile_id(tile_id: str) -> str:
         return f"{tile_id}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
 
-    def _register_working_table(
+    async def _register_working_table(
         self,
         unique_tile_infos: dict[str, TileGenSql],
         tile_ids_with_tracker: list[str],
@@ -344,14 +346,16 @@ class SnowflakeTileCache(TileCache):
         table_expr = table_expr.select("REQ.*", *columns)
         table_sql = table_expr.sql(pretty=True)
 
-        self.session.execute_query(
+        await self.session.execute_query(
             f"CREATE OR REPLACE TEMP TABLE {InternalName.TILE_CACHE_WORKING_TABLE} AS "
             f"{table_sql}"
         )
 
         self._materialized_temp_table_names.add(InternalName.TILE_CACHE_WORKING_TABLE)
 
-    def _get_tile_cache_validity_from_working_table(self, tile_ids: list[str]) -> dict[str, bool]:
+    async def _get_tile_cache_validity_from_working_table(
+        self, tile_ids: list[str]
+    ) -> dict[str, bool]:
         """Get a dictionary indicating whether each tile table has updated enough tiles
 
         Parameters
@@ -374,7 +378,7 @@ class SnowflakeTileCache(TileCache):
         tile_cache_validity_sql = (
             select(*validity_exprs).from_(InternalName.TILE_CACHE_WORKING_TABLE.value)
         ).sql(pretty=True)
-        df_validity = self.session.execute_query(tile_cache_validity_sql)
+        df_validity = await self.session.execute_query(tile_cache_validity_sql)
 
         # Result should only have one row
         assert df_validity is not None

@@ -86,7 +86,7 @@ class FeatureStoreService(
         db_session = await self._get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
-        return db_session.list_databases()
+        return await db_session.list_databases()
 
     async def list_schemas(
         self,
@@ -114,7 +114,7 @@ class FeatureStoreService(
         db_session = await self._get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
-        return db_session.list_schemas(database_name=database_name)
+        return await db_session.list_schemas(database_name=database_name)
 
     async def list_tables(
         self,
@@ -145,7 +145,7 @@ class FeatureStoreService(
         db_session = await self._get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
-        return db_session.list_tables(database_name=database_name, schema_name=schema_name)
+        return await db_session.list_tables(database_name=database_name, schema_name=schema_name)
 
     async def list_columns(
         self,
@@ -179,7 +179,7 @@ class FeatureStoreService(
         db_session = await self._get_feature_store_session(
             feature_store=feature_store, get_credential=get_credential
         )
-        table_schema = db_session.list_table_schema(
+        table_schema = await db_session.list_table_schema(
             database_name=database_name, schema_name=schema_name, table_name=table_name
         )
         return [ColumnSpec(name=name, dtype=dtype) for name, dtype in table_schema.items()]

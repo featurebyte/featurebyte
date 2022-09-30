@@ -44,7 +44,7 @@ class FeatureListManagerSnowflake(BaseModel):
         super().__init__(**kw)
         self._session = session
 
-    def insert_feature_list_registry(self, feature_list: ExtendedFeatureListModel) -> None:
+    async def insert_feature_list_registry(self, feature_list: ExtendedFeatureListModel) -> None:
         """
         Insert featurelist registry record. If the feature list record already exists, return False
 
@@ -58,7 +58,7 @@ class FeatureListManagerSnowflake(BaseModel):
         DuplicatedRegistryError
             when the feature list registry record already exists
         """
-        feature_list_versions = self.retrieve_feature_list_registries(
+        feature_list_versions = await self.retrieve_feature_list_registries(
             feature_list=feature_list, version=feature_list.version
         )
 
@@ -82,14 +82,14 @@ class FeatureListManagerSnowflake(BaseModel):
                 feature_list=feature_list, feature_lst_str=feature_lst_str
             )
             logger.debug(f"generated sql: {sql}")
-            self._session.execute_query(sql)
+            await self._session.execute_query(sql)
         else:
             raise DuplicatedRegistryError(
                 f"FeatureList version already exist for {feature_list.name} with version "
                 f"{feature_list.version.to_str()}"
             )
 
-    def retrieve_feature_list_registries(
+    async def retrieve_feature_list_registries(
         self, feature_list: FeatureListModel, version: Optional[VersionIdentifier] = None
     ) -> pd.DataFrame:
         """
@@ -111,9 +111,9 @@ class FeatureListManagerSnowflake(BaseModel):
         if version:
             sql += f" AND VERSION = '{version.to_str()}'"
 
-        return self._session.execute_query(sql)
+        return await self._session.execute_query(sql)
 
-    def update_feature_list_registry(self, new_feature_list: FeatureListModel) -> None:
+    async def update_feature_list_registry(self, new_feature_list: FeatureListModel) -> None:
         """
         Update Feature List Registry record. Only readiness and status might be updated
 
@@ -127,7 +127,7 @@ class FeatureListManagerSnowflake(BaseModel):
         ValueError
             when the feature registry record does not exist
         """
-        feature_list_versions = self.retrieve_feature_list_registries(
+        feature_list_versions = await self.retrieve_feature_list_registries(
             feature_list=new_feature_list, version=new_feature_list.version
         )
         if len(feature_list_versions) == 0:
@@ -137,11 +137,11 @@ class FeatureListManagerSnowflake(BaseModel):
             )
         logger.debug(f"feature_list_versions: {feature_list_versions}")
 
-        self._session.execute_query(
+        await self._session.execute_query(
             tm_update_feature_list_registry.render(feature_list=new_feature_list)
         )
 
-    def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
+    async def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
         """
         Generate Tiles and update tile entity checking table
 
@@ -155,10 +155,12 @@ class FeatureListManagerSnowflake(BaseModel):
                 session=self._session,
             )
 
-            tile_mgr.generate_tiles(
+            await tile_mgr.generate_tiles(
                 tile_spec=tile_spec, tile_type=TileType.OFFLINE, start_ts_str=None, end_ts_str=None
             )
             logger.debug(f"Done generating tiles for {tile_spec}")
 
-            tile_mgr.update_tile_entity_tracker(tile_spec=tile_spec, temp_entity_table=entity_table)
+            await tile_mgr.update_tile_entity_tracker(
+                tile_spec=tile_spec, temp_entity_table=entity_table
+            )
             logger.debug(f"Done update_tile_entity_tracker for {tile_spec}")

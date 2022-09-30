@@ -1,7 +1,8 @@
 """
 Tests for featurebyte.query_graph.feature_historical.py
 """
-from unittest.mock import MagicMock, Mock, patch
+import asyncio
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pandas as pd
 import pytest
@@ -23,9 +24,9 @@ from tests.util.helper import assert_equal_with_expected_fixture
 def mocked_session_fixture():
     """Fixture for a mocked session object"""
     with patch("featurebyte.core.generic.SessionManager") as session_manager_cls:
-        session_manager = MagicMock(name="MockedSessionManager")
-        mocked_session = Mock(name="MockedSession", sf_schema="FEATUREBYTE")
-        session_manager.__getitem__.return_value = mocked_session
+        session_manager = AsyncMock(name="MockedSessionManager")
+        mocked_session = AsyncMock(name="MockedSession", sf_schema="FEATUREBYTE")
+        session_manager.get_session.return_value = mocked_session
         session_manager_cls.return_value = session_manager
         yield mocked_session
 
@@ -44,7 +45,8 @@ def mock_sqlite_feature_fixture():
     return feature
 
 
-def test_get_historical_features__missing_point_in_time(mock_snowflake_feature):
+@pytest.mark.asyncio
+async def test_get_historical_features__missing_point_in_time(mock_snowflake_feature):
     """Test validation of missing point in time for historical features"""
     training_events = pd.DataFrame(
         {
@@ -52,13 +54,14 @@ def test_get_historical_features__missing_point_in_time(mock_snowflake_feature):
         }
     )
     with pytest.raises(exception.MissingPointInTimeColumnError) as exc_info:
-        get_historical_features(
+        await get_historical_features(
             feature_objects=[mock_snowflake_feature], training_events=training_events
         )
     assert str(exc_info.value) == "POINT_IN_TIME column is required"
 
 
-def test_get_historical_features__missing_required_serving_name(mock_snowflake_feature):
+@pytest.mark.asyncio
+async def test_get_historical_features__missing_required_serving_name(mock_snowflake_feature):
     """Test validation of missing point in time for historical features"""
     training_events = pd.DataFrame(
         {
@@ -67,7 +70,7 @@ def test_get_historical_features__missing_required_serving_name(mock_snowflake_f
         }
     )
     with pytest.raises(exception.MissingServingNameError) as exc_info:
-        get_historical_features(
+        await get_historical_features(
             feature_objects=[mock_snowflake_feature], training_events=training_events
         )
     assert str(exc_info.value) == "Required serving names not provided: cust_id"
@@ -75,7 +78,8 @@ def test_get_historical_features__missing_required_serving_name(mock_snowflake_f
 
 @freeze_time("2022-05-01")
 @pytest.mark.parametrize("point_in_time_is_datetime_dtype", [True, False])
-def test_get_historical_features__too_recent_point_in_time(
+@pytest.mark.asyncio
+async def test_get_historical_features__too_recent_point_in_time(
     mock_snowflake_feature, point_in_time_is_datetime_dtype
 ):
     """Test validation of too recent point in time for historical features"""
@@ -89,7 +93,7 @@ def test_get_historical_features__too_recent_point_in_time(
         }
     )
     with pytest.raises(exception.TooRecentPointInTimeError) as exc_info:
-        get_historical_features(
+        await get_historical_features(
             feature_objects=[mock_snowflake_feature], training_events=training_events
         )
     assert str(exc_info.value) == (
@@ -98,14 +102,16 @@ def test_get_historical_features__too_recent_point_in_time(
     )
 
 
-def test_get_session__multiple_stores_not_supported(float_feature, mock_sqlite_feature):
+@pytest.mark.asyncio
+async def test_get_session__multiple_stores_not_supported(float_feature, mock_sqlite_feature):
     """Test multiple stores not supported"""
     with pytest.raises(NotImplementedError) as exc_info:
-        get_session_from_feature_objects([float_feature, mock_sqlite_feature])
+        await get_session_from_feature_objects([float_feature, mock_sqlite_feature])
     assert str(exc_info.value) == "Historical features request using multiple stores not supported"
 
 
-def test_get_historical_features__point_in_time_dtype_conversion(
+@pytest.mark.asyncio
+async def test_get_historical_features__point_in_time_dtype_conversion(
     float_feature,
     config,
     mocked_session,
@@ -126,7 +132,7 @@ def test_get_historical_features__point_in_time_dtype_conversion(
     )
     assert df_request.dtypes["POINT_IN_TIME"] == "object"
 
-    _ = get_historical_features(
+    _ = await get_historical_features(
         feature_objects=feature_objects,
         training_events=df_request,
         credentials=config.credentials,

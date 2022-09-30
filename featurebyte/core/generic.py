@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar, cast
 
+import asyncio
 import json
 from abc import abstractmethod
 from http import HTTPStatus
@@ -33,7 +34,7 @@ class ExtendedFeatureStoreModel(FeatureStoreModel):
     ExtendedFeatureStoreModel class contains method to construct a session
     """
 
-    def get_session(self, credentials: Credentials | None = None) -> BaseSession:
+    async def get_session(self, credentials: Credentials | None = None) -> BaseSession:
         """
         Get data source session based on provided configuration
 
@@ -50,7 +51,7 @@ class ExtendedFeatureStoreModel(FeatureStoreModel):
             config = Configurations()
             credentials = config.credentials
         session_manager = SessionManager(credentials=credentials)
-        return session_manager[self]
+        return await session_manager.get_session(self)
 
 
 QueryObjectT = TypeVar("QueryObjectT", bound="QueryObject")
@@ -133,8 +134,8 @@ class QueryObject(FeatureByteBaseModel):
             Preview request failed
         """
         if self.feature_store.details.is_local_source:
-            session = self.feature_store.get_session()
-            return session.execute_query(self.preview_sql(limit=limit))
+            session = asyncio.run(self.feature_store.get_session())
+            return asyncio.run(session.execute_query(self.preview_sql(limit=limit)))
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = FeatureStorePreview(
@@ -167,7 +168,7 @@ class QueryObject(FeatureByteBaseModel):
             config = Configurations()
             credentials = config.credentials
 
-        session = self.feature_store.get_session(credentials=credentials)
+        session = asyncio.run(self.feature_store.get_session(credentials=credentials))
         return session
 
     def copy(

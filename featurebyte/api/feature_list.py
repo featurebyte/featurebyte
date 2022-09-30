@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, OrderedDict, Union
 
+import asyncio
 import collections
 import time
 from collections import defaultdict
@@ -424,9 +425,11 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         """
         if credentials is None:
             credentials = Configurations().credentials
-        return get_historical_features(
-            feature_objects=self._features,
-            training_events=training_events,
-            credentials=credentials,
-            serving_names_mapping=serving_names_mapping,
+        return asyncio.run(
+            get_historical_features(
+                feature_objects=self._features,
+                training_events=training_events,
+                credentials=credentials,
+                serving_names_mapping=serving_names_mapping,
+            )
         )

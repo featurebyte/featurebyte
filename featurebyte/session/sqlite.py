@@ -32,16 +32,16 @@ class SQLiteSession(BaseSession):
 
         self._connection = sqlite3.connect(filename)
 
-    def list_databases(self) -> list[str]:
+    async def list_databases(self) -> list[str]:
         return []
 
-    def list_schemas(self, database_name: str | None = None) -> list[str]:
+    async def list_schemas(self, database_name: str | None = None) -> list[str]:
         return []
 
-    def list_tables(
+    async def list_tables(
         self, database_name: str | None = None, schema_name: str | None = None
     ) -> list[str]:
-        tables = self.execute_query("SELECT name FROM sqlite_master WHERE type = 'table'")
+        tables = await self.execute_query("SELECT name FROM sqlite_master WHERE type = 'table'")
         output = []
         if tables is not None:
             output.extend(tables["name"])
@@ -68,13 +68,13 @@ class SQLiteSession(BaseSession):
             return DBVarType.DATE
         raise ValueError(f"Not supported data type '{sqlite_data_type}'")
 
-    def list_table_schema(
+    async def list_table_schema(
         self,
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
     ) -> OrderedDict[str, DBVarType]:
-        schema = self.execute_query(f'PRAGMA table_info("{table_name}")')
+        schema = await self.execute_query(f'PRAGMA table_info("{table_name}")')
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
             for _, (column_name, data_type) in schema[["name", "type"]].iterrows():
@@ -83,5 +83,5 @@ class SQLiteSession(BaseSession):
                 )
         return column_name_type_map
 
-    def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
+    async def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         raise NotImplementedError()

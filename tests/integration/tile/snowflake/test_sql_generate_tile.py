@@ -9,7 +9,8 @@ from snowflake.connector.errors import ProgrammingError
 from featurebyte.enum import InternalName
 
 
-def test_generate_tile(snowflake_session):
+@pytest.mark.asyncio
+async def test_generate_tile(snowflake_session):
     """
     Test normal generation of tiles
     """
@@ -37,13 +38,13 @@ def test_generate_tile(snowflake_session):
         f"  'OFFLINE',"
         f"  '2022-06-05T23:53:00Z')"
     )
-    snowflake_session.execute_query(sql)
+    await snowflake_session.execute_query(sql)
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
-    result = snowflake_session.execute_query(sql)
+    result = await snowflake_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 2
 
-    result = snowflake_session.execute_query(
+    result = await snowflake_session.execute_query(
         f"SELECT * FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
     )
     assert (
@@ -56,7 +57,8 @@ def test_generate_tile(snowflake_session):
     assert result["LAST_TILE_INDEX_OFFLINE"].iloc[0] == 5514910
 
 
-def test_generate_tile_no_data(snowflake_session):
+@pytest.mark.asyncio
+async def test_generate_tile_no_data(snowflake_session):
     """
     Test generation of tile with no tile data
     """
@@ -73,15 +75,16 @@ def test_generate_tile_no_data(snowflake_session):
         f"call SP_TILE_GENERATE('{tile_sql}', '{InternalName.TILE_START_DATE}', '{InternalName.TILE_LAST_START_DATE}', "
         f"183, 3, 5, '{entity_col_names}', '{value_col_names}', '{tile_id}', 'ONLINE', null)"
     )
-    result = snowflake_session.execute_query(sql)
+    result = await snowflake_session.execute_query(sql)
     assert "Debug" in result["SP_TILE_GENERATE"].iloc[0]
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
-    result = snowflake_session.execute_query(sql)
+    result = await snowflake_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 0
 
 
-def test_generate_tile_non_exist_table(snowflake_session):
+@pytest.mark.asyncio
+async def test_generate_tile_non_exist_table(snowflake_session):
     """
     Test generation of tile with error in tile query
     """
@@ -96,13 +99,14 @@ def test_generate_tile_non_exist_table(snowflake_session):
     )
 
     with pytest.raises(ProgrammingError) as exc_info:
-        snowflake_session.execute_query(sql)
+        await snowflake_session.execute_query(sql)
 
     # make sure the error is about table not existing
     assert "Object 'NON_EXIST_TABLE' does not exist or not authorized." in str(exc_info.value)
 
 
-def test_generate_tile_new_value_column(snowflake_session):
+@pytest.mark.asyncio
+async def test_generate_tile_new_value_column(snowflake_session):
     """
     Test normal generation of tiles
     """
@@ -130,14 +134,14 @@ def test_generate_tile_new_value_column(snowflake_session):
         f"  'OFFLINE',"
         f"  '2022-06-05T23:53:00Z')"
     )
-    snowflake_session.execute_query(sql)
+    await snowflake_session.execute_query(sql)
 
     sql = f"SELECT {value_col_names} FROM {tile_id}"
-    result = snowflake_session.execute_query(sql)
+    result = await snowflake_session.execute_query(sql)
     assert len(result) == 2
 
     sql = f"SELECT VALUE_COLUMN_NAMES FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
-    result = snowflake_session.execute_query(sql)
+    result = await snowflake_session.execute_query(sql)
     assert len(result) == 1
     assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE"
 
@@ -149,7 +153,7 @@ def test_generate_tile_new_value_column(snowflake_session):
     ).replace("'", "''")
     with pytest.raises(ProgrammingError) as excinfo:
         sql = f"SELECT {value_col_names_2} FROM {tile_id}"
-        snowflake_session.execute_query(sql)
+        await snowflake_session.execute_query(sql)
     assert "invalid identifier 'VALUE_2'" in str(excinfo.value)
 
     sql = (
@@ -166,13 +170,13 @@ def test_generate_tile_new_value_column(snowflake_session):
         f"  'OFFLINE',"
         f"  '2022-06-05T23:53:00Z')"
     )
-    snowflake_session.execute_query(sql)
+    await snowflake_session.execute_query(sql)
 
     sql = f"SELECT {value_col_names_2} FROM {tile_id}"
-    result = snowflake_session.execute_query(sql)
+    result = await snowflake_session.execute_query(sql)
     assert len(result) == 2
 
     sql = f"SELECT VALUE_COLUMN_NAMES FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'"
-    result = snowflake_session.execute_query(sql)
+    result = await snowflake_session.execute_query(sql)
     assert len(result) == 1
     assert result["VALUE_COLUMN_NAMES"].iloc[0] == "VALUE,VALUE_2"

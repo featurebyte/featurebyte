@@ -1,7 +1,7 @@
 """
 This module contains session to EventView integration tests
 """
-from decimal import Decimal
+import asyncio
 
 import numpy as np
 import pandas as pd
@@ -72,7 +72,7 @@ def test_query_object_operation_on_sqlite_source(
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
 
-def check_feature_and_remove_registry(feature, feature_manager):
+async def check_feature_and_remove_registry(feature, feature_manager):
     """
     Check feature properties & registry values
     """
@@ -80,12 +80,12 @@ def check_feature_and_remove_registry(feature, feature_manager):
     extended_feature_model = ExtendedFeatureModel(
         **feature.dict(by_alias=True), feature_store=feature.feature_store
     )
-    feat_reg_df = feature_manager.retrieve_feature_registries(extended_feature_model)
+    feat_reg_df = await feature_manager.retrieve_feature_registries(extended_feature_model)
     assert len(feat_reg_df) == 1
     assert feat_reg_df.iloc[0]["NAME"] == feature.name
     assert feat_reg_df.iloc[0]["VERSION"] == feature.version.to_str()
     assert feat_reg_df.iloc[0]["READINESS"] == "DRAFT"
-    feature_manager.remove_feature_registry(extended_feature_model)
+    await feature_manager.remove_feature_registry(extended_feature_model)
 
 
 def iet_entropy(view, group_by_col, window, name):
@@ -309,7 +309,7 @@ def test_query_object_operation_on_snowflake_source(
 
     special_feature = create_feature_with_filtered_event_view(event_view)
     special_feature.save()  # pylint: disable=no-member
-    check_feature_and_remove_registry(special_feature, feature_manager)
+    asyncio.run(check_feature_and_remove_registry(special_feature, feature_manager))
 
     # add iet entropy
     feature_group["iet_entropy_24h"] = iet_entropy(

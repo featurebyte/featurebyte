@@ -19,7 +19,8 @@ import pytest
         (15, 100, 2, "2022-06-13T09:26:35.000Z", 13792604),
     ],
 )
-def test_timestamp_to_index(
+@pytest.mark.asyncio
+async def test_timestamp_to_index(
     snowflake_session,
     time_modulo_frequency_seconds,
     blind_spot_seconds,
@@ -31,7 +32,7 @@ def test_timestamp_to_index(
     Test timestamp to tile index conversion with both iso/non-iso format and different job settings
     """
     sql = f"SELECT F_TIMESTAMP_TO_INDEX('{test_input}', {time_modulo_frequency_seconds}, {blind_spot_seconds}, {frequency_minute}) as INDEX"
-    result = snowflake_session.execute_query(sql)
+    result = await snowflake_session.execute_query(sql)
     assert result["INDEX"].iloc[0] == expected
 
 
@@ -44,7 +45,8 @@ def test_timestamp_to_index(
         (15, 100, 2, 13792604, "2022-06-13T09:26:35.000Z"),
     ],
 )
-def test_index_to_timestamp(
+@pytest.mark.asyncio
+async def test_index_to_timestamp(
     snowflake_session,
     time_modulo_frequency_seconds,
     blind_spot_seconds,
@@ -56,5 +58,5 @@ def test_index_to_timestamp(
     Test tile index conversion to timestamp conversion with different job settings
     """
     sql = f"SELECT F_INDEX_TO_TIMESTAMP({test_input}, {time_modulo_frequency_seconds}, {blind_spot_seconds}, {frequency_minute}) as TS"
-    result = snowflake_session.execute_query(sql)
+    result = await snowflake_session.execute_query(sql)
     assert result["TS"].iloc[0] == expected

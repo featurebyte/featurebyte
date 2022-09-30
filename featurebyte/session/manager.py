@@ -3,9 +3,12 @@ SessionManager class
 """
 from __future__ import annotations
 
+from typing import Any
+
 import json
 
-from cachetools import TTLCache, cached
+from asyncache import cached
+from cachetools import TTLCache
 from pydantic import BaseModel
 
 from featurebyte.config import Credentials
@@ -21,9 +24,11 @@ SOURCE_TYPE_SESSION_MAP = {
     SourceType.SNOWFLAKE: SnowflakeSession,
 }
 
+session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=900)
 
-@cached(cache=TTLCache(maxsize=1024, ttl=900))
-def get_session(item: str, credential_params: str) -> BaseSession:
+
+@cached(cache=session_cache)
+async def get_session(item: str, credential_params: str) -> BaseSession:
     """
     Retrieve or create a new session for the given database source key
 
@@ -42,9 +47,11 @@ def get_session(item: str, credential_params: str) -> BaseSession:
     item_dict = json.loads(item)
     logger.debug(f'Create a new session for {item_dict["type"]}')
     credential_params_dict = json.loads(credential_params)
-    return SOURCE_TYPE_SESSION_MAP[item_dict["type"]](
+    session = SOURCE_TYPE_SESSION_MAP[item_dict["type"]](
         **item_dict["details"], **credential_params_dict
     )
+    await session.initialize()
+    return session
 
 
 class SessionManager(BaseModel):
@@ -54,7 +61,7 @@ class SessionManager(BaseModel):
 
     credentials: Credentials
 
-    def __getitem__(self, item: FeatureStoreModel) -> BaseSession:
+    async def get_session(self, item: FeatureStoreModel) -> BaseSession:
         """
         Retrieve or create a new session for the given database source key
 
@@ -76,8 +83,10 @@ class SessionManager(BaseModel):
         if item.name in self.credentials:
             credential = self.credentials[item.name]
             credential_params = credential.credential.dict() if credential else {}
-            return get_session(
+            session = await get_session(
                 item=json.dumps(item.dict(include={"type": True, "details": True}), sort_keys=True),
                 credential_params=json.dumps(credential_params, sort_keys=True),
             )
+            assert isinstance(session, BaseSession)
+            return session
         raise ValueError(f'Credentials do not contain info for the feature store "{item.name}"!')

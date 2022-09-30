@@ -10,7 +10,7 @@ from pytest import LogCaptureFixture
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.models.feature_store import SQLiteDetails
-from featurebyte.session.manager import SessionManager, get_session
+from featurebyte.session.manager import SessionManager, session_cache
 
 
 @pytest.fixture(autouse=True, name="caplog_handle")
@@ -30,7 +30,7 @@ def session_manager_fixture(config, snowflake_connector):
     """
     # pylint: disable=no-member
     _ = snowflake_connector
-    get_session.cache_clear()
+    session_cache.clear()
     yield SessionManager(credentials=config.credentials)
 
 
@@ -48,7 +48,8 @@ def sqlite_feature_store_fixture(config):
 
 @patch("featurebyte.session.sqlite.os", Mock())
 @patch("featurebyte.session.sqlite.sqlite3", Mock())
-def test_session_manager__get_cached_properly(
+@pytest.mark.asyncio
+async def test_session_manager__get_cached_properly(
     snowflake_feature_store,
     sqlite_feature_store,
     snowflake_execute_query,
@@ -72,38 +73,39 @@ def test_session_manager__get_cached_properly(
         return total, latest_message
 
     # retrieve data source session for the first time
-    _ = session_manager[snowflake_feature_store]
+    _ = await session_manager.get_session(snowflake_feature_store)
     count, msg = count_create_session_logs()
     assert count == 1
     assert msg == "Create a new session for snowflake"
 
     # retrieve same data source for the second time, check that cached is used
-    _ = session_manager[snowflake_feature_store]
+    _ = await session_manager.get_session(snowflake_feature_store)
     count, msg = count_create_session_logs()
     assert count == 1
 
     # retrieve different data source
-    _ = session_manager[sqlite_feature_store]
+    _ = await session_manager.get_session(sqlite_feature_store)
     count, msg = count_create_session_logs()
     assert count == 2
     assert msg == "Create a new session for sqlite"
 
     # clear the cache & call again
-    get_session.cache_clear()
-    _ = session_manager[snowflake_feature_store]
+    session_cache.clear()
+    _ = await session_manager.get_session(snowflake_feature_store)
     count, msg = count_create_session_logs()
     assert count == 3
     assert msg == "Create a new session for snowflake"
 
 
-def test_session_manager__wrong_configuration_file(snowflake_feature_store):
+@pytest.mark.asyncio
+async def test_session_manager__wrong_configuration_file(snowflake_feature_store):
     """
     Test exception raised when wrong configuration file is used
     """
     config = Configurations("non/existent/path")
     session_manager = SessionManager(credentials=config.credentials)
     with pytest.raises(ValueError) as exc:
-        _ = session_manager[snowflake_feature_store]
+        _ = await session_manager.get_session(snowflake_feature_store)
     assert 'Credentials do not contain info for the feature store "sf_featurestore"' in str(
         exc.value
     )

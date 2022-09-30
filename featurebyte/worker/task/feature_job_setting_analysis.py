@@ -74,7 +74,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         feature_store = ExtendedFeatureStoreModel(**document)
 
         # establish database session
-        db_session = feature_store.get_session(
+        db_session = await feature_store.get_session(
             credentials={
                 feature_store.name: await self.get_credential(
                     user_id=payload.user_id, feature_store_name=feature_store.name
@@ -82,14 +82,13 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             }
         )
 
-        # create analysis
         event_dataset = EventDataset(
             database_type=feature_store.type,
             event_data_name=event_data.name,
             table_details=event_data.tabular_source.table_details.dict(),
             creation_date_column=event_data.record_creation_date_column,
             event_timestamp_column=event_data.event_timestamp_column,
-            sql_query_func=db_session.execute_query,
+            sql_query_func=db_session.execute_query_blocking,
         )
 
         self.update_progress(percent=5, message="Running Analysis")

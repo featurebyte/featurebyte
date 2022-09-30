@@ -60,15 +60,16 @@ def test_sqlite_session__file_not_found():
     assert "SQLite file 'some_random_sqlite_file.db' not found!" in str(exc.value)
 
 
-def test_sqlite_session(sqlite_db_filename):
+@pytest.mark.asyncio
+async def test_sqlite_session(sqlite_db_filename):
     """
     Test sqlite session
     """
     session = SQLiteSession(filename=sqlite_db_filename)
-    assert not session.list_databases()
-    assert not session.list_schemas()
-    assert session.list_tables() == ["type_table"]
-    assert session.list_table_schema(table_name="type_table") == {
+    assert not await session.list_databases()
+    assert not await session.list_schemas()
+    assert await session.list_tables() == ["type_table"]
+    assert await session.list_table_schema(table_name="type_table") == {
         "int": DBVarType.INT,
         "integer": DBVarType.INT,
         "tinyint": DBVarType.INT,
@@ -96,12 +97,13 @@ def test_sqlite_session(sqlite_db_filename):
     }
 
 
-def test_execute_query__with_empty_return(sqlite_db_filename):
+@pytest.mark.asyncio
+async def test_execute_query__with_empty_return(sqlite_db_filename):
     """
     Test execute query with empty result
     """
     session = SQLiteSession(filename=sqlite_db_filename)
-    write_output = session.execute_query(
+    write_output = await session.execute_query(
         """
         CREATE TEMPORARY TABLE temp_table(int INT)
         """

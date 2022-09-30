@@ -31,7 +31,8 @@ def to_object(obj_dict):
         ({"a": 1, "b": 2, "c": 3}, {"a": 1, "b": 2, "c": 3}, 1.0),
     ],
 )
-def test_cosine_similarity_udf(snowflake_session, counts1, counts2, expected):
+@pytest.mark.asyncio
+async def test_cosine_similarity_udf(snowflake_session, counts1, counts2, expected):
     """
     Test cosine similarity UDF
     """
@@ -41,12 +42,12 @@ def test_cosine_similarity_udf(snowflake_session, counts1, counts2, expected):
             return "null"
         return to_object(x)
 
-    def _check(a, b):
+    async def _check(a, b):
         a_expr = _to_expr(a)
         b_expr = _to_expr(b)
         query = f"SELECT F_COUNT_DICT_COSINE_SIMILARITY({a_expr}, {b_expr}) AS OUT"
-        df = snowflake_session.execute_query(query)
+        df = await snowflake_session.execute_query(query)
         np.testing.assert_allclose(df.iloc[0]["OUT"], expected, 1e-5)
 
-    _check(counts1, counts2)
-    _check(counts2, counts1)
+    await _check(counts1, counts2)
+    await _check(counts2, counts1)

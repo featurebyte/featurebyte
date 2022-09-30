@@ -6,6 +6,8 @@ from typing import AsyncGenerator
 import shutil
 from pathlib import Path
 
+import aiofiles
+
 from featurebyte.storage.base import Storage
 
 
@@ -112,9 +114,9 @@ class LocalStorage(Storage):
         if not source_path.exists():
             raise FileNotFoundError("Remote file does not exist")
 
-        with open(source_path, "rb") as file_obj:
+        async with aiofiles.open(source_path, "rb") as file_obj:
             while True:
-                chunk = file_obj.read(chunk_size)
+                chunk = await file_obj.read(chunk_size)
                 if len(chunk) == 0:
                     break
                 yield chunk
