@@ -120,7 +120,7 @@ class Storage(ABC):
         async with aiofiles.tempfile.NamedTemporaryFile(mode="w") as file_obj:
             await file_obj.write(text)
             await file_obj.flush()
-            await self.put(Path(file_obj.name), remote_path)
+            await self.put(Path(str(file_obj.name)), remote_path)
 
     async def get_text(self, remote_path: Path) -> str:
         """
@@ -137,7 +137,7 @@ class Storage(ABC):
             Text data
         """
         async with aiofiles.tempfile.NamedTemporaryFile(mode="r") as tmp_file:
-            await self.get(remote_path, Path(tmp_file.name))
+            await self.get(remote_path, Path(str(tmp_file.name)))
             async with aiofiles.open(tmp_file.name, encoding="utf8") as file_obj:
                 text = await file_obj.read()
             return text
@@ -155,7 +155,7 @@ class Storage(ABC):
         """
         async with aiofiles.tempfile.NamedTemporaryFile() as file_obj:
             dataframe.to_parquet(file_obj.name)
-            await self.put(Path(file_obj.name), remote_path)
+            await self.put(Path(str(file_obj.name)), remote_path)
 
     async def get_dataframe(self, remote_path: Path) -> DataFrame:
         """
@@ -172,5 +172,5 @@ class Storage(ABC):
             Pandas DataFrame object
         """
         async with aiofiles.tempfile.NamedTemporaryFile(mode="r") as file_obj:
-            await self.get(remote_path, Path(file_obj.name))
+            await self.get(remote_path, Path(str(file_obj.name)))
             return pd.read_parquet(file_obj.name)
