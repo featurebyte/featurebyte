@@ -127,16 +127,6 @@ class TableNode(SQLNode, ABC):
         """
         return self.columns_map[column_name]
 
-    def set_columns_map(self, columns_map: dict[str, Expression]) -> None:
-        """Set column-expression mapping to the provided mapping
-
-        Parameters
-        ----------
-        columns_map : dict[str, Expression]
-            Column names to expressions mapping
-        """
-        self.columns_map = columns_map
-
     def subset_columns(self: TableNodeT, columns: list[str]) -> TableNodeT:
         """Create a new TableNode with subset of columns
 
