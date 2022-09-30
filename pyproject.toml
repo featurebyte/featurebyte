@@ -14,6 +14,10 @@ line-length = 100
 target-version = ["py38"]
 
 [tool.coverage.report] # https://coverage.readthedocs.io/en/6.4.1/config.html#run
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+]
 fail_under = 50
 show_missing = true
 
