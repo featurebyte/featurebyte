@@ -192,7 +192,6 @@ def test_feature_deserialization(
     same_float_feature_dict = feature_group["sum_1d"].dict(
         exclude={"id": True, "feature_namespace_id": True}
     )
-    # check that the time id are the same (unused assigned node get pruned)
     float_feature_dict.pop("_id")
     float_feature_dict.pop("feature_store")
     float_feature_dict.pop("feature_namespace_id")
