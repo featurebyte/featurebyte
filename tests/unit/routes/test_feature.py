@@ -53,7 +53,17 @@ class TestFeatureApi(BaseApiTestSuite):
                     "msg": "ensure this value has at least 1 items",
                     "type": "value_error.list.min_items",
                     "ctx": {"limit_value": 1},
-                }
+                },
+                {
+                    "loc": ["body", "source_feature_id"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                },
+                {
+                    "loc": ["body", "feature_job_setting"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                },
             ],
         ),
         (
@@ -173,6 +183,35 @@ class TestFeatureApi(BaseApiTestSuite):
             response_dict["created_at"]
         )
         assert feat_namespace_docs[0]["updated_at"] > feat_namespace_docs[0]["created_at"]
+
+    def test_create_201__creation_new_version(
+        self, test_api_client_persistent, create_success_response
+    ):  # pylint: disable=invalid-overridden-method
+        """Test new version creation (success)"""
+        test_api_client, persistent = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        response = test_api_client.post(
+            f"{self.base_route}",
+            json={
+                "source_feature_id": create_response_dict["_id"],
+                "feature_job_setting": {
+                    "blind_spot": "1d",
+                    "frequency": "1d",
+                    "time_modulo_frequency": "1h",
+                },
+            },
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED
+        assert response_dict["version"] == {"name": get_version(), "suffix": 1}
+
+        groupby_node = response_dict["graph"]["nodes"][1]
+        assert groupby_node["name"] == "groupby_1"
+
+        parameters = groupby_node["parameters"]
+        assert parameters["time_modulo_frequency"] == 3600
+        assert parameters["frequency"] == 86400
+        assert parameters["blind_spot"] == 86400
 
     def test_create_401(self, test_api_client_persistent, mock_insert_feature_registry_fixture):
         """Test create (unauthorized)"""

@@ -30,6 +30,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.task_manager import AbstractTaskManager
+from featurebyte.service.version import VersionService
 from featurebyte.storage import Storage
 
 app_container_config = {
@@ -86,6 +87,10 @@ app_container_config = {
             "name": "preview_service",
             "clazz": PreviewService,
         },
+        {
+            "name": "version_service",
+            "clazz": VersionService,
+        },
     ],
     "controllers": [
         {
@@ -109,6 +114,7 @@ app_container_config = {
                 "feature_readiness_service",
                 "online_enable_service",
                 "preview_service",
+                "version_service",
             ],
         },
         {

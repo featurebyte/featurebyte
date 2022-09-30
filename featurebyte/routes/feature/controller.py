@@ -3,7 +3,7 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal, cast
+from typing import Any, Literal, Union, cast
 
 from http import HTTPStatus
 
@@ -18,12 +18,14 @@ from featurebyte.schema.feature import (
     FeaturePaginatedList,
     FeaturePreview,
     FeatureUpdate,
+    VersionCreate,
 )
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.version import VersionService
 
 
 class FeatureController(  # type: ignore[misc]
@@ -42,14 +44,18 @@ class FeatureController(  # type: ignore[misc]
         feature_readiness_service: FeatureReadinessService,
         online_enable_service: OnlineEnableService,
         preview_service: PreviewService,
+        version_service: VersionService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.feature_list_service = feature_list_service
         self.feature_readiness_service = feature_readiness_service
         self.online_enable_service = online_enable_service
         self.preview_service = preview_service
+        self.version_service = version_service
 
-    async def create_feature(self, get_credential: Any, data: FeatureCreate) -> FeatureModel:
+    async def create_feature(
+        self, get_credential: Any, data: Union[FeatureCreate, VersionCreate]
+    ) -> FeatureModel:
         """
         Create Feature at persistent (GitDB or MongoDB)
 
@@ -57,7 +63,7 @@ class FeatureController(  # type: ignore[misc]
         ----------
         get_credential: Any
             Get credential handler function
-        data: FeatureCreate
+        data: FeatureCreate | VersionCreate
             Feature creation payload
 
         Returns
@@ -65,10 +71,15 @@ class FeatureController(  # type: ignore[misc]
         FeatureModel
             Newly created feature object
         """
-        document = cast(
-            FeatureModel,
-            await self.service.create_document(data=data, get_credential=get_credential),
-        )
+        if isinstance(data, FeatureCreate):
+            document = cast(
+                FeatureModel,
+                await self.service.create_document(data=data, get_credential=get_credential),
+            )
+        else:
+            document = await self.version_service.create_new_feature_version(
+                data=data, get_credential=get_credential
+            )
 
         # update feature namespace readiness due to introduction of new feature
         await self.feature_readiness_service.update_feature_namespace(

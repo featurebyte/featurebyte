@@ -531,7 +531,9 @@ class QueryGraph(FeatureByteBaseModel):
         )
         return cast(GroupbyNode, node)
 
-    def reconstruct(self, replace_nodes_map: Dict[str, Node]) -> "QueryGraph":
+    def reconstruct(
+        self, replace_nodes_map: Dict[str, Node], regenerate_hash: bool = False
+    ) -> "QueryGraph":
         """
         Reconstruct the query graph using the replacement node mapping
 
@@ -539,6 +541,8 @@ class QueryGraph(FeatureByteBaseModel):
         ----------
         replace_nodes_map: Dict[str, Node]
             Node name (of the input query graph) to replacement node mapping
+        regenerate_hash: bool
+            Whether to regenerate tile ID & aggregation ID in groupby node
 
         Returns
         -------
@@ -553,12 +557,18 @@ class QueryGraph(FeatureByteBaseModel):
                 replace_nodes_map.get(input_node_name, self.nodes_map[input_node_name])
                 for input_node_name in input_node_names
             ]
-            output.add_operation(
-                node_type=node.type,
-                node_params=node.parameters.dict(),
-                node_output_type=node.output_type,
-                input_nodes=input_nodes,
-            )
+            if node.type == NodeType.GROUPBY and regenerate_hash:
+                output.add_groupby_operation(
+                    node_params=node.parameters.dict(),
+                    input_node=input_nodes[0],
+                )
+            else:
+                output.add_operation(
+                    node_type=node.type,
+                    node_params=node.parameters.dict(),
+                    node_output_type=node.output_type,
+                    input_nodes=input_nodes,
+                )
         return output
 
 

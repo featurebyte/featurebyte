@@ -50,6 +50,20 @@ class FeatureJobSetting(FeatureByteBaseModel):
         )
         return values
 
+    def to_seconds(self) -> Dict[str, Any]:
+        """Convert job settings format using seconds as time unit
+
+        Returns
+        -------
+        Dict[str, Any]
+        """
+        freq, time_mod_freq, blind_spot = validate_job_setting_parameters(
+            frequency=self.frequency,
+            time_modulo_frequency=self.time_modulo_frequency,
+            blind_spot=self.blind_spot,
+        )
+        return {"frequency": freq, "time_modulo_frequency": time_mod_freq, "blind_spot": blind_spot}
+
 
 class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
     """
