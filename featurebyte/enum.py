@@ -106,6 +106,9 @@ class AggFunc(str, Enum):
     NA_COUNT = "na_count"
     STD = "std"
 
+    def __repr__(self) -> str:
+        return str(self.value)
+
     @classmethod
     def all(cls) -> list[str]:
         """List all defined aggregation function names

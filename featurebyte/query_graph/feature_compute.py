@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from sqlglot import expressions, select
 
 from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.feature_common import (
     REQUEST_TABLE_NAME,
     AggregationSpec,
@@ -765,7 +766,7 @@ class FeatureExecutionPlanner:
         node : Node
             Query graph node
         """
-        for groupby_node in self.graph.iterate_grouby_nodes(node):
+        for groupby_node in self.graph.iterate_nodes(node, NodeType.GROUPBY):
             self.parse_and_update_specs_from_groupby(groupby_node)
         self.update_feature_specs(node)
 
