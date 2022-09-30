@@ -15,6 +15,27 @@ from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNode, make_l
 from featurebyte.query_graph.sql.ast.datetime import DateAddNode, DateDiffNode, make_date_add_node
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode
 
+BINARY_OPERATION_NODE_TYPES = {
+    NodeType.ADD,
+    NodeType.SUB,
+    NodeType.MUL,
+    NodeType.DIV,
+    NodeType.MOD,
+    NodeType.EQ,
+    NodeType.NE,
+    NodeType.LT,
+    NodeType.LE,
+    NodeType.GT,
+    NodeType.GE,
+    NodeType.AND,
+    NodeType.OR,
+    NodeType.CONCAT,
+    NodeType.COSINE_SIMILARITY,
+    NodeType.DATE_DIFF,
+    NodeType.DATE_ADD,
+    NodeType.POWER,
+}
+
 
 @dataclass
 class BinaryOp(ExpressionNode):
@@ -126,25 +147,3 @@ def make_binary_operation_node(
         raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
 
     return output_node
-
-
-BINARY_OPERATION_NODE_TYPES = {
-    NodeType.ADD,
-    NodeType.SUB,
-    NodeType.MUL,
-    NodeType.DIV,
-    NodeType.MOD,
-    NodeType.EQ,
-    NodeType.NE,
-    NodeType.LT,
-    NodeType.LE,
-    NodeType.GT,
-    NodeType.GE,
-    NodeType.AND,
-    NodeType.OR,
-    NodeType.CONCAT,
-    NodeType.COSINE_SIMILARITY,
-    NodeType.DATE_DIFF,
-    NodeType.DATE_ADD,
-    NodeType.POWER,
-}
