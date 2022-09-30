@@ -214,6 +214,7 @@ class EventViewGroupBy(OpsMixin):
             if method in {AggFunc.COUNT, AggFunc.NA_COUNT}:
                 var_type = DBVarType.OBJECT if self.category is not None else DBVarType.FLOAT
             else:
+                assert isinstance(value_column, str)
                 var_type = self.obj.column_var_type_map[value_column]
 
             feature = Feature(
