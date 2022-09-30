@@ -12,6 +12,10 @@ from sqlglot import expressions, select
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.ast.base import TableNode
+from featurebyte.query_graph.sql.ast.builder import SQLOperationGraph
+from featurebyte.query_graph.sql.ast.count_dict import MISSING_VALUE_REPLACEMENT
+from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     AggregationSpec,
@@ -21,8 +25,6 @@ from featurebyte.query_graph.sql.common import (
     escape_column_name,
     escape_column_names,
 )
-from featurebyte.query_graph.sql.interpreter import SQLOperationGraph
-from featurebyte.query_graph.sql.sql import MISSING_VALUE_REPLACEMENT, AliasNode, Project, TableNode
 
 Window = int
 Frequency = int

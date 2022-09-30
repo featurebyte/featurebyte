@@ -601,7 +601,7 @@ def feature_list_manager(mock_execute_query, session_manager, snowflake_feature_
 def mocked_tile_cache_fixture():
     """Fixture for a mocked SnowflakeTileCache object"""
     with mock.patch(
-        "featurebyte.query_graph.feature_historical.SnowflakeTileCache", autospec=True
+        "featurebyte.query_graph.sql.feature_historical.SnowflakeTileCache", autospec=True
     ) as mocked_cls:
         yield mocked_cls.return_value
 
