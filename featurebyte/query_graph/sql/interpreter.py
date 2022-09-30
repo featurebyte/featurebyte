@@ -13,13 +13,13 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
+from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.sql import (
     BINARY_OPERATION_NODE_TYPES,
     SUPPORTED_EXPRESSION_NODE_TYPES,
     AliasNode,
     ExpressionNode,
     SQLNode,
-    SQLType,
     TableNode,
     handle_filter_node,
     handle_groupby_node,

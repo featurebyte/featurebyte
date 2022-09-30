@@ -14,9 +14,8 @@ from featurebyte.enum import SpecialColumnName
 from featurebyte.logger import logger
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, prettify_sql
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, escape_column_name, prettify_sql
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
-from featurebyte.query_graph.sql.sql import escape_column_name
 from featurebyte.query_graph.sql.tile_compute import OnDemandTileComputePlan
 
 

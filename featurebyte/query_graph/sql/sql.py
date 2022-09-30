@@ -9,7 +9,6 @@ from typing import Any, Literal, Optional, TypeVar, Union
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass, field
-from enum import Enum
 
 import pandas as pd
 from sqlglot import Expression, expressions, parse_one, select
@@ -23,53 +22,17 @@ from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql import expression as fb_expressions
-from featurebyte.query_graph.sql.common import AggregationSpec
+from featurebyte.query_graph.sql.common import (
+    AggregationSpec,
+    SQLType,
+    escape_column_name,
+    escape_column_names,
+)
 from featurebyte.query_graph.sql.tiling import TileSpec, get_aggregator
 
 MISSING_VALUE_REPLACEMENT = "__MISSING__"
 
 TableNodeT = TypeVar("TableNodeT", bound="TableNode")
-
-
-class SQLType(Enum):
-    """Type of SQL code corresponding to different operations"""
-
-    BUILD_TILE = "build_tile"
-    BUILD_TILE_ON_DEMAND = "build_tile_on_demand"
-    EVENT_VIEW_PREVIEW = "event_view_preview"
-    GENERATE_FEATURE = "generate_feature"
-
-
-def escape_column_name(column_name: str) -> str:
-    """Enclose provided column name with quotes
-
-    Parameters
-    ----------
-    column_name : str
-        Column name
-
-    Returns
-    -------
-    str
-    """
-    if column_name.startswith('"') and column_name.endswith('"'):
-        return column_name
-    return f'"{column_name}"'
-
-
-def escape_column_names(column_names: list[str]) -> list[str]:
-    """Enclose provided column names with quotes
-
-    Parameters
-    ----------
-    column_names : list[str]
-        Column names
-
-    Returns
-    -------
-    list[str]
-    """
-    return [escape_column_name(x) for x in column_names]
 
 
 def has_window_function(expression: Expression) -> bool:

@@ -16,18 +16,13 @@ from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     AggregationSpec,
     FeatureSpec,
-    construct_cte_sql,
-)
-from featurebyte.query_graph.sql.interpreter import SQLOperationGraph
-from featurebyte.query_graph.sql.sql import (
-    MISSING_VALUE_REPLACEMENT,
-    AliasNode,
-    Project,
     SQLType,
-    TableNode,
+    construct_cte_sql,
     escape_column_name,
     escape_column_names,
 )
+from featurebyte.query_graph.sql.interpreter import SQLOperationGraph
+from featurebyte.query_graph.sql.sql import MISSING_VALUE_REPLACEMENT, AliasNode, Project, TableNode
 
 Window = int
 Frequency = int

@@ -4,6 +4,7 @@ Common helpers and data structures for feature SQL generation
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 
 import pandas as pd
 import sqlglot
@@ -50,6 +51,38 @@ def construct_cte_sql(cte_statements: list[tuple[str, str]]) -> str:
     cte_sql = ",\n".join(cte_definitions)
     cte_sql = f"WITH {cte_sql}"
     return cte_sql
+
+
+def escape_column_name(column_name: str) -> str:
+    """Enclose provided column name with quotes
+
+    Parameters
+    ----------
+    column_name : str
+        Column name
+
+    Returns
+    -------
+    str
+    """
+    if column_name.startswith('"') and column_name.endswith('"'):
+        return column_name
+    return f'"{column_name}"'
+
+
+def escape_column_names(column_names: list[str]) -> list[str]:
+    """Enclose provided column names with quotes
+
+    Parameters
+    ----------
+    column_names : list[str]
+        Column names
+
+    Returns
+    -------
+    list[str]
+    """
+    return [escape_column_name(x) for x in column_names]
 
 
 def apply_serving_names_mapping(serving_names: list[str], mapping: dict[str, str]) -> list[str]:
@@ -163,3 +196,12 @@ class FeatureSpec:
 
     feature_name: str
     feature_expr: str
+
+
+class SQLType(Enum):
+    """Type of SQL code corresponding to different operations"""
+
+    BUILD_TILE = "build_tile"
+    BUILD_TILE_ON_DEMAND = "build_tile_on_demand"
+    EVENT_VIEW_PREVIEW = "event_view_preview"
+    GENERATE_FEATURE = "generate_feature"

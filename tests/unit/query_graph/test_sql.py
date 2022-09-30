@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 from sqlglot import parse_one
 
+import featurebyte.query_graph.sql.common
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql import sql
@@ -171,7 +172,10 @@ def test_make_input_node_escape_special_characters():
             },
         },
     }
-    node = sql.make_input_node(parameters=parameters, sql_type=sql.SQLType.EVENT_VIEW_PREVIEW)
+    node = sql.make_input_node(
+        parameters=parameters,
+        sql_type=featurebyte.query_graph.sql.common.SQLType.EVENT_VIEW_PREVIEW,
+    )
     expected = textwrap.dedent(
         """
         SELECT
