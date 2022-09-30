@@ -1,7 +1,19 @@
 """
 Implement graph data structure for query graph
 """
-from typing import Any, Callable, Dict, Iterator, List, Literal, Optional, Set, Tuple, TypedDict
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Tuple,
+    TypedDict,
+    cast,
+)
 
 import json
 from collections import defaultdict
@@ -472,6 +484,7 @@ class QueryGraph(FeatureByteBaseModel):
         ValueError
             When the query graph have unexpected structure (groupby node should have at least an InputNode)
         """
+        # create a temporary groupby node & prune the graph to generate tile_id & aggregation_id
         temp_node = GroupbyNode(
             name="temp", parameters=node_params, output_type=NodeOutputType.FRAME
         )
@@ -493,6 +506,7 @@ class QueryGraph(FeatureByteBaseModel):
         if pruned_input_node_name is None or table_details is None:
             raise ValueError("Failed to add groupby operation.")
 
+        # tile_id & aggregation_id should be based on pruned graph to improve tile reuse
         tile_id = get_tile_table_identifier(
             table_details_dict=table_details, parameters=temp_node.parameters.dict()
         )
@@ -500,6 +514,8 @@ class QueryGraph(FeatureByteBaseModel):
             transformations_hash=pruned_graph.node_name_to_ref[pruned_input_node_name],
             parameters=temp_node.parameters.dict(),
         )
+
+        # insert the groupby node using the generated tile_id & aggregation_id
         node = self.add_operation(
             node_type=NodeType.GROUPBY,
             node_params={
@@ -510,8 +526,7 @@ class QueryGraph(FeatureByteBaseModel):
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[input_node],
         )
-        assert isinstance(node, GroupbyNode)
-        return node
+        return cast(GroupbyNode, node)
 
     def reconstruct(self, replace_nodes_map: Dict[str, Node]) -> "QueryGraph":
         """
