@@ -3,6 +3,8 @@ Unit test for query graph
 """
 from collections import defaultdict
 
+import pytest
+
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter
@@ -313,3 +315,41 @@ def test_global_graph_attributes():
     assert id(graph1.backward_edges_map) == id(graph2.backward_edges_map)
     assert id(graph1.node_type_counter) == id(graph2.node_type_counter)
     assert id(graph1.node_name_to_ref) == id(graph2.node_name_to_ref)
+
+
+def test_query_graph__reconstruct_edge_case(query_graph_with_groupby):
+    """Test reconstruct class method (edge case)"""
+    output = query_graph_with_groupby.reconstruct(replace_nodes_map={})
+    assert output.dict()["edges"] == query_graph_with_groupby.dict()["edges"]
+    assert output.nodes_map["groupby_1"] == query_graph_with_groupby.nodes_map["groupby_1"]
+
+
+@pytest.mark.parametrize(
+    "replacement_map",
+    [
+        {"groupby_1": {"blind_spot": 300}},
+        {"assign_1": {"name": "hello"}},
+        {"input_1": {"columns": ["hello", "world"]}},
+    ],
+)
+def test_query_graph__reconstruct(query_graph_with_groupby, replacement_map):
+    """Test reconstruct class method"""
+    replace_nodes_map = {}
+    for node_name, other_params in replacement_map.items():
+        node = query_graph_with_groupby.get_node_by_name(node_name)
+        parameters = {**node.parameters.dict(), **other_params}
+        replace_node = construct_node(**{**node.dict(), "parameters": parameters})
+        assert replace_node != node
+        replace_nodes_map[node_name] = replace_node
+
+    assert len(replacement_map) > 0
+    output = query_graph_with_groupby.reconstruct(replace_nodes_map=replace_nodes_map)
+
+    # check replace_node found in the output query graph
+    for node_name, replace_node in replace_nodes_map.items():
+        found = False
+        assert query_graph_with_groupby.nodes_map[node_name] != replace_node
+        for node in output.nodes:
+            if node.dict(exclude={"name": True}) == replace_node.dict(exclude={"name": True}):
+                found = True
+        assert found

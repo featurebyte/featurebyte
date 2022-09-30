@@ -312,14 +312,16 @@ class QueryGraph(FeatureByteBaseModel):
             node_name_map[node_name] = node_global.name
         return self, node_name_map
 
-    def iterate_grouby_nodes(self, target_node: Node) -> Iterator[Node]:
+    def iterate_nodes(self, target_node: Node, node_type: NodeType) -> Iterator[Node]:
         """
-        Iterate all groupby nodes in this query graph
+        Iterate all specified nodes in this query graph
 
         Parameters
         ----------
         target_node: Node
             Node from which to start the backward search
+        node_type: NodeType
+            Specific node type to iterate
 
         Yields
         ------
@@ -327,8 +329,38 @@ class QueryGraph(FeatureByteBaseModel):
             Query graph nodes of groupby type
         """
         for node in dfs_traversal(self, target_node):
-            if node.type == NodeType.GROUPBY:
+            if node.type == node_type:
                 yield node
+
+    def reconstruct(self, replace_nodes_map: Dict[str, Node]) -> "QueryGraph":
+        """
+        Reconstruct the query graph using the replacement node mapping
+
+        Parameters
+        ----------
+        replace_nodes_map: Dict[str, Node]
+            Node name (of the input query graph) to replacement node mapping
+
+        Returns
+        -------
+        QueryGraph
+        """
+        output = QueryGraph()
+        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
+        for node_name in sorted_node_names:
+            input_node_names = self.backward_edges_map[node_name]
+            node = replace_nodes_map.get(node_name, self.nodes_map[node_name])
+            input_nodes = [
+                replace_nodes_map.get(input_node_name, self.nodes_map[input_node_name])
+                for input_node_name in input_node_names
+            ]
+            output.add_operation(
+                node_type=node.type,
+                node_params=node.parameters.dict(),
+                node_output_type=node.output_type,
+                input_nodes=input_nodes,
+            )
+        return output
 
 
 class GraphState(TypedDict):
