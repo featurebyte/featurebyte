@@ -17,9 +17,6 @@ from featurebyte.core.mixin import OpsMixin
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
 
 class EventViewGroupBy(OpsMixin):
@@ -116,9 +113,9 @@ class EventViewGroupBy(OpsMixin):
         method: Optional[str],
         windows: Optional[list[str]],
         feature_names: Optional[list[str]],
-        timestamp_column: str | None = None,
-        value_by_column: str | None = None,
-        feature_job_setting: dict[str, str] | None = None,
+        timestamp_column: Optional[str] = None,
+        value_by_column: Optional[str] = None,
+        feature_job_setting: Optional[dict[str, str]] = None,
     ) -> dict[str, Any]:
         # pylint: disable=too-many-locals
         self._validate_parameters(
@@ -160,46 +157,6 @@ class EventViewGroupBy(OpsMixin):
             "serving_names": self.serving_names,
         }
 
-    def _prepare_node_and_column_metadata(
-        self, node_params: dict[str, Any], tile_id: str | None, aggregation_id: str | None
-    ) -> tuple[Node, dict[str, DBVarType], dict[str, tuple[str, ...]]]:
-        """
-        Insert a groupby node into global graph & return the node and some column metadata
-
-        Parameters
-        ----------
-        node_params: dict[str, Any]
-            Groupby node parameters
-        tile_id: str | None
-            Tile ID
-        aggregation_id: str | None
-            Aggregation ID
-
-        Returns
-        -------
-        Node
-            Newly created groupby node
-        dict[str, DBVarType]
-            Column to DBVarType mapping
-        dict[str, tuple[str, ...]]
-            Column to lineage mapping
-        """
-        node = self.obj.graph.add_operation(
-            node_type=NodeType.GROUPBY,
-            node_params={**node_params, "tile_id": tile_id, "aggregation_id": aggregation_id},
-            node_output_type=NodeOutputType.FRAME,
-            input_nodes=[self.obj.node],
-        )
-        column_var_type_map = {}
-        column_lineage_map: dict[str, tuple[str, ...]] = {}
-        for key in self.keys:
-            column_var_type_map[key] = self.obj.column_var_type_map[key]
-            column_lineage_map[key] = (node.name,)
-        for column in node_params["names"]:
-            column_var_type_map[column] = DBVarType.FLOAT
-            column_lineage_map[column] = (node.name,)
-        return node, column_var_type_map, column_lineage_map
-
     @typechecked
     def aggregate(
         self,
@@ -217,7 +174,7 @@ class EventViewGroupBy(OpsMixin):
         ----------
         value_column: str
             Column to be aggregated
-        method: str
+        method: Optional[AggFunc]
             Aggregation method
         windows: List[str]
             List of aggregation window sizes
@@ -233,43 +190,18 @@ class EventViewGroupBy(OpsMixin):
         -------
         FeatureGroup
         """
-        # pylint: disable=too-many-locals
         node_params = self._prepare_node_parameters(
-            value_column,
-            method,
-            windows,
-            feature_names,
-            timestamp_column,
-            self.category,
-            feature_job_setting,
+            method=method,
+            value_column=value_column,
+            windows=windows,
+            feature_names=feature_names,
+            timestamp_column=timestamp_column,
+            value_by_column=self.category,
+            feature_job_setting=feature_job_setting,
         )
-        # To generate a consistent tile_id before & after pruning, insert a groupby node to
-        # global query graph first, then used the inserted groupby node to prune the graph &
-        # generate updated tile id. Finally, insert a new groupby node into the graph (actual
-        # groupby node to be used).
-        temp_groupby_node, column_var_type_map, _ = self._prepare_node_and_column_metadata(
-            node_params, None, None
+        groupby_node = self.obj.graph.add_groupby_operation(
+            node_params=node_params, input_node=self.obj.node
         )
-        pruned_graph, node_name_map = GlobalQueryGraph().prune(
-            target_node=temp_groupby_node,
-            target_columns=set(column_var_type_map.keys()),
-        )
-        input_nodes = pruned_graph.backward_edges_map[node_name_map[temp_groupby_node.name]]
-        table_details_dict = self.obj.tabular_source.table_details.dict()
-        tile_id = get_tile_table_identifier(
-            table_details_dict=table_details_dict,
-            parameters=node_params,
-        )
-        aggregation_id = get_aggregation_identifier(
-            transformations_hash=pruned_graph.node_name_to_ref[input_nodes[0]],
-            parameters=node_params,
-        )
-        (
-            groupby_node,
-            column_var_type_map,
-            column_lineage_map,
-        ) = self._prepare_node_and_column_metadata(node_params, tile_id, aggregation_id)
-
         items: list[Feature | BaseFeatureGroup] = []
         assert isinstance(feature_names, list)
         for feature_name in feature_names:
@@ -279,19 +211,17 @@ class EventViewGroupBy(OpsMixin):
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[groupby_node],
             )
-            if method in {AggFunc.COUNT, AggFunc.NA_COUNT} and self.category is not None:
-                var_type = DBVarType.OBJECT
+            if method in {AggFunc.COUNT, AggFunc.NA_COUNT}:
+                var_type = DBVarType.OBJECT if self.category is not None else DBVarType.FLOAT
             else:
-                var_type = column_var_type_map[feature_name]
+                var_type = self.obj.column_var_type_map[value_column]
+
             feature = Feature(
                 name=feature_name,
                 feature_store=self.obj.feature_store,
                 tabular_source=self.obj.tabular_source,
                 node_name=feature_node.name,
                 dtype=var_type,
-                lineage=self._append_to_lineage(
-                    column_lineage_map[feature_name], feature_node.name
-                ),
                 row_index_lineage=(groupby_node.name,),
                 event_data_ids=[self.obj.event_data_id],
                 entity_ids=self.entity_ids,

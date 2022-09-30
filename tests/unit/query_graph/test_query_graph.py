@@ -353,3 +353,52 @@ def test_query_graph__reconstruct(query_graph_with_groupby, replacement_map):
             if node.dict(exclude={"name": True}) == replace_node.dict(exclude={"name": True}):
                 found = True
         assert found
+
+
+@pytest.fixture(name="groupby_node_params")
+def groupby_node_params_fixture():
+    """Groupby Node parameters"""
+    return {
+        "keys": ["biz_id"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "sum",
+        "time_modulo_frequency": 1800,
+        "frequency": 3600,
+        "blind_spot": 900,
+        "timestamp": "ts",
+        "names": ["a_7d_sum_by_business"],
+        "windows": ["7d"],
+        "serving_names": ["BUSINESS_ID"],
+    }
+
+
+def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_params):
+    """Test add_groupby_operation method"""
+    graph, node_input = graph_single_node
+    assert "tile_id" not in groupby_node_params
+    assert "aggregation_id" not in groupby_node_params
+    groupby_node = graph.add_groupby_operation(
+        node_params=groupby_node_params, input_node=node_input
+    )
+    tile_id = "transaction_f3600_m1800_b900_8a2a4064239908696910f175aa0f4b69105997f3"
+    aggregation_id = "sum_925a5866dd2cbfe915e070831311f860176d09c7"
+    assert groupby_node.parameters.tile_id == tile_id
+    assert groupby_node.parameters.aggregation_id == aggregation_id
+
+
+def test_query_graph__add_groupby_operation__error(groupby_node_params):
+    """Test add_groupby_operation method (value error)"""
+    query_graph = QueryGraph()
+    input_node = query_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["random"]},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    with pytest.raises(ValueError) as exc:
+        query_graph.add_groupby_operation(
+            node_params=groupby_node_params,
+            input_node=input_node,
+        )
+    assert "Failed to add groupby operation." in str(exc)

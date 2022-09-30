@@ -9,12 +9,17 @@ from collections import defaultdict
 from pydantic import Field, root_validator
 
 from featurebyte.common.singleton import SingletonMeta
+from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node, construct_node
-from featurebyte.query_graph.node.generic import AssignNode
-from featurebyte.query_graph.util import hash_node
+from featurebyte.query_graph.node.generic import AssignNode, GroupbyNode, InputNode
+from featurebyte.query_graph.util import (
+    get_aggregation_identifier,
+    get_tile_table_identifier,
+    hash_node,
+)
 
 
 class Edge(FeatureByteBaseModel):
@@ -446,6 +451,67 @@ class QueryGraph(FeatureByteBaseModel):
             index_map=index_map,
         )
         return pruned_graph, node_name_map
+
+    def add_groupby_operation(self, node_params: Dict[str, Any], input_node: Node) -> GroupbyNode:
+        """
+        Insert groupby operation
+
+        Parameters
+        ----------
+        node_params: Dict[str, Any]
+            Node parameters
+        input_node: Node
+            Input node
+
+        Returns
+        -------
+        GroupbyNode
+
+        Raises
+        ------
+        ValueError
+            When the query graph have unexpected structure (groupby node should have at least an InputNode)
+        """
+        temp_node = GroupbyNode(
+            name="temp", parameters=node_params, output_type=NodeOutputType.FRAME
+        )
+        pruned_graph, node_name_map = self.prune(
+            target_node=input_node,
+            target_columns=set(temp_node.get_required_input_columns()),
+        )
+        pruned_input_node_name = None
+        table_details = None
+        for node in dfs_traversal(self, input_node):
+            if pruned_input_node_name is None and node.name in node_name_map:
+                # as the input node could be pruned in the pruned graph, traverse the graph to find a valid input
+                pruned_input_node_name = node_name_map[node.name]
+            if isinstance(node, InputNode) and node.parameters.type == TableDataType.EVENT_DATA:
+                # get the table details from the input node
+                if table_details is None:
+                    table_details = node.parameters.table_details.dict()
+
+        if pruned_input_node_name is None or table_details is None:
+            raise ValueError("Failed to add groupby operation.")
+
+        tile_id = get_tile_table_identifier(
+            table_details_dict=table_details, parameters=temp_node.parameters.dict()
+        )
+        aggregation_id = get_aggregation_identifier(
+            transformations_hash=pruned_graph.node_name_to_ref[pruned_input_node_name],
+            parameters=temp_node.parameters.dict(),
+        )
+        node = self.add_operation(
+            node_type=NodeType.GROUPBY,
+            node_params={
+                **temp_node.parameters.dict(),
+                "tile_id": tile_id,
+                "aggregation_id": aggregation_id,
+            },
+            node_output_type=NodeOutputType.FRAME,
+            input_nodes=[input_node],
+        )
+        assert isinstance(node, GroupbyNode)
+        return node
 
     def reconstruct(self, replace_nodes_map: Dict[str, Node]) -> "QueryGraph":
         """
