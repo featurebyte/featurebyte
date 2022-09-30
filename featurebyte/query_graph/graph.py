@@ -332,6 +332,121 @@ class QueryGraph(FeatureByteBaseModel):
             if node.type == node_type:
                 yield node
 
+    def _prune(
+        self,
+        target_node: Node,
+        target_columns: Set[str],
+        pruned_graph: "QueryGraph",
+        processed_node_names: Set[str],
+        node_name_map: Dict[str, str],
+        index_map: Dict[str, int],
+    ) -> "QueryGraph":
+        # pylint: disable=too-many-locals
+        # pruning: move backward from target node to the input node
+        to_prune_target_node = False
+        input_node_names = self.backward_edges_map.get(target_node.name, [])
+
+        if isinstance(target_node, AssignNode):
+            # check whether to keep the current assign node
+            assign_column_name = target_node.parameters.name
+            if assign_column_name in target_columns:
+                # remove matched name from the target_columns
+                target_columns -= {assign_column_name}
+            else:
+                # remove series path if exists
+                to_prune_target_node = True
+                input_node_names = input_node_names[:1]
+        else:
+            # Update target_columns to include list of required columns for the current node operations
+            target_columns.update(target_node.get_required_input_columns())
+
+        # If the current target node produces a new column, we should remove it from the target_columns
+        # (as the condition has been matched). If it is not removed, the pruning algorithm may keep the unused
+        # assign operation that generate the same column name.
+        target_columns = target_columns.difference(target_node.get_new_output_columns())
+
+        # reverse topological sort to make sure "target_columns" get filled properly. Example:
+        # edges = {"assign_1": ["groupby_1", "project_1"], "project_1", ["groupby_1"], ...}
+        # Here, "groupby_1" node have 2 input_node_names ("assign_1" and "project_1"), reverse topological
+        # sort makes sure we travel "project_1" first (filled up target_columns) and then travel assign node.
+        # If the assign node's new columns are not in "target_columns", we can safely remove the node.
+        for input_node_name in sorted(input_node_names, key=lambda x: index_map[x], reverse=True):
+            input_node = self.nodes_map[input_node_name]
+            pruned_graph = self._prune(
+                target_node=input_node,
+                target_columns=target_columns,
+                pruned_graph=pruned_graph,
+                processed_node_names=processed_node_names,
+                node_name_map=node_name_map,
+                index_map=index_map,
+            )
+
+        if to_prune_target_node:
+            # do not add the target_node to the pruned graph
+            return pruned_graph
+
+        # reconstruction: process the node from the input node towards the target node
+        mapped_input_node_names = []
+        for input_node_name in input_node_names:
+            # if the input node get pruned, it will not exist in the processed_node_names.
+            # in this case, keep finding the first parent node exists in the processed_node_names.
+            # currently only ASSIGN node could get pruned, the first input node is the frame node.
+            # it is used to replace the pruned assigned node
+            while input_node_name not in processed_node_names:
+                input_node_name = self.backward_edges_map[input_node_name][0]
+            mapped_input_node_names.append(input_node_name)
+
+        # add the node back to the pruned graph
+        input_nodes = [
+            pruned_graph.nodes_map[node_name_map[node_name]]
+            for node_name in mapped_input_node_names
+        ]
+        node_pruned = pruned_graph.add_operation(
+            node_type=NodeType(target_node.type),
+            node_params=target_node.parameters.dict(),
+            node_output_type=NodeOutputType(target_node.output_type),
+            input_nodes=input_nodes,
+        )
+
+        # update the container to store the mapped node name & processed nodes information
+        node_name_map[target_node.name] = node_pruned.name
+        processed_node_names.add(target_node.name)
+        return pruned_graph
+
+    def prune(
+        self, target_node: Node, target_columns: Set[str]
+    ) -> Tuple["QueryGraph", Dict[str, str]]:
+        """
+        Prune the query graph and return the pruned graph & mapped node.
+
+        To prune the graph, this function first traverses from the target node to the input node.
+        The unused branches of the graph will get pruned in this step. After that, a new graph is
+        reconstructed by adding the required nodes back.
+
+        Parameters
+        ----------
+        target_node: Node
+            target end node
+        target_columns: set[str]
+            list of target columns
+
+        Returns
+        -------
+        QueryGraph, node_name_map
+        """
+        node_name_map: Dict[str, str] = {}
+        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
+        index_map = {value: idx for idx, value in enumerate(sorted_node_names)}
+        pruned_graph = self._prune(
+            target_node=target_node,
+            target_columns=target_columns,
+            pruned_graph=QueryGraph(),
+            processed_node_names=set(),
+            node_name_map=node_name_map,
+            index_map=index_map,
+        )
+        return pruned_graph, node_name_map
+
     def reconstruct(self, replace_nodes_map: Dict[str, Node]) -> "QueryGraph":
         """
         Reconstruct the query graph using the replacement node mapping
@@ -495,118 +610,3 @@ class GlobalQueryGraph(QueryGraph):
         # under no circumstances we should allow making copy of GlobalQueryGraph
         _ = args, kwargs
         return GlobalQueryGraph()
-
-    def _prune(
-        self,
-        target_node: Node,
-        target_columns: Set[str],
-        pruned_graph: QueryGraph,
-        processed_node_names: Set[str],
-        node_name_map: Dict[str, str],
-        index_map: Dict[str, int],
-    ) -> QueryGraph:
-        # pylint: disable=too-many-locals
-        # pruning: move backward from target node to the input node
-        to_prune_target_node = False
-        input_node_names = self.backward_edges_map.get(target_node.name, [])
-
-        if isinstance(target_node, AssignNode):
-            # check whether to keep the current assign node
-            assign_column_name = target_node.parameters.name
-            if assign_column_name in target_columns:
-                # remove matched name from the target_columns
-                target_columns -= {assign_column_name}
-            else:
-                # remove series path if exists
-                to_prune_target_node = True
-                input_node_names = input_node_names[:1]
-        else:
-            # Update target_columns to include list of required columns for the current node operations
-            target_columns.update(target_node.get_required_input_columns())
-
-        # If the current target node produces a new column, we should remove it from the target_columns
-        # (as the condition has been matched). If it is not removed, the pruning algorithm may keep the unused
-        # assign operation that generate the same column name.
-        target_columns = target_columns.difference(target_node.get_new_output_columns())
-
-        # reverse topological sort to make sure "target_columns" get filled properly. Example:
-        # edges = {"assign_1": ["groupby_1", "project_1"], "project_1", ["groupby_1"], ...}
-        # Here, "groupby_1" node have 2 input_node_names ("assign_1" and "project_1"), reverse topological
-        # sort makes sure we travel "project_1" first (filled up target_columns) and then travel assign node.
-        # If the assign node's new columns are not in "target_columns", we can safely remove the node.
-        for input_node_name in sorted(input_node_names, key=lambda x: index_map[x], reverse=True):
-            input_node = self.nodes_map[input_node_name]
-            pruned_graph = self._prune(
-                target_node=input_node,
-                target_columns=target_columns,
-                pruned_graph=pruned_graph,
-                processed_node_names=processed_node_names,
-                node_name_map=node_name_map,
-                index_map=index_map,
-            )
-
-        if to_prune_target_node:
-            # do not add the target_node to the pruned graph
-            return pruned_graph
-
-        # reconstruction: process the node from the input node towards the target node
-        mapped_input_node_names = []
-        for input_node_name in input_node_names:
-            # if the input node get pruned, it will not exist in the processed_node_names.
-            # in this case, keep finding the first parent node exists in the processed_node_names.
-            # currently only ASSIGN node could get pruned, the first input node is the frame node.
-            # it is used to replace the pruned assigned node
-            while input_node_name not in processed_node_names:
-                input_node_name = self.backward_edges_map[input_node_name][0]
-            mapped_input_node_names.append(input_node_name)
-
-        # add the node back to the pruned graph
-        input_nodes = [
-            pruned_graph.nodes_map[node_name_map[node_name]]
-            for node_name in mapped_input_node_names
-        ]
-        node_pruned = pruned_graph.add_operation(
-            node_type=NodeType(target_node.type),
-            node_params=target_node.parameters.dict(),
-            node_output_type=NodeOutputType(target_node.output_type),
-            input_nodes=input_nodes,
-        )
-
-        # update the container to store the mapped node name & processed nodes information
-        node_name_map[target_node.name] = node_pruned.name
-        processed_node_names.add(target_node.name)
-        return pruned_graph
-
-    def prune(
-        self, target_node: Node, target_columns: Set[str]
-    ) -> Tuple[QueryGraph, Dict[str, str]]:
-        """
-        Prune the query graph and return the pruned graph & mapped node.
-
-        To prune the graph, this function first traverses from the target node to the input node.
-        The unused branches of the graph will get pruned in this step. After that, a new graph is
-        reconstructed by adding the required nodes back.
-
-        Parameters
-        ----------
-        target_node: Node
-            target end node
-        target_columns: set[str]
-            list of target columns
-
-        Returns
-        -------
-        QueryGraph, node_name_map
-        """
-        node_name_map: Dict[str, str] = {}
-        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
-        index_map = {value: idx for idx, value in enumerate(sorted_node_names)}
-        pruned_graph = self._prune(
-            target_node=target_node,
-            target_columns=target_columns,
-            pruned_graph=QueryGraph(),
-            processed_node_names=set(),
-            node_name_map=node_name_map,
-            index_map=index_map,
-        )
-        return pruned_graph, node_name_map
