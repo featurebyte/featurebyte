@@ -34,7 +34,8 @@ class QueryGraph(FeatureByteBaseModel):
     edges: List[Edge] = Field(default_factory=list)
     nodes: List[Node] = Field(default_factory=list)
 
-    # non-serialized variables (will be derived during deserialization)
+    # non-serialized attributes (will be derived during deserialization)
+    # NEVER store a non-serialized attributes that CAN'T BE DERIVED from serialized attributes
     nodes_map: Dict[str, Node] = Field(default_factory=dict, exclude=True)
     edges_map: Dict[str, List[str]] = Field(default=defaultdict(list), exclude=True)
     backward_edges_map: Dict[str, List[str]] = Field(default=defaultdict(list), exclude=True)
@@ -119,6 +120,9 @@ class QueryGraph(FeatureByteBaseModel):
     @root_validator
     @classmethod
     def _set_internal_variables(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        # NOTE: During graph instantiation, this method will get called (including graph query graph).
+        # Only create a new dictionary/object when the value is None. Otherwise, it will cause issue
+        # for the global query graph.
         nodes_map = values.get("nodes_map")
         if not nodes_map:
             values["nodes_map"] = cls._derive_nodes_map(values["nodes"], nodes_map)
@@ -418,8 +422,11 @@ class GlobalQueryGraph(QueryGraph):
     Global query graph used to store the core like operations for the SQL query construction
     """
 
+    # all the attributes (including non-serialized) should be stored at GlobalGraphState
     edges: List[Edge] = Field(default_factory=GlobalGraphState.construct_getter_func("edges"))
     nodes: List[Node] = Field(default_factory=GlobalGraphState.construct_getter_func("nodes"))
+
+    # non-serialized attributes
     nodes_map: Dict[str, Node] = Field(
         default_factory=GlobalGraphState.construct_getter_func("nodes_map"), exclude=True
     )
