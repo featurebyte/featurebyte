@@ -172,7 +172,6 @@ def test_feature_deserialization(
     assert deserialized_float_feature.tabular_source == float_feature.tabular_source
     assert deserialized_float_feature.graph == global_graph
     assert id(deserialized_float_feature.graph.nodes) == id(global_graph.nodes)
-    tile_id1 = float_feature.graph.nodes_map["groupby_1"].parameters.tile_id
 
     # construct another identical float feature with an additional unused column,
     snowflake_event_view_with_entity["unused_feat"] = (
@@ -193,9 +192,7 @@ def test_feature_deserialization(
     same_float_feature_dict = feature_group["sum_1d"].dict(
         exclude={"id": True, "feature_namespace_id": True}
     )
-    tile_id2 = float_feature.graph.nodes_map["groupby_2"].parameters.tile_id
     # check that the time id are the same (unused assigned node get pruned)
-    assert tile_id1 == tile_id2
     float_feature_dict.pop("_id")
     float_feature_dict.pop("feature_store")
     float_feature_dict.pop("feature_namespace_id")
