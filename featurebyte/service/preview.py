@@ -73,7 +73,7 @@ class PreviewService(OpsServiceMixin):
         """
         input_node = preview.graph.nodes_map["input_1"]
         assert isinstance(input_node, InputNode)
-        feature_store_dict = input_node.parameters.feature_store.dict()
+        feature_store_dict = input_node.parameters.feature_store_details.dict()
         db_session = await self._get_feature_store_session(
             feature_store=FeatureStoreModel(**feature_store_dict, name=preview.feature_store_name),
             get_credential=get_credential,
@@ -122,7 +122,7 @@ class PreviewService(OpsServiceMixin):
 
         input_node = graph.nodes_map["input_1"]
         assert isinstance(input_node, InputNode)
-        feature_store_dict = input_node.parameters.feature_store.dict()
+        feature_store_dict = input_node.parameters.feature_store_details.dict()
         db_session = await self._get_feature_store_session(
             feature_store=FeatureStoreModel(
                 **feature_store_dict, name=feature_preview.feature_store_name
@@ -169,7 +169,7 @@ class PreviewService(OpsServiceMixin):
         for preview_group in featurelist_preview.preview_groups:
             input_node = preview_group.graph.nodes_map["input_1"]
             assert isinstance(input_node, InputNode)
-            feature_store_dict = input_node.parameters.feature_store.dict()
+            feature_store_dict = input_node.parameters.feature_store_details.dict()
             db_session = await self._get_feature_store_session(
                 feature_store=FeatureStoreModel(
                     **feature_store_dict, name=preview_group.feature_store_name
