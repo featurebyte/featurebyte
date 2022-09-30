@@ -487,8 +487,8 @@ class QueryGraph(FeatureByteBaseModel):
                 pruned_input_node_name = node_name_map[node.name]
             if isinstance(node, InputNode) and node.parameters.type == TableDataType.EVENT_DATA:
                 # get the table details from the input node
-                if table_details is None:
-                    table_details = node.parameters.table_details.dict()
+                table_details = node.parameters.table_details.dict()
+                break
 
         if pruned_input_node_name is None or table_details is None:
             raise ValueError("Failed to add groupby operation.")
