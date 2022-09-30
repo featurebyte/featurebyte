@@ -10,16 +10,16 @@ from abc import ABC, abstractmethod
 from sqlglot import expressions, select
 
 from featurebyte.enum import InternalName, SpecialColumnName
-from featurebyte.query_graph.feature_common import (
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.feature_common import (
     REQUEST_TABLE_NAME,
     AggregationSpec,
     FeatureSpec,
     construct_cte_sql,
 )
-from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.interpreter import SQLOperationGraph
-from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql import (
+from featurebyte.query_graph.sql.interpreter import SQLOperationGraph
+from featurebyte.query_graph.sql.sql import (
     MISSING_VALUE_REPLACEMENT,
     AliasNode,
     Project,

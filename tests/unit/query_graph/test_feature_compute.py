@@ -6,8 +6,8 @@ import textwrap
 
 import pytest
 
-from featurebyte.query_graph.feature_common import AggregationSpec, FeatureSpec
-from featurebyte.query_graph.feature_compute import (
+from featurebyte.query_graph.sql.feature_common import AggregationSpec, FeatureSpec
+from featurebyte.query_graph.sql.feature_compute import (
     FeatureExecutionPlanner,
     SnowflakeRequestTablePlan,
 )

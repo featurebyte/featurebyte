@@ -18,8 +18,8 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel, TabularSource
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
-from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.schema.feature_store import FeatureStorePreview
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager

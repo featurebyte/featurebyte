@@ -8,8 +8,8 @@ import pytest
 from sqlglot import parse_one
 
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph import sql
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.sql import sql
 
 
 @pytest.fixture(name="input_node")

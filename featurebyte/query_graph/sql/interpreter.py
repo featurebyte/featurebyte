@@ -13,7 +13,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
-from featurebyte.query_graph.sql import (
+from featurebyte.query_graph.sql.sql import (
     BINARY_OPERATION_NODE_TYPES,
     SUPPORTED_EXPRESSION_NODE_TYPES,
     AliasNode,
@@ -308,26 +308,6 @@ class GraphInterpreter:
         """
         generator = TileSQLGenerator(self.query_graph, is_on_demand=is_on_demand)
         return generator.construct_tile_gen_sql(starting_node)
-
-    def construct_feature_from_tile_sql(self) -> None:
-        """Construct SQL that computes feature from tile table
-
-        Raises
-        ------
-        NotImplementedError
-            Not implemented yet
-        """
-        raise NotImplementedError()
-
-    def construct_feature_brute_force_sql(self) -> None:
-        """Construct SQL that computes feature without using tiling optimization
-
-        Raises
-        ------
-        NotImplementedError
-            Not implemented yet
-        """
-        raise NotImplementedError()
 
     def construct_preview_sql(self, node_name: str, num_rows: int = 10) -> str:
         """Construct SQL to preview a given node
