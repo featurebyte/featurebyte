@@ -3,7 +3,7 @@ This module generic query object classes
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar, cast
 
 import json
 from abc import abstractmethod

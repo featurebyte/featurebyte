@@ -6,7 +6,7 @@ import pytest
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState
+from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph
 from featurebyte.query_graph.node import construct_node
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
@@ -37,7 +37,7 @@ def global_query_graph():
     """
     Empty query graph fixture
     """
-    GlobalQueryGraphState.reset()
+    GlobalGraphState.reset()
     yield GlobalQueryGraph()
 
 
@@ -316,23 +316,12 @@ def query_graph_two_nodes(graph_single_node):
     Query graph with two nodes
     """
     graph, node_input = graph_single_node
-
-    # check internal variables before add_operation
-    assert graph._nodes_map is not None
-    assert graph._edges_map is not None
-    assert graph._backward_edges_map is not None
-
     node_proj = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[node_input],
     )
-
-    # check internal variables after add_operation
-    assert graph._nodes_map is None
-    assert graph._edges_map is None
-    assert graph._backward_edges_map is None
 
     pruned_graph, node_name_map = graph.prune(target_node=node_proj, target_columns={"a"})
     mapped_node = pruned_graph.get_node_by_name(node_name_map[node_proj.name])

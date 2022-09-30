@@ -157,6 +157,8 @@ class Frame(BaseFrame, OpsMixin, GetAttrMixin):
             #     "input_1": ["project_1", "assign_1"],
             #     "project_1": ["assign_1"],
             # }
+            if item == "VALUE":
+                _ = item
             node = self.graph.add_operation(
                 node_type=NodeType.PROJECT,
                 node_params={"columns": [item]},

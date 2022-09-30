@@ -10,8 +10,8 @@ from featurebyte.core.series import Series
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph import (
+    GlobalGraphState,
     GlobalQueryGraph,
-    GlobalQueryGraphState,
     NodeOutputType,
     NodeType,
 )
@@ -22,7 +22,7 @@ def global_query_graph():
     """
     Empty query graph fixture
     """
-    GlobalQueryGraphState.reset()
+    GlobalGraphState.reset()
     yield GlobalQueryGraph()
 
 

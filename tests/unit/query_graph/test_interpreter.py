@@ -8,7 +8,7 @@ import pytest
 
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import GlobalQueryGraph, GlobalQueryGraphState
+from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph
 from featurebyte.query_graph.interpreter import GraphInterpreter, SQLOperationGraph, SQLType
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
 
@@ -18,7 +18,7 @@ def query_graph():
     """
     Empty query graph fixture
     """
-    GlobalQueryGraphState.reset()
+    GlobalGraphState.reset()
     yield GlobalQueryGraph()
 
 
