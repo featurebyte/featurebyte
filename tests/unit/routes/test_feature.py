@@ -188,7 +188,7 @@ class TestFeatureApi(BaseApiTestSuite):
         self, test_api_client_persistent, create_success_response
     ):  # pylint: disable=invalid-overridden-method
         """Test new version creation (success)"""
-        test_api_client, persistent = test_api_client_persistent
+        test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         response = test_api_client.post(
             f"{self.base_route}",

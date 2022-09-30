@@ -10,6 +10,7 @@ from bson.objectid import ObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.schema.feature import FeatureCreate, VersionCreate
 from featurebyte.service.base_update import BaseUpdateService
@@ -24,7 +25,7 @@ class VersionService(BaseUpdateService):
     def _create_new_feature_version(
         feature: FeatureModel, feature_job_setting: FeatureJobSetting
     ) -> FeatureModel:
-        replace_nodes_map = {}
+        replace_nodes_map: dict[str, Node] = {}
         for groupby_node in feature.graph.iterate_nodes(
             target_node=feature.node, node_type=NodeType.GROUPBY
         ):

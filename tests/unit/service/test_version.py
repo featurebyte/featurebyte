@@ -56,7 +56,7 @@ async def test_create_new_feature_version(
 
     # compare edges & other nodes
     assert feature.graph.edges == version.graph.edges
-    for node_name in {"input_1", "project_1"}:
+    for node_name in ["input_1", "project_1"]:
         assert feature.graph.get_node_by_name(node_name) == version.graph.get_node_by_name(
             node_name
         )
