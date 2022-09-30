@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 import sqlglot
 
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
@@ -84,7 +85,7 @@ class TileSQLGenerator:
         """
         # Groupby operations requires building tiles (assuming the aggregation type supports tiling)
         tile_generating_nodes = {}
-        for node in self.query_graph.iterate_grouby_nodes(starting_node):
+        for node in self.query_graph.iterate_nodes(starting_node, NodeType.GROUPBY):
             assert isinstance(node, GroupbyNode)
             tile_generating_nodes[node.name] = node
 
