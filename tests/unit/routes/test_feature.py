@@ -344,7 +344,7 @@ class TestFeatureApi(BaseApiTestSuite):
             "featurebyte.core.generic.ExtendedFeatureStoreModel.get_session"
         ) as mock_get_session:
             expected_df = pd.DataFrame({"a": [0, 1, 2]})
-            mock_get_session.return_value.execute_query.return_value = expected_df
+            mock_get_session.return_value.execute_async_query.return_value = expected_df
             response = test_api_client.post(
                 f"{self.base_route}/preview", json=feature_preview_payload
             )
