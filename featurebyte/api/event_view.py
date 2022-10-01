@@ -15,7 +15,6 @@ from featurebyte.core.series import Series
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.generic import InputNode
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import EventViewGroupBy
@@ -151,9 +150,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         -------
         str
         """
-        assert isinstance(self.inception_node, InputNode)
-        assert self.inception_node.parameters.timestamp is not None
-        timestamp_col = str(self.inception_node.parameters.timestamp)
+        timestamp_col = str(self.inception_node.parameters.timestamp)  # type: ignore
         return timestamp_col
 
     @property

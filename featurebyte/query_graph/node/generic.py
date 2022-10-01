@@ -5,7 +5,7 @@ This module contains SQL operation related node classes
 from typing import Any, Dict, List, Literal, Optional, Union
 from typing_extensions import Annotated
 
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, root_validator
 
 from featurebyte.enum import AggFunc, DBVarType, TableDataType
 from featurebyte.models.base import PydanticObjectId
