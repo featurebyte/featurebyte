@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData, EventDataColumn
+from featurebyte.enum import TableDataType
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
@@ -88,6 +89,11 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
         event_timestamp_column="event_timestamp",
         record_creation_date_column="created_at",
     )
+
+    # check that node parameter is set properly
+    node_params = event_data.node.parameters
+    assert node_params.id == event_data.id
+    assert node_params.type == TableDataType.EVENT_DATA
 
     # check that event data columns for autocompletion
     assert set(event_data.columns).issubset(dir(event_data))

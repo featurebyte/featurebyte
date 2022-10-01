@@ -162,6 +162,8 @@ def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_enti
     """
     Test default job setting from event data is used
     """
+    node_name = snowflake_event_data.node.name
+    id_before = snowflake_event_data.id
     snowflake_event_data.update_default_feature_job_setting(
         feature_job_setting={
             "blind_spot": "1m30s",
@@ -169,6 +171,11 @@ def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_enti
             "time_modulo_frequency": "3m",
         }
     )
+
+    # check internal settings
+    assert snowflake_event_data.node.name == node_name
+    assert snowflake_event_data.id == id_before
+
     snowflake_event_data.cust_id.as_entity("customer")
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
 
@@ -194,7 +201,7 @@ def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_enti
         "frequency": 360,
         "time_modulo_frequency": 180,
         "tile_id": "sf_table_f360_m180_b90_6779d772dcc5c83e10a93ca08923844041ded978",
-        "aggregation_id": "sum_138f2d458d38ffc1b018608fb3fbb4535d99a8df",
+        "aggregation_id": "sum_b0abbc3b3fefccdcad17f564587d16e5876595e5",
         "timestamp": "event_timestamp",
         "value_by": None,
         "serving_names": ["cust_id"],
@@ -229,7 +236,7 @@ def test_groupby__category(snowflake_event_view_with_entity):
         "frequency": 360,
         "time_modulo_frequency": 180,
         "tile_id": "sf_table_f360_m180_b90_995fb463dce4af3f8384b1d76cd5575e9e9c9a39",
-        "aggregation_id": "sum_0fbfd9bd0fa57c8a6537b35faea91850aeff997f",
+        "aggregation_id": "sum_a1048ce69e0b2dc884a200ba413f69063a567290",
         "timestamp": "event_timestamp",
         "value_by": "col_int",
         "serving_names": ["cust_id"],

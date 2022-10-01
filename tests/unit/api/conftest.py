@@ -80,7 +80,7 @@ def snowflake_database_table_fixture(
 
 @pytest.fixture(name="snowflake_event_data_from_config")
 def snowflake_event_data_from_config_fixture(
-    snowflake_database_table_from_config, mock_get_persistent
+    snowflake_database_table_from_config, mock_get_persistent, snowflake_event_data_id
 ):
     """
     Snowflake EventData object fixture (using config object)
@@ -91,6 +91,7 @@ def snowflake_event_data_from_config_fixture(
         name="sf_event_data",
         event_timestamp_column="event_timestamp",
         record_creation_date_column="created_at",
+        _id=snowflake_event_data_id,
     )
 
 
@@ -101,6 +102,7 @@ def snowflake_event_data_fixture(
     mock_config_path_env,
     mock_get_persistent,
     request,
+    snowflake_event_data_id,
 ):
     """
     EventData object fixture
@@ -114,6 +116,7 @@ def snowflake_event_data_fixture(
             name="sf_event_data",
             event_timestamp_column="event_timestamp",
             record_creation_date_column="created_at",
+            _id=snowflake_event_data_id,
         )
 
 

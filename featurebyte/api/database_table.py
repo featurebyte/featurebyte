@@ -14,7 +14,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException, TableSchemaHasBeenChangedError
 from featurebyte.models.feature_store import ColumnInfo, DatabaseTableModel, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -56,7 +56,7 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
         dict[str, Any]
         """
         _ = values
-        return {}
+        return {"type": TableDataType.GENERIC}
 
     @root_validator(pre=True)
     @classmethod

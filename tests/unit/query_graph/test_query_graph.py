@@ -1,6 +1,7 @@
 """
 Unit test for query graph
 """
+import textwrap
 from collections import defaultdict
 
 import pytest
@@ -402,3 +403,18 @@ def test_query_graph__add_groupby_operation__error(groupby_node_params):
             input_node=input_node,
         )
     assert "Failed to add groupby operation." in str(exc)
+
+
+def test_query_graph__representation():
+    """Test the graph can be represented properly without throwing exceptions"""
+    graph = QueryGraph()
+    expected = textwrap.dedent(
+        """
+        {
+            "edges": [],
+            "nodes": []
+        }
+        """
+    ).strip()
+    assert repr(graph) == expected
+    assert str(graph) == expected

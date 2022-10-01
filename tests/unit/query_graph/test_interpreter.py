@@ -28,6 +28,7 @@ def query_graph():
 def node_input_fixture(graph):
     """Fixture for a generic input node"""
     node_params = {
+        "type": "event_data",
         "columns": ["ts", "cust_id", "a", "b"],
         "timestamp": "ts",
         "table_details": {
@@ -586,6 +587,7 @@ def test_graph_interpreter_snowflake(graph):
     node_input = graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
+            "type": "event_data",
             "columns": ["SERVER_TIMESTAMP", "CUST_ID"],
             "timestamp": "SERVER_TIMESTAMP",
             "table_details": {

@@ -3,7 +3,7 @@ Unit test for DatabaseTable
 """
 import pandas as pd
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TableDataType
 
 
 def test_database_table(snowflake_database_table, expected_snowflake_table_preview_query):
@@ -25,3 +25,9 @@ def test_database_table(snowflake_database_table, expected_snowflake_table_previ
         }
     )
     pd.testing.assert_series_equal(snowflake_database_table.dtypes, expected_dtypes)
+
+
+def test_database_table_node_parameters(snowflake_database_table):
+    """Test database table node parameters"""
+    node_params = snowflake_database_table.node.parameters
+    assert node_params.type == TableDataType.GENERIC
