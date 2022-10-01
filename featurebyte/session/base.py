@@ -122,9 +122,27 @@ class BaseSession(BaseModel):
         """
         return self.execute_query_blocking(query)
 
+    @abstractmethod
+    async def execute_async_query(self, query: str, timeout: int = 180) -> pd.DataFrame | None:
+        """
+        Execute SQL queries
+
+        Parameters
+        ----------
+        query: str
+            sql query to execute
+        timeout: int
+            timeout in seconds
+
+        Returns
+        -------
+        pd.DataFrame | None
+            Query result as a pandas DataFrame if the query expects result
+        """
+
     def execute_query_blocking(self, query: str) -> pd.DataFrame | None:
         """
-        Execute SQL query with blocking call
+        Execute SQL query without await
 
         Parameters
         ----------

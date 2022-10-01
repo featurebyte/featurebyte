@@ -315,7 +315,7 @@ def check_create_commands(mock_session):
         "functions": 0,
         "procedures": 0,
     }
-    for exec_calls in [mock_session.make_async_query_request, mock_session.execute_query]:
+    for exec_calls in [mock_session.execute_query, mock_session.execute_async_query]:
         for call_args in exec_calls.call_args_list:
             args = call_args[0]
             if args[0].startswith("CREATE SCHEMA"):

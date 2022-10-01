@@ -18,7 +18,7 @@ import pandas as pd
 from pydantic import Field
 from snowflake import connector
 from snowflake.connector.constants import QueryStatus
-from snowflake.connector.cursor import ASYNC_NO_DATA_MAX_RETRY, ASYNC_RETRY_PATTERN
+from snowflake.connector.cursor import ASYNC_NO_DATA_MAX_RETRY, ASYNC_RETRY_PATTERN, ResultState
 from snowflake.connector.errors import DatabaseError, NotSupportedError
 from snowflake.connector.pandas_tools import write_pandas
 
@@ -79,7 +79,7 @@ class SnowflakeSession(BaseSession):
         query_id = cursor.sfqid
         return query_id
 
-    async def fetch_async_query(self, query_id: Any, timeout: int = 30) -> pd.DataFrame | None:
+    async def fetch_async_query(self, query_id: Any, timeout: int = 180) -> pd.DataFrame | None:
         """
         Execute SQL queries
 
@@ -100,33 +100,48 @@ class SnowflakeSession(BaseSession):
         DatabaseError
             Invalid query id
         """
-        cursor = self.connection.cursor()
-        try:
-            start_time = time.time()
-            no_data_counter = 0
-            retry_pattern_pos = 0
-            while time.time() - start_time < timeout:
-                status = self.connection.get_query_status(query_id)
-                if not self.connection.is_still_running(status):
-                    break
-                if status == QueryStatus.NO_DATA:  # pragma: no cover
-                    no_data_counter += 1
-                    if no_data_counter > ASYNC_NO_DATA_MAX_RETRY:
-                        raise DatabaseError(
-                            "Cannot retrieve data on the status of this query. No information returned "
-                            "from server for query '{}'"
-                        )
-                await asyncio.sleep(0.5 * ASYNC_RETRY_PATTERN[retry_pattern_pos])
-                if retry_pattern_pos < (len(ASYNC_RETRY_PATTERN) - 1):
-                    retry_pattern_pos += 1
-            cursor.get_results_from_sfqid(query_id)
-            cursor._prefetch_hook()  # pylint: disable=protected-access
-            result = self.fetch_query_result_impl(cursor)
-            return result
-        finally:
-            cursor.close()
+        # pylint: disable=protected-access
+        connection = self.connection
+        cursor = connection.cursor()
+        connection.get_query_status_throw_if_error(query_id)
+        cursor._inner_cursor = cursor.__class__(cursor.connection)
+        cursor._sfqid = query_id
 
-    async def execute_query(self, query: str, timeout: int = 30) -> pd.DataFrame | None:
+        no_data_counter = 0
+        retry_pattern_pos = 0
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            status = self.connection.get_query_status(query_id)
+            if not self.connection.is_still_running(status):
+                break
+            if status == QueryStatus.NO_DATA:  # pragma: no cover
+                no_data_counter += 1
+                if no_data_counter > ASYNC_NO_DATA_MAX_RETRY:
+                    raise DatabaseError(
+                        "Cannot retrieve data on the status of this query. No information returned "
+                        "from server for query '{}'"
+                    )
+            await asyncio.sleep(0.5 * ASYNC_RETRY_PATTERN[retry_pattern_pos])  # Same wait as JDBC
+            # If we can advance in ASYNC_RETRY_PATTERN then do so
+            if retry_pattern_pos < (len(ASYNC_RETRY_PATTERN) - 1):
+                retry_pattern_pos += 1
+        if status != QueryStatus.SUCCESS:
+            raise DatabaseError(
+                f"Status of query '{query_id}' is {status.name}, results are unavailable"
+            )
+        cursor._inner_cursor.execute(f"select * from table(result_scan('{query_id}'))")
+        cursor._result = cursor._inner_cursor._result
+        cursor._query_result_format = cursor._inner_cursor._query_result_format
+        cursor._total_rowcount = cursor._inner_cursor._total_rowcount
+        cursor._description = cursor._inner_cursor._description
+        cursor._result_set = cursor._inner_cursor._result_set
+        cursor._result_state = ResultState.VALID
+        cursor._rownumber = 0
+        cursor._prefetch_hook = None
+
+        return self.fetch_query_result_impl(cursor)
+
+    async def execute_async_query(self, query: str, timeout: int = 180) -> pd.DataFrame | None:
         """
         Execute SQL queries
 
@@ -429,7 +444,7 @@ class SchemaInitializer:
             logger.debug(f'Registering {item["identifier"]}')
             async with aiofiles.open(item["filename"], encoding="utf-8") as f_handle:
                 query = await f_handle.read()
-            self.session.make_async_query_request(query)
+            await self.session.execute_query(query)
 
     @staticmethod
     def get_sql_objects() -> list[dict[str, Any]]:
