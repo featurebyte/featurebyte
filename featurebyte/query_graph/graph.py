@@ -15,9 +15,9 @@ from typing import (
     cast,
 )
 
+import json
 from collections import defaultdict
 
-from bson import json_util
 from pydantic import Field, root_validator
 
 from featurebyte.common.singleton import SingletonMeta
@@ -180,7 +180,7 @@ class QueryGraph(FeatureByteBaseModel):
         return values
 
     def __repr__(self) -> str:
-        return json_util.dumps(self.dict(), indent=4)
+        return json.dumps(self.json_dict(), indent=4)
 
     def __str__(self) -> str:
         return repr(self)

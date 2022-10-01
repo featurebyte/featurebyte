@@ -5,6 +5,7 @@ import textwrap
 from collections import defaultdict
 
 import pytest
+from bson.objectid import ObjectId
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
@@ -408,11 +409,63 @@ def test_query_graph__add_groupby_operation__error(groupby_node_params):
 def test_query_graph__representation():
     """Test the graph can be represented properly without throwing exceptions"""
     graph = QueryGraph()
+    graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "type": "event_data",
+            "id": ObjectId("633844bd416657bb96c96d3f"),
+            "columns": ["column"],
+            "table_details": {
+                "database_name": "db",
+                "schema_name": "public",
+                "table_name": "transaction",
+            },
+            "feature_store_details": {
+                "type": "snowflake",
+                "details": {
+                    "account": "sf_account",
+                    "warehouse": "sf_warehouse",
+                    "database": "db",
+                    "sf_schema": "public",
+                },
+            },
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
     expected = textwrap.dedent(
         """
         {
             "edges": [],
-            "nodes": []
+            "nodes": [
+                {
+                    "name": "input_1",
+                    "type": "input",
+                    "output_type": "frame",
+                    "parameters": {
+                        "columns": [
+                            "column"
+                        ],
+                        "table_details": {
+                            "database_name": "db",
+                            "schema_name": "public",
+                            "table_name": "transaction"
+                        },
+                        "feature_store_details": {
+                            "type": "snowflake",
+                            "details": {
+                                "account": "sf_account",
+                                "warehouse": "sf_warehouse",
+                                "database": "db",
+                                "sf_schema": "public"
+                            }
+                        },
+                        "type": "event_data",
+                        "timestamp": null,
+                        "id": "633844bd416657bb96c96d3f"
+                    }
+                }
+            ]
         }
         """
     ).strip()
