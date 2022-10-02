@@ -7,7 +7,8 @@ from unittest.mock import Mock, call, patch
 import numpy as np
 import pandas as pd
 import pytest
-from snowflake.connector.errors import NotSupportedError
+from snowflake.connector.constants import QueryStatus
+from snowflake.connector.errors import DatabaseError, NotSupportedError
 
 from featurebyte.enum import DBVarType
 from featurebyte.session.snowflake import SchemaInitializer, SnowflakeSession
@@ -458,3 +459,43 @@ def test_get_columns_schema_from_dataframe():
     }
     expected_schema = ", ".join(f'"{k}" {v}' for (k, v) in expected_dict.items())
     assert schema == expected_schema
+
+
+@patch("featurebyte.session.snowflake.connector")
+@patch("featurebyte.session.snowflake.ASYNC_NO_DATA_MAX_RETRY", 0)
+@pytest.mark.parametrize(
+    "is_still_running,query_status,error_message",
+    [
+        (
+            True,
+            QueryStatus.NO_DATA,
+            "Cannot retrieve data on the status of this query. No information returned from server for query 'some-query-id'",
+        ),
+        (
+            False,
+            QueryStatus.ABORTED,
+            "Status of query 'some-query-id' is ABORTED, results are unavailable",
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_snowflake_session__execute_async_query_fail(
+    mock_connector,
+    is_still_running,
+    error_message,
+    query_status,
+    snowflake_session_dict,
+):
+    """
+    Test snowflake session execute asynchronous query
+    """
+    connection = mock_connector.connect.return_value
+    cursor = connection.cursor.return_value
+    cursor._inner_cursor.execute = Mock()
+    cursor.sfqid = "some-query-id"
+    connection.is_still_running.return_value = is_still_running
+    connection.get_query_status.return_value = query_status
+    session = SnowflakeSession(**snowflake_session_dict)
+    with pytest.raises(DatabaseError) as exc:
+        await session.execute_async_query("SELECT * FROM T")
+    assert str(exc.value) == error_message

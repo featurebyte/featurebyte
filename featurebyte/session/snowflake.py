@@ -110,6 +110,7 @@ class SnowflakeSession(BaseSession):
         no_data_counter = 0
         retry_pattern_pos = 0
         start_time = time.time()
+        status = QueryStatus.RUNNING
         while time.time() - start_time < timeout:
             status = self.connection.get_query_status(query_id)
             if not self.connection.is_still_running(status):
@@ -119,7 +120,7 @@ class SnowflakeSession(BaseSession):
                 if no_data_counter > ASYNC_NO_DATA_MAX_RETRY:
                     raise DatabaseError(
                         "Cannot retrieve data on the status of this query. No information returned "
-                        "from server for query '{}'"
+                        f"from server for query '{query_id}'"
                     )
             await asyncio.sleep(0.5 * ASYNC_RETRY_PATTERN[retry_pattern_pos])  # Same wait as JDBC
             # If we can advance in ASYNC_RETRY_PATTERN then do so
