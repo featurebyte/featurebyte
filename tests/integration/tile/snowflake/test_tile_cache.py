@@ -6,7 +6,7 @@ import pytest
 
 from featurebyte.api.event_view import EventView
 from featurebyte.enum import InternalName
-from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.tile.tile_cache import SnowflakeOnDemandTileComputeRequest, SnowflakeTileCache
 
 

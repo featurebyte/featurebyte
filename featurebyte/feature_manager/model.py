@@ -12,7 +12,7 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, Vers
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
 from featurebyte.models.tile import TileSpec
-from featurebyte.query_graph.interpreter import GraphInterpreter
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
 
 class ExtendedFeatureModel(FeatureModel):

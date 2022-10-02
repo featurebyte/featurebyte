@@ -11,21 +11,18 @@ from sqlglot import expressions, select
 
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.feature_common import (
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.ast.base import TableNode
+from featurebyte.query_graph.sql.ast.builder import SQLOperationGraph
+from featurebyte.query_graph.sql.ast.count_dict import MISSING_VALUE_REPLACEMENT
+from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
+from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     AggregationSpec,
     FeatureSpec,
-    construct_cte_sql,
-)
-from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.interpreter import SQLOperationGraph
-from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql import (
-    MISSING_VALUE_REPLACEMENT,
-    AliasNode,
-    Project,
     SQLType,
-    TableNode,
+    construct_cte_sql,
     escape_column_name,
     escape_column_names,
 )

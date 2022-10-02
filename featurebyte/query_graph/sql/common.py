@@ -3,20 +3,15 @@ Common helpers and data structures for feature SQL generation
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from dataclasses import dataclass
+from enum import Enum
 
 import pandas as pd
 import sqlglot
 
-from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
-from featurebyte.query_graph.tiling import get_aggregator
-
-if TYPE_CHECKING:
-    from featurebyte.api.feature import Feature
+from featurebyte.query_graph.sql.tiling import get_aggregator
 
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
 
@@ -56,6 +51,38 @@ def construct_cte_sql(cte_statements: list[tuple[str, str]]) -> str:
     cte_sql = ",\n".join(cte_definitions)
     cte_sql = f"WITH {cte_sql}"
     return cte_sql
+
+
+def escape_column_name(column_name: str) -> str:
+    """Enclose provided column name with quotes
+
+    Parameters
+    ----------
+    column_name : str
+        Column name
+
+    Returns
+    -------
+    str
+    """
+    if column_name.startswith('"') and column_name.endswith('"'):
+        return column_name
+    return f'"{column_name}"'
+
+
+def escape_column_names(column_names: list[str]) -> list[str]:
+    """Enclose provided column names with quotes
+
+    Parameters
+    ----------
+    column_names : list[str]
+        Column names
+
+    Returns
+    -------
+    list[str]
+    """
+    return [escape_column_name(x) for x in column_names]
 
 
 def apply_serving_names_mapping(serving_names: list[str], mapping: dict[str, str]) -> list[str]:
@@ -171,22 +198,10 @@ class FeatureSpec:
     feature_expr: str
 
 
-def get_prune_graph_and_nodes(feature_objects: list[Feature]) -> tuple[QueryGraph, list[Node]]:
-    """Construct the pruned graph which contains list of pruned feature graph
+class SQLType(Enum):
+    """Type of SQL code corresponding to different operations"""
 
-    Parameters
-    ----------
-    feature_objects: List[Feature]
-        List of feature objects
-
-    Returns
-    -------
-    QueryGraph, List[Node]
-    """
-    local_query_graph = QueryGraph()
-    feature_nodes = []
-    for feature in feature_objects:
-        pruned_graph, mapped_node = feature.extract_pruned_graph_and_node()
-        local_query_graph, local_name_map = local_query_graph.load(pruned_graph)
-        feature_nodes.append(local_query_graph.get_node_by_name(local_name_map[mapped_node.name]))
-    return local_query_graph, feature_nodes
+    BUILD_TILE = "build_tile"
+    BUILD_TILE_ON_DEMAND = "build_tile_on_demand"
+    EVENT_VIEW_PREVIEW = "event_view_preview"
+    GENERATE_FEATURE = "generate_feature"

@@ -7,8 +7,8 @@ import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
-from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.query_graph.node import construct_node
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from tests.util.helper import get_node
 
 

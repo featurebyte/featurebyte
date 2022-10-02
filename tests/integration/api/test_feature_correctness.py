@@ -11,7 +11,7 @@ from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.logger import logger
-from featurebyte.query_graph.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
+from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
 from tests.util.helper import get_lagged_series_pandas
 
 

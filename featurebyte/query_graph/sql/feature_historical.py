@@ -20,8 +20,9 @@ from featurebyte.exception import (
     TooRecentPointInTimeError,
 )
 from featurebyte.logger import logger
-from featurebyte.query_graph.feature_common import REQUEST_TABLE_NAME, get_prune_graph_and_nodes
-from featurebyte.query_graph.feature_compute import FeatureExecutionPlanner
+from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import SnowflakeTileCache
 

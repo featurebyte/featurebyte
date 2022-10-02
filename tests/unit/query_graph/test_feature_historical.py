@@ -11,7 +11,7 @@ from featurebyte import exception
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.enum import SourceType
 from featurebyte.models.feature_store import SQLiteDetails
-from featurebyte.query_graph.feature_historical import (
+from featurebyte.query_graph.sql.feature_historical import (
     get_historical_features,
     get_historical_features_sql,
     get_session_from_feature_objects,

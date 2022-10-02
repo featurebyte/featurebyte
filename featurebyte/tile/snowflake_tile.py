@@ -10,7 +10,7 @@ from pydantic import BaseModel, PrivateAttr
 from featurebyte.enum import InternalName
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
-from featurebyte.query_graph.sql import escape_column_names
+from featurebyte.query_graph.sql.common import escape_column_names
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_sql_template import (
     tm_generate_tile,

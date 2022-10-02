@@ -1,7 +1,7 @@
 """
 Tests for feature preview SQL generation
 """
-from featurebyte.query_graph.feature_preview import get_feature_preview_sql
+from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from tests.util.helper import assert_equal_with_expected_fixture
 
 

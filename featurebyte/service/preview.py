@@ -11,9 +11,9 @@ import pandas as pd
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.models.feature_store import FeatureStoreModel
-from featurebyte.query_graph.feature_preview import get_feature_preview_sql
-from featurebyte.query_graph.interpreter import GraphInterpreter
 from featurebyte.query_graph.node.generic import GroupbyNode, InputNode
+from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.schema.feature import FeaturePreview
 from featurebyte.schema.feature_list import FeatureListPreview
 from featurebyte.schema.feature_store import FeatureStorePreview

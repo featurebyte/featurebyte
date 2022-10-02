@@ -9,7 +9,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
 from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.query_graph.tiling import AggFunc, TileSpec, get_aggregator
+from featurebyte.query_graph.sql.tiling import AggFunc, TileSpec, get_aggregator
 
 
 @pytest.mark.parametrize(
