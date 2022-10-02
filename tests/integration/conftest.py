@@ -1,6 +1,7 @@
 """
 Common test fixtures used across files in integration directory
 """
+import asyncio
 import json
 import os
 import sqlite3
@@ -12,6 +13,7 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
+import pytest_asyncio
 import yaml
 from bson.objectid import ObjectId
 from git import Git
@@ -66,6 +68,14 @@ def config_fixture():
             file_handle.write(yaml.dump(config_dict))
             file_handle.flush()
             yield Configurations(config_file_path=file_handle.name)
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """
+    Event loop to be used for async tests
+    """
+    return asyncio.get_event_loop()
 
 
 @pytest.fixture(name="mock_get_persistent", scope="session")
@@ -199,37 +209,39 @@ def sqlite_filename_fixture(transaction_data):
         yield file_handle.name
 
 
-@pytest.fixture(name="snowflake_session", scope="session")
-def snowflake_session_fixture(transaction_data_upper_case, config, snowflake_feature_store):
+@pytest_asyncio.fixture(name="snowflake_session", scope="session")
+async def snowflake_session_fixture(transaction_data_upper_case, config, snowflake_feature_store):
     """
     Snowflake session
     """
     session_manager = SessionManager(credentials=config.credentials)
-    session = session_manager[snowflake_feature_store]
+    session = await session_manager.get_session(snowflake_feature_store)
     assert isinstance(session, SnowflakeSession)
 
-    session.register_temp_table("TEST_TABLE", transaction_data_upper_case)
+    await session.register_temp_table("TEST_TABLE", transaction_data_upper_case)
 
     df_tiles = pd.read_csv(os.path.join(os.path.dirname(__file__), "tile", "tile_data.csv"))
     df_tiles[InternalName.TILE_START_DATE] = pd.to_datetime(df_tiles[InternalName.TILE_START_DATE])
-    session.register_temp_table("TEMP_TABLE", df_tiles)
+    await session.register_temp_table("TEMP_TABLE", df_tiles)
 
     yield session
 
-    session.execute_query(f"DROP SCHEMA IF EXISTS {snowflake_feature_store.details.sf_schema}")
+    await session.execute_query(
+        f"DROP SCHEMA IF EXISTS {snowflake_feature_store.details.sf_schema}"
+    )
 
 
-@pytest.fixture(scope="session")
-def sqlite_session(config, sqlite_feature_store):
+@pytest_asyncio.fixture(scope="session")
+async def sqlite_session(config, sqlite_feature_store):
     """
     SQLite session
     """
     session_manager = SessionManager(credentials=config.credentials)
-    return session_manager[sqlite_feature_store]
+    return await session_manager.get_session(sqlite_feature_store)
 
 
-@pytest.fixture
-def snowflake_tile(snowflake_session):
+@pytest_asyncio.fixture
+async def snowflake_tile(snowflake_session):
     """
     Pytest Fixture for TileSnowflake instance
     """
@@ -256,10 +268,10 @@ def snowflake_tile(snowflake_session):
 
     yield tile_spec
 
-    snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
-    snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
-    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
-    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+    await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
+    await snowflake_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
+    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
+    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
 
 
 @pytest.fixture
@@ -278,8 +290,8 @@ def feature_model_dict_feature(test_dir):
         return json.load(file_handle)
 
 
-@pytest.fixture
-def snowflake_feature(feature_model_dict, snowflake_session, snowflake_feature_store):
+@pytest_asyncio.fixture
+async def snowflake_feature(feature_model_dict, snowflake_session, snowflake_feature_store):
     """
     Fixture for a ExtendedFeatureModel object
     """
@@ -304,10 +316,10 @@ def snowflake_feature(feature_model_dict, snowflake_session, snowflake_feature_s
 
     yield feature
 
-    snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
-    snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
-    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
-    snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
+    await snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
+    await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
+    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_ONLINE")
+    await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
 
 
 @pytest.fixture(name="snowflake_feature_expected_tile_spec_dict")
@@ -375,8 +387,10 @@ def feature_manager(snowflake_session):
     return FeatureManagerSnowflake(session=snowflake_session)
 
 
-@pytest.fixture
-def snowflake_feature_list(feature_model_dict, snowflake_session, config, snowflake_feature_store):
+@pytest_asyncio.fixture
+async def snowflake_feature_list(
+    feature_model_dict, snowflake_session, config, snowflake_feature_store
+):
     """
     Pytest Fixture for FeatureSnowflake instance
     """
@@ -405,9 +419,9 @@ def snowflake_feature_list(feature_model_dict, snowflake_session, config, snowfl
 
     yield feature_list
 
-    snowflake_session.execute_query("DELETE FROM FEATURE_LIST_REGISTRY")
-    snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
-    snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
+    await snowflake_session.execute_query("DELETE FROM FEATURE_LIST_REGISTRY")
+    await snowflake_session.execute_query("DELETE FROM FEATURE_REGISTRY")
+    await snowflake_session.execute_query("DELETE FROM TILE_REGISTRY")
 
 
 @pytest.fixture

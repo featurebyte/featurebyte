@@ -31,30 +31,33 @@ def feature_for_tile_cache_tests_fixture(event_data, groupby_category):
     yield feature_group["SESSION_COUNT_48h"]
 
 
-def check_entity_table_sql_and_tile_compute_sql(
+async def check_entity_table_sql_and_tile_compute_sql(
     session,
     request: SnowflakeOnDemandTileComputeRequest,
     entity_column,
     expected_entities,
 ):
     """Test SQLs for entity table and tiles computation produce correct results"""
-    df_entity = session.execute_query(request.tracker_sql)
+    df_entity = await session.execute_query(request.tracker_sql)
     assert df_entity[entity_column].isin(expected_entities).all()
 
-    df_tiles = session.execute_query(request.tile_compute_sql)
+    df_tiles = await session.execute_query(request.tile_compute_sql)
     assert df_tiles[entity_column].isin(expected_entities).all()
 
 
-def check_temp_tables_cleaned_up(session):
+async def check_temp_tables_cleaned_up(session):
     """Check that temp tables are properly cleaned up"""
-    df_tables = session.execute_query("SHOW TABLES")
+    df_tables = await session.execute_query("SHOW TABLES")
     temp_table_names = df_tables[df_tables["kind"] == "TEMPORARY"]["name"].tolist()
     temp_table_names = [name.upper() for name in temp_table_names]
     assert InternalName.TILE_CACHE_WORKING_TABLE.value not in temp_table_names
 
 
 @pytest.mark.parametrize("groupby_category", [None, "PRODUCT_ACTION"])
-def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests, groupby_category):
+@pytest.mark.asyncio
+async def test_snowflake_tile_cache(
+    snowflake_session, feature_for_tile_cache_tests, groupby_category
+):
     """Test SnowflakeTileCache performs caching properly"""
     feature = feature_for_tile_cache_tests
     tile_cache = SnowflakeTileCache(snowflake_session)
@@ -67,23 +70,23 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests, g
             "user id": [1, 2, 3, 4, 5],
         }
     )
-    snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
+    await snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
 
     # No cache existed before for this feature. Check that one tile table needs to be computed
-    requests = tile_cache.get_required_computation(feature_objects)
+    requests = await tile_cache.get_required_computation(feature_objects)
     assert len(requests) == 1
-    check_entity_table_sql_and_tile_compute_sql(
+    await check_entity_table_sql_and_tile_compute_sql(
         snowflake_session,
         requests[0],
         "USER ID",
         [1, 2, 3, 4, 5],
     )
-    tile_cache.invoke_tile_manager(requests)
-    tile_cache.cleanup_temp_tables()
-    check_temp_tables_cleaned_up(snowflake_session)
+    await tile_cache.invoke_tile_manager(requests)
+    await tile_cache.cleanup_temp_tables()
+    await check_temp_tables_cleaned_up(snowflake_session)
 
     # Cache now exists. No additional compute required for the same request table
-    requests = tile_cache.get_required_computation(feature_objects)
+    requests = await tile_cache.get_required_computation(feature_objects)
     assert len(requests) == 0
 
     # Check using training events with outdated entities (user 3, 4, 5)
@@ -95,18 +98,18 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests, g
             "user id": [1, 2, 3, 4, 5],
         }
     )
-    snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
-    requests = tile_cache.get_required_computation(feature_objects)
+    await snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
+    requests = await tile_cache.get_required_computation(feature_objects)
     assert len(requests) == 1
-    check_entity_table_sql_and_tile_compute_sql(
+    await check_entity_table_sql_and_tile_compute_sql(
         snowflake_session,
         requests[0],
         "USER ID",
         [3, 4, 5],
     )
     tile_cache.invoke_tile_manager(requests)
-    tile_cache.cleanup_temp_tables()
-    check_temp_tables_cleaned_up(snowflake_session)
+    await tile_cache.cleanup_temp_tables()
+    await check_temp_tables_cleaned_up(snowflake_session)
 
     # Check using training events with new entities
     df_training_events = pd.DataFrame(
@@ -115,15 +118,15 @@ def test_snowflake_tile_cache(snowflake_session, feature_for_tile_cache_tests, g
             "user id": [6, 7],
         }
     )
-    snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
-    requests = tile_cache.get_required_computation(feature_objects)
+    await snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
+    requests = await tile_cache.get_required_computation(feature_objects)
     assert len(requests) == 1
-    check_entity_table_sql_and_tile_compute_sql(
+    await check_entity_table_sql_and_tile_compute_sql(
         snowflake_session,
         requests[0],
         "USER ID",
         [6, 7],
     )
-    tile_cache.invoke_tile_manager(requests)
-    tile_cache.cleanup_temp_tables()
-    check_temp_tables_cleaned_up(snowflake_session)
+    await tile_cache.invoke_tile_manager(requests)
+    await tile_cache.cleanup_temp_tables()
+    await check_temp_tables_cleaned_up(snowflake_session)

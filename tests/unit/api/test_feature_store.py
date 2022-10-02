@@ -15,12 +15,15 @@ from featurebyte.exception import (
 )
 
 
-def test_get_session(snowflake_connector, snowflake_execute_query, snowflake_feature_store, config):
+@pytest.mark.asyncio
+async def test_get_session(
+    snowflake_connector, snowflake_execute_query, snowflake_feature_store, config
+):
     """
     Test DatabaseSource.get_session return expected session
     """
     _ = snowflake_connector, snowflake_execute_query
-    session = snowflake_feature_store.get_session(credentials=config.credentials)
+    session = await snowflake_feature_store.get_session(credentials=config.credentials)
     assert session.dict() == {
         "source_type": "snowflake",
         "account": "sf_account",

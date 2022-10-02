@@ -43,7 +43,7 @@ class TileManagerSnowflake(BaseModel):
         super().__init__(**kw)
         self._session = session
 
-    def insert_tile_registry(self, tile_spec: TileSpec) -> bool:
+    async def insert_tile_registry(self, tile_spec: TileSpec) -> bool:
         """
         Insert new tile registry record if it does not exist
 
@@ -55,7 +55,7 @@ class TileManagerSnowflake(BaseModel):
         -------
             whether the tile registry record is inserted successfully or not
         """
-        result = self._session.execute_query(
+        result = await self._session.execute_query(
             tm_select_tile_registry.render(tile_id=tile_spec.tile_id)
         )
         if result is None or len(result) == 0:
@@ -69,13 +69,13 @@ class TileManagerSnowflake(BaseModel):
                 frequency_minute=tile_spec.frequency_minute,
             )
             logger.debug(f"generated tile insert sql: {sql}")
-            self._session.execute_query(sql)
+            await self._session.execute_query(sql)
             return True
 
         logger.warning(f"Tile id {tile_spec.tile_id} already exists")
         return False
 
-    def disable_tiles(self, tile_spec: TileSpec) -> None:
+    async def disable_tiles(self, tile_spec: TileSpec) -> None:
         """
         Disable tile jobs
 
@@ -86,13 +86,13 @@ class TileManagerSnowflake(BaseModel):
         """
         for t_type in TileType:
             tile_task_name = f"TILE_TASK_{t_type}_{tile_spec.tile_id}"
-            self._session.execute_query(f"ALTER TASK IF EXISTS {tile_task_name} SUSPEND")
+            await self._session.execute_query(f"ALTER TASK IF EXISTS {tile_task_name} SUSPEND")
 
-        self._session.execute_query(
+        await self._session.execute_query(
             tm_update_tile_registry.render(tile_id=tile_spec.tile_id, is_enabled=False)
         )
 
-    def update_tile_entity_tracker(self, tile_spec: TileSpec, temp_entity_table: str) -> str:
+    async def update_tile_entity_tracker(self, tile_spec: TileSpec, temp_entity_table: str) -> str:
         """
         Update <tile_id>_entity_tracker table for last_tile_start_date
 
@@ -120,11 +120,11 @@ class TileManagerSnowflake(BaseModel):
             tile_last_start_date_column=InternalName.TILE_LAST_START_DATE.value,
         )
         logger.debug(f"generated sql: {sql}")
-        self._session.execute_query(sql)
+        await self._session.execute_query(sql)
 
         return sql
 
-    def generate_tiles(
+    async def generate_tiles(
         self,
         tile_spec: TileSpec,
         tile_type: TileType,
@@ -183,11 +183,11 @@ class TileManagerSnowflake(BaseModel):
             last_tile_start_ts_str=last_tile_start_ts_str,
         )
         logger.debug(f"generated sql: {sql}")
-        self._session.execute_query(sql)
+        await self._session.execute_query(sql)
 
         return sql
 
-    def schedule_online_tiles(
+    async def schedule_online_tiles(
         self,
         tile_spec: TileSpec,
         monitor_periods: int = 10,
@@ -209,14 +209,14 @@ class TileManagerSnowflake(BaseModel):
         start_minute = tile_spec.time_modulo_frequency_second // 60
         cron = f"{start_minute}-59/{tile_spec.frequency_minute} * * * *"
 
-        return self._schedule_tiles(
+        return await self._schedule_tiles(
             tile_spec=tile_spec,
             tile_type=TileType.ONLINE,
             cron_expr=cron,
             monitor_periods=monitor_periods,
         )
 
-    def schedule_offline_tiles(
+    async def schedule_offline_tiles(
         self,
         tile_spec: TileSpec,
         offline_minutes: int = 1440,
@@ -238,14 +238,14 @@ class TileManagerSnowflake(BaseModel):
         start_minute = tile_spec.time_modulo_frequency_second // 60
         cron = f"{start_minute} 0 * * *"
 
-        return self._schedule_tiles(
+        return await self._schedule_tiles(
             tile_spec=tile_spec,
             tile_type=TileType.OFFLINE,
             cron_expr=cron,
             offline_minutes=offline_minutes,
         )
 
-    def _schedule_tiles(
+    async def _schedule_tiles(
         self,
         tile_spec: TileSpec,
         tile_type: TileType,
@@ -297,8 +297,8 @@ class TileManagerSnowflake(BaseModel):
         )
 
         logger.debug(f"generated sql: {sql}")
-        self._session.execute_query(sql)
+        await self._session.execute_query(sql)
 
-        self._session.execute_query(f"ALTER TASK IF EXISTS {temp_task_name} RESUME")
+        await self._session.execute_query(f"ALTER TASK IF EXISTS {temp_task_name} RESUME")
 
         return sql

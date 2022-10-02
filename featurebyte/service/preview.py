@@ -82,7 +82,7 @@ class PreviewService(OpsServiceMixin):
         preview_sql = GraphInterpreter(preview.graph).construct_preview_sql(
             node_name=preview.node.name, num_rows=limit
         )
-        result = db_session.execute_query(preview_sql)
+        result = await db_session.execute_async_query(preview_sql)
         return self._convert_dataframe_as_json(result)
 
     async def preview_feature(self, feature_preview: FeaturePreview, get_credential: Any) -> str:
@@ -134,7 +134,7 @@ class PreviewService(OpsServiceMixin):
             nodes=[feature_preview.feature.node],
             point_in_time_and_serving_name=feature_preview.point_in_time_and_serving_name,
         )
-        result = db_session.execute_query(preview_sql)
+        result = await db_session.execute_async_query(preview_sql)
         return self._convert_dataframe_as_json(result)
 
     async def preview_featurelist(
@@ -183,7 +183,7 @@ class PreviewService(OpsServiceMixin):
                 ],
                 point_in_time_and_serving_name=point_in_time_and_serving_name,
             )
-            _result = db_session.execute_query(preview_sql)
+            _result = await db_session.execute_async_query(preview_sql)
             if result is None:
                 result = _result
             else:

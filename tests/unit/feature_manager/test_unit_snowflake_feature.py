@@ -35,7 +35,8 @@ def mock_snowflake_feature_fixture(mock_snowflake_feature):
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature, feature_manager):
+@pytest.mark.asyncio
+async def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature, feature_manager):
     """
     Test insert_feature_registry
     """
@@ -43,7 +44,7 @@ def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature, fea
     mock_snowflake_feature.__dict__["event_data_ids"] = [
         PydanticObjectId("62d8d944d01041a098785131")
     ]
-    feature_manager.insert_feature_registry(mock_snowflake_feature)
+    await feature_manager.insert_feature_registry(mock_snowflake_feature)
     assert mock_execute_query.call_count == 3
 
     update_sql = tm_update_feature_registry_default_false.render(feature=mock_snowflake_feature)
@@ -65,7 +66,8 @@ def test_insert_feature_registry(mock_execute_query, mock_snowflake_feature, fea
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_remove_feature_registry(mock_execute_query, mock_snowflake_feature, feature_manager):
+@pytest.mark.asyncio
+async def test_remove_feature_registry(mock_execute_query, mock_snowflake_feature, feature_manager):
     """
     Test remove_feature_registry
     """
@@ -77,7 +79,7 @@ def test_remove_feature_registry(mock_execute_query, mock_snowflake_feature, fea
             "READINESS": ["DRAFT"],
         }
     )
-    feature_manager.remove_feature_registry(mock_snowflake_feature)
+    await feature_manager.remove_feature_registry(mock_snowflake_feature)
     assert mock_execute_query.call_count == 2
 
     remove_sql = tm_remove_feature_registry.render(feature=mock_snowflake_feature)
@@ -89,7 +91,8 @@ def test_remove_feature_registry(mock_execute_query, mock_snowflake_feature, fea
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_remove_feature_registry_no_feature(
+@pytest.mark.asyncio
+async def test_remove_feature_registry_no_feature(
     mock_execute_query, mock_snowflake_feature, feature_manager
 ):
     """
@@ -99,7 +102,7 @@ def test_remove_feature_registry_no_feature(
     mock_execute_query.return_value = []
 
     with pytest.raises(MissingFeatureRegistryError) as excinfo:
-        feature_manager.remove_feature_registry(mock_snowflake_feature)
+        await feature_manager.remove_feature_registry(mock_snowflake_feature)
 
     assert str(excinfo.value) == (
         f"Feature version does not exist for {mock_snowflake_feature.name} with version "
@@ -108,7 +111,8 @@ def test_remove_feature_registry_no_feature(
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_remove_feature_registry_feature_version_not_draft(
+@pytest.mark.asyncio
+async def test_remove_feature_registry_feature_version_not_draft(
     mock_execute_query, mock_snowflake_feature, feature_manager
 ):
     """
@@ -124,7 +128,7 @@ def test_remove_feature_registry_feature_version_not_draft(
     )
 
     with pytest.raises(InvalidFeatureRegistryOperationError) as excinfo:
-        feature_manager.remove_feature_registry(mock_snowflake_feature)
+        await feature_manager.remove_feature_registry(mock_snowflake_feature)
 
     assert str(excinfo.value) == (
         f"Feature version {mock_snowflake_feature.name} with version {mock_snowflake_feature.version.to_str()} "
@@ -133,7 +137,8 @@ def test_remove_feature_registry_feature_version_not_draft(
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_retrieve_features(mock_execute_query, mock_snowflake_feature, feature_manager):
+@pytest.mark.asyncio
+async def test_retrieve_features(mock_execute_query, mock_snowflake_feature, feature_manager):
     """
     Test retrieve_features
     """
@@ -153,7 +158,7 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature, feature_m
             "EVENT_DATA_IDS": ["626bccb9697a12204fb22ea3,726bccb9697a12204fb22ea3"],
         }
     )
-    f_reg_df = feature_manager.retrieve_feature_registries(mock_snowflake_feature)
+    f_reg_df = await feature_manager.retrieve_feature_registries(mock_snowflake_feature)
     assert mock_execute_query.call_count == 1
 
     sql = tm_select_feature_registry.render(feature_name=mock_snowflake_feature.name, version=None)
@@ -170,12 +175,13 @@ def test_retrieve_features(mock_execute_query, mock_snowflake_feature, feature_m
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_update_feature_list(mock_execute_query, mock_snowflake_feature, feature_manager):
+@pytest.mark.asyncio
+async def test_update_feature_list(mock_execute_query, mock_snowflake_feature, feature_manager):
     """
     Test retrieve_features
     """
     mock_execute_query.return_value = ["feature_list1"]
-    feature_manager.update_feature_registry(mock_snowflake_feature, to_online_enable=True)
+    await feature_manager.update_feature_registry(mock_snowflake_feature, to_online_enable=True)
     assert mock_execute_query.call_count == 2
 
     sql = tm_update_feature_registry.render(feature=mock_snowflake_feature, online_enabled=True)
@@ -189,7 +195,8 @@ def test_update_feature_list(mock_execute_query, mock_snowflake_feature, feature
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.insert_tile_registry")
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_online_tiles")
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_offline_tiles")
-def test_online_enable(
+@pytest.mark.asyncio
+async def test_online_enable(
     mock_schedule_offline_tiles,
     mock_schedule_online_tiles,
     mock_insert_tile_registry,
@@ -209,7 +216,7 @@ def test_online_enable(
     )
 
     mock_snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY
-    feature_manager.online_enable(mock_snowflake_feature)
+    await feature_manager.online_enable(mock_snowflake_feature)
 
     mock_insert_tile_registry.assert_called_once()
     mock_schedule_online_tiles.assert_called_once()
@@ -217,7 +224,8 @@ def test_online_enable(
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_get_last_tile_index(mock_execute_query, mock_snowflake_feature, feature_manager):
+@pytest.mark.asyncio
+async def test_get_last_tile_index(mock_execute_query, mock_snowflake_feature, feature_manager):
     """
     Test get_last_tile_index
     """
@@ -228,13 +236,14 @@ def test_get_last_tile_index(mock_execute_query, mock_snowflake_feature, feature
             "LAST_TILE_INDEX_OFFLINE": [80],
         }
     )
-    last_index_df = feature_manager.retrieve_last_tile_index(mock_snowflake_feature)
+    last_index_df = await feature_manager.retrieve_last_tile_index(mock_snowflake_feature)
     assert last_index_df.iloc[0]["TILE_ID"] == "TILE_ID1"
     assert last_index_df.iloc[0]["LAST_TILE_INDEX_ONLINE"] == 100
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_retrieve_feature_tile_inconsistency_data(mock_execute_query, feature_manager):
+@pytest.mark.asyncio
+async def test_retrieve_feature_tile_inconsistency_data(mock_execute_query, feature_manager):
     """
     Test retrieve_feature_tile_inconsistency_data
     """
@@ -246,7 +255,7 @@ def test_retrieve_feature_tile_inconsistency_data(mock_execute_query, feature_ma
             "TILE_MONITOR_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
         }
     )
-    result = feature_manager.retrieve_feature_tile_inconsistency_data(
+    result = await feature_manager.retrieve_feature_tile_inconsistency_data(
         query_start_ts="2022-06-05 15:43:00",
         query_end_ts="2022-06-05 16:03:00",
     )

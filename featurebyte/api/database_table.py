@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import asyncio
 from http import HTTPStatus
 
 from pydantic import Field, root_validator
@@ -90,11 +91,13 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             table_details = TableDetails(**table_details)
 
         if feature_store.details.is_local_source:
-            session = feature_store.get_session()
-            recent_schema = session.list_table_schema(
-                database_name=table_details.database_name,
-                schema_name=table_details.schema_name,
-                table_name=table_details.table_name,
+            session = asyncio.run(feature_store.get_session())
+            recent_schema = asyncio.run(
+                session.list_table_schema(
+                    database_name=table_details.database_name,
+                    schema_name=table_details.schema_name,
+                    table_name=table_details.table_name,
+                )
             )
         else:
             client = Configurations().get_client()

@@ -21,6 +21,11 @@ class BaseSession(BaseModel):
     source_type: SourceType
     _connection: Any = PrivateAttr(default=None)
 
+    async def initialize(self) -> None:
+        """
+        Initialize session
+        """
+
     @property
     def connection(self) -> Any:
         """
@@ -33,7 +38,7 @@ class BaseSession(BaseModel):
         return self._connection
 
     @abstractmethod
-    def list_databases(self) -> list[str]:
+    async def list_databases(self) -> list[str]:
         """
         Execute SQL query to retrieve database names
 
@@ -43,7 +48,7 @@ class BaseSession(BaseModel):
         """
 
     @abstractmethod
-    def list_schemas(self, database_name: str | None = None) -> list[str]:
+    async def list_schemas(self, database_name: str | None = None) -> list[str]:
         """
         Execute SQL query to retrieve schema names
 
@@ -58,7 +63,7 @@ class BaseSession(BaseModel):
         """
 
     @abstractmethod
-    def list_tables(
+    async def list_tables(
         self, database_name: str | None = None, schema_name: str | None = None
     ) -> list[str]:
         """
@@ -77,7 +82,7 @@ class BaseSession(BaseModel):
         """
 
     @abstractmethod
-    def list_table_schema(
+    async def list_table_schema(
         self,
         table_name: str | None,
         database_name: str | None = None,
@@ -101,9 +106,43 @@ class BaseSession(BaseModel):
         OrderedDict[str, DBVarType]
         """
 
-    def execute_query(self, query: str) -> pd.DataFrame | None:
+    async def execute_query(self, query: str) -> pd.DataFrame | None:
         """
         Execute SQL query
+
+        Parameters
+        ----------
+        query: str
+            sql query to execute
+
+        Returns
+        -------
+        pd.DataFrame | None
+            Query result as a pandas DataFrame if the query expects result
+        """
+        return self.execute_query_blocking(query)
+
+    @abstractmethod
+    async def execute_async_query(self, query: str, timeout: int = 180) -> pd.DataFrame | None:
+        """
+        Execute SQL queries
+
+        Parameters
+        ----------
+        query: str
+            sql query to execute
+        timeout: int
+            timeout in seconds
+
+        Returns
+        -------
+        pd.DataFrame | None
+            Query result as a pandas DataFrame if the query expects result
+        """
+
+    def execute_query_blocking(self, query: str) -> pd.DataFrame | None:
+        """
+        Execute SQL query without await
 
         Parameters
         ----------
@@ -144,7 +183,7 @@ class BaseSession(BaseModel):
         return None
 
     @abstractmethod
-    def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
+    async def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         """
         Register a temporary table
 

@@ -87,7 +87,9 @@ version = "0.1.0"
 [tool.poetry.dependencies]
 GitPython = "^3.1.27"
 PyYAML = "^6.0"
+aiofiles = "^22.1.0"
 alive-progress = "^2.4.1"
+asyncache = "^0.1.1"
 cachetools = "^5.2.0"
 fastapi = "^0.82.0"
 featurebyte-freeware = { version = "^0.1.0", allow-prereleases = true, source = "featurebyte_np" }

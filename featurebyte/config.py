@@ -293,7 +293,6 @@ class Configurations:
             Invalid settings
         """
         # pylint: disable=import-outside-toplevel,cyclic-import
-        from featurebyte.app import app
         from featurebyte.logger import configure_logger, logger
 
         # configure logger
@@ -308,6 +307,9 @@ class Configurations:
                 api_url=self.featurebyte.api_url, api_token=self.featurebyte.api_token
             )
         elif self.git:
+            # avoid git binary as a requirement for remote api url
+            from featurebyte.app import app
+
             client = TestClient(app)
         else:
             raise InvalidSettingsError("Git or FeatureByte API settings must be specified")

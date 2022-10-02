@@ -8,6 +8,7 @@ from unittest import mock
 
 import pandas as pd
 import pytest
+import pytest_asyncio
 import yaml
 from bson.objectid import ObjectId
 
@@ -35,7 +36,7 @@ from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.node import construct_node
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSettingAnalysisCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceCreate
-from featurebyte.session.manager import SessionManager, get_session
+from featurebyte.session.manager import SessionManager, session_cache
 from featurebyte.storage.local import LocalStorage
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
@@ -157,7 +158,8 @@ def mock_snowflake_connector():
     Mock snowflake connector in featurebyte.session.snowflake module
     """
     with mock.patch("featurebyte.session.snowflake.connector") as mock_connector:
-        yield mock_connector
+        with mock.patch("featurebyte.session.snowflake.SnowflakeSession.fetch_async_query"):
+            yield mock_connector
 
 
 @pytest.fixture(name="snowflake_execute_query")
@@ -473,7 +475,7 @@ def session_manager_fixture(config, snowflake_connector):
     """
     # pylint: disable=E1101
     _ = snowflake_connector
-    get_session.cache_clear()
+    session_cache.clear()
     yield SessionManager(credentials=config.credentials)
 
 
@@ -502,14 +504,14 @@ def mock_snowflake_tile():
     return tile_spec
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def tile_manager(mock_execute_query, session_manager, snowflake_feature_store):
+async def tile_manager(mock_execute_query, session_manager, snowflake_feature_store):
     """
     Tile Manager fixture
     """
     _ = mock_execute_query
-    return TileManagerSnowflake(session=session_manager[snowflake_feature_store])
+    return TileManagerSnowflake(session=await session_manager.get_session(snowflake_feature_store))
 
 
 @pytest.fixture
@@ -537,14 +539,16 @@ def mock_snowflake_feature(
     return feature
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def feature_manager(mock_execute_query, session_manager, snowflake_feature_store):
+async def feature_manager(mock_execute_query, session_manager, snowflake_feature_store):
     """
     Feature Manager fixture
     """
     _ = mock_execute_query
-    return FeatureManagerSnowflake(session=session_manager[snowflake_feature_store])
+    return FeatureManagerSnowflake(
+        session=await session_manager.get_session(snowflake_feature_store)
+    )
 
 
 @pytest.fixture
@@ -587,14 +591,16 @@ def mock_snowflake_feature_list_model(
     return mock_feature_list
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def feature_list_manager(mock_execute_query, session_manager, snowflake_feature_store):
+async def feature_list_manager(mock_execute_query, session_manager, snowflake_feature_store):
     """
     Feature List Manager fixture
     """
     _ = mock_execute_query
-    return FeatureListManagerSnowflake(session=session_manager[snowflake_feature_store])
+    return FeatureListManagerSnowflake(
+        session=await session_manager.get_session(snowflake_feature_store)
+    )
 
 
 @pytest.fixture(name="mocked_tile_cache")

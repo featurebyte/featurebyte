@@ -109,7 +109,7 @@ class OpsServiceMixin:
         """
         try:
             feature_store = ExtendedFeatureStoreModel(**feature_store.dict())
-            return feature_store.get_session(
+            return await feature_store.get_session(
                 credentials={
                     feature_store.name: await get_credential(
                         user_id=self.user.id, feature_store_name=feature_store.name

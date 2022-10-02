@@ -75,7 +75,7 @@ async def test_insert_feature_registry__non_snowflake_feature_store(
 
 
 @pytest.mark.asyncio
-@patch("featurebyte.session.base.BaseSession.execute_query")
+@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 async def test_insert_feature_registry(
     mock_execute_query,
     feature_model_dict,

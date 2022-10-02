@@ -44,11 +44,12 @@ def test_construct_snowflaketile_zero_time_modulo_frequency():
     assert tile_spec.frequency_minute == 3
 
 
-def test_generate_tiles(mock_snowflake_tile, tile_manager):
+@pytest.mark.asyncio
+async def test_generate_tiles(mock_snowflake_tile, tile_manager):
     """
     Test generate_tiles method in TileSnowflake
     """
-    sql = tile_manager.generate_tiles(
+    sql = await tile_manager.generate_tiles(
         mock_snowflake_tile,
         TileType.ONLINE,
         "2022-06-20 15:00:00",
@@ -75,11 +76,12 @@ def test_generate_tiles(mock_snowflake_tile, tile_manager):
     assert textwrap.dedent(sql).strip() == expected_sql
 
 
-def test_schedule_online_tiles(mock_snowflake_tile, tile_manager):
+@pytest.mark.asyncio
+async def test_schedule_online_tiles(mock_snowflake_tile, tile_manager):
     """
     Test schedule_online_tiles method in TileSnowflake
     """
-    sql = tile_manager.schedule_online_tiles(mock_snowflake_tile)
+    sql = await tile_manager.schedule_online_tiles(mock_snowflake_tile)
     expected_sql = textwrap.dedent(
         """
         CREATE OR REPLACE TASK SHELL_TASK_tile_id1_ONLINE
@@ -109,11 +111,12 @@ def test_schedule_online_tiles(mock_snowflake_tile, tile_manager):
     assert textwrap.dedent(sql).strip() == expected_sql
 
 
-def test_schedule_offline_tiles(mock_snowflake_tile, tile_manager):
+@pytest.mark.asyncio
+async def test_schedule_offline_tiles(mock_snowflake_tile, tile_manager):
     """
     Test schedule_offline_tiles method in TileSnowflake
     """
-    sql = tile_manager.schedule_offline_tiles(mock_snowflake_tile)
+    sql = await tile_manager.schedule_offline_tiles(mock_snowflake_tile)
     expected_sql = textwrap.dedent(
         """
         CREATE OR REPLACE TASK SHELL_TASK_tile_id1_OFFLINE
@@ -144,14 +147,15 @@ def test_schedule_offline_tiles(mock_snowflake_tile, tile_manager):
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-def test_insert_tile_registry(mock_execute_query, mock_snowflake_tile, tile_manager):
+@pytest.mark.asyncio
+async def test_insert_tile_registry(mock_execute_query, mock_snowflake_tile, tile_manager):
     """
     Test schedule_offline_tiles method in TileSnowflake
     """
     mock_execute_query.return_value = ["Element"]
-    flag = tile_manager.insert_tile_registry(mock_snowflake_tile)
+    flag = await tile_manager.insert_tile_registry(mock_snowflake_tile)
     assert flag is False
 
     mock_execute_query.return_value = []
-    flag = tile_manager.insert_tile_registry(mock_snowflake_tile)
+    flag = await tile_manager.insert_tile_registry(mock_snowflake_tile)
     assert flag is True

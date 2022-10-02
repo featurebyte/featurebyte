@@ -6,10 +6,10 @@ from __future__ import annotations
 from typing import Any, AsyncGenerator
 
 import json
-import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+import aiofiles
 import pandas as pd
 from pandas import DataFrame
 from pydantic import BaseModel
@@ -117,10 +117,10 @@ class Storage(ABC):
         remote_path: Path
             Path of remote file to upload to
         """
-        with tempfile.NamedTemporaryFile(mode="w") as file_obj:
-            file_obj.write(text)
-            file_obj.flush()
-            await self.put(Path(file_obj.name), remote_path)
+        async with aiofiles.tempfile.NamedTemporaryFile(mode="w") as file_obj:
+            await file_obj.write(text)
+            await file_obj.flush()
+            await self.put(Path(str(file_obj.name)), remote_path)
 
     async def get_text(self, remote_path: Path) -> str:
         """
@@ -136,10 +136,10 @@ class Storage(ABC):
         str
             Text data
         """
-        with tempfile.NamedTemporaryFile(mode="r") as tmp_file:
-            await self.get(remote_path, Path(tmp_file.name))
-            with open(tmp_file.name, encoding="utf8") as file_obj:
-                text = file_obj.read()
+        async with aiofiles.tempfile.NamedTemporaryFile(mode="r") as tmp_file:
+            await self.get(remote_path, Path(str(tmp_file.name)))
+            async with aiofiles.open(tmp_file.name, encoding="utf8") as file_obj:
+                text = await file_obj.read()
             return text
 
     async def put_dataframe(self, dataframe: DataFrame, remote_path: Path) -> None:
@@ -153,9 +153,9 @@ class Storage(ABC):
         remote_path: Path
             Path of remote file to upload to
         """
-        with tempfile.NamedTemporaryFile() as file_obj:
+        async with aiofiles.tempfile.NamedTemporaryFile() as file_obj:
             dataframe.to_parquet(file_obj.name)
-            await self.put(Path(file_obj.name), remote_path)
+            await self.put(Path(str(file_obj.name)), remote_path)
 
     async def get_dataframe(self, remote_path: Path) -> DataFrame:
         """
@@ -171,6 +171,6 @@ class Storage(ABC):
         DataFrame
             Pandas DataFrame object
         """
-        with tempfile.NamedTemporaryFile(mode="r") as file_obj:
-            await self.get(remote_path, Path(file_obj.name))
+        async with aiofiles.tempfile.NamedTemporaryFile(mode="r") as file_obj:
+            await self.get(remote_path, Path(str(file_obj.name)))
             return pd.read_parquet(file_obj.name)

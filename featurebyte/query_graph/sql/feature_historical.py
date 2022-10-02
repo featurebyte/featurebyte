@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
 
-def get_session_from_feature_objects(
+async def get_session_from_feature_objects(
     feature_objects: list[Feature], credentials: Credentials | None = None
 ) -> BaseSession:
     """Get a session object from a list of Feature objects
@@ -64,7 +64,7 @@ def get_session_from_feature_objects(
                 "Historical features request using multiple stores not supported"
             )
     assert feature_store is not None
-    return feature_store.get_session(credentials=credentials)
+    return await feature_store.get_session(credentials=credentials)
 
 
 def validate_historical_requests_point_in_time(training_events: pd.DataFrame) -> pd.DataFrame:
@@ -169,7 +169,7 @@ def get_historical_features_sql(
     return sql
 
 
-def get_historical_features(
+async def get_historical_features(
     feature_objects: list[Feature],
     training_events: pd.DataFrame,
     credentials: Credentials | None = None,
@@ -207,13 +207,13 @@ def get_historical_features(
     )
 
     # Execute feature SQL code
-    session = get_session_from_feature_objects(feature_objects, credentials=credentials)
-    session.register_temp_table(REQUEST_TABLE_NAME, training_events)
+    session = await get_session_from_feature_objects(feature_objects, credentials=credentials)
+    await session.register_temp_table(REQUEST_TABLE_NAME, training_events)
 
     # Compute tiles on demand if required
     tic = time.time()
     tile_cache = SnowflakeTileCache(session=session)
-    tile_cache.compute_tiles_on_demand(
+    await tile_cache.compute_tiles_on_demand(
         features=feature_objects, serving_names_mapping=serving_names_mapping
     )
     elapsed = time.time() - tic
@@ -221,7 +221,7 @@ def get_historical_features(
 
     # Execute feature query
     tic = time.time()
-    result = session.execute_query(sql)
+    result = await session.execute_query(sql)
     elapsed = time.time() - tic
     logger.debug(f"Executing feature query took {elapsed:.2f}s")
 
