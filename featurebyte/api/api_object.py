@@ -352,7 +352,7 @@ class ApiObject(ApiGetObject):
         DuplicatedRecordException
             When record with the same key exists at the persistent
         RecordCreationException
-            When fail to save the event data (general failure)
+            When fail to save the new object (general failure)
         """
         if self.saved:
             raise ObjectHasBeenSavedError(

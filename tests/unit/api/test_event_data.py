@@ -373,11 +373,11 @@ def test_update_default_job_setting(snowflake_event_data, config):
 
     assert snowflake_event_data.default_feature_job_setting is None
     snowflake_event_data.update_default_feature_job_setting(
-        feature_job_setting={
-            "blind_spot": "1m30s",
-            "frequency": "10m",
-            "time_modulo_frequency": "2m",
-        }
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s",
+            frequency="10m",
+            time_modulo_frequency="2m",
+        )
     )
     assert snowflake_event_data.saved is False
     assert snowflake_event_data.default_feature_job_setting == FeatureJobSetting(
@@ -393,11 +393,11 @@ def test_update_default_job_setting__saved_event_data(saved_event_data, config):
     """
     assert saved_event_data.default_feature_job_setting is None
     saved_event_data.update_default_feature_job_setting(
-        feature_job_setting={
-            "blind_spot": "1m30s",
-            "frequency": "6m",
-            "time_modulo_frequency": "3m",
-        }
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s",
+            frequency="6m",
+            time_modulo_frequency="3m",
+        )
     )
     assert saved_event_data.saved is True
 
@@ -467,11 +467,9 @@ def test_update_default_job_setting__record_update_exception(snowflake_event_dat
     with pytest.raises(RecordUpdateException):
         with patch("featurebyte.api.api_object.Configurations"):
             snowflake_event_data.update_default_feature_job_setting(
-                feature_job_setting={
-                    "blind_spot": "1m",
-                    "frequency": "2m",
-                    "time_modulo_frequency": "1m",
-                }
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="1m", frequency="2m", time_modulo_frequency="1m"
+                )
             )
 
 
@@ -604,11 +602,9 @@ def test_default_feature_job_setting_history(saved_event_data):
     assert setting_history[0].items() > {"setting": None}.items()
     t1 = datetime.utcnow()
     saved_event_data.update_default_feature_job_setting(
-        feature_job_setting={
-            "blind_spot": "1m30s",
-            "frequency": "10m",
-            "time_modulo_frequency": "2m",
-        }
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="10m", time_modulo_frequency="2m"
+        )
     )
     t2 = datetime.utcnow()
 
@@ -621,11 +617,9 @@ def test_default_feature_job_setting_history(saved_event_data):
     assert t2 >= datetime.fromisoformat(history[0]["created_at"]) >= t1
 
     saved_event_data.update_default_feature_job_setting(
-        feature_job_setting={
-            "blind_spot": "1m",
-            "frequency": "5m",
-            "time_modulo_frequency": "2m",
-        }
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m", frequency="5m", time_modulo_frequency="2m"
+        )
     )
     t3 = datetime.utcnow()
 

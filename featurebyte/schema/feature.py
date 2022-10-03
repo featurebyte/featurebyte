@@ -12,6 +12,7 @@ from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
+from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import QueryGraph
@@ -35,6 +36,15 @@ class FeatureCreate(FeatureByteBaseModel):
     event_data_ids: List[PydanticObjectId] = Field(min_items=1)
     entity_ids: List[PydanticObjectId] = Field(min_items=1)
     feature_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
+
+
+class VersionCreate(FeatureByteBaseModel):
+    """
+    New version creation schema based on existing feature
+    """
+
+    source_feature_id: PydanticObjectId
+    feature_job_setting: Optional[FeatureJobSetting]
 
 
 class FeaturePaginatedList(PaginationMixin):

@@ -13,6 +13,7 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
 )
+from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from tests.util.helper import get_node
@@ -442,3 +443,42 @@ def test_feature_derived_from_saved_feature_not_saved(saved_feature):
     """
     derived_feat = saved_feature + 1
     assert derived_feat.saved is False
+
+
+def test_create_new_version(saved_feature):
+    """Test creation a new version"""
+    new_version = saved_feature.create_new_version(
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+        )
+    )
+
+    assert new_version.id != saved_feature.id
+    assert new_version.saved is True
+
+    saved_feature_version = saved_feature.version
+    assert saved_feature_version.suffix is None
+    assert new_version.version == {"name": saved_feature_version.name, "suffix": 1}
+
+    new_version_dict = new_version.dict()
+    groupby_node = new_version_dict["graph"]["nodes"][1]
+    groupby_node_params = groupby_node["parameters"]
+    assert groupby_node["type"] == "groupby"
+    assert groupby_node_params["blind_spot"] == 45 * 60
+    assert groupby_node_params["frequency"] == 30 * 60
+    assert groupby_node_params["time_modulo_frequency"] == 15 * 60
+
+
+def test_create_new_version__error(float_feature):
+    """Test creation a new version (exception)"""
+    with pytest.raises(RecordCreationException) as exc:
+        float_feature.create_new_version(
+            feature_job_setting=FeatureJobSetting(
+                blind_spot="45m", frequency="30m", time_modulo_frequency="15m"
+            )
+        )
+
+    expected_msg = (
+        f'Feature (id: "{float_feature.id}") not found. Please save the Feature object first.'
+    )
+    assert expected_msg in str(exc.value)

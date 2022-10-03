@@ -3,7 +3,7 @@ Feature API routes
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Optional, Union, cast
 
 from http import HTTPStatus
 
@@ -28,13 +28,16 @@ from featurebyte.schema.feature import (
     FeaturePaginatedList,
     FeaturePreview,
     FeatureUpdate,
+    VersionCreate,
 )
 
 router = APIRouter(prefix="/feature")
 
 
 @router.post("", response_model=FeatureModel, status_code=HTTPStatus.CREATED)
-async def create_feature(request: Request, data: FeatureCreate) -> FeatureModel:
+async def create_feature(
+    request: Request, data: Union[FeatureCreate, VersionCreate]
+) -> FeatureModel:
     """
     Create Feature
     """

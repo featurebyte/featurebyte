@@ -26,6 +26,7 @@ from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
+from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.models.feature_store import SnowflakeDetails, SQLiteDetails, TableDetails
@@ -466,11 +467,9 @@ def event_data_fixture(snowflake_session, snowflake_feature_store):
         event_timestamp_column="EVENT_TIMESTAMP",
     )
     event_data.update_default_feature_job_setting(
-        feature_job_setting={
-            "blind_spot": "30m",
-            "frequency": "1h",
-            "time_modulo_frequency": "30m",
-        }
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
+        )
     )
 
     # create entity & event data
