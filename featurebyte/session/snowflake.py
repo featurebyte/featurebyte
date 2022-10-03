@@ -127,6 +127,8 @@ class SnowflakeSession(BaseSession):
             raise DatabaseError(
                 f"Status of query '{query_id}' is {status.name}, results are unavailable"
             )
+
+        # Retrieve results from Snowflake asynchronous query using SQL with query_id
         return await self.execute_query(f"select * from table(result_scan('{query_id}'))")
 
     async def execute_async_query(self, query: str, timeout: int = 180) -> pd.DataFrame | None:
