@@ -219,6 +219,7 @@ class TestFeatureApi(BaseApiTestSuite):
     def test_create_422__create_new_version(
         self, test_api_client_persistent, create_success_response
     ):
+        """Test create new version (unprocessable entity)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         response = test_api_client.post(

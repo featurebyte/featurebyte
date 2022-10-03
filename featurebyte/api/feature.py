@@ -320,8 +320,12 @@ class Feature(
         Returns
         -------
         Feature
-        """
 
+        Raises
+        ------
+        RecordCreationException
+            When failed to save new version
+        """
         client = Configurations().get_client()
         response = client.post(
             url=self._route,
