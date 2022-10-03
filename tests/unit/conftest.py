@@ -298,8 +298,34 @@ def snowflake_event_data_with_entity_fixture(snowflake_event_data, cust_id_entit
     yield snowflake_event_data
 
 
+@pytest.fixture(name="snowflake_feature_store_details_dict")
+def snowflake_feature_store_details_dict_fixture():
+    """Feature store details dict fixture"""
+    return {
+        "type": "snowflake",
+        "details": {
+            "account": "sf_account",
+            "database": "sf_database",
+            "sf_schema": "sf_schema",
+            "warehouse": "sf_warehouse",
+        },
+    }
+
+
+@pytest.fixture(name="snowflake_table_details_dict")
+def snowflake_table_details_dict_fixture():
+    """Table details dict fixture"""
+    return {
+        "database_name": "sf_database",
+        "schema_name": "sf_schema",
+        "table_name": "sf_table",
+    }
+
+
 @pytest.fixture(name="snowflake_event_view")
-def snowflake_event_view_fixture(snowflake_event_data):
+def snowflake_event_view_fixture(
+    snowflake_event_data, snowflake_feature_store_details_dict, snowflake_table_details_dict
+):
     """
     EventData object fixture
     """
@@ -323,20 +349,8 @@ def snowflake_event_view_fixture(snowflake_event_data):
                 "cust_id",
             ],
             "timestamp": "event_timestamp",
-            "feature_store_details": {
-                "type": "snowflake",
-                "details": {
-                    "account": "sf_account",
-                    "database": "sf_database",
-                    "sf_schema": "sf_schema",
-                    "warehouse": "sf_warehouse",
-                },
-            },
-            "table_details": {
-                "database_name": "sf_database",
-                "schema_name": "sf_schema",
-                "table_name": "sf_table",
-            },
+            "feature_store_details": snowflake_feature_store_details_dict,
+            "table_details": snowflake_table_details_dict,
         },
         output_type=NodeOutputType.FRAME,
     ).dict(exclude={"name": True})

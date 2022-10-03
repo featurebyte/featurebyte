@@ -5,6 +5,8 @@ import pytest
 
 from featurebyte.common.model_util import get_version
 from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.feature import VersionCreate
 
 
@@ -81,3 +83,59 @@ async def test_create_new_feature_version(
         document_id=feature.feature_namespace_id
     )
     assert namespace.feature_ids == [feature.id, version.id]
+
+
+@pytest.fixture(name="invalid_query_graph_groupby_node")
+def invalid_query_graph_groupby_node_fixture(
+    snowflake_feature_store_details_dict, snowflake_table_details_dict
+):
+    """Invalid query graph fixture"""
+    groupby_node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "avg",
+        "time_modulo_frequency": 1800,  # 30m
+        "frequency": 3600,  # 1h
+        "blind_spot": 900,  # 15m
+        "timestamp": "ts",
+        "names": ["a_2h_average", "a_48h_average"],
+        "windows": ["2h", "48h"],
+    }
+    graph = QueryGraph()
+    node_input = graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "type": "generic",
+            "columns": ["random_column"],
+            "table_details": snowflake_table_details_dict,
+            "feature_store_details": snowflake_feature_store_details_dict,
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    node_groupy = graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params=groupby_node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input],
+    )
+    return graph, node_groupy
+
+
+def test_version_service__iterate_groupby_and_event_input_node_pairs__invalid_graph(
+    version_service, invalid_query_graph_groupby_node
+):
+    """Test value error is raised when the input graph is invalid"""
+    graph, node = invalid_query_graph_groupby_node
+    with pytest.raises(ValueError) as exc:
+        for (
+            groupby_node,
+            input_node,
+        ) in version_service._iterate_groupby_and_event_data_input_node_pairs(
+            graph=graph, target_node=node
+        ):
+            _ = groupby_node, input_node
+    expected_msg = "Groupby node does not have valid event data!"
+    assert expected_msg in str(exc.value)
