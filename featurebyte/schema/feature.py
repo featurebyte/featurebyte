@@ -44,7 +44,7 @@ class VersionCreate(FeatureByteBaseModel):
     """
 
     source_feature_id: PydanticObjectId
-    feature_job_setting: FeatureJobSetting
+    feature_job_setting: Optional[FeatureJobSetting]
 
 
 class FeaturePaginatedList(PaginationMixin):

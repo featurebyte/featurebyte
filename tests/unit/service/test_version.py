@@ -4,6 +4,7 @@ Test for VersionService
 import pytest
 
 from featurebyte.common.model_util import get_version
+from featurebyte.exception import DocumentError
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -138,4 +139,32 @@ def test_version_service__iterate_groupby_and_event_input_node_pairs__invalid_gr
         ):
             _ = groupby_node, input_node
     expected_msg = "Groupby node does not have valid event data!"
+    assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_create_new_feature_version__document_error(version_service, feature, get_credential):
+    """Test create new feature version (document error due to no change is detected)"""
+    # check no feature job settings
+    with pytest.raises(DocumentError) as exc:
+        await version_service.create_new_feature_version(
+            data=VersionCreate(source_feature_id=feature.id, feature_job_setting=None),
+            get_credential=get_credential,
+        )
+
+    expected_msg = "No change detected on the new feature version."
+    assert expected_msg in str(exc.value)
+
+    # check same feature job settings
+    with pytest.raises(DocumentError) as exc:
+        await version_service.create_new_feature_version(
+            data=VersionCreate(
+                source_feature_id=feature.id,
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
+                ),
+            ),
+            get_credential=get_credential,
+        )
+
     assert expected_msg in str(exc.value)

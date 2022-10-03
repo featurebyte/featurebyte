@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import AsyncIterator
 
 import json
+import os.path
 from contextlib import asynccontextmanager
 from unittest.mock import Mock, patch
 
@@ -183,9 +184,10 @@ def deploy_service_fixture(user, persistent):
 
 
 @pytest_asyncio.fixture(name="feature_store")
-async def feature_store_fixture(feature_store_service, user):
+async def feature_store_fixture(test_dir, feature_store_service, user):
     """FeatureStore model"""
-    with open("tests/fixtures/request_payloads/feature_store.json", encoding="utf") as fhandle:
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_store.json")
+    with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         feature_store = await feature_store_service.create_document(
             data=FeatureStoreCreate(**payload, user_id=user.id)
@@ -194,10 +196,11 @@ async def feature_store_fixture(feature_store_service, user):
 
 
 @pytest_asyncio.fixture(name="event_data")
-async def event_data_fixture(feature_store, event_data_service, user):
+async def event_data_fixture(test_dir, feature_store, event_data_service, user):
     """EventData model"""
     _ = feature_store
-    with open("tests/fixtures/request_payloads/event_data.json", encoding="utf") as fhandle:
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_data.json")
+    with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         event_data = await event_data_service.create_document(
             data=EventDataCreate(**payload, user_id=user.id)
@@ -206,9 +209,10 @@ async def event_data_fixture(feature_store, event_data_service, user):
 
 
 @pytest_asyncio.fixture(name="entity")
-async def entity_fixture(entity_service, user):
+async def entity_fixture(test_dir, entity_service, user):
     """Entity model"""
-    with open("tests/fixtures/request_payloads/entity.json", encoding="utf") as fhandle:
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/entity.json")
+    with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         entity = await entity_service.create_document(data=EntityCreate(**payload, user_id=user.id))
         return entity
@@ -224,10 +228,13 @@ def mock_insert_feature_registry_fixture():
 
 
 @pytest_asyncio.fixture(name="feature")
-async def feature_fixture(event_data, entity, feature_service, mock_insert_feature_registry):
+async def feature_fixture(
+    test_dir, event_data, entity, feature_service, mock_insert_feature_registry
+):
     """Feature model"""
     _ = event_data, entity, mock_insert_feature_registry
-    with open("tests/fixtures/request_payloads/feature_sum_30m.json", encoding="utf") as fhandle:
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
+    with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         feature = await feature_service.create_document(data=FeatureCreate(**payload))
         return feature
@@ -250,12 +257,11 @@ async def feature_namespace_fixture(feature_namespace_service, feature):
 
 
 @pytest_asyncio.fixture(name="feature_list")
-async def feature_list_fixture(feature, feature_list_service):
+async def feature_list_fixture(test_dir, feature, feature_list_service):
     """Feature list model"""
     _ = feature
-    with open(
-        "tests/fixtures/request_payloads/feature_list_single.json", encoding="utf"
-    ) as fhandle:
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_list_single.json")
+    with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
         feature_list = await feature_list_service.create_document(data=FeatureListCreate(**payload))
         return feature_list
@@ -269,9 +275,10 @@ async def feature_list_namespace_fixture(feature_list_namespace_service, feature
     )
 
 
-async def insert_feature_into_persistent(user, persistent, readiness, name=None):
+async def insert_feature_into_persistent(test_dir, user, persistent, readiness, name=None):
     """Insert a feature into persistent"""
-    with open("tests/fixtures/request_payloads/feature_sum_30m.json", encoding="utf") as fhandle:
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
+    with open(fixture_path) as fhandle:
         payload = json.loads(fhandle.read())
         payload = FeatureCreate(**payload, user_id=user.id).dict(by_alias=True)
         payload["_id"] = ObjectId()
@@ -288,6 +295,7 @@ async def insert_feature_into_persistent(user, persistent, readiness, name=None)
 
 @pytest_asyncio.fixture(name="setup_for_feature_readiness")
 async def setup_for_feature_readiness_fixture(
+    test_dir,
     feature_list_service,
     feature_list_namespace_service,
     feature_namespace_service,
@@ -306,6 +314,7 @@ async def setup_for_feature_readiness_fixture(
 
     # add a deprecated feature version first
     new_feature_id = await insert_feature_into_persistent(
+        test_dir=test_dir,
         user=user,
         persistent=persistent,
         readiness="DEPRECATED",
