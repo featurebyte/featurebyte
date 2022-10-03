@@ -59,11 +59,6 @@ class TestFeatureApi(BaseApiTestSuite):
                     "msg": "field required",
                     "type": "value_error.missing",
                 },
-                {
-                    "loc": ["body", "feature_job_setting"],
-                    "msg": "field required",
-                    "type": "value_error.missing",
-                },
             ],
         ),
         (
@@ -184,9 +179,9 @@ class TestFeatureApi(BaseApiTestSuite):
         )
         assert feat_namespace_docs[0]["updated_at"] > feat_namespace_docs[0]["created_at"]
 
-    def test_create_201__creation_new_version(
+    def test_create_201__create_new_version(
         self, test_api_client_persistent, create_success_response
-    ):  # pylint: disable=invalid-overridden-method
+    ):
         """Test new version creation (success)"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -220,6 +215,20 @@ class TestFeatureApi(BaseApiTestSuite):
         self.setup_creation_route(test_api_client)
         response = test_api_client.post(f"{self.base_route}", json=self.payload)
         assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+    def test_create_422__create_new_version(
+        self, test_api_client_persistent, create_success_response
+    ):
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        response = test_api_client.post(
+            f"{self.base_route}",
+            json={"source_feature_id": create_response_dict["_id"]},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+        response_dict = response.json()
+        assert response_dict["detail"] == "No change detected on the new feature version."
 
     def test_list_404__feature_list_not_found(
         self,
