@@ -325,7 +325,10 @@ class Feature(
         client = Configurations().get_client()
         response = client.post(
             url=self._route,
-            json={"source_feature_id": self.id, "feature_job_setting": feature_job_setting.dict()},
+            json={
+                "source_feature_id": str(self.id),
+                "feature_job_setting": feature_job_setting.dict(),
+            },
         )
         if response.status_code != HTTPStatus.CREATED:
             raise RecordCreationException(response=response)
