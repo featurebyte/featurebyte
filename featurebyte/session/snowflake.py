@@ -19,11 +19,12 @@ from pydantic import Field
 from snowflake import connector
 from snowflake.connector.constants import QueryStatus
 from snowflake.connector.cursor import ASYNC_NO_DATA_MAX_RETRY, ASYNC_RETRY_PATTERN
-from snowflake.connector.errors import DatabaseError, NotSupportedError
+from snowflake.connector.errors import DatabaseError, NotSupportedError, OperationalError
 from snowflake.connector.pandas_tools import write_pandas
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, SourceType
+from featurebyte.exception import CredentialsError
 from featurebyte.logger import logger
 from featurebyte.session.base import BaseSession
 from featurebyte.session.enum import SnowflakeDataType
@@ -45,14 +46,17 @@ class SnowflakeSession(BaseSession):
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
 
-        self._connection = connector.connect(
-            user=data["username"],
-            password=data["password"],
-            account=data["account"],
-            warehouse=data["warehouse"],
-            database=data["database"],
-            schema=data["sf_schema"],
-        )
+        try:
+            self._connection = connector.connect(
+                user=data["username"],
+                password=data["password"],
+                account=data["account"],
+                warehouse=data["warehouse"],
+                database=data["database"],
+                schema=data["sf_schema"],
+            )
+        except OperationalError as exc:
+            raise CredentialsError("Invalid credentials provided.") from exc
 
     async def initialize(self) -> None:
         # If the featurebyte schema does not exist, the self._connection can still be created
