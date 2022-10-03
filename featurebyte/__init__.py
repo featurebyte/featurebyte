@@ -9,7 +9,7 @@ from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import AggFunc, SourceType
-from featurebyte.models.feature_store import SnowflakeDetails
+from featurebyte.models.feature_store import DatabricksDetails, SnowflakeDetails
 
 
 def get_version() -> str:

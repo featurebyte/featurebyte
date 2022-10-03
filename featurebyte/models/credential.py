@@ -17,6 +17,7 @@ class CredentialType(str, Enum):
     """
 
     USERNAME_PASSWORD = "USERNAME_PASSWORD"
+    ACCESS_TOKEN = "ACCESS_TOKEN"
 
 
 class UsernamePasswordCredential(FeatureByteBaseModel):
@@ -28,6 +29,14 @@ class UsernamePasswordCredential(FeatureByteBaseModel):
     password: StrictStr
 
 
+class AccessTokenCredential(FeatureByteBaseModel):
+    """
+    Access token based credential
+    """
+
+    access_token: StrictStr
+
+
 class Credential(FeatureByteBaseModel):
     """
     Credential model
@@ -35,4 +44,4 @@ class Credential(FeatureByteBaseModel):
 
     name: StrictStr
     credential_type: CredentialType
-    credential: Union[UsernamePasswordCredential]
+    credential: Union[UsernamePasswordCredential, AccessTokenCredential]

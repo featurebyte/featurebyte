@@ -91,6 +91,10 @@ class DBVarType(str, Enum):
     VARCHAR = "VARCHAR"
     OBJECT = "OBJECT"
     TIMEDELTA = "TIMEDELTA"
+    VOID = "VOID"
+    ARRAY = "ARRAY"
+    MAP = "MAP"
+    STRUCT = "STRUCT"
 
 
 class AggFunc(str, Enum):
@@ -127,6 +131,7 @@ class SourceType(str, Enum):
 
     SNOWFLAKE = "snowflake"
     SQLITE = "sqlite"
+    DATABRICKS = "databricks"
 
 
 class SpecialColumnName(str, Enum):
