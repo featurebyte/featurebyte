@@ -7,6 +7,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.event_view import EventView
 from featurebyte.api.groupby import EventViewGroupBy
 from featurebyte.enum import DBVarType
+from featurebyte.models.event_data import FeatureJobSetting
 
 
 @pytest.mark.parametrize(
@@ -165,11 +166,9 @@ def test_groupby__default_feature_job_setting(snowflake_event_data, cust_id_enti
     node_name = snowflake_event_data.node.name
     id_before = snowflake_event_data.id
     snowflake_event_data.update_default_feature_job_setting(
-        feature_job_setting={
-            "blind_spot": "1m30s",
-            "frequency": "6m",
-            "time_modulo_frequency": "3m",
-        }
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        )
     )
 
     # check internal settings

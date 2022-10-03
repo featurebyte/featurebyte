@@ -17,8 +17,9 @@ from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
-from featurebyte.exception import RecordRetrievalException
+from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.logger import logger
+from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import (
     DefaultVersionMode,
     FeatureModel,
@@ -305,3 +306,27 @@ class Feature(
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
         return pd.read_json(result, orient="table", convert_dates=False)
+
+    @typechecked
+    def create_new_version(self, feature_job_setting: FeatureJobSetting) -> Feature:
+        """
+        Create new feature version
+
+        Parameters
+        ----------
+        feature_job_setting: FeatureJobSetting
+            New feature job setting
+
+        Returns
+        -------
+        Feature
+        """
+
+        client = Configurations().get_client()
+        response = client.post(
+            url=self._route,
+            json={"source_feature_id": self.id, "feature_job_setting": feature_job_setting.dict()},
+        )
+        if response.status_code != HTTPStatus.CREATED:
+            raise RecordCreationException(response=response)
+        return Feature(**response.json(), **self._get_init_params_from_object(), saved=True)

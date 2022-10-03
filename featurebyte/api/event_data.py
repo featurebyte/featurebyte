@@ -15,13 +15,12 @@ from featurebyte.api.api_object import ApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.entity import Entity
 from featurebyte.common.env_util import is_notebook
-from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.event_data import EventDataModel
+from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
 from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 
@@ -206,30 +205,28 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
 
     @typechecked
     def update_default_feature_job_setting(
-        self, feature_job_setting: Optional[Dict[str, Any]] = None
+        self, feature_job_setting: Optional[FeatureJobSetting] = None
     ) -> None:
         """
         Update default feature job setting
 
         Parameters
         ----------
-        feature_job_setting: Optional[Dict[str, Any]]
-            Feature job setting dictionary contains blind_spot, frequency & time_modulo_frequency keys
+        feature_job_setting: Optional[FeatureJobSetting]
+            Feature job setting object (if not provided,
         """
-        if feature_job_setting:
-            _ = validate_job_setting_parameters(**feature_job_setting)
-        else:
+        if feature_job_setting is None:
             job_setting_analysis = self.post_async_task(
                 route="/feature_job_setting_analysis", payload={"event_data_id": str(self.id)}
             )
             recommended_setting = job_setting_analysis["analysis_result"][
                 "recommended_feature_job_setting"
             ]
-            feature_job_setting = {
-                "blind_spot": f'{recommended_setting["blind_spot"]}s',
-                "time_modulo_frequency": f'{recommended_setting["job_time_modulo_frequency"]}s',
-                "frequency": f'{recommended_setting["frequency"]}s',
-            }
+            feature_job_setting = FeatureJobSetting(
+                blind_spot=f'{recommended_setting["blind_spot"]}s',
+                time_modulo_frequency=f'{recommended_setting["job_time_modulo_frequency"]}s',
+                frequency=f'{recommended_setting["frequency"]}s',
+            )
 
             if is_notebook():
                 # pylint: disable=import-outside-toplevel
@@ -237,7 +234,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
 
                 display(HTML(job_setting_analysis["analysis_report"]))
 
-        self.update({"default_feature_job_setting": feature_job_setting})
+        self.update({"default_feature_job_setting": feature_job_setting.dict()})
 
     @property
     def default_feature_job_setting_history(self) -> list[dict[str, Any]]:
