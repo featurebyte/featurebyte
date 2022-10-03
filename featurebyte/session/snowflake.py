@@ -18,7 +18,7 @@ import pandas as pd
 from pydantic import Field
 from snowflake import connector
 from snowflake.connector.constants import QueryStatus
-from snowflake.connector.cursor import ASYNC_NO_DATA_MAX_RETRY, ASYNC_RETRY_PATTERN, ResultState
+from snowflake.connector.cursor import ASYNC_NO_DATA_MAX_RETRY, ASYNC_RETRY_PATTERN
 from snowflake.connector.errors import DatabaseError, NotSupportedError
 from snowflake.connector.pandas_tools import write_pandas
 
@@ -75,9 +75,12 @@ class SnowflakeSession(BaseSession):
             Query ID
         """
         cursor = self.connection.cursor()
-        cursor.execute_async(query)
-        query_id = cursor.sfqid
-        return query_id
+        try:
+            cursor.execute_async(query)
+            query_id = cursor.sfqid
+            return query_id
+        finally:
+            cursor.close()
 
     async def fetch_async_query(self, query_id: Any, timeout: int = 180) -> pd.DataFrame | None:
         """
@@ -101,18 +104,12 @@ class SnowflakeSession(BaseSession):
             Invalid query id
         """
         # pylint: disable=protected-access
-        connection = self.connection
-        cursor = connection.cursor()
-        connection.get_query_status_throw_if_error(query_id)
-        cursor._inner_cursor = cursor.__class__(cursor.connection)
-        cursor._sfqid = query_id
-
         no_data_counter = 0
         retry_pattern_pos = 0
         start_time = time.time()
         status = QueryStatus.RUNNING
         while time.time() - start_time < timeout:
-            status = self.connection.get_query_status(query_id)
+            status = self.connection.get_query_status_throw_if_error(query_id)
             if not self.connection.is_still_running(status):
                 break
             if status == QueryStatus.NO_DATA:  # pragma: no cover
@@ -130,17 +127,9 @@ class SnowflakeSession(BaseSession):
             raise DatabaseError(
                 f"Status of query '{query_id}' is {status.name}, results are unavailable"
             )
-        cursor._inner_cursor.execute(f"select * from table(result_scan('{query_id}'))")
-        cursor._result = cursor._inner_cursor._result
-        cursor._query_result_format = cursor._inner_cursor._query_result_format
-        cursor._total_rowcount = cursor._inner_cursor._total_rowcount
-        cursor._description = cursor._inner_cursor._description
-        cursor._result_set = cursor._inner_cursor._result_set
-        cursor._result_state = ResultState.VALID
-        cursor._rownumber = 0
-        cursor._prefetch_hook = None
 
-        return self.fetch_query_result_impl(cursor)
+        # Retrieve results from Snowflake asynchronous query using SQL with query_id
+        return await self.execute_query(f"select * from table(result_scan('{query_id}'))")
 
     async def execute_async_query(self, query: str, timeout: int = 180) -> pd.DataFrame | None:
         """

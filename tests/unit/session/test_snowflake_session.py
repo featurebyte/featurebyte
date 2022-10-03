@@ -491,10 +491,9 @@ async def test_snowflake_session__execute_async_query_fail(
     """
     connection = mock_connector.connect.return_value
     cursor = connection.cursor.return_value
-    cursor._inner_cursor.execute = Mock()
     cursor.sfqid = "some-query-id"
     connection.is_still_running.return_value = is_still_running
-    connection.get_query_status.return_value = query_status
+    connection.get_query_status_throw_if_error.return_value = query_status
     session = SnowflakeSession(**snowflake_session_dict)
     with pytest.raises(DatabaseError) as exc:
         await session.execute_async_query("SELECT * FROM T")
