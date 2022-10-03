@@ -18,6 +18,7 @@ from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin
+from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel
@@ -77,7 +78,12 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
 
     @classmethod
     def _get_other_input_node_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
-        return {"timestamp": values["event_timestamp_column"]}
+        # the key `_id` is used during deserialization, the key `id` is used during setattr
+        return {
+            "type": TableDataType.EVENT_DATA,
+            "timestamp": values["event_timestamp_column"],
+            "id": values.get("_id", values.get("id")),
+        }
 
     @classmethod
     @typechecked
@@ -87,6 +93,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         name: str,
         event_timestamp_column: str,
         record_creation_date_column: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
     ) -> EventData:
         """
         Create EventData object from tabular source
@@ -101,6 +108,8 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
             Event timestamp column from the given tabular source
         record_creation_date_column: str
             Record creation datetime column from the given tabular source
+        _id: Optional[ObjectId]
+            Identity value for constructed object
 
         Returns
         -------
@@ -114,7 +123,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
             When unexpected retrieval failure
         """
         data = EventDataCreate(
-            _id=ObjectId(),
+            _id=_id or ObjectId(),
             name=name,
             tabular_source=tabular_source.tabular_source,
             columns_info=tabular_source.columns_info,
@@ -127,7 +136,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
             response_dict = response.json()
             if not response_dict["data"]:
                 return EventData(
-                    **data.dict(),
+                    **data.json_dict(),
                     feature_store=tabular_source.feature_store,
                 )
             raise DuplicatedRecordException(

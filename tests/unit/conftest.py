@@ -259,17 +259,24 @@ def snowflake_database_table_fixture(
     yield snowflake_table
 
 
+@pytest.fixture(name="snowflake_event_data_id")
+def snowflake_event_data_id_fixture():
+    """Snowflake event data ID"""
+    return ObjectId("6337f9651050ee7d5980660d")
+
+
 @pytest.fixture(name="snowflake_event_data")
-def snowflake_event_data_fixture(snowflake_database_table):
-    """
-    EventData object fixture
-    """
-    yield EventData.from_tabular_source(
+def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_id):
+    """EventData object fixture"""
+    event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
         event_timestamp_column="event_timestamp",
         record_creation_date_column="created_at",
+        _id=snowflake_event_data_id,
     )
+    assert event_data.node.parameters.id == event_data.id
+    yield event_data
 
 
 @pytest.fixture(name="cust_id_entity")
@@ -302,6 +309,8 @@ def snowflake_event_view_fixture(snowflake_event_data):
         name="input_2",
         type=NodeType.INPUT,
         parameters={
+            "type": "event_data",
+            "id": snowflake_event_data.id,
             "columns": [
                 "col_int",
                 "col_float",
@@ -344,7 +353,9 @@ def snowflake_event_view_entity_fixture(snowflake_event_data_with_entity):
     """
     Snowflake event view with entity
     """
-    yield EventView.from_event_data(event_data=snowflake_event_data_with_entity)
+    event_view = EventView.from_event_data(event_data=snowflake_event_data_with_entity)
+    assert event_view.node.parameters.id == snowflake_event_data_with_entity.id
+    yield event_view
 
 
 @pytest.fixture(name="grouped_event_view")

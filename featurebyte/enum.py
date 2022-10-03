@@ -173,4 +173,5 @@ class TableDataType(str, Enum):
     TableDataType enum
     """
 
+    GENERIC = "generic"
     EVENT_DATA = "event_data"

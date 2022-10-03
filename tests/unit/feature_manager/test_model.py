@@ -12,7 +12,7 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
         feature_store=snowflake_feature_store,
         version=VersionIdentifier(name=get_version()),
     )
-    aggregation_id = "9b3973191f893fcce4eb8bf640bc33b34fd9078b"
+    aggregation_id = "8b878f7930698eb4e97cf8e756044109f968dc7a"
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -75,7 +75,7 @@ def test_extended_feature_model__agg_per_category_feature(
         feature_store=snowflake_feature_store,
         version=VersionIdentifier(name=get_version()),
     )
-    aggregation_id = "b71a197bdf176244cd4ff8af8362eef54bc58a38"
+    aggregation_id = "152129a9b37bdd83ab6282c0e2118e277b272328"
     expected_sql = textwrap.dedent(
         f"""
         SELECT

@@ -48,6 +48,7 @@ def query_graph_and_assign_node_fixture(global_graph):
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
+            "type": "event_data",
             "columns": ["ts", "cust_id", "a", "b"],
             "timestamp": "ts",
             "table_details": {
@@ -254,6 +255,7 @@ def query_graph_single_node(global_graph):
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
+            "type": "event_data",
             "columns": ["column"],
             "table_details": {
                 "database_name": "db",
@@ -414,6 +416,7 @@ def dataframe_fixture(global_graph, snowflake_feature_store):
     node = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params={
+            "type": "generic",
             "columns": [col["name"] for col in columns_info],
             "timestamp": "VALUE",
             "table_details": {

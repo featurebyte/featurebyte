@@ -2,7 +2,8 @@
 This module contains SQL operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
+from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field, root_validator
 
@@ -22,13 +23,18 @@ class InputNode(BaseNode):
         columns: List[InColumnStr]
         table_details: TableDetails
         feature_store_details: FeatureStoreDetails
-        id: Optional[PydanticObjectId] = Field(default=None)
+
+    class GenericParameters(BaseParameters):
+        """GenericParameters"""
+
+        type: Literal[TableDataType.GENERIC] = Field(TableDataType.GENERIC)
 
     class EventDataParameters(BaseParameters):
         """EventDataParameters"""
 
         type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
         timestamp: Optional[InColumnStr]
+        id: Optional[PydanticObjectId] = Field(default=None)
 
         @root_validator(pre=True)
         @classmethod
@@ -42,7 +48,18 @@ class InputNode(BaseNode):
 
     type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    parameters: EventDataParameters
+    parameters: Annotated[
+        Union[EventDataParameters, GenericParameters], Field(discriminator="type")
+    ]
+
+    @root_validator(pre=True)
+    @classmethod
+    def _set_default_table_data_type(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        # DEV-556: set default table data type when it is not present
+        if "parameters" in values:
+            if "type" not in values["parameters"]:
+                values["parameters"]["type"] = TableDataType.EVENT_DATA
+        return values
 
 
 class ProjectNode(BaseNode):
