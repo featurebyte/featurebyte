@@ -346,7 +346,7 @@ class QueryGraph(FeatureByteBaseModel):
         Yields
         ------
         Node
-            Query graph nodes of groupby type
+            Query graph nodes of the specified node type
         """
         for node in dfs_traversal(self, target_node):
             if node.type == node_type:
@@ -532,7 +532,7 @@ class QueryGraph(FeatureByteBaseModel):
         return cast(GroupbyNode, node)
 
     def reconstruct(
-        self, replace_nodes_map: Dict[str, Node], regenerate_hash: bool = False
+        self, replace_nodes_map: Dict[str, Node], regenerate_groupby_hash: bool = False
     ) -> "QueryGraph":
         """
         Reconstruct the query graph using the replacement node mapping
@@ -541,7 +541,7 @@ class QueryGraph(FeatureByteBaseModel):
         ----------
         replace_nodes_map: Dict[str, Node]
             Node name (of the input query graph) to replacement node mapping
-        regenerate_hash: bool
+        regenerate_groupby_hash: bool
             Whether to regenerate tile ID & aggregation ID in groupby node
 
         Returns
@@ -557,7 +557,7 @@ class QueryGraph(FeatureByteBaseModel):
                 replace_nodes_map.get(input_node_name, self.nodes_map[input_node_name])
                 for input_node_name in input_node_names
             ]
-            if node.type == NodeType.GROUPBY and regenerate_hash:
+            if node.type == NodeType.GROUPBY and regenerate_groupby_hash:
                 output.add_groupby_operation(
                     node_params=node.parameters.dict(),
                     input_node=input_nodes[0],

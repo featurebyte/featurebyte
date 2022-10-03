@@ -34,7 +34,9 @@ class VersionService(BaseUpdateService):
                 **{**groupby_node.dict(), "parameters": parameters}
             )
 
-        graph = feature.graph.reconstruct(replace_nodes_map=replace_nodes_map, regenerate_hash=True)
+        graph = feature.graph.reconstruct(
+            replace_nodes_map=replace_nodes_map, regenerate_groupby_hash=True
+        )
         new_feature = FeatureModel(**{**feature.dict(), "graph": graph, "_id": ObjectId()})
         return new_feature
 
