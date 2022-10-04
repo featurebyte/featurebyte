@@ -55,7 +55,7 @@ class SnowflakeSession(BaseSession):
                 database=data["database"],
                 schema=data["sf_schema"],
             )
-        except OperationalError as exc:
+        except (OperationalError, DatabaseError) as exc:
             raise CredentialsError("Invalid credentials provided.") from exc
 
     async def initialize(self) -> None:
