@@ -52,7 +52,17 @@ class TestFeatureListApi(BaseApiTestSuite):
                     "msg": "ensure this value has at least 1 items",
                     "type": "value_error.list.min_items",
                     "ctx": {"limit_value": 1},
-                }
+                },
+                {
+                    "loc": ["body", "source_feature_list_id"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                },
+                {
+                    "loc": ["body", "mode"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                },
             ],
         ),
     ]
