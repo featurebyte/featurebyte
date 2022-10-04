@@ -97,7 +97,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json() == databases
 
-    def test_list_databases__401(self, test_api_client_persistent, create_success_response):
+    def test_list_databases__401(
+        self, test_api_client_persistent, create_success_response, snowflake_connector
+    ):
         """
         Test list databases with invalid credentials
         """
@@ -106,6 +108,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         feature_store = create_success_response.json()
 
         credentials_error = CredentialsError("Invalid credentials provided.")
+        snowflake_connector.side_effect = CredentialsError
         with patch(
             "featurebyte.core.generic.ExtendedFeatureStoreModel.get_session"
         ) as mock_get_session:

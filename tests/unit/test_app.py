@@ -1,11 +1,13 @@
 """
 Test FastAPI app
 """
+import time
 from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.app import get_app
 from featurebyte.config import Configurations
 from featurebyte.utils.credential import get_credential
 from featurebyte.utils.persistent import get_persistent
@@ -38,3 +40,11 @@ def test_get_persistent():
                 mock_git.side_effect = ValueError()
                 get_persistent()
     mock_git.assert_called_once_with(**config.git.dict())
+
+
+def test_get_app__loading_time():
+    """Test app loading time (to detect changes that increase loading app time)"""
+    start = time.time()
+    get_app()
+    elapsed_time = time.time() - start
+    assert elapsed_time < 3

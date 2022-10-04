@@ -27,8 +27,6 @@ from featurebyte.utils.credential import get_credential
 from featurebyte.utils.persistent import cleanup_persistent, get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
 
-app = FastAPI()
-
 
 class User:
     """
@@ -75,27 +73,39 @@ def _get_api_deps() -> Callable[[Request], None]:
     return _dep_injection_func
 
 
-# add routers into the app
-resource_apis = [
-    event_data_api,
-    entity_api,
-    feature_api,
-    feature_job_setting_analysis_api,
-    feature_list_api,
-    feature_list_namespace_api,
-    feature_namespace_api,
-    feature_store_api,
-    task_api,
-    temp_data_api,
-]
-for resource_api in resource_apis:
-    app.include_router(
-        resource_api.router,
-        dependencies=[Depends(_get_api_deps())],
-        tags=[resource_api.router.prefix[1:]],
-    )
+def get_app() -> FastAPI:
+    """
+    Get FastAPI object
 
-app.middleware("http")(request_handler)
+    Returns
+    -------
+    FastAPI
+        FastAPI object
+    """
+    _app = FastAPI()
+
+    # add routers into the app
+    resource_apis = [
+        event_data_api,
+        entity_api,
+        feature_api,
+        feature_job_setting_analysis_api,
+        feature_list_api,
+        feature_list_namespace_api,
+        feature_namespace_api,
+        feature_store_api,
+        task_api,
+        temp_data_api,
+    ]
+    for resource_api in resource_apis:
+        _app.include_router(
+            resource_api.router,
+            dependencies=[Depends(_get_api_deps())],
+            tags=[resource_api.router.prefix[1:]],
+        )
+
+    _app.middleware("http")(request_handler)
+    return _app
 
 
 def _sigint_handler(signum, frame):  # type: ignore
@@ -117,6 +127,8 @@ def _sigint_handler(signum, frame):  # type: ignore
     cleanup_persistent(signum, frame)
     raise KeyboardInterrupt
 
+
+app = get_app()
 
 signal.signal(signal.SIGTERM, cleanup_persistent)
 signal.signal(signal.SIGINT, _sigint_handler)

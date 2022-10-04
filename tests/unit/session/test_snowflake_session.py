@@ -8,9 +8,10 @@ import numpy as np
 import pandas as pd
 import pytest
 from snowflake.connector.constants import QueryStatus
-from snowflake.connector.errors import DatabaseError, NotSupportedError
+from snowflake.connector.errors import DatabaseError, NotSupportedError, OperationalError
 
 from featurebyte.enum import DBVarType
+from featurebyte.exception import CredentialsError
 from featurebyte.session.snowflake import SchemaInitializer, SnowflakeSession
 
 
@@ -498,3 +499,14 @@ async def test_snowflake_session__execute_async_query_fail(
     with pytest.raises(DatabaseError) as exc:
         await session.execute_async_query("SELECT * FROM T")
     assert str(exc.value) == error_message
+
+
+@pytest.mark.parametrize("error_type", [DatabaseError, OperationalError])
+def test_constructor__credentials_error(snowflake_connector, error_type, snowflake_session_dict):
+    """
+    Check snowflake connection exception handling
+    """
+    snowflake_connector.connect.side_effect = error_type
+    with pytest.raises(CredentialsError) as exc:
+        SnowflakeSession(**snowflake_session_dict)
+    assert "Invalid credentials provided." in str(exc.value)
