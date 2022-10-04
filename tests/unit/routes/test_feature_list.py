@@ -168,6 +168,42 @@ class TestFeatureListApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.CREATED
         assert response.json()["feature_ids"] == sorted(payload_multi["feature_ids"])
 
+    def test_create_201__create_new_version(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test create new version (success)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+
+        # create a new feature version
+        feature_id = create_response_dict["feature_ids"][0]
+        feature_response = test_api_client.post(
+            "/feature",
+            json={
+                "source_feature_id": feature_id,
+                "feature_job_setting": {
+                    "blind_spot": "1d",
+                    "frequency": "1d",
+                    "time_modulo_frequency": "1h",
+                },
+            },
+        )
+        feature_response_dict = feature_response.json()
+
+        # then create a new feature list version
+        response = test_api_client.post(
+            f"{self.base_route}",
+            json={"source_feature_list_id": create_response_dict["_id"], "mode": "auto"},
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED
+        assert response_dict["version"] == {"name": get_version(), "suffix": 1}
+        assert response_dict["feature_ids"] == [feature_response_dict["_id"]]
+        assert (
+            response_dict["feature_list_namespace_id"]
+            == create_response_dict["feature_list_namespace_id"]
+        )
+
     def test_create_422__different_feature_stores(self, test_api_client_persistent):
         """
         Test feature list with different feature stores
@@ -236,6 +272,26 @@ class TestFeatureListApi(BaseApiTestSuite):
         assert response.json()["detail"] == (
             "Two Feature objects must not share the same name in a FeatureList object."
         )
+
+    def test_create_422__create_new_version(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test create new version (unprocessable entity)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        response = test_api_client.post(
+            f"{self.base_route}",
+            json={"source_feature_list_id": create_response_dict["_id"], "mode": "manual"},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == "Feature info is missing."
+
+        response = test_api_client.post(
+            f"{self.base_route}",
+            json={"source_feature_list_id": create_response_dict["_id"], "mode": "auto"},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == "No change detected on the new feature list version."
 
     def test_list_200__filter_by_namespace_id(
         self, test_api_client_persistent, create_multiple_success_responses

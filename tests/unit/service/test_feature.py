@@ -15,6 +15,7 @@ from featurebyte.exception import (
     CredentialsError,
     DocumentConflictError,
     DocumentInconsistencyError,
+    DocumentNotFoundError,
     DuplicatedRegistryError,
     InvalidFeatureRegistryOperationError,
     MissingFeatureRegistryError,
@@ -251,5 +252,24 @@ async def test_update_document__inconsistency_error(feature_service, feature):
     expected_msg = (
         'Feature (name: "random_name") object(s) within the same namespace must have the same "name" value '
         '(namespace: "sum_30m", feature: "random_name").'
+    )
+    assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_get_document_by_name_and_version(feature_service, feature):
+    """Test feature service - get_document_by_name_and_version"""
+    doc = await feature_service.get_document_by_name_and_version(
+        name=feature.name, version=feature.version
+    )
+    assert doc == feature
+
+    with pytest.raises(DocumentNotFoundError) as exc:
+        await feature_service.get_document_by_name_and_version(
+            name="random_name", version=feature.version
+        )
+    expected_msg = (
+        f'Feature (name: "random_name", version: "{feature.version.to_str()}") not found. '
+        f"Please save the Feature object first."
     )
     assert expected_msg in str(exc.value)

@@ -3,7 +3,7 @@ FeatureList API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal, cast
+from typing import Any, Literal, Union, cast
 
 from http import HTTPStatus
 
@@ -15,6 +15,7 @@ from featurebyte.routes.common.base import BaseDocumentController, GetInfoContro
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListInfo,
+    FeatureListNewVersionCreate,
     FeatureListPaginatedList,
     FeatureListPreview,
     FeatureListUpdate,
@@ -23,6 +24,7 @@ from featurebyte.service.deploy import DeployService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.version import VersionService
 
 
 class FeatureListController(  # type: ignore[misc]
@@ -41,14 +43,16 @@ class FeatureListController(  # type: ignore[misc]
         feature_readiness_service: FeatureReadinessService,
         deploy_service: DeployService,
         preview_service: PreviewService,
+        version_service: VersionService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.feature_readiness_service = feature_readiness_service
         self.deploy_service = deploy_service
         self.preview_service = preview_service
+        self.version_service = version_service
 
     async def create_feature_list(
-        self, get_credential: Any, data: FeatureListCreate
+        self, get_credential: Any, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
     ) -> FeatureListModel:
         """
         Create FeatureList at persistent (GitDB or MongoDB)
@@ -57,7 +61,7 @@ class FeatureListController(  # type: ignore[misc]
         ----------
         get_credential: Any
             Get credential handler function
-        data: FeatureListCreate
+        data: FeatureListCreate | FeatureListNewVersionCreate
             Feature list creation payload
 
         Returns
@@ -65,10 +69,15 @@ class FeatureListController(  # type: ignore[misc]
         FeatureListModel
             Newly created feature list object
         """
-        document = cast(
-            FeatureListModel,
-            await self.service.create_document(data=data, get_credential=get_credential),
-        )
+        if isinstance(data, FeatureListCreate):
+            document = cast(
+                FeatureListModel,
+                await self.service.create_document(data=data, get_credential=get_credential),
+            )
+        else:
+            document = await self.version_service.create_new_feature_list_version(
+                data=data, get_credential=get_credential
+            )
 
         # update feature namespace readiness due to introduction of new feature list
         await self.feature_readiness_service.update_feature_list_namespace(
