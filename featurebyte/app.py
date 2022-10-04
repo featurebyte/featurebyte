@@ -82,7 +82,7 @@ def get_app() -> FastAPI:
     FastAPI
         FastAPI object
     """
-    app = FastAPI()
+    _app = FastAPI()
 
     # add routers into the app
     resource_apis = [
@@ -98,14 +98,14 @@ def get_app() -> FastAPI:
         temp_data_api,
     ]
     for resource_api in resource_apis:
-        app.include_router(
+        _app.include_router(
             resource_api.router,
             dependencies=[Depends(_get_api_deps())],
             tags=[resource_api.router.prefix[1:]],
         )
 
-    app.middleware("http")(request_handler)
-    return app
+    _app.middleware("http")(request_handler)
+    return _app
 
 
 def _sigint_handler(signum, frame):  # type: ignore
