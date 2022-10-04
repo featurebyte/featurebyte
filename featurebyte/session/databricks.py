@@ -107,4 +107,4 @@ class DatabricksSession(BaseSession):
         return await self.execute_query(query)
 
     async def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
-        raise
+        raise NotImplementedError()
