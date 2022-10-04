@@ -49,7 +49,7 @@ async def get_session(item: str, credential_params: str) -> BaseSession:
     item_dict = json.loads(item)
     logger.debug(f'Create a new session for {item_dict["type"]}')
     credential_params_dict = json.loads(credential_params)
-    session = SOURCE_TYPE_SESSION_MAP[item_dict["type"]](
+    session = SOURCE_TYPE_SESSION_MAP[item_dict["type"]](  # type: ignore
         **item_dict["details"], **credential_params_dict
     )
     await session.initialize()

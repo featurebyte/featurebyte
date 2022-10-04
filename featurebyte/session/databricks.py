@@ -3,7 +3,7 @@ DatabricksSession class
 """
 from __future__ import annotations
 
-from typing import Any, OrderedDict
+from typing import Any, OrderedDict, cast
 
 import collections
 
@@ -16,6 +16,9 @@ from featurebyte.session.base import BaseSession
 
 
 class DatabricksSession(BaseSession):
+    """
+    Databricks session class
+    """
 
     server_hostname: str
     http_path: str
@@ -26,6 +29,7 @@ class DatabricksSession(BaseSession):
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
+
         self._connection = databricks_sql.connect(
             server_hostname=data["server_hostname"],
             http_path=data["http_path"],
@@ -36,16 +40,16 @@ class DatabricksSession(BaseSession):
 
     async def list_databases(self) -> list[str]:
         cursor = self._connection.cursor().catalogs()
-        df = super().fetch_query_result_impl(cursor)
-        if df is not None:
-            return df["TABLE_CAT"].tolist()
+        df_result = super().fetch_query_result_impl(cursor)
+        if df_result is not None:
+            return cast(list[str], df_result["TABLE_CAT"].tolist())
         return []
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
         cursor = self._connection.cursor().schemas(catalog_name=database_name)
-        df = super().fetch_query_result_impl(cursor)
-        if df is not None:
-            return df["TABLE_SCHEM"].tolist()
+        df_result = super().fetch_query_result_impl(cursor)
+        if df_result is not None:
+            return cast(list[str], df_result["TABLE_SCHEM"].tolist())
         return []
 
     async def list_tables(
@@ -54,9 +58,9 @@ class DatabricksSession(BaseSession):
         cursor = self._connection.cursor().tables(
             catalog_name=database_name, schema_name=schema_name
         )
-        df = super().fetch_query_result_impl(cursor)
-        if df is not None:
-            return df["TABLE_NAME"].tolist()
+        df_result = super().fetch_query_result_impl(cursor)
+        if df_result is not None:
+            return cast(list[str], df_result["TABLE_NAME"].tolist())
         return []
 
     async def list_table_schema(
@@ -70,10 +74,10 @@ class DatabricksSession(BaseSession):
             catalog_name=database_name,
             schema_name=schema_name,
         )
-        df = super().fetch_query_result_impl(cursor)
+        df_result = super().fetch_query_result_impl(cursor)
         column_name_type_map = collections.OrderedDict()
-        if df is not None:
-            for _, (column_name, databricks_type_name) in df[
+        if df_result is not None:
+            for _, (column_name, databricks_type_name) in df_result[
                 ["COLUMN_NAME", "TYPE_NAME"]
             ].iterrows():
                 column_name_type_map[column_name] = self._convert_to_internal_variable_type(
