@@ -113,6 +113,9 @@ class VersionService(BaseUpdateService):
             for feature_id in feat_name_to_default_id_map.values():
                 features.append(await self.feature_service.get_document(document_id=feature_id))
         else:
+            if not data.features:
+                raise DocumentError("Feature info is missing.")
+
             feature_id_to_name_map = {
                 feat_id: feature_namespace["name"]
                 for feature_namespace in feature_namespaces
@@ -136,8 +139,10 @@ class VersionService(BaseUpdateService):
                     features.append(await self.feature_service.get_document(document_id=feat_id))
 
             if specified_feature_map:
-                message = f"Features ({', '.join(specified_feature_map.keys())}) are not in the original FeatureList"
-                raise DocumentError(message)
+                names = [f'"{name}"' for name in specified_feature_map.keys()]
+                raise DocumentError(
+                    f"Features ({', '.join(names)}) are not in the original FeatureList"
+                )
 
         feature_ids = [feat.id for feat in features]
         if set(feature_list.feature_ids) == set(feature_ids):

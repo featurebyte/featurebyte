@@ -203,7 +203,7 @@ async def feature_list_fixture(test_dir, feature, feature_sum_2h, feature_list_s
 
 
 @pytest.mark.asyncio
-async def test_create_new_feature_list_version__document_error(
+async def test_create_new_feature_list_version__document_error__no_change_detected(
     version_service, feature_list_multi, get_credential
 ):
     """Test create new feature version (error due to no change detected)"""
@@ -217,6 +217,43 @@ async def test_create_new_feature_list_version__document_error(
         )
 
     expected_msg = "No change detected on the new feature list version."
+    assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_create_new_feature_list_version__document_error__feature_info_is_missing(
+    version_service, feature_list_multi, get_credential
+):
+    """Test create new feature version (error due to feature info is missing)"""
+    with pytest.raises(DocumentError) as exc:
+        await version_service.create_new_feature_list_version(
+            data=FeatureListNewVersionCreate(
+                source_feature_list_id=feature_list_multi.id,
+                mode=FeatureListNewVersionMode.MANUAL,
+            ),
+            get_credential=get_credential,
+        )
+    expected_msg = "Feature info is missing."
+    assert expected_msg in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_create_new_feature_list_version__document_error__unexpected_feature_info(
+    version_service, feature_list, feature_sum_2h, get_credential
+):
+    """Test create new feature version (error due to unexpected feature)"""
+    with pytest.raises(DocumentError) as exc:
+        await version_service.create_new_feature_list_version(
+            data=FeatureListNewVersionCreate(
+                source_feature_list_id=feature_list.id,
+                mode=FeatureListNewVersionMode.MANUAL,
+                features=[
+                    FeatureVersionInfo(name=feature_sum_2h.name, version=feature_sum_2h.version)
+                ],
+            ),
+            get_credential=get_credential,
+        )
+    expected_msg = 'Features ("sum_2h") are not in the original FeatureList'
     assert expected_msg in str(exc.value)
 
 
