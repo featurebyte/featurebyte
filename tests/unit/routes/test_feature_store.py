@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 import pytest
 from bson.objectid import ObjectId
-from snowflake.connector.errors import DatabaseError, OperationalError
 
+from featurebyte.exception import CredentialsError
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -103,16 +103,19 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         """
         Test list databases with invalid credentials
         """
-
         test_api_client, _ = test_api_client_persistent
         assert create_success_response.status_code == HTTPStatus.CREATED
         feature_store = create_success_response.json()
 
-        for snowflake_error in [DatabaseError, OperationalError]:
-            snowflake_connector.connect.side_effect = snowflake_error
+        credentials_error = CredentialsError("Invalid credentials provided.")
+        snowflake_connector.side_effect = CredentialsError
+        with patch(
+            "featurebyte.core.generic.ExtendedFeatureStoreModel.get_session"
+        ) as mock_get_session:
+            mock_get_session.return_value.list_databases.side_effect = credentials_error
             response = test_api_client.post(f"{self.base_route}/database", json=feature_store)
-            assert response.status_code == HTTPStatus.UNAUTHORIZED
-            assert response.json() == {"detail": "Invalid credentials provided."}
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+        assert response.json() == {"detail": str(credentials_error)}
 
     def test_list_schemas__422(self, test_api_client_persistent, create_success_response):
         """
