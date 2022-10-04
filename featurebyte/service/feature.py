@@ -221,6 +221,42 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
             await self._insert_feature_registry(extended_feature, get_credential)
         return await self.get_document(document_id=insert_id)
 
+    async def get_document_by_name_and_version(
+        self, name: str, version: VersionIdentifier
+    ) -> FeatureModel:
+        """
+        Retrieve feature given name & version
+
+        Parameters
+        ----------
+        name: str
+            Feature name
+        version: VersionIdentifier
+            Feature version
+
+        Returns
+        -------
+        FeatureModel
+
+        Raises
+        ------
+        DocumentNotFoundError
+            If the specified feature name & version cannot be found
+        """
+        document_dict = await self.persistent.find_one(
+            collection_name=self.collection_name,
+            query_filter={"name": name, "version": version.dict()},
+            user_id=self.user.id,
+        )
+        if document_dict is None:
+            class_name = self._snake_to_camel_case(self.collection_name)
+            exception_detail = (
+                f'{class_name} (name: "{name}", version: "{version.to_str()}") not found. '
+                f"Please save the {class_name} object first."
+            )
+            raise DocumentNotFoundError(exception_detail)
+        return FeatureModel(**document_dict)
+
     async def update_document(  # type: ignore[override]
         self,
         document_id: ObjectId,

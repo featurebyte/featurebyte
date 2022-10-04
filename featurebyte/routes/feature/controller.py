@@ -15,10 +15,10 @@ from featurebyte.routes.common.base import BaseDocumentController, GetInfoContro
 from featurebyte.schema.feature import (
     FeatureCreate,
     FeatureInfo,
+    FeatureNewVersionCreate,
     FeaturePaginatedList,
     FeaturePreview,
     FeatureUpdate,
-    VersionCreate,
 )
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -54,7 +54,7 @@ class FeatureController(  # type: ignore[misc]
         self.version_service = version_service
 
     async def create_feature(
-        self, get_credential: Any, data: Union[FeatureCreate, VersionCreate]
+        self, get_credential: Any, data: Union[FeatureCreate, FeatureNewVersionCreate]
     ) -> FeatureModel:
         """
         Create Feature at persistent (GitDB or MongoDB)
@@ -63,7 +63,7 @@ class FeatureController(  # type: ignore[misc]
         ----------
         get_credential: Any
             Get credential handler function
-        data: FeatureCreate | VersionCreate
+        data: FeatureCreate | FeatureNewVersionCreate
             Feature creation payload
 
         Returns

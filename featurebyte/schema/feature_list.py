@@ -13,6 +13,7 @@ from pydantic import Field, StrictStr, validator
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureListModel,
+    FeatureListNewVersionMode,
     FeatureListStatus,
     FeatureReadinessDistribution,
     FeatureTypeFeatureCount,
@@ -34,6 +35,25 @@ class FeatureListCreate(FeatureByteBaseModel):
     name: StrictStr
     feature_ids: List[PydanticObjectId] = Field(min_items=1)
     feature_list_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
+
+
+class FeatureVersionInfo(FeatureByteBaseModel):
+    """
+    Feature version info
+    """
+
+    name: str
+    version: VersionIdentifier
+
+
+class FeatureListNewVersionCreate(FeatureByteBaseModel):
+    """
+    New version creation schema based on existing feature list
+    """
+
+    source_feature_list_id: PydanticObjectId
+    mode: FeatureListNewVersionMode
+    features: Optional[List[FeatureVersionInfo]]
 
 
 class FeatureListPaginatedList(PaginationMixin):
