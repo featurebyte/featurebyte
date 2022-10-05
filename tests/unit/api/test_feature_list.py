@@ -9,7 +9,7 @@ from freezegun import freeze_time
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, FeatureList
-from featurebyte.exception import RecordRetrievalException
+from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.enum import NodeType
@@ -561,3 +561,50 @@ def test_get_historical_feature_sql(saved_feature_list):
     )
     sql = saved_feature_list.get_historical_features_sql(training_events=training_events)
     assert 'WITH "REQUEST_TABLE_W1800_F1800_BS600_M300_cust_id" AS' in sql
+
+
+def test_feature_list__feature_list_saving_in_bad_state(
+    snowflake_feature_store,
+    snowflake_event_data,
+    production_ready_feature,
+    draft_feature,
+    quarantine_feature,
+    deprecated_feature,
+    mock_insert_feature_registry,
+):
+    """Test feature list production ready fraction"""
+    snowflake_feature_store.save()
+    snowflake_event_data.save()
+
+    # create a feature list
+    feature_list = FeatureList(
+        [
+            production_ready_feature,
+            draft_feature,
+            quarantine_feature,
+            deprecated_feature,
+        ],
+        name="feature_list_name",
+    )
+    assert feature_list.saved is False
+
+    # save the feature outside the feature list
+    production_ready_feature.save()
+    assert production_ready_feature.saved is True
+
+    # the feature inside the feature list saved status is still False
+    assert feature_list["production_ready_feature"].saved is False
+
+    with pytest.raises(DuplicatedRecordException) as exc:
+        feature_list.save()
+    id_val = production_ready_feature.id
+    expected_msg = (
+        f'Feature (id: "{id_val}") already exists. '
+        f'Get the existing object by `Feature.get_by_id(id="{id_val}")`. '
+        f'Or try `feature_list.save(conflict_resolution = "retrieve")` to resolve conflict.'
+    )
+    assert expected_msg in str(exc.value)
+
+    # save the feature list will cause error due to duplicated exception
+    feature_list.save(conflict_resolution="retrieve")
+    assert feature_list.saved is True
