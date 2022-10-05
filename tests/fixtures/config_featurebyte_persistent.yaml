@@ -9,9 +9,13 @@ featurestore:
     username: user
     password: password
 
-featurebyte:
-  api_url: https://app.featurebyte.com/api/v1
-  api_token: API_TOKEN_VALUE
+profile:
+  - name: featurebyte1
+    api_url: https://app1.featurebyte.com/api/v1
+    api_token: API_TOKEN_VALUE1
+  - name: featurebyte2
+    api_url: https://app2.featurebyte.com/api/v1
+    api_token: API_TOKEN_VALUE2
 
 logging:
   level: INFO

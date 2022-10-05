@@ -1,7 +1,7 @@
 """
 Read configurations from ini file
 """
-from typing import Any, Dict, Optional, Pattern, Union
+from typing import Any, Dict, List, Optional, Pattern, Union
 
 import os
 import re
@@ -13,7 +13,7 @@ from pathlib import Path
 import requests
 import yaml
 from fastapi.testclient import TestClient
-from pydantic import BaseSettings, ConstrainedStr, Field, HttpUrl, validator
+from pydantic import BaseModel, BaseSettings, ConstrainedStr, Field, HttpUrl, validator
 from pydantic.error_wrappers import ValidationError
 from requests import Response
 
@@ -96,13 +96,22 @@ class LocalStorageSettings(BaseSettings):
         return value.expanduser()
 
 
-class FeatureByteSettings(BaseSettings):
+class Profile(BaseModel):
     """
     Settings for FeatureByte Application API access
     """
 
+    name: str
     api_url: HttpUrl
     api_token: str
+
+
+class ProfileList(BaseSettings):
+    """
+    List of Profile entries
+    """
+
+    profiles: List[Profile]
 
 
 class APIClient(requests.Session):
@@ -202,7 +211,8 @@ class Configurations:
 
         self.git: Optional[GitSettings] = None
         self.storage: LocalStorageSettings = LocalStorageSettings()
-        self.featurebyte: Optional[FeatureByteSettings] = None
+        self.profile: Optional[Profile] = None
+        self.profiles: Optional[List[Profile]] = None
         self.settings: Dict[str, Any] = {}
         self.credentials: Credentials = {}
         self.logging: LoggingSettings = LoggingSettings()
@@ -273,10 +283,32 @@ class Configurations:
             # parse storage settings
             self.storage = LocalStorageSettings(**storage_settings)
 
-        featurebyte_settings = self.settings.pop("featurebyte", None)
-        if featurebyte_settings:
-            # parse featurebyte settings
-            self.featurebyte = FeatureByteSettings(**featurebyte_settings)
+        profile_settings = self.settings.pop("profile", None)
+        if profile_settings:
+            # parse profile settings
+            self.profiles = ProfileList(profiles=profile_settings).profiles
+
+        if self.profiles:
+            # use first profile as fallback
+            self.profile = self.profiles[0]
+            selected_profile_name = os.environ.get("FEATUREBYTE_PROFILE")
+            if selected_profile_name:
+                for profile in self.profiles:
+                    if profile.name == selected_profile_name:
+                        self.profile = profile
+                        break
+
+    @classmethod
+    def use_profile(cls, profile_name: str) -> None:
+        """
+        Use a profile
+
+        Parameters
+        ----------
+        profile_name: str
+            Name of profile to use
+        """
+        os.environ["FEATUREBYTE_PROFILE"] = profile_name
 
     def get_client(self) -> Union[TestClient, APIClient]:
         """
@@ -300,18 +332,16 @@ class Configurations:
 
         client: Union[TestClient, APIClient]
 
-        if self.featurebyte:
+        if self.profile:
             if self.git:
                 logger.warning("Ignoring Git settings in configurations")
-            client = APIClient(
-                api_url=self.featurebyte.api_url, api_token=self.featurebyte.api_token
-            )
+            client = APIClient(api_url=self.profile.api_url, api_token=self.profile.api_token)
         elif self.git:
             # avoid git binary as a requirement for remote api url
             from featurebyte.app import app
 
             client = TestClient(app)
         else:
-            raise InvalidSettingsError("Git or FeatureByte API settings must be specified")
+            raise InvalidSettingsError("Git or FeatureByte profile settings must be specified")
 
         return client
