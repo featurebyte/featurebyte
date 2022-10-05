@@ -79,6 +79,16 @@ class MockDatabricksConnection:
     def fetchall(self):
         return self.result_rows[:]
 
+    def fetchall_arrow(self):
+        columns = [cols[0] for cols in self.description]
+        data = []
+        for row in self.result_rows:
+            data.append({k: v for (k, v) in zip(columns, row)})
+        df = pd.DataFrame(data)
+        mock_arrow_table = mock.Mock()
+        mock_arrow_table.to_pandas.return_value = df
+        return mock_arrow_table
+
     def execute(self, *args, **kwargs):
         self.description = [["a"], ["b"], ["c"]]
         self.result_rows = [
