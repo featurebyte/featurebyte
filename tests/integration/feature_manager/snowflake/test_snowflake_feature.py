@@ -30,7 +30,9 @@ async def test_insert_feature_registry(
     """
     await feature_manager.insert_feature_registry(snowflake_feature)
 
-    result = await snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
+    result = await snowflake_session.execute_query(
+        "SELECT * FROM FEATURE_REGISTRY WHERE name = 'sum_30m'"
+    )
     assert len(result) == 1
     assert result.iloc[0]["NAME"] == "sum_30m"
     assert result.iloc[0]["VERSION"] == "v1"
