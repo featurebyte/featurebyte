@@ -8,7 +8,14 @@ from typing import Any, OrderedDict, cast
 import collections
 
 import pandas as pd
-from databricks import sql as databricks_sql
+
+try:
+    from databricks import sql as databricks_sql
+
+    HAS_DATABRICKS_SQL_CONNECTOR = True
+except ImportError:
+    HAS_DATABRICKS_SQL_CONNECTOR = False
+
 from pydantic import Field
 
 from featurebyte.enum import DBVarType, SourceType

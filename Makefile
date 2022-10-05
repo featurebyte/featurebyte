@@ -27,6 +27,7 @@ install-nolock:
 	${MAKE} install-dev
 	${MAKE} install-lint
 	${MAKE} install-docs
+	${MAKE} install-databricks-sql-connector
 
 install-lock:
 	poetry lock -n
@@ -42,6 +43,10 @@ install-lint:
 
 install-docs:
 	poetry install -n --only=docs
+
+install-databricks-sql-connector:
+	pip install databricks-sql-connector==2.1.0
+	pip install pyarrow==8.0.0
 
 #* Update
 update:
