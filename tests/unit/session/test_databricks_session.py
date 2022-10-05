@@ -137,3 +137,13 @@ async def test_databricks_session(databricks_session_dict):
     df_result = await session.execute_async_query("SELECT * FROM table")
     df_expected = pd.DataFrame({"a": [1, 100], "b": [2, 200], "c": [3, 300]})
     pd.testing.assert_frame_equal(df_result, df_expected)
+
+
+def test_databricks_sql_connector_not_available(databricks_session_dict):
+    """
+    Simulate missing databricks-sql-connector dependency
+    """
+    with mock.patch("featurebyte.session.databricks.HAS_DATABRICKS_SQL_CONNECTOR", False):
+        with pytest.raises(RuntimeError) as exc:
+            _ = DatabricksSession(**databricks_session_dict)
+        assert str(exc.value) == "databricks-sql-connector is not available"

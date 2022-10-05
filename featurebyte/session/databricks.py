@@ -37,6 +37,9 @@ class DatabricksSession(BaseSession):
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
 
+        if not HAS_DATABRICKS_SQL_CONNECTOR:
+            raise RuntimeError("databricks-sql-connector is not available")
+
         self._connection = databricks_sql.connect(
             server_hostname=data["server_hostname"],
             http_path=data["http_path"],
