@@ -91,7 +91,6 @@ aiofiles = "^22.1.0"
 alive-progress = "^2.4.1"
 asyncache = "^0.1.1"
 cachetools = "^5.2.0"
-databricks-sql-connector = "^2.1.0"
 fastapi = "^0.82.0"
 featurebyte-freeware = { version = "^0.1.0", allow-prereleases = true, source = "featurebyte_np" }
 importlib_metadata = {version = "^4.5.0", python = "^3.8"}
@@ -99,7 +98,7 @@ jinja2 = "^3.1.2"
 loguru = "^0.6.0"
 motor = "^3.0.0"
 pandas = "^1.4.2"
-pyarrow = "^9.0.0"   # "9.0.0" causes seg faults
+pyarrow = "^8.0.0"   # "9.0.0" causes seg faults
 pydantic = "^1.9.1"
 pymongo = "^4.1.1"
 python = ">=3.8,<3.11"
