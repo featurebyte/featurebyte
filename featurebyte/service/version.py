@@ -109,6 +109,7 @@ class VersionService(BaseUpdateService):
             for feat_namespace in feature_namespaces
         }
         if data.mode == FeatureListNewVersionMode.AUTO:
+            # for auto mode, use default feature id for all the features within the feature list
             features = []
             for feature_id in feat_name_to_default_id_map.values():
                 features.append(await self.feature_service.get_document(document_id=feature_id))
@@ -134,6 +135,8 @@ class VersionService(BaseUpdateService):
                     )
                     features.append(feature)
                 else:
+                    # for semi-auto mode, use default feature id for non-specified features
+                    # for manual mode, use the original feature id of the feature list for non-specified features
                     if data.mode == FeatureListNewVersionMode.SEMI_AUTO:
                         feat_id = feat_name_to_default_id_map[feat_name]
                     features.append(await self.feature_service.get_document(document_id=feat_id))

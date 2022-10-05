@@ -10,6 +10,7 @@ from datetime import datetime
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, validator
 
+from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureListModel,
@@ -44,6 +45,14 @@ class FeatureVersionInfo(FeatureByteBaseModel):
 
     name: str
     version: VersionIdentifier
+
+    @validator("version", pre=True)
+    @classmethod
+    def _validate_version(cls, value: Any) -> Any:
+        # convert version string into version dictionary
+        if isinstance(value, str):
+            return convert_version_string_to_dict(value)
+        return value
 
 
 class FeatureListNewVersionCreate(FeatureByteBaseModel):

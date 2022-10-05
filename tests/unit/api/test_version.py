@@ -10,16 +10,28 @@ from featurebyte.models.event_data import FeatureJobSetting
 
 
 @pytest.fixture(name="feature_group")
-def feature_group_fixture(event_data):
+def feature_group_fixture(
+    snowflake_feature_store,
+    snowflake_event_data_with_entity,
+    mock_insert_feature_registry,
+):
     """
     Feature group fixture
     """
-    event_view = EventView.from_event_data(event_data)
-    feature_group = event_view.groupby("USER ID").aggregate(
-        value_column="AMOUNT",
+    snowflake_feature_store.save()
+    snowflake_event_data_with_entity.save()
+
+    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    feature_group = event_view.groupby("cust_id").aggregate(
+        value_column="col_float",
         method="sum",
         windows=["30m", "2h", "4h"],
         feature_names=["amt_sum_30m", "amt_sum_2h", "amt_sum_4h"],
+        feature_job_setting={
+            "blind_spot": "10m",
+            "frequency": "30m",
+            "time_modulo_frequency": "5m",
+        },
     )
     return feature_group
 
@@ -59,7 +71,9 @@ def test_feature_and_feature_list_version(feature_group):
     # create a new feature list version (manual)
     feature_list_v2 = feature_list.create_new_version(
         "manual",
-        features=[FeatureVersionInfo(name=amt_sum_30m_v1.name, version=amt_sum_30m_v1.version)],
+        features=[
+            FeatureVersionInfo(name=amt_sum_30m_v1.name, version=amt_sum_30m_v1.version.to_str())
+        ],
     )
     assert set(feature_list_v2.feature_ids) == set(feature_list_v1.feature_ids)
     assert feature_list_v2.version.to_str() == f"{get_version()}_2"
