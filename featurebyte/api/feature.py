@@ -324,7 +324,7 @@ class Feature(
         Raises
         ------
         RecordCreationException
-            When failed to save new version
+            When failed to save a new version
         """
         client = Configurations().get_client()
         response = client.post(
