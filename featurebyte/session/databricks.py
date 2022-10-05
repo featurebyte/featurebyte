@@ -107,6 +107,10 @@ class DatabricksSession(BaseSession):
         }
         return mapping[databricks_type]
 
+    def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
+        arrow_table = cursor.fetchall_arrow()
+        return arrow_table.to_pandas()
+
     async def execute_async_query(self, query: str, timeout: int = 180) -> pd.DataFrame | None:
         return await self.execute_query(query)
 
