@@ -133,5 +133,5 @@ class DatabricksSession(BaseSession):
         table_expr = construct_dataframe_sql_expr(dataframe, date_cols).sql(
             pretty=True, dialect="spark"
         )
-        query = f"CREATE TEMPORARY VIEW {table_name} AS {table_expr}"
+        query = f"CREATE OR REPLACE TEMPORARY VIEW {table_name} AS {table_expr}"
         return await self.execute_query(query)
