@@ -88,6 +88,10 @@ def test_feature_and_feature_list_version(feature_group):
     assert set(feature_list_v3.feature_ids) == set(feature_list_v2.feature_ids)
     assert feature_list_v3.version.to_str() == f"{get_version()}_3"
     assert feature_list.feature_list_namespace.default_feature_list_id == feature_list_v3.id
+    assert set(feat.id for feat in feature_list_v3.feature_objects.values()) == set(
+        feature_list_v3.feature_ids
+    )
+    assert len(feature_list.items) == len(feature_list.feature_objects)
 
     # check feature list ids in feature list namespace
     assert set(feature_list.feature_list_namespace.feature_list_ids) == {
