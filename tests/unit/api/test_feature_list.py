@@ -415,16 +415,21 @@ def test_deserialization(production_ready_feature, draft_feature, quarantine_fea
     feature_list_dict["status"] = expected_status
     feature_list_dict["version"] = expected_version
 
-    def get_by_id(feature_id):
-        return {
-            production_ready_feature.id: production_ready_feature,
-            draft_feature.id: draft_feature,
-            quarantine_feature.id: quarantine_feature,
-        }[feature_id]
-
-    with patch("featurebyte.api.feature_list.Feature.get_by_id") as mock_get_by_id:
-        mock_get_by_id.side_effect = get_by_id
-        loaded_feature_list = FeatureList(**feature_list_dict, items=[])
+    with patch(
+        "featurebyte.api.feature_list.FeatureList._iterate_paginated_routes"
+    ) as mock_iterate:
+        with patch("featurebyte.api.feature_store.FeatureStore._get_by_id") as mock_get_by_id:
+            mock_get_by_id.return_value = production_ready_feature.feature_store
+            mock_iterate.return_value = [
+                {
+                    "data": [
+                        production_ready_feature.dict(by_alias=True),
+                        draft_feature.dict(by_alias=True),
+                        quarantine_feature.dict(by_alias=True),
+                    ]
+                }
+            ]
+            loaded_feature_list = FeatureList(**feature_list_dict, items=[])
 
     # check consistency between loaded feature list & original feature list
     assert loaded_feature_list.version == expected_version

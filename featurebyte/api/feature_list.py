@@ -286,7 +286,10 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         return {"items": []}
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = FeatureListCreate(**self.json_dict(exclude_none=True))
+        feature_ids = [feature.id for feature in self.feature_objects.values()]
+        data = FeatureListCreate(
+            **{**self.json_dict(exclude_none=True), "feature_ids": feature_ids}
+        )
         return data.json_dict()
 
     def _pre_save_operations(self, conflict_resolution: ConflictResolution = "raise") -> None:
@@ -324,12 +327,17 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     def _initialize_feature_objects_and_items(cls, values: dict[str, Any]) -> dict[str, Any]:
         if "feature_ids" in values:
             if "feature_objects" not in values or "items" not in values:
+                # when deserialized from the record retrieved from the persistent
                 items = []
                 feature_objects = collections.OrderedDict()
-                for feature_id in values["feature_ids"]:
-                    feature = Feature.get_by_id(feature_id)
-                    items.append(feature)
-                    feature_objects[feature.name] = feature
+                id_value = values["_id"]
+                for response_dict in cls._iterate_paginated_routes(
+                    route="/feature", params={"feature_list_id": id_value, "page_size": 100}
+                ):
+                    for feature_dict in response_dict["data"]:
+                        feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
+                        items.append(feature)
+                        feature_objects[feature.name] = feature
                 values["items"] = items
                 values["feature_objects"] = feature_objects
         return values
