@@ -15,15 +15,6 @@ from featurebyte.exception import CredentialsError
 from featurebyte.session.snowflake import SchemaInitializer, SnowflakeSession
 
 
-@pytest.fixture(name="os_getenv")
-def mock_os_getenv():
-    """
-    Mock os.getenv in featurebyte.session.snowflake module
-    """
-    with patch("featurebyte.session.snowflake.os.getenv") as mock:
-        yield mock
-
-
 @pytest.fixture(name="snowflake_session_dict_without_credentials")
 def snowflake_session_dict_without_credentials_fixture():
     """

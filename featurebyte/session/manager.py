@@ -16,12 +16,14 @@ from featurebyte.enum import SourceType
 from featurebyte.logger import logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.session.base import BaseSession
+from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.session.sqlite import SQLiteSession
 
 SOURCE_TYPE_SESSION_MAP = {
     SourceType.SQLITE: SQLiteSession,
     SourceType.SNOWFLAKE: SnowflakeSession,
+    SourceType.DATABRICKS: DatabricksSession,
 }
 
 session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=900)
@@ -47,7 +49,7 @@ async def get_session(item: str, credential_params: str) -> BaseSession:
     item_dict = json.loads(item)
     logger.debug(f'Create a new session for {item_dict["type"]}')
     credential_params_dict = json.loads(credential_params)
-    session = SOURCE_TYPE_SESSION_MAP[item_dict["type"]](
+    session = SOURCE_TYPE_SESSION_MAP[item_dict["type"]](  # type: ignore
         **item_dict["details"], **credential_params_dict
     )
     await session.initialize()

@@ -40,7 +40,16 @@ class SQLiteDetails(BaseDatabaseDetails):
     is_local_source: ClassVar[bool] = True
 
 
-DatabaseDetails = Union[SnowflakeDetails, SQLiteDetails]
+class DatabricksDetails(BaseDatabaseDetails):
+    """Model for Databricks data source information"""
+
+    server_hostname: StrictStr
+    http_path: StrictStr
+    featurebyte_catalog: StrictStr
+    featurebyte_schema: StrictStr
+
+
+DatabaseDetails = Union[SnowflakeDetails, SQLiteDetails, DatabricksDetails]
 
 
 class FeatureStoreDetails(FeatureByteBaseModel):

@@ -2,6 +2,7 @@
 MAKE := make
 EXECUTABLES = poetry git
 PYLINT_DISABLE_FOR_TESTS := redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding,duplicate-code
+POETRY_ENV_PIP := $(shell poetry env info --path)/bin/pip
 
 .PHONY: init
 .PHONY: install install-nolock install-lock install-main install-dev install-lint install-docs
@@ -27,6 +28,7 @@ install-nolock:
 	${MAKE} install-dev
 	${MAKE} install-lint
 	${MAKE} install-docs
+	${MAKE} install-databricks-sql-connector
 
 install-lock:
 	poetry lock -n
@@ -42,6 +44,14 @@ install-lint:
 
 install-docs:
 	poetry install -n --only=docs
+
+install-databricks-sql-connector:
+	# databricks-sql-connector requires pyarrow = "^9.0.0" but snowflake-connector-python requires
+	# pyarrow>=8.0.0,<8.1.0. Poetry does not allow this. Temporary solution is to install
+	# databricks-sql-connector into the poetry managed venv using pip. databricks-sql-connector
+	# works with pyarrow==8.0.0
+	${POETRY_ENV_PIP} install databricks-sql-connector==2.1.0
+	${POETRY_ENV_PIP} install pyarrow==8.0.0
 
 #* Update
 update:
