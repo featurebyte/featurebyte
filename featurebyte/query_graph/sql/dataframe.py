@@ -38,6 +38,8 @@ def construct_dataframe_sql_expr(
         row_expr = select(*columns)
         row_exprs.append(row_expr)
 
+    # The Union expression is nested, and has the last expression (last row) at the outermost
+    # layer. So, start from the last row's expression and build from bottom up.
     row_exprs_reversed = row_exprs[::-1]
     union_expr = row_exprs_reversed[0]
     for row_expr in row_exprs_reversed[1:]:
