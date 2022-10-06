@@ -208,6 +208,7 @@ def test_get__unexpected_retrieval_exception():
     """
     # check unexpected creation exception
     with pytest.raises(RecordRetrievalException) as exc:
-        FeatureStore.get("some random name")
+        lazy_feature_store = FeatureStore.get("some random name")
+        _ = lazy_feature_store.name
     expected_msg = 'FeatureStore (name: "some random name") not found. Please save the FeatureStore object first.'
     assert expected_msg in str(exc.value)

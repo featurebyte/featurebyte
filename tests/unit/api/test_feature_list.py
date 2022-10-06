@@ -488,7 +488,8 @@ def test_get_feature_list(saved_feature_list):
 
     # check unexpected exception in get
     with pytest.raises(RecordRetrievalException) as exc:
-        FeatureList.get(name="random_name")
+        lazy_feature_list = FeatureList.get(name="random_name")
+        _ = lazy_feature_list.name
     expected_msg = (
         'FeatureList (name: "random_name") not found. Please save the FeatureList object first.'
     )

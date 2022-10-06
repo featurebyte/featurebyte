@@ -3,11 +3,25 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar, Dict, Iterator, List, Literal, Optional, Type, TypeVar
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Type,
+    TypeVar,
+    cast,
+)
 
 import time
+from functools import partial
 from http import HTTPStatus
 
+import lazy_object_proxy
 from bson.objectid import ObjectId
 from pydantic import Field
 from typeguard import typechecked
@@ -51,7 +65,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         return {}
 
     @classmethod
-    def _get(cls: Type[ApiObjectT], name: str) -> dict[str, Any]:
+    def _get_object_dict_by_name(cls: Type[ApiObjectT], name: str) -> dict[str, Any]:
         client = Configurations().get_client()
         response = client.get(url=cls._route, params={"name": name})
         if response.status_code == HTTPStatus.OK:
@@ -66,9 +80,13 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         raise RecordRetrievalException(response, "Failed to retrieve the specified object.")
 
     @classmethod
+    def _get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
+        return cls(**cls._get_object_dict_by_name(name=name), **cls._get_init_params(), saved=True)
+
+    @classmethod
     def get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
         """
-        Retrieve object dictionary from the persistent given object name
+        Retrieve lazy object from the persistent given object name
 
         Parameters
         ----------
@@ -80,14 +98,24 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         ApiObjectT
             ApiObject object of the given event data name
         """
-        return cls(**cls._get(name=name), **cls._get_init_params(), saved=True)
+        return cast(ApiObjectT, lazy_object_proxy.Proxy(partial(cls._get, name)))
+
+    @classmethod
+    def _get_by_id(
+        cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> ApiObjectT:
+        client = Configurations().get_client()
+        response = client.get(url=f"{cls._route}/{id}")
+        if response.status_code == HTTPStatus.OK:
+            return cls(**response.json(), **cls._get_init_params(), saved=True)
+        raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
     @classmethod
     def get_by_id(
         cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> ApiObjectT:
         """
-        Get the API object by specifying the object ID
+        Get the lazy object from the persistent given the object ID
 
         Parameters
         ----------
@@ -98,17 +126,8 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         -------
         ApiObjectT
             ApiGetObject object of the given object ID
-
-        Raises
-        ------
-        RecordRetrievalException
-            When the object not found
         """
-        client = Configurations().get_client()
-        response = client.get(url=f"{cls._route}/{id}")
-        if response.status_code == HTTPStatus.OK:
-            return cls(**response.json(), **cls._get_init_params(), saved=True)
-        raise RecordRetrievalException(response, "Failed to retrieve specified object.")
+        return cast(ApiObjectT, lazy_object_proxy.Proxy(partial(cls._get_by_id, id)))
 
     @staticmethod
     def _default_to_request_func(response_dict: dict[str, Any], page: int) -> bool:
@@ -387,7 +406,7 @@ class ApiObject(ApiGetObject):
 
         if retrieve_object:
             assert self.name is not None
-            object_dict = self._get(name=self.name)
+            object_dict = self._get_object_dict_by_name(name=self.name)
         else:
             object_dict = response.json()
         type(self).__init__(self, **object_dict, **self._get_init_params_from_object(), saved=True)
