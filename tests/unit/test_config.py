@@ -10,10 +10,10 @@ from fastapi.testclient import TestClient
 from featurebyte.config import (
     APIClient,
     Configurations,
-    FeatureByteSettings,
     GitSettings,
     LocalStorageSettings,
     LoggingSettings,
+    Profile,
 )
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.logger import logger
@@ -55,10 +55,13 @@ def test_configurations():
     assert config.settings == {}
 
     # featurebyte settings
-    assert config.featurebyte == FeatureByteSettings(
-        api_url="https://app.featurebyte.com/api/v1",
-        api_token="API_TOKEN_VALUE",
-    )
+    assert config.profiles == [
+        Profile(
+            name="featurebyte",
+            api_url="https://app.featurebyte.com/api/v1",
+            api_token="API_TOKEN_VALUE",
+        )
+    ]
 
 
 def test_get_client_no_persistence_settings():
@@ -67,7 +70,7 @@ def test_get_client_no_persistence_settings():
     """
     with pytest.raises(InvalidSettingsError) as exc_info:
         Configurations("tests/fixtures/invalid_config.yaml").get_client()
-    assert str(exc_info.value) == "Git or FeatureByte API settings must be specified"
+    assert str(exc_info.value) == "Git or FeatureByte profile settings must be specified"
 
 
 def test_get_client_git_persistent_settings():
@@ -96,7 +99,7 @@ def test_get_client_featurebyte_persistent_settings__success():
         "Accept-Encoding": "gzip, deflate",
         "accept": "application/json",
         "Connection": "keep-alive",
-        "Authorization": "Bearer API_TOKEN_VALUE",
+        "Authorization": "Bearer API_TOKEN_VALUE1",
     }
 
 
@@ -134,3 +137,20 @@ def test_default_local_storage():
     """
     config = Configurations("tests/fixtures/config_no_persistent.yaml")
     assert config.storage.local_path == Path("~/.featurebyte/data").expanduser()
+
+
+@patch("requests.Session.send")
+def test_use_profile(mock_requests_get):
+    """
+    Test selecting profile for api service
+    """
+    mock_requests_get.return_value.status_code = 200
+    config_path = "tests/fixtures/config_featurebyte_persistent.yaml"
+    config = Configurations(config_path)
+    assert config.profile.name == "featurebyte1"
+    assert config.get_client().base_url == "https://app1.featurebyte.com/api/v1"
+
+    Configurations.use_profile("featurebyte2")
+    config = Configurations(config_path)
+    assert config.profile.name == "featurebyte2"
+    assert config.get_client().base_url == "https://app2.featurebyte.com/api/v1"

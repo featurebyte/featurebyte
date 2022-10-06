@@ -14,9 +14,10 @@ git:
   key_path: ~/.ssh/id_rsa
   branch: test
 
-featurebyte:
-  api_url: https://app.featurebyte.com/api/v1
-  api_token: API_TOKEN_VALUE
+profile:
+  - name: featurebyte
+    api_url: https://app.featurebyte.com/api/v1
+    api_token: API_TOKEN_VALUE
 
 logging:
   level: INFO
