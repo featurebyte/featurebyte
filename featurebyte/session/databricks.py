@@ -3,7 +3,7 @@ DatabricksSession class
 """
 from __future__ import annotations
 
-from typing import Any, OrderedDict, cast
+from typing import Any, List, OrderedDict, cast
 
 import collections
 
@@ -52,14 +52,14 @@ class DatabricksSession(BaseSession):
         cursor = self._connection.cursor().catalogs()
         df_result = super().fetch_query_result_impl(cursor)
         if df_result is not None:
-            return cast(list[str], df_result["TABLE_CAT"].tolist())
+            return cast(List[str], df_result["TABLE_CAT"].tolist())
         return []
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
         cursor = self._connection.cursor().schemas(catalog_name=database_name)
         df_result = super().fetch_query_result_impl(cursor)
         if df_result is not None:
-            return cast(list[str], df_result["TABLE_SCHEM"].tolist())
+            return cast(List[str], df_result["TABLE_SCHEM"].tolist())
         return []
 
     async def list_tables(
@@ -70,7 +70,7 @@ class DatabricksSession(BaseSession):
         )
         df_result = super().fetch_query_result_impl(cursor)
         if df_result is not None:
-            return cast(list[str], df_result["TABLE_NAME"].tolist())
+            return cast(List[str], df_result["TABLE_NAME"].tolist())
         return []
 
     async def list_table_schema(
