@@ -5,11 +5,16 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+from bson.objectid import ObjectId
 from freezegun import freeze_time
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, FeatureList
-from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
+from featurebyte.exception import (
+    DuplicatedRecordException,
+    RecordCreationException,
+    RecordRetrievalException,
+)
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.enum import NodeType
@@ -578,7 +583,7 @@ def test_feature_list__feature_list_saving_in_bad_state(
     deprecated_feature,
     mock_insert_feature_registry,
 ):
-    """Test feature list production ready fraction"""
+    """Test feature list saving in bad state due to some feature has been saved (when the feature id is the same)"""
     snowflake_feature_store.save()
     snowflake_event_data.save()
 
@@ -601,6 +606,7 @@ def test_feature_list__feature_list_saving_in_bad_state(
     # the feature inside the feature list saved status is still False
     assert feature_list["production_ready_feature"].saved is False
 
+    # save the feature list will cause error due to duplicated exception
     with pytest.raises(DuplicatedRecordException) as exc:
         feature_list.save()
     id_val = production_ready_feature.id
@@ -611,6 +617,53 @@ def test_feature_list__feature_list_saving_in_bad_state(
     )
     assert expected_msg in str(exc.value)
 
-    # save the feature list will cause error due to duplicated exception
+    # resolve the error by retrieving the feature with the same name
     feature_list.save(conflict_resolution="retrieve")
     assert feature_list.saved is True
+
+
+def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different(
+    snowflake_feature_store,
+    snowflake_event_data,
+    feature_group,
+    production_ready_feature,
+    draft_feature,
+    quarantine_feature,
+    deprecated_feature,
+    mock_insert_feature_registry,
+):
+    """Test feature list saving in bad state due to some feature has been saved (when the feature id is different)"""
+    snowflake_feature_store.save()
+    snowflake_event_data.save()
+
+    # save the feature outside the feature list
+    production_ready_feature.save()
+
+    # create a feature list (simulate the case when the feature with the same name is created and ID are different)
+    feature = feature_group["sum_30m"] + 123
+    feature.name = "production_ready_feature"
+    feature_list = FeatureList(
+        [
+            feature,
+            draft_feature,
+            quarantine_feature,
+            deprecated_feature,
+        ],
+        name="feature_list_name",
+    )
+
+    with pytest.raises(DuplicatedRecordException) as exc:
+        feature_list.save()
+    expected_msg = (
+        'FeatureNamespace (name: "production_ready_feature") already exists. '
+        'Please rename object (name: "production_ready_feature") to something else. '
+        'Or try `feature_list.save(conflict_resolution = "retrieve")` to resolve conflict.'
+    )
+    assert expected_msg in str(exc.value)
+    assert feature_list[feature.name].id == feature.id
+
+    # resolve the error by retrieving the feature with the same name
+    # (check that ID value are updated after saved)
+    feature_list.save(conflict_resolution="retrieve")
+    assert feature_list.saved is True
+    assert feature_list[feature.name].id == production_ready_feature.id
