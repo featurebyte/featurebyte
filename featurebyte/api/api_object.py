@@ -348,13 +348,15 @@ class ApiObject(ApiGetObject):
     @typechecked
     def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
         """
-        Save object to the persistent
+        Save object to the persistent. Conflict could be triggered when the object
+        being saved has violated uniqueness check at the persistent (for example,
+        same ID has been used by another record stored at the persistent).
 
         Parameters
         ----------
         conflict_resolution: ConflictResolution
             "raise" raises error when then counters conflict error (default)
-            "retrieve" handle conflict error by retrieving object with the same name
+            "retrieve" handle conflict error by retrieving the object with the same name
 
         Raises
         ------
