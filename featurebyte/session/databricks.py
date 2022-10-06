@@ -134,4 +134,4 @@ class DatabricksSession(BaseSession):
             pretty=True, dialect="spark"
         )
         query = f"CREATE OR REPLACE TEMPORARY VIEW {table_name} AS {table_expr}"
-        return await self.execute_query(query)
+        await self.execute_query(query)

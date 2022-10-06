@@ -1,3 +1,6 @@
+"""
+Module for sql generation given a DataFrame (typically request data)
+"""
 from __future__ import annotations
 
 import pandas as pd
