@@ -145,7 +145,24 @@ async def get_feature_list_info(
 
 
 @router.post("/preview", response_model=str)
-async def get_feature_preview(
+async def get_feature_list_preview(
+    request: Request,
+    featurelist_preview: FeatureListPreview,
+) -> str:
+    """
+    Retrieve Feature preview
+    """
+    controller = request.state.app_container.feature_list_controller
+    return cast(
+        str,
+        await controller.preview(
+            featurelist_preview=featurelist_preview, get_credential=request.state.get_credential
+        ),
+    )
+
+
+@router.post("/historical", response_model=str)
+async def get_historical_data(
     request: Request,
     featurelist_preview: FeatureListPreview,
 ) -> str:

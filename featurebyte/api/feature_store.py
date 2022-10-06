@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional, TypeVar, cast
 
-import asyncio
 from http import HTTPStatus
 
 from typeguard import typechecked
@@ -13,6 +12,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import ApiObject
 from featurebyte.config import Configurations
 from featurebyte.core.generic import ExtendedFeatureStoreModel
+from featurebyte.core.utils import run_async
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import TableDetails, TabularSource
 from featurebyte.schema.feature_store import FeatureStoreCreate
@@ -50,8 +50,8 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
             Failed to retrieve database list
         """
         if self.details.is_local_source:
-            session = asyncio.run(self.get_session())
-            return asyncio.run(session.list_databases())
+            session = run_async(self.get_session)
+            return cast(List[str], run_async(session.list_databases))
 
         client = Configurations().get_client()
         response = client.post(url="/feature_store/database", json=self.json_dict())
@@ -79,8 +79,8 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
             Failed to retrieve database schema list
         """
         if self.details.is_local_source:
-            session = asyncio.run(self.get_session())
-            return asyncio.run(session.list_schemas(database_name=database_name))
+            session = run_async(self.get_session)
+            return cast(List[str], run_async(session.list_schemas, database_name=database_name))
 
         client = Configurations().get_client()
         response = client.post(
@@ -116,9 +116,12 @@ class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
             Failed to retrieve database table list
         """
         if self.details.is_local_source:
-            session = asyncio.run(self.get_session())
-            return asyncio.run(
-                session.list_tables(database_name=database_name, schema_name=schema_name)
+            session = run_async(self.get_session)
+            return cast(
+                List[str],
+                run_async(
+                    session.list_tables, database_name=database_name, schema_name=schema_name
+                ),
             )
 
         client = Configurations().get_client()
