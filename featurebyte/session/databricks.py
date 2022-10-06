@@ -19,6 +19,7 @@ except ImportError:
 from pydantic import Field
 
 from featurebyte.enum import DBVarType, SourceType
+from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.session.base import BaseSession
 
 
@@ -128,4 +129,9 @@ class DatabricksSession(BaseSession):
         return await self.execute_query(query)
 
     async def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
-        raise NotImplementedError()
+        date_cols = dataframe.select_dtypes(include=["datetime64"]).columns.tolist()
+        table_expr = construct_dataframe_sql_expr(dataframe, date_cols).sql(
+            pretty=True, dialect="spark"
+        )
+        query = f"CREATE TEMPORARY VIEW {table_name} AS {table_expr}"
+        return await self.execute_query(query)
