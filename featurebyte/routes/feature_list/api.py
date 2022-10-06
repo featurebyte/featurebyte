@@ -4,7 +4,7 @@ FeatureList API routes
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Optional, Union, cast
 
 from http import HTTPStatus
 
@@ -26,6 +26,7 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListInfo,
+    FeatureListNewVersionCreate,
     FeatureListPaginatedList,
     FeatureListPreview,
     FeatureListUpdate,
@@ -35,7 +36,9 @@ router = APIRouter(prefix="/feature_list")
 
 
 @router.post("", response_model=FeatureListModel, status_code=HTTPStatus.CREATED)
-async def create_feature_list(request: Request, data: FeatureListCreate) -> FeatureListModel:
+async def create_feature_list(
+    request: Request, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
+) -> FeatureListModel:
     """
     Create FeatureList
     """

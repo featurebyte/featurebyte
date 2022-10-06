@@ -38,7 +38,7 @@ class FeatureCreate(FeatureByteBaseModel):
     feature_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
 
 
-class VersionCreate(FeatureByteBaseModel):
+class FeatureNewVersionCreate(FeatureByteBaseModel):
     """
     New version creation schema based on existing feature
     """

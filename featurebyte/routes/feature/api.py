@@ -25,10 +25,10 @@ from featurebyte.routes.common.schema import (
 from featurebyte.schema.feature import (
     FeatureCreate,
     FeatureInfo,
+    FeatureNewVersionCreate,
     FeaturePaginatedList,
     FeaturePreview,
     FeatureUpdate,
-    VersionCreate,
 )
 
 router = APIRouter(prefix="/feature")
@@ -36,7 +36,7 @@ router = APIRouter(prefix="/feature")
 
 @router.post("", response_model=FeatureModel, status_code=HTTPStatus.CREATED)
 async def create_feature(
-    request: Request, data: Union[FeatureCreate, VersionCreate]
+    request: Request, data: Union[FeatureCreate, FeatureNewVersionCreate]
 ) -> FeatureModel:
     """
     Create Feature

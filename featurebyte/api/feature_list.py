@@ -3,7 +3,7 @@ FeatureListVersion class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, OrderedDict, Union
+from typing import Any, Dict, List, Literal, Optional, OrderedDict, Union
 
 import asyncio
 import collections
@@ -22,12 +22,13 @@ from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
-from featurebyte.exception import RecordRetrievalException
+from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel, VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
+    FeatureListNewVersionMode,
     FeatureListStatus,
 )
 from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
@@ -41,6 +42,7 @@ from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListPreview,
     FeatureListPreviewGroup,
+    FeatureVersionInfo,
 )
 from featurebyte.service.preview import PreviewService
 from featurebyte.utils.credential import get_credential
@@ -433,3 +435,42 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
                 serving_names_mapping=serving_names_mapping,
             )
         )
+
+    @typechecked
+    def create_new_version(
+        self,
+        mode: Literal[tuple(FeatureListNewVersionMode)],  # type: ignore[misc]
+        features: Optional[List[FeatureVersionInfo]] = None,
+    ) -> FeatureList:
+        """
+        Create new feature list version
+
+        Parameters
+        ----------
+        mode: FeatureListNewVersionMode
+            Feature list default version mode
+        features: Optional[List[FeatureVersionInfo]]
+            Specified feature version in feature list
+
+        Returns
+        -------
+        FeatureList
+
+        Raises
+        ------
+        RecordCreationException
+            When failed to save a new version
+        """
+        client = Configurations().get_client()
+        response = client.post(
+            url=self._route,
+            json={
+                "source_feature_list_id": str(self.id),
+                "mode": mode,
+                "features": [feature.dict() for feature in features] if features else None,
+            },
+        )
+        if response.status_code != HTTPStatus.CREATED:
+            raise RecordCreationException(response=response)
+        # TODO: self._get_init_params_from_object() does not get updated items (will fix this later)
+        return FeatureList(**response.json(), **self._get_init_params_from_object(), saved=True)

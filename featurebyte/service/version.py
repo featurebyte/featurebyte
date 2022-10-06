@@ -11,11 +11,13 @@ from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentError
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel
+from featurebyte.models.feature_list import FeatureListModel, FeatureListNewVersionMode
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode, InputNode
-from featurebyte.schema.feature import FeatureCreate, VersionCreate
+from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
+from featurebyte.schema.feature_list import FeatureListCreate, FeatureListNewVersionCreate
 from featurebyte.service.base_update import BaseUpdateService
 
 
@@ -73,7 +75,7 @@ class VersionService(BaseUpdateService):
 
     async def create_new_feature_version(
         self,
-        data: VersionCreate,
+        data: FeatureNewVersionCreate,
         get_credential: Any,
     ) -> FeatureModel:
         """
@@ -81,7 +83,7 @@ class VersionService(BaseUpdateService):
 
         Parameters
         ----------
-        data: VersionCreate
+        data: FeatureNewVersionCreate
             Version creation payload
         get_credential: Any
             Get credential handler function
@@ -94,4 +96,103 @@ class VersionService(BaseUpdateService):
         new_feature = self._create_new_feature_version(feature, data.feature_job_setting)
         return await self.feature_service.create_document(
             data=FeatureCreate(**new_feature.dict(by_alias=True)), get_credential=get_credential
+        )
+
+    async def _create_new_feature_list_version(
+        self,
+        feature_list: FeatureListModel,
+        feature_namespaces: list[dict[str, Any]],
+        data: FeatureListNewVersionCreate,
+    ) -> FeatureListModel:
+        feat_name_to_default_id_map = {
+            feat_namespace["name"]: feat_namespace["default_feature_id"]
+            for feat_namespace in feature_namespaces
+        }
+        if data.mode == FeatureListNewVersionMode.AUTO:
+            # for auto mode, use default feature id for all the features within the feature list
+            features = []
+            for feature_id in feat_name_to_default_id_map.values():
+                features.append(await self.feature_service.get_document(document_id=feature_id))
+        else:
+            if not data.features:
+                raise DocumentError("Feature info is missing.")
+
+            feature_id_to_name_map = {
+                feat_id: feature_namespace["name"]
+                for feature_namespace in feature_namespaces
+                for feat_id in feature_namespace["feature_ids"]
+            }
+            specified_feature_map = {
+                feat_info.name: feat_info.version for feat_info in data.features
+            }
+            features = []
+            for feat_id in feature_list.feature_ids:
+                feat_name = feature_id_to_name_map[feat_id]
+                if feat_name in specified_feature_map:
+                    version = specified_feature_map.pop(feat_name)
+                    feature = await self.feature_service.get_document_by_name_and_version(
+                        name=feat_name, version=version
+                    )
+                    features.append(feature)
+                else:
+                    # for semi-auto mode, use default feature id for non-specified features
+                    # for manual mode, use the original feature id of the feature list for non-specified features
+                    if data.mode == FeatureListNewVersionMode.SEMI_AUTO:
+                        feat_id = feat_name_to_default_id_map[feat_name]
+                    features.append(await self.feature_service.get_document(document_id=feat_id))
+
+            if specified_feature_map:
+                names = [f'"{name}"' for name in specified_feature_map.keys()]
+                raise DocumentError(
+                    f"Features ({', '.join(names)}) are not in the original FeatureList"
+                )
+
+        feature_ids = [feat.id for feat in features]
+        if set(feature_list.feature_ids) == set(feature_ids):
+            raise DocumentError("No change detected on the new feature list version.")
+
+        return FeatureListModel(
+            **{
+                **feature_list.dict(),
+                "_id": ObjectId(),
+                "feature_ids": feature_ids,
+                "features": features,
+            }
+        )
+
+    async def create_new_feature_list_version(
+        self,
+        data: FeatureListNewVersionCreate,
+        get_credential: Any,
+    ) -> FeatureListModel:
+        """
+        Create new feature list version based on given source feature list & new version mode
+
+        Parameters
+        ----------
+        data: FeatureListNewVersionCreate
+            Version creation payload
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        FeatureListModel
+        """
+        feature_list = await self.feature_list_service.get_document(
+            document_id=data.source_feature_list_id
+        )
+        feature_list_namespace = await self.feature_list_namespace_service.get_document(
+            document_id=feature_list.feature_list_namespace_id
+        )
+        feature_namespaces = await self.feature_namespace_service.list_documents(
+            query_filter={"_id": {"$in": feature_list_namespace.feature_namespace_ids}},
+            page_size=0,
+        )
+        new_feature_list = await self._create_new_feature_list_version(
+            feature_list, feature_namespaces["data"], data
+        )
+        return await self.feature_list_service.create_document(
+            data=FeatureListCreate(**new_feature_list.dict(by_alias=True)),
+            get_credential=get_credential,
         )

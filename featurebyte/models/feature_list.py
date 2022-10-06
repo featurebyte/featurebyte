@@ -8,6 +8,7 @@ from typing import Any, List
 
 import functools
 from collections import defaultdict
+from enum import Enum
 
 from bson.objectid import ObjectId
 from pydantic import Field, root_validator, validator
@@ -33,6 +34,14 @@ class FeatureListStatus(OrderedStrEnum):
     DRAFT = "DRAFT"
     PUBLIC_DRAFT = "PUBLIC_DRAFT"
     PUBLISHED = "PUBLISHED"
+
+
+class FeatureListNewVersionMode(str, Enum):
+    """New feature list version mode"""
+
+    AUTO = "auto"
+    SEMI_AUTO = "semi_auto"
+    MANUAL = "manual"
 
 
 class FeatureTypeFeatureCount(FeatureByteBaseModel):

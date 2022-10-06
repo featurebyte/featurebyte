@@ -125,6 +125,7 @@ app_container_config = {
                 "feature_readiness_service",
                 "deploy_service",
                 "preview_service",
+                "version_service",
             ],
         },
         {
