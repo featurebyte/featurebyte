@@ -208,6 +208,7 @@ class TestFeatureApi(BaseApiTestSuite):
         assert parameters["frequency"] == 86400
         assert parameters["blind_spot"] == 86400
 
+    @pytest.mark.skip("Skip feature registry insertion")
     def test_create_401(self, test_api_client_persistent, mock_insert_feature_registry_fixture):
         """Test create (unauthorized)"""
         mock_insert_feature_registry_fixture.side_effect = CredentialsError
