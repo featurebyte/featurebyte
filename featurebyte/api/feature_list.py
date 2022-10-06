@@ -486,5 +486,4 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         )
         if response.status_code != HTTPStatus.CREATED:
             raise RecordCreationException(response=response)
-        # TODO: self._get_init_params_from_object() does not get updated items (will fix this later)
-        return FeatureList(**response.json(), **self._get_init_params_from_object(), saved=True)
+        return FeatureList(**response.json(), **self._get_init_params(), saved=True)
