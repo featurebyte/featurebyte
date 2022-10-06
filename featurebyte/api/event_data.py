@@ -130,7 +130,7 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
             record_creation_date_column=record_creation_date_column,
         )
         client = Configurations().get_client()
-        response = client.get(url="/event_data/", params={"name": name})
+        response = client.get(url=cls._route, params={"name": name})
         if response.status_code == HTTPStatus.OK:
             response_dict = response.json()
             if not response_dict["data"]:
