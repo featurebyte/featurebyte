@@ -13,7 +13,7 @@ from pathlib import Path
 import requests
 import yaml
 from fastapi.testclient import TestClient
-from pydantic import BaseModel, BaseSettings, ConstrainedStr, Field, HttpUrl, validator
+from pydantic import BaseModel, ConstrainedStr, Field, HttpUrl, validator
 from pydantic.error_wrappers import ValidationError
 from requests import Response
 
@@ -43,7 +43,7 @@ class LogLevel(str, Enum):
     NOTSET = "NOTSET"
 
 
-class LoggingSettings(BaseSettings):
+class LoggingSettings(BaseModel):
     """
     Settings for logging
     """
@@ -60,7 +60,7 @@ class GitRepoUrl(ConstrainedStr):
     regex: Optional[Pattern[str]] = re.compile(r"^(.*\.git|file:///.*)$")
 
 
-class GitSettings(BaseSettings):
+class GitSettings(BaseModel):
     """
     Settings for git access
     """
@@ -70,12 +70,12 @@ class GitSettings(BaseSettings):
     branch: str
 
 
-class LocalStorageSettings(BaseSettings):
+class LocalStorageSettings(BaseModel):
     """
     Settings for local file storage
     """
 
-    local_path: Path = Field(default=os.path.join(DEFAULT_LOCAL_PATH, "data"))
+    local_path: Path = Field(default=Path(os.path.join(DEFAULT_LOCAL_PATH, "data")))
 
     @validator("local_path")
     @classmethod
@@ -106,7 +106,7 @@ class Profile(BaseModel):
     api_token: str
 
 
-class ProfileList(BaseSettings):
+class ProfileList(BaseModel):
     """
     List of Profile entries
     """
