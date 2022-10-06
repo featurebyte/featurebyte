@@ -3,7 +3,7 @@ DatabricksSession class
 """
 from __future__ import annotations
 
-from typing import Any, List, OrderedDict, cast
+from typing import Any, OrderedDict
 
 import collections
 
@@ -51,16 +51,18 @@ class DatabricksSession(BaseSession):
     async def list_databases(self) -> list[str]:
         cursor = self._connection.cursor().catalogs()
         df_result = super().fetch_query_result_impl(cursor)
+        out = []
         if df_result is not None:
-            return cast(List[str], df_result["TABLE_CAT"].tolist())
-        return []
+            out.extend(df_result["TABLE_CAT"])
+        return out
 
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
         cursor = self._connection.cursor().schemas(catalog_name=database_name)
-        df_result = super().fetch_query_result_impl(cursor)
+        df_result = self.fetch_query_result_impl(cursor)
+        out = []
         if df_result is not None:
-            return cast(List[str], df_result["TABLE_SCHEM"].tolist())
-        return []
+            out.extend(df_result["TABLE_SCHEM"])
+        return out
 
     async def list_tables(
         self, database_name: str | None = None, schema_name: str | None = None
@@ -69,9 +71,10 @@ class DatabricksSession(BaseSession):
             catalog_name=database_name, schema_name=schema_name
         )
         df_result = super().fetch_query_result_impl(cursor)
+        out = []
         if df_result is not None:
-            return cast(List[str], df_result["TABLE_NAME"].tolist())
-        return []
+            out.extend(df_result["TABLE_NAME"])
+        return out
 
     async def list_table_schema(
         self,
