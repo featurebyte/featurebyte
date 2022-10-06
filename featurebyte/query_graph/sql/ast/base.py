@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from sqlglot import Expression, expressions, select
+from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.common.typing import is_scalar_nan
 
@@ -206,22 +206,26 @@ class ExpressionNode(SQLNode, ABC):
         return select(self.sql).from_(self.table_node.sql_nested())
 
 
-def make_literal_value(value: Any) -> expressions.Literal | expressions.Null:
+def make_literal_value(value: Any, cast_as_timestamp: bool = False) -> expressions.Expression:
     """Create a sqlglot literal value
 
     Parameters
     ----------
     value : Any
         The literal value
+    cast_as_timestamp : bool
+        Whether to cast the value to timestamp
 
     Returns
     -------
-    expressions.Literal | expressions.Null
+    Expression
     """
-    if isinstance(value, str):
-        return expressions.Literal.string(value)
     if is_scalar_nan(value):
         return expressions.Null()
+    if cast_as_timestamp:
+        return parse_one(f"CAST('{str(value)}' AS TIMESTAMP)")
+    if isinstance(value, str):
+        return expressions.Literal.string(value)
     return expressions.Literal.number(value)
 
 

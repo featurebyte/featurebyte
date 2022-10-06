@@ -4,7 +4,7 @@ Module for sql generation given a DataFrame (typically request data)
 from __future__ import annotations
 
 import pandas as pd
-from sqlglot import expressions, parse_one, select
+from sqlglot import expressions, select
 
 from featurebyte.query_graph.sql.ast.base import make_literal_value
 
@@ -32,11 +32,8 @@ def construct_dataframe_sql_expr(
     for _, row in request_dataframe.iterrows():
         columns = []
         for col, value in row.items():
-            assert isinstance(col, str)
-            if col in date_cols:
-                expr = parse_one(f"CAST('{str(value)}' AS TIMESTAMP)")
-            else:
-                expr = make_literal_value(value)
+            cast_as_timestamp = col in date_cols
+            expr = make_literal_value(value, cast_as_timestamp)
             columns.append(expressions.alias_(expr, expressions.Identifier(this=col, quoted=True)))
         row_expr = select(*columns)
         row_exprs.append(row_expr)
