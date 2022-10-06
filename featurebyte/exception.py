@@ -16,6 +16,9 @@ class ResponseException(Exception):
 
     def __init__(self, response: Response, *args: Any, **kwargs: Any) -> None:
         self.response = response
+        resolution = None
+        if "resolution" in kwargs:
+            resolution = kwargs.pop("resolution")
         exc_info = None
         try:
             response_dict = response.json()
@@ -23,6 +26,8 @@ class ResponseException(Exception):
                 if field in response_dict:
                     exc_info = response_dict[field]
                     break
+            if resolution:
+                exc_info += resolution
         except JSONDecodeError:
             pass
 

@@ -16,13 +16,17 @@ from alive_progress import alive_bar
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiGetObject, ApiObject
+from featurebyte.api.api_object import ApiGetObject, ApiObject, ConflictResolution
 from featurebyte.api.feature import Feature
 from featurebyte.common.env_util import is_notebook
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
-from featurebyte.exception import RecordCreationException, RecordRetrievalException
+from featurebyte.exception import (
+    DuplicatedRecordException,
+    RecordCreationException,
+    RecordRetrievalException,
+)
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel, VersionIdentifier
 from featurebyte.models.feature_list import (
@@ -285,7 +289,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         data = FeatureListCreate(**self.json_dict(exclude_none=True))
         return data.json_dict()
 
-    def _pre_save_operations(self) -> None:
+    def _pre_save_operations(self, conflict_resolution: ConflictResolution = "raise") -> None:
         if is_notebook():
             other_kwargs = {"force_tty": True}
         else:
@@ -294,15 +298,26 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         with alive_bar(
             total=len(self.feature_objects), title="Saving Feature(s)", **other_kwargs
         ) as progress_bar:
-            for feature in self.feature_objects.values():
-                text = f'Feature "{feature.name}" has been saved before.'
-                if not feature.saved:
-                    feature.save()
-                    text = f'Feature "{feature.name}" is saved.'
+            for feat_name in self.feature_objects:
+                text = f'Feature "{feat_name}" has been saved before.'
+                if not self.feature_objects[feat_name].saved:
+                    self.feature_objects[feat_name].save(conflict_resolution=conflict_resolution)
+                    text = f'Feature "{feat_name}" is saved.'
 
                 # update progress bar
                 progress_bar.text = text
                 progress_bar()  # pylint: disable=not-callable
+
+    def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
+        try:
+            super().save(conflict_resolution=conflict_resolution)
+        except DuplicatedRecordException as exc:
+            if conflict_resolution == "raise":
+                raise DuplicatedRecordException(
+                    exc.response,
+                    resolution=' Or try `feature_list.save(conflict_resolution = "retrieve")` to resolve conflict.',
+                ) from exc
+            raise exc
 
     @root_validator(pre=True)
     @classmethod

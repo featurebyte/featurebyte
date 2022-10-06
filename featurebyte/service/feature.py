@@ -8,7 +8,6 @@ from typing import Any, Optional
 from bson.objectid import ObjectId
 
 from featurebyte.common.model_util import get_version
-from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import SourceType
 from featurebyte.exception import (
     DocumentConflictError,
@@ -27,7 +26,6 @@ from featurebyte.models.feature import (
     FeatureNamespaceModel,
     FeatureReadiness,
 )
-from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.feature import (
     FeatureBriefInfoList,
     FeatureCreate,
@@ -206,19 +204,6 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                         event_data_ids=sorted(document.event_data_ids),
                     ),
                 )
-
-            # insert feature registry into feature store
-            feature_store_dict = await self._get_document(
-                document_id=data.tabular_source.feature_store_id,
-                collection_name=FeatureStoreModel.collection_name(),
-            )
-            feature_store = ExtendedFeatureStoreModel(**feature_store_dict)
-            extended_feature = ExtendedFeatureModel(
-                **document.dict(by_alias=True),
-                is_default=document.id == feature_namespace.default_feature_id,
-                feature_store=feature_store,
-            )
-            await self._insert_feature_registry(extended_feature, get_credential)
         return await self.get_document(document_id=insert_id)
 
     async def get_document_by_name_and_version(

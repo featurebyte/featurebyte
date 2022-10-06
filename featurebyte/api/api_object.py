@@ -3,7 +3,7 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar, Dict, Iterator, List, Optional, Type, TypeVar
+from typing import Any, Callable, ClassVar, Dict, Iterator, List, Literal, Optional, Type, TypeVar
 
 import time
 from http import HTTPStatus
@@ -25,6 +25,7 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBas
 from featurebyte.schema.task import TaskStatus
 
 ApiObjectT = TypeVar("ApiObjectT", bound="ApiGetObject")
+ConflictResolution = Literal["raise", "retrieve"]
 
 
 class ApiGetObject(FeatureByteBaseDocumentModel):
@@ -50,6 +51,21 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         return {}
 
     @classmethod
+    def _get(cls: Type[ApiObjectT], name: str) -> dict[str, Any]:
+        client = Configurations().get_client()
+        response = client.get(url=cls._route, params={"name": name})
+        if response.status_code == HTTPStatus.OK:
+            response_dict = response.json()
+            if response_dict["data"]:
+                return dict(response_dict["data"][0])
+            class_name = cls.__name__
+            raise RecordRetrievalException(
+                response,
+                f'{class_name} (name: "{name}") not found. Please save the {class_name} object first.',
+            )
+        raise RecordRetrievalException(response, "Failed to retrieve the specified object.")
+
+    @classmethod
     def get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
         """
         Retrieve object dictionary from the persistent given object name
@@ -63,26 +79,8 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         -------
         ApiObjectT
             ApiObject object of the given event data name
-
-        Raises
-        ------
-        RecordRetrievalException
-            When the object not found or unexpected response status code
         """
-        client = Configurations().get_client()
-        response = client.get(url=cls._route, params={"name": name})
-        if response.status_code == HTTPStatus.OK:
-            response_dict = response.json()
-            if response_dict["data"]:
-                object_dict = response_dict["data"][0]
-                return cls(**object_dict, **cls._get_init_params(), saved=True)
-
-            class_name = cls.__name__
-            raise RecordRetrievalException(
-                response,
-                f'{class_name} (name: "{name}") not found. Please save the {class_name} object first.',
-            )
-        raise RecordRetrievalException(response, "Failed to retrieve the specified object.")
+        return cls(**cls._get(name=name), **cls._get_init_params(), saved=True)
 
     @classmethod
     def get_by_id(
@@ -293,11 +291,17 @@ class ApiObject(ApiGetObject):
         """
         return {}
 
-    def _pre_save_operations(self) -> None:
+    def _pre_save_operations(self, conflict_resolution: ConflictResolution) -> None:
         """
         Operations to be executed before saving the api object
+
+        Parameters
+        ----------
+        conflict_resolution: ConflictResolution
+            "raise" raises error when then counters conflict error (default)
+            "retrieve" handle conflict error by retrieving object with the same name
         """
-        return
+        _ = conflict_resolution
 
     @typechecked
     def update(self, update_payload: Dict[str, Any]) -> None:
@@ -341,9 +345,18 @@ class ApiObject(ApiGetObject):
         else:
             raise RecordUpdateException(response=response)
 
-    def save(self) -> None:
+    @typechecked
+    def save(self, conflict_resolution: ConflictResolution = "raise") -> None:
         """
-        Save object to the persistent
+        Save object to the persistent. Conflict could be triggered when the object
+        being saved has violated uniqueness check at the persistent (for example,
+        same ID has been used by another record stored at the persistent).
+
+        Parameters
+        ----------
+        conflict_resolution: ConflictResolution
+            "raise" raises error when then counters conflict error (default)
+            "retrieve" handle conflict error by retrieving the object with the same name
 
         Raises
         ------
@@ -359,16 +372,25 @@ class ApiObject(ApiGetObject):
                 f'{type(self).__name__} (id: "{self.id}") has been saved before.'
             )
 
-        self._pre_save_operations()
+        self._pre_save_operations(conflict_resolution=conflict_resolution)
         client = Configurations().get_client()
         response = client.post(url=self._route, json=self._get_create_payload())
+        retrieve_object = False
         if response.status_code != HTTPStatus.CREATED:
             if response.status_code == HTTPStatus.CONFLICT:
-                raise DuplicatedRecordException(response=response)
-            raise RecordCreationException(response=response)
-        type(self).__init__(
-            self, **response.json(), **self._get_init_params_from_object(), saved=True
-        )
+                if conflict_resolution == "retrieve":
+                    retrieve_object = True
+                else:
+                    raise DuplicatedRecordException(response=response)
+            if not retrieve_object:
+                raise RecordCreationException(response=response)
+
+        if retrieve_object:
+            assert self.name is not None
+            object_dict = self._get(name=self.name)
+        else:
+            object_dict = response.json()
+        type(self).__init__(self, **object_dict, **self._get_init_params_from_object(), saved=True)
 
     @staticmethod
     def post_async_task(route: str, payload: dict[str, Any], delay: float = 3.0) -> dict[str, Any]:
