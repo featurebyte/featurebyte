@@ -1,6 +1,9 @@
 """
 This module contains utility functions related to execution environment
 """
+from __future__ import annotations
+
+from typing import Any
 
 
 def is_notebook() -> bool:
@@ -18,3 +21,16 @@ def is_notebook() -> bool:
         return bool(shell == "ZMQInteractiveShell")
     except NameError:
         return False
+
+
+def get_alive_bar_additional_params() -> dict[str, Any]:
+    """
+    Get alive_bar additional parameters based on running environment
+
+    Returns
+    -------
+    dict[str, Any]
+    """
+    if is_notebook():
+        return {"force_tty": True}
+    return {"dual_line": True}

@@ -529,27 +529,6 @@ def test_get_feature_list(saved_feature_list):
     assert "Failed to list object audit log." in str(exc.value)
 
 
-@patch("featurebyte.api.feature_list.alive_bar")
-@patch("featurebyte.api.feature_list.is_notebook")
-def test_pre_save_operations(mock_is_notebook, mock_alive_bar, saved_feature_list):
-    """Test alive bar arguments in _pre_save_operations method"""
-    mock_is_notebook.return_value = True
-    saved_feature_list._pre_save_operations()
-    assert mock_alive_bar.call_args.kwargs == {
-        "total": 1,
-        "title": "Saving Feature(s)",
-        "force_tty": True,
-    }
-
-    mock_is_notebook.return_value = False
-    saved_feature_list._pre_save_operations()
-    assert mock_alive_bar.call_args.kwargs == {
-        "total": 1,
-        "title": "Saving Feature(s)",
-        "dual_line": True,
-    }
-
-
 def test_list(saved_feature_list):
     """Test listing feature list"""
     assert FeatureList.list() == [saved_feature_list.name] == ["my_feature_list"]

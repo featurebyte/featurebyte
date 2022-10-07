@@ -17,7 +17,7 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiGetObject, ApiObject, ConflictResolution
 from featurebyte.api.feature import Feature
-from featurebyte.common.env_util import is_notebook
+from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
@@ -294,13 +294,10 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         return data.json_dict()
 
     def _pre_save_operations(self, conflict_resolution: ConflictResolution = "raise") -> None:
-        if is_notebook():
-            other_kwargs = {"force_tty": True}
-        else:
-            other_kwargs = {"dual_line": True}
-
         with alive_bar(
-            total=len(self.feature_objects), title="Saving Feature(s)", **other_kwargs
+            total=len(self.feature_objects),
+            title="Saving Feature(s)",
+            **get_alive_bar_additional_params(),
         ) as progress_bar:
             for feat_name in self.feature_objects:
                 text = f'Feature "{feat_name}" has been saved before.'
@@ -333,12 +330,20 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
             items = []
             feature_objects = collections.OrderedDict()
             id_value = values["_id"]
-            for feature_dict in cls._iterate_api_object_using_paginated_routes(
-                route="/feature", params={"feature_list_id": id_value, "page_size": 100}
-            ):
-                feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
-                items.append(feature)
-                feature_objects[feature.name] = feature
+            with alive_bar(
+                total=len(values["feature_ids"]),
+                title="Loading Feature(s)",
+                **get_alive_bar_additional_params(),
+            ) as progress_bar:
+                for feature_dict in cls._iterate_api_object_using_paginated_routes(
+                    route="/feature", params={"feature_list_id": id_value, "page_size": 100}
+                ):
+                    feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
+                    items.append(feature)
+                    feature_objects[feature.name] = feature
+                    progress_bar.text = feature.name
+                    progress_bar()  # pylint: disable=not-callable
+
             values["items"] = items
             values["feature_objects"] = feature_objects
         return values
