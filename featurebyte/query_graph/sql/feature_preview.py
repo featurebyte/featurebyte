@@ -56,9 +56,7 @@ def get_feature_preview_sql(
     # prepare request table
     tic = time.time()
     df_request = pd.DataFrame([point_in_time_and_serving_name])
-    request_table_sql = construct_dataframe_sql_expr(
-        df_request, [SpecialColumnName.POINT_IN_TIME]
-    ).sql(pretty=True)
+    request_table_sql = construct_dataframe_sql_expr(df_request, [SpecialColumnName.POINT_IN_TIME])
     cte_statements.append((REQUEST_TABLE_NAME, request_table_sql))
     elapsed = time.time() - tic
     logger.debug(f"Constructing request table SQL took {elapsed:.2}s")
@@ -69,8 +67,9 @@ def get_feature_preview_sql(
         request_table_columns=df_request.columns.tolist(),
         prior_cte_statements=cte_statements,
     )
+    preview_sql_str = preview_sql.sql(pretty=True)
     elapsed = time.time() - tic
     logger.debug(f"Generating full SQL took {elapsed:.2}s")
-    logger.debug(f"Feature SQL:\n{preview_sql}")
+    logger.debug(f"Feature SQL:\n{preview_sql_str}")
 
-    return preview_sql
+    return preview_sql_str

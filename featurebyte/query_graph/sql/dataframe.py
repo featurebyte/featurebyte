@@ -11,7 +11,7 @@ from featurebyte.query_graph.sql.ast.base import make_literal_value
 
 def construct_dataframe_sql_expr(
     request_dataframe: pd.DataFrame, date_cols: list[str]
-) -> expressions.Expression:
+) -> expressions.Select:
     """Construct a SELECT statement that uploads the request data
 
     This does not use write_pandas and should only be used for small request data (e.g. request data
@@ -26,7 +26,7 @@ def construct_dataframe_sql_expr(
 
     Returns
     -------
-    str
+    expressions.Select
     """
     row_exprs = []
     for _, row in request_dataframe.iterrows():

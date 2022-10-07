@@ -60,7 +60,7 @@ class OnDemandTileComputePlan:
             self.tile_infos.append(tile_info)
             self.processed_agg_ids.add(tile_info.aggregation_id)
 
-    def construct_tile_sqls(self) -> dict[str, expressions.Expression]:
+    def construct_tile_sqls(self) -> dict[str, expressions.Select]:
         """Construct SQL expressions for all the required tile tables
 
         Returns
@@ -68,7 +68,7 @@ class OnDemandTileComputePlan:
         dict[str, expressions.Expression]
         """
 
-        tile_sqls: dict[str, expressions.Expression] = {}
+        tile_sqls: dict[str, expressions.Select] = {}
         prev_aliases: dict[str, str] = {}
 
         for tile_info in self.tile_infos:
@@ -164,7 +164,7 @@ class OnDemandTileComputePlan:
         """
         return self.max_window_size_by_agg_id[aggregation_id]
 
-    def construct_on_demand_tile_ctes(self) -> list[tuple[str, str]]:
+    def construct_on_demand_tile_ctes(self) -> list[tuple[str, expressions.Select]]:
         """Construct the CTE statements that would compute all the required tiles
 
         Returns
@@ -174,7 +174,7 @@ class OnDemandTileComputePlan:
         cte_statements = []
         tile_sqls = self.construct_tile_sqls()
         for tile_table_id, tile_sql_expr in tile_sqls.items():
-            cte_statements.append((tile_table_id, tile_sql_expr.sql(pretty=True)))
+            cte_statements.append((tile_table_id, tile_sql_expr))
         return cte_statements
 
 

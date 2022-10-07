@@ -165,7 +165,7 @@ def get_historical_features_sql(
     sql = plan.construct_combined_sql(
         point_in_time_column=SpecialColumnName.POINT_IN_TIME,
         request_table_columns=request_table_columns,
-    )
+    ).sql(pretty=True)
     return sql
 
 

@@ -3,7 +3,7 @@ Module with logic related to feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Iterable, Optional, Tuple, cast
+from typing import Iterable, Optional, Tuple
 
 from abc import ABC, abstractmethod
 
@@ -131,12 +131,12 @@ class RequestTablePlan(ABC):
         )
         return unique_tile_indices_id
 
-    def construct_request_tile_indices_ctes(self) -> list[tuple[str, str]]:
+    def construct_request_tile_indices_ctes(self) -> list[tuple[str, expressions.Select]]:
         """Construct SQL statements that build the expanded request tables
 
         Returns
         -------
-        list[tuple[str, str]]
+        list[tuple[str, expressions.Select]]
         """
         expanded_request_ctes = []
         for unique_tile_indices_id, table_name in self.expanded_request_table_names.items():
@@ -165,7 +165,7 @@ class RequestTablePlan(ABC):
         blind_spot: int,
         time_modulo_frequency: int,
         serving_names: list[str],
-    ) -> str:
+    ) -> expressions.Select:
         """Construct SQL for expanded SQLs
 
         The query can be different for different data warehouses.
@@ -200,7 +200,7 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
         blind_spot: int,
         time_modulo_frequency: int,
         serving_names: list[str],
-    ) -> str:
+    ) -> expressions.Select:
         # Input request table can have duplicated time points but aggregation should be done only on
         # distinct time points
         quoted_serving_names = escape_column_names(serving_names)
@@ -217,8 +217,7 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
             f"FLOOR((__FB_TS - {time_modulo_frequency}) / {frequency}) AS {InternalName.LAST_TILE_INDEX}",
             f"{InternalName.LAST_TILE_INDEX} - {num_tiles} AS {InternalName.FIRST_TILE_INDEX}",
         ).from_(select_distinct_expr.subquery())
-        expr_str = cast(str, expr.sql(pretty=True))
-        return expr_str
+        return expr
 
 
 class AggregationSpecSet:
@@ -556,7 +555,7 @@ class FeatureExecutionPlan(ABC):
 
     def construct_combined_aggregation_cte(
         self, point_in_time_column: str, request_table_columns: list[str]
-    ) -> tuple[str, str]:
+    ) -> tuple[str, expressions.Select]:
         """Construct SQL code for all aggregations
 
         Parameters
@@ -568,8 +567,8 @@ class FeatureExecutionPlan(ABC):
 
         Returns
         -------
-        tuple[str, str]
-            Tuple of table name and SQL code
+        tuple[str, expressions.Select]
+            Tuple of table name and SQL expression
         """
         table_expr = select().from_(f"{REQUEST_TABLE_NAME} AS REQ")
         qualified_aggregation_names = []
@@ -606,11 +605,12 @@ class FeatureExecutionPlan(ABC):
 
         request_table_columns = [f"REQ.{escape_column_name(c)}" for c in request_table_columns]
         table_expr = table_expr.select(*request_table_columns, *qualified_aggregation_names)
-        combined_sql = table_expr.sql(pretty=True)
 
-        return self.AGGREGATION_TABLE_NAME, combined_sql
+        return self.AGGREGATION_TABLE_NAME, table_expr
 
-    def construct_post_aggregation_sql(self, request_table_columns: list[str]) -> str:
+    def construct_post_aggregation_sql(
+        self, cte_context: expressions.Select, request_table_columns: list[str]
+    ) -> expressions.Select:
         """Construct SQL code for post-aggregation that transforms aggregated results to features
 
         Most of the time aggregated results are the features. However, some features require
@@ -621,6 +621,8 @@ class FeatureExecutionPlan(ABC):
 
         Parameters
         ----------
+        cte_context : expressions.Select
+            A partial Select statement with CTEs defined
         request_table_columns : list[str]
             Columns in the input request table
 
@@ -637,18 +639,17 @@ class FeatureExecutionPlan(ABC):
         request_table_column_names = [
             f"AGG.{escape_column_name(col)}" for col in request_table_columns
         ]
-        table_expr = select(*request_table_column_names, *qualified_feature_names).from_(
-            f"{self.AGGREGATION_TABLE_NAME} AS AGG"
-        )
-        sql = cast(str, table_expr.sql(pretty=True))
-        return sql
+        table_expr = cte_context.select(
+            *request_table_column_names, *qualified_feature_names
+        ).from_(f"{self.AGGREGATION_TABLE_NAME} AS AGG")
+        return table_expr
 
     def construct_combined_sql(
         self,
         point_in_time_column: str,
         request_table_columns: list[str],
-        prior_cte_statements: Optional[list[tuple[str, str]]] = None,
-    ) -> str:
+        prior_cte_statements: Optional[list[tuple[str, expressions.Select]]] = None,
+    ) -> expressions.Select:
         """Construct combined SQL that will generate the features
 
         Parameters
@@ -674,11 +675,12 @@ class FeatureExecutionPlan(ABC):
         cte_statements.append(
             self.construct_combined_aggregation_cte(point_in_time_column, request_table_columns)
         )
-        cte_sql = construct_cte_sql(cte_statements)
+        cte_context = construct_cte_sql(cte_statements)
 
-        post_aggregation_sql = self.construct_post_aggregation_sql(request_table_columns)
-        sql = "\n".join([cte_sql, post_aggregation_sql])
-        return sql
+        post_aggregation_sql = self.construct_post_aggregation_sql(
+            cte_context, request_table_columns
+        )
+        return post_aggregation_sql
 
 
 class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):

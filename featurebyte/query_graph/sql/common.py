@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 import pandas as pd
+from sqlglot import Expression, expressions, select
 
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
@@ -15,7 +16,9 @@ from featurebyte.query_graph.sql.tiling import get_aggregator
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
 
 
-def construct_cte_sql(cte_statements: list[tuple[str, str]]) -> str:
+def construct_cte_sql(
+    cte_statements: list[tuple[str | expressions.Identifier, Expression]]
+) -> expressions.Select:
     """Construct CTEs section of a SQL code
 
     Parameters
@@ -27,12 +30,25 @@ def construct_cte_sql(cte_statements: list[tuple[str, str]]) -> str:
     -------
     str
     """
-    cte_definitions = []
-    for table_name, table_statement in cte_statements:
-        cte_definitions.append(f"{table_name} AS ({table_statement})")
-    cte_sql = ",\n".join(cte_definitions)
-    cte_sql = f"WITH {cte_sql}"
-    return cte_sql
+    cte_expr = select()
+    for table_name, table_expr in cte_statements:
+        cte_expr = cte_expr.with_(table_name, table_expr)
+    return cte_expr
+
+
+def quoted_identifier(column_name: str) -> Expression:
+    """Construct a quoted Identifier
+
+    Parameters
+    ----------
+    column_name : str
+        Column name
+
+    Returns
+    -------
+    Expression
+    """
+    return expressions.Identifier(this=column_name, quoted=True)
 
 
 def escape_column_name(column_name: str) -> str:

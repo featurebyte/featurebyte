@@ -55,7 +55,7 @@ class PreviewService(OpsServiceMixin):
 
     async def preview(self, preview: FeatureStorePreview, limit: int, get_credential: Any) -> str:
         """
-        Preview a Feature
+        Preview a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
 
         Parameters
         ----------
