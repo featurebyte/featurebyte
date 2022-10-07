@@ -19,7 +19,7 @@ from featurebyte.query_graph.sql.ast.base import (
     make_literal_value,
 )
 from featurebyte.query_graph.sql.ast.input import InputNode
-from featurebyte.query_graph.sql.common import escape_column_name
+from featurebyte.query_graph.sql.common import quoted_identifier
 
 
 @dataclass
@@ -59,7 +59,7 @@ class Project(ExpressionNode):
         # This is overridden to bypass self.sql - the column expression would have been evaluated in
         # self.table_node.sql_nested already, and the expression must not be evaluated again.
         # Instead, simply select the column name from the nested query.
-        return select(escape_column_name(self.column_name)).from_(self.table_node.sql_nested())
+        return select(quoted_identifier(self.column_name)).from_(self.table_node.sql_nested())
 
 
 @dataclass

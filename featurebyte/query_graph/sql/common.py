@@ -28,7 +28,7 @@ def construct_cte_sql(
 
     Returns
     -------
-    str
+    expression.Select
     """
     cte_expr = select()
     for table_name, table_expr in cte_statements:
@@ -49,38 +49,6 @@ def quoted_identifier(column_name: str) -> Expression:
     Expression
     """
     return expressions.Identifier(this=column_name, quoted=True)
-
-
-def escape_column_name(column_name: str) -> str:
-    """Enclose provided column name with quotes
-
-    Parameters
-    ----------
-    column_name : str
-        Column name
-
-    Returns
-    -------
-    str
-    """
-    if column_name.startswith('"') and column_name.endswith('"'):
-        return column_name
-    return f'"{column_name}"'
-
-
-def escape_column_names(column_names: list[str]) -> list[str]:
-    """Enclose provided column names with quotes
-
-    Parameters
-    ----------
-    column_names : list[str]
-        Column names
-
-    Returns
-    -------
-    list[str]
-    """
-    return [escape_column_name(x) for x in column_names]
 
 
 def apply_serving_names_mapping(serving_names: list[str], mapping: dict[str, str]) -> list[str]:

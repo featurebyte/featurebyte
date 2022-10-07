@@ -23,8 +23,7 @@ from featurebyte.query_graph.sql.common import (
     FeatureSpec,
     SQLType,
     construct_cte_sql,
-    escape_column_name,
-    escape_column_names,
+    quoted_identifier,
 )
 
 Window = int
@@ -203,7 +202,7 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
     ) -> expressions.Select:
         # Input request table can have duplicated time points but aggregation should be done only on
         # distinct time points
-        quoted_serving_names = escape_column_names(serving_names)
+        quoted_serving_names = [quoted_identifier(x) for x in serving_names]
         select_distinct_expr = (
             expressions.Select(distinct=True)
             .select(SpecialColumnName.POINT_IN_TIME.value, *quoted_serving_names)
@@ -408,8 +407,10 @@ class FeatureExecutionPlan(ABC):
             f"FLOOR(REQ.{last_index_name} / {num_tiles}) - 1 = FLOOR(TILE.INDEX / {num_tiles})",
         )
         join_conditions_lst = [range_join_condition]
-        for serving_name, key in zip(escape_column_names(serving_names), escape_column_names(keys)):
-            join_conditions_lst.append(f"REQ.{serving_name} = TILE.{key}")
+        for serving_name, key in zip(serving_names, keys):
+            join_conditions_lst.append(
+                f"REQ.{quoted_identifier(serving_name).sql()} = TILE.{quoted_identifier(key).sql()}"
+            )
         join_conditions = expressions.and_(*join_conditions_lst)
 
         first_index_name = InternalName.FIRST_TILE_INDEX.value
@@ -419,8 +420,8 @@ class FeatureExecutionPlan(ABC):
         ]
 
         group_by_keys = [f"REQ.{point_in_time_column}"]
-        for serving_name in escape_column_names(serving_names):
-            group_by_keys.append(f"REQ.{serving_name}")
+        for serving_name in serving_names:
+            group_by_keys.append(f"REQ.{quoted_identifier(serving_name).sql()}")
 
         if value_by is None:
             inner_agg_result_names = agg_result_names
@@ -429,7 +430,7 @@ class FeatureExecutionPlan(ABC):
             inner_agg_result_names = [
                 f"inner_{agg_result_name}" for agg_result_name in agg_result_names
             ]
-            inner_group_by_keys = group_by_keys + [f"TILE.{escape_column_name(value_by)}"]
+            inner_group_by_keys = group_by_keys + [f"TILE.{quoted_identifier(value_by).sql()}"]
 
         inner_agg_expr = (
             select(
@@ -441,7 +442,7 @@ class FeatureExecutionPlan(ABC):
                     )
                 ],
             )
-            .from_(f"{escape_column_name(expanded_request_table_name)} AS REQ")
+            .from_(f"{quoted_identifier(expanded_request_table_name).sql()} AS REQ")
             .join(
                 tile_table_id,
                 join_alias="TILE",
@@ -543,7 +544,7 @@ class FeatureExecutionPlan(ABC):
         ]
         for serving_name in serving_names:
             join_conditions_lst += [
-                f"REQ.{escape_column_name(serving_name)} = {agg_table_alias}.{escape_column_name(serving_name)}"
+                f"REQ.{quoted_identifier(serving_name).sql()} = {agg_table_alias}.{quoted_identifier(serving_name).sql()}"
             ]
         updated_table_expr = table_expr.join(
             agg_expr.subquery(),
@@ -603,7 +604,7 @@ class FeatureExecutionPlan(ABC):
             )
             qualified_aggregation_names.extend(agg_result_name_aliases)
 
-        request_table_columns = [f"REQ.{escape_column_name(c)}" for c in request_table_columns]
+        request_table_columns = [f"REQ.{quoted_identifier(c).sql()}" for c in request_table_columns]
         table_expr = table_expr.select(*request_table_columns, *qualified_aggregation_names)
 
         return self.AGGREGATION_TABLE_NAME, table_expr
@@ -632,12 +633,10 @@ class FeatureExecutionPlan(ABC):
         """
         qualified_feature_names = []
         for feature_spec in self.feature_specs.values():
-            feature_alias = (
-                f"{feature_spec.feature_expr} AS {escape_column_name(feature_spec.feature_name)}"
-            )
+            feature_alias = f"{feature_spec.feature_expr} AS {quoted_identifier(feature_spec.feature_name).sql()}"
             qualified_feature_names.append(feature_alias)
         request_table_column_names = [
-            f"AGG.{escape_column_name(col)}" for col in request_table_columns
+            f"AGG.{quoted_identifier(col).sql()}" for col in request_table_columns
         ]
         table_expr = cte_context.select(
             *request_table_column_names, *qualified_feature_names
@@ -701,9 +700,9 @@ class SnowflakeFeatureExecutionPlan(FeatureExecutionPlan):
 
         outer_group_by_keys = [f"{inner_alias}.{point_in_time_column}"]
         for serving_name in serving_names:
-            outer_group_by_keys.append(f"{inner_alias}.{escape_column_name(serving_name)}")
+            outer_group_by_keys.append(f"{inner_alias}.{quoted_identifier(serving_name).sql()}")
 
-        category_col = f"{inner_alias}.{escape_column_name(value_by)}"
+        category_col = f"{inner_alias}.{quoted_identifier(value_by).sql()}"
         # Cast type to string first so that integer can be represented nicely ('{"0": 7}' vs
         # '{"0.00000": 7}')
         category_col_casted = f"CAST({category_col} AS VARCHAR)"

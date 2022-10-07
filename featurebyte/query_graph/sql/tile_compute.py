@@ -9,7 +9,7 @@ from sqlglot import expressions, parse_one, select
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.common import escape_column_name
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 
 
@@ -100,9 +100,11 @@ class OnDemandTileComputePlan:
 
             if tile_table_id not in tile_sqls:
                 # New tile table - get the tile index column, entity columns and tile value columns
-                keys = [f"{agg_id}.{escape_column_name(key)}" for key in tile_info.entity_columns]
+                keys = [
+                    f"{agg_id}.{quoted_identifier(key).sql()}" for key in tile_info.entity_columns
+                ]
                 if tile_info.value_by_column is not None:
-                    keys.append(f"{agg_id}.{escape_column_name(tile_info.value_by_column)}")
+                    keys.append(f"{agg_id}.{quoted_identifier(tile_info.value_by_column).sql()}")
                 tile_sql = select(f"{agg_id}.INDEX", *keys, *tile_info.tile_value_columns).from_(
                     tile_sql_expr.subquery(alias=agg_id)
                 )
@@ -114,7 +116,7 @@ class OnDemandTileComputePlan:
                 prev_alias = prev_aliases[tile_table_id]
                 join_conditions = [f"{prev_alias}.INDEX = {agg_id}.INDEX"]
                 for key in tile_info.entity_columns:
-                    key = escape_column_name(key)
+                    key = quoted_identifier(key).sql()
                     join_conditions.append(f"{prev_alias}.{key} = {agg_id}.{key}")
                 # Tile sqls with the same tile_table_id should generate output with identical set of
                 # tile indices and entity columns (they are derived from the same event data using

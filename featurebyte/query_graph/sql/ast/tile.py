@@ -12,12 +12,7 @@ from sqlglot import Expression, expressions, select
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.ast.base import SQLNode, TableNode
-from featurebyte.query_graph.sql.common import (
-    AggregationSpec,
-    SQLType,
-    escape_column_name,
-    escape_column_names,
-)
+from featurebyte.query_graph.sql.common import AggregationSpec, SQLType, quoted_identifier
 from featurebyte.query_graph.sql.tiling import TileSpec, get_aggregator
 
 
@@ -45,7 +40,7 @@ class BuildTileNode(TableNode):
             start_date_expr = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
 
         start_date_epoch = f"DATE_PART(EPOCH_SECOND, CAST({start_date_expr} AS TIMESTAMP))"
-        timestamp_epoch = f"DATE_PART(EPOCH_SECOND, {escape_column_name(self.timestamp)})"
+        timestamp_epoch = f"DATE_PART(EPOCH_SECOND, {quoted_identifier(self.timestamp).sql()})"
 
         input_tiled = select(
             "*",
@@ -53,9 +48,9 @@ class BuildTileNode(TableNode):
         ).from_(self.input_node.sql_nested())
 
         tile_start_date = f"TO_TIMESTAMP({start_date_epoch} + tile_index * {self.frequency})"
-        keys = escape_column_names(self.keys)
+        keys = [quoted_identifier(k) for k in self.keys]
         if self.value_by is not None:
-            keys.append(escape_column_name(self.value_by))
+            keys.append(quoted_identifier(self.value_by))
 
         if self.is_on_demand:
             groupby_keys = keys + [InternalName.ENTITY_TABLE_START_DATE.value]
