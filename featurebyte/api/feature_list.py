@@ -12,12 +12,19 @@ from http import HTTPStatus
 
 import pandas as pd
 from alive_progress import alive_bar
+from bson.objectid import ObjectId
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiGetObject, ApiObject, ConflictResolution
+from featurebyte.api.api_object import (
+    PAGINATED_CALL_PAGE_SIZE,
+    ApiGetObject,
+    ApiObject,
+    ConflictResolution,
+)
 from featurebyte.api.feature import Feature
-from featurebyte.common.env_util import is_notebook
+from featurebyte.api.feature_store import FeatureStore
+from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
 from featurebyte.core.mixin import ParentMixin
@@ -28,13 +35,14 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.logger import logger
-from featurebyte.models.base import FeatureByteBaseModel, VersionIdentifier
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
     FeatureListNewVersionMode,
     FeatureListStatus,
 )
+from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
 from featurebyte.query_graph.sql.feature_historical import (
     get_historical_features,
@@ -55,7 +63,6 @@ from featurebyte.utils.credential import get_credential
 class BaseFeatureGroup(FeatureByteBaseModel):
     """
     BaseFeatureGroup class
-
     items : list[Union[Feature, BaseFeatureGroup]]
         List of feature like objects to be used to create the FeatureList
     feature_objects: OrderedDict[str, Feature]
@@ -273,6 +280,8 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         Name of the FeatureList
     """
 
+    # override FeatureListModel attributes
+    feature_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
     version: VersionIdentifier = Field(allow_mutation=False, default=None)
 
     # class variables
@@ -286,17 +295,17 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         return {"items": []}
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = FeatureListCreate(**self.json_dict(exclude_none=True))
+        feature_ids = [feature.id for feature in self.feature_objects.values()]
+        data = FeatureListCreate(
+            **{**self.json_dict(exclude_none=True), "feature_ids": feature_ids}
+        )
         return data.json_dict()
 
     def _pre_save_operations(self, conflict_resolution: ConflictResolution = "raise") -> None:
-        if is_notebook():
-            other_kwargs = {"force_tty": True}
-        else:
-            other_kwargs = {"dual_line": True}
-
         with alive_bar(
-            total=len(self.feature_objects), title="Saving Feature(s)", **other_kwargs
+            total=len(self.feature_objects),
+            title="Saving Feature(s)",
+            **get_alive_bar_additional_params(),
         ) as progress_bar:
             for feat_name in self.feature_objects:
                 text = f'Feature "{feat_name}" has been saved before.'
@@ -323,15 +332,40 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     @classmethod
     def _initialize_feature_objects_and_items(cls, values: dict[str, Any]) -> dict[str, Any]:
         if "feature_ids" in values:
-            if "feature_objects" not in values or "items" not in values:
-                items = []
-                feature_objects = collections.OrderedDict()
-                for feature_id in values["feature_ids"]:
-                    feature = Feature.get_by_id(feature_id)
+            # FeatureList object constructed in SDK will not have feature_ids attribute,
+            # only the record retrieved from the persistent contains this attribute.
+            # Use this check to decide whether to make API call to retrieve features.
+            items = []
+            feature_objects = collections.OrderedDict()
+            id_value = values["_id"]
+            feature_store_map: Dict[ObjectId, FeatureStore] = {}
+            with alive_bar(
+                total=len(values["feature_ids"]),
+                title="Loading Feature(s)",
+                **get_alive_bar_additional_params(),
+            ) as progress_bar:
+                for feature_dict in cls._iterate_api_object_using_paginated_routes(
+                    route="/feature",
+                    params={"feature_list_id": id_value, "page_size": PAGINATED_CALL_PAGE_SIZE},
+                ):
+                    # store the feature store retrieve result to reuse it if same feature store are called again
+                    feature_store_id = TabularSource(
+                        **feature_dict["tabular_source"]
+                    ).feature_store_id
+                    feature_store_map[feature_store_id] = feature_store_map.get(
+                        feature_store_id, FeatureStore.get_by_id(feature_store_id)
+                    )
+                    feature_dict["feature_store"] = feature_store_map[feature_store_id]
+
+                    # deserialize feature record into feature object
+                    feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
                     items.append(feature)
                     feature_objects[feature.name] = feature
-                values["items"] = items
-                values["feature_objects"] = feature_objects
+                    progress_bar.text = feature.name
+                    progress_bar()  # pylint: disable=not-callable
+
+            values["items"] = items
+            values["feature_objects"] = feature_objects
         return values
 
     @root_validator()
@@ -486,5 +520,4 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         )
         if response.status_code != HTTPStatus.CREATED:
             raise RecordCreationException(response=response)
-        # TODO: self._get_init_params_from_object() does not get updated items (will fix this later)
-        return FeatureList(**response.json(), **self._get_init_params_from_object(), saved=True)
+        return FeatureList(**response.json(), **self._get_init_params(), saved=True)

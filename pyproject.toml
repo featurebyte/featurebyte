@@ -95,6 +95,7 @@ fastapi = "^0.82.0"
 featurebyte-freeware = { version = "^0.1.0", allow-prereleases = true, source = "featurebyte_np" }
 importlib_metadata = {version = "^4.5.0", python = "^3.8"}
 jinja2 = "^3.1.2"
+lazy-object-proxy = "^1.7.1"
 loguru = "^0.6.0"
 motor = "^3.0.0"
 pandas = "^1.4.2"

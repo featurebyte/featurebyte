@@ -415,16 +415,20 @@ def test_deserialization(production_ready_feature, draft_feature, quarantine_fea
     feature_list_dict["status"] = expected_status
     feature_list_dict["version"] = expected_version
 
-    def get_by_id(feature_id):
-        return {
-            production_ready_feature.id: production_ready_feature,
-            draft_feature.id: draft_feature,
-            quarantine_feature.id: quarantine_feature,
-        }[feature_id]
+    with patch(
+        "featurebyte.api.feature_list.FeatureList._iterate_api_object_using_paginated_routes"
+    ) as mock_iterate:
+        with patch("featurebyte.api.feature_store.FeatureStore._get_by_id") as mock_get_by_id:
+            mock_get_by_id.return_value = production_ready_feature.feature_store
+            mock_iterate.return_value = [
+                production_ready_feature.dict(by_alias=True),
+                draft_feature.dict(by_alias=True),
+                quarantine_feature.dict(by_alias=True),
+            ]
+            loaded_feature_list = FeatureList(**feature_list_dict, items=[])
 
-    with patch("featurebyte.api.feature_list.Feature.get_by_id") as mock_get_by_id:
-        mock_get_by_id.side_effect = get_by_id
-        loaded_feature_list = FeatureList(**feature_list_dict, items=[])
+        # check that it is only called once
+        assert mock_get_by_id.call_count == 1
 
     # check consistency between loaded feature list & original feature list
     assert loaded_feature_list.version == expected_version
@@ -488,7 +492,8 @@ def test_get_feature_list(saved_feature_list):
 
     # check unexpected exception in get
     with pytest.raises(RecordRetrievalException) as exc:
-        FeatureList.get(name="random_name")
+        lazy_feature_list = FeatureList.get(name="random_name")
+        _ = lazy_feature_list.name
     expected_msg = (
         'FeatureList (name: "random_name") not found. Please save the FeatureList object first.'
     )
@@ -527,27 +532,6 @@ def test_get_feature_list(saved_feature_list):
     assert "Failed to list object audit log." in str(exc.value)
 
 
-@patch("featurebyte.api.feature_list.alive_bar")
-@patch("featurebyte.api.feature_list.is_notebook")
-def test_pre_save_operations(mock_is_notebook, mock_alive_bar, saved_feature_list):
-    """Test alive bar arguments in _pre_save_operations method"""
-    mock_is_notebook.return_value = True
-    saved_feature_list._pre_save_operations()
-    assert mock_alive_bar.call_args.kwargs == {
-        "total": 1,
-        "title": "Saving Feature(s)",
-        "force_tty": True,
-    }
-
-    mock_is_notebook.return_value = False
-    saved_feature_list._pre_save_operations()
-    assert mock_alive_bar.call_args.kwargs == {
-        "total": 1,
-        "title": "Saving Feature(s)",
-        "dual_line": True,
-    }
-
-
 def test_list(saved_feature_list):
     """Test listing feature list"""
     assert FeatureList.list() == [saved_feature_list.name] == ["my_feature_list"]
@@ -572,7 +556,7 @@ def test_feature_list__feature_list_saving_in_bad_state(
     deprecated_feature,
     mock_insert_feature_registry,
 ):
-    """Test feature list production ready fraction"""
+    """Test feature list saving in bad state due to some feature has been saved (when the feature id is the same)"""
     snowflake_feature_store.save()
     snowflake_event_data.save()
 
@@ -595,6 +579,7 @@ def test_feature_list__feature_list_saving_in_bad_state(
     # the feature inside the feature list saved status is still False
     assert feature_list["production_ready_feature"].saved is False
 
+    # save the feature list will cause error due to duplicated exception
     with pytest.raises(DuplicatedRecordException) as exc:
         feature_list.save()
     id_val = production_ready_feature.id
@@ -605,6 +590,53 @@ def test_feature_list__feature_list_saving_in_bad_state(
     )
     assert expected_msg in str(exc.value)
 
-    # save the feature list will cause error due to duplicated exception
+    # resolve the error by retrieving the feature with the same name
     feature_list.save(conflict_resolution="retrieve")
     assert feature_list.saved is True
+
+
+def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different(
+    snowflake_feature_store,
+    snowflake_event_data,
+    feature_group,
+    production_ready_feature,
+    draft_feature,
+    quarantine_feature,
+    deprecated_feature,
+    mock_insert_feature_registry,
+):
+    """Test feature list saving in bad state due to some feature has been saved (when the feature id is different)"""
+    snowflake_feature_store.save()
+    snowflake_event_data.save()
+
+    # save the feature outside the feature list
+    production_ready_feature.save()
+
+    # create a feature list (simulate the case when the feature with the same name is created and ID are different)
+    feature = feature_group["sum_30m"] + 123
+    feature.name = "production_ready_feature"
+    feature_list = FeatureList(
+        [
+            feature,
+            draft_feature,
+            quarantine_feature,
+            deprecated_feature,
+        ],
+        name="feature_list_name",
+    )
+
+    with pytest.raises(DuplicatedRecordException) as exc:
+        feature_list.save()
+    expected_msg = (
+        'FeatureNamespace (name: "production_ready_feature") already exists. '
+        'Please rename object (name: "production_ready_feature") to something else. '
+        'Or try `feature_list.save(conflict_resolution = "retrieve")` to resolve conflict.'
+    )
+    assert expected_msg in str(exc.value)
+    assert feature_list[feature.name].id == feature.id
+
+    # resolve the error by retrieving the feature with the same name
+    # (check that ID value are updated after saved)
+    feature_list.save(conflict_resolution="retrieve")
+    assert feature_list.saved is True
+    assert feature_list[feature.name].id == production_ready_feature.id

@@ -402,7 +402,8 @@ def test_get_feature(saved_feature):
     )
 
     with pytest.raises(RecordRetrievalException) as exc:
-        Feature.get(name="random_name")
+        lazy_feature = Feature.get(name="random_name")
+        _ = lazy_feature.name
     expected_msg = 'Feature (name: "random_name") not found. Please save the Feature object first.'
     assert expected_msg in str(exc.value)
 

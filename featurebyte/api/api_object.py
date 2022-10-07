@@ -3,11 +3,13 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar, Dict, Iterator, List, Literal, Optional, Type, TypeVar
+from typing import Any, ClassVar, Dict, Iterator, List, Literal, Optional, Type, TypeVar, cast
 
 import time
+from functools import partial
 from http import HTTPStatus
 
+import lazy_object_proxy
 from bson.objectid import ObjectId
 from pydantic import Field
 from typeguard import typechecked
@@ -26,6 +28,7 @@ from featurebyte.schema.task import TaskStatus
 
 ApiObjectT = TypeVar("ApiObjectT", bound="ApiGetObject")
 ConflictResolution = Literal["raise", "retrieve"]
+PAGINATED_CALL_PAGE_SIZE = 100
 
 
 class ApiGetObject(FeatureByteBaseDocumentModel):
@@ -51,7 +54,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         return {}
 
     @classmethod
-    def _get(cls: Type[ApiObjectT], name: str) -> dict[str, Any]:
+    def _get_object_dict_by_name(cls: Type[ApiObjectT], name: str) -> dict[str, Any]:
         client = Configurations().get_client()
         response = client.get(url=cls._route, params={"name": name})
         if response.status_code == HTTPStatus.OK:
@@ -66,9 +69,13 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         raise RecordRetrievalException(response, "Failed to retrieve the specified object.")
 
     @classmethod
+    def _get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
+        return cls(**cls._get_object_dict_by_name(name=name), **cls._get_init_params(), saved=True)
+
+    @classmethod
     def get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
         """
-        Retrieve object dictionary from the persistent given object name
+        Retrieve lazy object from the persistent given object name
 
         Parameters
         ----------
@@ -80,14 +87,43 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         ApiObjectT
             ApiObject object of the given event data name
         """
-        return cls(**cls._get(name=name), **cls._get_init_params(), saved=True)
+        return cast(ApiObjectT, lazy_object_proxy.Proxy(partial(cls._get, name)))
+
+    @classmethod
+    def from_persistent_object_dict(
+        cls: Type[ApiObjectT], object_dict: dict[str, Any]
+    ) -> ApiObjectT:
+        """
+        Construct the object from dictionary stored at the persistent
+
+        Parameters
+        ----------
+        object_dict: dict[str, Any]
+            Record in dictionary format
+
+        Returns
+        -------
+        ApiObjectT
+            Deserialized object
+        """
+        return cls(**object_dict, **cls._get_init_params(), saved=True)
+
+    @classmethod
+    def _get_by_id(
+        cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+    ) -> ApiObjectT:
+        client = Configurations().get_client()
+        response = client.get(url=f"{cls._route}/{id}")
+        if response.status_code == HTTPStatus.OK:
+            return cls.from_persistent_object_dict(object_dict=response.json())
+        raise RecordRetrievalException(response, "Failed to retrieve specified object.")
 
     @classmethod
     def get_by_id(
         cls: Type[ApiObjectT], id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
     ) -> ApiObjectT:
         """
-        Get the API object by specifying the object ID
+        Get the lazy object from the persistent given the object ID
 
         Parameters
         ----------
@@ -98,20 +134,11 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         -------
         ApiObjectT
             ApiGetObject object of the given object ID
-
-        Raises
-        ------
-        RecordRetrievalException
-            When the object not found
         """
-        client = Configurations().get_client()
-        response = client.get(url=f"{cls._route}/{id}")
-        if response.status_code == HTTPStatus.OK:
-            return cls(**response.json(), **cls._get_init_params(), saved=True)
-        raise RecordRetrievalException(response, "Failed to retrieve specified object.")
+        return cast(ApiObjectT, lazy_object_proxy.Proxy(partial(cls._get_by_id, id)))
 
     @staticmethod
-    def _default_to_request_func(response_dict: dict[str, Any], page: int) -> bool:
+    def _to_request_func(response_dict: dict[str, Any], page: int) -> bool:
         """
         Default helper function to check whether to continue calling list route
 
@@ -129,14 +156,11 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         return bool(response_dict["total"] > (page * response_dict["page_size"]))
 
     @classmethod
-    def _iterate_paginated_routes(
-        cls,
-        route: str,
-        params: dict[str, Any] | None = None,
-        to_request_func: Callable[[dict[str, Any], int], bool] | None = None,
+    def _iterate_api_object_using_paginated_routes(
+        cls, route: str, params: dict[str, Any] | None = None
     ) -> Iterator[dict[str, Any]]:
         """
-        List route response generator
+        Api object generator by iterating listing route
 
         Parameters
         ----------
@@ -144,13 +168,11 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             List route
         params: dict[str, Any] | None
             Route parameters
-        to_request_func: Callable[[dict[str, Any], int], bool] = None,
-            Function used to check whether to continue calling the route
 
         Yields
         -------
         Iterator[dict[str, Any]]
-            List route response
+            Iterator of api object records
 
         Raises
         ------
@@ -160,17 +182,16 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         client = Configurations().get_client()
         to_request, page = True, 1
         params = params or {}
-        if to_request_func is None:
-            to_request_func = cls._default_to_request_func
         while to_request:
             params = params.copy()
             params["page"] = page
             response = client.get(url=route, params=params)
             if response.status_code == HTTPStatus.OK:
                 response_dict = response.json()
-                to_request = to_request_func(response_dict, page)
+                to_request = cls._to_request_func(response_dict, page)
                 page += 1
-                yield response_dict
+                for obj_dict in response_dict["data"]:
+                    yield obj_dict
             else:
                 raise RecordRetrievalException(response, "Failed to list object names.")
 
@@ -185,9 +206,10 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             List of object name
         """
         output = []
-        for response_dict in cls._iterate_paginated_routes(route=cls._route):
-            for item in response_dict["data"]:
-                output.append(item["name"])
+        for item_dict in cls._iterate_api_object_using_paginated_routes(
+            route=cls._route, params={"page_size": PAGINATED_CALL_PAGE_SIZE}
+        ):
+            output.append(item_dict["name"])
         return output
 
     def audit(self) -> dict[str, Any]:
@@ -387,7 +409,7 @@ class ApiObject(ApiGetObject):
 
         if retrieve_object:
             assert self.name is not None
-            object_dict = self._get(name=self.name)
+            object_dict = self._get_object_dict_by_name(name=self.name)
         else:
             object_dict = response.json()
         type(self).__init__(self, **object_dict, **self._get_init_params_from_object(), saved=True)

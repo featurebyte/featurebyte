@@ -13,6 +13,7 @@ from pydantic import Field, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiGetObject, ApiObject
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
@@ -72,14 +73,8 @@ class Feature(
         if "feature_store" not in values:
             tabular_source = values.get("tabular_source")
             if isinstance(tabular_source, dict):
-                tabular_source_obj = TabularSource(**tabular_source)
-                client = Configurations().get_client()
-                feature_store_id = tabular_source_obj.feature_store_id
-                feature_store_response = client.get(url=f"/feature_store/{feature_store_id}")
-                if feature_store_response.status_code == HTTPStatus.OK:
-                    values["feature_store"] = ExtendedFeatureStoreModel(
-                        **feature_store_response.json()
-                    )
+                feature_store_id = TabularSource(**tabular_source).feature_store_id
+                values["feature_store"] = FeatureStore.get_by_id(id=feature_store_id)
         return values
 
     @classmethod
