@@ -1,6 +1,7 @@
 """
 Unit test for DatabricksSession
 """
+import textwrap
 from unittest import mock
 
 import pandas as pd
@@ -149,6 +150,40 @@ async def test_databricks_session(databricks_session_dict):
     df_result = await session.execute_async_query("SELECT * FROM table")
     df_expected = pd.DataFrame({"a": [1, 100], "b": [2, 200], "c": [3, 300]})
     pd.testing.assert_frame_equal(df_result, df_expected)
+
+
+@pytest.mark.asyncio
+async def test_databricks_register_temp_table(databricks_session_dict, databricks_connection):
+    """
+    Test Databricks session register_temp_table
+    """
+    with mock.patch(
+        "featurebyte.session.databricks.DatabricksSession.execute_query"
+    ) as mock_execute_query:
+        session = DatabricksSession(**databricks_session_dict)
+        df = pd.DataFrame(
+            {
+                "point_in_time": pd.to_datetime(["2022-01-01", "2022-01-02", "2022-01-03"]),
+                "cust_id": [1, 2, 3],
+            },
+        )
+        await session.register_temp_table("my_view", df)
+        expected_query = textwrap.dedent(
+            """
+            CREATE OR REPLACE TEMPORARY VIEW my_view AS SELECT
+              CAST('2022-01-01 00:00:00' AS TIMESTAMP) AS `point_in_time`,
+              1 AS `cust_id`
+            UNION ALL
+            SELECT
+              CAST('2022-01-02 00:00:00' AS TIMESTAMP) AS `point_in_time`,
+              2 AS `cust_id`
+            UNION ALL
+            SELECT
+              CAST('2022-01-03 00:00:00' AS TIMESTAMP) AS `point_in_time`,
+              3 AS `cust_id`
+            """
+        ).strip()
+        assert mock_execute_query.call_args == mock.call(expected_query)
 
 
 def test_databricks_sql_connector_not_available(databricks_session_dict):

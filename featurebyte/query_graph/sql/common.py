@@ -7,30 +7,12 @@ from dataclasses import dataclass
 from enum import Enum
 
 import pandas as pd
-import sqlglot
 
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.tiling import get_aggregator
 
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
-
-
-def prettify_sql(sql_str: str) -> str:
-    """Reformat sql code using sqlglot
-
-    Parameters
-    ----------
-    sql_str : str
-        SQL code to be prettified
-
-    Returns
-    -------
-    str
-    """
-    result = sqlglot.parse_one(sql_str).sql(pretty=True)
-    assert isinstance(result, str)
-    return result
 
 
 def construct_cte_sql(cte_statements: list[tuple[str, str]]) -> str:
