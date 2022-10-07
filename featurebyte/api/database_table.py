@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import asyncio
 from http import HTTPStatus
 
 from pydantic import Field, root_validator
@@ -14,6 +13,7 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
 from featurebyte.core.generic import ExtendedFeatureStoreModel
+from featurebyte.core.utils import run_async
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException, TableSchemaHasBeenChangedError
 from featurebyte.models.feature_store import ColumnInfo, DatabaseTableModel, TableDetails
@@ -91,13 +91,12 @@ class DatabaseTable(DatabaseTableModel, BaseFrame):
             table_details = TableDetails(**table_details)
 
         if feature_store.details.is_local_source:
-            session = asyncio.run(feature_store.get_session())
-            recent_schema = asyncio.run(
-                session.list_table_schema(
-                    database_name=table_details.database_name,
-                    schema_name=table_details.schema_name,
-                    table_name=table_details.table_name,
-                )
+            session = run_async(feature_store.get_session)
+            recent_schema = run_async(
+                session.list_table_schema,
+                database_name=table_details.database_name,
+                schema_name=table_details.schema_name,
+                table_name=table_details.table_name,
             )
         else:
             client = Configurations().get_client()

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Callable, Tuple, TypeVar, cast
 
-import asyncio
 import json
 from abc import abstractmethod
 from http import HTTPStatus
@@ -15,6 +14,7 @@ from pydantic import Field, StrictStr
 from typeguard import typechecked
 
 from featurebyte.config import Configurations, Credentials
+from featurebyte.core.utils import run_async
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel, TabularSource
@@ -134,8 +134,8 @@ class QueryObject(FeatureByteBaseModel):
             Preview request failed
         """
         if self.feature_store.details.is_local_source:
-            session = asyncio.run(self.feature_store.get_session())
-            return asyncio.run(session.execute_query(self.preview_sql(limit=limit)))
+            session = run_async(self.feature_store.get_session)
+            return run_async(session.execute_query, self.preview_sql(limit=limit))
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = FeatureStorePreview(
@@ -168,7 +168,9 @@ class QueryObject(FeatureByteBaseModel):
             config = Configurations()
             credentials = config.credentials
 
-        session = asyncio.run(self.feature_store.get_session(credentials=credentials))
+        session = cast(
+            BaseSession, run_async(self.feature_store.get_session, credentials=credentials)
+        )
         return session
 
     def copy(
