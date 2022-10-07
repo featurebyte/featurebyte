@@ -45,11 +45,15 @@ class InputNode(TableNode):
         select_expr = select_expr.select(*select_args)
 
         # FROM clause
-        if self.feature_store["type"] == SourceType.SNOWFLAKE:
+        if self.feature_store["type"] in {SourceType.SNOWFLAKE, SourceType.DATABRICKS}:
+            # Data warehouses that support three-part fully qualified naming schemes go here
             database = self.dbtable["database_name"]
             schema = self.dbtable["schema_name"]
             table = self.dbtable["table_name"]
-            dbtable = f'"{database}"."{schema}"."{table}"'
+            if self.feature_store["type"] == SourceType.SNOWFLAKE:
+                dbtable = f'"{database}"."{schema}"."{table}"'
+            else:
+                dbtable = f"`{database}`.`{schema}`.`{table}`"
         else:
             dbtable = escape_column_name(self.dbtable["table_name"])
         select_expr = select_expr.from_(dbtable)

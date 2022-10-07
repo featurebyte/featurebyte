@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 import sqlglot
 
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -147,8 +148,9 @@ class GraphInterpreter:
     query_graph : QueryGraph
     """
 
-    def __init__(self, query_graph: QueryGraph):
+    def __init__(self, query_graph: QueryGraph, source_type: SourceType):
         self.query_graph = query_graph
+        self.source_type = source_type
 
     def construct_tile_gen_sql(self, starting_node: Node, is_on_demand: bool) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
@@ -192,6 +194,11 @@ class GraphInterpreter:
             sql_tree = sql_node.sql_standalone
 
         assert isinstance(sql_tree, sqlglot.expressions.Select)
-        sql_code: str = sql_tree.limit(num_rows).sql(pretty=True)
+        sql_code: str = sql_tree.limit(num_rows).sql(dialect=self._get_sql_dialect(), pretty=True)
 
         return sql_code
+
+    def _get_sql_dialect(self) -> str | None:
+        if self.source_type == SourceType.DATABRICKS:
+            return "spark"
+        return None

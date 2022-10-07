@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from sqlglot import expressions, select
 
 from featurebyte.api.feature import Feature
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec
@@ -227,7 +227,7 @@ class SnowflakeTileCache(TileCache):
         """
         out = {}
         for feature in features:
-            interpreter = GraphInterpreter(feature.graph)
+            interpreter = GraphInterpreter(feature.graph, source_type=SourceType.SNOWFLAKE)
             infos = interpreter.construct_tile_gen_sql(feature.node, is_on_demand=True)
             for info in infos:
                 if info.aggregation_id not in out:

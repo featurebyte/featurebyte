@@ -1,6 +1,7 @@
 """
 Tests for feature preview SQL generation
 """
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from tests.util.helper import assert_equal_with_expected_fixture
 
@@ -17,6 +18,7 @@ def test_get_feature_preview_sql(query_graph_with_groupby, update_fixtures):
         graph=graph,
         nodes=[node],
         point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.SNOWFLAKE,
     )
 
     assert_equal_with_expected_fixture(
@@ -38,6 +40,7 @@ def test_get_feature_preview_sql__category_groupby(
         graph=graph,
         nodes=[node],
         point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
         preview_sql,
@@ -59,6 +62,7 @@ def test_get_feature_preview_sql__multiple_nodes(
         graph=graph,
         nodes=groupby_nodes,
         point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
         preview_sql,
@@ -78,6 +82,7 @@ def test_get_feature_preview_sql__complex_feature(complex_feature_query_graph, u
         graph=graph,
         nodes=[node],
         point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
         preview_sql,

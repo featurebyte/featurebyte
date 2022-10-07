@@ -154,7 +154,7 @@ class RequestTablePlan(ABC):
                 time_modulo_frequency=time_modulo_frequency,
                 serving_names=list(serving_names),
             )
-            expanded_request_ctes.append((escape_column_name(table_name), expanded_table_sql))
+            expanded_request_ctes.append((quoted_identifier(table_name).sql(), expanded_table_sql))
         return expanded_request_ctes
 
     @staticmethod

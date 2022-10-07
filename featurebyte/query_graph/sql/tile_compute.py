@@ -6,7 +6,7 @@ from __future__ import annotations
 import pandas as pd
 from sqlglot import expressions, parse_one, select
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import escape_column_name
@@ -28,11 +28,12 @@ class OnDemandTileComputePlan:
         Point in time value specified when calling preview
     """
 
-    def __init__(self, point_in_time: str):
+    def __init__(self, point_in_time: str, source_type: SourceType):
         self.point_in_time = point_in_time
         self.processed_agg_ids: set[str] = set()
         self.max_window_size_by_agg_id: dict[str, int] = {}
         self.tile_infos: list[TileGenSql] = []
+        self.source_type = source_type
 
     def process_node(self, graph: QueryGraph, node: Node) -> None:
         """Update state given a query graph node
@@ -44,7 +45,7 @@ class OnDemandTileComputePlan:
         node : Node
             Query graph node
         """
-        tile_gen_info_lst = get_tile_gen_info(graph, node)
+        tile_gen_info_lst = get_tile_gen_info(graph, node, self.source_type)
 
         for tile_info in tile_gen_info_lst:
 
@@ -178,7 +179,7 @@ class OnDemandTileComputePlan:
         return cte_statements
 
 
-def get_tile_gen_info(graph: QueryGraph, node: Node) -> list[TileGenSql]:
+def get_tile_gen_info(graph: QueryGraph, node: Node, source_type: SourceType) -> list[TileGenSql]:
     """Construct TileGenSql that contains recipe of building tiles
 
     Parameters
@@ -187,12 +188,14 @@ def get_tile_gen_info(graph: QueryGraph, node: Node) -> list[TileGenSql]:
         Query graph
     node : Node
         Query graph node
+    source_type : SourceType
+        Source type information
 
     Returns
     -------
     list[TileGenSql]
     """
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, source_type=source_type)
     tile_gen_info = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
     return tile_gen_info
 

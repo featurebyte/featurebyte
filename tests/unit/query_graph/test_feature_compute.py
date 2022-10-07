@@ -100,7 +100,7 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
         FROM REQUEST_TABLE
     )
     """
-    assert_sql_equal(cte[1], expected_sql)
+    assert_sql_equal(cte[1].sql(pretty=True), expected_sql)
 
 
 def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
@@ -138,7 +138,7 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
         FROM REQUEST_TABLE
     )
     """
-    assert_sql_equal(sql, expected_sql)
+    assert_sql_equal(sql.sql(pretty=True), expected_sql)
 
     # check expanded table for 1d
     name, sql = ctes[1]
@@ -157,7 +157,7 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
         FROM REQUEST_TABLE
     )
     """
-    assert_sql_equal(sql, expected_sql)
+    assert_sql_equal(sql.sql(pretty=True), expected_sql)
 
 
 def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggregation_id):
