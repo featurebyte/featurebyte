@@ -46,14 +46,12 @@ class InputNode(TableNode):
 
         # FROM clause
         if self.feature_store["type"] in {SourceType.SNOWFLAKE, SourceType.DATABRICKS}:
-            # Data warehouses that support three-part fully qualified naming schemes go here
             database = self.dbtable["database_name"]
             schema = self.dbtable["schema_name"]
             table = self.dbtable["table_name"]
-            if self.feature_store["type"] == SourceType.SNOWFLAKE:
-                dbtable = f'"{database}"."{schema}"."{table}"'
-            else:
-                dbtable = f"`{database}`.`{schema}`.`{table}`"
+            # Note that the quotes here are not final and will be converted to the right kinds (e.g.
+            # backticks for databricks) when the expression formatted as string
+            dbtable = f'"{database}"."{schema}"."{table}"'
         else:
             dbtable = quoted_identifier(self.dbtable["table_name"])
         select_expr = select_expr.from_(dbtable)
