@@ -427,6 +427,9 @@ def test_deserialization(production_ready_feature, draft_feature, quarantine_fea
             ]
             loaded_feature_list = FeatureList(**feature_list_dict, items=[])
 
+        # check that it is only called once
+        assert mock_get_by_id.call_count == 1
+
     # check consistency between loaded feature list & original feature list
     assert loaded_feature_list.version == expected_version
     assert loaded_feature_list.feature_ids == feature_list.feature_ids

@@ -12,11 +12,13 @@ from http import HTTPStatus
 
 import pandas as pd
 from alive_progress import alive_bar
+from bson.objectid import ObjectId
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiGetObject, ApiObject, ConflictResolution
 from featurebyte.api.feature import Feature
+from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations, Credentials
@@ -35,6 +37,7 @@ from featurebyte.models.feature_list import (
     FeatureListNewVersionMode,
     FeatureListStatus,
 )
+from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
 from featurebyte.query_graph.sql.feature_historical import (
     get_historical_features,
@@ -330,6 +333,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
             items = []
             feature_objects = collections.OrderedDict()
             id_value = values["_id"]
+            feature_store_map: Dict[ObjectId, FeatureStore] = {}
             with alive_bar(
                 total=len(values["feature_ids"]),
                 title="Loading Feature(s)",
@@ -338,6 +342,16 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
                 for feature_dict in cls._iterate_api_object_using_paginated_routes(
                     route="/feature", params={"feature_list_id": id_value, "page_size": 100}
                 ):
+                    # store the feature store retrieve result to reuse it if same feature store are called again
+                    feature_store_id = TabularSource(
+                        **feature_dict["tabular_source"]
+                    ).feature_store_id
+                    feature_store_map[feature_store_id] = feature_store_map.get(
+                        feature_store_id, FeatureStore.get_by_id(feature_store_id)
+                    )
+                    feature_dict["feature_store"] = feature_store_map[feature_store_id]
+
+                    # deserialize feature record into feature object
                     feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
                     items.append(feature)
                     feature_objects[feature.name] = feature
