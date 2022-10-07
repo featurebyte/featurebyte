@@ -3,7 +3,7 @@ PreviewService class
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from decimal import Decimal
 
@@ -11,6 +11,7 @@ import pandas as pd
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.generic import GroupbyNode, InputNode
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
@@ -112,13 +113,15 @@ class PreviewService(OpsServiceMixin):
         if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
             raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
 
-        inception_node = graph.get_node_by_name(feature_preview.feature.row_index_lineage[0])
-        assert isinstance(inception_node, GroupbyNode)
-        serving_names = inception_node.parameters.serving_names
-        if serving_names is not None:
-            for col in serving_names:
-                if col not in point_in_time_and_serving_name:
-                    raise KeyError(f"Serving name not provided: {col}")
+        serving_names = []
+        for node in graph.iterate_nodes(
+            target_node=feature_preview.feature.node, node_type=NodeType.GROUPBY
+        ):
+            serving_names.extend(cast(GroupbyNode, node).parameters.serving_names)
+
+        for col in serving_names:
+            if col not in point_in_time_and_serving_name:
+                raise KeyError(f"Serving name not provided: {col}")
 
         input_node = graph.nodes_map["input_1"]
         assert isinstance(input_node, InputNode)

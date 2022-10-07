@@ -331,30 +331,6 @@ def snowflake_event_view_fixture(
     """
     event_view = EventView.from_event_data(event_data=snowflake_event_data)
     assert isinstance(event_view, EventView)
-    expected_inception_node = construct_node(
-        name="input_2",
-        type=NodeType.INPUT,
-        parameters={
-            "type": "event_data",
-            "id": snowflake_event_data.id,
-            "columns": [
-                "col_int",
-                "col_float",
-                "col_char",
-                "col_text",
-                "col_binary",
-                "col_boolean",
-                "event_timestamp",
-                "created_at",
-                "cust_id",
-            ],
-            "timestamp": "event_timestamp",
-            "feature_store_details": snowflake_feature_store_details_dict,
-            "table_details": snowflake_table_details_dict,
-        },
-        output_type=NodeOutputType.FRAME,
-    ).dict(exclude={"name": True})
-    assert event_view.inception_node.dict(exclude={"name": True}) == expected_inception_node
     assert event_view.protected_columns == {"event_timestamp"}
     assert event_view.inherited_columns == {"event_timestamp"}
     assert event_view.timestamp_column == "event_timestamp"

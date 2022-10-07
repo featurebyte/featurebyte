@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 import time
 from http import HTTPStatus
@@ -154,22 +154,10 @@ class Feature(
         -------
         List[str]
         """
-        assert isinstance(self.inception_node, GroupbyNode)
-        entity_ids: list[str] = self.inception_node.parameters.keys  # type: ignore
+        entity_ids: list[str] = []
+        for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.GROUPBY):
+            entity_ids.extend(cast(GroupbyNode, node).parameters.keys)
         return entity_ids
-
-    @property
-    def serving_names(self) -> List[str]:
-        """
-        Serving name columns
-
-        Returns
-        -------
-        List[str]
-        """
-        assert isinstance(self.inception_node, GroupbyNode)
-        serving_names: list[str] = self.inception_node.parameters.serving_names
-        return serving_names
 
     @property
     def inherited_columns(self) -> set[str]:
