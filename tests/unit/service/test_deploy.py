@@ -76,17 +76,26 @@ async def check_states_after_deployed_change(
         assert feature.deployed_feature_list_ids == expected_deployed_feature_list_ids
 
 
+@pytest.mark.asyncio
 async def test_update_feature_list(
     feature_service,
     feature_list_namespace_service,
     feature_list_service,
     feature_list,
+    feature_readiness_service,
     deploy_service,
 ):
     """Test update feature list"""
+    for feature_id in feature_list.feature_ids:
+        await feature_readiness_service.update_feature(
+            feature_id=feature_id, readiness="PRODUCTION_READY"
+        )
+
+    assert feature_list.online_enabled_feature_ids == []
     deployed_feature_list = await deploy_service.update_feature_list(
         feature_list_id=feature_list.id, deployed=True, return_document=True
     )
+    assert deployed_feature_list.online_enabled_feature_ids == deployed_feature_list.feature_ids
     assert isinstance(deployed_feature_list, FeatureListModel)
     await check_states_after_deployed_change(
         feature_service=feature_service,
@@ -100,6 +109,7 @@ async def test_update_feature_list(
     deployed_disabled_feature_list = await deploy_service.update_feature_list(
         feature_list_id=feature_list.id, deployed=False, return_document=True
     )
+    assert deployed_disabled_feature_list.online_enabled_feature_ids == []
     assert isinstance(deployed_disabled_feature_list, FeatureListModel)
     await check_states_after_deployed_change(
         feature_service=feature_service,

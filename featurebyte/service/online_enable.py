@@ -153,5 +153,6 @@ class OnlineEnableService(BaseUpdateService):
                         feature=feature,
                         return_document=False,
                     )
-                return self.conditional_return(document=feature, condition=return_document)
+                if return_document:
+                    return await self.feature_service.get_document(document_id=feature_id)
         return self.conditional_return(document=document, condition=return_document)
