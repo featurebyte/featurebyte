@@ -3,7 +3,7 @@ Feature preview SQL generation
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 import time
 
@@ -77,4 +77,4 @@ def get_feature_preview_sql(
     logger.debug(f"Generating full SQL took {elapsed:.2}s")
     logger.debug(f"Feature SQL:\n{preview_sql}")
 
-    return cast(str, preview_sql)
+    return preview_sql
