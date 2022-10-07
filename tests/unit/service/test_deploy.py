@@ -30,7 +30,7 @@ async def test_update_feature_list_namespace__no_update_except_updated_at(
     deploy_service, feature_list, feature_list_namespace
 ):
     """Test update feature list namespace when deployed status is the same"""
-    updated_namespace = await deploy_service.update_feature_list_namespace(
+    updated_namespace = await deploy_service._update_feature_list_namespace(
         feature_list_namespace_id=feature_list.feature_list_namespace_id,
         feature_list=feature_list,
     )
@@ -45,7 +45,7 @@ async def test_update_feature__no_update_except_updated_at(
 ):
     """Test update feature when deployed status is the same"""
     feature = await feature_service.get_document(document_id=feature.id)
-    updated_feature = await deploy_service.update_feature(
+    updated_feature = await deploy_service._update_feature(
         feature_id=feature.id,
         feature_list=feature_list,
     )

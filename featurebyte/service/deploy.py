@@ -42,7 +42,7 @@ class DeployService(BaseUpdateService):
             return cls.include_object_id(document.deployed_feature_list_ids, feature_list.id)
         return cls.exclude_object_id(document.deployed_feature_list_ids, feature_list.id)
 
-    async def update_feature(
+    async def _update_feature(
         self,
         feature_id: ObjectId,
         feature_list: FeatureListModel,
@@ -50,7 +50,8 @@ class DeployService(BaseUpdateService):
         return_document: bool = True,
     ) -> Optional[FeatureModel]:
         """
-        Update deployed_feature_list_ids in feature
+        Update deployed_feature_list_ids in feature. For each update, trigger online service to update
+        online enabled status at feature level.
 
         Parameters
         ----------
@@ -88,7 +89,7 @@ class DeployService(BaseUpdateService):
             return_document=return_document,
         )
 
-    async def update_feature_list_namespace(
+    async def _update_feature_list_namespace(
         self,
         feature_list_namespace_id: ObjectId,
         feature_list: FeatureListModel,
@@ -181,13 +182,13 @@ class DeployService(BaseUpdateService):
                     return_document=True,
                 )
                 assert isinstance(feature_list, FeatureListModel)
-                await self.update_feature_list_namespace(
+                await self._update_feature_list_namespace(
                     feature_list_namespace_id=feature_list.feature_list_namespace_id,
                     feature_list=feature_list,
                     return_document=False,
                 )
                 for feature_id in feature_list.feature_ids:
-                    await self.update_feature(
+                    await self._update_feature(
                         feature_id=feature_id,
                         feature_list=feature_list,
                         return_document=False,

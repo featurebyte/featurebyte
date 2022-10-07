@@ -29,7 +29,7 @@ class OnlineEnableService(BaseUpdateService):
             return cls.include_object_id(document.online_enabled_feature_ids, feature.id)
         return cls.exclude_object_id(document.online_enabled_feature_ids, feature.id)
 
-    async def update_feature_list(
+    async def _update_feature_list(
         self,
         feature_list_id: ObjectId,
         feature: FeatureModel,
@@ -68,7 +68,7 @@ class OnlineEnableService(BaseUpdateService):
             return_document=return_document,
         )
 
-    async def update_feature_namespace(
+    async def _update_feature_namespace(
         self,
         feature_namespace_id: ObjectId,
         feature: FeatureModel,
@@ -142,13 +142,13 @@ class OnlineEnableService(BaseUpdateService):
                     return_document=True,
                 )
                 assert isinstance(feature, FeatureModel)
-                await self.update_feature_namespace(
+                await self._update_feature_namespace(
                     feature_namespace_id=feature.feature_namespace_id,
                     feature=feature,
                     return_document=False,
                 )
                 for feature_list_id in feature.feature_list_ids:
-                    await self.update_feature_list(
+                    await self._update_feature_list(
                         feature_list_id=feature_list_id,
                         feature=feature,
                         return_document=False,
