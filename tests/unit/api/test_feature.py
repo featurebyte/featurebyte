@@ -6,6 +6,8 @@ from datetime import datetime
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.api.entity import Entity
+from featurebyte.api.event_view import EventView
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import FeatureGroup
 from featurebyte.exception import (
@@ -483,3 +485,38 @@ def test_create_new_version__error(float_feature):
         f'Feature (id: "{float_feature.id}") not found. Please save the Feature object first.'
     )
     assert expected_msg in str(exc.value)
+
+
+def test_composite_features(snowflake_event_data_with_entity):
+    """Test composite features' property"""
+    entity = Entity(name="binary", serving_names=["col_binary"])
+    entity.save()
+
+    # make col_binary as an entity column
+    snowflake_event_data_with_entity.col_binary.as_entity("binary")
+
+    event_view = EventView.from_event_data(snowflake_event_data_with_entity)
+    feature_job_setting = {
+        "blind_spot": "10m",
+        "frequency": "30m",
+        "time_modulo_frequency": "5m",
+    }
+    feature_group_by_cust_id = event_view.groupby("cust_id").aggregate(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_job_setting,
+        feature_names=["sum_30m_by_cust_id"],
+    )
+    feature_group_by_binary = event_view.groupby("col_binary").aggregate(
+        value_column="col_float",
+        method="sum",
+        windows=["30m"],
+        feature_job_setting=feature_job_setting,
+        feature_names=["sum_30m_by_binary"],
+    )
+    composite_feature = (
+        feature_group_by_cust_id["sum_30m_by_cust_id"]
+        + feature_group_by_binary["sum_30m_by_binary"]
+    )
+    assert set(composite_feature.entity_identifiers) == {"cust_id", "col_binary"}
