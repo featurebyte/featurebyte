@@ -13,7 +13,7 @@ from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.logger import logger
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.tile_compute import OnDemandTileComputePlan
@@ -65,11 +65,14 @@ def get_feature_preview_sql(
     logger.debug(f"Constructing request table SQL took {elapsed:.2}s")
 
     tic = time.time()
-    preview_sql = execution_plan.construct_combined_sql(
-        point_in_time_column=SpecialColumnName.POINT_IN_TIME,
-        request_table_columns=df_request.columns.tolist(),
-        prior_cte_statements=cte_statements,
-    ).sql(pretty=True)
+    preview_sql = sql_to_string(
+        execution_plan.construct_combined_sql(
+            point_in_time_column=SpecialColumnName.POINT_IN_TIME,
+            request_table_columns=df_request.columns.tolist(),
+            prior_cte_statements=cte_statements,
+        ),
+        source_type=source_type,
+    )
     elapsed = time.time() - tic
     logger.debug(f"Generating full SQL took {elapsed:.2}s")
     logger.debug(f"Feature SQL:\n{preview_sql}")
