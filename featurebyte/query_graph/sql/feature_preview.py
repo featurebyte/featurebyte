@@ -3,7 +3,7 @@ Feature preview SQL generation
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import time
 
@@ -69,10 +69,9 @@ def get_feature_preview_sql(
         point_in_time_column=SpecialColumnName.POINT_IN_TIME,
         request_table_columns=df_request.columns.tolist(),
         prior_cte_statements=cte_statements,
-    )
-    preview_sql_str = preview_sql.sql(pretty=True)
+    ).sql(pretty=True)
     elapsed = time.time() - tic
     logger.debug(f"Generating full SQL took {elapsed:.2}s")
-    logger.debug(f"Feature SQL:\n{preview_sql_str}")
+    logger.debug(f"Feature SQL:\n{preview_sql}")
 
-    return preview_sql_str
+    return cast(str, preview_sql)

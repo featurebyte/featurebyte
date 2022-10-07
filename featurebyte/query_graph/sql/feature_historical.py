@@ -3,7 +3,7 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 import datetime
 import time
@@ -166,7 +166,8 @@ def get_historical_features_sql(
         point_in_time_column=SpecialColumnName.POINT_IN_TIME,
         request_table_columns=request_table_columns,
     ).sql(pretty=True)
-    return sql
+
+    return cast(str, sql)
 
 
 async def get_historical_features(
