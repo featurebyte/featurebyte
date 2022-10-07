@@ -3,10 +3,15 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any, OrderedDict
+from typing import Any, AsyncGenerator, OrderedDict
 
+import os
+import shutil
+import tempfile
 from abc import abstractmethod
+from pathlib import Path
 
+import aiofiles
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
@@ -122,8 +127,9 @@ class BaseSession(BaseModel):
         """
         return self.execute_query_blocking(query)
 
-    @abstractmethod
-    async def execute_async_query(self, query: str, timeout: int = 180) -> pd.DataFrame | None:
+    async def execute_async_query(
+        self, query: str, timeout: int = 180, output_path: Path | None = None
+    ) -> pd.DataFrame | None:
         """
         Execute SQL queries
 
@@ -133,12 +139,58 @@ class BaseSession(BaseModel):
             sql query to execute
         timeout: int
             timeout in seconds
+        output_path: Path | None
+            path to store results
 
         Returns
         -------
         pd.DataFrame | None
             Query result as a pandas DataFrame if the query expects result
         """
+        _ = timeout
+        result = await self.execute_query(query)
+        if output_path is None:
+            return result
+        assert isinstance(result, pd.DataFrame)
+        result.to_parquet(output_path)
+        return None
+
+    async def get_async_query_stream(
+        self, query: str, timeout: int = 180, chunk_size: int = 255 * 1024
+    ) -> AsyncGenerator[bytes, None]:
+        """
+        Stream results from asynchronous query as parquet zip archive
+
+        Parameters
+        ----------
+        query: str
+            sql query to execute
+        timeout: int
+            timeout in seconds
+        chunk_size: int
+            Size of each chunk in the stream
+
+        Yields
+        ------
+        bytes
+            Byte chunk
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # execute query and save result to parquet file
+            parquet_path = Path(os.path.join(tmpdir, "data.parquet"))
+            await self.execute_async_query(query=query, timeout=timeout, output_path=parquet_path)
+
+            # create zip archive from output parquet
+            assert os.path.exists(parquet_path)
+            shutil.make_archive(str(parquet_path), "zip", root_dir=tmpdir, base_dir="data.parquet")
+
+            # stream zip file
+            async with aiofiles.open(f"{parquet_path}.zip", "rb") as file_obj:
+                while True:
+                    chunk = await file_obj.read(chunk_size)
+                    if len(chunk) == 0:
+                        break
+                    yield chunk
 
     def execute_query_blocking(self, query: str) -> pd.DataFrame | None:
         """

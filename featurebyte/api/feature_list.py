@@ -3,12 +3,13 @@ FeatureListVersion class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, OrderedDict, Union
+from typing import Any, Dict, List, Literal, Optional, OrderedDict, Union, cast
 
 import collections
 import time
 from collections import defaultdict
 from http import HTTPStatus
+from io import BytesIO
 
 import pandas as pd
 from alive_progress import alive_bar
@@ -26,9 +27,9 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
-from featurebyte.config import Configurations, Credentials
+from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
-from featurebyte.core.utils import run_async
+from featurebyte.core.utils import pandas_df_from_parquet_archive_data, run_async
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
@@ -36,7 +37,7 @@ from featurebyte.exception import (
 )
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
-from featurebyte.models.feature import DefaultVersionMode
+from featurebyte.models.feature import DefaultVersionMode, FeatureModel
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
@@ -46,15 +47,15 @@ from featurebyte.models.feature_list import (
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
 from featurebyte.query_graph.sql.feature_historical import (
-    get_historical_features,
     get_historical_features_sql,
     validate_historical_requests_point_in_time,
     validate_request_schema,
 )
 from featurebyte.schema.feature_list import (
+    FeatureCluster,
     FeatureListCreate,
+    FeatureListGetHistoricalFeatures,
     FeatureListPreview,
-    FeatureListPreviewGroup,
     FeatureListUpdate,
     FeatureVersionInfo,
 )
@@ -176,30 +177,33 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         ]
         return self._subset_list_of_columns(selected_feat_names)
 
+    def _get_feature_clusters(self) -> List[FeatureCluster]:
+        """
+        Get groups of features in the feature lists that belong to the same feature store
 
-class FeatureGroup(BaseFeatureGroup, ParentMixin):
-    """
-    FeatureGroup class
-    """
+        Returns
+        -------
+        List[FeatureCluster]
+        """
+        # split features into groups that share the same feature store
+        groups = defaultdict(list)
+        for feature in self._features:
+            groups[feature.feature_store.name].append(feature)
 
-    @typechecked
-    def __getitem__(self, item: Union[str, List[str]]) -> Union[Feature, FeatureGroup]:
-        # Note: Feature can only modify FeatureGroup parent but not FeatureList parent.
-        output = super().__getitem__(item)
-        if isinstance(output, Feature):
-            output.set_parent(self)
-        return output
-
-    @typechecked
-    def __setitem__(self, key: str, value: Feature) -> None:
-        # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original
-        # Feature object
-        value = parse_obj_as(Feature, value)
-        # Name setting performs validation to ensure the specified name is valid
-        value.name = key
-        self.feature_objects[key] = value
-        # sanity check: make sure we don't copy global query graph
-        assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
+        # create preview group for each group
+        feature_clusters = []
+        for feature_store_name, features in groups.items():
+            pruned_graph, mapped_nodes = get_prune_graph_and_nodes(
+                feature_objects=cast(List[FeatureModel], features)
+            )
+            feature_clusters.append(
+                FeatureCluster(
+                    feature_store_name=feature_store_name,
+                    graph=pruned_graph,
+                    node_names=[node.name for node in mapped_nodes],
+                )
+            )
+        return feature_clusters
 
     @typechecked
     def preview(
@@ -226,31 +230,16 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         """
         tic = time.time()
 
-        # split features into groups that share the same feature store
-        groups = defaultdict(list)
-        for feature in self._features:
-            groups[feature.feature_store.name].append(feature)
-
-        # create preview group for each group
-        preview_groups = []
-        for feature_store_name, features in groups.items():
-            pruned_graph, mapped_nodes = get_prune_graph_and_nodes(feature_objects=features)
-            preview_groups.append(
-                FeatureListPreviewGroup(
-                    feature_store_name=feature_store_name,
-                    graph=pruned_graph,
-                    node_names=[node.name for node in mapped_nodes],
-                )
-            )
-
         payload = FeatureListPreview(
-            preview_groups=preview_groups,
+            feature_clusters=self._get_feature_clusters(),
             point_in_time_and_serving_name=point_in_time_and_serving_name,
         )
 
         if self._features[0].feature_store.details.is_local_source:
-            result = PreviewService(user=None, persistent=None).preview_featurelist(
-                featurelist_preview=payload, get_credential=get_credential
+            result = run_async(
+                PreviewService(user=None, persistent=None).preview_featurelist,
+                featurelist_preview=payload,
+                get_credential=get_credential,
             )
         else:
             client = Configurations().get_client()
@@ -262,6 +251,31 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
         return pd.read_json(result, orient="table", convert_dates=False)
+
+
+class FeatureGroup(BaseFeatureGroup, ParentMixin):
+    """
+    FeatureGroup class
+    """
+
+    @typechecked
+    def __getitem__(self, item: Union[str, List[str]]) -> Union[Feature, FeatureGroup]:
+        # Note: Feature can only modify FeatureGroup parent but not FeatureList parent.
+        output = super().__getitem__(item)
+        if isinstance(output, Feature):
+            output.set_parent(self)
+        return output
+
+    @typechecked
+    def __setitem__(self, key: str, value: Feature) -> None:
+        # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original
+        # Feature object
+        value = parse_obj_as(Feature, value)
+        # Name setting performs validation to ensure the specified name is valid
+        value.name = key
+        self.feature_objects[key] = value
+        # sanity check: make sure we don't copy global query graph
+        assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
 
 
 class FeatureListNamespace(FeatureListNamespaceModel, ApiObject):
@@ -471,8 +485,15 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         # Validate request
         validate_request_schema(training_events)
         training_events = validate_historical_requests_point_in_time(training_events)
+
+        # multiple feature stores not supported
+        feature_clusters = self._get_feature_clusters()
+        assert len(feature_clusters) == 1
+
+        feature_cluster = feature_clusters[0]
         return get_historical_features_sql(
-            feature_objects=self._features,
+            graph=feature_cluster.graph,
+            nodes=feature_cluster.nodes,
             request_table_columns=training_events.columns.tolist(),
             serving_names_mapping=serving_names_mapping,
         )
@@ -481,7 +502,6 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
     def get_historical_features(
         self,
         training_events: pd.DataFrame,
-        credentials: Optional[Credentials] = None,
         serving_names_mapping: Optional[Dict[str, str]] = None,
     ) -> Optional[pd.DataFrame]:
         """Get historical features
@@ -490,8 +510,6 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         ----------
         training_events : pd.DataFrame
             Training events DataFrame
-        credentials : Optional[Credentials]
-            Optional feature store to credential mapping
         serving_names_mapping : Optional[Dict[str, str]]
             Optional serving names mapping if the training events data has different serving name
             columns than those defined in Entities. Mapping from original serving name to new
@@ -500,16 +518,52 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         Returns
         -------
         pd.DataFrame
+
+        Raises
+        ------
+        RecordRetrievalException
+            Get historical features request failed
         """
-        if credentials is None:
-            credentials = Configurations().credentials
-        return run_async(
-            get_historical_features,
-            feature_objects=self._features,
-            training_events=training_events,
-            credentials=credentials,
+        payload = FeatureListGetHistoricalFeatures(
+            feature_clusters=self._get_feature_clusters(),
             serving_names_mapping=serving_names_mapping,
         )
+
+        if self._features[0].feature_store.details.is_local_source:
+
+            async def _get_historical_features(*args: Any, **kwargs: Any) -> bytes:
+                bytestream = await PreviewService(
+                    user=None, persistent=None
+                ).get_historical_features(*args, **kwargs)
+                content = b""
+                async for data in bytestream:
+                    content += data
+                return content
+
+            content = run_async(
+                _get_historical_features,
+                training_events=training_events,
+                featurelist_get_historical_features=payload,
+                get_credential=get_credential,
+            )
+        else:
+            client = Configurations().get_client()
+            buffer = BytesIO()
+            # parquet does not allow higher precision beyond ms
+            training_events.to_parquet(
+                buffer, allow_truncated_timestamps=True, coerce_timestamps="ms"
+            )
+            buffer.seek(0)
+            response = client.post(
+                "/feature_list/get_historical_features",
+                data={"payload": payload.json()},
+                files={"training_events": buffer.read()},
+            )
+            buffer.close()
+            if response.status_code != HTTPStatus.OK:
+                raise RecordRetrievalException(response)
+            content = response.content
+        return pandas_df_from_parquet_archive_data(BytesIO(content))
 
     @typechecked
     def create_new_version(

@@ -367,7 +367,8 @@ class TestFeatureApi(BaseApiTestSuite):
 
         return {
             "feature_store_name": feature_store["name"],
-            "feature": feature,
+            "graph": feature["graph"],
+            "node_name": feature["node_name"],
             "point_in_time_and_serving_name": {
                 "cust_id": "C1",
                 "POINT_IN_TIME": "2022-04-01",
@@ -375,7 +376,7 @@ class TestFeatureApi(BaseApiTestSuite):
         }
 
     def test_preview_200(self, test_api_client_persistent, feature_preview_payload):
-        """Test list (success) using feature_list_id to filter"""
+        """Test feature preview (success)"""
         test_api_client, _ = test_api_client_persistent
         with patch(
             "featurebyte.core.generic.ExtendedFeatureStoreModel.get_session"

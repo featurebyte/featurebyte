@@ -3,7 +3,7 @@ Historical features SQL generation
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, cast
+from typing import AsyncGenerator, cast
 
 import datetime
 import time
@@ -11,8 +11,6 @@ import time
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 
-from featurebyte.config import Credentials
-from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
@@ -20,51 +18,14 @@ from featurebyte.exception import (
     TooRecentPointInTimeError,
 )
 from featurebyte.logger import logger
-from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import SnowflakeTileCache
 
-if TYPE_CHECKING:
-    from featurebyte.api.feature import Feature
-
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
-
-
-async def get_session_from_feature_objects(
-    feature_objects: list[Feature], credentials: Credentials | None = None
-) -> BaseSession:
-    """Get a session object from a list of Feature objects
-
-    Parameters
-    ----------
-    feature_objects : list[Feature]
-        Feature objects
-    credentials : Credentials | None
-        Optional feature store to credential mapping
-
-    Returns
-    -------
-    BaseSession
-
-    Raises
-    ------
-    NotImplementedError
-        If the list of Features do not all use the same store
-    """
-    feature_store: Optional[ExtendedFeatureStoreModel] = None
-    for feature in feature_objects:
-        store = feature.feature_store
-        assert isinstance(store, ExtendedFeatureStoreModel)
-        if feature_store is None:
-            feature_store = store
-        elif feature_store != store:
-            raise NotImplementedError(
-                "Historical features request using multiple stores not supported"
-            )
-    assert feature_store is not None
-    return await feature_store.get_session(credentials=credentials)
 
 
 def validate_historical_requests_point_in_time(training_events: pd.DataFrame) -> pd.DataFrame:
@@ -127,7 +88,8 @@ def validate_request_schema(training_events: pd.DataFrame) -> None:
 
 
 def get_historical_features_sql(
-    feature_objects: list[Feature],
+    graph: QueryGraph,
+    nodes: list[Node],
     request_table_columns: list[str],
     serving_names_mapping: dict[str, str] | None = None,
 ) -> str:
@@ -135,8 +97,10 @@ def get_historical_features_sql(
 
     Parameters
     ----------
-    feature_objects : list[Feature]
-        List of Feature objects
+    graph : QueryGraph
+        Query graph
+    nodes : list[Node]
+        List of query graph node
     request_table_columns : list[str]
         List of column names in the training events
     serving_names_mapping : dict[str, str] | None
@@ -151,9 +115,8 @@ def get_historical_features_sql(
     MissingServingNameError
         If any required serving name is not provided
     """
-    pruned_graph, feature_nodes = get_prune_graph_and_nodes(feature_objects)
-    planner = FeatureExecutionPlanner(pruned_graph, serving_names_mapping=serving_names_mapping)
-    plan = planner.generate_plan(feature_nodes)
+    planner = FeatureExecutionPlanner(graph, serving_names_mapping=serving_names_mapping)
+    plan = planner.generate_plan(nodes)
 
     missing_serving_names = plan.required_serving_names.difference(request_table_columns)
     if missing_serving_names:
@@ -171,28 +134,31 @@ def get_historical_features_sql(
 
 
 async def get_historical_features(
-    feature_objects: list[Feature],
+    session: BaseSession,
+    graph: QueryGraph,
+    nodes: list[Node],
     training_events: pd.DataFrame,
-    credentials: Credentials | None = None,
     serving_names_mapping: dict[str, str] | None = None,
-) -> Optional[pd.DataFrame]:
+) -> AsyncGenerator[bytes, None]:
     """Get historical features
 
     Parameters
     ----------
-    feature_objects : list[Feature]
-        List of Feature objects
+    session: BaseSession
+        Session to use to make queries
+    graph : QueryGraph
+        Query graph
+    nodes : list[Node]
+        List of query graph node
     training_events : pd.DataFrame
         Training events DataFrame
-    credentials : Credentials | None
-        Optional feature store to credential mapping
     serving_names_mapping : dict[str, str] | None
         Optional serving names mapping if the training events data has different serving name
         columns than those defined in Entities
 
     Returns
     -------
-    pd.DataFrame
+    AsyncGenerator[bytes, None]
     """
     tic_ = time.time()
 
@@ -202,29 +168,29 @@ async def get_historical_features(
 
     # Generate SQL code that computes the features
     sql = get_historical_features_sql(
-        feature_objects=feature_objects,
+        graph=graph,
+        nodes=nodes,
         request_table_columns=training_events.columns.tolist(),
         serving_names_mapping=serving_names_mapping,
     )
 
     # Execute feature SQL code
-    session = await get_session_from_feature_objects(feature_objects, credentials=credentials)
     await session.register_temp_table(REQUEST_TABLE_NAME, training_events)
 
     # Compute tiles on demand if required
     tic = time.time()
     tile_cache = SnowflakeTileCache(session=session)
     await tile_cache.compute_tiles_on_demand(
-        features=feature_objects, serving_names_mapping=serving_names_mapping
+        graph=graph, nodes=nodes, serving_names_mapping=serving_names_mapping
     )
     elapsed = time.time() - tic
     logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")
 
     # Execute feature query
     tic = time.time()
-    result = await session.execute_query(sql)
+    result = session.get_async_query_stream(sql)
+
     elapsed = time.time() - tic
     logger.debug(f"Executing feature query took {elapsed:.2f}s")
-
     logger.debug(f"get_historical_features in total took {time.time() - tic_:.2f}s")
     return result

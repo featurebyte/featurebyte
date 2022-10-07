@@ -7,14 +7,19 @@ from typing import Any, Literal, Union, cast
 
 from http import HTTPStatus
 
+import pandas as pd
 from bson.objectid import ObjectId
+from fastapi import UploadFile
 from fastapi.exceptions import HTTPException
+from fastapi.responses import StreamingResponse
 
+from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
+    FeatureListGetHistoricalFeatures,
     FeatureListInfo,
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
@@ -169,7 +174,7 @@ class FeatureListController(  # type: ignore[misc]
 
     async def preview(self, featurelist_preview: FeatureListPreview, get_credential: Any) -> str:
         """
-        Preview a Feature
+        Preview a Feature List
 
         Parameters
         ----------
@@ -196,3 +201,47 @@ class FeatureListController(  # type: ignore[misc]
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
+
+    async def get_historical_features(
+        self,
+        training_events: UploadFile,
+        featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
+        get_credential: Any,
+    ) -> StreamingResponse:
+        """
+        Get historical features for Feature List
+
+        Parameters
+        ----------
+        training_events: UploadFile
+            Uploaded file
+        featurelist_get_historical_features: FeatureListGetHistoricalFeatures
+            FeatureListGetHistoricalFeatures object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        StreamingResponse
+            StreamingResponse object
+
+        Raises
+        ------
+        HTTPException
+            Invalid request payload
+        """
+        try:
+            bytestream = await self.preview_service.get_historical_features(
+                training_events=pd.read_parquet(training_events.file),
+                featurelist_get_historical_features=featurelist_get_historical_features,
+                get_credential=get_credential,
+            )
+        except (MissingPointInTimeColumnError, TooRecentPointInTimeError) as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
+            ) from exc
+        return StreamingResponse(
+            bytestream,
+            media_type="application/octet-stream",
+            headers={"content-disposition": "filename=data.parquet.zip"},
+        )

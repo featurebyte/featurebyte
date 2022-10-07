@@ -11,6 +11,7 @@ import pytest
 import pytest_asyncio
 import yaml
 from bson.objectid import ObjectId
+from snowflake.connector.constants import QueryStatus
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
@@ -158,8 +159,13 @@ def mock_snowflake_connector():
     Mock snowflake connector in featurebyte.session.snowflake module
     """
     with mock.patch("featurebyte.session.snowflake.connector") as mock_connector:
-        with mock.patch("featurebyte.session.snowflake.SnowflakeSession.fetch_async_query"):
-            yield mock_connector
+        connection = mock_connector.connect.return_value
+        connection.get_query_status_throw_if_error.return_value = QueryStatus.SUCCESS
+        connection.is_still_running.return_value = False
+        cursor = connection.cursor.return_value
+        cursor.sfqid = "some-query-id"
+        cursor.fetch_arrow_batches.return_value = []
+        yield mock_connector
 
 
 @pytest.fixture(name="snowflake_execute_query")

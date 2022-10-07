@@ -1,14 +1,10 @@
 """
 This module contains session to EventView integration tests
 """
-import asyncio
-
 import numpy as np
 import pandas as pd
 
 from featurebyte import AggFunc, EventData, EventView, FeatureList, to_timedelta
-from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.feature import FeatureReadiness
 from tests.util.helper import get_lagged_series_pandas
 
 
@@ -141,7 +137,7 @@ def pyramid_sum(event_view, group_by_col, window, numeric_column, name):
 
 
 def test_query_object_operation_on_snowflake_source(
-    transaction_data_upper_case, event_data, feature_manager, config
+    transaction_data_upper_case, event_data, feature_manager
 ):
     """
     Test loading event view from snowflake source
@@ -342,7 +338,7 @@ def test_query_object_operation_on_snowflake_source(
     # Check using a derived numeric column as category
     check_day_of_week_counts(event_view, preview_param)
 
-    run_and_test_get_historical_features(config, feature_group, feature_group_per_category)
+    run_and_test_get_historical_features(feature_group, feature_group_per_category)
 
 
 def create_feature_with_filtered_event_view(event_view):
@@ -411,7 +407,7 @@ def run_test_conditional_assign_feature(feature_group):
     assert result == {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14}
 
 
-def run_and_test_get_historical_features(config, feature_group, feature_group_per_category):
+def run_and_test_get_historical_features(feature_group, feature_group_per_category):
     """Test getting historical features from FeatureList"""
     df_training_events = pd.DataFrame(
         {
@@ -501,20 +497,18 @@ def run_and_test_get_historical_features(config, feature_group, feature_group_pe
             ],
         }
     )
-    df_historical_features = feature_list.get_historical_features(
-        df_training_events, credentials=config.credentials
-    )
+    df_historical_features = feature_list.get_historical_features(df_training_events)
     # When using fetch_pandas_all(), the dtype of "USER ID" column is int8 (int64 otherwise)
     pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)
 
     # Test again using the same feature list and data but with serving names mapping
     _test_get_historical_features_with_serving_names(
-        config, feature_list, df_training_events, df_historical_expected
+        feature_list, df_training_events, df_historical_expected
     )
 
 
 def _test_get_historical_features_with_serving_names(
-    config, feature_list, df_training_events, df_historical_expected
+    feature_list, df_training_events, df_historical_expected
 ):
     """Test getting historical features from FeatureList with alternative serving names"""
 
@@ -528,7 +522,6 @@ def _test_get_historical_features_with_serving_names(
 
     df_historical_features = feature_list.get_historical_features(
         df_training_events,
-        credentials=config.credentials,
         serving_names_mapping=mapping,
     )
     pd.testing.assert_frame_equal(df_historical_features, df_historical_expected, check_dtype=False)

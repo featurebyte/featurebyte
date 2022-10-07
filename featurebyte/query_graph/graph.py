@@ -22,6 +22,7 @@ from pydantic import Field, root_validator
 
 from featurebyte.common.singleton import SingletonMeta
 from featurebyte.enum import TableDataType
+from featurebyte.exception import GraphInconsistencyError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -59,6 +60,32 @@ class QueryGraph(FeatureByteBaseModel):
     node_type_counter: Dict[str, int] = Field(default=defaultdict(int), exclude=True)
     node_name_to_ref: Dict[str, str] = Field(default_factory=dict, exclude=True)
     ref_to_node_name: Dict[str, str] = Field(default_factory=dict, exclude=True)
+
+    def get_input_node(self, node_name: str) -> InputNode:
+        """
+        Retrieve input node for a specified target node
+
+        Parameters
+        ----------
+        node_name: str
+            Name of node to get input node for
+
+        Raises
+        ------
+        GraphInconsistencyError
+            Invalid graph structure
+
+        Returns
+        -------
+        InputNode
+            InputNode object
+        """
+        target_node = self.get_node_by_name(node_name)
+        for input_node in self.iterate_nodes(target_node=target_node, node_type=NodeType.INPUT):
+            assert isinstance(input_node, InputNode)
+            if input_node.parameters.type == TableDataType.EVENT_DATA:
+                return input_node
+        raise GraphInconsistencyError("Input node not found")
 
     @staticmethod
     def _derive_nodes_map(

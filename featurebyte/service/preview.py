@@ -3,7 +3,7 @@ PreviewService class
 """
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, AsyncGenerator, cast
 
 from decimal import Decimal
 
@@ -12,11 +12,12 @@ import pandas as pd
 from featurebyte.enum import SpecialColumnName
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.node.generic import GroupbyNode, InputNode
+from featurebyte.query_graph.node.generic import GroupbyNode
+from featurebyte.query_graph.sql.feature_historical import get_historical_features
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.schema.feature import FeaturePreview
-from featurebyte.schema.feature_list import FeatureListPreview
+from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures, FeatureListPreview
 from featurebyte.schema.feature_store import FeatureStorePreview
 from featurebyte.service.mixin import OpsServiceMixin
 
@@ -72,9 +73,9 @@ class PreviewService(OpsServiceMixin):
         str
             Dataframe converted to json string
         """
-        input_node = preview.graph.nodes_map["input_1"]
-        assert isinstance(input_node, InputNode)
-        feature_store_dict = input_node.parameters.feature_store_details.dict()
+        feature_store_dict = preview.graph.get_input_node(
+            preview.node_name
+        ).parameters.feature_store_details.dict()
         feature_store = FeatureStoreModel(**feature_store_dict, name=preview.feature_store_name)
         db_session = await self._get_feature_store_session(
             feature_store=feature_store,
@@ -83,7 +84,7 @@ class PreviewService(OpsServiceMixin):
 
         preview_sql = GraphInterpreter(
             preview.graph, source_type=feature_store.type
-        ).construct_preview_sql(node_name=preview.node.name, num_rows=limit)
+        ).construct_preview_sql(node_name=preview.node_name, num_rows=limit)
         result = await db_session.execute_async_query(preview_sql)
         return self._convert_dataframe_as_json(result)
 
@@ -108,25 +109,24 @@ class PreviewService(OpsServiceMixin):
         KeyError
             Invalid point_in_time_and_serving_name payload
         """
-        graph = feature_preview.feature.graph
+        graph = feature_preview.graph
+        feature_node = graph.get_node_by_name(feature_preview.node_name)
         point_in_time_and_serving_name = feature_preview.point_in_time_and_serving_name
 
         if SpecialColumnName.POINT_IN_TIME not in point_in_time_and_serving_name:
             raise KeyError(f"Point in time column not provided: {SpecialColumnName.POINT_IN_TIME}")
 
         serving_names = []
-        for node in graph.iterate_nodes(
-            target_node=feature_preview.feature.node, node_type=NodeType.GROUPBY
-        ):
+        for node in graph.iterate_nodes(target_node=feature_node, node_type=NodeType.GROUPBY):
             serving_names.extend(cast(GroupbyNode, node).parameters.serving_names)
 
         for col in sorted(set(serving_names)):
             if col not in point_in_time_and_serving_name:
                 raise KeyError(f"Serving name not provided: {col}")
 
-        input_node = graph.nodes_map["input_1"]
-        assert isinstance(input_node, InputNode)
-        feature_store_dict = input_node.parameters.feature_store_details.dict()
+        feature_store_dict = graph.get_input_node(
+            feature_preview.node_name
+        ).parameters.feature_store_details.dict()
         feature_store = FeatureStoreModel(
             **feature_store_dict, name=feature_preview.feature_store_name
         )
@@ -136,7 +136,7 @@ class PreviewService(OpsServiceMixin):
         )
         preview_sql = get_feature_preview_sql(
             graph=graph,
-            nodes=[feature_preview.feature.node],
+            nodes=[feature_node],
             point_in_time_and_serving_name=feature_preview.point_in_time_and_serving_name,
             source_type=feature_store.type,
         )
@@ -172,22 +172,20 @@ class PreviewService(OpsServiceMixin):
 
         result: pd.DataFrame = None
         group_join_keys = list(point_in_time_and_serving_name.keys())
-        for preview_group in featurelist_preview.preview_groups:
-            input_node = preview_group.graph.nodes_map["input_1"]
-            assert isinstance(input_node, InputNode)
-            feature_store_dict = input_node.parameters.feature_store_details.dict()
+        for feature_cluster in featurelist_preview.feature_clusters:
+            feature_store_dict = feature_cluster.graph.get_input_node(
+                feature_cluster.node_names[0]
+            ).parameters.feature_store_details.dict()
             feature_store = FeatureStoreModel(
-                **feature_store_dict, name=preview_group.feature_store_name
+                **feature_store_dict, name=feature_cluster.feature_store_name
             )
             db_session = await self._get_feature_store_session(
                 feature_store=feature_store,
                 get_credential=get_credential,
             )
             preview_sql = get_feature_preview_sql(
-                graph=preview_group.graph,
-                nodes=[
-                    preview_group.graph.get_node_by_name(name) for name in preview_group.node_names
-                ],
+                graph=feature_cluster.graph,
+                nodes=feature_cluster.nodes,
                 point_in_time_and_serving_name=point_in_time_and_serving_name,
                 source_type=feature_store.type,
             )
@@ -198,3 +196,49 @@ class PreviewService(OpsServiceMixin):
                 result = result.merge(_result, on=group_join_keys)
 
         return self._convert_dataframe_as_json(result)
+
+    async def get_historical_features(
+        self,
+        training_events: pd.DataFrame,
+        featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
+        get_credential: Any,
+    ) -> AsyncGenerator[bytes, None]:
+        """
+        Get historical features for Feature List
+
+        Parameters
+        ----------
+        training_events: pd.DataFrame
+            Training events data
+        featurelist_get_historical_features: FeatureListGetHistoricalFeatures
+            FeatureListGetHistoricalFeatures object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        AsyncGenerator[bytes, None]
+            Asynchronous bytes generator
+        """
+        # multiple feature stores not supported
+        feature_clusters = featurelist_get_historical_features.feature_clusters
+        assert len(feature_clusters) == 1
+
+        feature_cluster = feature_clusters[0]
+        feature_store_dict = feature_cluster.graph.get_input_node(
+            feature_cluster.node_names[0]
+        ).parameters.feature_store_details.dict()
+        db_session = await self._get_feature_store_session(
+            feature_store=FeatureStoreModel(
+                **feature_store_dict, name=feature_cluster.feature_store_name
+            ),
+            get_credential=get_credential,
+        )
+
+        return await get_historical_features(
+            session=db_session,
+            graph=feature_cluster.graph,
+            nodes=feature_cluster.nodes,
+            training_events=training_events,
+            serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
+        )

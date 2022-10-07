@@ -10,7 +10,6 @@ from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import DatabaseDetails, FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node import Node
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.schema.common.base import BaseInfo
 
@@ -50,4 +49,4 @@ class FeatureStorePreview(FeatureByteBaseModel):
 
     feature_store_name: StrictStr
     graph: QueryGraph
-    node: Node
+    node_name: str
