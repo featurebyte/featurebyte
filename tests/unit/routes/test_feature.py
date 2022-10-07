@@ -317,19 +317,6 @@ class TestFeatureApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json()["readiness"] == "PRODUCTION_READY"
 
-        # test online enabled
-        response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"online_enabled": True}
-        )
-        assert response.status_code == HTTPStatus.OK
-        assert response.json()["online_enabled"] is True
-
-        response = test_api_client.patch(
-            f"{self.base_route}/{doc_id}", json={"online_enabled": False}
-        )
-        assert response.status_code == HTTPStatus.OK
-        assert response.json()["online_enabled"] is False
-
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""

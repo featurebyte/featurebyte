@@ -7,8 +7,7 @@ from typing import Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel, FeatureReadiness
+from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
@@ -108,19 +107,6 @@ class OnlineEnableService(BaseUpdateService):
             return_document=return_document,
         )
 
-    @staticmethod
-    def _validate_online_enabled_operation(feature: FeatureModel, online_enabled: bool) -> None:
-        if online_enabled and feature.readiness != FeatureReadiness.PRODUCTION_READY:
-            raise DocumentUpdateError(
-                f"Only Feature object with {FeatureReadiness.PRODUCTION_READY} readiness can be online enabled "
-                f"(readiness: {feature.readiness})."
-            )
-        if not online_enabled and feature.deployed_feature_list_ids:
-            raise DocumentUpdateError(
-                "Failed to online disable the feature as it has been used by at least one deployed "
-                "FeatureList object."
-            )
-
     async def update_feature(
         self,
         feature_id: ObjectId,
@@ -148,7 +134,6 @@ class OnlineEnableService(BaseUpdateService):
         """
         document = await self.get_feature_document(document_id=feature_id, document=document)
         if document.online_enabled != online_enabled:
-            self._validate_online_enabled_operation(document, online_enabled)
             async with self.persistent.start_transaction():
                 feature = await self.feature_service.update_document(
                     document_id=feature_id,

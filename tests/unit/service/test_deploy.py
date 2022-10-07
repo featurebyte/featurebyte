@@ -12,7 +12,7 @@ async def test_update_feature_list__feature_not_online_enabled_error(deploy_serv
     """Test update feature list (not all features are online enabled validation error)"""
     with pytest.raises(DocumentUpdateError) as exc:
         await deploy_service.update_feature_list(feature_list_id=feature_list.id, deployed=True)
-    expected_msg = "Only FeatureList object will all features online enabled can be deployed."
+    expected_msg = "Only FeatureList object of all production ready features can be deployed."
     assert expected_msg in str(exc.value)
 
 

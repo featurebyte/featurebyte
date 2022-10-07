@@ -112,7 +112,6 @@ app_container_config = {
                 "feature_service",
                 "feature_list_service",
                 "feature_readiness_service",
-                "online_enable_service",
                 "preview_service",
                 "version_service",
             ],
