@@ -1279,3 +1279,34 @@ def test_window_function__multiple_filters(graph, node_input):
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
+
+
+def test_databricks_source(graph, node_input):
+    """Test using a simple query graph"""
+    proj_a = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_input],
+    )
+    assign = graph.add_operation(
+        node_type=NodeType.ASSIGN,
+        node_params={"name": "a_copy"},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_input, proj_a],
+    )
+    interpreter = GraphInterpreter(graph, source_type=SourceType.DATABRICKS)
+    preview_sql = interpreter.construct_preview_sql(assign.name)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          `ts` AS `ts`,
+          `cust_id` AS `cust_id`,
+          `a` AS `a`,
+          `b` AS `b`,
+          `a` AS `a_copy`
+        FROM `db`.`public`.`event_table`
+        LIMIT 10
+        """
+    ).strip()
+    assert preview_sql == expected
