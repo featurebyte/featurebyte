@@ -28,7 +28,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.logger import logger
-from featurebyte.models.base import FeatureByteBaseModel, VersionIdentifier
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
@@ -55,7 +55,6 @@ from featurebyte.utils.credential import get_credential
 class BaseFeatureGroup(FeatureByteBaseModel):
     """
     BaseFeatureGroup class
-
     items : list[Union[Feature, BaseFeatureGroup]]
         List of feature like objects to be used to create the FeatureList
     feature_objects: OrderedDict[str, Feature]
@@ -273,6 +272,8 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         Name of the FeatureList
     """
 
+    # override FeatureListModel attributes
+    feature_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
     version: VersionIdentifier = Field(allow_mutation=False, default=None)
 
     # class variables
@@ -326,20 +327,20 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
     @classmethod
     def _initialize_feature_objects_and_items(cls, values: dict[str, Any]) -> dict[str, Any]:
         if "feature_ids" in values:
-            if "feature_objects" not in values or "items" not in values:
-                # when deserialized from the record retrieved from the persistent
-                items = []
-                feature_objects = collections.OrderedDict()
-                id_value = values["_id"]
-                for response_dict in cls._iterate_paginated_routes(
-                    route="/feature", params={"feature_list_id": id_value, "page_size": 100}
-                ):
-                    for feature_dict in response_dict["data"]:
-                        feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
-                        items.append(feature)
-                        feature_objects[feature.name] = feature
-                values["items"] = items
-                values["feature_objects"] = feature_objects
+            # FeatureList object constructed in SDK will not have feature_ids attribute,
+            # only the record retrieved from the persistent contains this attribute.
+            # Use this check to decide whether to make API call to retrieve features.
+            items = []
+            feature_objects = collections.OrderedDict()
+            id_value = values["_id"]
+            for feature_dict in cls._iterate_api_object_using_paginated_routes(
+                route="/feature", params={"feature_list_id": id_value, "page_size": 100}
+            ):
+                feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
+                items.append(feature)
+                feature_objects[feature.name] = feature
+            values["items"] = items
+            values["feature_objects"] = feature_objects
         return values
 
     @root_validator()

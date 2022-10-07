@@ -3,19 +3,7 @@ ApiObject class
 """
 from __future__ import annotations
 
-from typing import (
-    Any,
-    Callable,
-    ClassVar,
-    Dict,
-    Iterator,
-    List,
-    Literal,
-    Optional,
-    Type,
-    TypeVar,
-    cast,
-)
+from typing import Any, ClassVar, Dict, Iterator, List, Literal, Optional, Type, TypeVar, cast
 
 import time
 from functools import partial
@@ -149,7 +137,7 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         return cast(ApiObjectT, lazy_object_proxy.Proxy(partial(cls._get_by_id, id)))
 
     @staticmethod
-    def _default_to_request_func(response_dict: dict[str, Any], page: int) -> bool:
+    def _to_request_func(response_dict: dict[str, Any], page: int) -> bool:
         """
         Default helper function to check whether to continue calling list route
 
@@ -167,14 +155,11 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         return bool(response_dict["total"] > (page * response_dict["page_size"]))
 
     @classmethod
-    def _iterate_paginated_routes(
-        cls,
-        route: str,
-        params: dict[str, Any] | None = None,
-        to_request_func: Callable[[dict[str, Any], int], bool] | None = None,
+    def _iterate_api_object_using_paginated_routes(
+        cls, route: str, params: dict[str, Any] | None = None
     ) -> Iterator[dict[str, Any]]:
         """
-        List route response generator
+        Api object generator by iterating listing route
 
         Parameters
         ----------
@@ -182,13 +167,11 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             List route
         params: dict[str, Any] | None
             Route parameters
-        to_request_func: Callable[[dict[str, Any], int], bool] = None,
-            Function used to check whether to continue calling the route
 
         Yields
         -------
         Iterator[dict[str, Any]]
-            List route response
+            Iterator of api object records
 
         Raises
         ------
@@ -198,17 +181,16 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         client = Configurations().get_client()
         to_request, page = True, 1
         params = params or {}
-        if to_request_func is None:
-            to_request_func = cls._default_to_request_func
         while to_request:
             params = params.copy()
             params["page"] = page
             response = client.get(url=route, params=params)
             if response.status_code == HTTPStatus.OK:
                 response_dict = response.json()
-                to_request = to_request_func(response_dict, page)
+                to_request = cls._to_request_func(response_dict, page)
                 page += 1
-                yield response_dict
+                for obj_dict in response_dict["data"]:
+                    yield obj_dict
             else:
                 raise RecordRetrievalException(response, "Failed to list object names.")
 
@@ -223,9 +205,8 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             List of object name
         """
         output = []
-        for response_dict in cls._iterate_paginated_routes(route=cls._route):
-            for item in response_dict["data"]:
-                output.append(item["name"])
+        for item_dict in cls._iterate_api_object_using_paginated_routes(route=cls._route):
+            output.append(item_dict["name"])
         return output
 
     def audit(self) -> dict[str, Any]:

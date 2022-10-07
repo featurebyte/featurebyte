@@ -5,16 +5,11 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
-from bson.objectid import ObjectId
 from freezegun import freeze_time
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, FeatureList
-from featurebyte.exception import (
-    DuplicatedRecordException,
-    RecordCreationException,
-    RecordRetrievalException,
-)
+from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.enum import NodeType
@@ -421,18 +416,14 @@ def test_deserialization(production_ready_feature, draft_feature, quarantine_fea
     feature_list_dict["version"] = expected_version
 
     with patch(
-        "featurebyte.api.feature_list.FeatureList._iterate_paginated_routes"
+        "featurebyte.api.feature_list.FeatureList._iterate_api_object_using_paginated_routes"
     ) as mock_iterate:
         with patch("featurebyte.api.feature_store.FeatureStore._get_by_id") as mock_get_by_id:
             mock_get_by_id.return_value = production_ready_feature.feature_store
             mock_iterate.return_value = [
-                {
-                    "data": [
-                        production_ready_feature.dict(by_alias=True),
-                        draft_feature.dict(by_alias=True),
-                        quarantine_feature.dict(by_alias=True),
-                    ]
-                }
+                production_ready_feature.dict(by_alias=True),
+                draft_feature.dict(by_alias=True),
+                quarantine_feature.dict(by_alias=True),
             ]
             loaded_feature_list = FeatureList(**feature_list_dict, items=[])
 
