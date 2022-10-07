@@ -28,6 +28,7 @@ from featurebyte.schema.task import TaskStatus
 
 ApiObjectT = TypeVar("ApiObjectT", bound="ApiGetObject")
 ConflictResolution = Literal["raise", "retrieve"]
+PAGINATED_CALL_PAGE_SIZE = 100
 
 
 class ApiGetObject(FeatureByteBaseDocumentModel):
@@ -205,7 +206,9 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             List of object name
         """
         output = []
-        for item_dict in cls._iterate_api_object_using_paginated_routes(route=cls._route):
+        for item_dict in cls._iterate_api_object_using_paginated_routes(
+            route=cls._route, params={"page_size": PAGINATED_CALL_PAGE_SIZE}
+        ):
             output.append(item_dict["name"])
         return output
 

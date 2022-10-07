@@ -16,7 +16,12 @@ from bson.objectid import ObjectId
 from pydantic import Field, parse_obj_as, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiGetObject, ApiObject, ConflictResolution
+from featurebyte.api.api_object import (
+    PAGINATED_CALL_PAGE_SIZE,
+    ApiGetObject,
+    ApiObject,
+    ConflictResolution,
+)
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.env_util import get_alive_bar_additional_params
@@ -340,7 +345,8 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
                 **get_alive_bar_additional_params(),
             ) as progress_bar:
                 for feature_dict in cls._iterate_api_object_using_paginated_routes(
-                    route="/feature", params={"feature_list_id": id_value, "page_size": 100}
+                    route="/feature",
+                    params={"feature_list_id": id_value, "page_size": PAGINATED_CALL_PAGE_SIZE},
                 ):
                     # store the feature store retrieve result to reuse it if same feature store are called again
                     feature_store_id = TabularSource(
