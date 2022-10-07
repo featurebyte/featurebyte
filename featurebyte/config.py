@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Pattern, Union
 import os
 import re
 from enum import Enum
-from http import HTTPStatus
 from pathlib import Path
 
 # pylint: disable=too-few-public-methods
@@ -129,11 +128,6 @@ class APIClient(requests.Session):
             URL of FeatureByte API service
         api_token: str
             API token to used for authentication
-
-        Raises
-        ------
-        InvalidSettingsError
-            Invalid settings
         """
         super().__init__()
         self.base_url = api_url
