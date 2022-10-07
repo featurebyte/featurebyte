@@ -26,18 +26,19 @@ from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.schema.task import TaskStatus
 
-ApiObjectT = TypeVar("ApiObjectT", bound="ApiGetObject")
+ApiObjectT = TypeVar("ApiObjectT", bound="ApiObject")
 ConflictResolution = Literal["raise", "retrieve"]
 PAGINATED_CALL_PAGE_SIZE = 100
 
 
-class ApiGetObject(FeatureByteBaseDocumentModel):
+class ApiObject(FeatureByteBaseDocumentModel):
     """
     ApiGetObject contains common methods used to retrieve data
     """
 
     # class variables
     _route: ClassVar[str] = ""
+    _update_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
     # other ApiGetObject attributes
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)
@@ -46,6 +47,17 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
     def _get_init_params(cls) -> dict[str, Any]:
         """
         Additional parameters pass to constructor (without referencing any object)
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {}
+
+    def _get_init_params_from_object(self) -> dict[str, Any]:
+        """
+        Additional parameters pass to constructor from object of the same class
+        (other than those parameters from response)
 
         Returns
         -------
@@ -212,6 +224,50 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
             output.append(item_dict["name"])
         return output
 
+    @typechecked
+    def update(self, update_payload: Dict[str, Any], allow_update_local: bool) -> None:
+        """
+        Update object in the persistent
+
+        Parameters
+        ----------
+        update_payload: dict[str, Any]
+            Fields to update in dictionary format
+        allow_update_local: bool
+            Whether to allow update load object if the object has not been saved
+
+        Raises
+        ------
+        NotImplementedError
+            If there _update_schema is not set
+        DuplicatedRecordException
+            If the update causes record conflict
+        RecordUpdateException
+            When unexpected record update failure
+        """
+        if self._update_schema_class is None:
+            raise NotImplementedError
+
+        data = self._update_schema_class(  # pylint: disable=not-callable
+            **{**self.dict(), **update_payload}
+        )
+        client = Configurations().get_client()
+        response = client.patch(url=f"{self._route}/{self.id}", json=data.json_dict())
+        if response.status_code == HTTPStatus.OK:
+            type(self).__init__(
+                self,
+                **response.json(),
+                **self._get_init_params_from_object(),
+                saved=True,
+            )
+        elif response.status_code == HTTPStatus.NOT_FOUND and allow_update_local:
+            for key, value in update_payload.items():
+                setattr(self, key, value)
+        elif response.status_code == HTTPStatus.CONFLICT:
+            raise DuplicatedRecordException(response=response)
+        else:
+            raise RecordUpdateException(response=response)
+
     def audit(self) -> dict[str, Any]:
         """
         Get list of persistent audit logs which records the object update history
@@ -284,13 +340,10 @@ class ApiGetObject(FeatureByteBaseDocumentModel):
         raise RecordRetrievalException(response, "Failed to retrieve object info.")
 
 
-class ApiObject(ApiGetObject):
+class SavableApiObject(ApiObject):
     """
     ApiObject contains common methods used to interact with API routes
     """
-
-    # class variables
-    _update_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
     def _get_create_payload(self) -> dict[str, Any]:
         """
@@ -301,17 +354,6 @@ class ApiObject(ApiGetObject):
         dict[str, Any]
         """
         return self.json_dict(exclude_none=True)
-
-    def _get_init_params_from_object(self) -> dict[str, Any]:
-        """
-        Additional parameters pass to constructor from object of the same class
-        (other than those parameters from response)
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        return {}
 
     def _pre_save_operations(self, conflict_resolution: ConflictResolution) -> None:
         """
@@ -324,48 +366,6 @@ class ApiObject(ApiGetObject):
             "retrieve" handle conflict error by retrieving object with the same name
         """
         _ = conflict_resolution
-
-    @typechecked
-    def update(self, update_payload: Dict[str, Any]) -> None:
-        """
-        Update object in the persistent
-
-        Parameters
-        ----------
-        update_payload: dict[str, Any]
-            Fields to update in dictionary format
-
-        Raises
-        ------
-        NotImplementedError
-            If there _update_schema is not set
-        DuplicatedRecordException
-            If the update causes record conflict
-        RecordUpdateException
-            When unexpected record update failure
-        """
-        if self._update_schema_class is None:
-            raise NotImplementedError
-
-        data = self._update_schema_class(  # pylint: disable=not-callable
-            **{**self.dict(), **update_payload}
-        )
-        client = Configurations().get_client()
-        response = client.patch(url=f"{self._route}/{self.id}", json=data.json_dict())
-        if response.status_code == HTTPStatus.OK:
-            type(self).__init__(
-                self,
-                **response.json(),
-                **self._get_init_params_from_object(),
-                saved=True,
-            )
-        elif response.status_code == HTTPStatus.NOT_FOUND:
-            for key, value in update_payload.items():
-                setattr(self, key, value)
-        elif response.status_code == HTTPStatus.CONFLICT:
-            raise DuplicatedRecordException(response=response)
-        else:
-            raise RecordUpdateException(response=response)
 
     @typechecked
     def save(self, conflict_resolution: ConflictResolution = "raise") -> None:

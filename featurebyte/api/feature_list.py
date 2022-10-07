@@ -18,9 +18,9 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import (
     PAGINATED_CALL_PAGE_SIZE,
-    ApiGetObject,
     ApiObject,
     ConflictResolution,
+    SavableApiObject,
 )
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
@@ -36,6 +36,7 @@ from featurebyte.exception import (
 )
 from featurebyte.logger import logger
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
+from featurebyte.models.feature import DefaultVersionMode
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureListNamespaceModel,
@@ -54,8 +55,10 @@ from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListPreview,
     FeatureListPreviewGroup,
+    FeatureListUpdate,
     FeatureVersionInfo,
 )
+from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
 from featurebyte.service.preview import PreviewService
 from featurebyte.utils.credential import get_credential
 
@@ -261,16 +264,17 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         return pd.read_json(result, orient="table", convert_dates=False)
 
 
-class FeatureListNamespace(FeatureListNamespaceModel, ApiGetObject):
+class FeatureListNamespace(FeatureListNamespaceModel, ApiObject):
     """
     FeatureListNamespace class
     """
 
     # class variable
     _route = "/feature_list_namespace"
+    _update_schema_class = FeatureListNamespaceUpdate
 
 
-class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
+class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
     """
     FeatureList class
 
@@ -286,6 +290,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
 
     # class variables
     _route = "/feature_list"
+    _update_schema_class = FeatureListUpdate
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"items": self.items}
@@ -394,6 +399,28 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         return FeatureListNamespace.get_by_id(id=self.feature_list_namespace_id)
 
     @property
+    def is_default(self) -> bool:
+        """
+        Check whether current feature list is the default one or not
+
+        Returns
+        -------
+        bool
+        """
+        return self.id == self.feature_list_namespace.default_feature_list_id
+
+    @property
+    def default_version_mode(self) -> DefaultVersionMode:
+        """
+        Retrieve default version mode of current feature list namespace
+
+        Returns
+        -------
+        DefaultVersionMode
+        """
+        return self.feature_list_namespace.default_version_mode
+
+    @property
     def status(self) -> FeatureListStatus:
         """
         Retrieve feature list status at persistent
@@ -495,7 +522,7 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
 
         Parameters
         ----------
-        mode: FeatureListNewVersionMode
+        mode: Literal[tuple(FeatureListNewVersionMode)]
             Feature list default version mode
         features: Optional[List[FeatureVersionInfo]]
             Specified feature version in feature list
@@ -521,3 +548,36 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, ApiObject):
         if response.status_code != HTTPStatus.CREATED:
             raise RecordCreationException(response=response)
         return FeatureList(**response.json(), **self._get_init_params(), saved=True)
+
+    @typechecked
+    def update_status(
+        self, status: Literal[tuple(FeatureListStatus)]  # type: ignore[misc]
+    ) -> None:
+        """
+        Update feature list status
+
+        Parameters
+        ----------
+        status: Literal[tuple(FeatureListStatus)]
+            Feature list status
+        """
+        self.feature_list_namespace.update(
+            update_payload={"status": str(status)}, allow_update_local=False
+        )
+
+    @typechecked
+    def update_default_version_mode(
+        self, default_version_mode: Literal[tuple(DefaultVersionMode)]  # type: ignore[misc]
+    ) -> None:
+        """
+        Update feature list default version mode
+
+        Parameters
+        ----------
+        default_version_mode: Literal[tuple(DefaultVersionMode)]
+            Feature list default version mode
+        """
+        self.feature_list_namespace.update(
+            update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
+            allow_update_local=False,
+        )

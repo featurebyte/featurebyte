@@ -14,6 +14,7 @@ from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
     RecordRetrievalException,
+    RecordUpdateException,
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
@@ -520,3 +521,45 @@ def test_composite_features(snowflake_event_data_with_entity):
         + feature_group_by_binary["sum_30m_by_binary"]
     )
     assert set(composite_feature.entity_identifiers) == {"cust_id", "col_binary"}
+
+
+def test_update_readiness_and_default_version_mode(saved_feature):
+    """Test update feature readiness"""
+    assert saved_feature.readiness == FeatureReadiness.DRAFT
+    saved_feature.update_readiness("PRODUCTION_READY")
+    assert saved_feature.readiness == FeatureReadiness.PRODUCTION_READY
+    saved_feature.update_readiness(FeatureReadiness.DRAFT)
+    assert saved_feature.readiness == FeatureReadiness.DRAFT
+
+    # check update on the same readiness
+    saved_feature.update_readiness(FeatureReadiness.DRAFT)
+    assert saved_feature.readiness == FeatureReadiness.DRAFT
+
+    # check default version mode
+    assert saved_feature.default_version_mode == DefaultVersionMode.AUTO
+    saved_feature.update_default_version_mode("MANUAL")
+    assert saved_feature.default_version_mode == DefaultVersionMode.MANUAL
+
+    # test update on wrong readiness input
+    with pytest.raises(ValueError) as exc:
+        saved_feature.update_readiness("random")
+    assert "'random' is not a valid FeatureReadiness" in str(exc.value)
+
+
+def test_update_readiness_and_default_version_mode__unsaved_feature(float_feature):
+    """Test update feature readiness on unsaved feature"""
+    _ = float_feature
+    with pytest.raises(RecordUpdateException) as exc:
+        float_feature.update_readiness(FeatureReadiness.PRODUCTION_READY)
+    expected = (
+        f'Feature (id: "{float_feature.id}") not found. Please save the Feature object first.'
+    )
+    assert expected in str(exc.value)
+
+    with pytest.raises(RecordRetrievalException) as exc:
+        float_feature.update_default_version_mode(DefaultVersionMode.MANUAL)
+    namespace_id = float_feature.feature_namespace_id
+    expected = (
+        f'FeatureNamespace (id: "{namespace_id}") not found. Please save the Feature object first.'
+    )
+    assert expected in str(exc.value)

@@ -11,7 +11,7 @@ from bson.objectid import ObjectId
 from pydantic import validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.entity import Entity
 from featurebyte.common.env_util import is_notebook
@@ -56,10 +56,10 @@ class EventDataColumn(FeatureByteBaseModel, ParentMixin):
             else:
                 columns_info.append(col)
 
-        self.parent.update({"columns_info": columns_info})
+        self.parent.update(update_payload={"columns_info": columns_info}, allow_update_local=True)
 
 
-class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
+class EventData(EventDataModel, DatabaseTable, SavableApiObject, GetAttrMixin):
     """
     EventData class
     """
@@ -201,7 +201,10 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
         # perform record creation datetime column assignment first to
         # trigger record creation date column validation check
         self.record_creation_date_column = record_creation_date_column
-        self.update({"record_creation_date_column": record_creation_date_column})
+        self.update(
+            update_payload={"record_creation_date_column": record_creation_date_column},
+            allow_update_local=True,
+        )
 
     @typechecked
     def update_default_feature_job_setting(
@@ -234,7 +237,10 @@ class EventData(EventDataModel, DatabaseTable, ApiObject, GetAttrMixin):
 
                 display(HTML(job_setting_analysis["analysis_report"]))
 
-        self.update({"default_feature_job_setting": feature_job_setting.dict()})
+        self.update(
+            update_payload={"default_feature_job_setting": feature_job_setting.dict()},
+            allow_update_local=True,
+        )
 
     @property
     def default_feature_job_setting_history(self) -> list[dict[str, Any]]:
