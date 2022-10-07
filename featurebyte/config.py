@@ -144,9 +144,6 @@ class APIClient(requests.Session):
                 "Authorization": f"Bearer {api_token}",
             }
         )
-        response = self.get("/user/me")
-        if response.status_code != HTTPStatus.OK:
-            raise InvalidSettingsError("Authentication failed")
 
     def request(
         self,
