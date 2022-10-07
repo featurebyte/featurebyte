@@ -14,7 +14,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.ast.builder import SQLOperationGraph
-from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.query_graph.sql.common import SQLType, sql_to_string
 
 
 @dataclass
@@ -64,9 +64,10 @@ class TileSQLGenerator:
     query_graph : QueryGraph
     """
 
-    def __init__(self, query_graph: QueryGraph, is_on_demand: bool):
+    def __init__(self, query_graph: QueryGraph, is_on_demand: bool, source_type: SourceType):
         self.query_graph = query_graph
         self.is_on_demand = is_on_demand
+        self.source_type = source_type
 
     def construct_tile_gen_sql(self, starting_node: Node) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
@@ -126,7 +127,7 @@ class TileSQLGenerator:
         info = TileGenSql(
             tile_table_id=tile_table_id,
             aggregation_id=aggregation_id,
-            sql=sql.sql(pretty=True),
+            sql=sql_to_string(sql, source_type=self.source_type),
             columns=groupby_sql_node.columns,
             entity_columns=entity_columns,
             tile_value_columns=tile_value_columns,
@@ -146,6 +147,9 @@ class GraphInterpreter:
     Parameters
     ----------
     query_graph : QueryGraph
+        Query graph
+    source_type : SourceType
+        Data source type information
     """
 
     def __init__(self, query_graph: QueryGraph, source_type: SourceType):
@@ -166,7 +170,9 @@ class GraphInterpreter:
         -------
         List[TileGenSql]
         """
-        generator = TileSQLGenerator(self.query_graph, is_on_demand=is_on_demand)
+        generator = TileSQLGenerator(
+            self.query_graph, is_on_demand=is_on_demand, source_type=self.source_type
+        )
         return generator.construct_tile_gen_sql(starting_node)
 
     def construct_preview_sql(self, node_name: str, num_rows: int = 10) -> str:
@@ -194,11 +200,6 @@ class GraphInterpreter:
             sql_tree = sql_node.sql_standalone
 
         assert isinstance(sql_tree, sqlglot.expressions.Select)
-        sql_code: str = sql_tree.limit(num_rows).sql(dialect=self._get_sql_dialect(), pretty=True)
+        sql_code: str = sql_to_string(sql_tree.limit(num_rows), source_type=self.source_type)
 
         return sql_code
-
-    def _get_sql_dialect(self) -> str | None:
-        if self.source_type == SourceType.DATABRICKS:
-            return "spark"
-        return None

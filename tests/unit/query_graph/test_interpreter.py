@@ -1281,32 +1281,65 @@ def test_window_function__multiple_filters(graph, node_input):
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_databricks_source(graph, node_input):
-    """Test using a simple query graph"""
-    proj_a = graph.add_operation(
-        node_type=NodeType.PROJECT,
-        node_params={"columns": ["a"]},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[node_input],
-    )
-    assign = graph.add_operation(
-        node_type=NodeType.ASSIGN,
-        node_params={"name": "a_copy"},
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[node_input, proj_a],
-    )
+def test_databricks_source(query_graph_with_groupby):
+    """Test SQL generation for databricks source"""
+    graph = query_graph_with_groupby
+    input_node = graph.get_node_by_name("input_1")
+    groupby_node = graph.get_node_by_name("groupby_1")
     interpreter = GraphInterpreter(graph, source_type=SourceType.DATABRICKS)
-    preview_sql = interpreter.construct_preview_sql(assign.name)
+
+    # Check preview SQL
+    preview_sql = interpreter.construct_preview_sql(input_node.name)
     expected = textwrap.dedent(
         """
         SELECT
           `ts` AS `ts`,
           `cust_id` AS `cust_id`,
           `a` AS `a`,
-          `b` AS `b`,
-          `a` AS `a_copy`
+          `b` AS `b`
         FROM `db`.`public`.`event_table`
         LIMIT 10
         """
     ).strip()
     assert preview_sql == expected
+
+    # Check tile SQL
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
+    assert len(tile_gen_sqls) == 1
+    tile_sql = tile_gen_sqls[0].sql
+    expected = textwrap.dedent(
+        """
+        SELECT
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          `cust_id`,
+          SUM(`a`) AS sum_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12,
+          COUNT(`a`) AS count_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, `ts`) - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+            FROM (
+                SELECT
+                  *
+                FROM (
+                    SELECT
+                      `ts` AS `ts`,
+                      `cust_id` AS `cust_id`,
+                      `a` AS `a`,
+                      `b` AS `b`,
+                      (`a` + `b`) AS `c`
+                    FROM `db`.`public`.`event_table`
+                )
+                WHERE
+                  `ts` >= CAST(__FB_START_DATE AS TIMESTAMP)
+                  AND `ts` < CAST(__FB_END_DATE AS TIMESTAMP)
+            )
+        )
+        GROUP BY
+          tile_index,
+          `cust_id`
+        ORDER BY
+          tile_index
+        """
+    ).strip()
+    assert tile_sql == expected

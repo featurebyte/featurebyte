@@ -3,12 +3,15 @@ Common helpers and data structures for feature SQL generation
 """
 from __future__ import annotations
 
+from typing import cast
+
 from dataclasses import dataclass
 from enum import Enum
 
 import pandas as pd
 from sqlglot import Expression, expressions, select
 
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.tiling import get_aggregator
@@ -49,6 +52,26 @@ def quoted_identifier(column_name: str) -> Expression:
     Expression
     """
     return expressions.Identifier(this=column_name, quoted=True)
+
+
+def sql_to_string(sql_expr: Expression, source_type: SourceType) -> str:
+    """Convert a SQL expression to text given the source type
+
+    Parameters
+    ----------
+    sql_expr : Expression
+        SQL expression object
+    source_type : SourceType
+        The type of the database engine which will be used to determine the SQL dialect
+
+    Returns
+    -------
+    str
+    """
+    dialect = None
+    if source_type == SourceType.DATABRICKS:
+        dialect = "spark"
+    return cast(str, sql_expr.sql(dialect=dialect, pretty=True))
 
 
 def apply_serving_names_mapping(serving_names: list[str], mapping: dict[str, str]) -> list[str]:
