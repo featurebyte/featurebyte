@@ -119,7 +119,7 @@ class PreviewService(OpsServiceMixin):
         ):
             serving_names.extend(cast(GroupbyNode, node).parameters.serving_names)
 
-        for col in serving_names:
+        for col in sorted(set(serving_names)):
             if col not in point_in_time_and_serving_name:
                 raise KeyError(f"Serving name not provided: {col}")
 

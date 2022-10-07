@@ -323,9 +323,7 @@ def snowflake_table_details_dict_fixture():
 
 
 @pytest.fixture(name="snowflake_event_view")
-def snowflake_event_view_fixture(
-    snowflake_event_data, snowflake_feature_store_details_dict, snowflake_table_details_dict
-):
+def snowflake_event_view_fixture(snowflake_event_data):
     """
     EventData object fixture
     """
