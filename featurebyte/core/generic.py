@@ -288,15 +288,3 @@ class ProtectedColumnsQueryObject(QueryObject):
         -------
         set[str]
         """
-
-    @property
-    def inception_node(self) -> Node:
-        """
-        Node where the event data is introduced to the query graph
-
-        Returns
-        -------
-        Node
-        """
-        graph = GlobalQueryGraph()
-        return graph.get_node_by_name(self.row_index_lineage[0])

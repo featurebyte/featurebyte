@@ -82,7 +82,6 @@ def test_getitem__list_of_str(snowflake_event_view):
     assert isinstance(event_view_subset1, EventView)
     assert set(event_view_subset1.column_var_type_map) == {"event_timestamp", "col_float"}
     assert event_view_subset1.row_index_lineage == snowflake_event_view.row_index_lineage
-    assert event_view_subset1.inception_node == snowflake_event_view.inception_node
     assert (
         event_view_subset1.default_feature_job_setting
         == snowflake_event_view.default_feature_job_setting
@@ -93,7 +92,6 @@ def test_getitem__list_of_str(snowflake_event_view):
     assert isinstance(event_view_subset2, EventView)
     assert set(event_view_subset2.column_var_type_map) == {"event_timestamp", "col_float"}
     assert event_view_subset2.row_index_lineage == snowflake_event_view.row_index_lineage
-    assert event_view_subset2.inception_node == snowflake_event_view.inception_node
     assert (
         event_view_subset2.default_feature_job_setting
         == snowflake_event_view.default_feature_job_setting
@@ -121,7 +119,6 @@ def test_getitem__series_key(snowflake_event_view):
     assert event_view_row_subset.row_index_lineage == (
         snowflake_event_view.row_index_lineage + (event_view_row_subset.node.name,)
     )
-    assert event_view_row_subset.inception_node == snowflake_event_view.inception_node
     assert (
         event_view_row_subset.default_feature_job_setting
         == snowflake_event_view.default_feature_job_setting

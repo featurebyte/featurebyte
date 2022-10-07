@@ -3,7 +3,7 @@ EventView class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, List, Optional, TypeVar, Union, cast
 
 from pydantic import Field, PrivateAttr
 from typeguard import typechecked
@@ -12,9 +12,11 @@ from featurebyte.api.event_data import EventData
 from featurebyte.core.frame import Frame
 from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.node.generic import InputNode
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import EventViewGroupBy
@@ -150,8 +152,12 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         -------
         str
         """
-        timestamp_col = str(self.inception_node.parameters.timestamp)  # type: ignore
-        return timestamp_col
+        input_node = next(
+            node
+            for node in self.graph.iterate_nodes(target_node=self.node, node_type=NodeType.INPUT)
+            if cast(InputNode, node).parameters.type == TableDataType.EVENT_DATA
+        )
+        return input_node.parameters.timestamp  # type: ignore
 
     @property
     def inherited_columns(self) -> set[str]:
