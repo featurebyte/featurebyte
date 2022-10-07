@@ -33,14 +33,14 @@ PAGINATED_CALL_PAGE_SIZE = 100
 
 class ApiObject(FeatureByteBaseDocumentModel):
     """
-    ApiGetObject contains common methods used to retrieve data
+    ApiObject contains common methods used to retrieve data
     """
 
     # class variables
     _route: ClassVar[str] = ""
     _update_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
 
-    # other ApiGetObject attributes
+    # other ApiObject attributes
     saved: bool = Field(default=False, allow_mutation=False, exclude=True)
 
     @classmethod
@@ -145,7 +145,7 @@ class ApiObject(FeatureByteBaseDocumentModel):
         Returns
         -------
         ApiObjectT
-            ApiGetObject object of the given object ID
+            ApiObject object of the given object ID
         """
         return cast(ApiObjectT, lazy_object_proxy.Proxy(partial(cls._get_by_id, id)))
 
