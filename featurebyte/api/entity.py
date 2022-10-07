@@ -7,12 +7,12 @@ from typing import Any
 
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object import SavableApiObject
 from featurebyte.models.entity import EntityModel
 from featurebyte.schema.entity import EntityCreate, EntityUpdate
 
 
-class Entity(EntityModel, ApiObject):
+class Entity(EntityModel, SavableApiObject):
     """
     Entity class
     """
@@ -46,7 +46,7 @@ class Entity(EntityModel, ApiObject):
         name: str
             New entity name
         """
-        self.update({"name": name})
+        self.update(update_payload={"name": name}, allow_update_local=True)
 
     @property
     def name_history(self) -> list[dict[str, Any]]:

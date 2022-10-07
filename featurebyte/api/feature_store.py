@@ -9,7 +9,7 @@ from http import HTTPStatus
 
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiObject
+from featurebyte.api.api_object import SavableApiObject
 from featurebyte.config import Configurations
 from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.core.utils import run_async
@@ -23,7 +23,7 @@ else:
     DatabaseTable = TypeVar("DatabaseTable")
 
 
-class FeatureStore(ExtendedFeatureStoreModel, ApiObject):
+class FeatureStore(ExtendedFeatureStoreModel, SavableApiObject):
     """
     FeatureStore class
     """

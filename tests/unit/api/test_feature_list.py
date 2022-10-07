@@ -10,7 +10,7 @@ from freezegun import freeze_time
 from featurebyte.api.feature import Feature
 from featurebyte.api.feature_list import BaseFeatureGroup, FeatureGroup, FeatureList
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.feature import DefaultVersionMode, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
 from featurebyte.query_graph.enum import NodeType
 
@@ -640,3 +640,66 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
     feature_list.save(conflict_resolution="retrieve")
     assert feature_list.saved is True
     assert feature_list[feature.name].id == production_ready_feature.id
+
+
+@pytest.fixture(name="feature_list")
+def feature_list_fixture(
+    snowflake_feature_store,
+    snowflake_event_data,
+    production_ready_feature,
+    draft_feature,
+    quarantine_feature,
+    deprecated_feature,
+):
+    snowflake_feature_store.save()
+    snowflake_event_data.save()
+
+    # create a feature list
+    feature_list = FeatureList(
+        [
+            production_ready_feature,
+            draft_feature,
+            quarantine_feature,
+            deprecated_feature,
+        ],
+        name="feature_list_name",
+    )
+    yield feature_list
+
+
+def test_feature_list_update_status_and_default_version_mode(feature_list):
+    """Test update feature list status"""
+    assert feature_list.saved is False
+    feature_list.save()
+    assert feature_list.saved is True
+    assert feature_list.status == FeatureListStatus.DRAFT
+    feature_list.update_status("PUBLIC_DRAFT")
+    assert feature_list.status == FeatureListStatus.PUBLIC_DRAFT
+
+    # test update on the same status
+    feature_list.update_status(FeatureListStatus.PUBLIC_DRAFT)
+    assert feature_list.status == FeatureListStatus.PUBLIC_DRAFT
+
+    # check default version mode
+    assert feature_list.default_version_mode == DefaultVersionMode.AUTO
+    feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
+    assert feature_list.default_version_mode == DefaultVersionMode.MANUAL
+
+    # test update on wrong status input
+    with pytest.raises(ValueError) as exc:
+        feature_list.update_status("random")
+    assert "'random' is not a valid FeatureListStatus" in str(exc.value)
+
+
+def test_feature_list_update_status_and_default_version_mode__unsaved_feature_list(feature_list):
+    """Test feature list status update - unsaved feature list"""
+    assert feature_list.saved is False
+    with pytest.raises(RecordRetrievalException) as exc:
+        feature_list.update_status(FeatureListStatus.PUBLISHED)
+    namespace_id = feature_list.feature_list_namespace_id
+    expected = f'FeatureListNamespace (id: "{namespace_id}") not found. Please save the FeatureList object first.'
+    assert expected in str(exc.value)
+
+    with pytest.raises(RecordRetrievalException) as exc:
+        feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
+    assert expected in str(exc.value)

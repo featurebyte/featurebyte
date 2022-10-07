@@ -3,7 +3,7 @@ Feature and FeatureList classes
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Literal, cast
 
 import time
 from http import HTTPStatus
@@ -12,7 +12,7 @@ import pandas as pd
 from pydantic import Field, root_validator
 from typeguard import typechecked
 
-from featurebyte.api.api_object import ApiGetObject, ApiObject
+from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
@@ -30,25 +30,27 @@ from featurebyte.models.feature import (
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.generic import AliasNode, GroupbyNode, ProjectNode
-from featurebyte.schema.feature import FeatureCreate, FeaturePreview
+from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureUpdate
+from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 from featurebyte.service.preview import PreviewService
 from featurebyte.utils.credential import get_credential
 
 
-class FeatureNamespace(FeatureNamespaceModel, ApiGetObject):
+class FeatureNamespace(FeatureNamespaceModel, ApiObject):
     """
     FeatureNamespace class
     """
 
     # class variables
     _route = "/feature_namespace"
+    _update_schema_class = FeatureNamespaceUpdate
 
 
 class Feature(
     ProtectedColumnsQueryObject,
     Series,
     FeatureModel,
-    ApiObject,
+    SavableApiObject,
     CdAccessorMixin,
 ):
     """
@@ -59,6 +61,7 @@ class Feature(
 
     # class variables
     _route = "/feature"
+    _update_schema_class = FeatureUpdate
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
@@ -185,7 +188,7 @@ class Feature(
     @property
     def is_default(self) -> bool:
         """
-        Check whether current feature version is the default one or not
+        Check whether current feature is the default one or not
 
         Returns
         -------
@@ -320,3 +323,34 @@ class Feature(
         if response.status_code != HTTPStatus.CREATED:
             raise RecordCreationException(response=response)
         return Feature(**response.json(), **self._get_init_params_from_object(), saved=True)
+
+    @typechecked
+    def update_readiness(
+        self, readiness: Literal[tuple(FeatureReadiness)]  # type: ignore[misc]
+    ) -> None:
+        """
+        Update feature readiness
+
+        Parameters
+        ----------
+        readiness: Literal[tuple(FeatureReadiness)]
+            Feature readiness level
+        """
+        self.update(update_payload={"readiness": str(readiness)}, allow_update_local=False)
+
+    @typechecked
+    def update_default_version_mode(
+        self, default_version_mode: Literal[tuple(DefaultVersionMode)]  # type: ignore[misc]
+    ) -> None:
+        """
+        Update feature default version mode
+
+        Parameters
+        ----------
+        default_version_mode: Literal[tuple(DefaultVersionMode)]
+            Feature default version mode
+        """
+        self.feature_namespace.update(
+            update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
+            allow_update_local=False,
+        )

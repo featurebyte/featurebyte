@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from featurebyte.api.api_object import ApiGetObject, ApiObject
+from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.schema.task import TaskStatus
 
@@ -39,7 +39,7 @@ def mock_configuration_fixture(request):
 @pytest.mark.parametrize("mock_configuration", [1, 3, 5, 11, 25], indirect=True)
 def test_list(mock_configuration):
     """Test pagination list logic"""
-    output = ApiGetObject.list()
+    output = ApiObject.list()
     assert output == [f"item_{i}" for i in range(11)]
 
 
@@ -140,7 +140,7 @@ def mock_client_fixture():
 )
 def test_post_async_task__success(mock_client, route):
     """Test post async task (success)"""
-    output = ApiObject.post_async_task(route=route, payload={})
+    output = SavableApiObject.post_async_task(route=route, payload={})
     assert output == {"result": "some_value"}
 
 
@@ -150,7 +150,7 @@ def test_post_async_task__success(mock_client, route):
 def test_post_async_task__record_creation_exception(mock_client, route):
     """Test post async task (success)"""
     with pytest.raises(RecordCreationException):
-        ApiObject.post_async_task(route=route, payload={})
+        SavableApiObject.post_async_task(route=route, payload={})
 
 
 @pytest.mark.parametrize(
@@ -159,4 +159,4 @@ def test_post_async_task__record_creation_exception(mock_client, route):
 def test_post_async_task__record_retrieval_exception(mock_client, route):
     """Test post async task (success)"""
     with pytest.raises(RecordRetrievalException):
-        ApiObject.post_async_task(route=route, payload={})
+        SavableApiObject.post_async_task(route=route, payload={})
