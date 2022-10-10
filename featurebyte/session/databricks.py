@@ -50,6 +50,14 @@ class DatabricksSession(BaseSession):
             schema=self.featurebyte_schema,
         )
 
+    @property
+    def schema_name(self) -> str:
+        return self.featurebyte_schema
+
+    @property
+    def database_name(self) -> str:
+        return self.featurebyte_catalog
+
     async def list_databases(self) -> list[str]:
         cursor = self._connection.cursor().catalogs()
         df_result = super().fetch_query_result_impl(cursor)

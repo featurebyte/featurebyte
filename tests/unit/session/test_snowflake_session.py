@@ -16,7 +16,7 @@ from snowflake.connector.errors import DatabaseError, NotSupportedError, Operati
 from featurebyte.core.utils import pandas_df_from_parquet_archive_data
 from featurebyte.enum import DBVarType
 from featurebyte.exception import CredentialsError
-from featurebyte.session.snowflake import SchemaInitializer, SnowflakeSession
+from featurebyte.session.snowflake import SnowflakeSchemaInitializer, SnowflakeSession
 
 
 @pytest.fixture(name="snowflake_session_dict_without_credentials")
@@ -100,7 +100,7 @@ def mock_snowflake_cursor_fixture(is_fetch_pandas_all_available):
 @pytest.fixture(name="mock_schema_initializer")
 def mock_schema_initializer_fixture():
     """Fixture to mock SchemaInitializer as no-op"""
-    with patch("featurebyte.session.snowflake.SchemaInitializer") as mocked:
+    with patch("featurebyte.session.snowflake.SnowflakeSchemaInitializer") as mocked:
         yield mocked
 
 
@@ -211,27 +211,46 @@ def patched_snowflake_session_cls_fixture(
     def mock_execute_query(query):
         if not query.startswith("SHOW "):
             return None
-        if query == "SHOW SCHEMAS":
-            return schemas_output
         if query.startswith("SHOW USER FUNCTIONS"):
             return functions_output
         if query.startswith("SHOW PROCEDURES"):
             return procedures_output
-        if query.startswith("SHOW TABLES"):
-            return tables_output
         raise AssertionError(f"Unknown query: {query}")
+
+    def mock_list_schemas(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        return schemas_output["name"].tolist()
+
+    def mock_list_tables(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        return tables_output["name"].tolist()
 
     with patch("featurebyte.session.snowflake.SnowflakeSession", autospec=True) as patched_class:
         mock_session_obj = patched_class.return_value
         mock_session_obj.execute_query.side_effect = mock_execute_query
-        mock_session_obj.database = snowflake_session_dict_without_credentials["database"]
-        mock_session_obj.sf_schema = snowflake_session_dict_without_credentials["sf_schema"]
+        mock_session_obj.list_schemas.side_effect = mock_list_schemas
+        mock_session_obj.list_tables.side_effect = mock_list_tables
+        mock_session_obj.database_name = snowflake_session_dict_without_credentials["database"]
+        mock_session_obj.schema_name = snowflake_session_dict_without_credentials["sf_schema"]
         yield patched_class
 
 
-def test_schema_initializer__sql_objects():
+@pytest.mark.parametrize("is_schema_missing", [False])
+@pytest.mark.parametrize("is_functions_missing", [False])
+@pytest.mark.parametrize("is_procedures_missing", [False])
+@pytest.mark.parametrize("is_tables_missing", [False])
+def test_schema_initializer__sql_objects(
+    patched_snowflake_session_cls,
+    is_schema_missing,
+    is_functions_missing,
+    is_procedures_missing,
+    is_tables_missing,
+):
     """Test retrieving SQL objects"""
-    sql_objects = SchemaInitializer.get_sql_objects()
+    session = patched_snowflake_session_cls()
+    sql_objects = SnowflakeSchemaInitializer(session).get_sql_objects()
     for item in sql_objects:
         item["filename"] = os.path.basename(item["filename"])
         item["type"] = item["type"].value
@@ -346,13 +365,15 @@ async def test_schema_initializer__everything_exists(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    await SchemaInitializer(session).initialize()
+    await SnowflakeSchemaInitializer(session).initialize()
     # Nothing to do except checking schemas and existing objects
+    assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     assert session.execute_query.call_args_list == [
-        call("SHOW SCHEMAS"),
         call("SHOW USER FUNCTIONS IN DATABASE sf_database"),
         call("SHOW PROCEDURES IN DATABASE sf_database"),
-        call('SHOW TABLES IN SCHEMA "sf_database"."FEATUREBYTE"'),
+    ]
+    assert session.list_tables.call_args_list == [
+        call(database_name="sf_database", schema_name="FEATUREBYTE")
     ]
     counts = check_create_commands(session)
     assert counts == {"schema": 0, "functions": 0, "procedures": 0, "tables": 0}
@@ -378,10 +399,10 @@ async def test_schema_initializer__all_missing(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    await SchemaInitializer(session).initialize()
+    await SnowflakeSchemaInitializer(session).initialize()
     # Should create schema if not exists
-    assert session.execute_query.call_args_list[:2] == [
-        call("SHOW SCHEMAS"),
+    assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
+    assert session.execute_query.call_args_list[:1] == [
         call("CREATE SCHEMA FEATUREBYTE"),
     ]
     # Should register custom functions and procedures
@@ -413,7 +434,7 @@ async def test_schema_initializer__partial_missing(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    await SchemaInitializer(session).initialize()
+    await SnowflakeSchemaInitializer(session).initialize()
     # Should register custom functions and procedures
     counts = check_create_commands(session)
     expected_counts = {"schema": 0, "functions": 0, "procedures": 0, "tables": 0}
