@@ -163,7 +163,7 @@ async def test_databricks_session(databricks_session_dict):
         "col_struct": DBVarType.STRUCT,
         "col_string": DBVarType.VARCHAR,
     }
-    df_result = await session.execute_async_query("SELECT * FROM table")
+    df_result = await session.execute_query("SELECT * FROM table")
     df_expected = pd.DataFrame({"a": [1, 100], "b": [2, 200], "c": [3, 300]})
     pd.testing.assert_frame_equal(df_result, df_expected)
 

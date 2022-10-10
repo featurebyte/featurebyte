@@ -93,3 +93,8 @@ class SQLiteSession(BaseSession):
 
     async def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         raise NotImplementedError()
+
+    async def execute_query(self, query: str, timeout: float = 180) -> pd.DataFrame | None:
+        # sqlite session cannot be used in across threads
+        _ = timeout
+        return super().execute_query_blocking(query=query)

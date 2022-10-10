@@ -164,7 +164,7 @@ async def get_feature_list_preview(
     )
 
 
-@router.post("/get_historical_features")
+@router.post("/historical_features")
 async def get_historical_features(
     request: Request,
     payload: str = Form(),

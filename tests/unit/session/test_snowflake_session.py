@@ -2,7 +2,7 @@
 Unit test for snowflake session
 """
 import os
-import tempfile
+import time
 from unittest.mock import Mock, call, patch
 
 import numpy as np
@@ -10,12 +10,11 @@ import pandas as pd
 import pyarrow as pa
 import pytest
 from pandas.testing import assert_frame_equal
-from snowflake.connector.constants import QueryStatus
 from snowflake.connector.errors import DatabaseError, NotSupportedError, OperationalError
 
-from featurebyte.core.utils import pandas_df_from_parquet_archive_data
+from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import DBVarType
-from featurebyte.exception import CredentialsError
+from featurebyte.exception import CredentialsError, QueryExecutionTimeOut
 from featurebyte.session.snowflake import SnowflakeSchemaInitializer, SnowflakeSession
 
 
@@ -91,9 +90,19 @@ def mock_snowflake_cursor_fixture(is_fetch_pandas_all_available):
         if not is_fetch_pandas_all_available:
             mock_cursor.fetch_pandas_all.side_effect = NotSupportedError
             mock_cursor.fetchall.return_value = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        else:
+            mock_cursor.fetch_pandas_all.return_value = pd.DataFrame(
+                {
+                    "col_a": [1, 4, 7],
+                    "col_b": [2, 5, 8],
+                    "col_c": [3, 6, 9],
+                }
+            )
         mock_connection = Mock(name="MockConnection")
         mock_connection.cursor.return_value = mock_cursor
         mock_connector.connect.return_value = mock_connection
+        # fetch_arrow_batches is disabled so we fallback to using fetch_pandas_all
+        mock_cursor.fetch_arrow_batches.side_effect = NotSupportedError
         yield mock_cursor
 
 
@@ -122,14 +131,14 @@ async def test_snowflake_session__fetch_pandas_all(
         assert mock_snowflake_cursor.fetchall.call_count == 0
     else:
         assert mock_snowflake_cursor.fetchall.call_count == 1
-        expected_result = pd.DataFrame(
-            {
-                "col_a": [1, 4, 7],
-                "col_b": [2, 5, 8],
-                "col_c": [3, 6, 9],
-            }
-        )
-        pd.testing.assert_frame_equal(result, expected_result)
+    expected_result = pd.DataFrame(
+        {
+            "col_a": [1, 4, 7],
+            "col_b": [2, 5, 8],
+            "col_c": [3, 6, 9],
+        }
+    )
+    pd.testing.assert_frame_equal(result, expected_result)
 
 
 EXPECTED_FUNCTIONS = [
@@ -331,17 +340,16 @@ def check_create_commands(mock_session):
         "functions": 0,
         "procedures": 0,
     }
-    for exec_calls in [mock_session.execute_query, mock_session.execute_async_query]:
-        for call_args in exec_calls.call_args_list:
-            args = call_args[0]
-            if args[0].startswith("CREATE SCHEMA"):
-                counts["schema"] += 1
-            if args[0].startswith("CREATE OR REPLACE PROCEDURE"):
-                counts["procedures"] += 1
-            elif args[0].startswith("CREATE OR REPLACE FUNCTION"):
-                counts["functions"] += 1
-            elif args[0].startswith("CREATE TABLE"):
-                counts["tables"] += 1
+    for call_args in mock_session.execute_query.call_args_list:
+        args = call_args[0]
+        if args[0].startswith("CREATE SCHEMA"):
+            counts["schema"] += 1
+        if args[0].startswith("CREATE OR REPLACE PROCEDURE"):
+            counts["procedures"] += 1
+        elif args[0].startswith("CREATE OR REPLACE FUNCTION"):
+            counts["functions"] += 1
+        elif args[0].startswith("CREATE TABLE"):
+            counts["tables"] += 1
     return counts
 
 
@@ -478,45 +486,6 @@ def test_get_columns_schema_from_dataframe():
     assert schema == expected_schema
 
 
-@patch("featurebyte.session.snowflake.connector")
-@patch("featurebyte.session.snowflake.ASYNC_NO_DATA_MAX_RETRY", 0)
-@pytest.mark.parametrize(
-    "is_still_running,query_status,error_message",
-    [
-        (
-            True,
-            QueryStatus.NO_DATA,
-            "Cannot retrieve data on the status of this query. No information returned from server for query 'some-query-id'",
-        ),
-        (
-            False,
-            QueryStatus.ABORTED,
-            "Status of query 'some-query-id' is ABORTED, results are unavailable",
-        ),
-    ],
-)
-@pytest.mark.asyncio
-async def test_snowflake_session__execute_async_query_fail(
-    mock_connector,
-    error_message,
-    is_still_running,
-    query_status,
-    snowflake_session_dict,
-):
-    """
-    Test snowflake session execute asynchronous query
-    """
-    connection = mock_connector.connect.return_value
-    cursor = connection.cursor.return_value
-    cursor.sfqid = "some-query-id"
-    connection.get_query_status_throw_if_error.return_value = query_status
-    connection.is_still_running.return_value = is_still_running
-    session = SnowflakeSession(**snowflake_session_dict)
-    with pytest.raises(DatabaseError) as exc:
-        await session.execute_async_query("SELECT * FROM T")
-    assert str(exc.value) == error_message
-
-
 @pytest.mark.parametrize("error_type", [DatabaseError, OperationalError])
 def test_constructor__credentials_error(snowflake_connector, error_type, snowflake_session_dict):
     """
@@ -540,22 +509,103 @@ async def test_get_async_query_stream(snowflake_connector, snowflake_session_dic
         }
     )
 
+    def mock_fetch_arrow_batches():
+        for i in range(result_data.shape[0]):
+            yield pa.Table.from_pandas(result_data.iloc[i : (i + 1)])
+
     connection = snowflake_connector.connect.return_value
     cursor = connection.cursor.return_value
-    cursor.sfqid = "some-query-id"
-    cursor.description = [["col_a"], ["col_b"], ["col_c"]]
-    cursor.fetch_arrow_batches.return_value = [
-        pa.Table.from_pandas(result_data[i : (i + 1)]) for i in range(10)
-    ]
+    cursor.fetch_arrow_batches.side_effect = mock_fetch_arrow_batches
 
     session = SnowflakeSession(**snowflake_session_dict)
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        result = session.get_async_query_stream("SELECT * FROM T")
-        download_path = os.path.join(tmpdir, "data.parquet.zip")
-        with open(download_path, "wb") as f:
-            async for data in result:
-                f.write(data)
-        df = pandas_df_from_parquet_archive_data(download_path)
+    bytestream = session.get_async_query_stream("SELECT * FROM T")
+    data = b""
+    async for chunk in bytestream:
+        data += chunk
+    df = dataframe_from_arrow_stream(data)
 
     assert_frame_equal(df, result_data)
+
+
+@pytest.mark.asyncio
+@patch("featurebyte.session.snowflake.SnowflakeSession.fetch_query_stream_impl")
+async def test_timeout(mock_fetch_query_stream_impl, snowflake_connector, snowflake_session_dict):
+    """
+    Test execute_query time out
+    """
+
+    def long_run(*args, **kwargs):
+        """
+        Simulate long execute run that exceeds timeout
+        """
+        time.sleep(1)
+
+    connection = snowflake_connector.connect.return_value
+    cursor = connection.cursor.return_value
+    cursor.execute.side_effect = long_run
+    session = SnowflakeSession(**snowflake_session_dict)
+
+    with pytest.raises(QueryExecutionTimeOut) as exc:
+        await session.execute_query("SELECT * FROM T", timeout=0.1)
+    assert "Execution timeout 0.1s exceeded." in str(exc.value)
+
+    # confirm fetch_query_stream_impl not called due to thread termination
+    time.sleep(1)
+    mock_fetch_query_stream_impl.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_exception_handling_in_thread(snowflake_connector, snowflake_session_dict):
+    """
+    Test execute_query time out
+    """
+
+    connection = snowflake_connector.connect.return_value
+    cursor = connection.cursor.return_value
+    cursor.execute.side_effect = ValueError("error occurred")
+    session = SnowflakeSession(**snowflake_session_dict)
+
+    with pytest.raises(ValueError) as exc:
+        await session.execute_query("SELECT * FROM T")
+    assert "error occurred" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_execute_query_no_data(snowflake_connector, snowflake_session_dict):
+    """
+    Test get_async_query_stream
+    """
+    query = "SELECT * FROM T"
+    connection = snowflake_connector.connect.return_value
+    cursor = connection.cursor.return_value
+
+    # no data, no description
+    cursor.description = None
+    session = SnowflakeSession(**snowflake_session_dict)
+    result = await session.execute_query(query)
+    assert result is None
+
+    # # no data, with description
+    # cursor.description = True
+    # session = SnowflakeSession(**snowflake_session_dict)
+    # # cursor.fetch_arrow_batches.side_effect = yield
+    # result = await session.execute_query(query)
+    # assert result is None
+
+    empty_df = pd.DataFrame({"a": [], "b": []})
+
+    # empty dataframe, fetch_arrow_batches supported
+    def mock_fetch_arrow_batches():
+        yield pa.Table.from_pandas(empty_df)
+
+    cursor.description = True
+    cursor.fetch_arrow_batches.side_effect = mock_fetch_arrow_batches
+    result = await session.execute_query(query)
+    assert_frame_equal(result, empty_df)
+
+    # empty dataframe, fetch_arrow_batches not supported
+    cursor.fetch_arrow_batches.side_effect = NotSupportedError
+    cursor.fetch_pandas_all.return_value = empty_df
+    result = await session.execute_query(query)
+    assert_frame_equal(result, empty_df)

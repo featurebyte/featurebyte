@@ -175,3 +175,9 @@ class GraphInconsistencyError(DocumentError):
     """
     Raise when the graph consistency issue is detected
     """
+
+
+class QueryExecutionTimeOut(DocumentError):
+    """
+    Raise when the SQL query execution times out
+    """

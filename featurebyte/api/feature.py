@@ -14,11 +14,11 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.common.utils import run_async
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
-from featurebyte.core.utils import run_async
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.event_data import FeatureJobSetting

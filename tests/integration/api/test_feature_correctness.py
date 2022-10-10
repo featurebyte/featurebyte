@@ -351,7 +351,4 @@ def test_aggregation(
         ["POINT_IN_TIME", entity_column_name]
     ).reset_index(drop=True)
 
-    # truncate date to ms - parquet does not support higher precision
-    df_expected["POINT_IN_TIME"] = df_expected["POINT_IN_TIME"].dt.floor(freq="ms")
-
     fb_assert_frame_equal(df_historical_features, df_expected, dict_like_columns)

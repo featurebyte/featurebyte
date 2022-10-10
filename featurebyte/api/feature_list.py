@@ -9,7 +9,6 @@ import collections
 import time
 from collections import defaultdict
 from http import HTTPStatus
-from io import BytesIO
 
 import pandas as pd
 from alive_progress import alive_bar
@@ -27,9 +26,13 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
+from featurebyte.common.utils import (
+    dataframe_from_arrow_stream,
+    dataframe_to_arrow_bytes,
+    run_async,
+)
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
-from featurebyte.core.utils import pandas_df_from_parquet_archive_data, run_async
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordCreationException,
@@ -548,22 +551,15 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
             )
         else:
             client = Configurations().get_client()
-            buffer = BytesIO()
-            # parquet does not allow higher precision beyond ms
-            training_events.to_parquet(
-                buffer, allow_truncated_timestamps=True, coerce_timestamps="ms"
-            )
-            buffer.seek(0)
             response = client.post(
-                "/feature_list/get_historical_features",
+                "/feature_list/historical_features",
                 data={"payload": payload.json()},
-                files={"training_events": buffer.read()},
+                files={"training_events": dataframe_to_arrow_bytes(training_events)},
             )
-            buffer.close()
             if response.status_code != HTTPStatus.OK:
                 raise RecordRetrievalException(response)
             content = response.content
-        return pandas_df_from_parquet_archive_data(BytesIO(content))
+        return dataframe_from_arrow_stream(content)
 
     @typechecked
     def create_new_version(
