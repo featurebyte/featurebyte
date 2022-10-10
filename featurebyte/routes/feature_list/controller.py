@@ -10,6 +10,7 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from fastapi.exceptions import HTTPException
 
+from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
 from featurebyte.schema.feature_list import (
@@ -106,6 +107,14 @@ class FeatureListController(  # type: ignore[misc]
         FeatureListModel
             FeatureList object with updated attribute(s)
         """
+        if data.make_production_ready:
+            feature_list = await self.get(document_id=feature_list_id)
+            for feature_id in feature_list.feature_ids:
+                await self.feature_readiness_service.update_feature(
+                    feature_id=feature_id,
+                    readiness=FeatureReadiness.PRODUCTION_READY,
+                    return_document=False,
+                )
         if data.deployed is not None:
             await self.deploy_service.update_feature_list(
                 feature_list_id=feature_list_id,

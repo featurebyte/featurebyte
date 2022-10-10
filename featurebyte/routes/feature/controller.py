@@ -23,7 +23,6 @@ from featurebyte.schema.feature import (
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService
-from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 
@@ -42,14 +41,12 @@ class FeatureController(  # type: ignore[misc]
         service: FeatureService,
         feature_list_service: FeatureListService,
         feature_readiness_service: FeatureReadinessService,
-        online_enable_service: OnlineEnableService,
         preview_service: PreviewService,
         version_service: VersionService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.feature_list_service = feature_list_service
         self.feature_readiness_service = feature_readiness_service
-        self.online_enable_service = online_enable_service
         self.preview_service = preview_service
         self.version_service = version_service
 
@@ -112,12 +109,6 @@ class FeatureController(  # type: ignore[misc]
             await self.feature_readiness_service.update_feature(
                 feature_id=feature_id,
                 readiness=FeatureReadiness(data.readiness),
-                return_document=False,
-            )
-        if data.online_enabled is not None:
-            await self.online_enable_service.update_feature(
-                feature_id=feature_id,
-                online_enabled=data.online_enabled,
                 return_document=False,
             )
         return await self.get(document_id=feature_id)

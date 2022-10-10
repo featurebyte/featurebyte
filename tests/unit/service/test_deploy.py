@@ -12,7 +12,7 @@ async def test_update_feature_list__feature_not_online_enabled_error(deploy_serv
     """Test update feature list (not all features are online enabled validation error)"""
     with pytest.raises(DocumentUpdateError) as exc:
         await deploy_service.update_feature_list(feature_list_id=feature_list.id, deployed=True)
-    expected_msg = "Only FeatureList object will all features online enabled can be deployed."
+    expected_msg = "Only FeatureList object of all production ready features can be deployed."
     assert expected_msg in str(exc.value)
 
 
@@ -30,7 +30,7 @@ async def test_update_feature_list_namespace__no_update_except_updated_at(
     deploy_service, feature_list, feature_list_namespace
 ):
     """Test update feature list namespace when deployed status is the same"""
-    updated_namespace = await deploy_service.update_feature_list_namespace(
+    updated_namespace = await deploy_service._update_feature_list_namespace(
         feature_list_namespace_id=feature_list.feature_list_namespace_id,
         feature_list=feature_list,
     )
@@ -45,7 +45,7 @@ async def test_update_feature__no_update_except_updated_at(
 ):
     """Test update feature when deployed status is the same"""
     feature = await feature_service.get_document(document_id=feature.id)
-    updated_feature = await deploy_service.update_feature(
+    updated_feature = await deploy_service._update_feature(
         feature_id=feature.id,
         feature_list=feature_list,
     )
@@ -76,17 +76,26 @@ async def check_states_after_deployed_change(
         assert feature.deployed_feature_list_ids == expected_deployed_feature_list_ids
 
 
+@pytest.mark.asyncio
 async def test_update_feature_list(
     feature_service,
     feature_list_namespace_service,
     feature_list_service,
     feature_list,
+    feature_readiness_service,
     deploy_service,
 ):
     """Test update feature list"""
+    for feature_id in feature_list.feature_ids:
+        await feature_readiness_service.update_feature(
+            feature_id=feature_id, readiness="PRODUCTION_READY"
+        )
+
+    assert feature_list.online_enabled_feature_ids == []
     deployed_feature_list = await deploy_service.update_feature_list(
         feature_list_id=feature_list.id, deployed=True, return_document=True
     )
+    assert deployed_feature_list.online_enabled_feature_ids == deployed_feature_list.feature_ids
     assert isinstance(deployed_feature_list, FeatureListModel)
     await check_states_after_deployed_change(
         feature_service=feature_service,
@@ -100,6 +109,7 @@ async def test_update_feature_list(
     deployed_disabled_feature_list = await deploy_service.update_feature_list(
         feature_list_id=feature_list.id, deployed=False, return_document=True
     )
+    assert deployed_disabled_feature_list.online_enabled_feature_ids == []
     assert isinstance(deployed_disabled_feature_list, FeatureListModel)
     await check_states_after_deployed_change(
         feature_service=feature_service,

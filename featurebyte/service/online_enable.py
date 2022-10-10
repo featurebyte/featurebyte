@@ -7,8 +7,7 @@ from typing import Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel, FeatureReadiness
+from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
@@ -30,7 +29,7 @@ class OnlineEnableService(BaseUpdateService):
             return cls.include_object_id(document.online_enabled_feature_ids, feature.id)
         return cls.exclude_object_id(document.online_enabled_feature_ids, feature.id)
 
-    async def update_feature_list(
+    async def _update_feature_list(
         self,
         feature_list_id: ObjectId,
         feature: FeatureModel,
@@ -69,7 +68,7 @@ class OnlineEnableService(BaseUpdateService):
             return_document=return_document,
         )
 
-    async def update_feature_namespace(
+    async def _update_feature_namespace(
         self,
         feature_namespace_id: ObjectId,
         feature: FeatureModel,
@@ -108,19 +107,6 @@ class OnlineEnableService(BaseUpdateService):
             return_document=return_document,
         )
 
-    @staticmethod
-    def _validate_online_enabled_operation(feature: FeatureModel, online_enabled: bool) -> None:
-        if online_enabled and feature.readiness != FeatureReadiness.PRODUCTION_READY:
-            raise DocumentUpdateError(
-                f"Only Feature object with {FeatureReadiness.PRODUCTION_READY} readiness can be online enabled "
-                f"(readiness: {feature.readiness})."
-            )
-        if not online_enabled and feature.deployed_feature_list_ids:
-            raise DocumentUpdateError(
-                "Failed to online disable the feature as it has been used by at least one deployed "
-                "FeatureList object."
-            )
-
     async def update_feature(
         self,
         feature_id: ObjectId,
@@ -148,7 +134,6 @@ class OnlineEnableService(BaseUpdateService):
         """
         document = await self.get_feature_document(document_id=feature_id, document=document)
         if document.online_enabled != online_enabled:
-            self._validate_online_enabled_operation(document, online_enabled)
             async with self.persistent.start_transaction():
                 feature = await self.feature_service.update_document(
                     document_id=feature_id,
@@ -157,16 +142,17 @@ class OnlineEnableService(BaseUpdateService):
                     return_document=True,
                 )
                 assert isinstance(feature, FeatureModel)
-                await self.update_feature_namespace(
+                await self._update_feature_namespace(
                     feature_namespace_id=feature.feature_namespace_id,
                     feature=feature,
                     return_document=False,
                 )
                 for feature_list_id in feature.feature_list_ids:
-                    await self.update_feature_list(
+                    await self._update_feature_list(
                         feature_list_id=feature_list_id,
                         feature=feature,
                         return_document=False,
                     )
-                return self.conditional_return(document=feature, condition=return_document)
+                if return_document:
+                    return await self.feature_service.get_document(document_id=feature_id)
         return self.conditional_return(document=document, condition=return_document)
