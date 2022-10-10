@@ -371,7 +371,6 @@ class BaseSchemaInitializer(ABC):
 
     async def register_missing_objects(self) -> None:
         """Detect database objects that are missing and register them"""
-
         sql_objects = self.get_sql_objects()
         sql_objects_by_type: dict[SqlObjectType, list[dict[str, Any]]] = {
             SqlObjectType.FUNCTION: [],

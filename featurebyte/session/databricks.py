@@ -21,7 +21,7 @@ from pydantic import Field
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 
 
 class DatabricksSession(BaseSession):
@@ -49,6 +49,9 @@ class DatabricksSession(BaseSession):
             catalog=self.featurebyte_catalog,
             schema=self.featurebyte_schema,
         )
+
+    async def initialize(self) -> None:
+        await DatabricksSchemaInitializer(self).initialize()
 
     @property
     def schema_name(self) -> str:
@@ -152,3 +155,38 @@ class DatabricksSession(BaseSession):
         )
         query = f"CREATE OR REPLACE TEMPORARY VIEW {table_name} AS {table_expr}"
         await self.execute_query(query)
+
+
+class DatabricksSchemaInitializer(BaseSchemaInitializer):
+    """Databricks schema initializer class"""
+
+    @property
+    def sql_directory_name(self) -> str:
+        return "databricks"
+
+    async def create_schema(self) -> None:
+        create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
+        await self.session.execute_query(create_schema_query)
+
+    async def list_functions(self) -> list[str]:
+        def _function_name_to_identifier(function_name: str) -> str:
+            # Two things:
+            #
+            # 1) function names returned from SHOW FUNCTIONS are three part fully qualified, but
+            # identifiers are based on function names only
+            #
+            # 2) functions name are always stored as lower case even when declared upper case;
+            # however the SchemaInitializer expects that identifiers are in the same casing as the
+            # SQL filename (upper case)
+            return function_name.rsplit(".", 1)[1].upper()
+
+        df_result = await self.session.execute_query(
+            f"SHOW USER FUNCTIONS IN {self.session.schema_name}"
+        )
+        out = []
+        if df_result is not None:
+            out.extend(df_result["function"].apply(_function_name_to_identifier))
+        return out
+
+    async def list_procedures(self) -> list[str]:
+        return []
