@@ -78,6 +78,7 @@ class FeatureListUpdate(FeatureByteBaseModel):
     FeatureList update schema
     """
 
+    make_production_ready: Optional[bool]
     deployed: Optional[bool]
 
 

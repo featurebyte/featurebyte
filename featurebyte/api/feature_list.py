@@ -581,3 +581,20 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
             update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
             allow_update_local=False,
         )
+
+    @typechecked
+    def deploy(self, enable: bool, make_production_ready: bool = False) -> None:
+        """
+        Update feature list deployment status
+
+        Parameters
+        ----------
+        enable: bool
+            Whether to deploy this feature list
+        make_production_ready: bool
+            Whether to convert the feature to production ready if it is not production ready
+        """
+        self.update(
+            update_payload={"deployed": enable, "make_production_ready": make_production_ready},
+            allow_update_local=False,
+        )

@@ -703,3 +703,68 @@ def test_feature_list_update_status_and_default_version_mode__unsaved_feature_li
     with pytest.raises(RecordRetrievalException) as exc:
         feature_list.update_default_version_mode(DefaultVersionMode.MANUAL)
     assert expected in str(exc.value)
+
+
+def test_deploy(feature_list, production_ready_feature, draft_feature):
+    """Test feature list deployment update"""
+    feature_list.save()
+    assert feature_list.saved is True
+
+    # create another feature list
+    another_feature_list = FeatureList(
+        [
+            production_ready_feature,
+            draft_feature,
+        ],
+        name="another_feature_list",
+    )
+    another_feature_list.save(conflict_resolution="retrieve")
+
+    # check feature online_enabled status
+    for feature_id in feature_list.feature_ids:
+        feature = Feature.get_by_id(feature_id)
+        assert not feature.online_enabled
+        assert feature.deployed_feature_list_ids == []
+
+    # first deploy feature list
+    feature_list.deploy(enable=True, make_production_ready=True)
+
+    for feature_id in feature_list.feature_ids:
+        feature = Feature.get_by_id(feature_id)
+        assert feature.online_enabled
+        assert feature.deployed_feature_list_ids == [feature_list.id]
+
+    # deploy another feature list
+    another_feature_list.deploy(enable=True)
+
+    for feature_id in feature_list.feature_ids:
+        feature = Feature.get_by_id(feature_id)
+        assert feature.online_enabled
+        if feature_id in another_feature_list.feature_ids:
+            # when the feature appears in both feature lists
+            assert sorted(feature.deployed_feature_list_ids) == sorted(
+                [feature_list.id, another_feature_list.id]
+            )
+        else:
+            # when the feature is in one feature list only
+            assert feature.deployed_feature_list_ids == [feature_list.id]
+
+    # disable feature list deployment
+    feature_list.deploy(enable=False)
+
+    for feature_id in feature_list.feature_ids:
+        feature = Feature.get_by_id(feature_id)
+        if feature_id in another_feature_list.feature_ids:
+            assert feature.online_enabled
+            assert feature.deployed_feature_list_ids == [another_feature_list.id]
+        else:
+            assert not feature.online_enabled
+            assert feature.deployed_feature_list_ids == []
+
+    # disable another feature list deployment
+    another_feature_list.deploy(enable=False)
+
+    for feature_id in feature_list.feature_ids:
+        feature = Feature.get_by_id(feature_id)
+        assert not feature.online_enabled
+        assert feature.deployed_feature_list_ids == []

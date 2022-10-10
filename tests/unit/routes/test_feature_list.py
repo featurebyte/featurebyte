@@ -341,14 +341,28 @@ class TestFeatureListApi(BaseApiTestSuite):
             )
             assert response.status_code == HTTPStatus.OK
 
-            # make the feature online enabled
-            response = test_api_client.patch(
-                f"/feature/{feature_id}", json={"online_enabled": True}
-            )
-            assert response.status_code == HTTPStatus.OK
-
         # deploy the feature list
         response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"deployed": True})
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["deployed"] is True
+
+        # disable deployment
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"deployed": False})
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["deployed"] is False
+
+    def test_update_200__deploy_with_make_production_ready(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test update (success) with make production ready"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+
+        # deploy the feature list
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"deployed": True, "make_production_ready": True}
+        )
         assert response.status_code == HTTPStatus.OK
         assert response.json()["deployed"] is True
 
