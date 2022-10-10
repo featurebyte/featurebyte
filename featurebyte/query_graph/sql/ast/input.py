@@ -49,9 +49,13 @@ class InputNode(TableNode):
             database = self.dbtable["database_name"]
             schema = self.dbtable["schema_name"]
             table = self.dbtable["table_name"]
-            # Note that the quotes here are not final and will be converted to the right kinds (e.g.
-            # backticks for databricks) when the expression formatted as string
-            dbtable = f'"{database}"."{schema}"."{table}"'
+            # expressions.Table's notation for three part fully qualified name is
+            # {catalog}.{db}.{this}
+            dbtable = expressions.Table(
+                this=quoted_identifier(table),
+                db=quoted_identifier(schema),
+                catalog=quoted_identifier(database),
+            )
         else:
             dbtable = quoted_identifier(self.dbtable["table_name"])
         select_expr = select_expr.from_(dbtable)
