@@ -12,14 +12,14 @@ from dataclasses import dataclass
 from sqlglot import expressions, select
 
 from featurebyte.api.feature import Feature
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     apply_serving_names_mapping,
-    escape_column_name,
+    quoted_identifier,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.session.base import BaseSession
@@ -227,7 +227,7 @@ class SnowflakeTileCache(TileCache):
         """
         out = {}
         for feature in features:
-            interpreter = GraphInterpreter(feature.graph)
+            interpreter = GraphInterpreter(feature.graph, source_type=SourceType.SNOWFLAKE)
             infos = interpreter.construct_tile_gen_sql(feature.node, is_on_demand=True)
             for info in infos:
                 if info.aggregation_id not in out:
@@ -327,7 +327,7 @@ class SnowflakeTileCache(TileCache):
             join_conditions = []
             for serving_name, key in zip(tile_info.serving_names, tile_info.entity_columns):
                 join_conditions.append(
-                    f"REQ.{escape_column_name(serving_name)} = {table_alias}.{escape_column_name(key)}"
+                    f"REQ.{quoted_identifier(serving_name).sql()} = {table_alias}.{quoted_identifier(key).sql()}"
                 )
             join_conditions.append(
                 f"{last_tile_start_date_expr} <= {table_alias}.{InternalName.TILE_LAST_START_DATE}"
@@ -418,12 +418,12 @@ class SnowflakeTileCache(TileCache):
 
         # Tile compute sql uses original table columns instead of serving names
         serving_names_to_keys = [
-            f"{escape_column_name(serving_name)} AS {escape_column_name(col)}"
+            f"{quoted_identifier(serving_name).sql()} AS {quoted_identifier(col).sql()}"
             for serving_name, col in zip(tile_info.serving_names, tile_info.entity_columns)
         ]
 
         # This is the groupby keys used to construct the entity table
-        serving_names = [f"{escape_column_name(col)}" for col in tile_info.serving_names]
+        serving_names = [f"{quoted_identifier(col).sql()}" for col in tile_info.serving_names]
 
         entity_table_expr = (
             select(

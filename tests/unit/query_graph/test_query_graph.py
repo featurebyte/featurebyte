@@ -7,6 +7,7 @@ from collections import defaultdict
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node import construct_node
@@ -256,9 +257,9 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
         target_node=dataframe.node, target_columns=set(dataframe.columns)
     )
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
-    query_before_serialization = GraphInterpreter(pruned_graph).construct_preview_sql(
-        node_name=mapped_node.name
-    )
+    query_before_serialization = GraphInterpreter(
+        pruned_graph, SourceType.SNOWFLAKE
+    ).construct_preview_sql(node_name=mapped_node.name)
 
     # further modify the global graph & check the global query graph are updated
     dataframe["feature"] = dataframe["VALUE"] / dataframe["CUST_ID"]
@@ -280,16 +281,18 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
     mapped_node_before_load = pruned_graph_before_load.get_node_by_name(
         node_name_map_before_load[node_before_load.name]
     )
-    query_before_load = GraphInterpreter(pruned_graph_before_load).construct_preview_sql(
-        mapped_node_before_load.name
-    )
+    query_before_load = GraphInterpreter(
+        pruned_graph_before_load, SourceType.SNOWFLAKE
+    ).construct_preview_sql(mapped_node_before_load.name)
 
     # deserialize the graph, load the graph to global query graph & check the generated query
     graph = QueryGraph.parse_obj(pruned_graph.dict())
     _, node_name_map = GlobalQueryGraph().load(graph)
     node_global = GlobalQueryGraph().get_node_by_name(node_name_map[mapped_node.name])
     assert (
-        GraphInterpreter(GlobalQueryGraph()).construct_preview_sql(node_global.name)
+        GraphInterpreter(GlobalQueryGraph(), SourceType.SNOWFLAKE).construct_preview_sql(
+            node_global.name
+        )
         == query_before_serialization
     )
     assert isinstance(graph.edges_map, defaultdict)
@@ -300,9 +303,9 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
     pruned_graph_after_load, _ = GlobalQueryGraph().prune(
         target_node=node_before_load, target_columns=set(columns_before_load)
     )
-    query_after_load = GraphInterpreter(pruned_graph_after_load).construct_preview_sql(
-        mapped_node_before_load.name
-    )
+    query_after_load = GraphInterpreter(
+        pruned_graph_after_load, SourceType.SNOWFLAKE
+    ).construct_preview_sql(mapped_node_before_load.name)
     assert query_before_load == query_after_load
 
 

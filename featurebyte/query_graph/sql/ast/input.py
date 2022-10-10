@@ -11,7 +11,7 @@ from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.sql.ast.base import TableNode
-from featurebyte.query_graph.sql.common import SQLType, escape_column_name
+from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
 
 
 @dataclass
@@ -45,13 +45,19 @@ class InputNode(TableNode):
         select_expr = select_expr.select(*select_args)
 
         # FROM clause
-        if self.feature_store["type"] == SourceType.SNOWFLAKE:
+        if self.feature_store["type"] in {SourceType.SNOWFLAKE, SourceType.DATABRICKS}:
             database = self.dbtable["database_name"]
             schema = self.dbtable["schema_name"]
             table = self.dbtable["table_name"]
-            dbtable = f'"{database}"."{schema}"."{table}"'
+            # expressions.Table's notation for three part fully qualified name is
+            # {catalog}.{db}.{this}
+            dbtable = expressions.Table(
+                this=quoted_identifier(table),
+                db=quoted_identifier(schema),
+                catalog=quoted_identifier(database),
+            )
         else:
-            dbtable = escape_column_name(self.dbtable["table_name"])
+            dbtable = quoted_identifier(self.dbtable["table_name"])
         select_expr = select_expr.from_(dbtable)
 
         # WHERE clause
@@ -81,7 +87,7 @@ class BuildTileInputNode(InputNode):
         # Apply tile start and end date filters on a nested subquery to avoid filtering out data
         # required by window function
         select_expr = select("*").from_(table_expr.subquery())
-        timestamp = escape_column_name(self.timestamp)
+        timestamp = quoted_identifier(self.timestamp).sql()
         start_cond = (
             f"{timestamp} >= CAST({InternalName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
         )

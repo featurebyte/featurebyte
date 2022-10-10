@@ -6,10 +6,10 @@ from __future__ import annotations
 import pandas as pd
 from sqlglot import expressions, parse_one, select
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.common import escape_column_name
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 
 
@@ -28,11 +28,12 @@ class OnDemandTileComputePlan:
         Point in time value specified when calling preview
     """
 
-    def __init__(self, point_in_time: str):
+    def __init__(self, point_in_time: str, source_type: SourceType):
         self.point_in_time = point_in_time
         self.processed_agg_ids: set[str] = set()
         self.max_window_size_by_agg_id: dict[str, int] = {}
         self.tile_infos: list[TileGenSql] = []
+        self.source_type = source_type
 
     def process_node(self, graph: QueryGraph, node: Node) -> None:
         """Update state given a query graph node
@@ -44,7 +45,7 @@ class OnDemandTileComputePlan:
         node : Node
             Query graph node
         """
-        tile_gen_info_lst = get_tile_gen_info(graph, node)
+        tile_gen_info_lst = get_tile_gen_info(graph, node, self.source_type)
 
         for tile_info in tile_gen_info_lst:
 
@@ -60,7 +61,7 @@ class OnDemandTileComputePlan:
             self.tile_infos.append(tile_info)
             self.processed_agg_ids.add(tile_info.aggregation_id)
 
-    def construct_tile_sqls(self) -> dict[str, expressions.Expression]:
+    def construct_tile_sqls(self) -> dict[str, expressions.Select]:
         """Construct SQL expressions for all the required tile tables
 
         Returns
@@ -68,7 +69,7 @@ class OnDemandTileComputePlan:
         dict[str, expressions.Expression]
         """
 
-        tile_sqls: dict[str, expressions.Expression] = {}
+        tile_sqls: dict[str, expressions.Select] = {}
         prev_aliases: dict[str, str] = {}
 
         for tile_info in self.tile_infos:
@@ -99,9 +100,11 @@ class OnDemandTileComputePlan:
 
             if tile_table_id not in tile_sqls:
                 # New tile table - get the tile index column, entity columns and tile value columns
-                keys = [f"{agg_id}.{escape_column_name(key)}" for key in tile_info.entity_columns]
+                keys = [
+                    f"{agg_id}.{quoted_identifier(key).sql()}" for key in tile_info.entity_columns
+                ]
                 if tile_info.value_by_column is not None:
-                    keys.append(f"{agg_id}.{escape_column_name(tile_info.value_by_column)}")
+                    keys.append(f"{agg_id}.{quoted_identifier(tile_info.value_by_column).sql()}")
                 tile_sql = select(f"{agg_id}.INDEX", *keys, *tile_info.tile_value_columns).from_(
                     tile_sql_expr.subquery(alias=agg_id)
                 )
@@ -113,7 +116,7 @@ class OnDemandTileComputePlan:
                 prev_alias = prev_aliases[tile_table_id]
                 join_conditions = [f"{prev_alias}.INDEX = {agg_id}.INDEX"]
                 for key in tile_info.entity_columns:
-                    key = escape_column_name(key)
+                    key = quoted_identifier(key).sql()
                     join_conditions.append(f"{prev_alias}.{key} = {agg_id}.{key}")
                 # Tile sqls with the same tile_table_id should generate output with identical set of
                 # tile indices and entity columns (they are derived from the same event data using
@@ -164,7 +167,7 @@ class OnDemandTileComputePlan:
         """
         return self.max_window_size_by_agg_id[aggregation_id]
 
-    def construct_on_demand_tile_ctes(self) -> list[tuple[str, str]]:
+    def construct_on_demand_tile_ctes(self) -> list[tuple[str, expressions.Select]]:
         """Construct the CTE statements that would compute all the required tiles
 
         Returns
@@ -174,11 +177,11 @@ class OnDemandTileComputePlan:
         cte_statements = []
         tile_sqls = self.construct_tile_sqls()
         for tile_table_id, tile_sql_expr in tile_sqls.items():
-            cte_statements.append((tile_table_id, tile_sql_expr.sql(pretty=True)))
+            cte_statements.append((tile_table_id, tile_sql_expr))
         return cte_statements
 
 
-def get_tile_gen_info(graph: QueryGraph, node: Node) -> list[TileGenSql]:
+def get_tile_gen_info(graph: QueryGraph, node: Node, source_type: SourceType) -> list[TileGenSql]:
     """Construct TileGenSql that contains recipe of building tiles
 
     Parameters
@@ -187,12 +190,14 @@ def get_tile_gen_info(graph: QueryGraph, node: Node) -> list[TileGenSql]:
         Query graph
     node : Node
         Query graph node
+    source_type : SourceType
+        Source type information
 
     Returns
     -------
     list[TileGenSql]
     """
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, source_type=source_type)
     tile_gen_info = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
     return tile_gen_info
 

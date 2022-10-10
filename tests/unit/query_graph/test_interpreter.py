@@ -6,7 +6,7 @@ from dataclasses import asdict
 
 import pytest
 
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph
 from featurebyte.query_graph.sql.ast.builder import SQLOperationGraph
@@ -254,7 +254,7 @@ def test_graph_interpreter_project_multiple_columns(graph, node_input):
 
 def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggregation_id):
     """Test tile building SQL"""
-    interpreter = GraphInterpreter(query_graph_with_groupby)
+    interpreter = GraphInterpreter(query_graph_with_groupby, SourceType.SNOWFLAKE)
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
     assert len(tile_gen_sqls) == 1
@@ -293,7 +293,7 @@ def test_graph_interpreter_on_demand_tile_gen(
     Note that the input table query contains a left-join with an entity table to filter only data
     belonging to specific entity IDs and date range
     """
-    interpreter = GraphInterpreter(query_graph_with_groupby)
+    interpreter = GraphInterpreter(query_graph_with_groupby, SourceType.SNOWFLAKE)
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=True)
     assert len(tile_gen_sqls) == 1
@@ -369,7 +369,7 @@ def test_graph_interpreter_on_demand_tile_gen(
 
 def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_groupby):
     """Test tile building SQL with aggregation per category"""
-    interpreter = GraphInterpreter(query_graph_with_category_groupby)
+    interpreter = GraphInterpreter(query_graph_with_category_groupby, SourceType.SNOWFLAKE)
     groupby_node = query_graph_with_category_groupby.get_node_by_name("groupby_1")
     tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
     assert len(tile_gen_sqls) == 1
@@ -445,7 +445,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
 ):
     """Test case for a complex feature that depends on two groupby nodes"""
     complex_feature_node, graph = complex_feature_query_graph
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
     tile_gen_sqls = interpreter.construct_tile_gen_sql(complex_feature_node, is_on_demand=True)
     assert len(tile_gen_sqls) == 2
 
@@ -635,7 +635,7 @@ def test_graph_interpreter_snowflake(graph):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],
     )
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
     tile_gen_sql = interpreter.construct_tile_gen_sql(_groupby_node, is_on_demand=False)
     assert len(tile_gen_sql) == 1
     sql_template = tile_gen_sql[0].sql
@@ -717,7 +717,7 @@ def test_graph_interpreter_preview(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, proj_c],
     )
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
 
     sql_code = interpreter.construct_preview_sql("assign_2")
     expected = textwrap.dedent(
@@ -786,7 +786,7 @@ def test_filter_node(graph, node_input):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a, binary_node],
     )
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
     sql_code = interpreter.construct_preview_sql(filter_node.name)
     expected = textwrap.dedent(
         """
@@ -803,7 +803,7 @@ def test_filter_node(graph, node_input):
     ).strip()
     assert sql_code == expected
 
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
     sql_code = interpreter.construct_preview_sql(filter_series_node.name)
     expected = textwrap.dedent(
         """
@@ -857,7 +857,7 @@ def test_multiple_filters(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[filter_node_1, binary_node_2],
     )
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
     sql_code = interpreter.construct_preview_sql(filter_node_2.name)
     expected = textwrap.dedent(
         """
@@ -908,7 +908,7 @@ def test_filter_assign_project(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node],
     )
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
     sql_code = interpreter.construct_preview_sql(project_node.name)
     expected = textwrap.dedent(
         """
@@ -944,7 +944,7 @@ def test_project_multi_then_assign(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[project_node, proj_b],
     )
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
     sql_code = interpreter.construct_preview_sql(assign_node.name)
     expected = textwrap.dedent(
         """
@@ -992,7 +992,7 @@ def test_conditional_assign__project_named(graph, node_input):
         input_nodes=[assign_node],
     )
 
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
     sql_code = interpreter.construct_preview_sql(projected_conditional.name)
     expected = textwrap.dedent(
         """
@@ -1014,7 +1014,7 @@ def test_conditional_assign__project_named(graph, node_input):
     ).strip()
     assert sql_code == expected
 
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
     sql_code = interpreter.construct_preview_sql(assign_node.name)
     expected = textwrap.dedent(
         """
@@ -1047,7 +1047,7 @@ def test_isnull(graph, node_input):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a],
     )
-    interpreter = GraphInterpreter(graph)
+    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
     sql_code = interpreter.construct_preview_sql(mask_node.name)
     expected = textwrap.dedent(
         """
@@ -1279,3 +1279,67 @@ def test_window_function__multiple_filters(graph, node_input):
         """
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
+
+
+def test_databricks_source(query_graph_with_groupby):
+    """Test SQL generation for databricks source"""
+    graph = query_graph_with_groupby
+    input_node = graph.get_node_by_name("input_1")
+    groupby_node = graph.get_node_by_name("groupby_1")
+    interpreter = GraphInterpreter(graph, source_type=SourceType.DATABRICKS)
+
+    # Check preview SQL
+    preview_sql = interpreter.construct_preview_sql(input_node.name)
+    expected = textwrap.dedent(
+        """
+        SELECT
+          `ts` AS `ts`,
+          `cust_id` AS `cust_id`,
+          `a` AS `a`,
+          `b` AS `b`
+        FROM `db`.`public`.`event_table`
+        LIMIT 10
+        """
+    ).strip()
+    assert preview_sql == expected
+
+    # Check tile SQL
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
+    assert len(tile_gen_sqls) == 1
+    tile_sql = tile_gen_sqls[0].sql
+    expected = textwrap.dedent(
+        """
+        SELECT
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          `cust_id`,
+          SUM(`a`) AS sum_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12,
+          COUNT(`a`) AS count_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, `ts`) - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+            FROM (
+                SELECT
+                  *
+                FROM (
+                    SELECT
+                      `ts` AS `ts`,
+                      `cust_id` AS `cust_id`,
+                      `a` AS `a`,
+                      `b` AS `b`,
+                      (`a` + `b`) AS `c`
+                    FROM `db`.`public`.`event_table`
+                )
+                WHERE
+                  `ts` >= CAST(__FB_START_DATE AS TIMESTAMP)
+                  AND `ts` < CAST(__FB_END_DATE AS TIMESTAMP)
+            )
+        )
+        GROUP BY
+          tile_index,
+          `cust_id`
+        ORDER BY
+          tile_index
+        """
+    ).strip()
+    assert tile_sql == expected

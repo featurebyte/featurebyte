@@ -32,7 +32,7 @@ class ExtendedFeatureModel(FeatureModel):
         -------
         list[TileSpec]
         """
-        interpreter = GraphInterpreter(self.graph)
+        interpreter = GraphInterpreter(self.graph, self.feature_store.type)
         node = self.graph.get_node_by_name(self.node_name)
         tile_infos = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
         out = []

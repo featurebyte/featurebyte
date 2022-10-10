@@ -110,9 +110,9 @@ class QueryObject(FeatureByteBaseModel):
         str
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
-        return GraphInterpreter(pruned_graph).construct_preview_sql(
-            node_name=mapped_node.name, num_rows=limit
-        )
+        return GraphInterpreter(
+            pruned_graph, source_type=self.feature_store.type
+        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)
 
     @typechecked
     def preview(self, limit: int = 10) -> pd.DataFrame:

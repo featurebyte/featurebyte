@@ -56,7 +56,7 @@ class PreviewService(OpsServiceMixin):
 
     async def preview(self, preview: FeatureStorePreview, limit: int, get_credential: Any) -> str:
         """
-        Preview a Feature
+        Preview a QueryObject that is not a Feature (e.g. DatabaseTable, EventData, EventView, etc)
 
         Parameters
         ----------
@@ -75,14 +75,15 @@ class PreviewService(OpsServiceMixin):
         input_node = preview.graph.nodes_map["input_1"]
         assert isinstance(input_node, InputNode)
         feature_store_dict = input_node.parameters.feature_store_details.dict()
+        feature_store = FeatureStoreModel(**feature_store_dict, name=preview.feature_store_name)
         db_session = await self._get_feature_store_session(
-            feature_store=FeatureStoreModel(**feature_store_dict, name=preview.feature_store_name),
+            feature_store=feature_store,
             get_credential=get_credential,
         )
 
-        preview_sql = GraphInterpreter(preview.graph).construct_preview_sql(
-            node_name=preview.node.name, num_rows=limit
-        )
+        preview_sql = GraphInterpreter(
+            preview.graph, source_type=feature_store.type
+        ).construct_preview_sql(node_name=preview.node.name, num_rows=limit)
         result = await db_session.execute_async_query(preview_sql)
         return self._convert_dataframe_as_json(result)
 
@@ -126,16 +127,18 @@ class PreviewService(OpsServiceMixin):
         input_node = graph.nodes_map["input_1"]
         assert isinstance(input_node, InputNode)
         feature_store_dict = input_node.parameters.feature_store_details.dict()
+        feature_store = FeatureStoreModel(
+            **feature_store_dict, name=feature_preview.feature_store_name
+        )
         db_session = await self._get_feature_store_session(
-            feature_store=FeatureStoreModel(
-                **feature_store_dict, name=feature_preview.feature_store_name
-            ),
+            feature_store=feature_store,
             get_credential=get_credential,
         )
         preview_sql = get_feature_preview_sql(
             graph=graph,
             nodes=[feature_preview.feature.node],
             point_in_time_and_serving_name=feature_preview.point_in_time_and_serving_name,
+            source_type=feature_store.type,
         )
         result = await db_session.execute_async_query(preview_sql)
         return self._convert_dataframe_as_json(result)
@@ -173,10 +176,11 @@ class PreviewService(OpsServiceMixin):
             input_node = preview_group.graph.nodes_map["input_1"]
             assert isinstance(input_node, InputNode)
             feature_store_dict = input_node.parameters.feature_store_details.dict()
+            feature_store = FeatureStoreModel(
+                **feature_store_dict, name=preview_group.feature_store_name
+            )
             db_session = await self._get_feature_store_session(
-                feature_store=FeatureStoreModel(
-                    **feature_store_dict, name=preview_group.feature_store_name
-                ),
+                feature_store=feature_store,
                 get_credential=get_credential,
             )
             preview_sql = get_feature_preview_sql(
@@ -185,6 +189,7 @@ class PreviewService(OpsServiceMixin):
                     preview_group.graph.get_node_by_name(name) for name in preview_group.node_names
                 ],
                 point_in_time_and_serving_name=point_in_time_and_serving_name,
+                source_type=feature_store.type,
             )
             _result = await db_session.execute_async_query(preview_sql)
             if result is None:
