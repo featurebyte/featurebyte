@@ -1,8 +1,7 @@
 """
 Tests for featurebyte.query_graph.feature_historical.py
 """
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pandas as pd
 import pytest
@@ -15,7 +14,6 @@ from featurebyte.models.feature_store import SQLiteDetails
 from featurebyte.query_graph.sql.feature_historical import (
     get_historical_features,
     get_historical_features_sql,
-    get_session_from_feature_objects,
 )
 from tests.util.helper import assert_equal_with_expected_fixture
 
@@ -46,7 +44,9 @@ def mock_sqlite_feature_fixture():
 
 
 @pytest.mark.asyncio
-async def test_get_historical_features__missing_point_in_time(mock_snowflake_feature):
+async def test_get_historical_features__missing_point_in_time(
+    mock_snowflake_feature, mocked_session
+):
     """Test validation of missing point in time for historical features"""
     training_events = pd.DataFrame(
         {
@@ -55,13 +55,18 @@ async def test_get_historical_features__missing_point_in_time(mock_snowflake_fea
     )
     with pytest.raises(exception.MissingPointInTimeColumnError) as exc_info:
         await get_historical_features(
-            feature_objects=[mock_snowflake_feature], training_events=training_events
+            session=mocked_session,
+            graph=mock_snowflake_feature.graph,
+            nodes=[mock_snowflake_feature.node],
+            training_events=training_events,
         )
     assert str(exc_info.value) == "POINT_IN_TIME column is required"
 
 
 @pytest.mark.asyncio
-async def test_get_historical_features__missing_required_serving_name(mock_snowflake_feature):
+async def test_get_historical_features__missing_required_serving_name(
+    mock_snowflake_feature, mocked_session
+):
     """Test validation of missing point in time for historical features"""
     training_events = pd.DataFrame(
         {
@@ -71,7 +76,10 @@ async def test_get_historical_features__missing_required_serving_name(mock_snowf
     )
     with pytest.raises(exception.MissingServingNameError) as exc_info:
         await get_historical_features(
-            feature_objects=[mock_snowflake_feature], training_events=training_events
+            session=mocked_session,
+            graph=mock_snowflake_feature.graph,
+            nodes=[mock_snowflake_feature.node],
+            training_events=training_events,
         )
     assert str(exc_info.value) == "Required serving names not provided: cust_id"
 
@@ -80,7 +88,7 @@ async def test_get_historical_features__missing_required_serving_name(mock_snowf
 @pytest.mark.parametrize("point_in_time_is_datetime_dtype", [True, False])
 @pytest.mark.asyncio
 async def test_get_historical_features__too_recent_point_in_time(
-    mock_snowflake_feature, point_in_time_is_datetime_dtype
+    mock_snowflake_feature, mocked_session, point_in_time_is_datetime_dtype
 ):
     """Test validation of too recent point in time for historical features"""
     point_in_time_vals = ["2022-04-15", "2022-04-30"]
@@ -94,20 +102,15 @@ async def test_get_historical_features__too_recent_point_in_time(
     )
     with pytest.raises(exception.TooRecentPointInTimeError) as exc_info:
         await get_historical_features(
-            feature_objects=[mock_snowflake_feature], training_events=training_events
+            session=mocked_session,
+            graph=mock_snowflake_feature.graph,
+            nodes=[mock_snowflake_feature.node],
+            training_events=training_events,
         )
     assert str(exc_info.value) == (
         "The latest point in time (2022-04-30 00:00:00) should not be more recent than 48 hours "
         "from now"
     )
-
-
-@pytest.mark.asyncio
-async def test_get_session__multiple_stores_not_supported(float_feature, mock_sqlite_feature):
-    """Test multiple stores not supported"""
-    with pytest.raises(NotImplementedError) as exc_info:
-        await get_session_from_feature_objects([float_feature, mock_sqlite_feature])
-    assert str(exc_info.value) == "Historical features request using multiple stores not supported"
 
 
 @pytest.mark.asyncio
@@ -121,8 +124,6 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     Test that if point in time column is provided as string, it is converted to datetime before
     being registered as a temp table in session
     """
-    feature_objects = [float_feature]
-
     # Input POINT_IN_TIME is string
     df_request = pd.DataFrame(
         {
@@ -133,9 +134,10 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     assert df_request.dtypes["POINT_IN_TIME"] == "object"
 
     _ = await get_historical_features(
-        feature_objects=feature_objects,
+        session=mocked_session,
+        graph=float_feature.graph,
+        nodes=[float_feature.node],
         training_events=df_request,
-        credentials=config.credentials,
     )
 
     # Check POINT_IN_TIME is converted to datetime
@@ -149,10 +151,11 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
 
 def test_get_historical_feature_sql(float_feature, update_fixtures):
     """Test SQL code generated for historical features is expected"""
-    feature_objects = [float_feature]
     request_table_columns = ["POINT_IN_TIME", "cust_id", "A", "B", "C"]
     sql = get_historical_features_sql(
-        feature_objects=feature_objects, request_table_columns=request_table_columns
+        graph=float_feature.graph,
+        nodes=[float_feature.node],
+        request_table_columns=request_table_columns,
     )
     assert_equal_with_expected_fixture(
         sql, "tests/fixtures/expected_historical_requests.sql", update_fixture=update_fixtures
@@ -161,11 +164,11 @@ def test_get_historical_feature_sql(float_feature, update_fixtures):
 
 def test_get_historical_feature_sql__serving_names_mapping(float_feature, update_fixtures):
     """Test SQL code generated for historical features with serving names mapping"""
-    feature_objects = [float_feature]
     request_table_columns = ["POINT_IN_TIME", "NEW_CUST_ID", "A", "B", "C"]
     serving_names_mapping = {"cust_id": "NEW_CUST_ID"}
     sql = get_historical_features_sql(
-        feature_objects=feature_objects,
+        graph=float_feature.graph,
+        nodes=[float_feature.node],
         request_table_columns=request_table_columns,
         serving_names_mapping=serving_names_mapping,
     )

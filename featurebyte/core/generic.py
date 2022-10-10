@@ -141,7 +141,7 @@ class QueryObject(FeatureByteBaseModel):
         payload = FeatureStorePreview(
             feature_store_name=self.feature_store.name,
             graph=pruned_graph,
-            node=mapped_node,
+            node_name=mapped_node.name,
         )
         client = Configurations().get_client()
         response = client.post(

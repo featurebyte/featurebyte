@@ -11,11 +11,12 @@ from dataclasses import dataclass
 
 from sqlglot import expressions, select
 
-from featurebyte.api.feature import Feature
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec
+from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     apply_serving_names_mapping,
@@ -40,13 +41,22 @@ class TileCache(ABC):
         self.session = session
 
     @abstractmethod
-    async def compute_tiles_on_demand(self, features: list[Feature]) -> None:
+    async def compute_tiles_on_demand(
+        self,
+        graph: QueryGraph,
+        nodes: list[Node],
+        serving_names_mapping: dict[str, str] | None = None,
+    ) -> None:
         """Check tile status for the provided features and compute missing tiles if required
 
         Parameters
         ----------
-        features : list[Feature]
-            Feature objects
+        graph : QueryGraph
+            Query graph
+        nodes : list[Node]
+            List of query graph node
+        serving_names_mapping : dict[str, str] | None
+            Optional mapping from original serving name to new serving name
         """
 
 
@@ -94,20 +104,25 @@ class SnowflakeTileCache(TileCache):
         self._materialized_temp_table_names: set[str] = set()
 
     async def compute_tiles_on_demand(
-        self, features: list[Feature], serving_names_mapping: dict[str, str] | None = None
+        self,
+        graph: QueryGraph,
+        nodes: list[Node],
+        serving_names_mapping: dict[str, str] | None = None,
     ) -> None:
-        """Compute missing tiles for the given list of Features
+        """Compute missing tiles for the given list of FeatureModel objects
 
         Parameters
         ----------
-        features : list[Feature]
-            Feature objects
+        graph : QueryGraph
+            Query graph
+        nodes : list[Node]
+            List of query graph node
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
         """
         tic = time.time()
         required_requests = await self.get_required_computation(
-            features, serving_names_mapping=serving_names_mapping
+            graph=graph, nodes=nodes, serving_names_mapping=serving_names_mapping
         )
         elapsed = time.time() - tic
         logger.debug(
@@ -149,7 +164,8 @@ class SnowflakeTileCache(TileCache):
 
     async def get_required_computation(
         self,
-        features: list[Feature],
+        graph: QueryGraph,
+        nodes: list[Node],
         serving_names_mapping: dict[str, str] | None = None,
     ) -> list[SnowflakeOnDemandTileComputeRequest]:
         """Query the entity tracker tables on Snowflake and obtain a list of tile computations that
@@ -157,8 +173,10 @@ class SnowflakeTileCache(TileCache):
 
         Parameters
         ----------
-        features : list[Feature]
-            Feature objects
+        graph : QueryGraph
+            Query graph
+        nodes : list[Node]
+            List of query graph node
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
 
@@ -167,7 +185,7 @@ class SnowflakeTileCache(TileCache):
         list[SnowflakeOnDemandTileComputeRequest]
         """
         unique_tile_infos = SnowflakeTileCache._get_unique_tile_infos(
-            features, serving_names_mapping=serving_names_mapping
+            graph=graph, nodes=nodes, serving_names_mapping=serving_names_mapping
         )
         tile_ids_with_tracker = await self._filter_tile_ids_with_tracker(
             list(unique_tile_infos.keys())
@@ -210,14 +228,16 @@ class SnowflakeTileCache(TileCache):
 
     @staticmethod
     def _get_unique_tile_infos(
-        features: list[Feature], serving_names_mapping: dict[str, str] | None
+        graph: QueryGraph, nodes: list[Node], serving_names_mapping: dict[str, str] | None
     ) -> dict[str, TileGenSql]:
         """Construct mapping from tile_table_id to TileGenSql for easier manipulation
 
         Parameters
         ----------
-        features : list[Feature]
-            List of Feature objects
+        graph : QueryGraph
+            Query graph
+        nodes : list[Node]
+            List of query graph node
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
 
@@ -226,9 +246,9 @@ class SnowflakeTileCache(TileCache):
         dict[str, TileGenSql]
         """
         out = {}
-        for feature in features:
-            interpreter = GraphInterpreter(feature.graph, source_type=SourceType.SNOWFLAKE)
-            infos = interpreter.construct_tile_gen_sql(feature.node, is_on_demand=True)
+        interpreter = GraphInterpreter(graph, source_type=SourceType.SNOWFLAKE)
+        for node in nodes:
+            infos = interpreter.construct_tile_gen_sql(node, is_on_demand=True)
             for info in infos:
                 if info.aggregation_id not in out:
                     if serving_names_mapping is not None:

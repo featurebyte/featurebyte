@@ -158,14 +158,25 @@ class FeatureListInfo(NamespaceInfo):
     versions_info: Optional[FeatureListBriefInfoList]
 
 
-class FeatureListPreviewGroup(FeatureByteBaseModel):
+class FeatureCluster(FeatureByteBaseModel):
     """
-    FeatureList preview schema for a group of features from the same feature store
+    Schema for a group of features from the same feature store
     """
 
     feature_store_name: StrictStr
     graph: QueryGraph
     node_names: List[StrictStr]
+
+    @property
+    def nodes(self) -> List[Node]:
+        """
+        Get feature nodes
+
+        Returns
+        -------
+        List[Node]
+        """
+        return [self.graph.get_node_by_name(name) for name in self.node_names]
 
 
 class FeatureListPreview(FeatureByteBaseModel):
@@ -173,15 +184,14 @@ class FeatureListPreview(FeatureByteBaseModel):
     FeatureList preview schema
     """
 
-    preview_groups: List[FeatureListPreviewGroup]
+    feature_clusters: List[FeatureCluster]
     point_in_time_and_serving_name: Dict[str, Any]
 
 
-class FeatureListHistorical(FeatureByteBaseModel):
+class FeatureListGetHistoricalFeatures(FeatureByteBaseModel):
     """
-    FeatureList preview schema
+    FeatureList get historical features schema
     """
 
-    graph: QueryGraph
-    nodes: List[Node]
-    point_in_time_and_serving_name: Dict[str, Any]
+    feature_clusters: List[FeatureCluster]
+    serving_names_mapping: Optional[Dict[str, str]]

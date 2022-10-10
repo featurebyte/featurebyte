@@ -18,6 +18,7 @@ from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
+from featurebyte.core.utils import run_async
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.logger import logger
 from featurebyte.models.event_data import FeatureJobSetting
@@ -271,16 +272,20 @@ class Feature(
         feature_dict = self.dict()
         feature_dict["graph"] = pruned_graph
         feature_dict["node"] = mapped_node
+        feature = FeatureModel(**feature_dict)
 
         payload = FeaturePreview(
             feature_store_name=self.feature_store.name,
-            feature=FeatureModel(**feature_dict),
+            graph=feature.graph,
+            node_name=feature.node_name,
             point_in_time_and_serving_name=point_in_time_and_serving_name,
         )
 
         if self.feature_store.details.is_local_source:
-            result = PreviewService(user=None, persistent=None).preview_feature(
-                feature_preview=payload, get_credential=get_credential
+            result = run_async(
+                PreviewService(user=None, persistent=None).preview_feature,
+                feature_preview=payload,
+                get_credential=get_credential,
             )
         else:
             client = Configurations().get_client()

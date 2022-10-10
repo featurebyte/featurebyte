@@ -6,9 +6,11 @@ from __future__ import annotations
 
 from typing import Optional, Union, cast
 
+import json
 from http import HTTPStatus
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, File, Form, Request, UploadFile
+from fastapi.responses import StreamingResponse
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureListModel
@@ -25,6 +27,7 @@ from featurebyte.routes.common.schema import (
 )
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
+    FeatureListGetHistoricalFeatures,
     FeatureListInfo,
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
@@ -161,18 +164,20 @@ async def get_feature_list_preview(
     )
 
 
-@router.post("/historical", response_model=str)
-async def get_historical_data(
+@router.post("/get_historical_features")
+async def get_historical_features(
     request: Request,
-    featurelist_preview: FeatureListPreview,
-) -> str:
+    payload: str = Form(),
+    training_events: UploadFile = File(description="Training events data in parquet format"),
+) -> StreamingResponse:
     """
     Retrieve Feature preview
     """
+    featurelist_get_historical_features = FeatureListGetHistoricalFeatures(**json.loads(payload))
     controller = request.state.app_container.feature_list_controller
-    return cast(
-        str,
-        await controller.preview(
-            featurelist_preview=featurelist_preview, get_credential=request.state.get_credential
-        ),
+    result: StreamingResponse = await controller.get_historical_features(
+        training_events=training_events,
+        featurelist_get_historical_features=featurelist_get_historical_features,
+        get_credential=request.state.get_credential,
     )
+    return result

@@ -163,5 +163,6 @@ class FeaturePreview(FeatureByteBaseModel):
     """
 
     feature_store_name: StrictStr
-    feature: FeatureModel
+    graph: QueryGraph
+    node_name: str
     point_in_time_and_serving_name: Dict[str, Any]

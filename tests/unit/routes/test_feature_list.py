@@ -1,16 +1,23 @@
 """
 Tests for FeatureList route
 """
+import json
+import os
+import shutil
+import tempfile
 from collections import defaultdict
 from http import HTTPStatus
+from io import BytesIO
 from unittest.mock import patch
 
+import aiofiles
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
+from featurebyte.core.utils import pandas_df_from_parquet_archive_data
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -407,8 +414,8 @@ class TestFeatureListApi(BaseApiTestSuite):
         assert "created_at" in verbose_response_dict
         assert verbose_response_dict["versions_info"] is not None
 
-    @pytest.fixture(name="featurelist_preview_payload")
-    def featurelist_preview_payload_fixture(
+    @pytest.fixture(name="featurelist_feature_clusters")
+    def featurelist_feature_clusters_fixture(
         self, create_success_response, test_api_client_persistent
     ):
         """
@@ -427,14 +434,21 @@ class TestFeatureListApi(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         feature_store = response.json()
 
+        return [
+            {
+                "feature_store_name": feature_store["name"],
+                "graph": feature["graph"],
+                "node_names": [feature["node_name"]],
+            }
+        ]
+
+    @pytest.fixture(name="featurelist_preview_payload")
+    def featurelist_preview_payload_fixture(self, featurelist_feature_clusters):
+        """
+        featurelist_preview_payload fixture
+        """
         return {
-            "preview_groups": [
-                {
-                    "feature_store_name": feature_store["name"],
-                    "graph": feature["graph"],
-                    "node_names": [feature["node_name"]],
-                }
-            ],
+            "feature_clusters": featurelist_feature_clusters,
             "point_in_time_and_serving_name": {
                 "cust_id": "C1",
                 "POINT_IN_TIME": "2022-04-01",
@@ -442,7 +456,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         }
 
     def test_preview_200(self, test_api_client_persistent, featurelist_preview_payload):
-        """Test list (success) using feature_list_id to filter"""
+        """Test feature list preview"""
         test_api_client, _ = test_api_client_persistent
         with patch(
             "featurebyte.core.generic.ExtendedFeatureStoreModel.get_session"
@@ -454,3 +468,71 @@ class TestFeatureListApi(BaseApiTestSuite):
             )
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(pd.read_json(response.json(), orient="table"), expected_df)
+
+    @pytest.fixture(name="featurelist_get_historical_features_payload")
+    def featurelist_get_historical_features_payload_fixture(self, featurelist_feature_clusters):
+        """
+        featurelist_get_historical_features_payload fixture
+        """
+        return {
+            "feature_clusters": featurelist_feature_clusters,
+            "serving_names_mapping": {},
+        }
+
+    def test_get_historical_features_200(
+        self,
+        test_api_client_persistent,
+        featurelist_get_historical_features_payload,
+    ):
+        """Test feature list get_historical_features"""
+        test_api_client, _ = test_api_client_persistent
+        training_events = pd.DataFrame({"cust_id": [0, 1, 2], "POINT_IN_TIME": ["2022-04-01"] * 3})
+        expected_df = pd.DataFrame({"a": [0, 1, 2]})
+        df = expected_df.copy()
+
+        async def mock_get_async_query_stream(query):
+            _ = query
+            with tempfile.TemporaryDirectory() as tmpdir:
+                parquet_path = os.path.join(tmpdir, "data.parquet")
+                df["__index__"] = range(expected_df.shape[0])
+                df.to_parquet(parquet_path)
+
+                # create zip archive from output parquet
+                assert os.path.exists(parquet_path)
+                shutil.make_archive(
+                    str(parquet_path), "zip", root_dir=tmpdir, base_dir="data.parquet"
+                )
+
+                # stream zip file
+                async with aiofiles.open(f"{parquet_path}.zip", "rb") as file_obj:
+                    while True:
+                        chunk = await file_obj.read(1024)
+                        if len(chunk) == 0:
+                            break
+                        yield chunk
+
+        with patch(
+            "featurebyte.core.generic.ExtendedFeatureStoreModel.get_session"
+        ) as mock_get_session:
+            expected_df = pd.DataFrame({"a": [0, 1, 2]})
+            mock_get_session.return_value.get_async_query_stream = mock_get_async_query_stream
+
+            buffer = BytesIO()
+            training_events.to_parquet(buffer)
+            buffer.seek(0)
+            response = test_api_client.post(
+                f"{self.base_route}/get_historical_features",
+                data={"payload": json.dumps(featurelist_get_historical_features_payload)},
+                files={"training_events": buffer.read()},
+                stream=True,
+            )
+            buffer.close()
+            assert response.status_code == HTTPStatus.OK, response.json()
+
+            # test streaming download works
+            content = b""
+            for chunk in response.iter_content(chunk_size=8192):
+                content += chunk
+
+        df = pandas_df_from_parquet_archive_data(BytesIO(content))
+        assert_frame_equal(df, expected_df)

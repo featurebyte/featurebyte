@@ -2,14 +2,18 @@
 Unit test for snowflake session
 """
 import os
+import tempfile
 from unittest.mock import Mock, call, patch
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 import pytest
+from pandas.testing import assert_frame_equal
 from snowflake.connector.constants import QueryStatus
 from snowflake.connector.errors import DatabaseError, NotSupportedError, OperationalError
 
+from featurebyte.core.utils import pandas_df_from_parquet_archive_data
 from featurebyte.enum import DBVarType
 from featurebyte.exception import CredentialsError
 from featurebyte.session.snowflake import SchemaInitializer, SnowflakeSession
@@ -473,8 +477,8 @@ def test_get_columns_schema_from_dataframe():
 @pytest.mark.asyncio
 async def test_snowflake_session__execute_async_query_fail(
     mock_connector,
-    is_still_running,
     error_message,
+    is_still_running,
     query_status,
     snowflake_session_dict,
 ):
@@ -484,8 +488,8 @@ async def test_snowflake_session__execute_async_query_fail(
     connection = mock_connector.connect.return_value
     cursor = connection.cursor.return_value
     cursor.sfqid = "some-query-id"
-    connection.is_still_running.return_value = is_still_running
     connection.get_query_status_throw_if_error.return_value = query_status
+    connection.is_still_running.return_value = is_still_running
     session = SnowflakeSession(**snowflake_session_dict)
     with pytest.raises(DatabaseError) as exc:
         await session.execute_async_query("SELECT * FROM T")
@@ -501,3 +505,36 @@ def test_constructor__credentials_error(snowflake_connector, error_type, snowfla
     with pytest.raises(CredentialsError) as exc:
         SnowflakeSession(**snowflake_session_dict)
     assert "Invalid credentials provided." in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_get_async_query_stream(snowflake_connector, snowflake_session_dict):
+    """
+    Test get_async_query_stream
+    """
+    result_data = pd.DataFrame(
+        {
+            "col_a": range(10),
+            "col_b": range(20, 30),
+        }
+    )
+
+    connection = snowflake_connector.connect.return_value
+    cursor = connection.cursor.return_value
+    cursor.sfqid = "some-query-id"
+    cursor.description = [["col_a"], ["col_b"], ["col_c"]]
+    cursor.fetch_arrow_batches.return_value = [
+        pa.Table.from_pandas(result_data[i : (i + 1)]) for i in range(10)
+    ]
+
+    session = SnowflakeSession(**snowflake_session_dict)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        result = session.get_async_query_stream("SELECT * FROM T")
+        download_path = os.path.join(tmpdir, "data.parquet.zip")
+        with open(download_path, "wb") as f:
+            async for data in result:
+                f.write(data)
+        df = pandas_df_from_parquet_archive_data(download_path)
+
+    assert_frame_equal(df, result_data)

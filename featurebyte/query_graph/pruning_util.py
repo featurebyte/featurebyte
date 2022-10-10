@@ -5,20 +5,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.graph import QueryGraph
 
 if TYPE_CHECKING:
-    from featurebyte.api.feature import Feature
     from featurebyte.query_graph.node import Node
 
 
-def get_prune_graph_and_nodes(feature_objects: list[Feature]) -> tuple[QueryGraph, list[Node]]:
+def get_prune_graph_and_nodes(feature_objects: list[FeatureModel]) -> tuple[QueryGraph, list[Node]]:
     """Construct the pruned graph which contains list of pruned feature graph
 
     Parameters
     ----------
-    feature_objects: List[Feature]
-        List of feature objects
+    feature_objects: List[FeatureModel]
+        List of FeatureModel objects
 
     Returns
     -------

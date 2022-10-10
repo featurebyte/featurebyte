@@ -169,3 +169,9 @@ class DocumentInconsistencyError(DocumentError):
     """
     Raise when the document consistency issue is detected
     """
+
+
+class GraphInconsistencyError(DocumentError):
+    """
+    Raise when the graph consistency issue is detected
+    """

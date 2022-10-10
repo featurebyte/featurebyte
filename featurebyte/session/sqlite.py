@@ -85,6 +85,3 @@ class SQLiteSession(BaseSession):
 
     async def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         raise NotImplementedError()
-
-    async def execute_async_query(self, query: str, timeout: int = 180) -> pd.DataFrame | None:
-        return await self.execute_query(query)

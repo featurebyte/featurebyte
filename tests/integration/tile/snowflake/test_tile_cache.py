@@ -61,7 +61,6 @@ async def test_snowflake_tile_cache(
     """Test SnowflakeTileCache performs caching properly"""
     feature = feature_for_tile_cache_tests
     tile_cache = SnowflakeTileCache(snowflake_session)
-    feature_objects = [feature]
     _ = groupby_category
 
     df_training_events = pd.DataFrame(
@@ -73,7 +72,10 @@ async def test_snowflake_tile_cache(
     await snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
 
     # No cache existed before for this feature. Check that one tile table needs to be computed
-    requests = await tile_cache.get_required_computation(feature_objects)
+    requests = await tile_cache.get_required_computation(
+        graph=feature.graph,
+        nodes=[feature.node],
+    )
     assert len(requests) == 1
     await check_entity_table_sql_and_tile_compute_sql(
         snowflake_session,
@@ -86,7 +88,10 @@ async def test_snowflake_tile_cache(
     await check_temp_tables_cleaned_up(snowflake_session)
 
     # Cache now exists. No additional compute required for the same request table
-    requests = await tile_cache.get_required_computation(feature_objects)
+    requests = await tile_cache.get_required_computation(
+        graph=feature.graph,
+        nodes=[feature.node],
+    )
     assert len(requests) == 0
 
     # Check using training events with outdated entities (user 3, 4, 5)
@@ -99,7 +104,10 @@ async def test_snowflake_tile_cache(
         }
     )
     await snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
-    requests = await tile_cache.get_required_computation(feature_objects)
+    requests = await tile_cache.get_required_computation(
+        graph=feature.graph,
+        nodes=[feature.node],
+    )
     assert len(requests) == 1
     await check_entity_table_sql_and_tile_compute_sql(
         snowflake_session,
@@ -107,7 +115,7 @@ async def test_snowflake_tile_cache(
         "USER ID",
         [3, 4, 5],
     )
-    tile_cache.invoke_tile_manager(requests)
+    await tile_cache.invoke_tile_manager(requests)
     await tile_cache.cleanup_temp_tables()
     await check_temp_tables_cleaned_up(snowflake_session)
 
@@ -119,7 +127,10 @@ async def test_snowflake_tile_cache(
         }
     )
     await snowflake_session.register_temp_table(REQUEST_TABLE_NAME, df_training_events)
-    requests = await tile_cache.get_required_computation(feature_objects)
+    requests = await tile_cache.get_required_computation(
+        graph=feature.graph,
+        nodes=[feature.node],
+    )
     assert len(requests) == 1
     await check_entity_table_sql_and_tile_compute_sql(
         snowflake_session,

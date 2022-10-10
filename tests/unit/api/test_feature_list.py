@@ -122,7 +122,7 @@ def test_feature_list_production_ready_fraction__single_feature(production_ready
 
 @pytest.mark.usefixtures("mocked_tile_cache")
 @freeze_time("2022-05-01")
-def test_feature_list_creation__success(production_ready_feature, config, mocked_tile_cache):
+def test_feature_list_creation__success(production_ready_feature, mocked_tile_cache):
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
     dataframe = pd.DataFrame(
@@ -131,7 +131,11 @@ def test_feature_list_creation__success(production_ready_feature, config, mocked
             "cust_id": ["C1", "C2"],
         }
     )
-    flist.get_historical_features(dataframe, credentials=config.credentials)
+
+    with patch("featurebyte.session.snowflake.SnowflakeSession.get_async_query_stream"):
+        with patch("featurebyte.api.feature_list.pandas_df_from_parquet_archive_data"):
+            flist.get_historical_features(dataframe)
+
     assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],

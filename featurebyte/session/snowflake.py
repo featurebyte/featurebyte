@@ -11,10 +11,13 @@ import json
 import os
 import time
 from enum import Enum
+from pathlib import Path
 
 import aiofiles
 import numpy as np
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 from pydantic import Field
 from snowflake import connector
 from snowflake.connector.constants import QueryStatus
@@ -86,7 +89,9 @@ class SnowflakeSession(BaseSession):
         finally:
             cursor.close()
 
-    async def fetch_async_query(self, query_id: Any, timeout: int = 180) -> pd.DataFrame | None:
+    async def fetch_async_query(
+        self, query_id: Any, timeout: int, output_path: Path | None
+    ) -> pd.DataFrame | None:
         """
         Execute SQL queries
 
@@ -96,6 +101,8 @@ class SnowflakeSession(BaseSession):
             Query ID used to fetch results
         timeout: int
             timeout in seconds
+        output_path: Path | None
+            path to store results
 
         Returns
         -------
@@ -132,10 +139,32 @@ class SnowflakeSession(BaseSession):
                 f"Status of query '{query_id}' is {status.name}, results are unavailable"
             )
 
-        # Retrieve results from Snowflake asynchronous query using SQL with query_id
-        return await self.execute_query(f"select * from table(result_scan('{query_id}'))")
+        get_result_sql = f"select * from table(result_scan('{query_id}'))"
 
-    async def execute_async_query(self, query: str, timeout: int = 180) -> pd.DataFrame | None:
+        # return result as dataframe
+        if not output_path:
+            return await self.execute_query(get_result_sql)
+
+        # save result to parquet file
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute(get_result_sql)
+            index = 0
+            for table in cursor.fetch_arrow_batches():
+                end_index = index + len(table)
+                # add index column so that order can be recovered later
+                table = table.append_column(
+                    "__index__", pa.array(range(index, end_index), pa.int64())
+                )
+                pq.write_to_dataset(table, root_path=output_path)
+                index = end_index
+            return None
+        finally:
+            cursor.close()
+
+    async def execute_async_query(
+        self, query: str, timeout: int = 180, output_path: Path | None = None
+    ) -> pd.DataFrame | None:
         """
         Execute SQL queries
 
@@ -145,15 +174,20 @@ class SnowflakeSession(BaseSession):
             sql query to execute
         timeout: int
             timeout in seconds
+        output_path: Path | None
+            path to store results
 
         Returns
         -------
         pd.DataFrame | None
             Query result as a pandas DataFrame if the query expects result
         """
+
+        query_id = self.make_async_query_request(query)
         return await self.fetch_async_query(
-            query_id=self.make_async_query_request(query),
+            query_id=query_id,
             timeout=timeout,
+            output_path=output_path,
         )
 
     async def list_databases(self) -> list[str]:

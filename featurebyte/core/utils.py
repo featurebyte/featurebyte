@@ -4,7 +4,12 @@ Utility functions for API Objects
 from typing import Any
 
 import asyncio
+import os
+import tempfile
 import threading
+from zipfile import ZipFile
+
+import pandas as pd
 
 
 class RunThread(threading.Thread):
@@ -54,3 +59,29 @@ def run_async(func: Any, *args: Any, **kwargs: Any) -> Any:
         thread.join()
         return thread.result
     return asyncio.run(func(*args, **kwargs))
+
+
+def pandas_df_from_parquet_archive_data(zip_data: Any) -> pd.DataFrame:
+    """
+    Read data from zipped parquet archive byte stream to pandas dataframe
+
+    Parameters
+    ----------
+    zip_data: Any
+        ZipFile input (path or buffer-like)
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas Dataframe object
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        output_path = os.path.join(tmpdir, "data.parquet")
+        with ZipFile(zip_data, "r") as zipfile:
+            zipfile.extractall(path=output_path)
+        return (
+            pd.read_parquet(output_path)
+            .sort_values("__index__")
+            .drop("__index__", axis=1)
+            .reset_index(drop=True)
+        )

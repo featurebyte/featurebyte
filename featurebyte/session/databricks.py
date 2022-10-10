@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, OrderedDict
 
 import collections
+from pathlib import Path
 
 import pandas as pd
 
@@ -125,8 +126,16 @@ class DatabricksSession(BaseSession):
         arrow_table = cursor.fetchall_arrow()
         return arrow_table.to_pandas()
 
-    async def execute_async_query(self, query: str, timeout: int = 180) -> pd.DataFrame | None:
-        return await self.execute_query(query)
+    async def execute_async_query(
+        self, query: str, timeout: int = 180, output_path: Path | None = None
+    ) -> pd.DataFrame | None:
+        _ = timeout
+        result = await self.execute_query(query)
+        if output_path is None:
+            return result
+        assert isinstance(result, pd.DataFrame)
+        result.to_parquet(output_path)
+        return None
 
     async def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         date_cols = dataframe.select_dtypes(include=["datetime64"]).columns.tolist()

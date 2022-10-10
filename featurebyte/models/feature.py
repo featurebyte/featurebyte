@@ -165,6 +165,22 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         allow_mutation=False, default_factory=list
     )
 
+    def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
+        """
+        Extract pruned graph and node
+
+        Returns
+        -------
+        tuple[QueryGraph, Node]
+            Pruned graph and node
+        """
+        pruned_graph, node_name_map = self.graph.prune(
+            target_node=self.node,
+            target_columns={self.name} if self.name else set(),
+        )
+        mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
+        return pruned_graph, mapped_node
+
     @property
     def node(self) -> Node:
         """
