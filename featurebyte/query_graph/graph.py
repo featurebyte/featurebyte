@@ -83,7 +83,7 @@ class QueryGraph(FeatureByteBaseModel):
         target_node = self.get_node_by_name(node_name)
         for input_node in self.iterate_nodes(target_node=target_node, node_type=NodeType.INPUT):
             assert isinstance(input_node, InputNode)
-            if input_node.parameters.type == TableDataType.EVENT_DATA:
+            if input_node.parameters.type in {TableDataType.EVENT_DATA, TableDataType.GENERIC}:
                 return input_node
         raise GraphInconsistencyError("Input node not found")
 
