@@ -29,8 +29,14 @@ from featurebyte.feature_manager.snowflake_feature_list import FeatureListManage
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_list import FeatureListStatus
-from featurebyte.models.feature_store import SnowflakeDetails, SQLiteDetails, TableDetails
+from featurebyte.models.feature_store import (
+    DatabricksDetails,
+    SnowflakeDetails,
+    SQLiteDetails,
+    TableDetails,
+)
 from featurebyte.persistent.git import GitDB
+from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake, TileSpec
@@ -54,6 +60,14 @@ def config_fixture():
             },
         ],
     }
+    if os.getenv("DATABRICKS_ACCESS_TOKEN") is not None:
+        config_dict["featurestore"].append(
+            {
+                "name": "databricks_featurestore",
+                "credential_type": "ACCESS_TOKEN",
+                "access_token": os.getenv("DATABRICKS_ACCESS_TOKEN"),
+            },
+        )
     with tempfile.TemporaryDirectory() as temp_dir_path:
         # initialize git
         git = Git(temp_dir_path)
@@ -106,6 +120,26 @@ def snowflake_feature_store_fixture(mock_get_persistent):
             warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
             sf_schema=temp_schema_name,
             database=os.getenv("SNOWFLAKE_DATABASE"),
+        ),
+    )
+
+
+@pytest.fixture(name="databricks_feature_store", scope="session")
+def databricks_feature_store_fixture(mock_get_persistent):
+    """
+    Databricks database source fixture
+    """
+    _ = mock_get_persistent
+    schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
+    temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+    return FeatureStore(
+        name="databricks_featurestore",
+        type="databricks",
+        details=DatabricksDetails(
+            server_hostname=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
+            http_path=os.getenv("DATABRICKS_HTTP_PATH"),
+            featurebyte_catalog=os.getenv("DATABRICKS_CATALOG"),
+            featurebyte_schema=temp_schema_name,
         ),
     )
 
@@ -229,6 +263,24 @@ async def snowflake_session_fixture(transaction_data_upper_case, config, snowfla
 
     await session.execute_query(
         f"DROP SCHEMA IF EXISTS {snowflake_feature_store.details.sf_schema}"
+    )
+
+
+@pytest_asyncio.fixture(name="databricks_session", scope="session")
+async def databricks_session_fixture(transaction_data_upper_case, config, databricks_feature_store):
+    """
+    Databricks session
+    """
+    session_manager = SessionManager(credentials=config.credentials)
+    session = await session_manager.get_session(databricks_feature_store)
+    assert isinstance(session, DatabricksSession)
+
+    # await session.register_temp_table("TEST_TABLE", transaction_data_upper_case)
+
+    yield session
+
+    await session.execute_query(
+        f"DROP SCHEMA IF EXISTS {databricks_feature_store.details.featurebyte_schema}"
     )
 
 

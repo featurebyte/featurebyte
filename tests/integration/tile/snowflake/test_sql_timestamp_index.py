@@ -3,7 +3,31 @@ This module contains integration tests between timestamp and tile index conversi
 """
 import pytest
 
+from tests.util.helper import DATABRICKS_SESSION_AVAILABLE
 
+
+@pytest.fixture(name="db_session", scope="session")
+def db_session_fixture(request):
+    if request.param == "snowflake":
+        return request.getfixturevalue("snowflake_session")
+    elif request.param == "databricks":
+        return request.getfixturevalue("databricks_session")
+    raise NotImplementedError(f"{request.param}")
+
+
+@pytest.mark.parametrize(
+    "db_session",
+    [
+        pytest.param(
+            "databricks",
+            marks=pytest.mark.skipif(
+                not DATABRICKS_SESSION_AVAILABLE, reason="Databricks credentials not available"
+            ),
+        ),
+        "snowflake",
+    ],
+    indirect=True,
+)
 @pytest.mark.parametrize(
     "time_modulo_frequency_seconds,blind_spot_seconds,frequency_minute,test_input,expected",
     [
@@ -21,7 +45,7 @@ import pytest
 )
 @pytest.mark.asyncio
 async def test_timestamp_to_index(
-    snowflake_session,
+    db_session,
     time_modulo_frequency_seconds,
     blind_spot_seconds,
     frequency_minute,
@@ -32,8 +56,9 @@ async def test_timestamp_to_index(
     Test timestamp to tile index conversion with both iso/non-iso format and different job settings
     """
     sql = f"SELECT F_TIMESTAMP_TO_INDEX('{test_input}', {time_modulo_frequency_seconds}, {blind_spot_seconds}, {frequency_minute}) as INDEX"
-    result = await snowflake_session.execute_query(sql)
-    assert result["INDEX"].iloc[0] == expected
+    result = await db_session.execute_query(sql)
+    res = result["INDEX"].iloc[0]
+    assert res == expected
 
 
 @pytest.mark.parametrize(
