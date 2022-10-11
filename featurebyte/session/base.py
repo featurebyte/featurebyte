@@ -326,10 +326,10 @@ class BaseSchemaInitializer(ABC):
         -------
         bool
         """
-        available_schemas = await self.session.list_schemas(
-            database_name=self.session.database_name
+        available_schemas = self._normalize_casings(
+            await self.session.list_schemas(database_name=self.session.database_name)
         )
-        return self.session.schema_name in available_schemas
+        return self._normalize_casing(self.session.schema_name) in available_schemas
 
     async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
         """Register functions defined in the snowflake sql directory
@@ -339,7 +339,7 @@ class BaseSchemaInitializer(ABC):
         functions : list[dict[str, Any]]
             List of functions to register
         """
-        existing = await self.list_functions()
+        existing = self._normalize_casings(await self.list_functions())
         items = [item for item in functions if item["identifier"] not in existing]
         await self._register_sql_objects(items)
 
@@ -351,7 +351,7 @@ class BaseSchemaInitializer(ABC):
         procedures: list[dict[str, Any]]
             List of procedures to register
         """
-        existing = await self.list_procedures()
+        existing = self._normalize_casings(await self.list_procedures())
         items = [item for item in procedures if item["identifier"] not in existing]
         await self._register_sql_objects(items)
 
@@ -363,8 +363,10 @@ class BaseSchemaInitializer(ABC):
         tables: list[dict[str, Any]]
             List of tables to register
         """
-        existing = await self.session.list_tables(
-            database_name=self.session.database_name, schema_name=self.session.schema_name
+        existing = self._normalize_casings(
+            await self.session.list_tables(
+                database_name=self.session.database_name, schema_name=self.session.schema_name
+            )
         )
         items = [item for item in tables if item["identifier"] not in existing]
         await self._register_sql_objects(items)
@@ -421,8 +423,20 @@ class BaseSchemaInitializer(ABC):
             sql_object = {
                 "type": sql_object_type,
                 "filename": full_filename,
-                "identifier": identifier,
+                "identifier": self._normalize_casing(identifier),
             }
             output.append(sql_object)
 
         return output
+
+    @classmethod
+    def _normalize_casing(cls, identifier: str) -> str:
+        # Some database warehouses convert the names returned from list_tables(), list_schemas(),
+        # list_functions() etc to always upper case (Snowflake) or lower case (Databricks). To unify
+        # the handling between different engines, this converts the identifiers used internally for
+        # initialization purpose to be always upper case.
+        return identifier.upper()
+
+    @classmethod
+    def _normalize_casings(cls, identifiers: list[str]) -> list[str]:
+        return [cls._normalize_casing(x) for x in identifiers]

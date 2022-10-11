@@ -170,15 +170,9 @@ class DatabricksSchemaInitializer(BaseSchemaInitializer):
 
     async def list_functions(self) -> list[str]:
         def _function_name_to_identifier(function_name: str) -> str:
-            # Two things:
-            #
-            # 1) function names returned from SHOW FUNCTIONS are three part fully qualified, but
+            # function names returned from SHOW FUNCTIONS are three part fully qualified, but
             # identifiers are based on function names only
-            #
-            # 2) functions name are always stored as lower case even when declared upper case;
-            # however the SchemaInitializer expects that identifiers are in the same casing as the
-            # SQL filename (upper case)
-            return function_name.rsplit(".", 1)[1].upper()
+            return function_name.rsplit(".", 1)[1]
 
         df_result = await self.session.execute_query(
             f"SHOW USER FUNCTIONS IN {self.session.schema_name}"
