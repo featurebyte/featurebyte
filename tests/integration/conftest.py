@@ -267,7 +267,7 @@ async def snowflake_session_fixture(transaction_data_upper_case, config, snowfla
 
 
 @pytest_asyncio.fixture(name="databricks_session", scope="session")
-async def databricks_session_fixture(transaction_data_upper_case, config, databricks_feature_store):
+async def databricks_session_fixture(config, databricks_feature_store):
     """
     Databricks session
     """
@@ -275,12 +275,10 @@ async def databricks_session_fixture(transaction_data_upper_case, config, databr
     session = await session_manager.get_session(databricks_feature_store)
     assert isinstance(session, DatabricksSession)
 
-    # await session.register_temp_table("TEST_TABLE", transaction_data_upper_case)
-
     yield session
 
     await session.execute_query(
-        f"DROP SCHEMA IF EXISTS {databricks_feature_store.details.featurebyte_schema}"
+        f"DROP SCHEMA IF EXISTS {databricks_feature_store.details.featurebyte_schema} CASCADE"
     )
 
 

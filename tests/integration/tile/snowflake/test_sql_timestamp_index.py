@@ -3,6 +3,7 @@ This module contains integration tests between timestamp and tile index conversi
 """
 import pytest
 
+from featurebyte.session.base import BaseSession
 from tests.util.helper import DATABRICKS_SESSION_AVAILABLE
 
 
@@ -56,6 +57,7 @@ async def test_timestamp_to_index(
     Test timestamp to tile index conversion with both iso/non-iso format and different job settings
     """
     sql = f"SELECT F_TIMESTAMP_TO_INDEX('{test_input}', {time_modulo_frequency_seconds}, {blind_spot_seconds}, {frequency_minute}) as INDEX"
+    assert isinstance(db_session, BaseSession)
     result = await db_session.execute_query(sql)
     res = result["INDEX"].iloc[0]
     assert res == expected
