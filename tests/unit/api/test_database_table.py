@@ -31,3 +31,12 @@ def test_database_table_node_parameters(snowflake_database_table):
     """Test database table node parameters"""
     node_params = snowflake_database_table.node.parameters
     assert node_params.type == TableDataType.GENERIC
+
+
+def test_database_table_get_input_node(snowflake_database_table):
+    """Test database table get input node"""
+    input_node_dict = snowflake_database_table.graph.get_input_node(
+        snowflake_database_table.node_name
+    ).dict()
+    assert input_node_dict["name"] == "input_1"
+    assert input_node_dict["parameters"]["type"] == "generic"
