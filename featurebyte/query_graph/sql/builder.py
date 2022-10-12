@@ -3,13 +3,16 @@ Module for SQL syntax tree builder
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Iterable, Type
 
+from collections import defaultdict
+
+from featurebyte.common.path_util import import_submodules
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
-from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNode, TableNode
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.binary import (
     BINARY_OPERATION_NODE_TYPES,
     make_binary_operation_node,
@@ -28,6 +31,75 @@ from featurebyte.query_graph.sql.ast.unary import (
     make_expression_node,
 )
 from featurebyte.query_graph.sql.common import SQLType
+
+
+class NodeRegistry:
+    """Registry of mapping between query graph Node and SQLNode"""
+
+    def __init__(self) -> None:
+        self.ast_classes_by_query: dict[NodeType, set[Type[SQLNode]]] = defaultdict(set)
+        for _, cls in self.iterate_sql_nodes():
+            self.register_sql_node(cls)
+
+    def add(self, node_type: NodeType, ast_node_cls: Type[SQLNode]) -> None:
+        """Add a query graph node to SQLNode mapping
+
+        Parameters
+        ----------
+        node_type : NodeType
+            Node Type
+        ast_node_cls : Type[SQLNode]
+            A subclass of SQLNode
+        """
+        self.ast_classes_by_query[node_type].add(ast_node_cls)
+
+    def get_sql_node_classes(self, node_type: NodeType) -> set[Type[SQLNode]] | None:
+        """Retrieve a set of candidate classes corresponding to the query node type
+
+        Parameters
+        ----------
+        node_type : NodeType
+            Query graph node type
+
+        Returns
+        -------
+        set[Type[SQLNode]]
+        """
+        return self.ast_classes_by_query.get(node_type, set())
+
+    def register_sql_node(self, sql_node_cls: Type[SQLNode]) -> None:
+        """Register a SQLNode subclass
+
+        Parameters
+        ----------
+        sql_node_cls : Type[SQLNode]
+            A subclass of SQLNode
+        """
+        if sql_node_cls.query_node_type is None:
+            return
+        if not isinstance(sql_node_cls.query_node_type, (list, tuple)):
+            query_node_types = [sql_node_cls.query_node_type]
+        else:
+            query_node_types = sql_node_cls.query_node_type
+        for node_type in query_node_types:
+            self.add(node_type, sql_node_cls)
+
+    @classmethod
+    def iterate_sql_nodes(cls) -> Iterable[tuple[str, Type[SQLNode]]]:
+        """Iterate subclasses of SQLNode in the ast subpackage
+
+        Yields
+        ------
+        tuple[str, Type[SQLNode]]
+            Tuples of class name and SQLNode subclass
+        """
+        for _, mod in import_submodules("featurebyte.query_graph.sql.ast").items():
+            for name, sql_node_cls in mod.__dict__.items():
+                if isinstance(sql_node_cls, type) and issubclass(sql_node_cls, SQLNode):
+                    yield name, sql_node_cls
+
+
+NODE_REGISTRY = NodeRegistry()
 
 
 class SQLOperationGraph:
@@ -113,7 +185,22 @@ class SQLOperationGraph:
         parameters = cur_node.parameters.dict()
         output_type = cur_node.output_type
 
-        sql_node: Any
+        sql_node: Any = None
+        sql_node_classes = NODE_REGISTRY.get_sql_node_classes(node_type)
+        context = SQLNodeContext(
+            query_node=cur_node, parameters=parameters, input_sql_nodes=input_sql_nodes
+        )
+
+        if sql_node_classes:
+            for sql_node_cls in sql_node_classes:
+                sql_node = sql_node_cls.build(context)
+                if sql_node is not None:
+                    break
+
+        if sql_node is not None:
+            self.sql_nodes[node_id] = sql_node
+            return sql_node
+
         if node_type == NodeType.INPUT:
             sql_node = make_input_node(parameters, self.sql_type, groupby_keys)
 

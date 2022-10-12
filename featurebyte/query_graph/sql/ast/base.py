@@ -3,7 +3,7 @@ Module containing base classes and functions for building syntax tree
 """
 from __future__ import annotations
 
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional, Type, TypeVar
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
@@ -12,8 +12,20 @@ from dataclasses import dataclass, field
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.common.typing import is_scalar_nan
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node import Node
 
+SQLNodeT = TypeVar("SQLNodeT", bound="SQLNode")
 TableNodeT = TypeVar("TableNodeT", bound="TableNode")
+
+
+@dataclass
+class SQLNodeContext:
+    """Context containing information required when constructing instances of SQLNode"""
+
+    query_node: Node
+    parameters: dict[str, Any]
+    input_sql_nodes: list[SQLNode]
 
 
 class SQLNode(ABC):
@@ -23,6 +35,8 @@ class SQLNode(ABC):
     produce the feature described by the Query Graph. Each SQL operation can be represented as a
     node in this tree. This is the interface that a node in this tree should implement.
     """
+
+    query_node_type: Optional[NodeType | list[NodeType]] = None
 
     # pylint: disable=too-few-public-methods
     @property
@@ -35,6 +49,24 @@ class SQLNode(ABC):
         Expression
             A sqlglot Expression object
         """
+
+    @classmethod
+    def build(  # pylint: disable=useless-return
+        cls: Type[SQLNodeT], context: SQLNodeContext
+    ) -> Optional[SQLNodeT]:
+        """Create an instance of SQLNode given a context if applicable
+
+        Parameters
+        ----------
+        context : SQLNodeContext
+            Context for building SQLNode
+
+        Returns
+        -------
+        Optional[SQLNodeT]
+        """
+        _ = context
+        return None
 
 
 @dataclass  # type: ignore[misc]

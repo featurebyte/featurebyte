@@ -3,7 +3,7 @@ Module for datetime operations related sql generation
 """
 from __future__ import annotations
 
-from typing import Any, Union
+from typing import Any, Type, Union, cast
 
 from dataclasses import dataclass
 
@@ -11,7 +11,14 @@ import pandas as pd
 from sqlglot import Expression, expressions
 
 from featurebyte.common.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
-from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode, make_literal_value
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.sql.ast.base import (
+    ExpressionNode,
+    SQLNodeContext,
+    SQLNodeT,
+    TableNode,
+    make_literal_value,
+)
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode, resolve_project_node
 
 
@@ -21,6 +28,7 @@ class DatetimeExtractNode(ExpressionNode):
 
     expr: ExpressionNode
     dt_property: DatetimeSupportedPropertyType
+    query_node_type = NodeType.DT_EXTRACT
 
     @property
     def sql(self) -> Expression:
@@ -37,6 +45,17 @@ class DatetimeExtractNode(ExpressionNode):
             )
         return prop_expr
 
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> DatetimeExtractNode:
+        input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
+        table_node = input_expr_node.table_node
+        sql_node = DatetimeExtractNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            dt_property=context.parameters["property"],
+        )
+        return sql_node
+
 
 @dataclass
 class DateDiffNode(ExpressionNode):
@@ -44,6 +63,7 @@ class DateDiffNode(ExpressionNode):
 
     left_node: ExpressionNode
     right_node: ExpressionNode
+    query_node_type = NodeType.DATE_DIFF
 
     def with_unit(self, unit: TimedeltaSupportedUnitType) -> Expression:
         """Construct a date difference expression with provided time unit
@@ -78,6 +98,7 @@ class TimedeltaExtractNode(ExpressionNode):
 
     timedelta_node: Union[TimedeltaNode, DateDiffNode]
     unit: TimedeltaSupportedUnitType
+    query_node_type = NodeType.TIMEDELTA_EXTRACT
 
     @property
     def sql(self) -> Expression:
@@ -130,6 +151,7 @@ class TimedeltaNode(ExpressionNode):
 
     value_expr: ExpressionNode
     unit: TimedeltaSupportedUnitType
+    query_node_type = NodeType.TIMEDELTA
 
     @property
     def sql(self) -> Expression:
@@ -142,6 +164,7 @@ class DateAddNode(ExpressionNode):
 
     input_date_node: ExpressionNode
     timedelta_node: Union[TimedeltaNode, DateDiffNode, ParsedExpressionNode]
+    query_node_type = NodeType.DATE_ADD
 
     @property
     def sql(self) -> Expression:
