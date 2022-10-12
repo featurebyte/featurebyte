@@ -8,6 +8,7 @@ from typing import Any
 from featurebyte.query_graph.sql.ast.base import (
     ExpressionNode,
     SQLNode,
+    SQLNodeContext,
     TableNode,
     make_literal_value,
 )
@@ -52,19 +53,21 @@ def prepare_binary_op_input_nodes(
     return table_node, left_node, right_node
 
 
-def prepare_unary_input_nodes(input_sql_nodes) -> tuple[TableNode, ExpressionNode]:
+def prepare_unary_input_nodes(
+    context: SQLNodeContext,
+) -> tuple[TableNode, ExpressionNode, dict[str, Any]]:
     """Extract TableNode and ExpressionNode in a unary operation
 
     Parameters
     ----------
-    input_sql_nodes : list[SQLNode]
-        Input SQL nodes
+    context: SQLNodeContext
+        Information related to SQL node building
 
     Returns
     -------
-    tuple[TableNode, ExpressionNode]
+    tuple[TableNode, ExpressionNode, dict[str, Any]]
     """
-    input_expr_node = input_sql_nodes[0]
+    input_expr_node = context.input_sql_nodes[0]
     assert isinstance(input_expr_node, ExpressionNode)
     table_node = input_expr_node.table_node
-    return table_node, input_expr_node
+    return table_node, input_expr_node, context.parameters

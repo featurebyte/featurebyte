@@ -12,6 +12,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import make_literal_value
 from featurebyte.query_graph.sql.ast.binary import BinaryOp
+from featurebyte.query_graph.sql.ast.count_dict import CountDictTransformNode
 from featurebyte.query_graph.sql.ast.datetime import (
     DateAddNode,
     DateDiffNode,
@@ -26,7 +27,7 @@ from featurebyte.query_graph.sql.ast.generic import (
     resolve_project_node,
 )
 from featurebyte.query_graph.sql.ast.input import InputNode, make_input_node
-from featurebyte.query_graph.sql.ast.unary import CastNode, LagNode, make_expression_node
+from featurebyte.query_graph.sql.ast.unary import CastNode, LagNode
 from featurebyte.query_graph.sql.builder import SQLNodeContext
 from featurebyte.query_graph.sql.common import SQLType
 
@@ -246,10 +247,12 @@ def test_make_input_node_escape_special_characters():
 def test_count_dict_transform(parameters, expected, input_node):
     """Test count dict transformation node"""
     column = StrExpressionNode(table_node=input_node, expr="cd_val")
-    node = make_expression_node(
-        input_sql_nodes=[column],
-        node_type=NodeType.COUNT_DICT_TRANSFORM,
-        parameters=parameters,
+    node = CountDictTransformNode.build(
+        SQLNodeContext(
+            input_sql_nodes=[column],
+            query_node=Mock(type=NodeType.COUNT_DICT_TRANSFORM),
+            parameters=parameters,
+        )
     )
     assert node.sql.sql() == expected
 

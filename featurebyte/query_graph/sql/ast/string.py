@@ -1,14 +1,18 @@
 """
 Module containing string operations related sql generation
 """
+from __future__ import annotations
+
 from typing import Literal, Optional
 
 from dataclasses import dataclass
 
 from sqlglot import Expression, expressions
 
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql import expression as fb_expressions
-from featurebyte.query_graph.sql.ast.base import ExpressionNode, make_literal_value
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, make_literal_value
+from featurebyte.query_graph.sql.ast.util import prepare_unary_input_nodes
 
 
 @dataclass
@@ -17,11 +21,22 @@ class StringCaseNode(ExpressionNode):
 
     expr: ExpressionNode
     case: Literal["upper", "lower"]
+    query_node_type = NodeType.STR_CASE
 
     @property
     def sql(self) -> Expression:
         expression = {"upper": expressions.Upper, "lower": expressions.Lower}[self.case]
         return expression(this=self.expr.sql)
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> StringCaseNode:
+        table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
+        sql_node = StringCaseNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            case=parameters["case"],
+        )
+        return sql_node
 
 
 @dataclass
@@ -31,6 +46,7 @@ class StringContains(ExpressionNode):
     expr: ExpressionNode
     pattern: str
     case: bool
+    query_node_type = NodeType.STR_CONTAINS
 
     @property
     def sql(self) -> Expression:
@@ -44,6 +60,17 @@ class StringContains(ExpressionNode):
             pattern=expressions.Lower(this=make_literal_value(self.pattern)),
         )
 
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> StringContains:
+        table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
+        sql_node = StringContains(
+            table_node=table_node,
+            expr=input_expr_node,
+            pattern=parameters["pattern"],
+            case=parameters["case"],
+        )
+        return sql_node
+
 
 @dataclass
 class TrimNode(ExpressionNode):
@@ -52,6 +79,7 @@ class TrimNode(ExpressionNode):
     expr: ExpressionNode
     character: Optional[str]
     side: Literal["left", "right", "both"]
+    query_node_type = NodeType.TRIM
 
     @property
     def sql(self) -> Expression:
@@ -66,6 +94,17 @@ class TrimNode(ExpressionNode):
             )
         return expression_class(this=self.expr.sql)
 
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> TrimNode:
+        table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
+        sql_node = TrimNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            character=parameters["character"],
+            side=parameters["side"],
+        )
+        return sql_node
+
 
 @dataclass
 class ReplaceNode(ExpressionNode):
@@ -74,6 +113,7 @@ class ReplaceNode(ExpressionNode):
     expr: ExpressionNode
     pattern: str
     replacement: str
+    query_node_type = NodeType.REPLACE
 
     @property
     def sql(self) -> Expression:
@@ -82,6 +122,17 @@ class ReplaceNode(ExpressionNode):
             pattern=make_literal_value(self.pattern),
             replacement=make_literal_value(self.replacement),
         )
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> ReplaceNode:
+        table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
+        sql_node = ReplaceNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            pattern=parameters["pattern"],
+            replacement=parameters["replacement"],
+        )
+        return sql_node
 
 
 @dataclass
@@ -92,6 +143,7 @@ class PadNode(ExpressionNode):
     side: Literal["left", "right", "both"]
     length: int
     pad: str
+    query_node_type = NodeType.PAD
 
     @staticmethod
     def _generate_pad_expression(
@@ -146,6 +198,18 @@ class PadNode(ExpressionNode):
             )
         return expressions.If(this=mask_expr, true=self.expr.sql, false=pad_expr)
 
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> PadNode:
+        table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
+        sql_node = PadNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            side=parameters["side"],
+            length=parameters["length"],
+            pad=parameters["pad"],
+        )
+        return sql_node
+
 
 @dataclass
 class SubStringNode(ExpressionNode):
@@ -154,6 +218,7 @@ class SubStringNode(ExpressionNode):
     expr: ExpressionNode
     start: int
     length: Optional[int]
+    query_node_type = NodeType.SUBSTRING
 
     @property
     def sql(self) -> Expression:
@@ -161,3 +226,14 @@ class SubStringNode(ExpressionNode):
         if self.length is not None:
             params["length"] = make_literal_value(self.length)
         return expressions.Substring(**params)
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> SubStringNode:
+        table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
+        sql_node = SubStringNode(
+            table_node=table_node,
+            expr=input_expr_node,
+            start=parameters["start"],
+            length=parameters["length"],
+        )
+        return sql_node

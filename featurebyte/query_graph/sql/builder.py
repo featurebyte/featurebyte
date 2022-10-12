@@ -22,10 +22,6 @@ from featurebyte.query_graph.sql.ast.generic import (
 )
 from featurebyte.query_graph.sql.ast.input import make_input_node
 from featurebyte.query_graph.sql.ast.tile import handle_groupby_node
-from featurebyte.query_graph.sql.ast.unary import (
-    SUPPORTED_EXPRESSION_NODE_TYPES,
-    make_expression_node,
-)
 from featurebyte.query_graph.sql.common import SQLType
 
 
@@ -212,9 +208,6 @@ class SQLOperationGraph:
             sql_node = AliasNode(
                 table_node=expr_node.table_node, name=parameters["name"], expr_node=expr_node
             )
-
-        elif node_type in SUPPORTED_EXPRESSION_NODE_TYPES:
-            sql_node = make_expression_node(input_sql_nodes, node_type, parameters)
 
         elif node_type == NodeType.FILTER:
             sql_node = handle_filter_node(input_sql_nodes, output_type)
