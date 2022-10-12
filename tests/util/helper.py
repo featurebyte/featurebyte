@@ -1,9 +1,12 @@
 """
 This module contains utility functions used in tests
 """
+import os
 import sys
 from contextlib import contextmanager
 from unittest.mock import Mock
+
+DATABRICKS_SESSION_AVAILABLE = os.getenv("DATABRICKS_ACCESS_TOKEN") is not None
 
 
 def assert_equal_with_expected_fixture(actual, fixture_filename, update_fixture=False):

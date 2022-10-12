@@ -8,14 +8,17 @@ from typing import Any, AsyncGenerator, OrderedDict
 import os
 import shutil
 import tempfile
-from abc import abstractmethod
+from abc import ABC, abstractmethod
+from enum import Enum
 from pathlib import Path
 
 import aiofiles
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr
 
+from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, SourceType
+from featurebyte.logger import logger
 
 
 class BaseSession(BaseModel):
@@ -246,3 +249,194 @@ class BaseSession(BaseModel):
         dataframe : pd.DataFrame
             DataFrame to register
         """
+
+    @property
+    @abstractmethod
+    def schema_name(self) -> str:
+        """
+        Returns the name of the working schema that stores featurebyte assets
+
+        Returns
+        -------
+        str
+        """
+
+    @property
+    @abstractmethod
+    def database_name(self) -> str:
+        """
+        Returns the name of the working database that stores featurebyte assets
+
+        Returns
+        -------
+        str
+        """
+
+
+class SqlObjectType(str, Enum):
+    """Enum for type of SQL objects to initialize in Snowflake"""
+
+    FUNCTION = "function"
+    PROCEDURE = "procedure"
+    TABLE = "table"
+
+
+class BaseSchemaInitializer(ABC):
+    """Responsible for initializing featurebyte schema
+
+    Parameters
+    ----------
+    session : BaseSession
+        Session object
+    """
+
+    def __init__(self, session: BaseSession):
+        self.session = session
+
+    @abstractmethod
+    async def create_schema(self) -> None:
+        """Create the featurebyte working schema"""
+
+    @abstractmethod
+    async def list_functions(self) -> list[str]:
+        """Retrieve list of functions in the working schema"""
+
+    @abstractmethod
+    async def list_procedures(self) -> list[str]:
+        """Retrieve list of procedures in the working schema"""
+
+    @property
+    @abstractmethod
+    def sql_directory_name(self) -> str:
+        """Directory name containing the SQL initialization scripts"""
+
+    async def initialize(self) -> None:
+        """Entry point to set up the featurebyte working schema"""
+
+        if not await self.schema_exists():
+            logger.debug(f"Initializing schema {self.session.schema_name}")
+            await self.create_schema()
+
+        await self.register_missing_objects()
+
+    async def schema_exists(self) -> bool:
+        """Check whether the featurebyte schema exists
+
+        Returns
+        -------
+        bool
+        """
+        available_schemas = self._normalize_casings(
+            await self.session.list_schemas(database_name=self.session.database_name)
+        )
+        return self._normalize_casing(self.session.schema_name) in available_schemas
+
+    async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
+        """Register functions defined in the snowflake sql directory
+
+        Parameters
+        ----------
+        functions : list[dict[str, Any]]
+            List of functions to register
+        """
+        existing = self._normalize_casings(await self.list_functions())
+        items = [item for item in functions if item["identifier"] not in existing]
+        await self._register_sql_objects(items)
+
+    async def register_missing_procedures(self, procedures: list[dict[str, Any]]) -> None:
+        """Register procedures defined in the snowflake sql directory
+
+        Parameters
+        ----------
+        procedures: list[dict[str, Any]]
+            List of procedures to register
+        """
+        existing = self._normalize_casings(await self.list_procedures())
+        items = [item for item in procedures if item["identifier"] not in existing]
+        await self._register_sql_objects(items)
+
+    async def create_missing_tables(self, tables: list[dict[str, Any]]) -> None:
+        """Create tables defined in snowflake sql directory
+
+        Parameters
+        ----------
+        tables: list[dict[str, Any]]
+            List of tables to register
+        """
+        existing = self._normalize_casings(
+            await self.session.list_tables(
+                database_name=self.session.database_name, schema_name=self.session.schema_name
+            )
+        )
+        items = [item for item in tables if item["identifier"] not in existing]
+        await self._register_sql_objects(items)
+
+    async def register_missing_objects(self) -> None:
+        """Detect database objects that are missing and register them"""
+        sql_objects = self.get_sql_objects()
+        sql_objects_by_type: dict[SqlObjectType, list[dict[str, Any]]] = {
+            SqlObjectType.FUNCTION: [],
+            SqlObjectType.PROCEDURE: [],
+            SqlObjectType.TABLE: [],
+        }
+        for sql_object in sql_objects:
+            sql_objects_by_type[sql_object["type"]].append(sql_object)
+
+        await self.register_missing_functions(sql_objects_by_type[SqlObjectType.FUNCTION])
+        await self.register_missing_procedures(sql_objects_by_type[SqlObjectType.PROCEDURE])
+        await self.create_missing_tables(sql_objects_by_type[SqlObjectType.TABLE])
+
+    async def _register_sql_objects(self, items: list[dict[str, Any]]) -> None:
+        for item in items:
+            logger.debug(f'Registering {item["identifier"]}')
+            async with aiofiles.open(item["filename"], encoding="utf-8") as f_handle:
+                query = await f_handle.read()
+            await self.session.execute_query(query)
+
+    def get_sql_objects(self) -> list[dict[str, Any]]:
+        """Find all the objects defined in the sql directory
+
+        Returns
+        -------
+        list[str]
+        """
+        sql_directory = os.path.join(get_package_root(), "sql", self.sql_directory_name)
+        output = []
+
+        for filename in os.listdir(sql_directory):
+
+            sql_object_type = None
+            if filename.startswith("F_"):
+                sql_object_type = SqlObjectType.FUNCTION
+            elif filename.startswith("SP_"):
+                sql_object_type = SqlObjectType.PROCEDURE
+            elif filename.startswith("T_"):
+                sql_object_type = SqlObjectType.TABLE
+
+            identifier = filename.replace(".sql", "")
+            if sql_object_type == SqlObjectType.TABLE:
+                # Table naming convention does not include "T_" prefix
+                identifier = identifier[len("T_") :]
+
+            full_filename = os.path.join(sql_directory, filename)
+
+            sql_object = {
+                "type": sql_object_type,
+                "filename": full_filename,
+                "identifier": self._normalize_casing(identifier),
+            }
+            output.append(sql_object)
+
+        return output
+
+    @classmethod
+    def _normalize_casing(cls, identifier: str) -> str:
+        # Some database warehouses convert the names returned from list_tables(), list_schemas(),
+        # list_functions() etc to always upper case (Snowflake) or lower case (Databricks). To unify
+        # the handling between different engines, this converts the identifiers used internally for
+        # initialization purpose to be always upper case.
+        return identifier.upper()
+
+    @classmethod
+    def _normalize_casings(cls, identifiers: list[str]) -> list[str]:
+        return [cls._normalize_casing(x) for x in identifiers]

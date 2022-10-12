@@ -32,6 +32,14 @@ class SQLiteSession(BaseSession):
 
         self._connection = sqlite3.connect(filename)
 
+    @property
+    def database_name(self) -> str:
+        raise NotImplementedError()
+
+    @property
+    def schema_name(self) -> str:
+        raise NotImplementedError()
+
     async def list_databases(self) -> list[str]:
         return []
 

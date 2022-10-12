@@ -8,12 +8,9 @@ from typing import Any, OrderedDict
 import asyncio
 import collections
 import json
-import os
 import time
-from enum import Enum
 from pathlib import Path
 
-import aiofiles
 import numpy as np
 import pandas as pd
 import pyarrow as pa
@@ -25,11 +22,9 @@ from snowflake.connector.cursor import ASYNC_NO_DATA_MAX_RETRY, ASYNC_RETRY_PATT
 from snowflake.connector.errors import DatabaseError, NotSupportedError, OperationalError
 from snowflake.connector.pandas_tools import write_pandas
 
-from featurebyte.common.path_util import get_package_root
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import CredentialsError
-from featurebyte.logger import logger
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import BaseSchemaInitializer, BaseSession
 from featurebyte.session.enum import SnowflakeDataType
 
 
@@ -65,7 +60,15 @@ class SnowflakeSession(BaseSession):
         # If the featurebyte schema does not exist, the self._connection can still be created
         # without errors. Below checks whether the schema actually exists. If not, it will be
         # created and initialized with custom functions and procedures.
-        await SchemaInitializer(self).initialize()
+        await SnowflakeSchemaInitializer(self).initialize()
+
+    @property
+    def schema_name(self) -> str:
+        return self.sf_schema
+
+    @property
+    def database_name(self) -> str:
+        return self.database
 
     def make_async_query_request(self, query: str) -> Any:
         """
@@ -354,159 +357,33 @@ class SnowflakeSession(BaseSession):
         return dataframe
 
 
-class SqlObjectType(str, Enum):
-    """Enum for type of SQL objects to initialize in Snowflake"""
+class SnowflakeSchemaInitializer(BaseSchemaInitializer):
+    """Snowflake schema initializer class"""
 
-    FUNCTION = "function"
-    PROCEDURE = "procedure"
-    TABLE = "table"
+    @property
+    def sql_directory_name(self) -> str:
+        return "snowflake"
 
+    async def create_schema(self) -> None:
+        create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
+        await self.session.execute_query(create_schema_query)
 
-class SchemaInitializer:
-    """Responsible for initializing featurebyte schema
-
-    Parameters
-    ----------
-    session : SnowflakeSession
-        Snowflake session object
-    """
-
-    def __init__(self, session: SnowflakeSession):
-        self.session = session
-
-    async def schema_exists(self) -> bool:
-        """Check whether the featurebyte schema exists
-
-        Returns
-        -------
-        bool
-        """
-        show_schemas_result = await self.session.execute_query("SHOW SCHEMAS")
-        if show_schemas_result is not None:
-            available_schemas = show_schemas_result["name"].tolist()
-        else:
-            available_schemas = []
-        return self.session.sf_schema in available_schemas
-
-    async def initialize(self) -> None:
-        """Initialize the featurebyte schema if it doesn't exist"""
-
-        if not await self.schema_exists():
-            logger.debug(f"Initializing schema {self.session.sf_schema}")
-            create_schema_query = f"CREATE SCHEMA {self.session.sf_schema}"
-            await self.session.execute_query(create_schema_query)
-
-        await self.register_missing_objects()
-
-    async def register_missing_objects(self) -> None:
-        """Detect database objects that are missing and register them"""
-
-        sql_objects = self.get_sql_objects()
-        sql_objects_by_type: dict[SqlObjectType, list[dict[str, Any]]] = {
-            SqlObjectType.FUNCTION: [],
-            SqlObjectType.PROCEDURE: [],
-            SqlObjectType.TABLE: [],
-        }
-        for sql_object in sql_objects:
-            sql_objects_by_type[sql_object["type"]].append(sql_object)
-
-        await self.register_missing_functions(sql_objects_by_type[SqlObjectType.FUNCTION])
-        await self.register_missing_procedures(sql_objects_by_type[SqlObjectType.PROCEDURE])
-        await self.create_missing_tables(sql_objects_by_type[SqlObjectType.TABLE])
-
-    async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
-        """Register functions defined in the snowflake sql directory
-
-        Parameters
-        ----------
-        functions : list[dict[str, Any]]
-            List of functions to register
-        """
+    async def list_functions(self) -> list[str]:
         df_result = await self.session.execute_query(
-            f"SHOW USER FUNCTIONS IN DATABASE {self.session.database}"
+            f"SHOW USER FUNCTIONS IN DATABASE {self.session.database_name}"
         )
-        if df_result is None:
-            return
-        df_result = df_result[df_result["schema_name"] == self.session.sf_schema]
-        existing = set(df_result["name"].tolist())
-        items = [item for item in functions if item["identifier"] not in existing]
-        await self._register_sql_objects(items)
+        out = []
+        if df_result is not None:
+            df_result = df_result[df_result["schema_name"] == self.session.schema_name]
+            out.extend(df_result["name"])
+        return out
 
-    async def register_missing_procedures(self, procedures: list[dict[str, Any]]) -> None:
-        """Register procedures defined in the snowflake sql directory
-
-        Parameters
-        ----------
-        procedures: list[dict[str, Any]]
-            List of procedures to register
-        """
+    async def list_procedures(self) -> list[str]:
         df_result = await self.session.execute_query(
-            f"SHOW PROCEDURES IN DATABASE {self.session.database}"
+            f"SHOW PROCEDURES IN DATABASE {self.session.database_name}"
         )
-        if df_result is None:
-            return
-        df_result = df_result[df_result["schema_name"] == self.session.sf_schema]
-        existing = set(df_result["name"].tolist())
-        items = [item for item in procedures if item["identifier"] not in existing]
-        await self._register_sql_objects(items)
-
-    async def create_missing_tables(self, tables: list[dict[str, Any]]) -> None:
-        """Create tables defined in snowflake sql directory
-
-        Parameters
-        ----------
-        tables: list[dict[str, Any]]
-            List of tables to register
-        """
-        df_result = await self.session.execute_query(
-            f'SHOW TABLES IN SCHEMA "{self.session.database}"."{self.session.sf_schema}"'
-        )
-        if df_result is None:
-            return
-        existing = set(df_result["name"].tolist())
-        items = [item for item in tables if item["identifier"] not in existing]
-        await self._register_sql_objects(items)
-
-    async def _register_sql_objects(self, items: list[dict[str, Any]]) -> None:
-        for item in items:
-            logger.debug(f'Registering {item["identifier"]}')
-            async with aiofiles.open(item["filename"], encoding="utf-8") as f_handle:
-                query = await f_handle.read()
-            await self.session.execute_query(query)
-
-    @staticmethod
-    def get_sql_objects() -> list[dict[str, Any]]:
-        """Find all the objects defined in the sql directory
-
-        Returns
-        -------
-        list[str]
-        """
-        sql_directory = os.path.join(get_package_root(), "sql", "snowflake")
-        output = []
-
-        for filename in os.listdir(sql_directory):
-
-            sql_object_type = None
-            if filename.startswith("F_"):
-                sql_object_type = SqlObjectType.FUNCTION
-            elif filename.startswith("SP_"):
-                sql_object_type = SqlObjectType.PROCEDURE
-            elif filename.startswith("T_"):
-                sql_object_type = SqlObjectType.TABLE
-
-            identifier = filename.replace(".sql", "")
-            if sql_object_type == SqlObjectType.TABLE:
-                # Table naming convention does not include "T_" prefix
-                identifier = identifier[len("T_") :]
-
-            full_filename = os.path.join(sql_directory, filename)
-
-            sql_object = {
-                "type": sql_object_type,
-                "filename": full_filename,
-                "identifier": identifier,
-            }
-            output.append(sql_object)
-
-        return output
+        out = []
+        if df_result is not None:
+            df_result = df_result[df_result["schema_name"] == self.session.schema_name]
+            out.extend(df_result["name"])
+        return out

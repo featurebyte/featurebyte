@@ -1,14 +1,16 @@
 """
 Unit test for DatabricksSession
 """
+import os
 import textwrap
 from unittest import mock
+from unittest.mock import call
 
 import pandas as pd
 import pytest
 
 from featurebyte.enum import DBVarType
-from featurebyte.session.databricks import DatabricksSession
+from featurebyte.session.databricks import DatabricksSchemaInitializer, DatabricksSession
 
 
 @pytest.fixture
@@ -113,6 +115,20 @@ def databricks_connection():
         yield mock_connector
 
 
+@pytest.fixture(name="patched_databricks_session_cls")
+def patched_databricks_session_cls_fixture(
+    databricks_session_dict,
+):
+    """Fixture for a patched session class"""
+    with mock.patch(
+        "featurebyte.session.databricks.DatabricksSession", autospec=True
+    ) as patched_class:
+        mock_session_obj = patched_class.return_value
+        mock_session_obj.database_name = databricks_session_dict["featurebyte_catalog"]
+        mock_session_obj.schema_name = databricks_session_dict["featurebyte_schema"]
+        yield patched_class
+
+
 @pytest.mark.usefixtures("databricks_connection")
 @pytest.mark.asyncio
 async def test_databricks_session(databricks_session_dict):
@@ -194,3 +210,36 @@ def test_databricks_sql_connector_not_available(databricks_session_dict):
         with pytest.raises(RuntimeError) as exc:
             _ = DatabricksSession(**databricks_session_dict)
         assert str(exc.value) == "databricks-sql-connector is not available"
+
+
+def test_databricks_schema_initializer__sql_objects(patched_databricks_session_cls):
+    session = patched_databricks_session_cls()
+    sql_objects = DatabricksSchemaInitializer(session).get_sql_objects()
+    for item in sql_objects:
+        item["filename"] = os.path.basename(item["filename"])
+        item["type"] = item["type"].value
+    expected = [
+        {
+            "filename": "F_TIMESTAMP_TO_INDEX.sql",
+            "identifier": "F_TIMESTAMP_TO_INDEX",
+            "type": "function",
+        },
+    ]
+
+    def _sorted_result(lst):
+        return sorted(lst, key=lambda x: x["filename"])
+
+    assert _sorted_result(sql_objects) == _sorted_result(expected)
+
+
+@pytest.mark.asyncio
+async def test_databricks_schema_initializer__commands(patched_databricks_session_cls):
+    """Test Databricks schema initializer dispatches the correct queries"""
+    session = patched_databricks_session_cls()
+    initializer = DatabricksSchemaInitializer(session)
+
+    await initializer.list_functions()
+    assert session.execute_query.call_args_list == [call("SHOW USER FUNCTIONS IN featurebyte")]
+
+    assert await initializer.list_procedures() == []
+    assert session.execute_query.call_args_list == [call("SHOW USER FUNCTIONS IN featurebyte")]
