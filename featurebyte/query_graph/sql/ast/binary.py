@@ -3,19 +3,16 @@ Module for binary operations sql generation
 """
 from __future__ import annotations
 
-from typing import Any
-
 from dataclasses import dataclass
 
 from sqlglot import Expression, expressions, parse_one
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql import expression as fb_expressions
-from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNode, make_literal_value
-from featurebyte.query_graph.sql.ast.datetime import DateAddNode
-from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
+from featurebyte.query_graph.sql.ast.util import prepare_binary_op_input_nodes
 
-BINARY_OPERATION_NODE_TYPES = {
+BINARY_OPERATION_NODE_TYPES = [
     NodeType.ADD,
     NodeType.SUB,
     NodeType.MUL,
@@ -31,10 +28,8 @@ BINARY_OPERATION_NODE_TYPES = {
     NodeType.OR,
     NodeType.CONCAT,
     NodeType.COSINE_SIMILARITY,
-    NodeType.DATE_DIFF,
-    NodeType.DATE_ADD,
     NodeType.POWER,
-}
+]
 
 
 @dataclass
@@ -59,81 +54,39 @@ class BinaryOp(ExpressionNode):
             op_expr = self.operation(this=self.left_node.sql, expression=right_expr)
         return expressions.Paren(this=op_expr)
 
-
-def make_binary_operation_node(
-    node_type: NodeType,
-    input_sql_nodes: list[SQLNode],
-    parameters: dict[str, Any],
-) -> BinaryOp | DateAddNode:
-    """Create a BinaryOp node for eligible query node types
-
-    Parameters
-    ----------
-    node_type : NodeType
-        Node type
-    input_sql_nodes : List[SQLNode]
-        List of input SQL nodes
-    parameters : dict
-        Query node parameters
-
-    Returns
-    -------
-    BinaryOp | DateAddNode
-
-    Raises
-    ------
-    NotImplementedError
-        For incompatible node types
-    """
-    left_node = input_sql_nodes[0]
-    assert isinstance(left_node, ExpressionNode)
-    table_node = left_node.table_node
-    right_node: Any
-    if len(input_sql_nodes) == 1:
-        # When the other value is a scalar
-        literal_value = make_literal_value(parameters["value"])
-        right_node = ParsedExpressionNode(table_node=table_node, expr=literal_value)
-    else:
-        # When the other value is a Series
-        right_node = input_sql_nodes[1]
-
-    if isinstance(right_node, ExpressionNode) and parameters.get("right_op"):
-        # Swap left & right objects if the operation from the right object
-        left_node, right_node = right_node, left_node
-
-    node_type_to_expression_cls = {
-        # Arithmetic
-        NodeType.ADD: expressions.Add,
-        NodeType.SUB: expressions.Sub,
-        NodeType.MUL: expressions.Mul,
-        NodeType.DIV: expressions.Div,
-        NodeType.MOD: expressions.Mod,
-        # Relational
-        NodeType.EQ: expressions.EQ,
-        NodeType.NE: expressions.NEQ,
-        NodeType.LT: expressions.LT,
-        NodeType.LE: expressions.LTE,
-        NodeType.GT: expressions.GT,
-        NodeType.GE: expressions.GTE,
-        # Logical
-        NodeType.AND: expressions.And,
-        NodeType.OR: expressions.Or,
-        # String
-        NodeType.CONCAT: fb_expressions.Concat,
-        NodeType.COSINE_SIMILARITY: fb_expressions.CosineSim,
-        NodeType.POWER: expressions.Pow,
-    }
-
-    output_node: BinaryOp | DateAddNode
-    if node_type in node_type_to_expression_cls:
-        expression_cls = node_type_to_expression_cls[node_type]
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> BinaryOp:
+        node_type_to_expression_cls = {
+            # Arithmetic
+            NodeType.ADD: expressions.Add,
+            NodeType.SUB: expressions.Sub,
+            NodeType.MUL: expressions.Mul,
+            NodeType.DIV: expressions.Div,
+            NodeType.MOD: expressions.Mod,
+            # Relational
+            NodeType.EQ: expressions.EQ,
+            NodeType.NE: expressions.NEQ,
+            NodeType.LT: expressions.LT,
+            NodeType.LE: expressions.LTE,
+            NodeType.GT: expressions.GT,
+            NodeType.GE: expressions.GTE,
+            # Logical
+            NodeType.AND: expressions.And,
+            NodeType.OR: expressions.Or,
+            # String
+            NodeType.CONCAT: fb_expressions.Concat,
+            NodeType.COSINE_SIMILARITY: fb_expressions.CosineSim,
+            NodeType.POWER: expressions.Pow,
+        }
+        output_node: BinaryOp
+        expression_cls = node_type_to_expression_cls[context.query_node.type]
+        table_node, left_node, right_node = prepare_binary_op_input_nodes(
+            context.input_sql_nodes, context.parameters
+        )
         output_node = BinaryOp(
             table_node=table_node,
             left_node=left_node,
             right_node=right_node,
             operation=expression_cls,
         )
-    else:
-        raise NotImplementedError(f"{node_type} cannot be converted to binary operation")
-
-    return output_node
+        return output_node

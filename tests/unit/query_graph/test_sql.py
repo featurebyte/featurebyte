@@ -11,7 +11,7 @@ from sqlglot import parse_one
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import make_literal_value
-from featurebyte.query_graph.sql.ast.binary import make_binary_operation_node
+from featurebyte.query_graph.sql.ast.binary import BinaryOp
 from featurebyte.query_graph.sql.ast.datetime import (
     DateAddNode,
     DateDiffNode,
@@ -129,8 +129,10 @@ def test_binary_operation_node__series(node_type, expected, input_node):
     column1 = StrExpressionNode(table_node=input_node, expr="a")
     column2 = StrExpressionNode(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
-    parameters = {}
-    node = make_binary_operation_node(node_type, input_nodes, parameters)
+    context = SQLNodeContext(
+        query_node=Mock(type=node_type), parameters={}, input_sql_nodes=input_nodes
+    )
+    node = BinaryOp.build(context)
     assert node.sql.sql() == expected
 
 
@@ -139,8 +141,16 @@ def test_binary_operation_node__consecutive_ops_1(input_node):
     col_a = StrExpressionNode(table_node=input_node, expr="a")
     col_b = StrExpressionNode(table_node=input_node, expr="b")
     col_c = StrExpressionNode(table_node=input_node, expr="c")
-    a_plus_b = make_binary_operation_node(NodeType.ADD, [col_a, col_b], {})
-    a_plus_b_div_c = make_binary_operation_node(NodeType.DIV, [a_plus_b, col_c], {})
+    a_plus_b = BinaryOp.build(
+        SQLNodeContext(
+            query_node=Mock(type=NodeType.ADD), parameters={}, input_sql_nodes=[col_a, col_b]
+        )
+    )
+    a_plus_b_div_c = BinaryOp.build(
+        SQLNodeContext(
+            query_node=Mock(type=NodeType.DIV), parameters={}, input_sql_nodes=[a_plus_b, col_c]
+        )
+    )
     assert a_plus_b_div_c.sql.sql() == "((a + b) / NULLIF(c, 0))"
 
 
@@ -149,8 +159,16 @@ def test_binary_operation_node__consecutive_ops_2(input_node):
     col_a = StrExpressionNode(table_node=input_node, expr="a")
     col_b = StrExpressionNode(table_node=input_node, expr="b")
     col_c = StrExpressionNode(table_node=input_node, expr="c")
-    a_plus_b = make_binary_operation_node(NodeType.ADD, [col_a, col_b], {})
-    c_div_a_plus_b = make_binary_operation_node(NodeType.DIV, [col_c, a_plus_b], {})
+    a_plus_b = BinaryOp.build(
+        SQLNodeContext(
+            query_node=Mock(type=NodeType.ADD), parameters={}, input_sql_nodes=[col_a, col_b]
+        )
+    )
+    c_div_a_plus_b = BinaryOp.build(
+        SQLNodeContext(
+            query_node=Mock(type=NodeType.DIV), parameters={}, input_sql_nodes=[col_c, a_plus_b]
+        )
+    )
     assert c_div_a_plus_b.sql.sql() == "(c / NULLIF((a + b), 0))"
 
 
@@ -173,7 +191,11 @@ def test_binary_operation_node__scalar(node_type, value, right_op, expected, inp
     column1 = StrExpressionNode(table_node=input_node, expr="a")
     input_nodes = [column1]
     parameters = {"value": value, "right_op": right_op}
-    node = make_binary_operation_node(node_type, input_nodes, parameters)
+    node = BinaryOp.build(
+        SQLNodeContext(
+            query_node=Mock(type=node_type), input_sql_nodes=input_nodes, parameters=parameters
+        )
+    )
     assert node.sql.sql() == expected
 
 
@@ -266,7 +288,13 @@ def test_cosine_similarity(input_node):
     column2 = StrExpressionNode(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
     parameters = {}
-    node = make_binary_operation_node(NodeType.COSINE_SIMILARITY, input_nodes, parameters)
+    node = BinaryOp.build(
+        SQLNodeContext(
+            query_node=Mock(type=NodeType.COSINE_SIMILARITY),
+            input_sql_nodes=input_nodes,
+            parameters=parameters,
+        )
+    )
     assert node.sql.sql() == "(F_COUNT_DICT_COSINE_SIMILARITY(a, b))"
 
 

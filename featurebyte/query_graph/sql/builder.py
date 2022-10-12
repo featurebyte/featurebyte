@@ -13,10 +13,6 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNode, SQLNodeContext, TableNode
-from featurebyte.query_graph.sql.ast.binary import (
-    BINARY_OPERATION_NODE_TYPES,
-    make_binary_operation_node,
-)
 from featurebyte.query_graph.sql.ast.generic import (
     AliasNode,
     handle_filter_node,
@@ -216,9 +212,6 @@ class SQLOperationGraph:
             sql_node = AliasNode(
                 table_node=expr_node.table_node, name=parameters["name"], expr_node=expr_node
             )
-
-        elif node_type in BINARY_OPERATION_NODE_TYPES:
-            sql_node = make_binary_operation_node(node_type, input_sql_nodes, parameters)
 
         elif node_type in SUPPORTED_EXPRESSION_NODE_TYPES:
             sql_node = make_expression_node(input_sql_nodes, node_type, parameters)
