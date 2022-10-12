@@ -3,14 +3,14 @@ Module for unary operations sql generation
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from dataclasses import dataclass
 
 from sqlglot import Expression, expressions
 
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNode
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNode, SQLNodeContext
 from featurebyte.query_graph.sql.ast.count_dict import CountDictTransformNode
 from featurebyte.query_graph.sql.ast.generic import CastNode, IsNullNode, LagNode
 from featurebyte.query_graph.sql.ast.string import (
@@ -22,9 +22,8 @@ from featurebyte.query_graph.sql.ast.string import (
     TrimNode,
 )
 
-SUPPORTED_EXPRESSION_NODE_TYPES = {
+SUPPORTED_EXPRESSION_NODE_TYPES = [
     NodeType.IS_NULL,
-    NodeType.LENGTH,
     NodeType.TRIM,
     NodeType.REPLACE,
     NodeType.PAD,
@@ -32,31 +31,44 @@ SUPPORTED_EXPRESSION_NODE_TYPES = {
     NodeType.STR_CONTAINS,
     NodeType.SUBSTRING,
     NodeType.DT_EXTRACT,
-    NodeType.NOT,
     NodeType.COUNT_DICT_TRANSFORM,
     NodeType.CAST,
     NodeType.LAG,
-    NodeType.TIMEDELTA_EXTRACT,
-    NodeType.TIMEDELTA,
-    NodeType.SQRT,
-    NodeType.ABS,
-    NodeType.FLOOR,
-    NodeType.CEIL,
-    NodeType.LOG,
-    NodeType.EXP,
-}
+]
 
 
 @dataclass
 class UnaryOp(ExpressionNode):
-    """Typical unary operation node"""
+    """Typical unary operation node (can be handled identically given the correct sqlglot
+    expression)
+    """
 
     expr: ExpressionNode
     operation: type[expressions.Expression]
 
+    node_type_to_expression_cls = {
+        NodeType.SQRT: expressions.Sqrt,
+        NodeType.ABS: expressions.Abs,
+        NodeType.FLOOR: expressions.Floor,
+        NodeType.CEIL: expressions.Ceil,
+        NodeType.NOT: expressions.Not,
+        NodeType.LENGTH: expressions.Length,
+        NodeType.LOG: expressions.Ln,
+        NodeType.EXP: expressions.Exp,
+    }
+    query_node_type = list(node_type_to_expression_cls.keys())
+
     @property
     def sql(self) -> Expression:
         return self.operation(this=self.expr.sql)
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> UnaryOp:
+        input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
+        table_node = input_expr_node.table_node
+        expr_cls = cls.node_type_to_expression_cls[context.query_node.type]
+        node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expr_cls)
+        return node
 
 
 def make_expression_node(
@@ -88,21 +100,7 @@ def make_expression_node(
     table_node = input_expr_node.table_node
     sql_node: ExpressionNode
 
-    # Some node types can be handled identically given the correct sqlglot expression
-    node_type_to_expression_cls = {
-        NodeType.SQRT: expressions.Sqrt,
-        NodeType.ABS: expressions.Abs,
-        NodeType.FLOOR: expressions.Floor,
-        NodeType.CEIL: expressions.Ceil,
-        NodeType.NOT: expressions.Not,
-        NodeType.LENGTH: expressions.Length,
-        NodeType.LOG: expressions.Ln,
-        NodeType.EXP: expressions.Exp,
-    }
-    if node_type in node_type_to_expression_cls:
-        cls = node_type_to_expression_cls[node_type]
-        sql_node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=cls)
-    elif node_type == NodeType.IS_NULL:
+    if node_type == NodeType.IS_NULL:
         sql_node = IsNullNode(table_node=table_node, expr=input_expr_node)
     elif node_type == NodeType.STR_CASE:
         sql_node = StringCaseNode(
