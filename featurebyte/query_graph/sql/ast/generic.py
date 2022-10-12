@@ -9,11 +9,11 @@ from dataclasses import dataclass
 
 from sqlglot import Expression, expressions, parse_one, select
 
-from featurebyte.query_graph.enum import NodeOutputType
-from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.sql.ast.base import (
     ExpressionNode,
     SQLNode,
+    SQLNodeContext,
     TableNode,
     make_literal_value,
 )
@@ -67,10 +67,20 @@ class AliasNode(ExpressionNode):
 
     name: str
     expr_node: ExpressionNode
+    query_node_type = NodeType.ALIAS
 
     @property
     def sql(self) -> Expression:
         return self.expr_node.sql
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> AliasNode:
+        expr_node = context.input_sql_nodes[0]
+        assert isinstance(expr_node, ExpressionNode)
+        sql_node = AliasNode(
+            table_node=expr_node.table_node, name=context.parameters["name"], expr_node=expr_node
+        )
+        return sql_node
 
 
 @dataclass
@@ -80,12 +90,30 @@ class Conditional(ExpressionNode):
     series_node: ExpressionNode
     mask: ExpressionNode
     value: Any
+    query_node_type = NodeType.CONDITIONAL
 
     @property
     def sql(self) -> Expression:
         if_expr = expressions.If(this=self.mask.sql, true=make_literal_value(self.value))
         expr = expressions.Case(ifs=[if_expr], default=self.series_node.sql)
         return expr
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> Conditional:
+        input_sql_nodes = context.input_sql_nodes
+        assert len(input_sql_nodes) == 2
+
+        series_node = input_sql_nodes[0]
+        mask = input_sql_nodes[1]
+        value = context.parameters["value"]
+        assert isinstance(series_node, ExpressionNode)
+        assert isinstance(mask, ExpressionNode)
+        input_table_node = series_node.table_node
+
+        sql_node = Conditional(
+            table_node=input_table_node, series_node=series_node, mask=mask, value=value
+        )
+        return sql_node
 
 
 def make_project_node(
@@ -144,36 +172,6 @@ def make_assign_node(input_sql_nodes: list[SQLNode], parameters: dict[str, Any])
     assert isinstance(expr_node, ExpressionNode)
     sql_node = input_table_node.copy()
     sql_node.assign_column(parameters["name"], expr_node)
-    return sql_node
-
-
-def make_conditional_node(input_sql_nodes: list[SQLNode], node: Node) -> Conditional:
-    """Create a Conditional node
-
-    Parameters
-    ----------
-    input_sql_nodes : list[SQLNode]
-        Input SQL nodes
-    node : Node
-        Query graph node
-
-    Returns
-    -------
-    Conditional
-    """
-    assert len(input_sql_nodes) == 2
-    parameters = node.parameters.dict()
-
-    series_node = input_sql_nodes[0]
-    mask = input_sql_nodes[1]
-    value = parameters["value"]
-    assert isinstance(series_node, ExpressionNode)
-    assert isinstance(mask, ExpressionNode)
-    input_table_node = series_node.table_node
-
-    sql_node = Conditional(
-        table_node=input_table_node, series_node=series_node, mask=mask, value=value
-    )
     return sql_node
 
 

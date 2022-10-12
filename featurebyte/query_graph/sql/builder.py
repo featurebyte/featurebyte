@@ -12,12 +12,10 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
-from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNode, SQLNodeContext, TableNode
+from featurebyte.query_graph.sql.ast.base import SQLNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.generic import (
-    AliasNode,
     handle_filter_node,
     make_assign_node,
-    make_conditional_node,
     make_project_node,
 )
 from featurebyte.query_graph.sql.ast.input import make_input_node
@@ -202,18 +200,8 @@ class SQLOperationGraph:
         elif node_type == NodeType.PROJECT:
             sql_node = make_project_node(input_sql_nodes, parameters, output_type)
 
-        elif node_type == NodeType.ALIAS:
-            expr_node = input_sql_nodes[0]
-            assert isinstance(expr_node, ExpressionNode)
-            sql_node = AliasNode(
-                table_node=expr_node.table_node, name=parameters["name"], expr_node=expr_node
-            )
-
         elif node_type == NodeType.FILTER:
             sql_node = handle_filter_node(input_sql_nodes, output_type)
-
-        elif node_type == NodeType.CONDITIONAL:
-            sql_node = make_conditional_node(input_sql_nodes, cur_node)
 
         elif node_type == NodeType.GROUPBY:
             sql_node = handle_groupby_node(
