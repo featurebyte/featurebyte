@@ -50,3 +50,21 @@ def prepare_binary_op_input_nodes(
         left_node, right_node = right_node, left_node
 
     return table_node, left_node, right_node
+
+
+def prepare_unary_input_nodes(input_sql_nodes) -> tuple[TableNode, ExpressionNode]:
+    """Extract TableNode and ExpressionNode in a unary operation
+
+    Parameters
+    ----------
+    input_sql_nodes : list[SQLNode]
+        Input SQL nodes
+
+    Returns
+    -------
+    tuple[TableNode, ExpressionNode]
+    """
+    input_expr_node = input_sql_nodes[0]
+    assert isinstance(input_expr_node, ExpressionNode)
+    table_node = input_expr_node.table_node
+    return table_node, input_expr_node

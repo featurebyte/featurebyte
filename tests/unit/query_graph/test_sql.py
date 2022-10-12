@@ -26,7 +26,7 @@ from featurebyte.query_graph.sql.ast.generic import (
     resolve_project_node,
 )
 from featurebyte.query_graph.sql.ast.input import InputNode, make_input_node
-from featurebyte.query_graph.sql.ast.unary import make_expression_node
+from featurebyte.query_graph.sql.ast.unary import CastNode, LagNode, make_expression_node
 from featurebyte.query_graph.sql.builder import SQLNodeContext
 from featurebyte.query_graph.sql.common import SQLType
 
@@ -274,10 +274,12 @@ def test_count_dict_transform(parameters, expected, input_node):
 def test_cast(parameters, expected, input_node):
     """Test cast node for type conversion"""
     column = StrExpressionNode(table_node=input_node, expr="val")
-    node = make_expression_node(
-        input_sql_nodes=[column],
-        node_type=NodeType.CAST,
-        parameters=parameters,
+    node = CastNode.build(
+        SQLNodeContext(
+            query_node=Mock(type=NodeType.CAST),
+            input_sql_nodes=[column],
+            parameters=parameters,
+        )
     )
     assert node.sql.sql() == expected
 
@@ -301,10 +303,12 @@ def test_cosine_similarity(input_node):
 def test_lag(input_node):
     """Test lag node"""
     column = StrExpressionNode(table_node=input_node, expr="val")
-    node = make_expression_node(
-        input_sql_nodes=[column],
-        node_type=NodeType.LAG,
-        parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
+    node = LagNode.build(
+        SQLNodeContext(
+            input_sql_nodes=[column],
+            query_node=Mock(type=NodeType.LAG),
+            parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
+        )
     )
     assert node.sql.sql() == 'LAG(val, 1) OVER(PARTITION BY "cust_id" ORDER BY "ts")'
 

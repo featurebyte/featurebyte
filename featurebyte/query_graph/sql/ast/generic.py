@@ -3,13 +3,12 @@ Module for generic operations sql generation
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Any, Optional
 
 from dataclasses import dataclass
 
 from sqlglot import Expression, expressions, parse_one, select
 
-from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.ast.base import (
@@ -87,77 +86,6 @@ class Conditional(ExpressionNode):
         if_expr = expressions.If(this=self.mask.sql, true=make_literal_value(self.value))
         expr = expressions.Case(ifs=[if_expr], default=self.series_node.sql)
         return expr
-
-
-@dataclass
-class IsNullNode(ExpressionNode):
-    """Node for IS_NULL operation"""
-
-    expr: ExpressionNode
-
-    @property
-    def sql(self) -> Expression:
-        return expressions.Is(this=self.expr.sql, expression=expressions.Null())
-
-
-@dataclass
-class CastNode(ExpressionNode):
-    """Node for casting operation"""
-
-    expr: ExpressionNode
-    new_type: Literal["int", "float", "str"]
-    from_dtype: DBVarType
-
-    @property
-    def sql(self) -> Expression:
-        if self.from_dtype == DBVarType.FLOAT and self.new_type == "int":
-            # Casting to INTEGER performs rounding (could be up or down). Hence, apply FLOOR first
-            # to mimic pandas astype(int)
-            expr = expressions.Floor(this=self.expr.sql)
-        elif self.from_dtype == DBVarType.BOOL and self.new_type == "float":
-            # Casting to FLOAT from BOOL directly is not allowed
-            expr = expressions.Cast(this=self.expr.sql, to=parse_one("INTEGER"))
-        else:
-            expr = self.expr.sql
-        type_expr = {
-            "int": parse_one("INTEGER"),
-            "float": parse_one("FLOAT"),
-            "str": parse_one("VARCHAR"),
-        }[self.new_type]
-        output_expr = expressions.Cast(this=expr, to=type_expr)
-        return output_expr
-
-
-@dataclass
-class LagNode(ExpressionNode):
-    """Node for lag operation"""
-
-    expr: ExpressionNode
-    entity_columns: list[str]
-    timestamp_column: str
-    offset: int
-
-    @property
-    def sql(self) -> Expression:
-        partition_by = [
-            expressions.Column(this=expressions.Identifier(this=col, quoted=True))
-            for col in self.entity_columns
-        ]
-        order = expressions.Order(
-            expressions=[
-                expressions.Ordered(
-                    this=expressions.Identifier(this=self.timestamp_column, quoted=True)
-                )
-            ]
-        )
-        output_expr = expressions.Window(
-            this=expressions.Anonymous(
-                this="LAG", expressions=[self.expr.sql, make_literal_value(self.offset)]
-            ),
-            partition_by=partition_by,
-            order=order,
-        )
-        return output_expr
 
 
 def make_project_node(
