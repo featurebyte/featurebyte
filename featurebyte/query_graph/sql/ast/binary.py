@@ -12,7 +12,7 @@ from sqlglot import Expression, expressions, parse_one
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNode, make_literal_value
-from featurebyte.query_graph.sql.ast.datetime import DateAddNode, DateDiffNode, make_date_add_node
+from featurebyte.query_graph.sql.ast.datetime import DateAddNode
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode
 
 BINARY_OPERATION_NODE_TYPES = {
@@ -64,7 +64,7 @@ def make_binary_operation_node(
     node_type: NodeType,
     input_sql_nodes: list[SQLNode],
     parameters: dict[str, Any],
-) -> BinaryOp | DateDiffNode | DateAddNode:
+) -> BinaryOp | DateAddNode:
     """Create a BinaryOp node for eligible query node types
 
     Parameters
@@ -78,7 +78,7 @@ def make_binary_operation_node(
 
     Returns
     -------
-    BinaryOp | DateDiffNode | DateAddNode
+    BinaryOp | DateAddNode
 
     Raises
     ------
@@ -124,7 +124,7 @@ def make_binary_operation_node(
         NodeType.POWER: expressions.Pow,
     }
 
-    output_node: BinaryOp | DateDiffNode | DateAddNode
+    output_node: BinaryOp | DateAddNode
     if node_type in node_type_to_expression_cls:
         expression_cls = node_type_to_expression_cls[node_type]
         output_node = BinaryOp(
@@ -132,16 +132,6 @@ def make_binary_operation_node(
             left_node=left_node,
             right_node=right_node,
             operation=expression_cls,
-        )
-    elif node_type == NodeType.DATE_DIFF:
-        output_node = DateDiffNode(
-            table_node=table_node,
-            left_node=left_node,
-            right_node=right_node,
-        )
-    elif node_type == NodeType.DATE_ADD:
-        output_node = make_date_add_node(
-            table_node=table_node, input_date_node=left_node, timedelta_node=right_node
         )
     else:
         raise NotImplementedError(f"{node_type} cannot be converted to binary operation")

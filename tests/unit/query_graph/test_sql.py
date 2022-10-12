@@ -2,6 +2,7 @@
 Tests for the featurebyte.query_graph.sql module
 """
 import textwrap
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
@@ -11,7 +12,12 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import make_literal_value
 from featurebyte.query_graph.sql.ast.binary import make_binary_operation_node
-from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
+from featurebyte.query_graph.sql.ast.datetime import (
+    DateAddNode,
+    DateDiffNode,
+    TimedeltaExtractNode,
+    TimedeltaNode,
+)
 from featurebyte.query_graph.sql.ast.generic import (
     ParsedExpressionNode,
     Project,
@@ -21,6 +27,7 @@ from featurebyte.query_graph.sql.ast.generic import (
 )
 from featurebyte.query_graph.sql.ast.input import InputNode, make_input_node
 from featurebyte.query_graph.sql.ast.unary import make_expression_node
+from featurebyte.query_graph.sql.builder import SQLNodeContext
 from featurebyte.query_graph.sql.common import SQLType
 
 
@@ -279,22 +286,18 @@ def test_date_difference(input_node):
     column1 = StrExpressionNode(table_node=input_node, expr="a")
     column2 = StrExpressionNode(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
-    node = make_binary_operation_node(
-        NodeType.DATE_DIFF,
-        input_nodes,
-        parameters={},
-    )
+    context = SQLNodeContext(query_node=Mock(), parameters={}, input_sql_nodes=input_nodes)
+    node = DateDiffNode.build(context)
     assert node.sql.sql() == "DATEDIFF(second, b, a)"
 
 
 def test_timedelta(input_node):
     """Test TimedeltaNode"""
     column = StrExpressionNode(table_node=input_node, expr="a")
-    node = make_expression_node(
-        [column],
-        NodeType.TIMEDELTA,
-        parameters={"unit": "second"},
+    context = SQLNodeContext(
+        query_node=Mock(), parameters={"unit": "second"}, input_sql_nodes=[column]
     )
+    node = TimedeltaNode.build(context)
     # when previewing, this should show the value component of the timedelta without unit
     assert node.sql.sql() == "a"
 
@@ -302,13 +305,15 @@ def test_timedelta(input_node):
 def test_date_add__timedelta(input_node):
     """Test DateAdd node"""
     column = StrExpressionNode(table_node=input_node, expr="num_seconds")
-    timedelta_node = make_expression_node(
-        [column],
-        NodeType.TIMEDELTA,
-        parameters={"unit": "second"},
+    context = SQLNodeContext(
+        query_node=Mock(), parameters={"unit": "second"}, input_sql_nodes=[column]
     )
+    timedelta_node = TimedeltaNode.build(context)
     date_column = StrExpressionNode(table_node=input_node, expr="date_col")
-    date_add_node = make_binary_operation_node(NodeType.DATE_ADD, [date_column, timedelta_node], {})
+    context = SQLNodeContext(
+        query_node=Mock(), parameters={}, input_sql_nodes=[date_column, timedelta_node]
+    )
+    date_add_node = DateAddNode.build(context)
     assert date_add_node.sql.sql() == "DATEADD(second, num_seconds, date_col)"
 
 
@@ -318,21 +323,24 @@ def test_date_add__datediff(input_node):
     column1 = StrExpressionNode(table_node=input_node, expr="a")
     column2 = StrExpressionNode(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
-    date_diff_node = make_binary_operation_node(
-        NodeType.DATE_DIFF,
-        input_nodes,
-        parameters={},
-    )
+    context = SQLNodeContext(query_node=Mock(), parameters={}, input_sql_nodes=input_nodes)
+    date_diff_node = DateDiffNode.build(context)
     # make a date add node
     date_column = StrExpressionNode(table_node=input_node, expr="date_col")
-    date_add_node = make_binary_operation_node(NodeType.DATE_ADD, [date_column, date_diff_node], {})
+    context = SQLNodeContext(
+        query_node=Mock(), parameters={}, input_sql_nodes=[date_column, date_diff_node]
+    )
+    date_add_node = DateAddNode.build(context)
     assert date_add_node.sql.sql() == "DATEADD(microsecond, DATEDIFF(microsecond, b, a), date_col)"
 
 
 def test_date_add__constant(input_node):
     """Test DateAdd node when the timedelta is a fixed constant"""
     date_column = StrExpressionNode(table_node=input_node, expr="date_col")
-    date_add_node = make_binary_operation_node(NodeType.DATE_ADD, [date_column], {"value": 3600})
+    context = SQLNodeContext(
+        query_node=Mock(), parameters={"value": 3600}, input_sql_nodes=[date_column]
+    )
+    date_add_node = DateAddNode.build(context)
     assert date_add_node.sql.sql() == "DATEADD(second, 3600, date_col)"
 
 

@@ -12,7 +12,6 @@ from sqlglot import Expression, expressions
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNode
 from featurebyte.query_graph.sql.ast.count_dict import CountDictTransformNode
-from featurebyte.query_graph.sql.ast.datetime import TimedeltaNode, make_timedelta_extract_node
 from featurebyte.query_graph.sql.ast.generic import CastNode, IsNullNode, LagNode
 from featurebyte.query_graph.sql.ast.string import (
     PadNode,
@@ -147,14 +146,6 @@ def make_expression_node(
             start=parameters["start"],
             length=parameters["length"],
         )
-    elif node_type == NodeType.TIMEDELTA_EXTRACT:
-        sql_node = make_timedelta_extract_node(input_expr_node, parameters)
-
-    elif node_type == NodeType.TIMEDELTA:
-        sql_node = TimedeltaNode(
-            table_node=table_node, value_expr=input_expr_node, unit=parameters["unit"]
-        )
-
     elif node_type == NodeType.COUNT_DICT_TRANSFORM:
         sql_node = CountDictTransformNode(
             table_node=table_node,
