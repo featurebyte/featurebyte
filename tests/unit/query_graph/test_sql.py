@@ -57,6 +57,23 @@ def input_node_fixture():
     )
 
 
+def make_context(node_type=None, parameters=None, input_sql_nodes=None):
+    """
+    Helper function to create a SQLNodeContext with only arguments that matter in tests
+    """
+    if parameters is None:
+        parameters = {}
+    mock_query_node = Mock(type=node_type)
+    context = SQLNodeContext(
+        query_node=mock_query_node,
+        parameters=parameters,
+        input_sql_nodes=input_sql_nodes,
+        sql_type=SQLType.EVENT_VIEW_PREVIEW,
+        groupby_keys=None,
+    )
+    return context
+
+
 def test_input_node__subset_columns(input_node):
     """
     Test input node subset columns
@@ -130,9 +147,7 @@ def test_binary_operation_node__series(node_type, expected, input_node):
     column1 = StrExpressionNode(table_node=input_node, expr="a")
     column2 = StrExpressionNode(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
-    context = SQLNodeContext(
-        query_node=Mock(type=node_type), parameters={}, input_sql_nodes=input_nodes
-    )
+    context = make_context(node_type=node_type, parameters={}, input_sql_nodes=input_nodes)
     node = BinaryOp.build(context)
     assert node.sql.sql() == expected
 
@@ -143,14 +158,10 @@ def test_binary_operation_node__consecutive_ops_1(input_node):
     col_b = StrExpressionNode(table_node=input_node, expr="b")
     col_c = StrExpressionNode(table_node=input_node, expr="c")
     a_plus_b = BinaryOp.build(
-        SQLNodeContext(
-            query_node=Mock(type=NodeType.ADD), parameters={}, input_sql_nodes=[col_a, col_b]
-        )
+        make_context(node_type=NodeType.ADD, parameters={}, input_sql_nodes=[col_a, col_b])
     )
     a_plus_b_div_c = BinaryOp.build(
-        SQLNodeContext(
-            query_node=Mock(type=NodeType.DIV), parameters={}, input_sql_nodes=[a_plus_b, col_c]
-        )
+        make_context(node_type=NodeType.DIV, parameters={}, input_sql_nodes=[a_plus_b, col_c])
     )
     assert a_plus_b_div_c.sql.sql() == "((a + b) / NULLIF(c, 0))"
 
@@ -161,14 +172,10 @@ def test_binary_operation_node__consecutive_ops_2(input_node):
     col_b = StrExpressionNode(table_node=input_node, expr="b")
     col_c = StrExpressionNode(table_node=input_node, expr="c")
     a_plus_b = BinaryOp.build(
-        SQLNodeContext(
-            query_node=Mock(type=NodeType.ADD), parameters={}, input_sql_nodes=[col_a, col_b]
-        )
+        make_context(node_type=NodeType.ADD, parameters={}, input_sql_nodes=[col_a, col_b])
     )
     c_div_a_plus_b = BinaryOp.build(
-        SQLNodeContext(
-            query_node=Mock(type=NodeType.DIV), parameters={}, input_sql_nodes=[col_c, a_plus_b]
-        )
+        make_context(node_type=NodeType.DIV, parameters={}, input_sql_nodes=[col_c, a_plus_b])
     )
     assert c_div_a_plus_b.sql.sql() == "(c / NULLIF((a + b), 0))"
 
@@ -193,9 +200,7 @@ def test_binary_operation_node__scalar(node_type, value, right_op, expected, inp
     input_nodes = [column1]
     parameters = {"value": value, "right_op": right_op}
     node = BinaryOp.build(
-        SQLNodeContext(
-            query_node=Mock(type=node_type), input_sql_nodes=input_nodes, parameters=parameters
-        )
+        make_context(node_type=node_type, input_sql_nodes=input_nodes, parameters=parameters)
     )
     assert node.sql.sql() == expected
 
@@ -248,10 +253,10 @@ def test_count_dict_transform(parameters, expected, input_node):
     """Test count dict transformation node"""
     column = StrExpressionNode(table_node=input_node, expr="cd_val")
     node = CountDictTransformNode.build(
-        SQLNodeContext(
-            input_sql_nodes=[column],
-            query_node=Mock(type=NodeType.COUNT_DICT_TRANSFORM),
+        make_context(
+            node_type=NodeType.COUNT_DICT_TRANSFORM,
             parameters=parameters,
+            input_sql_nodes=[column],
         )
     )
     assert node.sql.sql() == expected
@@ -278,8 +283,8 @@ def test_cast(parameters, expected, input_node):
     """Test cast node for type conversion"""
     column = StrExpressionNode(table_node=input_node, expr="val")
     node = CastNode.build(
-        SQLNodeContext(
-            query_node=Mock(type=NodeType.CAST),
+        make_context(
+            node_type=NodeType.CAST,
             input_sql_nodes=[column],
             parameters=parameters,
         )
@@ -294,8 +299,8 @@ def test_cosine_similarity(input_node):
     input_nodes = [column1, column2]
     parameters = {}
     node = BinaryOp.build(
-        SQLNodeContext(
-            query_node=Mock(type=NodeType.COSINE_SIMILARITY),
+        make_context(
+            node_type=NodeType.COSINE_SIMILARITY,
             input_sql_nodes=input_nodes,
             parameters=parameters,
         )
@@ -307,9 +312,9 @@ def test_lag(input_node):
     """Test lag node"""
     column = StrExpressionNode(table_node=input_node, expr="val")
     node = LagNode.build(
-        SQLNodeContext(
+        make_context(
             input_sql_nodes=[column],
-            query_node=Mock(type=NodeType.LAG),
+            node_type=NodeType.LAG,
             parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
         )
     )
@@ -321,7 +326,7 @@ def test_date_difference(input_node):
     column1 = StrExpressionNode(table_node=input_node, expr="a")
     column2 = StrExpressionNode(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
-    context = SQLNodeContext(query_node=Mock(), parameters={}, input_sql_nodes=input_nodes)
+    context = make_context(parameters={}, input_sql_nodes=input_nodes)
     node = DateDiffNode.build(context)
     assert node.sql.sql() == "DATEDIFF(second, b, a)"
 
@@ -329,9 +334,7 @@ def test_date_difference(input_node):
 def test_timedelta(input_node):
     """Test TimedeltaNode"""
     column = StrExpressionNode(table_node=input_node, expr="a")
-    context = SQLNodeContext(
-        query_node=Mock(), parameters={"unit": "second"}, input_sql_nodes=[column]
-    )
+    context = make_context(parameters={"unit": "second"}, input_sql_nodes=[column])
     node = TimedeltaNode.build(context)
     # when previewing, this should show the value component of the timedelta without unit
     assert node.sql.sql() == "a"
@@ -340,14 +343,10 @@ def test_timedelta(input_node):
 def test_date_add__timedelta(input_node):
     """Test DateAdd node"""
     column = StrExpressionNode(table_node=input_node, expr="num_seconds")
-    context = SQLNodeContext(
-        query_node=Mock(), parameters={"unit": "second"}, input_sql_nodes=[column]
-    )
+    context = make_context(parameters={"unit": "second"}, input_sql_nodes=[column])
     timedelta_node = TimedeltaNode.build(context)
     date_column = StrExpressionNode(table_node=input_node, expr="date_col")
-    context = SQLNodeContext(
-        query_node=Mock(), parameters={}, input_sql_nodes=[date_column, timedelta_node]
-    )
+    context = make_context(parameters={}, input_sql_nodes=[date_column, timedelta_node])
     date_add_node = DateAddNode.build(context)
     assert date_add_node.sql.sql() == "DATEADD(second, num_seconds, date_col)"
 
@@ -358,13 +357,11 @@ def test_date_add__datediff(input_node):
     column1 = StrExpressionNode(table_node=input_node, expr="a")
     column2 = StrExpressionNode(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
-    context = SQLNodeContext(query_node=Mock(), parameters={}, input_sql_nodes=input_nodes)
+    context = make_context(node_type=None, parameters={}, input_sql_nodes=input_nodes)
     date_diff_node = DateDiffNode.build(context)
     # make a date add node
     date_column = StrExpressionNode(table_node=input_node, expr="date_col")
-    context = SQLNodeContext(
-        query_node=Mock(), parameters={}, input_sql_nodes=[date_column, date_diff_node]
-    )
+    context = make_context(input_sql_nodes=[date_column, date_diff_node])
     date_add_node = DateAddNode.build(context)
     assert date_add_node.sql.sql() == "DATEADD(microsecond, DATEDIFF(microsecond, b, a), date_col)"
 
@@ -372,8 +369,8 @@ def test_date_add__datediff(input_node):
 def test_date_add__constant(input_node):
     """Test DateAdd node when the timedelta is a fixed constant"""
     date_column = StrExpressionNode(table_node=input_node, expr="date_col")
-    context = SQLNodeContext(
-        query_node=Mock(), parameters={"value": 3600}, input_sql_nodes=[date_column]
+    context = make_context(
+        node_type=None, parameters={"value": 3600}, input_sql_nodes=[date_column]
     )
     date_add_node = DateAddNode.build(context)
     assert date_add_node.sql.sql() == "DATEADD(second, 3600, date_col)"

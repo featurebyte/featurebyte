@@ -18,7 +18,6 @@ from featurebyte.query_graph.sql.ast.generic import (
     make_assign_node,
     make_project_node,
 )
-from featurebyte.query_graph.sql.ast.input import make_input_node
 from featurebyte.query_graph.sql.ast.tile import handle_groupby_node
 from featurebyte.query_graph.sql.common import SQLType
 
@@ -178,7 +177,11 @@ class SQLOperationGraph:
         sql_node: Any = None
         sql_node_classes = NODE_REGISTRY.get_sql_node_classes(node_type)
         context = SQLNodeContext(
-            query_node=cur_node, parameters=parameters, input_sql_nodes=input_sql_nodes
+            query_node=cur_node,
+            parameters=parameters,
+            sql_type=self.sql_type,
+            groupby_keys=groupby_keys,
+            input_sql_nodes=input_sql_nodes,
         )
 
         if sql_node_classes:
@@ -191,10 +194,7 @@ class SQLOperationGraph:
             self.sql_nodes[node_id] = sql_node
             return sql_node
 
-        if node_type == NodeType.INPUT:
-            sql_node = make_input_node(parameters, self.sql_type, groupby_keys)
-
-        elif node_type == NodeType.ASSIGN:
+        if node_type == NodeType.ASSIGN:
             sql_node = make_assign_node(input_sql_nodes, parameters)
 
         elif node_type == NodeType.PROJECT:

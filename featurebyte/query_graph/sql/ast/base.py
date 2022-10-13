@@ -14,6 +14,7 @@ from sqlglot import Expression, expressions, parse_one, select
 from featurebyte.common.typing import is_scalar_nan
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.common import SQLType
 
 SQLNodeT = TypeVar("SQLNodeT", bound="SQLNode")
 TableNodeT = TypeVar("TableNodeT", bound="TableNode")
@@ -21,10 +22,29 @@ TableNodeT = TypeVar("TableNodeT", bound="TableNode")
 
 @dataclass
 class SQLNodeContext:
-    """Context containing information required when constructing instances of SQLNode"""
+    """
+    Context containing information required when constructing instances of SQLNode
+
+    Parameters
+    ----------
+    query_node : Node
+        Query graph node
+    parameters : dict[str, Any]
+        Query graph node parameters
+    sql_type: SQLType
+        Type of SQL code to generate
+    groupby_keys : list[str] | None
+        List of groupby keys that is used for the downstream groupby operation. This information is
+        required so that only tiles corresponding to specific entities are built (vs building tiles
+        using all available data). This option is only used when SQLType is BUILD_TILE_ON_DEMAND.
+    input_sql_nodes : list[SQLNode]
+        List of input SQL nodes
+    """
 
     query_node: Node
     parameters: dict[str, Any]
+    sql_type: SQLType
+    groupby_keys: list[str] | None
     input_sql_nodes: list[SQLNode]
 
 
