@@ -3,7 +3,7 @@ RelationshipService class
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import cast
 
 from bson import ObjectId
 
@@ -34,7 +34,9 @@ class RelationshipService(BaseUpdateService):
         raise NotImplementedError
 
     @staticmethod
-    def _validate_relationship(parent_obj: Relationship, child_obj: Relationship) -> None:
+    def _validate_add_relationship_operation(
+        parent_obj: Relationship, child_obj: Relationship
+    ) -> None:
         if parent_obj.id == child_obj.id:
             raise DocumentUpdateError(f'Object "{parent_obj.name}" cannot be both parent & child.')
         if child_obj.id in parent_obj.ancestor_ids:
@@ -47,9 +49,7 @@ class RelationshipService(BaseUpdateService):
                 f'Object "{parent_obj.name}" is already an ancestor of object "{child_obj.name}".'
             )
 
-    async def add_relationship(
-        self, parent_id: ObjectId, child_id: ObjectId, return_document: bool = True
-    ) -> Optional[Relationship]:
+    async def add_relationship(self, parent_id: ObjectId, child_id: ObjectId) -> Relationship:
         """
         Add parent & child relationship between two objects
 
@@ -59,8 +59,6 @@ class RelationshipService(BaseUpdateService):
             Parent object ID
         child_id: ObjectId
             Child object ID
-        return_document: bool
-            Whether to return updated child document
 
         Returns
         -------
@@ -70,7 +68,7 @@ class RelationshipService(BaseUpdateService):
         child_object = await self.document_service.get_document(document_id=child_id)
         assert isinstance(parent_object, Relationship)
         assert isinstance(child_object, Relationship)
-        self._validate_relationship(parent_obj=parent_object, child_obj=child_object)
+        self._validate_add_relationship_operation(parent_obj=parent_object, child_obj=child_object)
 
         async with self.persistent.start_transaction():
             updated_document = await self.document_service.update_document(
@@ -87,6 +85,7 @@ class RelationshipService(BaseUpdateService):
             )
             updated_document = cast(Relationship, updated_document)
 
+            # update all objects which have child_id in their ancestor_ids
             objects = await self.document_service.list_documents(
                 query_filter={"ancestor_ids": {"$in": [child_id]}}, page_size=0
             )
@@ -100,4 +99,71 @@ class RelationshipService(BaseUpdateService):
                         parent_id=obj["parent_id"],
                     ),
                 )
-            return self.conditional_return(updated_document, return_document)
+            return updated_document
+
+    @staticmethod
+    def _validate_remove_relationship_operation(
+        parent_obj: Relationship, child_obj: Relationship
+    ) -> None:
+        if parent_obj.id != child_obj.parent_id:
+            raise DocumentUpdateError(
+                f'Object "{parent_obj.name}" is not the parent of object "{child_obj.name}".'
+            )
+
+    async def remove_relationship(self, parent_id: ObjectId, child_id: ObjectId) -> Relationship:
+        """
+        Remove parent & child relationship between two objects
+
+        Parameters
+        ----------
+        parent_id: ObjectId
+            Parent object ID
+        child_id: ObjectId
+            Child object ID
+
+        Returns
+        -------
+        Updated document
+        """
+        parent_object = await self.document_service.get_document(document_id=parent_id)
+        child_object = await self.document_service.get_document(document_id=child_id)
+        assert isinstance(parent_object, Relationship)
+        assert isinstance(child_object, Relationship)
+        self._validate_remove_relationship_operation(
+            parent_obj=parent_object, child_obj=child_object
+        )
+
+        async with self.persistent.start_transaction():
+            updated_document = await self.document_service.update_document(
+                document_id=child_id,
+                data=Relationship(
+                    ancestor_ids=sorted(
+                        set(child_object.ancestor_ids).difference(
+                            self.include_object_id(parent_object.ancestor_ids, parent_id)
+                        )
+                    ),
+                    parent_id=None,
+                ),
+                exclude_none=False,
+                return_document=True,
+            )
+            updated_document = cast(Relationship, updated_document)
+
+            # update all objects which have child_id in their ancestor_ids
+            objects = await self.document_service.list_documents(
+                query_filter={"ancestor_ids": {"$in": [child_id]}}, page_size=0
+            )
+            for obj in objects["data"]:
+                await self.document_service.update_document(
+                    document_id=obj["_id"],
+                    data=Relationship(
+                        ancestor_ids=sorted(
+                            set(obj["ancestor_ids"]).difference(
+                                self.include_object_id(parent_object.ancestor_ids, parent_id)
+                            )
+                        ),
+                        parent_id=obj["parent_id"],
+                    ),
+                    exclude_none=False,
+                )
+            return updated_document
