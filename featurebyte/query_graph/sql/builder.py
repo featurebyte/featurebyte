@@ -18,7 +18,6 @@ from featurebyte.query_graph.sql.ast.generic import (
     make_assign_node,
     make_project_node,
 )
-from featurebyte.query_graph.sql.ast.tile import handle_groupby_node
 from featurebyte.query_graph.sql.common import SQLType
 
 
@@ -203,13 +202,6 @@ class SQLOperationGraph:
         elif node_type == NodeType.FILTER:
             sql_node = handle_filter_node(input_sql_nodes, output_type)
 
-        elif node_type == NodeType.GROUPBY:
-            sql_node = handle_groupby_node(
-                groupby_node=cur_node,
-                parameters=parameters,
-                input_sql_nodes=input_sql_nodes,
-                sql_type=self.sql_type,
-            )
         else:
             raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
 

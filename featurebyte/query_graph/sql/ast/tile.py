@@ -10,8 +10,8 @@ from dataclasses import dataclass
 from sqlglot import Expression, expressions, select
 
 from featurebyte.enum import InternalName
-from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.ast.base import SQLNode, TableNode
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.sql.ast.base import SQLNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import AggregationSpec, SQLType, quoted_identifier
 from featurebyte.query_graph.sql.tiling import TileSpec, get_aggregator
 
@@ -31,6 +31,7 @@ class BuildTileNode(TableNode):
     agg_func: str
     frequency: int
     is_on_demand: bool
+    query_node_type = NodeType.GROUPBY
 
     @property
     def sql(self) -> Expression:
@@ -70,6 +71,61 @@ class BuildTileNode(TableNode):
 
         return groupby_sql
 
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> BuildTileNode | None:
+        sql_node = None
+        if context.sql_type == SQLType.BUILD_TILE:
+            sql_node = cls.make_build_tile_node(
+                context.input_sql_nodes, context.parameters, is_on_demand=False
+            )
+        elif context.sql_type == SQLType.BUILD_TILE_ON_DEMAND:
+            sql_node = cls.make_build_tile_node(
+                context.input_sql_nodes, context.parameters, is_on_demand=True
+            )
+        return sql_node
+
+    @classmethod
+    def make_build_tile_node(
+        cls, input_sql_nodes: list[SQLNode], parameters: dict[str, Any], is_on_demand: bool
+    ) -> BuildTileNode:
+        """Create a BuildTileNode
+
+        Parameters
+        ----------
+        input_sql_nodes : list[SQLNode]
+            List of input SQL nodes
+        parameters : dict[str, Any]
+            Query node parameters
+        is_on_demand : bool
+            Whether the SQL is for on-demand tile building for historical features
+
+        Returns
+        -------
+        BuildTileNode
+        """
+        input_node = input_sql_nodes[0]
+        assert isinstance(input_node, TableNode)
+        aggregator = get_aggregator(parameters["agg_func"])
+        tile_specs = aggregator.tile(parameters["parent"], parameters["aggregation_id"])
+        columns = (
+            [InternalName.TILE_START_DATE.value]
+            + parameters["keys"]
+            + [spec.tile_column_name for spec in tile_specs]
+        )
+        columns_map = {col: expressions.Identifier(this=col, quoted=True) for col in columns}
+        sql_node = BuildTileNode(
+            columns_map=columns_map,
+            input_node=input_node,
+            keys=parameters["keys"],
+            value_by=parameters["value_by"],
+            tile_specs=tile_specs,
+            timestamp=parameters["timestamp"],
+            agg_func=parameters["agg_func"],
+            frequency=parameters["frequency"],
+            is_on_demand=is_on_demand,
+        )
+        return sql_node
+
 
 @dataclass
 class AggregatedTilesNode(TableNode):
@@ -81,111 +137,22 @@ class AggregatedTilesNode(TableNode):
     calling get_column_expr().
     """
 
+    query_node_type = NodeType.GROUPBY
+
     @property
     def sql(self) -> Expression:
         # This will not be called anywhere
         raise NotImplementedError()
 
-
-def make_build_tile_node(
-    input_sql_nodes: list[SQLNode], parameters: dict[str, Any], is_on_demand: bool
-) -> BuildTileNode:
-    """Create a BuildTileNode
-
-    Parameters
-    ----------
-    input_sql_nodes : list[SQLNode]
-        List of input SQL nodes
-    parameters : dict[str, Any]
-        Query node parameters
-    is_on_demand : bool
-        Whether the SQL is for on-demand tile building for historical features
-
-    Returns
-    -------
-    BuildTileNode
-    """
-    input_node = input_sql_nodes[0]
-    assert isinstance(input_node, TableNode)
-    aggregator = get_aggregator(parameters["agg_func"])
-    tile_specs = aggregator.tile(parameters["parent"], parameters["aggregation_id"])
-    columns = (
-        [InternalName.TILE_START_DATE.value]
-        + parameters["keys"]
-        + [spec.tile_column_name for spec in tile_specs]
-    )
-    columns_map = {col: expressions.Identifier(this=col, quoted=True) for col in columns}
-    sql_node = BuildTileNode(
-        columns_map=columns_map,
-        input_node=input_node,
-        keys=parameters["keys"],
-        value_by=parameters["value_by"],
-        tile_specs=tile_specs,
-        timestamp=parameters["timestamp"],
-        agg_func=parameters["agg_func"],
-        frequency=parameters["frequency"],
-        is_on_demand=is_on_demand,
-    )
-    return sql_node
-
-
-def make_aggregated_tiles_node(groupby_node: Node) -> AggregatedTilesNode:
-    """Create a TableNode representing the aggregated tiles
-
-    Parameters
-    ----------
-    groupby_node : Node
-        Query graph node with groupby type
-
-    Returns
-    -------
-    AggregatedTilesNode
-    """
-    agg_specs = AggregationSpec.from_groupby_query_node(groupby_node)
-    columns_map = {}
-    for agg_spec in agg_specs:
-        columns_map[agg_spec.feature_name] = expressions.Identifier(
-            this=agg_spec.agg_result_name, quoted=True
-        )
-    return AggregatedTilesNode(columns_map=columns_map)
-
-
-def handle_groupby_node(
-    groupby_node: Node,
-    parameters: dict[str, Any],
-    input_sql_nodes: list[SQLNode],
-    sql_type: SQLType,
-) -> BuildTileNode | AggregatedTilesNode:
-    """Handle a groupby query graph node and create an appropriate SQLNode
-
-    Parameters
-    ----------
-    groupby_node : Node
-        Groupby query graph
-    parameters : dict[str, Any]
-        Query node parameters
-    input_sql_nodes : list[SQLNode]
-        Input SQL nodes
-    sql_type : SQLType
-        Type of SQL code to generate
-
-    Returns
-    -------
-    BuildTileNode | AggregatedTilesNode
-        Resulting SQLNode
-
-    Raises
-    ------
-    NotImplementedError
-        If the provided query node is not supported
-    """
-    sql_node: BuildTileNode | AggregatedTilesNode
-    if sql_type == SQLType.BUILD_TILE:
-        sql_node = make_build_tile_node(input_sql_nodes, parameters, is_on_demand=False)
-    elif sql_type == SQLType.BUILD_TILE_ON_DEMAND:
-        sql_node = make_build_tile_node(input_sql_nodes, parameters, is_on_demand=True)
-    elif sql_type == SQLType.GENERATE_FEATURE:
-        sql_node = make_aggregated_tiles_node(groupby_node)
-    else:
-        raise NotImplementedError(f"SQLNode not implemented for {groupby_node}")
-    return sql_node
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> AggregatedTilesNode | None:
+        sql_node = None
+        if context.sql_type == SQLType.GENERATE_FEATURE:
+            agg_specs = AggregationSpec.from_groupby_query_node(context.query_node)
+            columns_map = {}
+            for agg_spec in agg_specs:
+                columns_map[agg_spec.feature_name] = expressions.Identifier(
+                    this=agg_spec.agg_result_name, quoted=True
+                )
+            sql_node = AggregatedTilesNode(columns_map=columns_map)
+        return sql_node
