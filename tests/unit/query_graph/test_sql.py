@@ -41,9 +41,9 @@ def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type
     if sql_type is None:
         sql_type = SQLType.EVENT_VIEW_PREVIEW
     mock_query_node = Mock(type=node_type)
+    mock_query_node.parameters.dict.return_value = parameters
     context = SQLNodeContext(
         query_node=mock_query_node,
-        parameters=parameters,
         input_sql_nodes=input_sql_nodes,
         sql_type=sql_type,
         groupby_keys=None,

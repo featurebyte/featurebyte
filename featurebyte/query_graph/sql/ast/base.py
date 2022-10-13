@@ -29,8 +29,6 @@ class SQLNodeContext:
     ----------
     query_node : Node
         Query graph node
-    parameters : dict[str, Any]
-        Query graph node parameters
     sql_type: SQLType
         Type of SQL code to generate
     groupby_keys : list[str] | None
@@ -42,10 +40,12 @@ class SQLNodeContext:
     """
 
     query_node: Node
-    parameters: dict[str, Any]
     sql_type: SQLType
     groupby_keys: list[str] | None
     input_sql_nodes: list[SQLNode]
+
+    def __post_init__(self) -> None:
+        self.parameters = self.query_node.parameters.dict()
 
 
 @dataclass  # type: ignore

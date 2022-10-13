@@ -170,13 +170,11 @@ class SQLOperationGraph:
         # Now that input sql nodes are ready, build the current sql node
         node_id = cur_node.name
         node_type = cur_node.type
-        parameters = cur_node.parameters.dict()
 
         sql_node: Any = None
         sql_node_classes = NODE_REGISTRY.get_sql_node_classes(node_type)
         context = SQLNodeContext(
             query_node=cur_node,
-            parameters=parameters,
             sql_type=self.sql_type,
             groupby_keys=groupby_keys,
             input_sql_nodes=input_sql_nodes,
