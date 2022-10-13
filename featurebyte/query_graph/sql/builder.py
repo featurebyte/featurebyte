@@ -180,27 +180,27 @@ class SQLOperationGraph:
             input_sql_nodes=input_sql_nodes,
         )
 
+        # Construct an appropriate SQLNode based on the candidates defined in NodeRegistry
         if sql_node_classes:
             for sql_node_cls in sql_node_classes:
                 sql_node = sql_node_cls.build(context)
                 if sql_node is not None:
                     break
 
-        if sql_node is not None:
-            self.sql_nodes[node_id] = sql_node
-            return sql_node
+        # Nodes that can be mapped to different SQLNode. Instead of splitting the factory logic into
+        # multiple SQLNode subclasses, helper functions like these are clearer.
+        if sql_node is None:
+            if node_type == NodeType.ASSIGN:
+                sql_node = make_assign_node(context)
 
-        if node_type == NodeType.ASSIGN:
-            sql_node = make_assign_node(context)
+            elif node_type == NodeType.PROJECT:
+                sql_node = make_project_node(context)
 
-        elif node_type == NodeType.PROJECT:
-            sql_node = make_project_node(context)
+            elif node_type == NodeType.FILTER:
+                sql_node = handle_filter_node(context)
 
-        elif node_type == NodeType.FILTER:
-            sql_node = handle_filter_node(context)
-
-        else:
-            raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
+            else:
+                raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
 
         self.sql_nodes[node_id] = sql_node
         return sql_node
