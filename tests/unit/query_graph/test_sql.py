@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from sqlglot import parse_one
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import make_literal_value
 from featurebyte.query_graph.sql.ast.binary import BinaryOp
@@ -47,6 +47,7 @@ def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type
         input_sql_nodes=input_sql_nodes,
         sql_type=sql_type,
         groupby_keys=None,
+        source_type=SourceType.SNOWFLAKE,
     )
     return context
 
