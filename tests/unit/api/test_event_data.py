@@ -297,6 +297,22 @@ def test_event_data__save__feature_store_not_saved_exception(snowflake_event_dat
     assert expect_msg in str(exc.value)
 
 
+def test_info__event_data_without_record_creation_date(
+    snowflake_feature_store, snowflake_database_table
+):
+    """Test info on event data with record creation date is None"""
+    snowflake_feature_store.save()
+    event_data = EventData.from_tabular_source(
+        tabular_source=snowflake_database_table,
+        name="sf_event_data",
+        event_timestamp_column="event_timestamp",
+    )
+    event_data.save()
+
+    # make sure .info() can be executed without throwing any error
+    _ = event_data.info()
+
+
 def test_info(saved_event_data, cust_id_entity):
     """
     Test info
