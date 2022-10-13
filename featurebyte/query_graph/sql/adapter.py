@@ -18,7 +18,8 @@ class SnowflakeAdapter(BaseAdapter):
     @classmethod
     def epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
         return expressions.Anonymous(
-            this="DATE_PART", expressions=[expressions.Identifier("EPOCH_SECOND"), timestamp_expr]
+            this="DATE_PART",
+            expressions=[expressions.Identifier(this="EPOCH_SECOND"), timestamp_expr],
         )
 
 
