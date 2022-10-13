@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 from sqlglot import expressions, select
 
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -735,9 +735,15 @@ class FeatureExecutionPlanner:
         Query graph
     """
 
-    def __init__(self, graph: QueryGraph, serving_names_mapping: dict[str, str] | None = None):
+    def __init__(
+        self,
+        graph: QueryGraph,
+        source_type: SourceType,
+        serving_names_mapping: dict[str, str] | None = None,
+    ):
         self.graph = graph
         self.plan = SnowflakeFeatureExecutionPlan()
+        self.source_type = source_type
         self.serving_names_mapping = serving_names_mapping
 
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
@@ -790,7 +796,9 @@ class FeatureExecutionPlanner:
         node : Node
             Query graph node
         """
-        sql_graph = SQLOperationGraph(self.graph, SQLType.GENERATE_FEATURE)
+        sql_graph = SQLOperationGraph(
+            self.graph, SQLType.GENERATE_FEATURE, source_type=self.source_type
+        )
         sql_node = sql_graph.build(node)
 
         if isinstance(sql_node, TableNode):

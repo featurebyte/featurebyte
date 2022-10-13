@@ -494,11 +494,13 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         assert len(feature_clusters) == 1
 
         feature_cluster = feature_clusters[0]
+        source_type = self._features[0].feature_store.type
         return get_historical_features_sql(
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
             request_table_columns=training_events.columns.tolist(),
             serving_names_mapping=serving_names_mapping,
+            source_type=source_type,
         )
 
     @typechecked

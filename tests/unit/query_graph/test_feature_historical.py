@@ -156,6 +156,7 @@ def test_get_historical_feature_sql(float_feature, update_fixtures):
         graph=float_feature.graph,
         nodes=[float_feature.node],
         request_table_columns=request_table_columns,
+        source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
         sql, "tests/fixtures/expected_historical_requests.sql", update_fixture=update_fixtures
@@ -171,6 +172,7 @@ def test_get_historical_feature_sql__serving_names_mapping(float_feature, update
         nodes=[float_feature.node],
         request_table_columns=request_table_columns,
         serving_names_mapping=serving_names_mapping,
+        source_type=SourceType.SNOWFLAKE,
     )
     assert_equal_with_expected_fixture(
         sql,
