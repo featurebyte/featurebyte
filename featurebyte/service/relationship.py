@@ -74,12 +74,10 @@ class RelationshipService(BaseUpdateService):
             updated_document = await self.document_service.update_document(
                 document_id=child_id,
                 data=Relationship(
-                    ancestor_ids=sorted(
-                        set(child_object.ancestor_ids).union(
-                            self.include_object_id(parent_object.ancestor_ids, parent_id)
-                        )
+                    ancestor_ids=set(child_object.ancestor_ids).union(
+                        self.include_object_id(parent_object.ancestor_ids, parent_id)
                     ),
-                    parent_id=parent_id,
+                    parent_ids=set(child_object.parent_ids).union([parent_id]),
                 ),
                 return_document=True,
             )
@@ -93,10 +91,8 @@ class RelationshipService(BaseUpdateService):
                 await self.document_service.update_document(
                     document_id=obj["_id"],
                     data=Relationship(
-                        ancestor_ids=sorted(
-                            set(obj["ancestor_ids"]).union(updated_document.ancestor_ids)
-                        ),
-                        parent_id=obj["parent_id"],
+                        ancestor_ids=set(obj["ancestor_ids"]).union(updated_document.ancestor_ids),
+                        parent_ids=obj["parent_ids"],
                     ),
                 )
             return updated_document
@@ -105,7 +101,7 @@ class RelationshipService(BaseUpdateService):
     def _validate_remove_relationship_operation(
         parent_obj: Relationship, child_obj: Relationship
     ) -> None:
-        if parent_obj.id != child_obj.parent_id:
+        if parent_obj.id not in child_obj.parent_ids:
             raise DocumentUpdateError(
                 f'Object "{parent_obj.name}" is not the parent of object "{child_obj.name}".'
             )
@@ -137,12 +133,10 @@ class RelationshipService(BaseUpdateService):
             updated_document = await self.document_service.update_document(
                 document_id=child_id,
                 data=Relationship(
-                    ancestor_ids=sorted(
-                        set(child_object.ancestor_ids).difference(
-                            self.include_object_id(parent_object.ancestor_ids, parent_id)
-                        )
+                    ancestor_ids=set(child_object.ancestor_ids).difference(
+                        self.include_object_id(parent_object.ancestor_ids, parent_id)
                     ),
-                    parent_id=None,
+                    parent_ids=self.exclude_object_id(child_object.parent_ids, parent_id),
                 ),
                 exclude_none=False,
                 return_document=True,
@@ -157,12 +151,10 @@ class RelationshipService(BaseUpdateService):
                 await self.document_service.update_document(
                     document_id=obj["_id"],
                     data=Relationship(
-                        ancestor_ids=sorted(
-                            set(obj["ancestor_ids"]).difference(
-                                self.include_object_id(parent_object.ancestor_ids, parent_id)
-                            )
+                        ancestor_ids=set(obj["ancestor_ids"]).difference(
+                            self.include_object_id(parent_object.ancestor_ids, parent_id)
                         ),
-                        parent_id=obj["parent_id"],
+                        parent_ids=obj["parent_ids"],
                     ),
                     exclude_none=False,
                 )

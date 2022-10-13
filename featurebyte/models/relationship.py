@@ -2,7 +2,7 @@
 This module contains Relation mixin model
 """
 # pylint: disable=too-few-public-methods
-from typing import List, Optional
+from typing import List
 
 from bson import ObjectId
 from pydantic import Field, validator
@@ -16,9 +16,9 @@ class Relationship(FeatureByteBaseDocumentModel):
     """
 
     ancestor_ids: List[PydanticObjectId] = Field(default_factory=list)
-    parent_id: Optional[PydanticObjectId] = Field(default=None)
+    parent_ids: List[PydanticObjectId] = Field(default_factory=list)
 
-    @validator("ancestor_ids")
+    @validator("ancestor_ids", "parent_ids")
     @classmethod
     def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
         # make sure list of ids always sorted
