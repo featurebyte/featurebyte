@@ -107,7 +107,7 @@ class EventDataInfo(EventDataBriefInfo, BaseInfo):
     """
 
     event_timestamp_column: str
-    record_creation_date_column: str
+    record_creation_date_column: Optional[str]
     table_details: TableDetails
     default_feature_job_setting: Optional[FeatureJobSetting]
     entities: EntityBriefInfoList
