@@ -12,7 +12,6 @@ from sqlglot import Expression, expressions, parse_one, select
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.sql.ast.base import (
     ExpressionNode,
-    SQLNode,
     SQLNodeContext,
     TableNode,
     make_literal_value,
@@ -116,53 +115,45 @@ class Conditional(ExpressionNode):
         return sql_node
 
 
-def make_project_node(
-    input_sql_nodes: list[SQLNode],
-    parameters: dict[str, Any],
-    output_type: NodeOutputType,
-) -> Project | TableNode:
+def make_project_node(context: SQLNodeContext) -> Project | TableNode:
     """Create a Project or ProjectMulti node
 
     Parameters
     ----------
-    input_sql_nodes : list[SQLNode]
-        List of input SQL nodes
-    parameters : dict[str, Any]
-        Query node parameters
-    output_type : NodeOutputType
-        Query node output type
+    context : SQLNodeContext
+        Information required to build SQLNode
 
     Returns
     -------
     Project | TableNode
         The appropriate SQL node for projection
     """
-    table_node = input_sql_nodes[0]
+    table_node = context.input_sql_nodes[0]
     assert isinstance(table_node, TableNode)
-    columns = parameters["columns"]
+    columns = context.parameters["columns"]
     sql_node: Project | TableNode
-    if output_type == NodeOutputType.SERIES:
+    if context.query_node.output_type == NodeOutputType.SERIES:
         sql_node = Project(table_node=table_node, column_name=columns[0])
     else:
         sql_node = table_node.subset_columns(columns)
     return sql_node
 
 
-def make_assign_node(input_sql_nodes: list[SQLNode], parameters: dict[str, Any]) -> TableNode:
+def make_assign_node(context: SQLNodeContext) -> TableNode:
     """
     Create a TableNode for an assign operation
 
     Parameters
     ----------
-    input_sql_nodes : list[SQLNode]
-        List of input SQL nodes
-    parameters : dict[str, Any]
-        Query graph node parameters
+    context : SQLNodeContext
+        Information required to build SQLNode
 
     Returns
     -------
     TableNode
     """
+    input_sql_nodes = context.input_sql_nodes
+    parameters = context.parameters
     input_table_node = input_sql_nodes[0]
     assert isinstance(input_table_node, TableNode)
     if len(input_sql_nodes) == 2:
@@ -199,27 +190,23 @@ def resolve_project_node(expr_node: ExpressionNode) -> Optional[ExpressionNode]:
     return assigned_node
 
 
-def handle_filter_node(
-    input_sql_nodes: list[SQLNode], output_type: NodeOutputType
-) -> TableNode | ExpressionNode:
+def handle_filter_node(context: SQLNodeContext) -> TableNode | ExpressionNode:
     """Create a TableNode or ExpressionNode with filter condition
 
     Parameters
     ----------
-    input_sql_nodes : list[SQLNode]
-        List of input SQL nodes
-    output_type : NodeOutputType
-        Query node output type
+    context : SQLNodeContext
+        Information required to build SQLNode
 
     Returns
     -------
     TableNode | ExpressionNode
         The appropriate SQL node for the filtered result
     """
-    item, mask = input_sql_nodes
+    item, mask = context.input_sql_nodes
     assert isinstance(mask, ExpressionNode)
     sql_node: TableNode | ExpressionNode
-    if output_type == NodeOutputType.FRAME:
+    if context.query_node.output_type == NodeOutputType.FRAME:
         assert isinstance(item, InputNode)
         sql_node = item.subset_rows(mask.sql)
     else:

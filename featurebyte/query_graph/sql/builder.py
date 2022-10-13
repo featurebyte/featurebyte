@@ -171,7 +171,6 @@ class SQLOperationGraph:
         node_id = cur_node.name
         node_type = cur_node.type
         parameters = cur_node.parameters.dict()
-        output_type = cur_node.output_type
 
         sql_node: Any = None
         sql_node_classes = NODE_REGISTRY.get_sql_node_classes(node_type)
@@ -194,13 +193,13 @@ class SQLOperationGraph:
             return sql_node
 
         if node_type == NodeType.ASSIGN:
-            sql_node = make_assign_node(input_sql_nodes, parameters)
+            sql_node = make_assign_node(context)
 
         elif node_type == NodeType.PROJECT:
-            sql_node = make_project_node(input_sql_nodes, parameters, output_type)
+            sql_node = make_project_node(context)
 
         elif node_type == NodeType.FILTER:
-            sql_node = handle_filter_node(input_sql_nodes, output_type)
+            sql_node = handle_filter_node(context)
 
         else:
             raise NotImplementedError(f"SQLNode not implemented for {cur_node}")
