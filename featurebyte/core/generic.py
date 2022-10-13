@@ -13,8 +13,8 @@ import pandas as pd
 from pydantic import Field, StrictStr
 from typeguard import typechecked
 
+from featurebyte.common.utils import run_async
 from featurebyte.config import Configurations, Credentials
-from featurebyte.core.utils import run_async
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel, TabularSource

@@ -5,23 +5,17 @@ from __future__ import annotations
 
 from typing import Any, OrderedDict
 
-import asyncio
 import collections
 import json
-import time
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 from pydantic import Field
 from snowflake import connector
-from snowflake.connector.constants import QueryStatus
-from snowflake.connector.cursor import ASYNC_NO_DATA_MAX_RETRY, ASYNC_RETRY_PATTERN
 from snowflake.connector.errors import DatabaseError, NotSupportedError, OperationalError
 from snowflake.connector.pandas_tools import write_pandas
 
+from featurebyte.common.utils import create_new_arrow_stream_writer, pa_table_to_record_batches
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import CredentialsError
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
@@ -69,129 +63,6 @@ class SnowflakeSession(BaseSession):
     @property
     def database_name(self) -> str:
         return self.database
-
-    def make_async_query_request(self, query: str) -> Any:
-        """
-        Execute async query
-
-        Parameters
-        ----------
-        query: str
-            sql query to execute
-
-        Returns
-        -------
-        Any
-            Query ID
-        """
-        cursor = self.connection.cursor()
-        try:
-            cursor.execute_async(query)
-            query_id = cursor.sfqid
-            return query_id
-        finally:
-            cursor.close()
-
-    async def fetch_async_query(
-        self, query_id: Any, timeout: int, output_path: Path | None
-    ) -> pd.DataFrame | None:
-        """
-        Execute SQL queries
-
-        Parameters
-        ----------
-        query_id: Any
-            Query ID used to fetch results
-        timeout: int
-            timeout in seconds
-        output_path: Path | None
-            path to store results
-
-        Returns
-        -------
-        pd.DataFrame | None
-            Query result as a pandas DataFrame if the query expects result
-
-        Raises
-        ------
-        DatabaseError
-            Invalid query id
-        """
-        # pylint: disable=protected-access
-        no_data_counter = 0
-        retry_pattern_pos = 0
-        start_time = time.time()
-        status = QueryStatus.RUNNING
-        while time.time() - start_time < timeout:
-            status = self.connection.get_query_status_throw_if_error(query_id)
-            if not self.connection.is_still_running(status):
-                break
-            if status == QueryStatus.NO_DATA:  # pragma: no cover
-                no_data_counter += 1
-                if no_data_counter > ASYNC_NO_DATA_MAX_RETRY:
-                    raise DatabaseError(
-                        "Cannot retrieve data on the status of this query. No information returned "
-                        f"from server for query '{query_id}'"
-                    )
-            await asyncio.sleep(0.5 * ASYNC_RETRY_PATTERN[retry_pattern_pos])  # Same wait as JDBC
-            # If we can advance in ASYNC_RETRY_PATTERN then do so
-            if retry_pattern_pos < (len(ASYNC_RETRY_PATTERN) - 1):
-                retry_pattern_pos += 1
-        if status != QueryStatus.SUCCESS:
-            raise DatabaseError(
-                f"Status of query '{query_id}' is {status.name}, results are unavailable"
-            )
-
-        get_result_sql = f"select * from table(result_scan('{query_id}'))"
-
-        # return result as dataframe
-        if not output_path:
-            return await self.execute_query(get_result_sql)
-
-        # save result to parquet file
-        cursor = self.connection.cursor()
-        try:
-            cursor.execute(get_result_sql)
-            index = 0
-            for table in cursor.fetch_arrow_batches():
-                end_index = index + len(table)
-                # add index column so that order can be recovered later
-                table = table.append_column(
-                    "__index__", pa.array(range(index, end_index), pa.int64())
-                )
-                pq.write_to_dataset(table, root_path=output_path)
-                index = end_index
-            return None
-        finally:
-            cursor.close()
-
-    async def execute_async_query(
-        self, query: str, timeout: int = 180, output_path: Path | None = None
-    ) -> pd.DataFrame | None:
-        """
-        Execute SQL queries
-
-        Parameters
-        ----------
-        query: str
-            sql query to execute
-        timeout: int
-            timeout in seconds
-        output_path: Path | None
-            path to store results
-
-        Returns
-        -------
-        pd.DataFrame | None
-            Query result as a pandas DataFrame if the query expects result
-        """
-
-        query_id = self.make_async_query_request(query)
-        return await self.fetch_async_query(
-            query_id=query_id,
-            timeout=timeout,
-            output_path=output_path,
-        )
 
     async def list_databases(self) -> list[str]:
         """
@@ -266,6 +137,35 @@ class SnowflakeSession(BaseSession):
                 # available as a dependency.
                 return super().fetch_query_result_impl(cursor)
         return None
+
+    def fetch_query_stream_impl(self, cursor: Any, output_pipe: Any) -> None:
+        """
+        Stream results from cursor in batches
+
+        Parameters
+        ----------
+        cursor : Any
+            The connection cursor
+        output_pipe: Any
+            Output pipe buffer
+        """
+        # fetch results in batches and write to the stream
+        try:
+            writer = None
+            for table in cursor.fetch_arrow_batches():
+                if not writer:
+                    writer = create_new_arrow_stream_writer(output_pipe, table.schema)
+                for batch in pa_table_to_record_batches(table):
+                    writer.write_batch(batch)
+            if not writer:
+                # Arrow batch is empty, need to return empty table with schema
+                table = cursor.get_result_batches()[0].to_arrow()
+                batch = pa_table_to_record_batches(table)[0]
+                writer = create_new_arrow_stream_writer(output_pipe, batch.schema)
+                writer.write_batch(batch)
+            writer.close()
+        except NotSupportedError:
+            super().fetch_query_stream_impl(cursor, output_pipe)
 
     async def register_temp_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         schema = self.get_columns_schema_from_dataframe(dataframe)

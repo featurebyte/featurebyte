@@ -133,7 +133,7 @@ def test_feature_list_creation__success(production_ready_feature, mocked_tile_ca
     )
 
     with patch("featurebyte.session.snowflake.SnowflakeSession.get_async_query_stream"):
-        with patch("featurebyte.api.feature_list.pandas_df_from_parquet_archive_data"):
+        with patch("featurebyte.api.feature_list.dataframe_from_arrow_stream"):
             flist.get_historical_features(dataframe)
 
     assert flist.dict(exclude={"id": True, "feature_list_namespace_id": True}) == {

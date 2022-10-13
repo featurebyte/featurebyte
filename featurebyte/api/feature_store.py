@@ -10,9 +10,9 @@ from http import HTTPStatus
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
+from featurebyte.common.utils import run_async
 from featurebyte.config import Configurations
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.core.utils import run_async
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import TableDetails, TabularSource
 from featurebyte.schema.feature_store import FeatureStoreCreate

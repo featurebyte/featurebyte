@@ -5,20 +5,72 @@ from __future__ import annotations
 
 from typing import Any, AsyncGenerator, OrderedDict
 
+import asyncio
+
+try:
+    # fcntl is not available on Windows
+    import fcntl
+
+    FCNTL_AVAILABLE = True
+except ImportError:
+    FCNTL_AVAILABLE = False
+
 import os
-import shutil
-import tempfile
+import threading
+import time
 from abc import ABC, abstractmethod
 from enum import Enum
-from pathlib import Path
 
 import aiofiles
 import pandas as pd
+import pyarrow as pa
 from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.common.path_util import get_package_root
+from featurebyte.common.utils import (
+    create_new_arrow_stream_writer,
+    dataframe_from_arrow_stream,
+    pa_table_to_record_batches,
+)
 from featurebyte.enum import DBVarType, SourceType
+from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logger import logger
+
+
+class RunThread(threading.Thread):
+    """
+    Thread to execute query
+    """
+
+    def __init__(self, cursor: Any, query: str, out_fd: int, fetch_query_stream_impl: Any) -> None:
+        self.cursor = cursor
+        self.query = query
+        self.out_fd = out_fd
+        self.fetch_query_stream_impl = fetch_query_stream_impl
+        self.exception: Exception | None = None
+        self.is_terminated = False
+        super().__init__()
+
+    def run(self) -> None:
+        """
+        Run async function
+        """
+        try:
+            # execute query
+            self.cursor.execute(self.query)
+            if self.is_terminated:
+                return
+
+            # stream result back via pipe
+            if self.cursor.description:
+                output_pipe = os.fdopen(self.out_fd, "wb")
+                try:
+                    self.fetch_query_stream_impl(self.cursor, output_pipe)
+                finally:
+                    output_pipe.close()
+
+        except Exception as exc:  # pylint: disable=broad-except
+            self.exception = exc
 
 
 class BaseSession(BaseModel):
@@ -114,7 +166,93 @@ class BaseSession(BaseModel):
         OrderedDict[str, DBVarType]
         """
 
-    async def execute_query(self, query: str) -> pd.DataFrame | None:
+    def fetch_query_stream_impl(self, cursor: Any, output_pipe: Any) -> None:
+        """
+        Stream results from cursor in batches
+
+        Parameters
+        ----------
+        cursor : Any
+            The connection cursor
+        output_pipe: Any
+            Output pipe buffer
+        """
+        # fetch all results into a single dataframe and write batched records to the stream
+        dataframe = self.fetch_query_result_impl(cursor)
+        table = pa.Table.from_pandas(dataframe)
+        writer = create_new_arrow_stream_writer(output_pipe, table.schema)
+        for batch in pa_table_to_record_batches(table):
+            writer.write_batch(batch)
+
+    async def get_async_query_stream(
+        self, query: str, timeout: float = 180
+    ) -> AsyncGenerator[bytes, None]:
+        """
+        Stream results from asynchronous query as compressed arrow bytestream
+
+        Parameters
+        ----------
+        query: str
+            sql query to execute
+        timeout: float
+            timeout in seconds
+
+        Yields
+        ------
+        bytes
+            Byte chunk
+
+        Raises
+        ------
+        exception
+            Exception raised during query execution
+        QueryExecutionTimeOut
+            Query execution timed out
+        """
+
+        cursor = self.connection.cursor()
+        in_fd, out_fd = os.pipe()
+        input_pipe = os.fdopen(in_fd, "rb")
+        if FCNTL_AVAILABLE:
+            # set pipe to non-blocking if fcntl is available
+            fcntl.fcntl(input_pipe, fcntl.F_SETFL, os.O_NONBLOCK)
+        thread = RunThread(cursor, query, out_fd, self.fetch_query_stream_impl)
+        thread.setDaemon(True)
+        thread.start()
+
+        start_time = time.time()
+
+        try:
+            while True:
+
+                # check for timeout
+                if timeout and time.time() - start_time > timeout:
+                    thread.is_terminated = True
+                    raise QueryExecutionTimeOut(f"Execution timeout {timeout}s exceeded.")
+
+                # read data from the pipe
+                chunk = input_pipe.read()
+                if chunk:
+                    yield chunk
+
+                if not thread.is_alive():
+                    # read any remaining data from the pipe
+                    chunk = input_pipe.read()
+                    if chunk:
+                        yield chunk
+                    break
+
+                # asynchronous sleep
+                await asyncio.sleep(0.2)
+
+            if thread.exception:
+                raise thread.exception
+        finally:
+            cursor.close()
+            input_pipe.close()
+            thread.join(timeout=0)
+
+    async def execute_query(self, query: str, timeout: float = 0) -> pd.DataFrame | None:
         """
         Execute SQL query
 
@@ -122,78 +260,21 @@ class BaseSession(BaseModel):
         ----------
         query: str
             sql query to execute
+        timeout: float
+            timeout in seconds
 
         Returns
         -------
         pd.DataFrame | None
             Query result as a pandas DataFrame if the query expects result
         """
-        return self.execute_query_blocking(query)
-
-    async def execute_async_query(
-        self, query: str, timeout: int = 180, output_path: Path | None = None
-    ) -> pd.DataFrame | None:
-        """
-        Execute SQL queries
-
-        Parameters
-        ----------
-        query: str
-            sql query to execute
-        timeout: int
-            timeout in seconds
-        output_path: Path | None
-            path to store results
-
-        Returns
-        -------
-        pd.DataFrame | None
-            Query result as a pandas DataFrame if the query expects result
-        """
-        _ = timeout
-        result = await self.execute_query(query)
-        if output_path is None:
-            return result
-        assert isinstance(result, pd.DataFrame)
-        result.to_parquet(output_path)
-        return None
-
-    async def get_async_query_stream(
-        self, query: str, timeout: int = 180, chunk_size: int = 255 * 1024
-    ) -> AsyncGenerator[bytes, None]:
-        """
-        Stream results from asynchronous query as parquet zip archive
-
-        Parameters
-        ----------
-        query: str
-            sql query to execute
-        timeout: int
-            timeout in seconds
-        chunk_size: int
-            Size of each chunk in the stream
-
-        Yields
-        ------
-        bytes
-            Byte chunk
-        """
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # execute query and save result to parquet file
-            parquet_path = Path(os.path.join(tmpdir, "data.parquet"))
-            await self.execute_async_query(query=query, timeout=timeout, output_path=parquet_path)
-
-            # create zip archive from output parquet
-            assert os.path.exists(parquet_path)
-            shutil.make_archive(str(parquet_path), "zip", root_dir=tmpdir, base_dir="data.parquet")
-
-            # stream zip file
-            async with aiofiles.open(f"{parquet_path}.zip", "rb") as file_obj:
-                while True:
-                    chunk = await file_obj.read(chunk_size)
-                    if len(chunk) == 0:
-                        break
-                    yield chunk
+        bytestream = self.get_async_query_stream(query=query, timeout=timeout)
+        data = b""
+        async for chunk in bytestream:
+            data += chunk
+        if not data:
+            return None
+        return dataframe_from_arrow_stream(data)
 
     def execute_query_blocking(self, query: str) -> pd.DataFrame | None:
         """

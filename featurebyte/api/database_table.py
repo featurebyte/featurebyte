@@ -10,10 +10,10 @@ from http import HTTPStatus
 from pydantic import Field, root_validator
 
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.common.utils import run_async
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
 from featurebyte.core.generic import ExtendedFeatureStoreModel
-from featurebyte.core.utils import run_async
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import RecordRetrievalException, TableSchemaHasBeenChangedError
 from featurebyte.models.feature_store import ColumnInfo, DatabaseTableModel, TableDetails

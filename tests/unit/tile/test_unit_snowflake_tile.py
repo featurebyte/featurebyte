@@ -45,10 +45,12 @@ def test_construct_snowflaketile_zero_time_modulo_frequency():
 
 
 @pytest.mark.asyncio
-async def test_generate_tiles(mock_snowflake_tile, tile_manager):
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+async def test_generate_tiles(mock_execute_query, mock_snowflake_tile, tile_manager):
     """
     Test generate_tiles method in TileSnowflake
     """
+    _ = mock_execute_query
     sql = await tile_manager.generate_tiles(
         mock_snowflake_tile,
         TileType.ONLINE,
@@ -77,10 +79,12 @@ async def test_generate_tiles(mock_snowflake_tile, tile_manager):
 
 
 @pytest.mark.asyncio
-async def test_schedule_online_tiles(mock_snowflake_tile, tile_manager):
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, tile_manager):
     """
     Test schedule_online_tiles method in TileSnowflake
     """
+    _ = mock_execute_query
     sql = await tile_manager.schedule_online_tiles(mock_snowflake_tile)
     expected_sql = textwrap.dedent(
         """
@@ -112,10 +116,12 @@ async def test_schedule_online_tiles(mock_snowflake_tile, tile_manager):
 
 
 @pytest.mark.asyncio
-async def test_schedule_offline_tiles(mock_snowflake_tile, tile_manager):
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+async def test_schedule_offline_tiles(mock_execute_query, mock_snowflake_tile, tile_manager):
     """
     Test schedule_offline_tiles method in TileSnowflake
     """
+    _ = mock_execute_query
     sql = await tile_manager.schedule_offline_tiles(mock_snowflake_tile)
     expected_sql = textwrap.dedent(
         """

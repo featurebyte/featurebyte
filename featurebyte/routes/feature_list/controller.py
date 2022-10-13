@@ -7,12 +7,12 @@ from typing import Any, Literal, Union, cast
 
 from http import HTTPStatus
 
-import pandas as pd
 from bson.objectid import ObjectId
 from fastapi import UploadFile
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
 
+from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel
@@ -232,7 +232,7 @@ class FeatureListController(  # type: ignore[misc]
         """
         try:
             bytestream = await self.preview_service.get_historical_features(
-                training_events=pd.read_parquet(training_events.file),
+                training_events=dataframe_from_arrow_stream(training_events.file),
                 featurelist_get_historical_features=featurelist_get_historical_features,
                 get_credential=get_credential,
             )
@@ -243,5 +243,4 @@ class FeatureListController(  # type: ignore[misc]
         return StreamingResponse(
             bytestream,
             media_type="application/octet-stream",
-            headers={"content-disposition": "filename=data.parquet.zip"},
         )
