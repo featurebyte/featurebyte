@@ -55,6 +55,9 @@ class SQLNode(ABC):
     Query Graph Interpreter constructs a tree that represents the list of SQL operations required to
     produce the feature described by the Query Graph. Each SQL operation can be represented as a
     node in this tree. This is the interface that a node in this tree should implement.
+
+    query_node_type attribute specifies the type of the query graph node that the SQLNode
+    corresponds to. It is used by NodeRegistry.
     """
 
     context: SQLNodeContext
