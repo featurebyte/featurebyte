@@ -12,8 +12,6 @@ from io import BytesIO
 import pandas as pd
 import pyarrow as pa
 
-COMPRESSION_TYPE = "bz2"
-
 
 class RunThread(threading.Thread):
     """
@@ -80,7 +78,7 @@ def create_new_arrow_stream_writer(buffer: Any, schema: pa.Schema) -> pa.RecordB
     pd.RecordBatchStreamWriter
         PyArrow RecordBatchStreamWriter object
     """
-    ipc_options = pa.ipc.IpcWriteOptions(compression="ZSTD")
+    ipc_options = pa.ipc.IpcWriteOptions(compression=pa.Codec("ZSTD", compression_level=9))
     return pa.ipc.new_stream(buffer, schema, options=ipc_options)
 
 
@@ -99,8 +97,7 @@ def dataframe_to_arrow_bytes(dataframe: pd.DataFrame) -> bytes:
     """
     table = pa.Table.from_pandas(dataframe)
     sink = pa.BufferOutputStream()
-    with pa.CompressedOutputStream(sink, COMPRESSION_TYPE) as compressed_buffer:
-        create_new_arrow_stream_writer(compressed_buffer, table.schema).write_table(table)
+    create_new_arrow_stream_writer(sink, table.schema).write_table(table)
     data = sink.getvalue().to_pybytes()
     assert isinstance(data, bytes)
     return data
@@ -125,9 +122,8 @@ def dataframe_from_arrow_stream(buffer: Any) -> pd.DataFrame | None:
     else:
         input_buffer = buffer
 
-    with pa.CompressedInputStream(input_buffer, COMPRESSION_TYPE) as decompressed_buffer:
-        reader = pa.ipc.open_stream(decompressed_buffer)
-        return reader.read_all().to_pandas()
+    reader = pa.ipc.open_stream(input_buffer)
+    return reader.read_all().to_pandas()
 
 
 def pa_table_to_record_batches(table: pa.Table) -> Any:

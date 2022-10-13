@@ -6,7 +6,12 @@ from __future__ import annotations
 from typing import Any, AsyncGenerator, OrderedDict
 
 import asyncio
-import fcntl
+
+try:
+    # fcntl is not available on Windows
+    import fcntl
+except ImportError:
+    pass
 import os
 import threading
 import time
@@ -20,7 +25,6 @@ from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.common.utils import (
-    COMPRESSION_TYPE,
     create_new_arrow_stream_writer,
     dataframe_from_arrow_stream,
     pa_table_to_record_batches,
@@ -58,10 +62,7 @@ class RunThread(threading.Thread):
             if self.cursor.description:
                 output_pipe = os.fdopen(self.out_fd, "wb")
                 try:
-                    with pa.CompressedOutputStream(
-                        output_pipe, COMPRESSION_TYPE
-                    ) as compressed_output_pipe:
-                        self.fetch_query_stream_impl(self.cursor, compressed_output_pipe)
+                    self.fetch_query_stream_impl(self.cursor, output_pipe)
                 finally:
                     output_pipe.close()
 
@@ -173,7 +174,7 @@ class BaseSession(BaseModel):
         output_pipe: Any
             Output pipe buffer
         """
-        # simple generator with only one batch
+        # fetch all results into a single dataframe and write batched records to the stream
         dataframe = self.fetch_query_result_impl(cursor)
         table = pa.Table.from_pandas(dataframe)
         writer = create_new_arrow_stream_writer(output_pipe, table.schema)
@@ -209,7 +210,12 @@ class BaseSession(BaseModel):
         cursor = self.connection.cursor()
         in_fd, out_fd = os.pipe()
         input_pipe = os.fdopen(in_fd, "rb")
-        fcntl.fcntl(input_pipe, fcntl.F_SETFL, os.O_NONBLOCK)
+        try:
+            # fcntl is not available on Windows
+            fcntl.fcntl(input_pipe, fcntl.F_SETFL, os.O_NONBLOCK)
+        except NameError:
+            # fallback to blocking read on the input pipe
+            pass
 
         thread = RunThread(cursor, query, out_fd, self.fetch_query_stream_impl)
         thread.setDaemon(True)

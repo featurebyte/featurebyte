@@ -149,6 +149,7 @@ class SnowflakeSession(BaseSession):
         output_pipe: Any
             Output pipe buffer
         """
+        # fetch results in batches and write to the stream
         try:
             writer = None
             for table in cursor.fetch_arrow_batches():

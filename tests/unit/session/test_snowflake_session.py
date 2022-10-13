@@ -586,12 +586,12 @@ async def test_execute_query_no_data(snowflake_connector, snowflake_session_dict
     result = await session.execute_query(query)
     assert result is None
 
-    # # no data, with description
-    # cursor.description = True
-    # session = SnowflakeSession(**snowflake_session_dict)
-    # # cursor.fetch_arrow_batches.side_effect = yield
-    # result = await session.execute_query(query)
-    # assert result is None
+    # no data, with description
+    cursor.description = True
+    session = SnowflakeSession(**snowflake_session_dict)
+    cursor.fetch_arrow_batches.side_effect = yield
+    result = await session.execute_query(query)
+    assert result is None
 
     empty_df = pd.DataFrame({"a": [], "b": []})
 
