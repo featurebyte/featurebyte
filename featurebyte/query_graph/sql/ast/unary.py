@@ -45,7 +45,9 @@ class UnaryOp(ExpressionNode):
         input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
         table_node = input_expr_node.table_node
         expr_cls = cls.node_type_to_expression_cls[context.query_node.type]
-        node = UnaryOp(table_node=table_node, expr=input_expr_node, operation=expr_cls)
+        node = UnaryOp(
+            context=context, table_node=table_node, expr=input_expr_node, operation=expr_cls
+        )
         return node
 
 
@@ -63,7 +65,7 @@ class IsNullNode(ExpressionNode):
     @classmethod
     def build(cls, context: SQLNodeContext) -> IsNullNode:
         table_node, expr_node, _ = prepare_unary_input_nodes(context)
-        return IsNullNode(table_node=table_node, expr=expr_node)
+        return IsNullNode(context=context, table_node=table_node, expr=expr_node)
 
 
 @dataclass
@@ -98,6 +100,7 @@ class CastNode(ExpressionNode):
     def build(cls, context: SQLNodeContext) -> CastNode:
         table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
         sql_node = CastNode(
+            context=context,
             table_node=table_node,
             expr=input_expr_node,
             new_type=parameters["type"],
@@ -142,6 +145,7 @@ class LagNode(ExpressionNode):
     def build(cls, context: SQLNodeContext) -> LagNode:
         table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
         sql_node = LagNode(
+            context=context,
             table_node=table_node,
             expr=input_expr_node,
             entity_columns=parameters["entity_columns"],

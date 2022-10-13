@@ -50,6 +50,7 @@ class CountDictTransformNode(ExpressionNode):
     def build(cls, context: SQLNodeContext) -> CountDictTransformNode:
         table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
         sql_node = CountDictTransformNode(
+            context=context,
             table_node=table_node,
             expr=input_expr_node,
             transform_type=parameters["transform_type"],

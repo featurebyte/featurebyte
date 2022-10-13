@@ -32,6 +32,7 @@ class StringCaseNode(ExpressionNode):
     def build(cls, context: SQLNodeContext) -> StringCaseNode:
         table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
         sql_node = StringCaseNode(
+            context=context,
             table_node=table_node,
             expr=input_expr_node,
             case=parameters["case"],
@@ -64,6 +65,7 @@ class StringContains(ExpressionNode):
     def build(cls, context: SQLNodeContext) -> StringContains:
         table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
         sql_node = StringContains(
+            context=context,
             table_node=table_node,
             expr=input_expr_node,
             pattern=parameters["pattern"],
@@ -98,6 +100,7 @@ class TrimNode(ExpressionNode):
     def build(cls, context: SQLNodeContext) -> TrimNode:
         table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
         sql_node = TrimNode(
+            context=context,
             table_node=table_node,
             expr=input_expr_node,
             character=parameters["character"],
@@ -127,6 +130,7 @@ class ReplaceNode(ExpressionNode):
     def build(cls, context: SQLNodeContext) -> ReplaceNode:
         table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
         sql_node = ReplaceNode(
+            context=context,
             table_node=table_node,
             expr=input_expr_node,
             pattern=parameters["pattern"],
@@ -202,6 +206,7 @@ class PadNode(ExpressionNode):
     def build(cls, context: SQLNodeContext) -> PadNode:
         table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
         sql_node = PadNode(
+            context=context,
             table_node=table_node,
             expr=input_expr_node,
             side=parameters["side"],
@@ -231,6 +236,7 @@ class SubStringNode(ExpressionNode):
     def build(cls, context: SQLNodeContext) -> SubStringNode:
         table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
         sql_node = SubStringNode(
+            context=context,
             table_node=table_node,
             expr=input_expr_node,
             start=parameters["start"],

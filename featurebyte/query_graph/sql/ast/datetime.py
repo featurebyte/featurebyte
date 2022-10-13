@@ -45,6 +45,7 @@ class DatetimeExtractNode(ExpressionNode):
         input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
         table_node = input_expr_node.table_node
         sql_node = DatetimeExtractNode(
+            context=context,
             table_node=table_node,
             expr=input_expr_node,
             dt_property=context.parameters["property"],
@@ -88,10 +89,9 @@ class DateDiffNode(ExpressionNode):
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> DateDiffNode:
-        table_node, left_node, right_node = prepare_binary_op_input_nodes(
-            context.input_sql_nodes, context.parameters
-        )
+        table_node, left_node, right_node = prepare_binary_op_input_nodes(context)
         node = cls(
+            context=context,
             table_node=table_node,
             left_node=left_node,
             right_node=right_node,
@@ -158,6 +158,7 @@ class TimedeltaExtractNode(ExpressionNode):
         resolved_expr_node = resolve_project_node(input_expr_node)
         assert isinstance(resolved_expr_node, (DateDiffNode, TimedeltaNode))
         sql_node = TimedeltaExtractNode(
+            context=context,
             table_node=input_expr_node.table_node,
             timedelta_node=resolved_expr_node,
             unit=context.parameters["property"],
@@ -182,7 +183,10 @@ class TimedeltaNode(ExpressionNode):
         input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
         table_node = input_expr_node.table_node
         sql_node = TimedeltaNode(
-            table_node=table_node, value_expr=input_expr_node, unit=context.parameters["unit"]
+            context=context,
+            table_node=table_node,
+            value_expr=input_expr_node,
+            unit=context.parameters["unit"],
         )
         return sql_node
 
@@ -223,14 +227,13 @@ class DateAddNode(ExpressionNode):
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> DateAddNode:
-        table_node, left_node, right_node = prepare_binary_op_input_nodes(
-            context.input_sql_nodes, context.parameters
-        )
+        table_node, left_node, right_node = prepare_binary_op_input_nodes(context)
         resolved_timedelta_node = resolve_project_node(right_node)
         assert isinstance(
             resolved_timedelta_node, (TimedeltaNode, DateDiffNode, ParsedExpressionNode)
         )
         output_node = DateAddNode(
+            context=context,
             table_node=table_node,
             input_date_node=left_node,
             timedelta_node=resolved_timedelta_node,

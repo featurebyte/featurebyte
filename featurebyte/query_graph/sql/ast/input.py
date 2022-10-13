@@ -75,6 +75,7 @@ class InputNode(TableNode):
         columns_map = cls.make_input_columns_map(context)
         feature_store = context.parameters["feature_store_details"]
         sql_node = InputNode(
+            context=context,
             columns_map=columns_map,
             dbtable=context.parameters["table_details"],
             feature_store=feature_store,
@@ -137,6 +138,7 @@ class BuildTileInputNode(InputNode):
         columns_map = cls.make_input_columns_map(context)
         feature_store = context.parameters["feature_store_details"]
         sql_node = BuildTileInputNode(
+            context=context,
             columns_map=columns_map,
             timestamp=context.parameters["timestamp"],
             dbtable=context.parameters["table_details"],
@@ -202,6 +204,7 @@ class SelectedEntityBuildTileInputNode(InputNode):
         feature_store = context.parameters["feature_store_details"]
         assert context.groupby_keys is not None
         sql_node = SelectedEntityBuildTileInputNode(
+            context=context,
             columns_map=columns_map,
             timestamp=context.parameters["timestamp"],
             dbtable=context.parameters["table_details"],

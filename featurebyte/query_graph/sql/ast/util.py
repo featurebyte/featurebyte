@@ -7,7 +7,6 @@ from typing import Any
 
 from featurebyte.query_graph.sql.ast.base import (
     ExpressionNode,
-    SQLNode,
     SQLNodeContext,
     TableNode,
     make_literal_value,
@@ -16,7 +15,7 @@ from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode
 
 
 def prepare_binary_op_input_nodes(
-    input_sql_nodes: list[SQLNode], parameters: dict[str, Any]
+    context: SQLNodeContext,
 ) -> tuple[TableNode, ExpressionNode, ExpressionNode]:
     """
     Perform common preparation on binary ops input nodes, such as constructing literal value
@@ -24,16 +23,15 @@ def prepare_binary_op_input_nodes(
 
     Parameters
     ----------
-    input_sql_nodes : list[SQLNode]
-        Input SQL nodes
-    parameters : dict[str, Any]
-        Query graph node parameters
+    context: SQLNodeContext
+        Information related to SQL node building
 
     Returns
     -------
     tuple[TableNode, ExpressionNode, ExpressionNode]
     """
-
+    input_sql_nodes = context.input_sql_nodes
+    parameters = context.parameters
     left_node = input_sql_nodes[0]
     assert isinstance(left_node, ExpressionNode)
     table_node = left_node.table_node
@@ -41,7 +39,9 @@ def prepare_binary_op_input_nodes(
     if len(input_sql_nodes) == 1:
         # When the other value is a scalar
         literal_value = make_literal_value(parameters["value"])
-        right_node = ParsedExpressionNode(table_node=table_node, expr=literal_value)
+        right_node = ParsedExpressionNode(
+            context=context, table_node=table_node, expr=literal_value
+        )
     else:
         # When the other value is a Series
         right_node = input_sql_nodes[1]

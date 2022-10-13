@@ -48,6 +48,7 @@ class SQLNodeContext:
     input_sql_nodes: list[SQLNode]
 
 
+@dataclass  # type: ignore
 class SQLNode(ABC):
     """Base class of a node in the SQL operations tree
 
@@ -56,9 +57,9 @@ class SQLNode(ABC):
     node in this tree. This is the interface that a node in this tree should implement.
     """
 
-    query_node_type: Optional[NodeType | list[NodeType]] = None
+    context: SQLNodeContext
+    query_node_type: Optional[NodeType | list[NodeType]] = field(init=False, default=None)
 
-    # pylint: disable=too-few-public-methods
     @property
     @abstractmethod
     def sql(self) -> Expression | expressions.Subqueryable:

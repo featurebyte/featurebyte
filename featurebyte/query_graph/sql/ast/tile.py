@@ -3,15 +3,13 @@ Module for tile related sql generation
 """
 from __future__ import annotations
 
-from typing import Any
-
 from dataclasses import dataclass
 
 from sqlglot import Expression, expressions, select
 
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.sql.ast.base import SQLNode, SQLNodeContext, TableNode
+from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import AggregationSpec, SQLType, quoted_identifier
 from featurebyte.query_graph.sql.tiling import TileSpec, get_aggregator
 
@@ -75,27 +73,19 @@ class BuildTileNode(TableNode):
     def build(cls, context: SQLNodeContext) -> BuildTileNode | None:
         sql_node = None
         if context.sql_type == SQLType.BUILD_TILE:
-            sql_node = cls.make_build_tile_node(
-                context.input_sql_nodes, context.parameters, is_on_demand=False
-            )
+            sql_node = cls.make_build_tile_node(context, is_on_demand=False)
         elif context.sql_type == SQLType.BUILD_TILE_ON_DEMAND:
-            sql_node = cls.make_build_tile_node(
-                context.input_sql_nodes, context.parameters, is_on_demand=True
-            )
+            sql_node = cls.make_build_tile_node(context, is_on_demand=True)
         return sql_node
 
     @classmethod
-    def make_build_tile_node(
-        cls, input_sql_nodes: list[SQLNode], parameters: dict[str, Any], is_on_demand: bool
-    ) -> BuildTileNode:
+    def make_build_tile_node(cls, context: SQLNodeContext, is_on_demand: bool) -> BuildTileNode:
         """Create a BuildTileNode
 
         Parameters
         ----------
-        input_sql_nodes : list[SQLNode]
-            List of input SQL nodes
-        parameters : dict[str, Any]
-            Query node parameters
+        context : SQLNodeContext
+            SQLNodeContext object
         is_on_demand : bool
             Whether the SQL is for on-demand tile building for historical features
 
@@ -103,7 +93,8 @@ class BuildTileNode(TableNode):
         -------
         BuildTileNode
         """
-        input_node = input_sql_nodes[0]
+        parameters = context.parameters
+        input_node = context.input_sql_nodes[0]
         assert isinstance(input_node, TableNode)
         aggregator = get_aggregator(parameters["agg_func"])
         tile_specs = aggregator.tile(parameters["parent"], parameters["aggregation_id"])
@@ -114,6 +105,7 @@ class BuildTileNode(TableNode):
         )
         columns_map = {col: expressions.Identifier(this=col, quoted=True) for col in columns}
         sql_node = BuildTileNode(
+            context=context,
             columns_map=columns_map,
             input_node=input_node,
             keys=parameters["keys"],
@@ -154,5 +146,5 @@ class AggregatedTilesNode(TableNode):
                 columns_map[agg_spec.feature_name] = expressions.Identifier(
                     this=agg_spec.agg_result_name, quoted=True
                 )
-            sql_node = AggregatedTilesNode(columns_map=columns_map)
+            sql_node = AggregatedTilesNode(context=context, columns_map=columns_map)
         return sql_node

@@ -62,10 +62,9 @@ class BinaryOp(ExpressionNode):
     @classmethod
     def build(cls, context: SQLNodeContext) -> BinaryOp:
         expression_cls = cls.node_type_to_expression_cls[context.query_node.type]
-        table_node, left_node, right_node = prepare_binary_op_input_nodes(
-            context.input_sql_nodes, context.parameters
-        )
+        table_node, left_node, right_node = prepare_binary_op_input_nodes(context)
         output_node = BinaryOp(
+            context=context,
             table_node=table_node,
             left_node=left_node,
             right_node=right_node,
