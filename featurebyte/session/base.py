@@ -10,8 +10,11 @@ import asyncio
 try:
     # fcntl is not available on Windows
     import fcntl
+
+    FCNTL_AVAILABLE = True
 except ImportError:
-    pass
+    FCNTL_AVAILABLE = False
+
 import os
 import threading
 import time
@@ -210,13 +213,9 @@ class BaseSession(BaseModel):
         cursor = self.connection.cursor()
         in_fd, out_fd = os.pipe()
         input_pipe = os.fdopen(in_fd, "rb")
-        try:
-            # fcntl is not available on Windows
+        if FCNTL_AVAILABLE:
+            # set pipe to non-blocking if fcntl is available
             fcntl.fcntl(input_pipe, fcntl.F_SETFL, os.O_NONBLOCK)
-        except NameError:
-            # fallback to blocking read on the input pipe
-            pass
-
         thread = RunThread(cursor, query, out_fd, self.fetch_query_stream_impl)
         thread.setDaemon(True)
         thread.start()
