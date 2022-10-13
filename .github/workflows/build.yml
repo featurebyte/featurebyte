@@ -8,6 +8,7 @@ name: build
 ## SLACK_OAUTH                   | Slack App OAUTH Token           | [Slack                          ] write message
 ## SNOWFLAKE_PASSWORD            | Snowflake password              | [Snowflake                      ] password
 ## GIST_SECRET                   | Github Gist Token               | [Github | Gist                  ] Write
+## DATABRICKS_TOKEN              | Databricks access token         | [Databricks                     ] password
 
 on:
   workflow_dispatch:
@@ -33,6 +34,12 @@ env:
   SNOWFLAKE_DATABASE: FEATUREBYTE_TESTING
   SNOWFLAKE_SCHEMA: PUBLIC
   SNOWFLAKE_SCHEMA_FEATUREBYTE: FEATUREBYTE
+  # Databricks
+  DATABRICKS_ACCESS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+  DATABRICKS_SERVER_HOSTNAME: 2085793316075774.4.gcp.databricks.com
+  DATABRICKS_HTTP_PATH: sql/protocolv1/o/2085793316075774/1010-041133-p07dh5j6
+  DATABRICKS_CATALOG: hive_metastore
+  DATABRICKS_SCHEMA_FEATUREBYTE: featurebyte_github
   # Python
   GCR_PYPI_PROJECT_ID: vpc-host-nonprod-xa739-xz970
   GCR_PYPI_REPO: featurebyte-pypi

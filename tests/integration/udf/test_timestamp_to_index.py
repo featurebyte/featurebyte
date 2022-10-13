@@ -4,7 +4,6 @@ This module contains integration tests for F_TIMESTAMP_TO_INDEX UDF
 import pytest
 
 from featurebyte.session.base import BaseSession
-from tests.util.helper import DATABRICKS_SESSION_AVAILABLE
 
 
 @pytest.fixture(name="db_session", scope="session")
@@ -20,12 +19,7 @@ def db_session_fixture(request):
     "db_session",
     [
         "snowflake",
-        pytest.param(
-            "databricks",
-            marks=pytest.mark.skipif(
-                not DATABRICKS_SESSION_AVAILABLE, reason="Databricks credentials not available"
-            ),
-        ),
+        "databricks",
     ],
     indirect=True,
 )

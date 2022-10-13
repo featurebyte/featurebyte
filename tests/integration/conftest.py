@@ -58,16 +58,13 @@ def config_fixture():
             {
                 "name": "sqlite_datasource",
             },
-        ],
-    }
-    if os.getenv("DATABRICKS_ACCESS_TOKEN") is not None:
-        config_dict["featurestore"].append(
             {
                 "name": "databricks_featurestore",
                 "credential_type": "ACCESS_TOKEN",
                 "access_token": os.getenv("DATABRICKS_ACCESS_TOKEN"),
             },
-        )
+        ],
+    }
     with tempfile.TemporaryDirectory() as temp_dir_path:
         # initialize git
         git = Git(temp_dir_path)
