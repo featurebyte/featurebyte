@@ -64,6 +64,26 @@ def run_async(func: Any, *args: Any, **kwargs: Any) -> Any:
     return asyncio.run(func(*args, **kwargs))
 
 
+def create_new_arrow_stream_writer(buffer: Any, schema: pa.Schema) -> pa.RecordBatchStreamWriter:
+    """
+    Create new arrow IPC stream writer
+
+    Parameters
+    ----------
+    buffer: Any
+        buffer-like
+    schema: pa.Schema
+        Schema to use
+
+    Returns
+    -------
+    pd.RecordBatchStreamWriter
+        PyArrow RecordBatchStreamWriter object
+    """
+    ipc_options = pa.ipc.IpcWriteOptions(compression="ZSTD")
+    return pa.ipc.new_stream(buffer, schema, options=ipc_options)
+
+
 def dataframe_to_arrow_bytes(dataframe: pd.DataFrame) -> bytes:
     """
     Convert pandas DataFrame to compressed bytes in arrow format
@@ -80,7 +100,7 @@ def dataframe_to_arrow_bytes(dataframe: pd.DataFrame) -> bytes:
     table = pa.Table.from_pandas(dataframe)
     sink = pa.BufferOutputStream()
     with pa.CompressedOutputStream(sink, COMPRESSION_TYPE) as compressed_buffer:
-        pa.ipc.new_stream(compressed_buffer, table.schema).write_table(table)
+        create_new_arrow_stream_writer(compressed_buffer, table.schema).write_table(table)
     data = sink.getvalue().to_pybytes()
     assert isinstance(data, bytes)
     return data

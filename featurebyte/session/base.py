@@ -21,6 +21,7 @@ from pydantic import BaseModel, PrivateAttr
 from featurebyte.common.path_util import get_package_root
 from featurebyte.common.utils import (
     COMPRESSION_TYPE,
+    create_new_arrow_stream_writer,
     dataframe_from_arrow_stream,
     pa_table_to_record_batches,
 )
@@ -175,7 +176,7 @@ class BaseSession(BaseModel):
         # simple generator with only one batch
         dataframe = self.fetch_query_result_impl(cursor)
         table = pa.Table.from_pandas(dataframe)
-        writer = pa.ipc.new_stream(output_pipe, table.schema)
+        writer = create_new_arrow_stream_writer(output_pipe, table.schema)
         for batch in pa_table_to_record_batches(table):
             writer.write_batch(batch)
 

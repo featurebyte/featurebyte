@@ -10,13 +10,12 @@ import json
 
 import numpy as np
 import pandas as pd
-import pyarrow as pa
 from pydantic import Field
 from snowflake import connector
 from snowflake.connector.errors import DatabaseError, NotSupportedError, OperationalError
 from snowflake.connector.pandas_tools import write_pandas
 
-from featurebyte.common.utils import pa_table_to_record_batches
+from featurebyte.common.utils import create_new_arrow_stream_writer, pa_table_to_record_batches
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import CredentialsError
 from featurebyte.session.base import BaseSchemaInitializer, BaseSession
@@ -154,14 +153,14 @@ class SnowflakeSession(BaseSession):
             writer = None
             for table in cursor.fetch_arrow_batches():
                 if not writer:
-                    writer = pa.ipc.new_stream(output_pipe, table.schema)
+                    writer = create_new_arrow_stream_writer(output_pipe, table.schema)
                 for batch in pa_table_to_record_batches(table):
                     writer.write_batch(batch)
             if not writer:
                 # Arrow batch is empty, need to return empty table with schema
                 table = cursor.get_result_batches()[0].to_arrow()
                 batch = pa_table_to_record_batches(table)[0]
-                writer = pa.ipc.new_stream(output_pipe, batch.schema)
+                writer = create_new_arrow_stream_writer(output_pipe, batch.schema)
                 writer.write_batch(batch)
             writer.close()
         except NotSupportedError:
