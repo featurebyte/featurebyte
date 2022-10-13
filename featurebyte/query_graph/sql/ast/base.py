@@ -15,6 +15,7 @@ from featurebyte.common.typing import is_scalar_nan
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import SQLType
 
 SQLNodeT = TypeVar("SQLNodeT", bound="SQLNode")
@@ -50,6 +51,11 @@ class SQLNodeContext:
 
     def __post_init__(self) -> None:
         self.parameters = self.query_node.parameters.dict()
+
+    @property
+    def adapter(self) -> BaseAdapter:
+        """Adapter object for generating engine specific SQL expressions"""
+        return get_sql_adapter(self.source_type)
 
 
 @dataclass  # type: ignore

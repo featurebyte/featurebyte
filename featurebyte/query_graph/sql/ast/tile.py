@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from sqlglot import Expression, expressions, select
+from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeType
@@ -38,8 +38,12 @@ class BuildTileNode(TableNode):
         else:
             start_date_expr = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
 
-        start_date_epoch = f"DATE_PART(EPOCH_SECOND, CAST({start_date_expr} AS TIMESTAMP))"
-        timestamp_epoch = f"DATE_PART(EPOCH_SECOND, {quoted_identifier(self.timestamp).sql()})"
+        start_date_epoch = self.context.adapter.epoch_seconds(
+            parse_one(f"CAST({start_date_expr} AS TIMESTAMP)")
+        ).sql()
+        timestamp_epoch = self.context.adapter.epoch_seconds(
+            quoted_identifier(self.timestamp)
+        ).sql()
 
         input_tiled = select(
             "*",

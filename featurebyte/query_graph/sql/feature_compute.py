@@ -7,12 +7,13 @@ from typing import Iterable, Optional, Tuple
 
 from abc import ABC, abstractmethod
 
-from sqlglot import expressions, select
+from sqlglot import expressions, parse_one, select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.count_dict import MISSING_VALUE_REPLACEMENT
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
@@ -66,8 +67,9 @@ class RequestTablePlan(ABC):
     -------------------------------------------------------------------
     """
 
-    def __init__(self) -> None:
+    def __init__(self, source_type: SourceType) -> None:
         self.expanded_request_table_names: dict[TileIndicesIdType, str] = {}
+        self.adapter = get_sql_adapter(source_type)
 
     def add_aggregation_spec(self, agg_spec: AggregationSpec) -> None:
         """Process a new AggregationSpec
@@ -156,9 +158,9 @@ class RequestTablePlan(ABC):
             expanded_request_ctes.append((quoted_identifier(table_name).sql(), expanded_table_sql))
         return expanded_request_ctes
 
-    @staticmethod
     @abstractmethod
     def construct_expanded_request_table_sql(
+        self,
         window_size: int,
         frequency: int,
         blind_spot: int,
@@ -192,8 +194,8 @@ class RequestTablePlan(ABC):
 class SnowflakeRequestTablePlan(RequestTablePlan):
     """Generator of Snowflake specific query to expand request table"""
 
-    @staticmethod
     def construct_expanded_request_table_sql(
+        self,
         window_size: int,
         frequency: int,
         blind_spot: int,
@@ -209,12 +211,17 @@ class SnowflakeRequestTablePlan(RequestTablePlan):
             .from_(REQUEST_TABLE_NAME)
         )
         num_tiles = window_size // frequency
+        point_in_time_epoch_expr = self.adapter.epoch_seconds(SpecialColumnName.POINT_IN_TIME.value)
+        last_time_index_expr = parse_one(
+            f"FLOOR(({point_in_time_epoch_expr.sql()} - {time_modulo_frequency}) / {frequency})"
+        )
+        first_tile_index_expr = parse_one(f"{last_time_index_expr.sql()} - {num_tiles}")
         expr = select(
             SpecialColumnName.POINT_IN_TIME.value,
             *quoted_serving_names,
-            f"DATE_PART(epoch, {SpecialColumnName.POINT_IN_TIME}) AS __FB_TS",
-            f"FLOOR((__FB_TS - {time_modulo_frequency}) / {frequency}) AS {InternalName.LAST_TILE_INDEX}",
-            f"{InternalName.LAST_TILE_INDEX} - {num_tiles} AS {InternalName.FIRST_TILE_INDEX}",
+            expressions.alias_(point_in_time_epoch_expr, "__FB_TS"),
+            expressions.alias_(last_time_index_expr, InternalName.LAST_TILE_INDEX.value),
+            expressions.alias_(first_tile_index_expr, InternalName.FIRST_TILE_INDEX.value),
         ).from_(select_distinct_expr.subquery())
         return expr
 
@@ -284,10 +291,13 @@ class FeatureExecutionPlan(ABC):
 
     AGGREGATION_TABLE_NAME = "_FB_AGGREGATED"
 
-    def __init__(self) -> None:
+    def __init__(self, source_type: SourceType) -> None:
         self.aggregation_spec_set = AggregationSpecSet()
         self.feature_specs: dict[str, FeatureSpec] = {}
-        self.request_table_plan: RequestTablePlan = SnowflakeRequestTablePlan()
+        self.request_table_plan: RequestTablePlan = SnowflakeRequestTablePlan(
+            source_type=source_type
+        )
+        self.source_type = source_type
 
     @property
     def required_serving_names(self) -> set[str]:
@@ -742,7 +752,7 @@ class FeatureExecutionPlanner:
         serving_names_mapping: dict[str, str] | None = None,
     ):
         self.graph = graph
-        self.plan = SnowflakeFeatureExecutionPlan()
+        self.plan = SnowflakeFeatureExecutionPlan(source_type)
         self.source_type = source_type
         self.serving_names_mapping = serving_names_mapping
 
