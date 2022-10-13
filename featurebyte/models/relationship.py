@@ -15,8 +15,8 @@ class Relationship(FeatureByteBaseDocumentModel):
     Relationship model used to track parent (or ancestor) and child relationship
     """
 
-    ancestor_ids: List[PydanticObjectId] = Field(default_factory=list)
-    parent_ids: List[PydanticObjectId] = Field(default_factory=list)
+    ancestor_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
+    parent_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
 
     @validator("ancestor_ids", "parent_ids")
     @classmethod

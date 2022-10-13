@@ -3,14 +3,22 @@ Entity API routes
 """
 from __future__ import annotations
 
-from typing import cast
+from typing import Union, cast
 
 from bson.objectid import ObjectId
 
 from featurebyte.models.entity import EntityModel
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
-from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityList, EntityUpdate
+from featurebyte.schema.entity import (
+    AddParentEntityUpdate,
+    EntityCreate,
+    EntityInfo,
+    EntityList,
+    EntityUpdate,
+    RemoveParentEntityUpdate,
+)
 from featurebyte.service.entity import EntityService
+from featurebyte.service.relationship import EntityRelationshipService
 
 
 class EntityController(  # type: ignore[misc]
@@ -23,8 +31,13 @@ class EntityController(  # type: ignore[misc]
 
     paginated_document_class = EntityList
 
-    def __init__(self, service: EntityService):
+    def __init__(
+        self,
+        service: EntityService,
+        entity_relationship_service: EntityRelationshipService,
+    ):
         super().__init__(service)
+        self.entity_relationship_service = entity_relationship_service
 
     async def create_entity(
         self,
@@ -46,7 +59,11 @@ class EntityController(  # type: ignore[misc]
         document = await self.service.create_document(data)  # type: ignore[attr-defined]
         return cast(EntityModel, document)
 
-    async def update_entity(self, entity_id: ObjectId, data: EntityUpdate) -> EntityModel:
+    async def update_entity(
+        self,
+        entity_id: ObjectId,
+        data: Union[EntityUpdate, AddParentEntityUpdate, RemoveParentEntityUpdate],
+    ) -> EntityModel:
         """
         Update Entity stored at persistent (GitDB or MongoDB)
 
@@ -54,7 +71,7 @@ class EntityController(  # type: ignore[misc]
         ----------
         entity_id: ObjectId
             Entity ID
-        data: EntityUpdate
+        data: Union[EntityUpdate, AddParentEntityUpdate, RemoveParentEntityUpdate]
             Entity update payload
 
         Returns
@@ -62,6 +79,18 @@ class EntityController(  # type: ignore[misc]
         EntityModel
             Entity object with updated attribute(s)
         """
-        document: EntityModel = await self.service.update_document(document_id=entity_id, data=data)  # type: ignore[attr-defined]
-        assert document is not None
-        return document
+        if isinstance(data, EntityUpdate):
+            document: EntityModel = await self.service.update_document(  # type: ignore[attr-defined]
+                document_id=entity_id, data=data
+            )
+            assert document is not None
+        elif isinstance(data, AddParentEntityUpdate):
+            document: EntityModel = await self.entity_relationship_service.add_relationship(
+                parent_id=data.add_parent_id, child_id=entity_id
+            )
+        else:
+            assert isinstance(data, RemoveParentEntityUpdate)
+            document: EntityModel = await self.entity_relationship_service.remove_relationship(
+                parent_id=data.remove_parent_id, child_id=entity_id
+            )
+        return cast(EntityModel, document)

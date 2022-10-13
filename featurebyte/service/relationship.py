@@ -138,7 +138,6 @@ class RelationshipService(BaseUpdateService):
                     ),
                     parent_ids=self.exclude_object_id(child_object.parent_ids, parent_id),
                 ),
-                exclude_none=False,
                 return_document=True,
             )
             updated_document = cast(Relationship, updated_document)
@@ -156,6 +155,15 @@ class RelationshipService(BaseUpdateService):
                         ),
                         parent_ids=obj["parent_ids"],
                     ),
-                    exclude_none=False,
                 )
             return updated_document
+
+
+class EntityRelationshipService(RelationshipService):
+    """
+    EntityRelationshipService is responsible to update relationship between different entities.
+    """
+
+    @property
+    def document_service(self) -> BaseDocumentService[FeatureByteBaseDocumentModel]:
+        return self.entity_service  # type: ignore[return-value]

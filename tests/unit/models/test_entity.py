@@ -26,6 +26,8 @@ def test_entity_model():
         "serving_names",
         "created_at",
         "updated_at",
+        "ancestor_ids",
+        "parent_ids",
     }
     assert isinstance(entity_dict["_id"], ObjectId)
     assert isinstance(entity_dict["user_id"], ObjectId)

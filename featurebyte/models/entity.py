@@ -16,6 +16,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+from featurebyte.models.relationship import Relationship
 
 
 class EntityNameHistoryEntry(FeatureByteBaseModel):
@@ -32,7 +33,7 @@ class EntityNameHistoryEntry(FeatureByteBaseModel):
     name: StrictStr
 
 
-class EntityModel(FeatureByteBaseDocumentModel):
+class EntityModel(Relationship):
     """
     Model for Entity
 
@@ -42,8 +43,14 @@ class EntityModel(FeatureByteBaseDocumentModel):
         Name of the Entity
     serving_names: List[str]
         Name of the serving column
+    parent_ids: List[PydanticObjectId]
+        Parent entities of this entity
+    ancestor_ids: List[PydanticObjectId]
+        Ancestor entities of this entity
     created_at: datetime
         Datetime when the Entity object was first saved or published
+    updated_at: datetime
+        Datetime when the Entity object get updated
     """
 
     serving_names: List[StrictStr] = Field(allow_mutation=False)

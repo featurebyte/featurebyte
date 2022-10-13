@@ -41,6 +41,22 @@ class EntityUpdate(FeatureByteBaseModel):
     name: StrictStr
 
 
+class AddParentEntityUpdate(FeatureByteBaseModel):
+    """
+    Add parent entity update schema
+    """
+
+    add_parent_id: PydanticObjectId
+
+
+class RemoveParentEntityUpdate(FeatureByteBaseModel):
+    """
+    Remove parent entity update schema
+    """
+
+    remove_parent_id: PydanticObjectId
+
+
 class EntityBriefInfo(BaseBriefInfo):
     """
     Entity brief info schema
