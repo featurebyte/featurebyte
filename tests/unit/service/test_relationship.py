@@ -60,6 +60,10 @@ class FamilyRelationshipService(RelationshipService):
     def document_service(self):
         return FamilyDocumentService(user=self.user, persistent=self.persistent)
 
+    @classmethod
+    def prepare_document_update_payload(cls, relationship):
+        return relationship
+
 
 @pytest.fixture(name="family_document_service")
 def family_document_service_fixture(user, persistent):

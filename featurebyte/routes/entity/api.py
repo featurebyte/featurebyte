@@ -22,14 +22,7 @@ from featurebyte.routes.common.schema import (
     SortDirQuery,
     VerboseQuery,
 )
-from featurebyte.schema.entity import (
-    AddParentEntityUpdate,
-    EntityCreate,
-    EntityInfo,
-    EntityList,
-    EntityUpdate,
-    RemoveParentEntityUpdate,
-)
+from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityList, EntityUpdate
 
 router = APIRouter(prefix="/entity")
 
@@ -83,7 +76,7 @@ async def list_entities(
 async def update_entity(
     request: Request,
     entity_id: PydanticObjectId,
-    data: Union[EntityUpdate, AddParentEntityUpdate, RemoveParentEntityUpdate],
+    data: EntityUpdate,
 ) -> EntityModel:
     """
     Update Entity

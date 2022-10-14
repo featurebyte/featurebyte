@@ -10,12 +10,11 @@ from bson.objectid import ObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
 from featurebyte.schema.entity import (
-    AddParentEntityUpdate,
     EntityCreate,
     EntityInfo,
     EntityList,
+    EntityServiceUpdate,
     EntityUpdate,
-    RemoveParentEntityUpdate,
 )
 from featurebyte.service.entity import EntityService
 from featurebyte.service.relationship import EntityRelationshipService
@@ -62,7 +61,7 @@ class EntityController(  # type: ignore[misc]
     async def update_entity(
         self,
         entity_id: ObjectId,
-        data: Union[EntityUpdate, AddParentEntityUpdate, RemoveParentEntityUpdate],
+        data: EntityUpdate,
     ) -> EntityModel:
         """
         Update Entity stored at persistent (GitDB or MongoDB)
@@ -71,7 +70,7 @@ class EntityController(  # type: ignore[misc]
         ----------
         entity_id: ObjectId
             Entity ID
-        data: Union[EntityUpdate, AddParentEntityUpdate, RemoveParentEntityUpdate]
+        data: EntityUpdate
             Entity update payload
 
         Returns
@@ -79,18 +78,19 @@ class EntityController(  # type: ignore[misc]
         EntityModel
             Entity object with updated attribute(s)
         """
-        if isinstance(data, EntityUpdate):
-            document: EntityModel = await self.service.update_document(  # type: ignore[attr-defined]
-                document_id=entity_id, data=data
+        if data.name is not None:
+            await self.service.update_document(  # type: ignore[attr-defined]
+                document_id=entity_id, data=EntityServiceUpdate(name=data.name)
             )
-            assert document is not None
-        elif isinstance(data, AddParentEntityUpdate):
-            document: EntityModel = await self.entity_relationship_service.add_relationship(
+
+        if data.add_parent_id:
+            await self.entity_relationship_service.add_relationship(  # type: ignore
                 parent_id=data.add_parent_id, child_id=entity_id
             )
-        else:
-            assert isinstance(data, RemoveParentEntityUpdate)
-            document: EntityModel = await self.entity_relationship_service.remove_relationship(
+
+        if data.remove_parent_id:
+            await self.entity_relationship_service.remove_relationship(  # type: ignore
                 parent_id=data.remove_parent_id, child_id=entity_id
             )
-        return cast(EntityModel, document)
+
+        return await self.get(document_id=entity_id)

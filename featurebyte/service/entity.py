@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.entity import EntityModel
-from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityUpdate
+from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 
 
@@ -41,7 +41,7 @@ class EntityService(BaseDocumentService[EntityModel], GetInfoServiceMixin[Entity
     async def update_document(  # type: ignore[override]
         self,
         document_id: ObjectId,
-        data: EntityUpdate,
+        data: EntityServiceUpdate,
         exclude_none: bool = True,
         document: Optional[EntityModel] = None,
         return_document: bool = True,
@@ -49,12 +49,13 @@ class EntityService(BaseDocumentService[EntityModel], GetInfoServiceMixin[Entity
         if document is None:
             await self.get_document(document_id=document_id)
 
-        # check any conflict with existing documents
-        await self._check_document_unique_constraint(
-            query_filter={"name": data.name},
-            conflict_signature={"name": data.name},
-            resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-        )
+        if data.name:
+            # check any conflict with existing documents
+            await self._check_document_unique_constraint(
+                query_filter={"name": data.name},
+                conflict_signature={"name": data.name},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            )
 
         await self.persistent.update_one(
             collection_name=self.collection_name,

@@ -10,6 +10,7 @@ from bson import ObjectId
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.relationship import Relationship
+from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.base_update import BaseUpdateService
 
@@ -30,6 +31,25 @@ class RelationshipService(BaseUpdateService):
         ------
         NotImplementedError
             If the property has not been overriden
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def prepare_document_update_payload(
+        cls, relationship: Relationship
+    ) -> FeatureByteBaseDocumentModel:
+        """
+        Prepare document update payload (by converting Relationship schema into service update schema)
+
+        Parameters
+        ----------
+        relationship: Relationship
+            Update relationship
+
+        Raises
+        ------
+        NotImplementedError
+            If the method has not been overriden
         """
         raise NotImplementedError
 
@@ -73,11 +93,13 @@ class RelationshipService(BaseUpdateService):
         async with self.persistent.start_transaction():
             updated_document = await self.document_service.update_document(
                 document_id=child_id,
-                data=Relationship(
-                    ancestor_ids=set(child_object.ancestor_ids).union(
-                        self.include_object_id(parent_object.ancestor_ids, parent_id)
+                data=self.prepare_document_update_payload(
+                    relationship=Relationship(
+                        ancestor_ids=set(child_object.ancestor_ids).union(
+                            self.include_object_id(parent_object.ancestor_ids, parent_id)
+                        ),
+                        parent_ids=set(child_object.parent_ids).union([parent_id]),
                     ),
-                    parent_ids=set(child_object.parent_ids).union([parent_id]),
                 ),
                 return_document=True,
             )
@@ -90,9 +112,13 @@ class RelationshipService(BaseUpdateService):
             for obj in objects["data"]:
                 await self.document_service.update_document(
                     document_id=obj["_id"],
-                    data=Relationship(
-                        ancestor_ids=set(obj["ancestor_ids"]).union(updated_document.ancestor_ids),
-                        parent_ids=obj["parent_ids"],
+                    data=self.prepare_document_update_payload(
+                        relationship=Relationship(
+                            ancestor_ids=set(obj["ancestor_ids"]).union(
+                                updated_document.ancestor_ids
+                            ),
+                            parent_ids=obj["parent_ids"],
+                        ),
                     ),
                 )
             return updated_document
@@ -132,11 +158,13 @@ class RelationshipService(BaseUpdateService):
         async with self.persistent.start_transaction():
             updated_document = await self.document_service.update_document(
                 document_id=child_id,
-                data=Relationship(
-                    ancestor_ids=set(child_object.ancestor_ids).difference(
-                        self.include_object_id(parent_object.ancestor_ids, parent_id)
+                data=self.prepare_document_update_payload(
+                    relationship=Relationship(
+                        ancestor_ids=set(child_object.ancestor_ids).difference(
+                            self.include_object_id(parent_object.ancestor_ids, parent_id)
+                        ),
+                        parent_ids=self.exclude_object_id(child_object.parent_ids, parent_id),
                     ),
-                    parent_ids=self.exclude_object_id(child_object.parent_ids, parent_id),
                 ),
                 return_document=True,
             )
@@ -149,11 +177,13 @@ class RelationshipService(BaseUpdateService):
             for obj in objects["data"]:
                 await self.document_service.update_document(
                     document_id=obj["_id"],
-                    data=Relationship(
-                        ancestor_ids=set(obj["ancestor_ids"]).difference(
-                            self.include_object_id(parent_object.ancestor_ids, parent_id)
+                    data=self.prepare_document_update_payload(
+                        relationship=Relationship(
+                            ancestor_ids=set(obj["ancestor_ids"]).difference(
+                                self.include_object_id(parent_object.ancestor_ids, parent_id)
+                            ),
+                            parent_ids=obj["parent_ids"],
                         ),
-                        parent_ids=obj["parent_ids"],
                     ),
                 )
             return updated_document
@@ -167,3 +197,9 @@ class EntityRelationshipService(RelationshipService):
     @property
     def document_service(self) -> BaseDocumentService[FeatureByteBaseDocumentModel]:
         return self.entity_service  # type: ignore[return-value]
+
+    @classmethod
+    def prepare_document_update_payload(
+        cls, relationship: Relationship
+    ) -> FeatureByteBaseDocumentModel:
+        return EntityServiceUpdate(**relationship.dict())  # type: ignore[return-value]

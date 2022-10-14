@@ -38,23 +38,19 @@ class EntityUpdate(FeatureByteBaseModel):
     Entity update schema
     """
 
-    name: StrictStr
+    name: Optional[StrictStr]
+    add_parent_id: Optional[PydanticObjectId]
+    remove_parent_id: Optional[PydanticObjectId]
 
 
-class AddParentEntityUpdate(FeatureByteBaseModel):
+class EntityServiceUpdate(FeatureByteBaseModel):
     """
-    Add parent entity update schema
-    """
-
-    add_parent_id: PydanticObjectId
-
-
-class RemoveParentEntityUpdate(FeatureByteBaseModel):
-    """
-    Remove parent entity update schema
+    Entity service update schema
     """
 
-    remove_parent_id: PydanticObjectId
+    name: Optional[str]
+    ancestor_ids: Optional[List[PydanticObjectId]]
+    parent_ids: Optional[List[PydanticObjectId]]
 
 
 class EntityBriefInfo(BaseBriefInfo):

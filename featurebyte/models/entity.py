@@ -11,7 +11,6 @@ from datetime import datetime
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
