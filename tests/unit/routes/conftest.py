@@ -137,8 +137,8 @@ def mock_process_store(request, persistent, storage, temp_storage):
                     "process": Mock(exitcode=0),
                     "output_path": process_data.get("output_path", "some_path"),
                     "payload": process_data.get("payload", {"key": "value"}),
-                    "status": process_data["status"],
-                    "traceback": process_data["traceback"],
+                    "status": process_data.get("status", TaskStatus.SUCCESS),
+                    "traceback": process_data.get("traceback"),
                 }
 
             mock_get.side_effect = get
