@@ -59,6 +59,7 @@ async def test_get_historical_features__missing_point_in_time(
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             training_events=training_events,
+            source_type=SourceType.SNOWFLAKE,
         )
     assert str(exc_info.value) == "POINT_IN_TIME column is required"
 
@@ -80,6 +81,7 @@ async def test_get_historical_features__missing_required_serving_name(
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             training_events=training_events,
+            source_type=SourceType.SNOWFLAKE,
         )
     assert str(exc_info.value) == "Required serving names not provided: cust_id"
 
@@ -106,6 +108,7 @@ async def test_get_historical_features__too_recent_point_in_time(
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             training_events=training_events,
+            source_type=SourceType.SNOWFLAKE,
         )
     assert str(exc_info.value) == (
         "The latest point in time (2022-04-30 00:00:00) should not be more recent than 48 hours "
@@ -138,6 +141,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
         graph=float_feature.graph,
         nodes=[float_feature.node],
         training_events=df_request,
+        source_type=SourceType.SNOWFLAKE,
     )
 
     # Check POINT_IN_TIME is converted to datetime

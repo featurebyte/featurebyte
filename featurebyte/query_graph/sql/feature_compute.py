@@ -199,7 +199,6 @@ class RequestTablePlan(ABC):
         expr = select(
             SpecialColumnName.POINT_IN_TIME.value,
             *quoted_serving_names,
-            expressions.alias_(point_in_time_epoch_expr, "__FB_TS"),
             expressions.alias_(last_time_index_expr, InternalName.LAST_TILE_INDEX.value),
             expressions.alias_(first_tile_index_expr, InternalName.FIRST_TILE_INDEX.value),
         ).from_(select_distinct_expr.subquery())

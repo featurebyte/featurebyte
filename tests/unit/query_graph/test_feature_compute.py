@@ -88,9 +88,8 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
     SELECT
       POINT_IN_TIME,
       "CID",
-      DATE_PART(epoch, POINT_IN_TIME) AS __FB_TS,
-      FLOOR((__FB_TS - 1800) / 3600) AS __FB_LAST_TILE_INDEX,
-      __FB_LAST_TILE_INDEX - 24 AS __FB_FIRST_TILE_INDEX
+      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) AS "__FB_LAST_TILE_INDEX",
+      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) - 24 AS "__FB_FIRST_TILE_INDEX"
     FROM (
         SELECT DISTINCT
           POINT_IN_TIME,
@@ -126,9 +125,8 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     SELECT
       POINT_IN_TIME,
       "CID",
-      DATE_PART(epoch, POINT_IN_TIME) AS __FB_TS,
-      FLOOR((__FB_TS - 1800) / 3600) AS __FB_LAST_TILE_INDEX,
-      __FB_LAST_TILE_INDEX - 2 AS __FB_FIRST_TILE_INDEX
+      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) AS "__FB_LAST_TILE_INDEX",
+      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) - 2 AS "__FB_FIRST_TILE_INDEX"
     FROM (
         SELECT DISTINCT
           POINT_IN_TIME,
@@ -145,9 +143,8 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     SELECT
       POINT_IN_TIME,
       "CID",
-      DATE_PART(epoch, POINT_IN_TIME) AS __FB_TS,
-      FLOOR((__FB_TS - 1800) / 3600) AS __FB_LAST_TILE_INDEX,
-      __FB_LAST_TILE_INDEX - 24 AS __FB_FIRST_TILE_INDEX
+      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) AS "__FB_LAST_TILE_INDEX",
+      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) - 24 AS "__FB_FIRST_TILE_INDEX"
     FROM (
         SELECT DISTINCT
           POINT_IN_TIME,
