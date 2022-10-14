@@ -144,7 +144,7 @@ class RequestTablePlan(ABC):
             (
                 window_size,
                 frequency,
-                blind_spot,
+                _,
                 time_modulo_frequency,
                 serving_names,
             ) = unique_tile_indices_id
@@ -174,8 +174,6 @@ class RequestTablePlan(ABC):
             Frequency in feature job setting
         time_modulo_frequency : int
             Time modulo frequency in feature job setting
-        blind_spot : int
-            Blind spot in feature job setting
         serving_names: list[str]
             List of serving names corresponding to entities
 

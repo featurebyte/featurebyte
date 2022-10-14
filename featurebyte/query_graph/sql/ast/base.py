@@ -54,7 +54,13 @@ class SQLNodeContext:
 
     @property
     def adapter(self) -> BaseAdapter:
-        """Adapter object for generating engine specific SQL expressions"""
+        """
+        Adapter object for generating engine specific SQL expressions
+
+        Returns
+        -------
+        BaseAdapter
+        """
         return get_sql_adapter(self.source_type)
 
 
