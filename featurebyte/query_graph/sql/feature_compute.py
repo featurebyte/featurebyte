@@ -14,9 +14,9 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.ast.base import TableNode
-from featurebyte.query_graph.sql.ast.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.ast.count_dict import MISSING_VALUE_REPLACEMENT
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
+from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     AggregationSpec,

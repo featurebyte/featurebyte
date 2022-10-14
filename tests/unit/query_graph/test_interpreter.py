@@ -9,7 +9,7 @@ import pytest
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph
-from featurebyte.query_graph.sql.ast.builder import SQLOperationGraph
+from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier

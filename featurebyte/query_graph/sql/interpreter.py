@@ -13,7 +13,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
-from featurebyte.query_graph.sql.ast.builder import SQLOperationGraph
+from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, sql_to_string
 
 

@@ -3,7 +3,7 @@ Module for datetime operations related sql generation
 """
 from __future__ import annotations
 
-from typing import Any, Union
+from typing import Union, cast
 
 from dataclasses import dataclass
 
@@ -11,8 +11,10 @@ import pandas as pd
 from sqlglot import Expression, expressions
 
 from featurebyte.common.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
-from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode, make_literal_value
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, make_literal_value
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode, resolve_project_node
+from featurebyte.query_graph.sql.ast.util import prepare_binary_op_input_nodes
 
 
 @dataclass
@@ -21,6 +23,7 @@ class DatetimeExtractNode(ExpressionNode):
 
     expr: ExpressionNode
     dt_property: DatetimeSupportedPropertyType
+    query_node_type = NodeType.DT_EXTRACT
 
     @property
     def sql(self) -> Expression:
@@ -37,6 +40,18 @@ class DatetimeExtractNode(ExpressionNode):
             )
         return prop_expr
 
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> DatetimeExtractNode:
+        input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
+        table_node = input_expr_node.table_node
+        sql_node = DatetimeExtractNode(
+            context=context,
+            table_node=table_node,
+            expr=input_expr_node,
+            dt_property=context.parameters["property"],
+        )
+        return sql_node
+
 
 @dataclass
 class DateDiffNode(ExpressionNode):
@@ -44,6 +59,7 @@ class DateDiffNode(ExpressionNode):
 
     left_node: ExpressionNode
     right_node: ExpressionNode
+    query_node_type = NodeType.DATE_DIFF
 
     def with_unit(self, unit: TimedeltaSupportedUnitType) -> Expression:
         """Construct a date difference expression with provided time unit
@@ -71,6 +87,17 @@ class DateDiffNode(ExpressionNode):
     def sql(self) -> Expression:
         return self.with_unit("second")
 
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> DateDiffNode:
+        table_node, left_node, right_node = prepare_binary_op_input_nodes(context)
+        node = cls(
+            context=context,
+            table_node=table_node,
+            left_node=left_node,
+            right_node=right_node,
+        )
+        return node
+
 
 @dataclass
 class TimedeltaExtractNode(ExpressionNode):
@@ -78,6 +105,7 @@ class TimedeltaExtractNode(ExpressionNode):
 
     timedelta_node: Union[TimedeltaNode, DateDiffNode]
     unit: TimedeltaSupportedUnitType
+    query_node_type = NodeType.TIMEDELTA_EXTRACT
 
     @property
     def sql(self) -> Expression:
@@ -123,6 +151,20 @@ class TimedeltaExtractNode(ExpressionNode):
         converted_expr = expressions.Paren(this=converted_expr)
         return converted_expr
 
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> TimedeltaExtractNode:
+        # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
+        input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
+        resolved_expr_node = resolve_project_node(input_expr_node)
+        assert isinstance(resolved_expr_node, (DateDiffNode, TimedeltaNode))
+        sql_node = TimedeltaExtractNode(
+            context=context,
+            table_node=input_expr_node.table_node,
+            timedelta_node=resolved_expr_node,
+            unit=context.parameters["property"],
+        )
+        return sql_node
+
 
 @dataclass
 class TimedeltaNode(ExpressionNode):
@@ -130,10 +172,23 @@ class TimedeltaNode(ExpressionNode):
 
     value_expr: ExpressionNode
     unit: TimedeltaSupportedUnitType
+    query_node_type = NodeType.TIMEDELTA
 
     @property
     def sql(self) -> Expression:
         return self.value_expr.sql
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> TimedeltaNode:
+        input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
+        table_node = input_expr_node.table_node
+        sql_node = TimedeltaNode(
+            context=context,
+            table_node=table_node,
+            value_expr=input_expr_node,
+            unit=context.parameters["unit"],
+        )
+        return sql_node
 
 
 @dataclass
@@ -142,6 +197,7 @@ class DateAddNode(ExpressionNode):
 
     input_date_node: ExpressionNode
     timedelta_node: Union[TimedeltaNode, DateDiffNode, ParsedExpressionNode]
+    query_node_type = NodeType.DATE_ADD
 
     @property
     def sql(self) -> Expression:
@@ -169,59 +225,17 @@ class DateAddNode(ExpressionNode):
         output_expr = expressions.Anonymous(this="DATEADD", expressions=date_add_args)
         return output_expr
 
-
-def make_timedelta_extract_node(
-    input_expr_node: ExpressionNode, parameters: dict[str, Any]
-) -> ExpressionNode:
-    """Create a SQLNode for extracting timedelta as a numeric value
-
-    Parameters
-    ----------
-    input_expr_node : ExpressionNode
-        Node for the timedelta value
-    parameters: dict[str, Any]
-        Query node parameters
-
-    Returns
-    -------
-    ExpressionNode
-    """
-    # Need to retrieve the original DateDiffNode to rewrite the expression with new unit
-    resolved_expr_node = resolve_project_node(input_expr_node)
-    assert isinstance(resolved_expr_node, (DateDiffNode, TimedeltaNode))
-    sql_node = TimedeltaExtractNode(
-        table_node=input_expr_node.table_node,
-        timedelta_node=resolved_expr_node,
-        unit=parameters["property"],
-    )
-    return sql_node
-
-
-def make_date_add_node(
-    table_node: TableNode,
-    input_date_node: ExpressionNode,
-    timedelta_node: ExpressionNode,
-) -> DateAddNode:
-    """Create a DateAddNode
-
-    Parameters
-    ----------
-    table_node : TableNode
-        TableNode
-    input_date_node : ExpressionNode
-        Node for date expression
-    timedelta_node : ExpressionNode
-        Node for timedelta expression
-
-    Returns
-    -------
-    DateAddNode
-    """
-    resolved_timedelta_node = resolve_project_node(timedelta_node)
-    assert isinstance(resolved_timedelta_node, (TimedeltaNode, DateDiffNode, ParsedExpressionNode))
-    output_node = DateAddNode(
-        table_node=table_node,
-        input_date_node=input_date_node,
-        timedelta_node=resolved_timedelta_node,
-    )
-    return output_node
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> DateAddNode:
+        table_node, left_node, right_node = prepare_binary_op_input_nodes(context)
+        resolved_timedelta_node = resolve_project_node(right_node)
+        assert isinstance(
+            resolved_timedelta_node, (TimedeltaNode, DateDiffNode, ParsedExpressionNode)
+        )
+        output_node = DateAddNode(
+            context=context,
+            table_node=table_node,
+            input_date_node=left_node,
+            timedelta_node=resolved_timedelta_node,
+        )
+        return output_node

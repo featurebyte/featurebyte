@@ -9,7 +9,9 @@ from dataclasses import dataclass
 
 from sqlglot import Expression, expressions, parse_one
 
-from featurebyte.query_graph.sql.ast.base import ExpressionNode, make_literal_value
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, make_literal_value
+from featurebyte.query_graph.sql.ast.util import prepare_unary_input_nodes
 
 MISSING_VALUE_REPLACEMENT = "__MISSING__"
 
@@ -21,6 +23,7 @@ class CountDictTransformNode(ExpressionNode):
     expr: ExpressionNode
     transform_type: Literal["entropy", "most_frequent", "unique_count"]
     include_missing: bool
+    query_node_type = NodeType.COUNT_DICT_TRANSFORM
 
     @property
     def sql(self) -> Expression:
@@ -42,3 +45,15 @@ class CountDictTransformNode(ExpressionNode):
             # double quoting in the feature output ('remove' vs '"remove"')
             output_expr = expressions.Cast(this=output_expr, to=parse_one("VARCHAR"))
         return output_expr
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> CountDictTransformNode:
+        table_node, input_expr_node, parameters = prepare_unary_input_nodes(context)
+        sql_node = CountDictTransformNode(
+            context=context,
+            table_node=table_node,
+            expr=input_expr_node,
+            transform_type=parameters["transform_type"],
+            include_missing=parameters.get("include_missing", True),
+        )
+        return sql_node

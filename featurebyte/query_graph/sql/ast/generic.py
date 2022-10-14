@@ -3,18 +3,16 @@ Module for generic operations sql generation
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Any, Optional
 
 from dataclasses import dataclass
 
 from sqlglot import Expression, expressions, parse_one, select
 
-from featurebyte.enum import DBVarType
-from featurebyte.query_graph.enum import NodeOutputType
-from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.sql.ast.base import (
     ExpressionNode,
-    SQLNode,
+    SQLNodeContext,
     TableNode,
     make_literal_value,
 )
@@ -68,10 +66,23 @@ class AliasNode(ExpressionNode):
 
     name: str
     expr_node: ExpressionNode
+    query_node_type = NodeType.ALIAS
 
     @property
     def sql(self) -> Expression:
         return self.expr_node.sql
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> AliasNode:
+        expr_node = context.input_sql_nodes[0]
+        assert isinstance(expr_node, ExpressionNode)
+        sql_node = AliasNode(
+            context=context,
+            table_node=expr_node.table_node,
+            name=context.parameters["name"],
+            expr_node=expr_node,
+        )
+        return sql_node
 
 
 @dataclass
@@ -81,6 +92,7 @@ class Conditional(ExpressionNode):
     series_node: ExpressionNode
     mask: ExpressionNode
     value: Any
+    query_node_type = NodeType.CONDITIONAL
 
     @property
     def sql(self) -> Expression:
@@ -88,164 +100,78 @@ class Conditional(ExpressionNode):
         expr = expressions.Case(ifs=[if_expr], default=self.series_node.sql)
         return expr
 
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> Conditional:
+        input_sql_nodes = context.input_sql_nodes
+        assert len(input_sql_nodes) == 2
 
-@dataclass
-class IsNullNode(ExpressionNode):
-    """Node for IS_NULL operation"""
+        series_node = input_sql_nodes[0]
+        mask = input_sql_nodes[1]
+        value = context.parameters["value"]
+        assert isinstance(series_node, ExpressionNode)
+        assert isinstance(mask, ExpressionNode)
+        input_table_node = series_node.table_node
 
-    expr: ExpressionNode
-
-    @property
-    def sql(self) -> Expression:
-        return expressions.Is(this=self.expr.sql, expression=expressions.Null())
-
-
-@dataclass
-class CastNode(ExpressionNode):
-    """Node for casting operation"""
-
-    expr: ExpressionNode
-    new_type: Literal["int", "float", "str"]
-    from_dtype: DBVarType
-
-    @property
-    def sql(self) -> Expression:
-        if self.from_dtype == DBVarType.FLOAT and self.new_type == "int":
-            # Casting to INTEGER performs rounding (could be up or down). Hence, apply FLOOR first
-            # to mimic pandas astype(int)
-            expr = expressions.Floor(this=self.expr.sql)
-        elif self.from_dtype == DBVarType.BOOL and self.new_type == "float":
-            # Casting to FLOAT from BOOL directly is not allowed
-            expr = expressions.Cast(this=self.expr.sql, to=parse_one("INTEGER"))
-        else:
-            expr = self.expr.sql
-        type_expr = {
-            "int": parse_one("INTEGER"),
-            "float": parse_one("FLOAT"),
-            "str": parse_one("VARCHAR"),
-        }[self.new_type]
-        output_expr = expressions.Cast(this=expr, to=type_expr)
-        return output_expr
-
-
-@dataclass
-class LagNode(ExpressionNode):
-    """Node for lag operation"""
-
-    expr: ExpressionNode
-    entity_columns: list[str]
-    timestamp_column: str
-    offset: int
-
-    @property
-    def sql(self) -> Expression:
-        partition_by = [
-            expressions.Column(this=expressions.Identifier(this=col, quoted=True))
-            for col in self.entity_columns
-        ]
-        order = expressions.Order(
-            expressions=[
-                expressions.Ordered(
-                    this=expressions.Identifier(this=self.timestamp_column, quoted=True)
-                )
-            ]
+        sql_node = Conditional(
+            context=context,
+            table_node=input_table_node,
+            series_node=series_node,
+            mask=mask,
+            value=value,
         )
-        output_expr = expressions.Window(
-            this=expressions.Anonymous(
-                this="LAG", expressions=[self.expr.sql, make_literal_value(self.offset)]
-            ),
-            partition_by=partition_by,
-            order=order,
-        )
-        return output_expr
+        return sql_node
 
 
-def make_project_node(
-    input_sql_nodes: list[SQLNode],
-    parameters: dict[str, Any],
-    output_type: NodeOutputType,
-) -> Project | TableNode:
+def make_project_node(context: SQLNodeContext) -> Project | TableNode:
     """Create a Project or ProjectMulti node
 
     Parameters
     ----------
-    input_sql_nodes : list[SQLNode]
-        List of input SQL nodes
-    parameters : dict[str, Any]
-        Query node parameters
-    output_type : NodeOutputType
-        Query node output type
+    context : SQLNodeContext
+        Information required to build SQLNode
 
     Returns
     -------
     Project | TableNode
         The appropriate SQL node for projection
     """
-    table_node = input_sql_nodes[0]
+    table_node = context.input_sql_nodes[0]
     assert isinstance(table_node, TableNode)
-    columns = parameters["columns"]
+    columns = context.parameters["columns"]
     sql_node: Project | TableNode
-    if output_type == NodeOutputType.SERIES:
-        sql_node = Project(table_node=table_node, column_name=columns[0])
+    if context.query_node.output_type == NodeOutputType.SERIES:
+        sql_node = Project(context=context, table_node=table_node, column_name=columns[0])
     else:
         sql_node = table_node.subset_columns(columns)
     return sql_node
 
 
-def make_assign_node(input_sql_nodes: list[SQLNode], parameters: dict[str, Any]) -> TableNode:
+def make_assign_node(context: SQLNodeContext) -> TableNode:
     """
     Create a TableNode for an assign operation
 
     Parameters
     ----------
-    input_sql_nodes : list[SQLNode]
-        List of input SQL nodes
-    parameters : dict[str, Any]
-        Query graph node parameters
+    context : SQLNodeContext
+        Information required to build SQLNode
 
     Returns
     -------
     TableNode
     """
+    input_sql_nodes = context.input_sql_nodes
+    parameters = context.parameters
     input_table_node = input_sql_nodes[0]
     assert isinstance(input_table_node, TableNode)
     if len(input_sql_nodes) == 2:
         expr_node = input_sql_nodes[1]
     else:
-        expr_node = ParsedExpressionNode(input_table_node, make_literal_value(parameters["value"]))
+        expr_node = ParsedExpressionNode(
+            context, input_table_node, make_literal_value(parameters["value"])
+        )
     assert isinstance(expr_node, ExpressionNode)
     sql_node = input_table_node.copy()
     sql_node.assign_column(parameters["name"], expr_node)
-    return sql_node
-
-
-def make_conditional_node(input_sql_nodes: list[SQLNode], node: Node) -> Conditional:
-    """Create a Conditional node
-
-    Parameters
-    ----------
-    input_sql_nodes : list[SQLNode]
-        Input SQL nodes
-    node : Node
-        Query graph node
-
-    Returns
-    -------
-    Conditional
-    """
-    assert len(input_sql_nodes) == 2
-    parameters = node.parameters.dict()
-
-    series_node = input_sql_nodes[0]
-    mask = input_sql_nodes[1]
-    value = parameters["value"]
-    assert isinstance(series_node, ExpressionNode)
-    assert isinstance(mask, ExpressionNode)
-    input_table_node = series_node.table_node
-
-    sql_node = Conditional(
-        table_node=input_table_node, series_node=series_node, mask=mask, value=value
-    )
     return sql_node
 
 
@@ -273,32 +199,28 @@ def resolve_project_node(expr_node: ExpressionNode) -> Optional[ExpressionNode]:
     return assigned_node
 
 
-def handle_filter_node(
-    input_sql_nodes: list[SQLNode], output_type: NodeOutputType
-) -> TableNode | ExpressionNode:
+def handle_filter_node(context: SQLNodeContext) -> TableNode | ExpressionNode:
     """Create a TableNode or ExpressionNode with filter condition
 
     Parameters
     ----------
-    input_sql_nodes : list[SQLNode]
-        List of input SQL nodes
-    output_type : NodeOutputType
-        Query node output type
+    context : SQLNodeContext
+        Information required to build SQLNode
 
     Returns
     -------
     TableNode | ExpressionNode
         The appropriate SQL node for the filtered result
     """
-    item, mask = input_sql_nodes
+    item, mask = context.input_sql_nodes
     assert isinstance(mask, ExpressionNode)
     sql_node: TableNode | ExpressionNode
-    if output_type == NodeOutputType.FRAME:
+    if context.query_node.output_type == NodeOutputType.FRAME:
         assert isinstance(item, InputNode)
         sql_node = item.subset_rows(mask.sql)
     else:
         assert isinstance(item, ExpressionNode)
         assert isinstance(item.table_node, InputNode)
         input_table_copy = item.table_node.subset_rows(mask.sql)
-        sql_node = ParsedExpressionNode(input_table_copy, item.sql)
+        sql_node = ParsedExpressionNode(context, input_table_copy, item.sql)
     return sql_node

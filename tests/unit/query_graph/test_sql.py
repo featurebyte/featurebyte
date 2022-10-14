@@ -2,6 +2,7 @@
 Tests for the featurebyte.query_graph.sql module
 """
 import textwrap
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
@@ -10,8 +11,14 @@ from sqlglot import parse_one
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import make_literal_value
-from featurebyte.query_graph.sql.ast.binary import make_binary_operation_node
-from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
+from featurebyte.query_graph.sql.ast.binary import BinaryOp
+from featurebyte.query_graph.sql.ast.count_dict import CountDictTransformNode
+from featurebyte.query_graph.sql.ast.datetime import (
+    DateAddNode,
+    DateDiffNode,
+    TimedeltaExtractNode,
+    TimedeltaNode,
+)
 from featurebyte.query_graph.sql.ast.generic import (
     ParsedExpressionNode,
     Project,
@@ -19,9 +26,36 @@ from featurebyte.query_graph.sql.ast.generic import (
     make_assign_node,
     resolve_project_node,
 )
-from featurebyte.query_graph.sql.ast.input import InputNode, make_input_node
-from featurebyte.query_graph.sql.ast.unary import make_expression_node
+from featurebyte.query_graph.sql.ast.input import InputNode
+from featurebyte.query_graph.sql.ast.unary import CastNode, LagNode
+from featurebyte.query_graph.sql.builder import SQLNodeContext
 from featurebyte.query_graph.sql.common import SQLType
+
+
+def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type=None):
+    """
+    Helper function to create a SQLNodeContext with only arguments that matter in tests
+    """
+    if parameters is None:
+        parameters = {}
+    if sql_type is None:
+        sql_type = SQLType.EVENT_VIEW_PREVIEW
+    mock_query_node = Mock(type=node_type)
+    mock_query_node.parameters.dict.return_value = parameters
+    context = SQLNodeContext(
+        query_node=mock_query_node,
+        input_sql_nodes=input_sql_nodes,
+        sql_type=sql_type,
+        groupby_keys=None,
+    )
+    return context
+
+
+def make_str_expression_node(table_node, expr):
+    """
+    Helper function to create a StrExpressionNode used only in tests
+    """
+    return StrExpressionNode(make_context(), table_node=table_node, expr=expr)
 
 
 @pytest.fixture(name="input_node")
@@ -33,6 +67,7 @@ def input_node_fixture():
         "col_3": parse_one("col_3"),
     }
     return InputNode(
+        context=make_context(node_type=NodeType.INPUT),
         columns_map=columns_map,
         dbtable={
             "database_name": "my_database",
@@ -53,8 +88,8 @@ def test_input_node__subset_columns(input_node):
     """
     Test input node subset columns
     """
-    expr_node_1 = ParsedExpressionNode(input_node, parse_one("a + 1"))
-    expr_node_2 = ParsedExpressionNode(input_node, parse_one("a + 2"))
+    expr_node_1 = ParsedExpressionNode(make_context(), input_node, parse_one("a + 1"))
+    expr_node_2 = ParsedExpressionNode(make_context(), input_node, parse_one("a + 2"))
     input_node.assign_column("col_new_1", expr_node_1)
     input_node.assign_column("col_new_2", expr_node_2)
 
@@ -79,10 +114,10 @@ def test_input_node__subset_columns(input_node):
 
 def test_resolve_project_node(input_node):
     """Test resolve_project_node helper"""
-    expr_node = ParsedExpressionNode(input_node, parse_one("a + 1"))
+    expr_node = ParsedExpressionNode(make_context(), input_node, parse_one("a + 1"))
     input_node.assign_column("new_col", expr_node)
-    project_node = Project(input_node, "new_col")
-    project_node_original_column = Project(input_node, "col_1")
+    project_node = Project(make_context(), input_node, "new_col")
+    project_node_original_column = Project(make_context(), input_node, "col_1")
     assert resolve_project_node(project_node) == expr_node
     assert resolve_project_node(project_node_original_column) is None
     # no-op if not a Project node
@@ -91,8 +126,10 @@ def test_resolve_project_node(input_node):
 
 def test_make_assign_node(input_node):
     """Test make_assign_node"""
-    expr_node = ParsedExpressionNode(input_node, parse_one("a + 1"))
-    result = make_assign_node([input_node, expr_node], {"name": "new_col"})
+    expr_node = ParsedExpressionNode(make_context(), input_node, parse_one("a + 1"))
+    result = make_assign_node(
+        make_context(input_sql_nodes=[input_node, expr_node], parameters={"name": "new_col"})
+    )
     # should create a copy and not modify the original input node
     assert result is not input_node
     assert input_node.get_column_node("new_col") is None
@@ -119,31 +156,39 @@ def test_make_assign_node(input_node):
 )
 def test_binary_operation_node__series(node_type, expected, input_node):
     """Test binary operation node when another side is Series"""
-    column1 = StrExpressionNode(table_node=input_node, expr="a")
-    column2 = StrExpressionNode(table_node=input_node, expr="b")
+    column1 = make_str_expression_node(table_node=input_node, expr="a")
+    column2 = make_str_expression_node(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
-    parameters = {}
-    node = make_binary_operation_node(node_type, input_nodes, parameters)
+    context = make_context(node_type=node_type, parameters={}, input_sql_nodes=input_nodes)
+    node = BinaryOp.build(context)
     assert node.sql.sql() == expected
 
 
 def test_binary_operation_node__consecutive_ops_1(input_node):
     """Test multiple binary operations"""
-    col_a = StrExpressionNode(table_node=input_node, expr="a")
-    col_b = StrExpressionNode(table_node=input_node, expr="b")
-    col_c = StrExpressionNode(table_node=input_node, expr="c")
-    a_plus_b = make_binary_operation_node(NodeType.ADD, [col_a, col_b], {})
-    a_plus_b_div_c = make_binary_operation_node(NodeType.DIV, [a_plus_b, col_c], {})
+    col_a = make_str_expression_node(table_node=input_node, expr="a")
+    col_b = make_str_expression_node(table_node=input_node, expr="b")
+    col_c = make_str_expression_node(table_node=input_node, expr="c")
+    a_plus_b = BinaryOp.build(
+        make_context(node_type=NodeType.ADD, parameters={}, input_sql_nodes=[col_a, col_b])
+    )
+    a_plus_b_div_c = BinaryOp.build(
+        make_context(node_type=NodeType.DIV, parameters={}, input_sql_nodes=[a_plus_b, col_c])
+    )
     assert a_plus_b_div_c.sql.sql() == "((a + b) / NULLIF(c, 0))"
 
 
 def test_binary_operation_node__consecutive_ops_2(input_node):
     """Test multiple binary operations"""
-    col_a = StrExpressionNode(table_node=input_node, expr="a")
-    col_b = StrExpressionNode(table_node=input_node, expr="b")
-    col_c = StrExpressionNode(table_node=input_node, expr="c")
-    a_plus_b = make_binary_operation_node(NodeType.ADD, [col_a, col_b], {})
-    c_div_a_plus_b = make_binary_operation_node(NodeType.DIV, [col_c, a_plus_b], {})
+    col_a = make_str_expression_node(table_node=input_node, expr="a")
+    col_b = make_str_expression_node(table_node=input_node, expr="b")
+    col_c = make_str_expression_node(table_node=input_node, expr="c")
+    a_plus_b = BinaryOp.build(
+        make_context(node_type=NodeType.ADD, parameters={}, input_sql_nodes=[col_a, col_b])
+    )
+    c_div_a_plus_b = BinaryOp.build(
+        make_context(node_type=NodeType.DIV, parameters={}, input_sql_nodes=[col_c, a_plus_b])
+    )
     assert c_div_a_plus_b.sql.sql() == "(c / NULLIF((a + b), 0))"
 
 
@@ -163,10 +208,12 @@ def test_binary_operation_node__consecutive_ops_2(input_node):
 )
 def test_binary_operation_node__scalar(node_type, value, right_op, expected, input_node):
     """Test binary operation node when another side is scalar"""
-    column1 = StrExpressionNode(table_node=input_node, expr="a")
+    column1 = StrExpressionNode(make_context(), table_node=input_node, expr="a")
     input_nodes = [column1]
     parameters = {"value": value, "right_op": right_op}
-    node = make_binary_operation_node(node_type, input_nodes, parameters)
+    node = BinaryOp.build(
+        make_context(node_type=node_type, input_sql_nodes=input_nodes, parameters=parameters)
+    )
     assert node.sql.sql() == expected
 
 
@@ -183,9 +230,12 @@ def test_make_input_node_escape_special_characters():
             },
         },
     }
-    node = make_input_node(
-        parameters=parameters,
-        sql_type=SQLType.EVENT_VIEW_PREVIEW,
+    node = InputNode.build(
+        make_context(
+            node_type=NodeType.INPUT,
+            parameters=parameters,
+            sql_type=SQLType.EVENT_VIEW_PREVIEW,
+        )
     )
     expected = textwrap.dedent(
         """
@@ -216,11 +266,13 @@ def test_make_input_node_escape_special_characters():
 )
 def test_count_dict_transform(parameters, expected, input_node):
     """Test count dict transformation node"""
-    column = StrExpressionNode(table_node=input_node, expr="cd_val")
-    node = make_expression_node(
-        input_sql_nodes=[column],
-        node_type=NodeType.COUNT_DICT_TRANSFORM,
-        parameters=parameters,
+    column = make_str_expression_node(table_node=input_node, expr="cd_val")
+    node = CountDictTransformNode.build(
+        make_context(
+            node_type=NodeType.COUNT_DICT_TRANSFORM,
+            parameters=parameters,
+            input_sql_nodes=[column],
+        )
     )
     assert node.sql.sql() == expected
 
@@ -244,95 +296,98 @@ def test_count_dict_transform(parameters, expected, input_node):
 )
 def test_cast(parameters, expected, input_node):
     """Test cast node for type conversion"""
-    column = StrExpressionNode(table_node=input_node, expr="val")
-    node = make_expression_node(
-        input_sql_nodes=[column],
-        node_type=NodeType.CAST,
-        parameters=parameters,
+    column = make_str_expression_node(table_node=input_node, expr="val")
+    node = CastNode.build(
+        make_context(
+            node_type=NodeType.CAST,
+            input_sql_nodes=[column],
+            parameters=parameters,
+        )
     )
     assert node.sql.sql() == expected
 
 
 def test_cosine_similarity(input_node):
     """Test cosine similarity node"""
-    column1 = StrExpressionNode(table_node=input_node, expr="a")
-    column2 = StrExpressionNode(table_node=input_node, expr="b")
+    column1 = make_str_expression_node(table_node=input_node, expr="a")
+    column2 = make_str_expression_node(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
     parameters = {}
-    node = make_binary_operation_node(NodeType.COSINE_SIMILARITY, input_nodes, parameters)
+    node = BinaryOp.build(
+        make_context(
+            node_type=NodeType.COSINE_SIMILARITY,
+            input_sql_nodes=input_nodes,
+            parameters=parameters,
+        )
+    )
     assert node.sql.sql() == "(F_COUNT_DICT_COSINE_SIMILARITY(a, b))"
 
 
 def test_lag(input_node):
     """Test lag node"""
-    column = StrExpressionNode(table_node=input_node, expr="val")
-    node = make_expression_node(
-        input_sql_nodes=[column],
-        node_type=NodeType.LAG,
-        parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
+    column = make_str_expression_node(table_node=input_node, expr="val")
+    node = LagNode.build(
+        make_context(
+            input_sql_nodes=[column],
+            node_type=NodeType.LAG,
+            parameters={"timestamp_column": "ts", "entity_columns": ["cust_id"], "offset": 1},
+        )
     )
     assert node.sql.sql() == 'LAG(val, 1) OVER(PARTITION BY "cust_id" ORDER BY "ts")'
 
 
 def test_date_difference(input_node):
     """Test DateDiff node"""
-    column1 = StrExpressionNode(table_node=input_node, expr="a")
-    column2 = StrExpressionNode(table_node=input_node, expr="b")
+    column1 = make_str_expression_node(table_node=input_node, expr="a")
+    column2 = make_str_expression_node(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
-    node = make_binary_operation_node(
-        NodeType.DATE_DIFF,
-        input_nodes,
-        parameters={},
-    )
+    context = make_context(parameters={}, input_sql_nodes=input_nodes)
+    node = DateDiffNode.build(context)
     assert node.sql.sql() == "DATEDIFF(second, b, a)"
 
 
 def test_timedelta(input_node):
     """Test TimedeltaNode"""
-    column = StrExpressionNode(table_node=input_node, expr="a")
-    node = make_expression_node(
-        [column],
-        NodeType.TIMEDELTA,
-        parameters={"unit": "second"},
-    )
+    column = make_str_expression_node(table_node=input_node, expr="a")
+    context = make_context(parameters={"unit": "second"}, input_sql_nodes=[column])
+    node = TimedeltaNode.build(context)
     # when previewing, this should show the value component of the timedelta without unit
     assert node.sql.sql() == "a"
 
 
 def test_date_add__timedelta(input_node):
     """Test DateAdd node"""
-    column = StrExpressionNode(table_node=input_node, expr="num_seconds")
-    timedelta_node = make_expression_node(
-        [column],
-        NodeType.TIMEDELTA,
-        parameters={"unit": "second"},
-    )
-    date_column = StrExpressionNode(table_node=input_node, expr="date_col")
-    date_add_node = make_binary_operation_node(NodeType.DATE_ADD, [date_column, timedelta_node], {})
+    column = make_str_expression_node(table_node=input_node, expr="num_seconds")
+    context = make_context(parameters={"unit": "second"}, input_sql_nodes=[column])
+    timedelta_node = TimedeltaNode.build(context)
+    date_column = make_str_expression_node(table_node=input_node, expr="date_col")
+    context = make_context(parameters={}, input_sql_nodes=[date_column, timedelta_node])
+    date_add_node = DateAddNode.build(context)
     assert date_add_node.sql.sql() == "DATEADD(second, num_seconds, date_col)"
 
 
 def test_date_add__datediff(input_node):
     """Test DateAdd node when the timedelta is the result of date difference"""
     # make a date diff node
-    column1 = StrExpressionNode(table_node=input_node, expr="a")
-    column2 = StrExpressionNode(table_node=input_node, expr="b")
+    column1 = make_str_expression_node(table_node=input_node, expr="a")
+    column2 = make_str_expression_node(table_node=input_node, expr="b")
     input_nodes = [column1, column2]
-    date_diff_node = make_binary_operation_node(
-        NodeType.DATE_DIFF,
-        input_nodes,
-        parameters={},
-    )
+    context = make_context(node_type=None, parameters={}, input_sql_nodes=input_nodes)
+    date_diff_node = DateDiffNode.build(context)
     # make a date add node
-    date_column = StrExpressionNode(table_node=input_node, expr="date_col")
-    date_add_node = make_binary_operation_node(NodeType.DATE_ADD, [date_column, date_diff_node], {})
+    date_column = make_str_expression_node(table_node=input_node, expr="date_col")
+    context = make_context(input_sql_nodes=[date_column, date_diff_node])
+    date_add_node = DateAddNode.build(context)
     assert date_add_node.sql.sql() == "DATEADD(microsecond, DATEDIFF(microsecond, b, a), date_col)"
 
 
 def test_date_add__constant(input_node):
     """Test DateAdd node when the timedelta is a fixed constant"""
-    date_column = StrExpressionNode(table_node=input_node, expr="date_col")
-    date_add_node = make_binary_operation_node(NodeType.DATE_ADD, [date_column], {"value": 3600})
+    date_column = make_str_expression_node(table_node=input_node, expr="date_col")
+    context = make_context(
+        node_type=None, parameters={"value": 3600}, input_sql_nodes=[date_column]
+    )
+    date_add_node = DateAddNode.build(context)
     assert date_add_node.sql.sql() == "DATEADD(second, 3600, date_col)"
 
 
@@ -349,7 +404,7 @@ def test_date_add__constant(input_node):
 )
 def test_convert_timedelta_unit(input_node, input_unit, output_unit, expected):
     """Test convert_timedelta_unit"""
-    date_column = StrExpressionNode(table_node=input_node, expr="date_col")
+    date_column = make_str_expression_node(table_node=input_node, expr="date_col")
     converted = TimedeltaExtractNode.convert_timedelta_unit(
         date_column.sql, input_unit, output_unit
     )

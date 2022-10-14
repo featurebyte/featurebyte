@@ -10,7 +10,8 @@ from dataclasses import dataclass
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.enum import InternalName, SourceType
-from featurebyte.query_graph.sql.ast.base import TableNode
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
 
 
@@ -20,6 +21,7 @@ class InputNode(TableNode):
 
     dbtable: dict[str, str]
     feature_store: dict[str, Any]
+    query_node_type = NodeType.INPUT
 
     @property
     def sql(self) -> Expression:
@@ -66,12 +68,46 @@ class InputNode(TableNode):
 
         return select_expr
 
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> InputNode | None:
+        if context.sql_type in {SQLType.BUILD_TILE, SQLType.BUILD_TILE_ON_DEMAND}:
+            return None
+        columns_map = cls.make_input_columns_map(context)
+        feature_store = context.parameters["feature_store_details"]
+        sql_node = InputNode(
+            context=context,
+            columns_map=columns_map,
+            dbtable=context.parameters["table_details"],
+            feature_store=feature_store,
+        )
+        return sql_node
+
+    @classmethod
+    def make_input_columns_map(cls, context: SQLNodeContext) -> dict[str, Expression]:
+        """
+        Construct mapping from column name to expression
+
+        Parameters
+        ----------
+        context : SQLNodeContext
+            Context to build SQLNode
+
+        Returns
+        -------
+        dict[str, Expression]
+        """
+        columns_map = {}
+        for colname in context.parameters["columns"]:
+            columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
+        return columns_map
+
 
 @dataclass
 class BuildTileInputNode(InputNode):
     """Input data node used when building tiles"""
 
     timestamp: str
+    query_node_type = NodeType.INPUT
 
     @property
     def sql(self) -> Expression:
@@ -95,6 +131,21 @@ class BuildTileInputNode(InputNode):
         select_expr = select_expr.where(start_cond, end_cond)
         return select_expr
 
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> BuildTileInputNode | None:
+        if context.sql_type != SQLType.BUILD_TILE:
+            return None
+        columns_map = cls.make_input_columns_map(context)
+        feature_store = context.parameters["feature_store_details"]
+        sql_node = BuildTileInputNode(
+            context=context,
+            columns_map=columns_map,
+            timestamp=context.parameters["timestamp"],
+            dbtable=context.parameters["table_details"],
+            feature_store=feature_store,
+        )
+        return sql_node
+
 
 @dataclass
 class SelectedEntityBuildTileInputNode(InputNode):
@@ -113,6 +164,7 @@ class SelectedEntityBuildTileInputNode(InputNode):
 
     timestamp: str
     entity_columns: list[str]
+    query_node_type = NodeType.INPUT
 
     @property
     def sql(self) -> Expression:
@@ -144,55 +196,19 @@ class SelectedEntityBuildTileInputNode(InputNode):
         )
         return result
 
-
-def make_input_node(
-    parameters: dict[str, Any],
-    sql_type: SQLType,
-    groupby_keys: list[str] | None = None,
-) -> BuildTileInputNode | InputNode:
-    """Create a SQLNode corresponding to a query graph input node
-
-    Parameters
-    ----------
-    parameters : dict[str, Any]
-        Query graph node parameters
-    sql_type: SQLType
-        Type of SQL code to generate
-    groupby_keys : list[str] | None
-        List of groupby keys that is used for the downstream groupby operation. This information is
-        required so that only tiles corresponding to specific entities are built (vs building tiles
-        using all available data). This option is only used when SQLType is BUILD_TILE_ON_DEMAND.
-
-    Returns
-    -------
-    BuildTileInputNode | InputNode | SelectedEntityBuildTileInputNode
-        SQLNode corresponding to the query graph input node
-    """
-    columns_map = {}
-    for colname in parameters["columns"]:
-        columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
-    sql_node: BuildTileInputNode | SelectedEntityBuildTileInputNode | InputNode
-    feature_store = parameters["feature_store_details"]
-    if sql_type == SQLType.BUILD_TILE:
-        sql_node = BuildTileInputNode(
-            columns_map=columns_map,
-            timestamp=parameters["timestamp"],
-            dbtable=parameters["table_details"],
-            feature_store=feature_store,
-        )
-    elif sql_type == SQLType.BUILD_TILE_ON_DEMAND:
-        assert groupby_keys is not None
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> SelectedEntityBuildTileInputNode | None:
+        if context.sql_type != SQLType.BUILD_TILE_ON_DEMAND:
+            return None
+        columns_map = cls.make_input_columns_map(context)
+        feature_store = context.parameters["feature_store_details"]
+        assert context.groupby_keys is not None
         sql_node = SelectedEntityBuildTileInputNode(
+            context=context,
             columns_map=columns_map,
-            timestamp=parameters["timestamp"],
-            dbtable=parameters["table_details"],
+            timestamp=context.parameters["timestamp"],
+            dbtable=context.parameters["table_details"],
             feature_store=feature_store,
-            entity_columns=groupby_keys,
+            entity_columns=context.groupby_keys,
         )
-    else:
-        sql_node = InputNode(
-            columns_map=columns_map,
-            dbtable=parameters["table_details"],
-            feature_store=feature_store,
-        )
-    return sql_node
+        return sql_node
