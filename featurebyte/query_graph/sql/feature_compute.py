@@ -151,25 +151,20 @@ class RequestTablePlan(ABC):
             expanded_table_sql = self.construct_expanded_request_table_sql(
                 window_size=window_size,
                 frequency=frequency,
-                blind_spot=blind_spot,
                 time_modulo_frequency=time_modulo_frequency,
                 serving_names=list(serving_names),
             )
             expanded_request_ctes.append((quoted_identifier(table_name).sql(), expanded_table_sql))
         return expanded_request_ctes
 
-    @abstractmethod
     def construct_expanded_request_table_sql(
         self,
         window_size: int,
         frequency: int,
-        blind_spot: int,
         time_modulo_frequency: int,
         serving_names: list[str],
     ) -> expressions.Select:
         """Construct SQL for expanded SQLs
-
-        The query can be different for different data warehouses.
 
         Parameters
         ----------
@@ -189,19 +184,6 @@ class RequestTablePlan(ABC):
         str
             SQL code for expanding request table
         """
-
-
-class SnowflakeRequestTablePlan(RequestTablePlan):
-    """Generator of Snowflake specific query to expand request table"""
-
-    def construct_expanded_request_table_sql(
-        self,
-        window_size: int,
-        frequency: int,
-        blind_spot: int,
-        time_modulo_frequency: int,
-        serving_names: list[str],
-    ) -> expressions.Select:
         # Input request table can have duplicated time points but aggregation should be done only on
         # distinct time points
         quoted_serving_names = [quoted_identifier(x) for x in serving_names]
@@ -294,9 +276,7 @@ class FeatureExecutionPlan(ABC):
     def __init__(self, source_type: SourceType) -> None:
         self.aggregation_spec_set = AggregationSpecSet()
         self.feature_specs: dict[str, FeatureSpec] = {}
-        self.request_table_plan: RequestTablePlan = SnowflakeRequestTablePlan(
-            source_type=source_type
-        )
+        self.request_table_plan: RequestTablePlan = RequestTablePlan(source_type=source_type)
         self.source_type = source_type
 
     @property
