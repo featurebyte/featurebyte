@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import AsyncIterator
 
 import json
+import traceback
 from contextlib import asynccontextmanager
 from unittest.mock import Mock, patch
 
@@ -22,6 +23,7 @@ from featurebyte.enum import WorkerCommand
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.persistent.git import GitDB
 from featurebyte.persistent.mongo import MongoDB
+from featurebyte.schema.task import TaskStatus
 from featurebyte.utils.credential import get_credential
 from featurebyte.worker.task.base import TASK_MAP
 
@@ -106,11 +108,20 @@ def mock_process_store(request, persistent, storage, temp_storage):
                 get_storage=lambda: storage,
                 get_temp_storage=lambda: temp_storage,
             )
-            await task.execute()
+            try:
+                await task.execute()
+                status = TaskStatus.SUCCESS
+                traceback_info = None
+            except Exception:  # pylint: disable=broad-except
+                status = TaskStatus.FAILURE
+                traceback_info = traceback.format_exc()
+
             task_id = ObjectId()
             process_store[task_id] = {
                 "output_path": output_path,
                 "payload": payload_dict,
+                "status": status,
+                "traceback": traceback_info,
             }
             return task_id
 
@@ -126,7 +137,8 @@ def mock_process_store(request, persistent, storage, temp_storage):
                     "process": Mock(exitcode=0),
                     "output_path": process_data.get("output_path", "some_path"),
                     "payload": process_data.get("payload", {"key": "value"}),
-                    "status": "SUCCESS",
+                    "status": process_data["status"],
+                    "traceback": process_data["traceback"],
                 }
 
             mock_get.side_effect = get

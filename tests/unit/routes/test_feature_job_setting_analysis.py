@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 import pandas as pd
 import pytest
 from bson import ObjectId
+from featurebyte_freeware.feature_job_analysis.analysis import HighUpdateFrequencyError
 from featurebyte_freeware.feature_job_analysis.schema import (
     AnalysisResult,
     BacktestResult,
@@ -82,7 +83,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
             ),
         )
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture(autouse=True, name="mock_analysis")
     def mock_analysis(self, analysis_result):
         """
         Apply patch on call to analysis
@@ -96,7 +97,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
             "featurebyte.worker.task.feature_job_setting_analysis.create_feature_job_settings_analysis",
         ) as mock_create_feature_job_settings_analysis:
             mock_create_feature_job_settings_analysis.return_value = record
-            yield
+            yield mock_create_feature_job_settings_analysis
 
     @pytest.fixture(name="backtest_result")
     def backtest_result_fixture(self):
@@ -175,7 +176,8 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         """
         Check data from analysis uploaded to storage
         """
-        feature_job_setting_analysis_id = create_success_response.json()["_id"]
+        response_dict = create_success_response.json()
+        feature_job_setting_analysis_id = response_dict["_id"]
 
         # check results are stored to storage
         data = await storage.get_object(
@@ -215,3 +217,44 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
 
         backtest_dataframe = await temp_storage.get_dataframe(f"{prefix}.parquet")
         assert_frame_equal(backtest_dataframe, backtest_result[0].results)
+
+    @pytest.mark.asyncio
+    async def test_create_event_data_no_creation_date(self, test_api_client_persistent):
+        """
+        Create request for event data with no creation date column
+        """
+        test_api_client, persistent = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # remove event data creation date column
+        await persistent.update_one(
+            collection_name="event_data",
+            query_filter={},
+            update={"$set": {"record_creation_date_column": None}},
+            user_id=None,
+        )
+
+        payload = self.payload.copy()
+        response = test_api_client.post(f"{self.base_route}", json=payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert (
+            response.json()["detail"] == "Creation date column is not available for the event data."
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_event_data_high_frequency(
+        self, mock_analysis, test_api_client_persistent
+    ):
+        """
+        Create request for event data with overly high update frequency
+        """
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        # simulate error raised during analysis
+        mock_analysis.side_effect = HighUpdateFrequencyError
+        response = test_api_client.post(f"{self.base_route}", json=self.payload)
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "FAILURE"
+        assert "HighUpdateFrequencyError" in response_dict["traceback"]

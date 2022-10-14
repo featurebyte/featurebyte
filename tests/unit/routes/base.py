@@ -388,7 +388,6 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
         """
         task_submission = create_response.json()
         task_id = task_submission["id"]
-        output_path = task_submission["output_path"]
 
         start_time = datetime.now()
         while (datetime.now() - start_time).seconds < self.time_limit:
@@ -396,11 +395,11 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
             task_status = response.json()
             status = task_status["status"]
             if status not in ["PENDING", "RECEIVED", "STARTED"]:
-                assert status == "SUCCESS"
-                break
+                if status in ["SUCCESS", "FAILURE"]:
+                    break
             sleep(0.1)
 
-        return output_path
+        return response
 
     @pytest_asyncio.fixture()
     async def create_success_response(self, test_api_client_persistent):
@@ -410,9 +409,11 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
         id_before = self.payload["_id"]
         response = test_api_client.post(f"{self.base_route}", json=self.payload)
 
-        output_path = self.wait_for_results(test_api_client, response)
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS"
 
-        response = test_api_client.get(output_path)
+        response = test_api_client.get(response_dict["output_path"])
         response_dict = response.json()
         assert response_dict["_id"] == id_before
         return response

@@ -476,6 +476,46 @@ def test_update_default_feature_job_setting__using_feature_job_analysis(
         assert mock_mod.HTML.call_count == 1
 
 
+@patch("featurebyte.service.feature_job_setting_analysis.EventDataService.get_document")
+def test_update_default_feature_job_setting__using_feature_job_analysis_no_creation_date_col(
+    mock_get_document,
+    saved_event_data,
+    config,
+):
+    """
+    Update default feature job setting using feature job analysis
+    """
+    mock_get_document.return_value = Mock(record_creation_date_column=None)
+
+    with pytest.raises(RecordCreationException) as exc:
+        saved_event_data.update_default_feature_job_setting()
+    assert "Creation date column is not available for the event data." in str(exc)
+
+
+@patch("featurebyte.api.event_data.EventData.post_async_task")
+def test_update_default_feature_job_setting__using_feature_job_analysis_high_frequency(
+    mock_post_async_task,
+    saved_event_data,
+    config,
+):
+    """
+    Update default feature job setting using feature job analysis
+    """
+    # test update default feature job setting by using feature job analysis
+    mock_post_async_task.side_effect = RecordCreationException(
+        response=Mock(
+            json=lambda: {
+                "status": "FAILURE",
+                "traceback": "featurebyte_freeware.feature_job_analysis.analysis.HighUpdateFrequencyError",
+            }
+        )
+    )
+
+    with pytest.raises(RecordCreationException) as exc:
+        saved_event_data.update_default_feature_job_setting()
+    assert "HighUpdateFrequencyError" in str(exc)
+
+
 def test_update_default_job_setting__record_update_exception(snowflake_event_data):
     """
     Test unexpected exception during record update

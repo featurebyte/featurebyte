@@ -586,16 +586,21 @@ async def test_execute_query_no_data(snowflake_connector, snowflake_session_dict
     result = await session.execute_query(query)
     assert result is None
 
-    # no data, with description
-    cursor.description = True
-    session = SnowflakeSession(**snowflake_session_dict)
-    cursor.fetch_arrow_batches.side_effect = yield
-    result = await session.execute_query(query)
-    assert result is None
-
     empty_df = pd.DataFrame({"a": [], "b": []})
 
-    # empty dataframe, fetch_arrow_batches supported
+    def mock_fetch_arrow_batches_empty():
+        return
+        yield
+
+    # empty dataframe, no batch data from fetch_arrow_batches
+    cursor.description = True
+    session = SnowflakeSession(**snowflake_session_dict)
+    cursor.fetch_arrow_batches.side_effect = mock_fetch_arrow_batches_empty
+    cursor.get_result_batches.return_value = [Mock(to_arrow=lambda: pa.Table.from_pandas(empty_df))]
+    result = await session.execute_query(query)
+    assert_frame_equal(result, empty_df)
+
+    # empty dataframe, with batch data from fetch_arrow_batches
     def mock_fetch_arrow_batches():
         yield pa.Table.from_pandas(empty_df)
 
