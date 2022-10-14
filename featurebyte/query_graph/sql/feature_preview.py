@@ -43,7 +43,7 @@ def get_feature_preview_sql(
     -------
     str
     """
-    planner = FeatureExecutionPlanner(graph)
+    planner = FeatureExecutionPlanner(graph, source_type=source_type)
     execution_plan = planner.generate_plan(nodes)
 
     # build required tiles

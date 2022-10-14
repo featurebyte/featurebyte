@@ -228,10 +228,11 @@ class PreviewService(OpsServiceMixin):
         feature_store_dict = feature_cluster.graph.get_input_node(
             feature_cluster.node_names[0]
         ).parameters.feature_store_details.dict()
+        feature_store = FeatureStoreModel(
+            **feature_store_dict, name=feature_cluster.feature_store_name
+        )
         db_session = await self._get_feature_store_session(
-            feature_store=FeatureStoreModel(
-                **feature_store_dict, name=feature_cluster.feature_store_name
-            ),
+            feature_store=feature_store,
             get_credential=get_credential,
         )
 
@@ -241,4 +242,5 @@ class PreviewService(OpsServiceMixin):
             nodes=feature_cluster.nodes,
             training_events=training_events,
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
+            source_type=feature_store.type,
         )

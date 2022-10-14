@@ -69,7 +69,9 @@ def test_graph_interpreter_super_simple(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, proj_a],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(assign).sql
     expected = textwrap.dedent(
         """
@@ -93,7 +95,9 @@ def test_graph_interpreter_assign_scalar(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(assign).sql
     expected = textwrap.dedent(
         """
@@ -147,7 +151,9 @@ def test_graph_interpreter_multi_assign(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, proj_c],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE)
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(assign_node_2).sql
     expected = textwrap.dedent(
         """
@@ -208,7 +214,7 @@ def test_graph_interpreter_binary_operations(graph, node_input, node_type, expec
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, binary_node],
     )
-    sql_graph = SQLOperationGraph(graph, SQLType.BUILD_TILE)
+    sql_graph = SQLOperationGraph(graph, SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE)
     sql_tree = sql_graph.build(assign_node).sql
     expected = textwrap.dedent(
         f"""
@@ -239,7 +245,9 @@ def test_graph_interpreter_project_multiple_columns(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(proj).sql
     expected = textwrap.dedent(
         """
@@ -1110,7 +1118,9 @@ def test_window_function(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[filtered_input_node, lagged_a],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE)
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(assign_node).sql
     expected = textwrap.dedent(
         """
@@ -1173,7 +1183,9 @@ def test_window_function__as_filter(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, binary_node],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(filtered_node).sql
     expected = textwrap.dedent(
         """
@@ -1235,7 +1247,9 @@ def test_window_function__multiple_filters(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, window_based_condition],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(filtered_node_2).sql
     expected = textwrap.dedent(
         """
@@ -1254,7 +1268,9 @@ def test_window_function__multiple_filters(graph, node_input):
     ).strip()
     assert sql_tree.sql(pretty=True) == expected
 
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE)
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(filtered_node_2).sql
     expected = textwrap.dedent(
         """
@@ -1310,14 +1326,14 @@ def test_databricks_source(query_graph_with_groupby):
     expected = textwrap.dedent(
         """
         SELECT
-          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          TO_TIMESTAMP(UNIX_TIMESTAMP(CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
           `cust_id`,
           SUM(`a`) AS sum_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12,
           COUNT(`a`) AS count_value_avg_edade899e2fad6f29dfd3cad353742ff31964e12
         FROM (
             SELECT
               *,
-              FLOOR((DATE_PART(EPOCH_SECOND, `ts`) - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+              FLOOR((UNIX_TIMESTAMP(`ts`) - UNIX_TIMESTAMP(CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
             FROM (
                 SELECT
                   *

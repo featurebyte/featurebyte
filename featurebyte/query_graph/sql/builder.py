@@ -8,6 +8,7 @@ from typing import Any, Iterable, Type
 from collections import defaultdict
 
 from featurebyte.common.path_util import import_submodules
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -107,10 +108,11 @@ class SQLOperationGraph:
 
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, query_graph: QueryGraph, sql_type: SQLType) -> None:
+    def __init__(self, query_graph: QueryGraph, sql_type: SQLType, source_type: SourceType) -> None:
         self.sql_nodes: dict[str, SQLNode | TableNode] = {}
         self.query_graph = query_graph
         self.sql_type = sql_type
+        self.source_type = source_type
 
     def build(self, target_node: Node) -> Any:
         """Build the graph from a given query Node, working backwards
@@ -180,6 +182,7 @@ class SQLOperationGraph:
         context = SQLNodeContext(
             query_node=cur_node,
             sql_type=self.sql_type,
+            source_type=self.source_type,
             groupby_keys=groupby_keys,
             input_sql_nodes=input_sql_nodes,
         )

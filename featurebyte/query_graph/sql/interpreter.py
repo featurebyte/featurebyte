@@ -114,9 +114,9 @@ class TileSQLGenerator:
             sql_type = SQLType.BUILD_TILE_ON_DEMAND
         else:
             sql_type = SQLType.BUILD_TILE
-        groupby_sql_node = SQLOperationGraph(query_graph=self.query_graph, sql_type=sql_type).build(
-            groupby_node
-        )
+        groupby_sql_node = SQLOperationGraph(
+            query_graph=self.query_graph, sql_type=sql_type, source_type=self.source_type
+        ).build(groupby_node)
         sql = groupby_sql_node.sql
         tile_table_id = groupby_node.parameters.tile_id
         aggregation_id = groupby_node.parameters.aggregation_id
@@ -190,7 +190,9 @@ class GraphInterpreter:
         str
             SQL code for preview purpose
         """
-        sql_graph = SQLOperationGraph(self.query_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW)
+        sql_graph = SQLOperationGraph(
+            self.query_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=self.source_type
+        )
         sql_node = sql_graph.build(self.query_graph.get_node_by_name(node_name))
 
         assert isinstance(sql_node, (TableNode, ExpressionNode))

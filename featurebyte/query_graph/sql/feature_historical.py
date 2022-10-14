@@ -11,7 +11,7 @@ import time
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype
 
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import SourceType, SpecialColumnName
 from featurebyte.exception import (
     MissingPointInTimeColumnError,
     MissingServingNameError,
@@ -91,6 +91,7 @@ def get_historical_features_sql(
     graph: QueryGraph,
     nodes: list[Node],
     request_table_columns: list[str],
+    source_type: SourceType,
     serving_names_mapping: dict[str, str] | None = None,
 ) -> str:
     """Construct the SQL code that extracts historical features
@@ -103,6 +104,8 @@ def get_historical_features_sql(
         List of query graph node
     request_table_columns : list[str]
         List of column names in the training events
+    source_type : SourceType
+        Source type information
     serving_names_mapping : dict[str, str] | None
         Optional mapping from original serving name to new serving name
 
@@ -115,7 +118,9 @@ def get_historical_features_sql(
     MissingServingNameError
         If any required serving name is not provided
     """
-    planner = FeatureExecutionPlanner(graph, serving_names_mapping=serving_names_mapping)
+    planner = FeatureExecutionPlanner(
+        graph, serving_names_mapping=serving_names_mapping, source_type=source_type
+    )
     plan = planner.generate_plan(nodes)
 
     missing_serving_names = plan.required_serving_names.difference(request_table_columns)
@@ -138,6 +143,7 @@ async def get_historical_features(
     graph: QueryGraph,
     nodes: list[Node],
     training_events: pd.DataFrame,
+    source_type: SourceType,
     serving_names_mapping: dict[str, str] | None = None,
 ) -> AsyncGenerator[bytes, None]:
     """Get historical features
@@ -152,6 +158,8 @@ async def get_historical_features(
         List of query graph node
     training_events : pd.DataFrame
         Training events DataFrame
+    source_type : SourceType
+        Source type information
     serving_names_mapping : dict[str, str] | None
         Optional serving names mapping if the training events data has different serving name
         columns than those defined in Entities
@@ -172,6 +180,7 @@ async def get_historical_features(
         nodes=nodes,
         request_table_columns=training_events.columns.tolist(),
         serving_names_mapping=serving_names_mapping,
+        source_type=source_type,
     )
 
     # Execute feature SQL code

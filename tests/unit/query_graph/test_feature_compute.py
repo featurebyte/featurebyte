@@ -6,11 +6,9 @@ import textwrap
 
 import pytest
 
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.common import AggregationSpec, FeatureSpec
-from featurebyte.query_graph.sql.feature_compute import (
-    FeatureExecutionPlanner,
-    SnowflakeRequestTablePlan,
-)
+from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner, RequestTablePlan
 
 
 @pytest.fixture(name="agg_spec_template")
@@ -68,7 +66,7 @@ def assert_sql_equal(sql, expected):
 
 def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_1d):
     """Test that two compatible AggregationSpec shares the same expanded request table"""
-    plan = SnowflakeRequestTablePlan()
+    plan = RequestTablePlan(source_type=SourceType.SNOWFLAKE)
     plan.add_aggregation_spec(agg_spec_sum_1d)
     plan.add_aggregation_spec(agg_spec_max_1d)
 
@@ -90,9 +88,8 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
     SELECT
       POINT_IN_TIME,
       "CID",
-      DATE_PART(epoch, POINT_IN_TIME) AS __FB_TS,
-      FLOOR((__FB_TS - 1800) / 3600) AS __FB_LAST_TILE_INDEX,
-      __FB_LAST_TILE_INDEX - 24 AS __FB_FIRST_TILE_INDEX
+      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) AS "__FB_LAST_TILE_INDEX",
+      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) - 24 AS "__FB_FIRST_TILE_INDEX"
     FROM (
         SELECT DISTINCT
           POINT_IN_TIME,
@@ -105,7 +102,7 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
 
 def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     """Test that two incompatible AggregationSpec does not share expanded request tables"""
-    plan = SnowflakeRequestTablePlan()
+    plan = RequestTablePlan(source_type=SourceType.SNOWFLAKE)
     plan.add_aggregation_spec(agg_spec_max_2h)
     plan.add_aggregation_spec(agg_spec_max_1d)
 
@@ -128,9 +125,8 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     SELECT
       POINT_IN_TIME,
       "CID",
-      DATE_PART(epoch, POINT_IN_TIME) AS __FB_TS,
-      FLOOR((__FB_TS - 1800) / 3600) AS __FB_LAST_TILE_INDEX,
-      __FB_LAST_TILE_INDEX - 2 AS __FB_FIRST_TILE_INDEX
+      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) AS "__FB_LAST_TILE_INDEX",
+      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) - 2 AS "__FB_FIRST_TILE_INDEX"
     FROM (
         SELECT DISTINCT
           POINT_IN_TIME,
@@ -147,9 +143,8 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     SELECT
       POINT_IN_TIME,
       "CID",
-      DATE_PART(epoch, POINT_IN_TIME) AS __FB_TS,
-      FLOOR((__FB_TS - 1800) / 3600) AS __FB_LAST_TILE_INDEX,
-      __FB_LAST_TILE_INDEX - 24 AS __FB_FIRST_TILE_INDEX
+      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) AS "__FB_LAST_TILE_INDEX",
+      FLOOR((DATE_PART(EPOCH_SECOND, POINT_IN_TIME) - 1800) / 3600) - 24 AS "__FB_FIRST_TILE_INDEX"
     FROM (
         SELECT DISTINCT
           POINT_IN_TIME,
@@ -163,7 +158,7 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
 def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggregation_id):
     """Test FeatureExecutionPlanner generates the correct plan from groupby node"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
-    planner = FeatureExecutionPlanner(query_graph_with_groupby)
+    planner = FeatureExecutionPlanner(query_graph_with_groupby, source_type=SourceType.SNOWFLAKE)
     plan = planner.generate_plan([groupby_node])
     assert list(plan.aggregation_spec_set.get_grouped_aggregation_specs()) == [
         [
@@ -221,7 +216,9 @@ def test_feature_execution_planner__serving_names_mapping(
     """Test FeatureExecutionPlanner with serving names mapping provided"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     mapping = {"CUSTOMER_ID": "NEW_CUST_ID"}
-    planner = FeatureExecutionPlanner(query_graph_with_groupby, serving_names_mapping=mapping)
+    planner = FeatureExecutionPlanner(
+        query_graph_with_groupby, serving_names_mapping=mapping, source_type=SourceType.SNOWFLAKE
+    )
     plan = planner.generate_plan([groupby_node])
     assert list(plan.aggregation_spec_set.get_grouped_aggregation_specs()) == [
         [

@@ -41,16 +41,22 @@ def global_query_graph():
     yield GlobalQueryGraph()
 
 
-@pytest.fixture(name="query_graph_and_assign_node")
-def query_graph_and_assign_node_fixture(global_graph):
-    """Fixture of a query with some operations ready to run groupby"""
-    # pylint: disable=duplicate-code
-    node_input = global_graph.add_operation(
-        node_type=NodeType.INPUT,
-        node_params={
-            "type": "event_data",
-            "columns": ["ts", "cust_id", "a", "b"],
-            "timestamp": "ts",
+@pytest.fixture(name="input_details")
+def input_details_fixture(request):
+    """
+    Fixture for table_details and feature_store details for use in tests that rely only on graph
+    (not API objects).
+
+    To obtain query graph fixtures with a different source type, indirect parametrize this fixture
+    with the data source type name ("snowflake" or "databricks"). Parametrization of this fixture is
+    optional; the default value is "snowflake".
+    """
+    kind = "snowflake"
+    if hasattr(request, "param"):
+        kind = request.param
+    assert kind in {"snowflake", "databricks"}
+    if kind == "snowflake":
+        input_details = {
             "table_details": {
                 "database_name": "db",
                 "schema_name": "public",
@@ -65,21 +71,61 @@ def query_graph_and_assign_node_fixture(global_graph):
                     "warehouse": "warehouse",
                 },
             },
-        },
+        }
+    else:
+        input_details = {
+            "table_details": {
+                "database_name": "db",
+                "schema_name": "public",
+                "table_name": "event_table",
+            },
+            "feature_store_details": {
+                "type": "databricks",
+                "details": {
+                    "server_hostname": "databricks-hostname",
+                    "http_path": "databricks-http-path",
+                    "featurebyte_schema": "public",
+                    "featurebyte_catalog": "hive_metastore",
+                },
+            },
+        }
+    return input_details
+
+
+@pytest.fixture(name="input_node")
+def input_node_fixture(global_graph, input_details):
+    """Fixture of a query with some operations ready to run groupby"""
+    # pylint: disable=duplicate-code
+    node_params = {
+        "type": "event_data",
+        "columns": ["ts", "cust_id", "a", "b"],
+        "timestamp": "ts",
+    }
+    node_params.update(input_details)
+    node_input = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
+    return node_input
+
+
+@pytest.fixture(name="query_graph_and_assign_node")
+def query_graph_and_assign_node_fixture(global_graph, input_node):
+    """Fixture of a query with some operations ready to run groupby"""
+    # pylint: disable=duplicate-code
     proj_a = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},
         node_output_type=NodeOutputType.SERIES,
-        input_nodes=[node_input],
+        input_nodes=[input_node],
     )
     proj_b = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["b"]},
         node_output_type=NodeOutputType.SERIES,
-        input_nodes=[node_input],
+        input_nodes=[input_node],
     )
     sum_node = global_graph.add_operation(
         node_type=NodeType.ADD,
@@ -91,7 +137,7 @@ def query_graph_and_assign_node_fixture(global_graph):
         node_type=NodeType.ASSIGN,
         node_params={"name": "c"},
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[node_input, sum_node],
+        input_nodes=[input_node, sum_node],
     )
     return global_graph, assign_node
 

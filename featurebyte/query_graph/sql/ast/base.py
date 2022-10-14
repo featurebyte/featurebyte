@@ -12,8 +12,10 @@ from dataclasses import dataclass, field
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.common.typing import is_scalar_nan
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import SQLType
 
 SQLNodeT = TypeVar("SQLNodeT", bound="SQLNode")
@@ -31,6 +33,8 @@ class SQLNodeContext:
         Query graph node
     sql_type: SQLType
         Type of SQL code to generate
+    source_type : SourceType
+        Type of the data warehouse that the SQL will run on
     groupby_keys : list[str] | None
         List of groupby keys that is used for the downstream groupby operation. This information is
         required so that only tiles corresponding to specific entities are built (vs building tiles
@@ -41,11 +45,23 @@ class SQLNodeContext:
 
     query_node: Node
     sql_type: SQLType
+    source_type: SourceType
     groupby_keys: list[str] | None
     input_sql_nodes: list[SQLNode]
 
     def __post_init__(self) -> None:
         self.parameters = self.query_node.parameters.dict()
+
+    @property
+    def adapter(self) -> BaseAdapter:
+        """
+        Adapter object for generating engine specific SQL expressions
+
+        Returns
+        -------
+        BaseAdapter
+        """
+        return get_sql_adapter(self.source_type)
 
 
 @dataclass  # type: ignore

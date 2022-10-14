@@ -1,6 +1,8 @@
 """
 Tests for feature preview SQL generation
 """
+import pytest
+
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from tests.util.helper import assert_equal_with_expected_fixture
@@ -87,5 +89,28 @@ def test_get_feature_preview_sql__complex_feature(complex_feature_query_graph, u
     assert_equal_with_expected_fixture(
         preview_sql,
         "tests/fixtures/expected_preview_sql_complex_feature.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+@pytest.mark.parametrize("input_details", ["databricks"], indirect=True)
+def test_get_feature_preview_sql_databricks(query_graph_with_groupby, update_fixtures):
+    """Test generated preview SQL is as expected"""
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    graph = query_graph_with_groupby
+    node = graph.get_node_by_name("groupby_1")
+    preview_sql = get_feature_preview_sql(
+        graph=graph,
+        nodes=[node],
+        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.DATABRICKS,
+    )
+
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_databricks.sql",
         update_fixture=update_fixtures,
     )
