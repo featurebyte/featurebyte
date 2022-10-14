@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.entity import EntityModel
+from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
@@ -39,8 +39,8 @@ class EntityUpdate(FeatureByteBaseModel):
     """
 
     name: Optional[StrictStr]
-    add_parent_id: Optional[PydanticObjectId]
-    remove_parent_id: Optional[PydanticObjectId]
+    add_parent: Optional[ParentEntity]
+    remove_parent: Optional[ParentEntity]
 
 
 class EntityServiceUpdate(FeatureByteBaseModel):
@@ -50,7 +50,7 @@ class EntityServiceUpdate(FeatureByteBaseModel):
 
     name: Optional[str]
     ancestor_ids: Optional[List[PydanticObjectId]]
-    parent_ids: Optional[List[PydanticObjectId]]
+    parents: Optional[List[ParentEntity]]
 
 
 class EntityBriefInfo(BaseBriefInfo):

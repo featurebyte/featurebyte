@@ -3,16 +3,18 @@ RelationshipService class
 """
 from __future__ import annotations
 
-from typing import cast
+from typing import TypeVar, cast
 
 from bson import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import FeatureByteBaseDocumentModel
-from featurebyte.models.relationship import Relationship
+from featurebyte.models.relationship import Parent, Relationship
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.base_update import BaseUpdateService
+
+ParentT = TypeVar("ParentT", bound=Parent)
 
 
 class RelationshipService(BaseUpdateService):
@@ -36,15 +38,17 @@ class RelationshipService(BaseUpdateService):
 
     @classmethod
     def prepare_document_update_payload(
-        cls, relationship: Relationship
+        cls, ancestor_ids: set[ObjectId], parents: list[ParentT]
     ) -> FeatureByteBaseDocumentModel:
         """
         Prepare document update payload (by converting Relationship schema into service update schema)
 
         Parameters
         ----------
-        relationship: Relationship
-            Update relationship
+        ancestor_ids: list[ObjectId]
+            List of ancestor IDs
+        parents: list[ParentT]
+            List of parents
 
         Raises
         ------
@@ -69,13 +73,13 @@ class RelationshipService(BaseUpdateService):
                 f'Object "{parent_obj.name}" is already an ancestor of object "{child_obj.name}".'
             )
 
-    async def add_relationship(self, parent_id: ObjectId, child_id: ObjectId) -> Relationship:
+    async def add_relationship(self, parent: ParentT, child_id: ObjectId) -> Relationship:
         """
         Add parent & child relationship between two objects
 
         Parameters
         ----------
-        parent_id: ObjectId
+        parent: ParentT
             Parent object ID
         child_id: ObjectId
             Child object ID
@@ -84,7 +88,7 @@ class RelationshipService(BaseUpdateService):
         -------
         Updated document
         """
-        parent_object = await self.document_service.get_document(document_id=parent_id)
+        parent_object = await self.document_service.get_document(document_id=parent.id)
         child_object = await self.document_service.get_document(document_id=child_id)
         assert isinstance(parent_object, Relationship)
         assert isinstance(child_object, Relationship)
@@ -94,12 +98,10 @@ class RelationshipService(BaseUpdateService):
             updated_document = await self.document_service.update_document(
                 document_id=child_id,
                 data=self.prepare_document_update_payload(
-                    relationship=Relationship(
-                        ancestor_ids=set(child_object.ancestor_ids).union(
-                            self.include_object_id(parent_object.ancestor_ids, parent_id)
-                        ),
-                        parent_ids=set(child_object.parent_ids).union([parent_id]),
+                    ancestor_ids=set(child_object.ancestor_ids).union(
+                        self.include_object_id(parent_object.ancestor_ids, parent.id)
                     ),
+                    parents=child_object.parents + [parent],
                 ),
                 return_document=True,
             )
@@ -113,33 +115,29 @@ class RelationshipService(BaseUpdateService):
                 await self.document_service.update_document(
                     document_id=obj["_id"],
                     data=self.prepare_document_update_payload(
-                        relationship=Relationship(
-                            ancestor_ids=set(obj["ancestor_ids"]).union(
-                                updated_document.ancestor_ids
-                            ),
-                            parent_ids=obj["parent_ids"],
-                        ),
+                        ancestor_ids=set(obj["ancestor_ids"]).union(updated_document.ancestor_ids),
+                        parents=obj["parents"],
                     ),
                 )
             return updated_document
 
     @staticmethod
     def _validate_remove_relationship_operation(
-        parent_obj: Relationship, child_obj: Relationship
+        parent_obj: Relationship, child_obj: Relationship, parent: ParentT
     ) -> None:
-        if parent_obj.id not in child_obj.parent_ids:
+        if parent not in child_obj.parents:
             raise DocumentUpdateError(
                 f'Object "{parent_obj.name}" is not the parent of object "{child_obj.name}".'
             )
 
-    async def remove_relationship(self, parent_id: ObjectId, child_id: ObjectId) -> Relationship:
+    async def remove_relationship(self, parent: ParentT, child_id: ObjectId) -> Relationship:
         """
         Remove parent & child relationship between two objects
 
         Parameters
         ----------
-        parent_id: ObjectId
-            Parent object ID
+        parent: ParentT
+            Parent object
         child_id: ObjectId
             Child object ID
 
@@ -147,24 +145,24 @@ class RelationshipService(BaseUpdateService):
         -------
         Updated document
         """
-        parent_object = await self.document_service.get_document(document_id=parent_id)
+        parent_object = await self.document_service.get_document(document_id=parent.id)
         child_object = await self.document_service.get_document(document_id=child_id)
         assert isinstance(parent_object, Relationship)
         assert isinstance(child_object, Relationship)
         self._validate_remove_relationship_operation(
-            parent_obj=parent_object, child_obj=child_object
+            parent_obj=parent_object,
+            child_obj=child_object,
+            parent=parent,
         )
 
         async with self.persistent.start_transaction():
             updated_document = await self.document_service.update_document(
                 document_id=child_id,
                 data=self.prepare_document_update_payload(
-                    relationship=Relationship(
-                        ancestor_ids=set(child_object.ancestor_ids).difference(
-                            self.include_object_id(parent_object.ancestor_ids, parent_id)
-                        ),
-                        parent_ids=self.exclude_object_id(child_object.parent_ids, parent_id),
+                    ancestor_ids=set(child_object.ancestor_ids).difference(  # type: ignore[arg-type]
+                        self.include_object_id(parent_object.ancestor_ids, parent.id)
                     ),
+                    parents=[par for par in child_object.parents if par.id != parent.id],
                 ),
                 return_document=True,
             )
@@ -178,12 +176,10 @@ class RelationshipService(BaseUpdateService):
                 await self.document_service.update_document(
                     document_id=obj["_id"],
                     data=self.prepare_document_update_payload(
-                        relationship=Relationship(
-                            ancestor_ids=set(obj["ancestor_ids"]).difference(
-                                self.include_object_id(parent_object.ancestor_ids, parent_id)
-                            ),
-                            parent_ids=obj["parent_ids"],
+                        ancestor_ids=set(obj["ancestor_ids"]).difference(
+                            self.include_object_id(parent_object.ancestor_ids, parent.id)
                         ),
+                        parents=obj["parents"],
                     ),
                 )
             return updated_document
@@ -200,6 +196,6 @@ class EntityRelationshipService(RelationshipService):
 
     @classmethod
     def prepare_document_update_payload(
-        cls, relationship: Relationship
+        cls, ancestor_ids: set[ObjectId], parents: list[ParentT]
     ) -> FeatureByteBaseDocumentModel:
-        return EntityServiceUpdate(**relationship.dict())  # type: ignore[return-value]
+        return EntityServiceUpdate(ancestor_ids=ancestor_ids, parents=parents)  # type: ignore[return-value]

@@ -7,7 +7,19 @@ from typing import List
 from bson import ObjectId
 from pydantic import Field, validator
 
-from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+    PydanticObjectId,
+)
+
+
+class Parent(FeatureByteBaseModel):
+    """
+    Parent model
+    """
+
+    id: PydanticObjectId
 
 
 class Relationship(FeatureByteBaseDocumentModel):
@@ -16,9 +28,9 @@ class Relationship(FeatureByteBaseDocumentModel):
     """
 
     ancestor_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
-    parent_ids: List[PydanticObjectId] = Field(default_factory=list, allow_mutation=False)
+    parents: List[Parent] = Field(default_factory=list, allow_mutation=False)
 
-    @validator("ancestor_ids", "parent_ids")
+    @validator("ancestor_ids")
     @classmethod
     def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
         # make sure list of ids always sorted

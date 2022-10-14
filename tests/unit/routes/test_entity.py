@@ -135,9 +135,13 @@ class TestEntityApi(BaseApiTestSuite):
         entity_user_id = response.json()["_id"]
 
         # add user as parent entity to customer entity
-        payload = {"add_parent_id": entity_user_id}
+        data_id = str(ObjectId())
+        payload = {
+            "add_parent": {"id": entity_user_id, "data_type": "event_data", "data_id": data_id}
+        }
         response = test_api_client.patch(f"{self.base_route}/{entity_cust_id}", json=payload)
         response_dict = response.json()
+        parent = {"id": entity_user_id, "data_type": "event_data", "data_id": data_id}
         assert response.status_code == HTTPStatus.OK
         assert response_dict == {
             "_id": entity_cust_id,
@@ -146,12 +150,12 @@ class TestEntityApi(BaseApiTestSuite):
             "created_at": response_dict["created_at"],
             "updated_at": response_dict["updated_at"],
             "ancestor_ids": [entity_user_id],
-            "parent_ids": [entity_user_id],
+            "parents": [parent],
             "serving_names": ["cust_id"],
         }
 
         # remove user as parent entity to customer entity
-        payload = {"remove_parent_id": entity_user_id}
+        payload = {"remove_parent": parent}
         response = test_api_client.patch(f"{self.base_route}/{entity_cust_id}", json=payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
@@ -162,7 +166,7 @@ class TestEntityApi(BaseApiTestSuite):
             "created_at": response_dict["created_at"],
             "updated_at": response_dict["updated_at"],
             "ancestor_ids": [],
-            "parent_ids": [],
+            "parents": [],
             "serving_names": ["cust_id"],
         }
 
@@ -198,14 +202,26 @@ class TestEntityApi(BaseApiTestSuite):
         }
         response = test_api_client.patch(
             f"{self.base_route}/{response_dict['_id']}",
-            json={"add_parent_id": str(unknown_entity_id)},
+            json={
+                "add_parent": {
+                    "id": str(unknown_entity_id),
+                    "data_type": "event_data",
+                    "data_id": str(ObjectId()),
+                }
+            },
         )
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json() == expected
 
         response = test_api_client.patch(
             f"{self.base_route}/{response_dict['_id']}",
-            json={"remove_parent_id": str(unknown_entity_id)},
+            json={
+                "remove_parent": {
+                    "id": str(unknown_entity_id),
+                    "data_type": "event_data",
+                    "data_id": str(ObjectId()),
+                }
+            },
         )
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json() == expected
@@ -263,14 +279,26 @@ class TestEntityApi(BaseApiTestSuite):
         response_dict = create_success_response.json()
         response = test_api_client.patch(
             f"{self.base_route}/{response_dict['_id']}",
-            json={"add_parent_id": str(response_dict["_id"])},
+            json={
+                "add_parent": {
+                    "id": str(response_dict["_id"]),
+                    "data_type": "event_data",
+                    "data_id": str(ObjectId()),
+                }
+            },
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {"detail": 'Object "customer" cannot be both parent & child.'}
 
         response = test_api_client.patch(
             f"{self.base_route}/{response_dict['_id']}",
-            json={"remove_parent_id": str(response_dict["_id"])},
+            json={
+                "remove_parent": {
+                    "id": str(response_dict["_id"]),
+                    "data_type": "event_data",
+                    "data_id": str(ObjectId()),
+                }
+            },
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {

@@ -3,7 +3,7 @@ Entity API routes
 """
 from __future__ import annotations
 
-from typing import Union, cast
+from typing import cast
 
 from bson.objectid import ObjectId
 
@@ -83,14 +83,14 @@ class EntityController(  # type: ignore[misc]
                 document_id=entity_id, data=EntityServiceUpdate(name=data.name)
             )
 
-        if data.add_parent_id:
-            await self.entity_relationship_service.add_relationship(  # type: ignore
-                parent_id=data.add_parent_id, child_id=entity_id
+        if data.add_parent:
+            await self.entity_relationship_service.add_relationship(
+                parent=data.add_parent, child_id=entity_id
             )
 
-        if data.remove_parent_id:
-            await self.entity_relationship_service.remove_relationship(  # type: ignore
-                parent_id=data.remove_parent_id, child_id=entity_id
+        if data.remove_parent:
+            await self.entity_relationship_service.remove_relationship(
+                parent=data.remove_parent, child_id=entity_id
             )
 
         return await self.get(document_id=entity_id)
