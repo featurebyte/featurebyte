@@ -64,6 +64,10 @@ class NodeRegistry:
             A subclass of SQLNode
         """
         if sql_node_cls.query_node_type is None:
+            # query_node_type is None when the class 1) is an abstract base class; or 2) if the
+            # class deliberately chooses not to register the mapping in NodeRegistry (e.g.
+            # ParsedExpressionNode, which can be instantiated in many ways, not just from a single
+            # query node type)
             return
         if not isinstance(sql_node_cls.query_node_type, (list, tuple)):
             query_node_types = [sql_node_cls.query_node_type]

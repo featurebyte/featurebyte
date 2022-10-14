@@ -57,7 +57,8 @@ class SQLNode(ABC):
     node in this tree. This is the interface that a node in this tree should implement.
 
     query_node_type attribute specifies the type of the query graph node that the SQLNode
-    corresponds to. It is used by NodeRegistry.
+    corresponds to. If query_node_type is not overridden, the class will not be picked up by the
+    NodeRegistry and has to be manually instantiated.
     """
 
     context: SQLNodeContext
