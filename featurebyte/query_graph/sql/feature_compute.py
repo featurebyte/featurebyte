@@ -191,7 +191,9 @@ class RequestTablePlan(ABC):
             .from_(REQUEST_TABLE_NAME)
         )
         num_tiles = window_size // frequency
-        point_in_time_epoch_expr = self.adapter.epoch_seconds(SpecialColumnName.POINT_IN_TIME.value)
+        point_in_time_epoch_expr = self.adapter.to_epoch_seconds(
+            SpecialColumnName.POINT_IN_TIME.value
+        )
         last_time_index_expr = parse_one(
             f"FLOOR(({point_in_time_epoch_expr.sql()} - {time_modulo_frequency}) / {frequency})"
         )

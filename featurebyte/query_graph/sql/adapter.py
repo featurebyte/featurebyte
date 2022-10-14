@@ -18,7 +18,7 @@ class BaseAdapter:
 
     @classmethod
     @abstractmethod
-    def epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
+    def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
         """
         Expression to convert a timestamp to epoch second
 
@@ -39,7 +39,7 @@ class SnowflakeAdapter(BaseAdapter):
     """
 
     @classmethod
-    def epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
+    def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
         return expressions.Anonymous(
             this="DATE_PART",
             expressions=[expressions.Identifier(this="EPOCH_SECOND"), timestamp_expr],
@@ -52,7 +52,7 @@ class DatabricksAdapter(BaseAdapter):
     """
 
     @classmethod
-    def epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
+    def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
         return expressions.Anonymous(this="UNIX_TIMESTAMP", expressions=[timestamp_expr])
 
 
