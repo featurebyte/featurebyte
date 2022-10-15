@@ -5,13 +5,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from featurebyte.query_graph.sql.ast.base import (
-    ExpressionNode,
-    SQLNodeContext,
-    TableNode,
-    make_literal_value,
-)
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
 
 def prepare_binary_op_input_nodes(

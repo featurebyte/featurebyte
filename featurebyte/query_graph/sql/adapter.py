@@ -4,11 +4,15 @@ Module for helper classes to generate engine specific SQL expressions
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
+from typing import Literal, Optional
+
 from abc import abstractmethod
 
 from sqlglot import Expression, expressions
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.sql import expression as fb_expressions
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
 
 class BaseAdapter:
@@ -32,6 +36,19 @@ class BaseAdapter:
         Expression
         """
 
+    @classmethod
+    @abstractmethod
+    def trim(
+        cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
+    ) -> Expression:
+        """
+        Expression to trim leading and / or trailing characters from string
+
+        Returns
+        -------
+        Expression
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -45,6 +62,20 @@ class SnowflakeAdapter(BaseAdapter):
             expressions=[expressions.Identifier(this="EPOCH_SECOND"), timestamp_expr],
         )
 
+    @classmethod
+    @abstractmethod
+    def trim(
+        cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
+    ) -> Expression:
+        expression_class = {
+            "left": fb_expressions.LTrim,
+            "right": fb_expressions.RTrim,
+            "both": fb_expressions.Trim,
+        }[side]
+        if character:
+            return expression_class(this=expr, character=make_literal_value(character))
+        return expression_class(this=expr)
+
 
 class DatabricksAdapter(BaseAdapter):
     """
@@ -54,6 +85,29 @@ class DatabricksAdapter(BaseAdapter):
     @classmethod
     def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
         return expressions.Anonymous(this="UNIX_TIMESTAMP", expressions=[timestamp_expr])
+
+    @classmethod
+    @abstractmethod
+    def trim(
+        cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
+    ) -> Expression:
+        if character is None:
+            character = " "
+        character_literal = make_literal_value(character)
+
+        def _make_ltrim_expr(ex: Expression) -> Expression:
+            return expressions.Anonymous(this="LTRIM", expressions=[character_literal, ex])
+
+        def _make_rtrim_expr(ex: Expression) -> Expression:
+            return expressions.Anonymous(this="RTRIM", expressions=[character_literal, ex])
+
+        if side == "left":
+            out = _make_ltrim_expr(expr)
+        elif side == "right":
+            out = _make_rtrim_expr(expr)
+        else:
+            out = _make_ltrim_expr(_make_rtrim_expr(expr))
+        return out
 
 
 def get_sql_adapter(source_type: SourceType) -> BaseAdapter:

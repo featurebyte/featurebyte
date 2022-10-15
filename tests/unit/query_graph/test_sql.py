@@ -10,7 +10,6 @@ from sqlglot import parse_one
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.sql.ast.base import make_literal_value
 from featurebyte.query_graph.sql.ast.binary import BinaryOp
 from featurebyte.query_graph.sql.ast.count_dict import CountDictTransformNode
 from featurebyte.query_graph.sql.ast.datetime import (
@@ -27,6 +26,7 @@ from featurebyte.query_graph.sql.ast.generic import (
     resolve_project_node,
 )
 from featurebyte.query_graph.sql.ast.input import InputNode
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.unary import CastNode, LagNode
 from featurebyte.query_graph.sql.builder import SQLNodeContext
 from featurebyte.query_graph.sql.common import SQLType

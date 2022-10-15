@@ -10,13 +10,9 @@ from dataclasses import dataclass
 from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.sql.ast.base import (
-    ExpressionNode,
-    SQLNodeContext,
-    TableNode,
-    make_literal_value,
-)
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.input import InputNode
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 
 

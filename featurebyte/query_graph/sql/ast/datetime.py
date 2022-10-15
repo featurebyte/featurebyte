@@ -12,8 +12,9 @@ from sqlglot import Expression, expressions
 
 from featurebyte.common.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, make_literal_value
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode, resolve_project_node
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.util import prepare_binary_op_input_nodes
 
 
