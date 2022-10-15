@@ -3,6 +3,7 @@ This module contains session to EventView integration tests
 """
 import numpy as np
 import pandas as pd
+import pytest
 
 from featurebyte import AggFunc, EventData, EventView, FeatureList, to_timedelta
 from tests.util.helper import get_lagged_series_pandas
@@ -136,11 +137,12 @@ def pyramid_sum(event_view, group_by_col, window, numeric_column, name):
     return output
 
 
+@pytest.mark.parametrize("event_data", ["databricks", "snowflake"], indirect=True)
 def test_query_object_operation_on_snowflake_source(
     transaction_data_upper_case, event_data, feature_manager
 ):
     """
-    Test loading event view from snowflake source
+    Test EventView operations for an EventData
     """
     # create event view
     event_view = EventView.from_event_data(event_data)

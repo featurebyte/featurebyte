@@ -61,7 +61,7 @@ def config_fixture():
             {
                 "name": "databricks_featurestore",
                 "credential_type": "ACCESS_TOKEN",
-                "access_token": os.getenv("DATABRICKS_ACCESS_TOKEN"),
+                "access_token": os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
             },
         ],
     }
@@ -104,12 +104,12 @@ def mock_get_persistent_fixture(config):
 @pytest.fixture(name="snowflake_feature_store", scope="session")
 def snowflake_feature_store_fixture(mock_get_persistent):
     """
-    Snowflake database source fixture
+    Snowflake feature store fixture
     """
     _ = mock_get_persistent
     schema_name = os.getenv("SNOWFLAKE_SCHEMA_FEATUREBYTE")
     temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    return FeatureStore(
+    feature_store = FeatureStore(
         name="snowflake_featurestore",
         type="snowflake",
         details=SnowflakeDetails(
@@ -119,6 +119,8 @@ def snowflake_feature_store_fixture(mock_get_persistent):
             database=os.getenv("SNOWFLAKE_DATABASE"),
         ),
     )
+    feature_store.save()
+    return feature_store
 
 
 @pytest.fixture(name="databricks_feature_store", scope="session")
@@ -129,7 +131,7 @@ def databricks_feature_store_fixture(mock_get_persistent):
     _ = mock_get_persistent
     schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
     temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    return FeatureStore(
+    feature_store = FeatureStore(
         name="databricks_featurestore",
         type="databricks",
         details=DatabricksDetails(
@@ -139,6 +141,8 @@ def databricks_feature_store_fixture(mock_get_persistent):
             featurebyte_schema=temp_schema_name,
         ),
     )
+    feature_store.save()
+    return feature_store
 
 
 @pytest.fixture(name="sqlite_feature_store", scope="session")
@@ -271,6 +275,15 @@ async def databricks_session_fixture(config, databricks_feature_store):
     session_manager = SessionManager(credentials=config.credentials)
     session = await session_manager.get_session(databricks_feature_store)
     assert isinstance(session, DatabricksSession)
+
+    await session.execute_query(
+        """
+        CREATE TABLE TEST_TABLE
+        USING CSV
+        OPTIONS (header "true", inferSchema "true")
+        LOCATION 'dbfs:/FileStore/tables/transactions_data_upper_case_2022_10_14.csv';
+        """
+    )
 
     yield session
 
@@ -480,18 +493,33 @@ def feature_list_manager(snowflake_session):
     return FeatureListManagerSnowflake(session=snowflake_session)
 
 
-@pytest.fixture(name="event_data", scope="session")
-def event_data_fixture(snowflake_session, snowflake_feature_store):
-    """Fixture for an EventData in integration tests"""
-    table_name = "TEST_TABLE"
-    assert table_name in snowflake_feature_store.list_tables(
-        database_name=snowflake_session.database,
-        schema_name=snowflake_session.sf_schema,
-    )
+@pytest.fixture(name="user_entity", scope="session")
+def user_entity_fixture():
+    """
+    Fixture for an Entity "User"
+    """
+    entity = Entity(name="User", serving_names=["user id"])
+    entity.save()
+    return entity
 
-    snowflake_database_table = snowflake_feature_store.get_table(
-        database_name=snowflake_session.database,
-        schema_name=snowflake_session.sf_schema,
+
+def create_transactions_event_data_from_feature_store(
+    feature_store, database_name, schema_name, table_name, event_data_name
+):
+    """
+    Helper function to create an EventData with the given feature store
+    """
+    available_tables = feature_store.list_tables(
+        database_name=database_name,
+        schema_name=schema_name,
+    )
+    # check table exists (case-insensitive since some data warehouses change the casing)
+    available_tables = [x.upper() for x in available_tables]
+    assert table_name.upper() in available_tables
+
+    database_table = feature_store.get_table(
+        database_name=database_name,
+        schema_name=schema_name,
         table_name=table_name,
     )
     expected_dtypes = pd.Series(
@@ -505,12 +533,10 @@ def event_data_fixture(snowflake_session, snowflake_feature_store):
             "AMOUNT": "FLOAT",
         }
     )
-    pd.testing.assert_series_equal(expected_dtypes, snowflake_database_table.dtypes)
-
-    # create entity & event data
+    pd.testing.assert_series_equal(expected_dtypes, database_table.dtypes)
     event_data = EventData.from_tabular_source(
-        tabular_source=snowflake_database_table,
-        name="snowflake_event_data",
+        tabular_source=database_table,
+        name=event_data_name,
         event_timestamp_column="EVENT_TIMESTAMP",
     )
     event_data.update_default_feature_job_setting(
@@ -518,12 +544,50 @@ def event_data_fixture(snowflake_session, snowflake_feature_store):
             blind_spot="30m", frequency="1h", time_modulo_frequency="30m"
         )
     )
-
-    # create entity & event data
-    Entity(name="User", serving_names=["user id"]).save()
     event_data["USER ID"].as_entity("User")
-    snowflake_feature_store.save()
     event_data.save()
-
-    event_data = EventData.get("snowflake_event_data")
+    event_data = EventData.get(event_data_name)
     return event_data
+
+
+@pytest.fixture(name="snowflake_event_data", scope="session")
+def snowflake_event_data_fixture(snowflake_session, snowflake_feature_store, user_entity):
+    """Fixture for an EventData in integration tests"""
+    _ = user_entity
+    event_data = create_transactions_event_data_from_feature_store(
+        snowflake_feature_store,
+        database_name=snowflake_session.database,
+        schema_name=snowflake_session.sf_schema,
+        table_name="TEST_TABLE",
+        event_data_name="snowflake_event_data",
+    )
+    return event_data
+
+
+@pytest.fixture(name="databricks_event_data", scope="session")
+def databricks_event_data_fixture(databricks_session, databricks_feature_store, user_entity):
+    """Fixture for an EventData in integration tests"""
+    _ = user_entity
+    event_data = create_transactions_event_data_from_feature_store(
+        databricks_feature_store,
+        database_name=databricks_session.featurebyte_catalog,
+        schema_name=databricks_session.featurebyte_schema,
+        table_name="TEST_TABLE",
+        event_data_name="databricks_event_data",
+    )
+    return event_data
+
+
+@pytest.fixture(name="event_data", scope="session")
+def event_data_fixture(request):
+    """
+    Parametrizable fixture for EventData (possible parameters: "snowflake", "databricks")
+    """
+    if not hasattr(request, "param"):
+        kind = "snowflake"
+    else:
+        kind = request.param
+    assert kind in {"snowflake", "databricks"}
+    if kind == "snowflake":
+        return request.getfixturevalue("snowflake_event_data")
+    return request.getfixturevalue("databricks_event_data")
