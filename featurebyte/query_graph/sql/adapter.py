@@ -49,6 +49,17 @@ class BaseAdapter:
         Expression
         """
 
+    @classmethod
+    @abstractmethod
+    def adjust_dayofweek(cls, extracted_expr: Expression) -> Expression:
+        """
+        Expression to adjust day of week to have consistent result as pandas
+
+        Returns
+        -------
+        Expression
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -63,7 +74,6 @@ class SnowflakeAdapter(BaseAdapter):
         )
 
     @classmethod
-    @abstractmethod
     def trim(
         cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
     ) -> Expression:
@@ -76,6 +86,17 @@ class SnowflakeAdapter(BaseAdapter):
             return expression_class(this=expr, character=make_literal_value(character))
         return expression_class(this=expr)
 
+    @classmethod
+    def adjust_dayofweek(cls, extracted_expr: Expression) -> Expression:
+        # pandas: Monday=0, Sunday=6; snowflake: Sunday=0, Saturday=6
+        # to follow pandas behavior, add 6 then modulo 7 to perform left-shift
+        return expressions.Mod(
+            this=expressions.Paren(
+                this=expressions.Add(this=extracted_expr, expression=make_literal_value(6))
+            ),
+            expression=make_literal_value(7),
+        )
+
 
 class DatabricksAdapter(BaseAdapter):
     """
@@ -87,7 +108,6 @@ class DatabricksAdapter(BaseAdapter):
         return expressions.Anonymous(this="UNIX_TIMESTAMP", expressions=[timestamp_expr])
 
     @classmethod
-    @abstractmethod
     def trim(
         cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
     ) -> Expression:
@@ -108,6 +128,17 @@ class DatabricksAdapter(BaseAdapter):
         else:
             out = _make_ltrim_expr(_make_rtrim_expr(expr))
         return out
+
+    @classmethod
+    def adjust_dayofweek(cls, extracted_expr: Expression) -> Expression:
+        # pandas: Monday=0, Sunday=6; databricks: Sunday=1, Saturday=7
+        # Conversion formula: (databricks_dayofweek - 1 + 6) % 7
+        return expressions.Mod(
+            this=expressions.Paren(
+                this=expressions.Add(this=extracted_expr, expression=make_literal_value(5))
+            ),
+            expression=make_literal_value(7),
+        )
 
 
 def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
