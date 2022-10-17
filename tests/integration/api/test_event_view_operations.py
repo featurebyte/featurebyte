@@ -137,7 +137,35 @@ def pyramid_sum(event_view, group_by_col, window, numeric_column, name):
     return output
 
 
-@pytest.mark.parametrize("event_data", ["databricks", "snowflake"], indirect=True)
+def assert_feature_preview_output_equal(actual, expected):
+    """
+    Check output of Feature / FeatureGroup / FeatureList preview is as expected
+    """
+    assert isinstance(actual, pd.DataFrame)
+    assert actual.shape[0] == 1
+    assert sorted(actual.keys()) == sorted(expected.keys())
+
+    actual = actual.iloc[0].to_dict()
+
+    # Databricks returned datetime columns always have timezone (UTC). Remove timezone so that the
+    # actual and expected (no timezone) can be compared.
+    actual["POINT_IN_TIME"] = actual["POINT_IN_TIME"].tz_localize(None)
+
+    def _isnumeric(x):
+        try:
+            float(x)
+        except (TypeError, ValueError):
+            return False
+        return True
+
+    for k in actual:
+        if _isnumeric(expected[k]):
+            np.testing.assert_allclose(actual[k], expected[k], rtol=1e-5)
+        else:
+            assert actual[k] == expected[k]
+
+
+@pytest.mark.parametrize("event_data", ["databricks"], indirect=True)
 def test_query_object_operation(transaction_data_upper_case, event_data, feature_manager):
     """
     Test EventView operations for an EventData
@@ -189,9 +217,6 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
     ]
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
-    if source_type == SourceType.DATABRICKS:
-        return
-
     # create some features
     event_view["derived_value_column"] = 1.0 * event_view["USER ID"]
     feature_group = event_view.groupby("USER ID").aggregate(
@@ -226,74 +251,89 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
 
     # preview count features
     df_feature_preview = feature_group.preview(preview_param)
-    assert df_feature_preview.shape[0] == 1
-    assert df_feature_preview.iloc[0].to_dict() == {
-        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "user id": 1,
-        "COUNT_2h": 3,
-        "COUNT_24h": 14,
-    }
+    assert_feature_preview_output_equal(
+        df_feature_preview,
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+            "user id": 1,
+            "COUNT_2h": 3,
+            "COUNT_24h": 14,
+        },
+    )
 
-    # preview count per category features
-    df_feature_preview = feature_group_per_category.preview(preview_param)
-    assert df_feature_preview.shape[0] == 1
-    assert df_feature_preview.iloc[0].to_dict() == {
-        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "user id": 1,
-        "COUNT_BY_ACTION_2h": '{\n  "add": 2,\n  "purchase": 1\n}',
-        "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
-        "ENTROPY_BY_ACTION_24h": 1.376055285260417,
-        "MOST_FREQUENT_ACTION_24h": "add",
-        "NUM_UNIQUE_ACTION_24h": 5,
-        "NUM_UNIQUE_ACTION_24h_exclude_missing": 4,
-        "ACTION_SIMILARITY_2h_to_24h": 0.9395523512235261,
-    }
+    if source_type != SourceType.DATABRICKS:
+        # preview count per category features
+        df_feature_preview = feature_group_per_category.preview(preview_param)
+        assert df_feature_preview.shape[0] == 1
+        assert df_feature_preview.iloc[0].to_dict() == {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+            "user id": 1,
+            "COUNT_BY_ACTION_2h": '{\n  "add": 2,\n  "purchase": 1\n}',
+            "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
+            "ENTROPY_BY_ACTION_24h": 1.376055285260417,
+            "MOST_FREQUENT_ACTION_24h": "add",
+            "NUM_UNIQUE_ACTION_24h": 5,
+            "NUM_UNIQUE_ACTION_24h_exclude_missing": 4,
+            "ACTION_SIMILARITY_2h_to_24h": 0.9395523512235261,
+        }
 
     # preview one feature only
     df_feature_preview = feature_group["COUNT_2h"].preview(preview_param)
-    assert df_feature_preview.iloc[0].to_dict() == {
-        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "user id": 1,
-        "COUNT_2h": 3,
-    }
+    assert_feature_preview_output_equal(
+        df_feature_preview,
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+            "user id": 1,
+            "COUNT_2h": 3,
+        },
+    )
 
     # preview a not-yet-assigned feature
     new_feature = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     df_feature_preview = new_feature.preview(preview_param)
-    assert df_feature_preview.shape[0] == 1
-    assert df_feature_preview.iloc[0].to_dict() == {
-        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "user id": 1,
-        "Unnamed": 0.21428599999999998,
-    }
+    assert_feature_preview_output_equal(
+        df_feature_preview,
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+            "user id": 1,
+            "Unnamed": 0.2142857143,
+        },
+    )
 
     run_test_conditional_assign_feature(feature_group)
 
     # assign new feature and preview again
     feature_group["COUNT_2h / COUNT_24h"] = new_feature
     df_feature_preview = feature_group.preview(preview_param)
-    assert df_feature_preview.shape[0] == 1
-    assert df_feature_preview.iloc[0].to_dict() == {
-        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "user id": 1,
-        "COUNT_2h": 3,
-        "COUNT_24h": 14,
-        "COUNT_2h / COUNT_24h": 0.21428599999999998,
-    }
+    assert_feature_preview_output_equal(
+        df_feature_preview,
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+            "user id": 1,
+            "COUNT_2h": 3,
+            "COUNT_24h": 14,
+            "COUNT_2h / COUNT_24h": 0.21428599999999998,
+        },
+    )
 
     # check casting on feature
     df_feature_preview = (
         (feature_group["COUNT_2h"].astype(int) + 1).astype(float).preview(preview_param)
     )
-    assert df_feature_preview.shape[0] == 1
-    assert df_feature_preview.iloc[0].to_dict() == {
-        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "user id": 1,
-        "Unnamed": 4.0,
-    }
+    assert_feature_preview_output_equal(
+        df_feature_preview,
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+            "user id": 1,
+            "Unnamed": 4.0,
+        },
+    )
 
     special_feature = create_feature_with_filtered_event_view(event_view)
     special_feature.save()  # pylint: disable=no-member
+
+    if source_type == SourceType.DATABRICKS:
+        return
 
     # add iet entropy
     feature_group["iet_entropy_24h"] = iet_entropy(
@@ -329,16 +369,19 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
     ]
     df_feature_preview = feature_group_combined.preview(preview_param)
     expected_amount_sum_24h = 220.18
-    assert df_feature_preview.iloc[0].to_dict() == {
-        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-        "user id": 1,
-        "COUNT_2h": 2,
-        "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
-        "NUM_PURCHASE_7d": 4,
-        "iet_entropy_24h": 0.6971221346393941,
-        "pyramid_sum_24h": 7 * expected_amount_sum_24h,  # 1 + 2 + 4 = 7
-        "amount_sum_24h": expected_amount_sum_24h,
-    }
+    assert_feature_preview_output_equal(
+        df_feature_preview,
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+            "user id": 1,
+            "COUNT_2h": 2,
+            "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
+            "NUM_PURCHASE_7d": 4,
+            "iet_entropy_24h": 0.6971221346393941,
+            "pyramid_sum_24h": 7 * expected_amount_sum_24h,  # 1 + 2 + 4 = 7
+            "amount_sum_24h": expected_amount_sum_24h,
+        },
+    )
 
     # Check using a derived numeric column as category
     check_day_of_week_counts(event_view, preview_param)
@@ -360,12 +403,6 @@ def create_feature_with_filtered_event_view(event_view):
     return feature
 
 
-def get_feature_preview_as_dict(obj, preview_param):
-    df_feature_preview = obj.preview(preview_param)
-    assert df_feature_preview.shape[0] == 1
-    return df_feature_preview.iloc[0].to_dict()
-
-
 def run_test_conditional_assign_feature(feature_group):
     """
     Test conditional assignment operations on Feature
@@ -375,41 +412,41 @@ def run_test_conditional_assign_feature(feature_group):
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "user id": 1,
     }
-    result = get_feature_preview_as_dict(feature_count_24h, preview_param)
-    assert result == {**preview_param, "COUNT_24h": 14}
+    result = feature_count_24h.preview(preview_param)
+    assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 14})
 
     # Assign feature conditionally. Should be reflected in both Feature and FeatureGroup
     mask = feature_count_24h == 14.0
     feature_count_24h[mask] = 900
-    result = get_feature_preview_as_dict(feature_count_24h, preview_param)
-    assert result == {**preview_param, "COUNT_24h": 900}
-    result = get_feature_preview_as_dict(feature_group, preview_param)
-    assert result == {**preview_param, "COUNT_2h": 3, "COUNT_24h": 900}
+    result = feature_count_24h.preview(preview_param)
+    assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 900})
+    result = feature_group.preview(preview_param)
+    assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 900})
 
     # Assign conditionally again (revert the above). Should be reflected in both Feature and
     # FeatureGroup
     mask = feature_count_24h == 900.0
     feature_count_24h[mask] = 14.0
-    result = get_feature_preview_as_dict(feature_count_24h, preview_param)
-    assert result == {**preview_param, "COUNT_24h": 14}
-    result = get_feature_preview_as_dict(feature_group, preview_param)
-    assert result == {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14}
+    result = feature_count_24h.preview(preview_param)
+    assert_feature_preview_output_equal(result, {**preview_param, "COUNT_24h": 14})
+    result = feature_group.preview(preview_param)
+    assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
     # Assign to an unnamed Feature conditionally. Should not be reflected in Feature only and has no
     # effect on FeatureGroup
     temp_feature = feature_count_24h * 10
     mask = temp_feature == 140.0
     temp_feature[mask] = 900
-    result = get_feature_preview_as_dict(temp_feature, preview_param)
-    assert result == {**preview_param, "Unnamed": 900}
-    result = get_feature_preview_as_dict(feature_group, preview_param)
-    assert result == {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14}
+    result = temp_feature.preview(preview_param)
+    assert_feature_preview_output_equal(result, {**preview_param, "Unnamed": 900})
+    result = feature_group.preview(preview_param)
+    assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
     # Assign to copied Series should not be reflected in FeatureGroup
     cloned_feature = feature_group["COUNT_24h"].copy()
     cloned_feature[cloned_feature == 14] = 0
-    result = get_feature_preview_as_dict(feature_group, preview_param)
-    assert result == {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14}
+    result = feature_group.preview(preview_param)
+    assert_feature_preview_output_equal(result, {**preview_param, "COUNT_2h": 3, "COUNT_24h": 14})
 
 
 def run_and_test_get_historical_features(feature_group, feature_group_per_category):

@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 import pandas as pd
-from sqlglot import Expression, expressions, select
+from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.node import Node
@@ -39,7 +39,7 @@ def construct_cte_sql(
     return cte_expr
 
 
-def quoted_identifier(column_name: str) -> Expression:
+def quoted_identifier(column_name: str) -> expressions.Identifier:
     """Construct a quoted Identifier
 
     Parameters
@@ -52,6 +52,25 @@ def quoted_identifier(column_name: str) -> Expression:
     Expression
     """
     return expressions.Identifier(this=column_name, quoted=True)
+
+
+def get_dialect_from_source_type(source_type: SourceType) -> str | None:
+    """
+    Get the dialect name given SourceType
+
+    Parameters
+    ----------
+    source_type : SourceType
+        Source type information
+
+    Returns
+    -------
+    str | None
+    """
+    dialect = None
+    if source_type == SourceType.DATABRICKS:
+        dialect = "spark"
+    return dialect
 
 
 def sql_to_string(sql_expr: Expression, source_type: SourceType) -> str:
@@ -68,10 +87,24 @@ def sql_to_string(sql_expr: Expression, source_type: SourceType) -> str:
     -------
     str
     """
-    dialect = None
-    if source_type == SourceType.DATABRICKS:
-        dialect = "spark"
-    return cast(str, sql_expr.sql(dialect=dialect, pretty=True))
+    return cast(str, sql_expr.sql(dialect=get_dialect_from_source_type(source_type), pretty=True))
+
+
+def string_to_sql(sql_string: str, source_type: SourceType) -> Expression:
+    """Convert a SQL text to SQL expression tree
+
+    Parameters
+    ----------
+    sql_string : str
+        SQL text
+    source_type : SourceType
+        The type of the database engine which will be used to determine the SQL dialect
+
+    Returns
+    -------
+    Expression
+    """
+    return parse_one(sql_string, read=get_dialect_from_source_type(source_type))
 
 
 def apply_serving_names_mapping(serving_names: list[str], mapping: dict[str, str]) -> list[str]:
