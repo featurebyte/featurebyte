@@ -168,21 +168,21 @@ class QueryGraph(FeatureByteBaseModel):
         # Only create a new dictionary/object when the value is None. Otherwise, it will cause issue
         # for the global query graph.
         nodes_map = values.get("nodes_map")
-        if not nodes_map:
+        if not nodes_map and isinstance(values.get("nodes"), list):
             values["nodes_map"] = cls._derive_nodes_map(values["nodes"], nodes_map)
 
         edges_map = values.get("edges_map")
-        if not edges_map:
+        if not edges_map and isinstance(values.get("edges"), list):
             values["edges_map"] = cls._derive_edges_map(values["edges"], edges_map)
 
         backward_edges_map = values.get("backward_edges_map")
-        if not backward_edges_map:
+        if not backward_edges_map and isinstance(values.get("edges"), list):
             values["backward_edges_map"] = cls._derive_backward_edges_map(
                 values["edges"], backward_edges_map
             )
 
         node_type_counter = values.get("node_type_counter")
-        if not node_type_counter:
+        if not node_type_counter and isinstance(values.get("nodes"), list):
             values["node_type_counter"] = cls._derive_node_type_counter(
                 values["nodes"], node_type_counter
             )

@@ -46,6 +46,36 @@ class TestFeatureApi(BaseApiTestSuite):
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
+            {**payload, "graph": {"edges": {"name": "value"}}},
+            [
+                {
+                    "loc": ["body", "graph", "edges"],
+                    "msg": "value is not a valid list",
+                    "type": "type_error.list",
+                },
+                {
+                    "loc": ["body", "source_feature_id"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                },
+            ],
+        ),
+        (
+            {**payload, "graph": {"nodes": {}}},
+            [
+                {
+                    "loc": ["body", "graph", "nodes"],
+                    "msg": "value is not a valid list",
+                    "type": "type_error.list",
+                },
+                {
+                    "loc": ["body", "source_feature_id"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                },
+            ],
+        ),
+        (
             {**payload, "event_data_ids": []},
             [
                 {
