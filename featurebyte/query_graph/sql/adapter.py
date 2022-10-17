@@ -44,6 +44,15 @@ class BaseAdapter:
         """
         Expression to trim leading and / or trailing characters from string
 
+        Parameters
+        ----------
+        expr : Expression
+            Expression of the string input to be manipulated
+        character : Optional[str]
+            Character to trim, default is whitespace
+        side : Literal["left", "right", "both"]
+            The side of the string to be trimmed
+
         Returns
         -------
         Expression
@@ -55,17 +64,30 @@ class BaseAdapter:
         """
         Expression to adjust day of week to have consistent result as pandas
 
+        Parameters
+        ----------
+        extracted_expr : Expression
+            Expression representing day of week calculated by the EXTRACT function
+
         Returns
         -------
         Expression
         """
 
     @classmethod
+    @abstractmethod
     def dateadd_microsecond(
         cls, quantity_expr: Expression, timestamp_expr: Expression
     ) -> Expression:
         """
         Expression to perform DATEADD using microsecond as the time unit
+
+        Parameters
+        ----------
+        quantity_expr : Expression
+            Number of microseconds to add to the timestamp
+        timestamp_expr : Expression
+            Expression for the timestamp
 
         Returns
         -------
@@ -165,6 +187,13 @@ class DatabricksAdapter(BaseAdapter):
     def dateadd_microsecond(
         cls, quantity_expr: Expression, timestamp_expr: Expression
     ) -> Expression:
+        # In theory, simply DATEADD(microsecond, quantity_expr, timestamp_expr) should work.
+        # However, in Databricks the quantity_expr has INT type and hence is prone to overflow
+        # especially when the working unit is microsecond - overflow occurs when the quantity is
+        # more than just 35 minutes (2147483647 microseconds is about 35.7 minutes)!
+        #
+        # To overcome that issue, this performs DATEADD in two operations - the first using minute
+        # as the unit, and the second using microsecond as the unit for the remainder.
         num_microsecond_per_minute = make_literal_value(1e6 * 60)
         minute_quantity = expressions.Div(this=quantity_expr, expression=num_microsecond_per_minute)
         microsecond_quantity = expressions.Mod(

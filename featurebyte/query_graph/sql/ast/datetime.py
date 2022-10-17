@@ -145,7 +145,7 @@ class TimedeltaExtractNode(ExpressionNode):
         Expression
         """
 
-        def _make_quantity_in_microsecond(unit):
+        def _make_quantity_in_microsecond(unit: TimedeltaSupportedUnitType) -> Expression:
             quantity = int(pd.Timedelta(1, unit=unit).total_seconds() * 1e6)
             quantity_expr = make_literal_value(quantity)
             # cast to LONG type to avoid overflow in some engines (e.g. databricks)
@@ -189,6 +189,18 @@ class TimedeltaNode(ExpressionNode):
         return self.value_expr.sql
 
     def value_with_unit(self, new_unit: TimedeltaSupportedUnitType) -> Expression:
+        """
+        Return a numeric expression that represents the timedelta in a new time unit
+
+        Parameters
+        ----------
+        new_unit : TimedeltaSupportedUnitType
+            New time unit
+
+        Returns
+        -------
+        Expression
+        """
         return TimedeltaExtractNode.convert_timedelta_unit(
             self.value_expr.sql, input_unit=self.unit, output_unit=new_unit
         )
