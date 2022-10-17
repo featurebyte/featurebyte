@@ -43,9 +43,10 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
-        for _ in range(3):
+        for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
+            payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
 
     @pytest_asyncio.fixture
@@ -105,9 +106,8 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
             user=user, persistent=persistent
         )
         output = []
-        for i, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
+        for _, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
             # payload name is set here as we need the exact name value for test_list_200 test
-            payload["name"] = f'{self.payload["name"]}_{i}'
             document = await feature_list_namespace_service.create_document(
                 data=FeatureListNamespaceModel(**payload)
             )

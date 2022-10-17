@@ -16,6 +16,7 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.mixin import OpsServiceMixin
+from featurebyte.service.semantic import SemanticService
 
 
 class BaseUpdateService(OpsServiceMixin):
@@ -81,6 +82,17 @@ class BaseUpdateService(OpsServiceMixin):
         FeatureListNamespaceService
         """
         return FeatureListNamespaceService(user=self.user, persistent=self.persistent)
+
+    @property
+    def semantic_service(self) -> SemanticService:
+        """
+        SemanticService object
+
+        Returns
+        -------
+        SemanticService
+        """
+        return SemanticService(user=self.user, persistent=self.persistent)
 
     async def get_feature_document(
         self, document_id: ObjectId, document: Optional[FeatureModel]

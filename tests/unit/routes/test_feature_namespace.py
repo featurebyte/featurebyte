@@ -44,9 +44,10 @@ class TestFeatureNamespaceApi(BaseApiTestSuite):
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
-        for _ in range(3):
+        for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
+            payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
 
     @pytest_asyncio.fixture

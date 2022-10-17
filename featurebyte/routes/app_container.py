@@ -14,6 +14,7 @@ from featurebyte.routes.feature_list.controller import FeatureListController
 from featurebyte.routes.feature_list_namespace.controller import FeatureListNamespaceController
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.feature_store.controller import FeatureStoreController
+from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.service.default_version_mode import DefaultVersionModeService
@@ -29,7 +30,8 @@ from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.preview import PreviewService
-from featurebyte.service.relationship import EntityRelationshipService
+from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
+from featurebyte.service.semantic import SemanticService
 from featurebyte.service.task_manager import AbstractTaskManager
 from featurebyte.service.version import VersionService
 from featurebyte.storage import Storage
@@ -89,12 +91,20 @@ app_container_config = {
             "clazz": PreviewService,
         },
         {
+            "name": "semantic_service",
+            "clazz": SemanticService,
+        },
+        {
             "name": "version_service",
             "clazz": VersionService,
         },
         {
             "name": "entity_relationship_service",
             "clazz": EntityRelationshipService,
+        },
+        {
+            "name": "semantic_relationship_service",
+            "clazz": SemanticRelationshipService,
         },
     ],
     "controllers": [
@@ -157,6 +167,11 @@ app_container_config = {
                 "feature_store_service",
                 "preview_service",
             ],
+        },
+        {
+            "name": "semantic_controller",
+            "clazz": SemanticController,
+            "depends": ["semantic_service", "semantic_relationship_service"],
         },
     ],
 }

@@ -94,7 +94,7 @@ class TestFeatureListApi(BaseApiTestSuite):
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
-        for _ in range(3):
+        for i in range(3):
             # make a new feature from feature_sum_30m & create a new feature_ids
             feature_payload = self.load_payload(
                 "tests/fixtures/request_payloads/feature_sum_30m.json"
@@ -111,6 +111,7 @@ class TestFeatureListApi(BaseApiTestSuite):
 
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
+            payload["name"] = f'{self.payload["name"]}_{i}'
             payload["feature_ids"] = [new_feature_id]
             payload["feature_list_namespace_id"] = str(ObjectId())
             yield payload

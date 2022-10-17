@@ -18,6 +18,7 @@ import featurebyte.routes.feature_list.api as feature_list_api
 import featurebyte.routes.feature_list_namespace.api as feature_list_namespace_api
 import featurebyte.routes.feature_namespace.api as feature_namespace_api
 import featurebyte.routes.feature_store.api as feature_store_api
+import featurebyte.routes.semantic.api as semantic_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
 from featurebyte.middleware import request_handler
@@ -94,6 +95,7 @@ def get_app() -> FastAPI:
         feature_list_namespace_api,
         feature_namespace_api,
         feature_store_api,
+        semantic_api,
         task_api,
         temp_data_api,
     ]

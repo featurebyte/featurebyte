@@ -152,9 +152,10 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client
-        for _ in range(3):
+        for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
+            payload["name"] = f'{self.payload["name"]}_{i}'
             yield payload
 
     def test_create_event_data_not_found(self, test_api_client_persistent):

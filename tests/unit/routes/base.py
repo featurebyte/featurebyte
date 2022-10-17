@@ -148,9 +148,8 @@ class BaseApiTestSuite:
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         output = []
-        for i, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
+        for _, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
             # payload name is set here as we need the exact name value for test_list_200 test
-            payload["name"] = f'{self.payload["name"]}_{i}'
             response = test_api_client.post(f"{self.base_route}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
             output.append(response)
@@ -271,12 +270,16 @@ class BaseApiTestSuite:
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
         expected_paginated_info = {"page": 1, "page_size": 10, "total": 3}
-        payload_name = self.payload["name"]
 
         assert len(response_dict["data"]) == 3
         assert response_dict.items() >= expected_paginated_info.items()
+        expected_names = [
+            payload["name"]
+            for payload in self.multiple_success_payload_generator(api_client=test_api_client)
+        ]
         response_data_names = [elem["name"] for elem in response_dict["data"]]
-        assert response_data_names == [f"{payload_name}_{i}" for i in reversed(range(3))]
+        expected_names = list(reversed(expected_names))
+        assert response_data_names == expected_names
 
         # test with pagination parameters (page 1)
         response_with_params = test_api_client.get(
@@ -289,7 +292,8 @@ class BaseApiTestSuite:
 
         assert response_with_params_dict.items() >= expected_paginated_info.items()
         response_with_params_names = [elem["name"] for elem in response_with_params_dict["data"]]
-        assert response_with_params_names == [f"{payload_name}_0", f"{payload_name}_1"]
+        expected_sorted_names = sorted(expected_names)
+        assert response_with_params_names == expected_sorted_names[:2]
 
         # test with pagination parameters (page 2)
         response_with_params = test_api_client.get(
@@ -300,7 +304,7 @@ class BaseApiTestSuite:
         response_with_params_dict = response_with_params.json()
         assert response_with_params_dict.items() >= {**expected_paginated_info, "page": 2}.items()
         response_with_params_names = [elem["name"] for elem in response_with_params_dict["data"]]
-        assert response_with_params_names == [f"{payload_name}_2"]
+        assert response_with_params_names == expected_sorted_names[-1:]
 
         # test sort_by with some random unknown column name
         # should not throw error, just that the sort_by param has no real effect since column not found
@@ -311,11 +315,11 @@ class BaseApiTestSuite:
 
         # test name parameter
         response_with_params = test_api_client.get(
-            f"{self.base_route}", params={"name": f"{payload_name}_1"}
+            f"{self.base_route}", params={"name": expected_names[1]}
         )
         assert response_with_params.status_code == HTTPStatus.OK
         response_with_params_names = [elem["name"] for elem in response_with_params.json()["data"]]
-        assert response_with_params_names == [f"{payload_name}_1"]
+        assert response_with_params_names == [expected_names[1]]
 
         # test bench_size_boundary
         response_page_size_boundary = test_api_client.get(
@@ -437,3 +441,147 @@ class BaseAsyncApiTestSuite(BaseApiTestSuite):
         assert response_dict["total"] == 1
         assert [record["action_type"] for record in response_dict["data"]] == ["INSERT"]
         assert [record["previous_values"] for record in response_dict["data"]] == [{}]
+
+
+class BaseRelationshipApiTestSuite(BaseApiTestSuite):
+    """
+    BaseRelationshipApiTestSuite contains tests related to adding & removing parent object
+    """
+
+    unknown_id = ObjectId()
+    create_parent_unprocessable_payload_expected_detail_pairs = []
+
+    def pytest_generate_tests(self, metafunc):
+        """Parametrize fixture at runtime"""
+        super().pytest_generate_tests(metafunc)
+        if "create_parent_unprocessable_payload_expected_detail" in metafunc.fixturenames:
+            metafunc.parametrize(
+                "create_parent_unprocessable_payload_expected_detail",
+                self.create_parent_unprocessable_payload_expected_detail_pairs,
+            )
+
+    @staticmethod
+    def prepare_parent_payload(payload):
+        """Prepare payload to create parent relationship"""
+        return payload
+
+    def test_create_201_and_delete_parent_200(
+        self, test_api_client_persistent, create_multiple_success_responses
+    ):
+        """
+        Test create parent & child relationship
+        """
+        test_api_client, _ = test_api_client_persistent
+
+        parent_id = create_multiple_success_responses[0].json()["_id"]
+        child_response_dict = create_multiple_success_responses[1].json()
+        child_id = child_response_dict["_id"]
+
+        # create parent relationship
+        parent = self.prepare_parent_payload({"id": parent_id})
+        response = test_api_client.post(f"{self.base_route}/{child_id}/parent", json=parent)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED
+        assert (
+            response_dict.items()
+            >= {
+                "_id": child_id,
+                "user_id": response_dict["user_id"],
+                "name": child_response_dict["name"],
+                "created_at": child_response_dict["created_at"],
+                "updated_at": response_dict["updated_at"],
+                "ancestor_ids": [parent_id],
+                "parents": [parent],
+            }.items()
+        )
+
+        # remove parent relationship
+        response = test_api_client.delete(f"{self.base_route}/{child_id}/parent/{parent_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+        assert (
+            response_dict.items()
+            >= {
+                "_id": child_id,
+                "user_id": response_dict["user_id"],
+                "name": child_response_dict["name"],
+                "created_at": child_response_dict["created_at"],
+                "updated_at": response_dict["updated_at"],
+                "ancestor_ids": [],
+                "parents": [],
+            }.items()
+        )
+
+    def test_create_parent_422(
+        self,
+        create_success_response,
+        test_api_client_persistent,
+        create_parent_unprocessable_payload_expected_detail,
+    ):
+        """
+        Test create parent with non-existence parent ID
+        """
+        create_success_response_dict = create_success_response.json()
+        test_api_client, _ = test_api_client_persistent
+
+        (
+            unprocessible_entity_payload,
+            expected_message,
+        ) = create_parent_unprocessable_payload_expected_detail
+        response = test_api_client.post(
+            f"{self.base_route}/{create_success_response_dict['_id']}/parent",
+            json=unprocessible_entity_payload,
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == expected_message
+
+    def test_create_parent_422__child_not_found(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """
+        Test create parent with non-existent child ID
+        """
+        test_api_client, _ = test_api_client_persistent
+        create_success_response_dict = create_success_response.json()
+        unknown_id = ObjectId()
+        response = test_api_client.post(
+            f"{self.base_route}/{unknown_id}/parent",
+            json=self.prepare_parent_payload({"id": create_success_response_dict["_id"]}),
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        expected = f'{self.class_name} (id: "{unknown_id}") not found. Please save the {self.class_name} object first.'
+        assert response.json()["detail"] == expected
+
+    def test_create_parent_422__both_parent_and_child(
+        self, create_success_response, test_api_client_persistent
+    ):
+        """
+        Test create parent (unprocessible entity) when parent & child are the same ID
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        parent = self.prepare_parent_payload({"id": str(response_dict["_id"])})
+        response = test_api_client.post(
+            f"{self.base_route}/{response_dict['_id']}/parent", json=parent
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json() == {
+            "detail": f'Object "{response_dict["name"]}" cannot be both parent & child.'
+        }
+
+    def test_delete_parent_422__when_id_is_not_a_valid_parent(
+        self, create_success_response, test_api_client_persistent
+    ):
+        """
+        Test delete parent (unprocessible entity) when the given parent ID is not a valid parent
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        response = test_api_client.delete(
+            f"{self.base_route}/{response_dict['_id']}/parent/{response_dict['_id']}",
+        )
+        name = response_dict["name"]
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json() == {
+            "detail": f'Object "{name}" is not the parent of object "{name}".'
+        }

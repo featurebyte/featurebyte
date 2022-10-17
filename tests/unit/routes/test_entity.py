@@ -6,17 +6,20 @@ from http import HTTPStatus
 import pytest
 from bson.objectid import ObjectId
 
-from tests.unit.routes.base import BaseApiTestSuite
+from tests.unit.routes.base import BaseRelationshipApiTestSuite
 
 
-class TestEntityApi(BaseApiTestSuite):
+class TestEntityApi(BaseRelationshipApiTestSuite):
     """
     TestEntityApi class
     """
 
     class_name = "Entity"
     base_route = "/entity"
-    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/entity.json")
+    unknown_id = ObjectId()
+    payload = BaseRelationshipApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/entity.json"
+    )
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
@@ -44,6 +47,16 @@ class TestEntityApi(BaseApiTestSuite):
                     "type": "type_error.str",
                 }
             ],
+        )
+    ]
+    create_parent_unprocessable_payload_expected_detail_pairs = [
+        (
+            {
+                "id": str(unknown_id),
+                "data_type": "event_data",
+                "data_id": str(ObjectId()),
+            },
+            f'Entity (id: "{unknown_id}") not found. Please save the Entity object first.',
         )
     ]
 
@@ -77,8 +90,16 @@ class TestEntityApi(BaseApiTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
+            payload["name"] = f'{self.payload["name"]}_{i}'
             payload["serving_name"] = f'{payload["serving_name"]}_{i}'
             yield payload
+
+    @staticmethod
+    def prepare_parent_payload(payload):
+        """Create parent payload"""
+        payload["data_type"] = "event_data"
+        payload["data_id"] = str(ObjectId())
+        return payload
 
     def test_update_200(self, create_success_response, test_api_client_persistent):
         """
@@ -120,54 +141,6 @@ class TestEntityApi(BaseApiTestSuite):
         results = response.json()
         assert [doc["name"] for doc in results] == ["Customer", "customer"]
 
-    def test_create_201__entity_relationship(
-        self, create_success_response, test_api_client_persistent
-    ):
-        """
-        Test entity relationship update (success)
-        """
-        test_api_client, _ = test_api_client_persistent
-        response_dict = create_success_response.json()
-        entity_cust_id = response_dict["_id"]
-
-        payload = {"name": "user", "serving_name": "ser_id"}
-        response = test_api_client.post(self.base_route, json=payload)
-        entity_user_id = response.json()["_id"]
-
-        # add user as parent entity to customer entity
-        data_id = str(ObjectId())
-        parent = {"id": entity_user_id, "data_type": "event_data", "data_id": data_id}
-        response = test_api_client.post(f"{self.base_route}/{entity_cust_id}/parent", json=parent)
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.CREATED
-        assert response_dict == {
-            "_id": entity_cust_id,
-            "user_id": response_dict["user_id"],
-            "name": "customer",
-            "created_at": response_dict["created_at"],
-            "updated_at": response_dict["updated_at"],
-            "ancestor_ids": [entity_user_id],
-            "parents": [parent],
-            "serving_names": ["cust_id"],
-        }
-
-        # remove user as parent entity to customer entity
-        response = test_api_client.delete(
-            f"{self.base_route}/{entity_cust_id}/parent/{parent['id']}"
-        )
-        response_dict = response.json()
-        assert response.status_code == HTTPStatus.OK
-        assert response_dict == {
-            "_id": entity_cust_id,
-            "user_id": response_dict["user_id"],
-            "name": "customer",
-            "created_at": response_dict["created_at"],
-            "updated_at": response_dict["updated_at"],
-            "ancestor_ids": [],
-            "parents": [],
-            "serving_names": ["cust_id"],
-        }
-
     def test_update_404(self, test_api_client_persistent):
         """
         Test entity update (not found)
@@ -183,37 +156,6 @@ class TestEntityApi(BaseApiTestSuite):
                 f'Entity (id: "{unknown_entity_id}") not found. Please save the Entity object first.'
             )
         }
-
-    def test_update_422__create_entity_relationship__parent_not_found(
-        self, create_success_response, test_api_client_persistent
-    ):
-        """
-        Test entity relationship update (not found)
-        """
-        test_api_client, _ = test_api_client_persistent
-        response_dict = create_success_response.json()
-        unknown_entity_id = ObjectId()
-        expected = {
-            "detail": (
-                f'Entity (id: "{unknown_entity_id}") not found. Please save the Entity object first.'
-            )
-        }
-        response = test_api_client.post(
-            f"{self.base_route}/{response_dict['_id']}/parent",
-            json={
-                "id": str(unknown_entity_id),
-                "data_type": "event_data",
-                "data_id": str(ObjectId()),
-            },
-        )
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == expected
-
-        response = test_api_client.delete(
-            f"{self.base_route}/{response_dict['_id']}/parent/{unknown_entity_id}",
-        )
-        assert response.status_code == HTTPStatus.NOT_FOUND
-        assert response.json() == expected
 
     def test_update_409(self, create_multiple_entries, test_api_client_persistent):
         """ "
@@ -257,33 +199,6 @@ class TestEntityApi(BaseApiTestSuite):
                 "type": "type_error",
             }
         ]
-
-    def test_update_422__create_entity_relationship(
-        self, create_success_response, test_api_client_persistent
-    ):
-        """
-        Test entity relationship update (update error)
-        """
-        test_api_client, _ = test_api_client_persistent
-        response_dict = create_success_response.json()
-        response = test_api_client.post(
-            f"{self.base_route}/{response_dict['_id']}/parent",
-            json={
-                "id": str(response_dict["_id"]),
-                "data_type": "event_data",
-                "data_id": str(ObjectId()),
-            },
-        )
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {"detail": 'Object "customer" cannot be both parent & child.'}
-
-        response = test_api_client.delete(
-            f"{self.base_route}/{response_dict['_id']}/parent/{response_dict['_id']}",
-        )
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {
-            "detail": 'Object "customer" is not the parent of object "customer".'
-        }
 
     def tests_get_name_history(self, test_api_client_persistent, create_success_response):
         """
