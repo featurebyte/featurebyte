@@ -35,7 +35,7 @@ class SemanticService(BaseDocumentService[SemanticModel]):
         assert insert_id == document.id
         return await self.get_document(document_id=insert_id)
 
-    async def update_document(
+    async def update_document(  # type: ignore[override]
         self,
         document_id: ObjectId,
         data: SemanticServiceUpdate,

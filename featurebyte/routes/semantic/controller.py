@@ -13,7 +13,7 @@ from featurebyte.service.relationship import SemanticRelationshipService
 from featurebyte.service.semantic import SemanticService
 
 
-class SemanticController(  # type: ignore[misc]
+class SemanticController(
     BaseDocumentController[SemanticModel, SemanticList],
     RelationshipMixin[SemanticModel, Parent],
 ):
@@ -28,7 +28,7 @@ class SemanticController(  # type: ignore[misc]
         service: SemanticService,
         semantic_relationship_service: SemanticRelationshipService,
     ):
-        super().__init__(service)
+        super().__init__(service)  # type: ignore[arg-type]
         self.relationship_service = semantic_relationship_service
 
     async def create_semantic(
@@ -48,5 +48,5 @@ class SemanticController(  # type: ignore[misc]
         SemanticModel
             Newly created semantic object
         """
-        document = await self.service.create_document(data)  # type: ignore[attr-defined]
+        document = await self.service.create_document(data)
         return cast(SemanticModel, document)
