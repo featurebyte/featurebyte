@@ -97,9 +97,7 @@ async def add_parent(
     Create entity relationship
     """
     controller = request.state.app_container.entity_controller
-    entity: EntityModel = await controller.create_entity_relationship(
-        entity_id=entity_id, data=data
-    )
+    entity: EntityModel = await controller.create_relationship(data=data, child_id=entity_id)
     return entity
 
 
@@ -111,8 +109,8 @@ async def remove_parent(
     Remove entity relationship
     """
     controller = request.state.app_container.entity_controller
-    entity: EntityModel = await controller.remove_entity_relationship(
-        entity_id=entity_id, parent_entity_id=parent_entity_id
+    entity: EntityModel = await controller.remove_relationship(
+        parent_id=parent_entity_id, child_id=entity_id
     )
     return entity
 

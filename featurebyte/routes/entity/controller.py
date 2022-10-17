@@ -8,7 +8,11 @@ from typing import cast
 from bson.objectid import ObjectId
 
 from featurebyte.models.entity import EntityModel, ParentEntity
-from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
+from featurebyte.routes.common.base import (
+    BaseDocumentController,
+    GetInfoControllerMixin,
+    RelationshipMixin,
+)
 from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityList, EntityUpdate
 from featurebyte.service.entity import EntityService
 from featurebyte.service.relationship import EntityRelationshipService
@@ -17,6 +21,7 @@ from featurebyte.service.relationship import EntityRelationshipService
 class EntityController(  # type: ignore[misc]
     GetInfoControllerMixin[EntityInfo],
     BaseDocumentController[EntityModel, EntityList],
+    RelationshipMixin[EntityModel, ParentEntity],
 ):
     """
     Entity Controller
@@ -30,7 +35,7 @@ class EntityController(  # type: ignore[misc]
         entity_relationship_service: EntityRelationshipService,
     ):
         super().__init__(service)
-        self.entity_relationship_service = entity_relationship_service
+        self.relationship_service = entity_relationship_service
 
     async def create_entity(
         self,
@@ -77,52 +82,3 @@ class EntityController(  # type: ignore[misc]
         )
         assert document is not None
         return document
-
-    async def create_entity_relationship(
-        self, entity_id: ObjectId, data: ParentEntity
-    ) -> EntityModel:
-        """
-        Create entity relationship at persistent
-
-        Parameters
-        ----------
-        entity_id: ObjectId
-            Child entity ID
-        data: ParentEntity
-            Parent entity payload
-
-        Returns
-        -------
-        EntityModel
-            Entity model with newly created relationship
-        """
-        document = await self.entity_relationship_service.add_relationship(
-            parent=data, child_id=entity_id
-        )
-        return cast(EntityModel, document)
-
-    async def remove_entity_relationship(
-        self,
-        entity_id: ObjectId,
-        parent_entity_id: ObjectId,
-    ) -> EntityModel:
-        """
-        Remove Entity relationship at persistent
-
-        Parameters
-        ----------
-        entity_id: ObjectId
-            Child entity ID
-        parent_entity_id: ObjectId
-            Parent entity ID
-
-        Returns
-        -------
-        EntityModel
-            Entity model with specified relationship get removed
-        """
-        document = await self.entity_relationship_service.remove_relationship(
-            parent_id=parent_entity_id,
-            child_id=entity_id,
-        )
-        return cast(EntityModel, document)
