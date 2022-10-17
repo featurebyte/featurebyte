@@ -216,7 +216,7 @@ def transaction_dataframe():
     data["amount"] = amount
     data["created_at"] += rng.randint(1, 100, row_number).cumsum() * pd.Timedelta(seconds=1)
     data["created_at"] = data["created_at"].astype(int)
-    data["session_id"] = data["session_id"].sample(frac=1.0).reset_index(drop=True)
+    data["session_id"] = data["session_id"].sample(frac=1.0, random_state=0).reset_index(drop=True)
 
     # add some second-level variation to the event timestamp
     data["event_timestamp"] += rng.randint(0, 3600, len(timestamps)) * pd.Timedelta(seconds=1)
@@ -281,7 +281,7 @@ async def databricks_session_fixture(config, databricks_feature_store):
         CREATE TABLE TEST_TABLE
         USING CSV
         OPTIONS (header "true", inferSchema "true")
-        LOCATION 'dbfs:/FileStore/tables/transactions_data_upper_case_2022_10_14.csv';
+        LOCATION 'dbfs:/FileStore/tables/transactions_data_upper_case_2022_10_17.csv';
         """
     )
 
