@@ -60,6 +60,18 @@ class BaseAdapter:
         Expression
         """
 
+    @classmethod
+    def dateadd_microsecond(
+        cls, quantity_expr: Expression, timestamp_expr: Expression
+    ) -> Expression:
+        """
+        Expression to perform DATEADD using microsecond as the time unit
+
+        Returns
+        -------
+        Expression
+        """
+
 
 class SnowflakeAdapter(BaseAdapter):
     """
@@ -96,6 +108,15 @@ class SnowflakeAdapter(BaseAdapter):
             ),
             expression=make_literal_value(7),
         )
+
+    @classmethod
+    def dateadd_microsecond(
+        cls, quantity_expr: Expression, timestamp_expr: Expression
+    ) -> Expression:
+        output_expr = expressions.Anonymous(
+            this="DATEADD", expressions=["microsecond", quantity_expr, timestamp_expr]
+        )
+        return output_expr
 
 
 class DatabricksAdapter(BaseAdapter):
@@ -139,6 +160,23 @@ class DatabricksAdapter(BaseAdapter):
             ),
             expression=make_literal_value(7),
         )
+
+    @classmethod
+    def dateadd_microsecond(
+        cls, quantity_expr: Expression, timestamp_expr: Expression
+    ) -> Expression:
+        num_microsecond_per_minute = make_literal_value(1e6 * 60)
+        minute_quantity = expressions.Div(this=quantity_expr, expression=num_microsecond_per_minute)
+        microsecond_quantity = expressions.Mod(
+            this=quantity_expr, expression=num_microsecond_per_minute
+        )
+        output_expr = expressions.Anonymous(
+            this="DATEADD", expressions=["minute", minute_quantity, timestamp_expr]
+        )
+        output_expr = expressions.Anonymous(
+            this="DATEADD", expressions=["microsecond", microsecond_quantity, output_expr]
+        )
+        return output_expr
 
 
 def get_sql_adapter(source_type: SourceType) -> BaseAdapter:

@@ -531,6 +531,7 @@ def _test_get_historical_features_with_serving_names(
 
 def check_string_operations(event_view, column_name, limit=100):
     """Test string operations"""
+    event_view = event_view.copy()
     varchar_series = event_view[column_name]
     pandas_frame = varchar_series.preview(limit=limit)
     pandas_series = pandas_frame[pandas_frame.columns[0]]

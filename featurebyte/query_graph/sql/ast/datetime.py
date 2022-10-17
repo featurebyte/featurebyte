@@ -3,12 +3,12 @@ Module for datetime operations related sql generation
 """
 from __future__ import annotations
 
-from typing import Union, cast
+from typing import Literal, Union, cast
 
 from dataclasses import dataclass
 
 import pandas as pd
-from sqlglot import Expression, expressions
+from sqlglot import Expression, expressions, parse_one
 
 from featurebyte.common.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 from featurebyte.query_graph.enum import NodeType
@@ -32,7 +32,7 @@ class DatetimeExtractNode(ExpressionNode):
         prop_expr = expressions.Extract(**params)
         if self.dt_property == "dayofweek":
             return self.context.adapter.adjust_dayofweek(prop_expr)
-        elif self.dt_property == "second":
+        if self.dt_property == "second":
             # remove the fraction component
             return expressions.Floor(this=prop_expr)
         return prop_expr
@@ -82,7 +82,14 @@ class DateDiffNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return self.with_unit("second")
+        # The behaviour of DATEDIFF given a time unit depends on the engine; some engines perform
+        # rounding but others don't. To keep a consistent behaviour, always work in the highest
+        # supported precision (microsecond) and convert the result back to the desired unit
+        # explicitly.
+        working_unit: Literal["microsecond"] = "microsecond"
+        return TimedeltaExtractNode.convert_timedelta_unit(
+            input_expr=self.with_unit(working_unit), input_unit=working_unit, output_unit="second"
+        )
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> DateDiffNode:
@@ -137,13 +144,19 @@ class TimedeltaExtractNode(ExpressionNode):
         -------
         Expression
         """
-        input_unit_milli_seconds = int(pd.Timedelta(1, unit=input_unit).total_seconds() * 1e6)
-        output_unit_milli_seconds = int(pd.Timedelta(1, unit=output_unit).total_seconds() * 1e6)
+
+        def _make_quantity_in_microsecond(unit):
+            quantity = int(pd.Timedelta(1, unit=unit).total_seconds() * 1e6)
+            quantity_expr = make_literal_value(quantity)
+            # cast to LONG type to avoid overflow in some engines (e.g. databricks)
+            quantity_expr = expressions.Cast(this=quantity_expr, to=parse_one("LONG"))
+            return quantity_expr
+
+        input_unit_microsecond = _make_quantity_in_microsecond(input_unit)
+        output_unit_microsecond = _make_quantity_in_microsecond(output_unit)
         converted_expr = expressions.Div(
-            this=expressions.Mul(
-                this=input_expr, expression=make_literal_value(input_unit_milli_seconds)
-            ),
-            expression=make_literal_value(output_unit_milli_seconds),
+            this=expressions.Mul(this=input_expr, expression=input_unit_microsecond),
+            expression=output_unit_microsecond,
         )
         converted_expr = expressions.Paren(this=converted_expr)
         return converted_expr
@@ -175,6 +188,11 @@ class TimedeltaNode(ExpressionNode):
     def sql(self) -> Expression:
         return self.value_expr.sql
 
+    def value_with_unit(self, new_unit: TimedeltaSupportedUnitType) -> Expression:
+        return TimedeltaExtractNode.convert_timedelta_unit(
+            self.value_expr.sql, input_unit=self.unit, output_unit=new_unit
+        )
+
     @classmethod
     def build(cls, context: SQLNodeContext) -> TimedeltaNode:
         input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
@@ -199,10 +217,9 @@ class DateAddNode(ExpressionNode):
     @property
     def sql(self) -> Expression:
         if isinstance(self.timedelta_node, TimedeltaNode):
-            # timedelta is constructed from to_timedelta()
             date_add_args = [
-                self.timedelta_node.unit,
-                self.timedelta_node.sql,
+                "microsecond",
+                self.timedelta_node.value_with_unit("microsecond"),
                 self.input_date_node.sql,
             ]
         elif isinstance(self.timedelta_node, DateDiffNode):
@@ -213,13 +230,15 @@ class DateAddNode(ExpressionNode):
                 self.input_date_node.sql,
             ]
         else:
-            # timedelta is a constant value
+            quantity_expr = TimedeltaExtractNode.convert_timedelta_unit(
+                self.timedelta_node.sql, input_unit="second", output_unit="microsecond"
+            )
             date_add_args = [
-                "second",
-                self.timedelta_node.sql,
+                "microsecond",
+                quantity_expr,
                 self.input_date_node.sql,
             ]
-        output_expr = expressions.Anonymous(this="DATEADD", expressions=date_add_args)
+        output_expr = self.context.adapter.dateadd_microsecond(date_add_args[1], date_add_args[2])
         return output_expr
 
     @classmethod
