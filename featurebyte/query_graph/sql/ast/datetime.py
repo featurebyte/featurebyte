@@ -230,14 +230,12 @@ class DateAddNode(ExpressionNode):
     def sql(self) -> Expression:
         if isinstance(self.timedelta_node, TimedeltaNode):
             date_add_args = [
-                "microsecond",
                 self.timedelta_node.value_with_unit("microsecond"),
                 self.input_date_node.sql,
             ]
         elif isinstance(self.timedelta_node, DateDiffNode):
             # timedelta is the result of date difference
             date_add_args = [
-                "microsecond",
                 self.timedelta_node.with_unit("microsecond"),
                 self.input_date_node.sql,
             ]
@@ -246,11 +244,10 @@ class DateAddNode(ExpressionNode):
                 self.timedelta_node.sql, input_unit="second", output_unit="microsecond"
             )
             date_add_args = [
-                "microsecond",
                 quantity_expr,
                 self.input_date_node.sql,
             ]
-        output_expr = self.context.adapter.dateadd_microsecond(date_add_args[1], date_add_args[2])
+        output_expr = self.context.adapter.dateadd_microsecond(*date_add_args)
         return output_expr
 
     @classmethod
