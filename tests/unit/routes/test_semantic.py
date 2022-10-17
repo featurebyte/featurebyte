@@ -33,7 +33,7 @@ class TestSemanticApi(BaseRelationshipApiTestSuite):
         """Post multiple success responses"""
         _ = api_client
         semantic_names = ["EVENT_ID", "EVENT_TIMESTAMP", "ITEM_ID"]
-        for i, semantic in enumerate(semantic_names):
+        for semantic in semantic_names:
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["name"] = semantic
