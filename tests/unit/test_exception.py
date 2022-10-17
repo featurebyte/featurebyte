@@ -26,3 +26,14 @@ def test_response_exception__json_text_response():
     assert str(response_exception) == "some error"
     assert response_exception.text == '{"detail": "some error"}'
     assert response_exception.status_code == 500
+
+
+def test_response_exception__plain_text_response():
+    """Test response exception for plain text 500 response"""
+    response = Response()
+    response._content = bytes("some error", "utf-8")
+    response.status_code = 500
+    response_exception = ResponseException(response=response)
+    assert str(response_exception) == "some error"
+    assert response_exception.text == "some error"
+    assert response_exception.status_code == 500
