@@ -1,6 +1,7 @@
 """
 This module contains Semantic related models
 """
+# pylint: disable=too-few-public-methods
 from typing import List
 
 from enum import Enum

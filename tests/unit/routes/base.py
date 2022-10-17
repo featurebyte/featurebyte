@@ -148,7 +148,7 @@ class BaseApiTestSuite:
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
         output = []
-        for i, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
+        for _, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
             # payload name is set here as we need the exact name value for test_list_200 test
             response = test_api_client.post(f"{self.base_route}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
@@ -572,6 +572,9 @@ class BaseRelationshipApiTestSuite(BaseApiTestSuite):
     def test_delete_parent_422__when_id_is_not_a_valid_parent(
         self, create_success_response, test_api_client_persistent
     ):
+        """
+        Test delete parent (unprocessible entity) when the given parent ID is not a valid parent
+        """
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
         response = test_api_client.delete(

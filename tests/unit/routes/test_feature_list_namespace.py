@@ -106,7 +106,7 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
             user=user, persistent=persistent
         )
         output = []
-        for i, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
+        for _, payload in enumerate(self.multiple_success_payload_generator(test_api_client)):
             # payload name is set here as we need the exact name value for test_list_200 test
             document = await feature_list_namespace_service.create_document(
                 data=FeatureListNamespaceModel(**payload)
