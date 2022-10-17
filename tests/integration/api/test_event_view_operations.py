@@ -138,9 +138,7 @@ def pyramid_sum(event_view, group_by_col, window, numeric_column, name):
 
 
 @pytest.mark.parametrize("event_data", ["databricks", "snowflake"], indirect=True)
-def test_query_object_operation_on_snowflake_source(
-    transaction_data_upper_case, event_data, feature_manager
-):
+def test_query_object_operation(transaction_data_upper_case, event_data, feature_manager):
     """
     Test EventView operations for an EventData
     """
