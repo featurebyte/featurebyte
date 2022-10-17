@@ -535,6 +535,23 @@ class BaseRelationshipApiTestSuite(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == expected_message
 
+    def test_create_parent_422__child_not_found(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """
+        Test create parent with non-existent child ID
+        """
+        test_api_client, _ = test_api_client_persistent
+        create_success_response_dict = create_success_response.json()
+        unknown_id = ObjectId()
+        response = test_api_client.post(
+            f"{self.base_route}/{unknown_id}/parent",
+            json=self.prepare_parent_payload({"id": create_success_response_dict["_id"]}),
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        expected = f'{self.class_name} (id: "{unknown_id}") not found. Please save the {self.class_name} object first.'
+        assert response.json()["detail"] == expected
+
     def test_create_parent_422__both_parent_and_child(
         self, create_success_response, test_api_client_persistent
     ):
