@@ -55,13 +55,13 @@ class TestEntityApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         entity_id1, entity_id2, entity_id3 = str(ObjectId()), str(ObjectId()), str(ObjectId())
         res_region = test_api_client.post(
-            "/entity", json={"_id": entity_id1, "name": "region", "serving_name": "region"}
+            self.base_route, json={"_id": entity_id1, "name": "region", "serving_name": "region"}
         )
         res_cust = test_api_client.post(
-            "/entity", json={"_id": entity_id2, "name": "customer", "serving_name": "cust_id"}
+            self.base_route, json={"_id": entity_id2, "name": "customer", "serving_name": "cust_id"}
         )
         res_prod = test_api_client.post(
-            "/entity", json={"_id": entity_id3, "name": "product", "serving_name": "prod_id"}
+            self.base_route, json={"_id": entity_id3, "name": "product", "serving_name": "prod_id"}
         )
         assert res_region.status_code == HTTPStatus.CREATED
         assert res_cust.status_code == HTTPStatus.CREATED
@@ -87,20 +87,24 @@ class TestEntityApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
         entity_id = response_dict["_id"]
-        response = test_api_client.patch(f"/entity/{entity_id}", json={"name": "Customer"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{entity_id}", json={"name": "Customer"}
+        )
         assert response.status_code == HTTPStatus.OK
         result = response.json()
         assert result["name"] == "Customer"
 
         # conflict due the name already exist (event if it is the same as the existing one)
-        response = test_api_client.patch(f"/entity/{entity_id}", json={"name": "Customer"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{entity_id}", json={"name": "Customer"}
+        )
         assert response.status_code == HTTPStatus.CONFLICT
         assert response.json()["detail"] == (
             'Entity (name: "Customer") already exists. Get the existing object by `Entity.get(name="Customer")`.'
         )
 
         # test get audit records
-        response = test_api_client.get(f"/entity/audit/{entity_id}")
+        response = test_api_client.get(f"{self.base_route}/audit/{entity_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert results["total"] == 2
@@ -111,10 +115,58 @@ class TestEntityApi(BaseApiTestSuite):
         ]
 
         # test get default_feature_job_setting_history
-        response = test_api_client.get(f"/entity/history/name/{entity_id}")
+        response = test_api_client.get(f"{self.base_route}/history/name/{entity_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert [doc["name"] for doc in results] == ["Customer", "customer"]
+
+    def test_create_201__entity_relationship(
+        self, create_success_response, test_api_client_persistent
+    ):
+        """
+        Test entity relationship update (success)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        entity_cust_id = response_dict["_id"]
+
+        payload = {"name": "user", "serving_name": "ser_id"}
+        response = test_api_client.post(self.base_route, json=payload)
+        entity_user_id = response.json()["_id"]
+
+        # add user as parent entity to customer entity
+        data_id = str(ObjectId())
+        parent = {"id": entity_user_id, "data_type": "event_data", "data_id": data_id}
+        response = test_api_client.post(f"{self.base_route}/{entity_cust_id}/parent", json=parent)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED
+        assert response_dict == {
+            "_id": entity_cust_id,
+            "user_id": response_dict["user_id"],
+            "name": "customer",
+            "created_at": response_dict["created_at"],
+            "updated_at": response_dict["updated_at"],
+            "ancestor_ids": [entity_user_id],
+            "parents": [parent],
+            "serving_names": ["cust_id"],
+        }
+
+        # remove user as parent entity to customer entity
+        response = test_api_client.delete(
+            f"{self.base_route}/{entity_cust_id}/parent/{parent['id']}"
+        )
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+        assert response_dict == {
+            "_id": entity_cust_id,
+            "user_id": response_dict["user_id"],
+            "name": "customer",
+            "created_at": response_dict["created_at"],
+            "updated_at": response_dict["updated_at"],
+            "ancestor_ids": [],
+            "parents": [],
+            "serving_names": ["cust_id"],
+        }
 
     def test_update_404(self, test_api_client_persistent):
         """
@@ -123,7 +175,7 @@ class TestEntityApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         unknown_entity_id = ObjectId()
         response = test_api_client.patch(
-            f"/entity/{unknown_entity_id}", json={"name": "random_name"}
+            f"{self.base_route}/{unknown_entity_id}", json={"name": "random_name"}
         )
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json() == {
@@ -132,13 +184,44 @@ class TestEntityApi(BaseApiTestSuite):
             )
         }
 
+    def test_update_422__create_entity_relationship__parent_not_found(
+        self, create_success_response, test_api_client_persistent
+    ):
+        """
+        Test entity relationship update (not found)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        unknown_entity_id = ObjectId()
+        expected = {
+            "detail": (
+                f'Entity (id: "{unknown_entity_id}") not found. Please save the Entity object first.'
+            )
+        }
+        response = test_api_client.post(
+            f"{self.base_route}/{response_dict['_id']}/parent",
+            json={
+                "id": str(unknown_entity_id),
+                "data_type": "event_data",
+                "data_id": str(ObjectId()),
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json() == expected
+
+        response = test_api_client.delete(
+            f"{self.base_route}/{response_dict['_id']}/parent/{unknown_entity_id}",
+        )
+        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert response.json() == expected
+
     def test_update_409(self, create_multiple_entries, test_api_client_persistent):
         """ "
         Test entity update (conflict)
         """
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.patch(
-            f"/entity/{create_multiple_entries[0]}", json={"name": "customer"}
+            f"{self.base_route}/{create_multiple_entries[0]}", json={"name": "customer"}
         )
         assert response.status_code == HTTPStatus.CONFLICT
         assert response.json() == {
@@ -154,7 +237,7 @@ class TestEntityApi(BaseApiTestSuite):
         """
         test_api_client, _ = test_api_client_persistent
         unknown_entity_id = ObjectId()
-        response = test_api_client.patch(f"/entity/{unknown_entity_id}")
+        response = test_api_client.patch(f"{self.base_route}/{unknown_entity_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {
             "detail": [
@@ -166,7 +249,7 @@ class TestEntityApi(BaseApiTestSuite):
             ]
         }
 
-        response = test_api_client.patch("/entity/abc", json={"name": "anything"})
+        response = test_api_client.patch(f"{self.base_route}/abc", json={"name": "anything"})
         assert response.json()["detail"] == [
             {
                 "loc": ["path", self.id_field_name],
@@ -174,6 +257,33 @@ class TestEntityApi(BaseApiTestSuite):
                 "type": "type_error",
             }
         ]
+
+    def test_update_422__create_entity_relationship(
+        self, create_success_response, test_api_client_persistent
+    ):
+        """
+        Test entity relationship update (update error)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        response = test_api_client.post(
+            f"{self.base_route}/{response_dict['_id']}/parent",
+            json={
+                "id": str(response_dict["_id"]),
+                "data_type": "event_data",
+                "data_id": str(ObjectId()),
+            },
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json() == {"detail": 'Object "customer" cannot be both parent & child.'}
+
+        response = test_api_client.delete(
+            f"{self.base_route}/{response_dict['_id']}/parent/{response_dict['_id']}",
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json() == {
+            "detail": 'Object "customer" is not the parent of object "customer".'
+        }
 
     def tests_get_name_history(self, test_api_client_persistent, create_success_response):
         """
@@ -191,7 +301,7 @@ class TestEntityApi(BaseApiTestSuite):
 
         for name in ["a", "b", "c", "d", "e"]:
             response = test_api_client.patch(
-                f"/entity/{document_id}",
+                f"{self.base_route}/{document_id}",
                 json={"name": name},
             )
             assert response.status_code == HTTPStatus.OK
@@ -204,7 +314,7 @@ class TestEntityApi(BaseApiTestSuite):
             )
 
         # test get default_feature_job_setting_history
-        response = test_api_client.get(f"/entity/history/name/{document_id}")
+        response = test_api_client.get(f"{self.base_route}/history/name/{document_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert list(reversed(results)) == expected_history

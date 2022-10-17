@@ -29,6 +29,7 @@ from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.relationship import EntityRelationshipService
 from featurebyte.service.task_manager import AbstractTaskManager
 from featurebyte.service.version import VersionService
 from featurebyte.storage import Storage
@@ -91,12 +92,19 @@ app_container_config = {
             "name": "version_service",
             "clazz": VersionService,
         },
+        {
+            "name": "entity_relationship_service",
+            "clazz": EntityRelationshipService,
+        },
     ],
     "controllers": [
         {
             "name": "entity_controller",
             "clazz": EntityController,
-            "depends": ["entity_service"],
+            "depends": [
+                "entity_service",
+                "entity_relationship_service",
+            ],
         },
         {
             "name": "event_data_controller",

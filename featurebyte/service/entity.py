@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.entity import EntityModel
-from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityUpdate
+from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 
 
@@ -41,7 +41,7 @@ class EntityService(BaseDocumentService[EntityModel], GetInfoServiceMixin[Entity
     async def update_document(  # type: ignore[override]
         self,
         document_id: ObjectId,
-        data: EntityUpdate,
+        data: EntityServiceUpdate,
         exclude_none: bool = True,
         document: Optional[EntityModel] = None,
         return_document: bool = True,

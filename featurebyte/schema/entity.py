@@ -9,7 +9,7 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.entity import EntityModel
+from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
@@ -39,6 +39,16 @@ class EntityUpdate(FeatureByteBaseModel):
     """
 
     name: StrictStr
+
+
+class EntityServiceUpdate(FeatureByteBaseModel):
+    """
+    Entity service update schema
+    """
+
+    name: Optional[str]
+    ancestor_ids: Optional[List[PydanticObjectId]]
+    parents: Optional[List[ParentEntity]]
 
 
 class EntityBriefInfo(BaseBriefInfo):

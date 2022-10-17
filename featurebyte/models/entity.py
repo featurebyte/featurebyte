@@ -10,12 +10,14 @@ from datetime import datetime
 
 from pydantic import Field, StrictStr
 
+from featurebyte.enum import TableDataType
 from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
+    PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+from featurebyte.models.relationship import Parent, Relationship
 
 
 class EntityNameHistoryEntry(FeatureByteBaseModel):
@@ -32,7 +34,34 @@ class EntityNameHistoryEntry(FeatureByteBaseModel):
     name: StrictStr
 
 
-class EntityModel(FeatureByteBaseDocumentModel):
+class ParentEntity(Parent):
+    """
+    Model for parent entity
+
+    data_type: TableDataType
+        Type of data provided for constructing the entity relationship mapping
+    data_id: PydanticObjectId
+        ID of data provided for constructing the entity relationship mapping
+    """
+
+    data_type: TableDataType
+    data_id: PydanticObjectId
+
+
+class EntityRelationship(Relationship):
+    """
+    Model for entity relationship
+
+    ancestor_ids: List[PydanticObjectId]
+        Ancestor entities of this entity
+    parents: List[ParentEntity]
+        Parent entities of this entity
+    """
+
+    parents: List[ParentEntity] = Field(default_factory=list, allow_mutation=False)  # type: ignore
+
+
+class EntityModel(EntityRelationship):
     """
     Model for Entity
 
@@ -44,6 +73,8 @@ class EntityModel(FeatureByteBaseDocumentModel):
         Name of the serving column
     created_at: datetime
         Datetime when the Entity object was first saved or published
+    updated_at: datetime
+        Datetime when the Entity object was last updated
     """
 
     serving_names: List[StrictStr] = Field(allow_mutation=False)

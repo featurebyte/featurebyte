@@ -9,6 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
+from featurebyte.models.relationship import Parent
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.service.base_document import (
     BaseDocumentService,
@@ -16,8 +17,10 @@ from featurebyte.service.base_document import (
     GetInfoServiceMixin,
     InfoDocument,
 )
+from featurebyte.service.relationship import RelationshipService
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
+ParentT = TypeVar("ParentT", bound=Parent)
 
 
 class BaseDocumentController(Generic[Document, PaginatedDocument]):
@@ -209,3 +212,56 @@ class GetInfoControllerMixin(Generic[InfoDocument]):
         """
         info_document = await self.service.get_info(document_id=document_id, verbose=verbose)
         return info_document
+
+
+class RelationshipMixin(Generic[Document, ParentT]):
+    """
+    RelationshipMixin contains methods to add & remove parent relationship
+    """
+
+    relationship_service: RelationshipService
+
+    async def create_relationship(self, data: ParentT, child_id: ObjectId) -> Document:
+        """
+        Create relationship at persistent
+
+        Parameters
+        ----------
+        data: ParentT
+            Parent payload
+        child_id: ObjectId
+            Child entity ID
+
+        Returns
+        -------
+        Document
+            Document model with newly created relationship
+        """
+        document = await self.relationship_service.add_relationship(parent=data, child_id=child_id)
+        return cast(Document, document)
+
+    async def remove_relationship(
+        self,
+        parent_id: ObjectId,
+        child_id: ObjectId,
+    ) -> Document:
+        """
+        Remove relationship at persistent
+
+        Parameters
+        ----------
+        parent_id: ObjectId
+            Parent ID
+        child_id: ObjectId
+            Child ID
+
+        Returns
+        -------
+        Document
+            Document model with specified relationship get removed
+        """
+        document = await self.relationship_service.remove_relationship(
+            parent_id=parent_id,
+            child_id=child_id,
+        )
+        return cast(Document, document)

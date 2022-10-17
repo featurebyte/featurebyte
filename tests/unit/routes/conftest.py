@@ -33,7 +33,7 @@ def pytest_generate_tests(metafunc):
     Parametrize persistent fixture
     """
     if "persistent" in metafunc.fixturenames:
-        metafunc.parametrize("persistent", ["gitdb", "mongodb"], indirect=True)
+        metafunc.parametrize("persistent", ["mongodb"], indirect=True)
 
 
 @pytest_asyncio.fixture(name="persistent")
