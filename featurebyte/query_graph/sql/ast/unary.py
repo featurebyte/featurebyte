@@ -11,7 +11,8 @@ from sqlglot import Expression, expressions, parse_one
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, make_literal_value
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.util import prepare_unary_input_nodes
 
 

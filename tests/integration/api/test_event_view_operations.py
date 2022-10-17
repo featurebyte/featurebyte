@@ -3,8 +3,9 @@ This module contains session to EventView integration tests
 """
 import numpy as np
 import pandas as pd
+import pytest
 
-from featurebyte import AggFunc, EventData, EventView, FeatureList, to_timedelta
+from featurebyte import AggFunc, EventData, EventView, FeatureList, SourceType, to_timedelta
 from tests.util.helper import get_lagged_series_pandas
 
 
@@ -136,12 +137,13 @@ def pyramid_sum(event_view, group_by_col, window, numeric_column, name):
     return output
 
 
-def test_query_object_operation_on_snowflake_source(
-    transaction_data_upper_case, event_data, feature_manager
-):
+@pytest.mark.parametrize("event_data", ["databricks", "snowflake"], indirect=True)
+def test_query_object_operation(transaction_data_upper_case, event_data, feature_manager):
     """
-    Test loading event view from snowflake source
+    Test EventView operations for an EventData
     """
+    source_type = event_data.feature_store.type
+
     # create event view
     event_view = EventView.from_event_data(event_data)
     assert event_view.columns == [
@@ -166,7 +168,7 @@ def test_query_object_operation_on_snowflake_source(
     check_datetime_operations(event_view, "EVENT_TIMESTAMP")
 
     # check casting operations
-    check_cast_operations(event_view)
+    check_cast_operations(event_view, source_type=source_type)
 
     # check numeric operations
     check_numeric_operations(event_view)
@@ -186,6 +188,9 @@ def test_query_object_operation_on_snowflake_source(
         col for col in output.columns if not col.startswith("str_") and not col.startswith("dt_")
     ]
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
+
+    if source_type == SourceType.DATABRICKS:
+        return
 
     # create some features
     event_view["derived_value_column"] = 1.0 * event_view["USER ID"]
@@ -529,6 +534,7 @@ def _test_get_historical_features_with_serving_names(
 
 def check_string_operations(event_view, column_name, limit=100):
     """Test string operations"""
+    event_view = event_view.copy()
     varchar_series = event_view[column_name]
     pandas_frame = varchar_series.preview(limit=limit)
     pandas_series = pandas_frame[pandas_frame.columns[0]]
@@ -693,7 +699,7 @@ def check_datetime_operations(event_view, column_name, limit=100):
     )
 
 
-def check_cast_operations(event_view, limit=100):
+def check_cast_operations(event_view, source_type, limit=100):
     """Check casting operations"""
     event_view = event_view.copy()
     event_view["AMOUNT_INT"] = event_view["AMOUNT"].astype(int)
@@ -708,12 +714,20 @@ def check_cast_operations(event_view, limit=100):
     expected = df["AMOUNT"].astype(int).astype(str).tolist()
     assert df["AMOUNT_INT"].astype(str).tolist() == expected
 
-    assert (
-        df["AMOUNT_STR"].tolist()
-        == df["AMOUNT"].astype(str).apply(lambda x: "0" if x == "0.0" else x).tolist()
-    )
+    if source_type == SourceType.SNOWFLAKE:
+        pd.testing.assert_series_equal(
+            df["AMOUNT_STR"],
+            df["AMOUNT"].astype(str).apply(lambda x: "0" if x == "0.0" else x),
+            check_names=False,
+        )
+    else:
+        pd.testing.assert_series_equal(
+            df["AMOUNT_STR"], df["AMOUNT"].astype(str), check_names=False
+        )
 
-    assert df["AMOUNT_FLOAT"].tolist() == df["AMOUNT"].astype(float).tolist()
+    pd.testing.assert_series_equal(
+        df["AMOUNT_FLOAT"], df["AMOUNT"].astype(float), check_names=False
+    )
 
     assert df["INT_FROM_BOOL"].tolist() == (df["AMOUNT"] > 50).astype(int).tolist()
     assert df["FLOAT_FROM_BOOL"].tolist() == (df["AMOUNT"] > 50).astype(float).tolist()
@@ -736,8 +750,12 @@ def check_numeric_operations(event_view, limit=100):
     pd.testing.assert_series_equal(df["AMOUNT_ABS"], (df["AMOUNT"] * (-1)).abs(), check_names=False)
     pd.testing.assert_series_equal(df["AMOUNT_SQRT"], np.sqrt(df["AMOUNT"]), check_names=False)
     pd.testing.assert_series_equal(df["AMOUNT_POW_2"], df["AMOUNT"].pow(2), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_FLOOR"], np.floor(df["AMOUNT"]), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_CEIL"], np.ceil(df["AMOUNT"]), check_names=False)
+    pd.testing.assert_series_equal(
+        df["AMOUNT_FLOOR"], np.floor(df["AMOUNT"]), check_names=False, check_dtype=False
+    )
+    pd.testing.assert_series_equal(
+        df["AMOUNT_CEIL"], np.ceil(df["AMOUNT"]), check_names=False, check_dtype=False
+    )
     pd.testing.assert_series_equal(
         df["AMOUNT_INT_MOD_5"].astype(int), df["AMOUNT"].astype(int) % 5, check_names=False
     )

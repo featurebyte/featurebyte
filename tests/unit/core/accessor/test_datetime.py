@@ -19,7 +19,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
         (lambda s: s.dt.day_of_week, '(EXTRACT(dayofweek FROM "TIMESTAMP") + 6) % 7'),
         (lambda s: s.dt.hour, 'EXTRACT(hour FROM "TIMESTAMP")'),
         (lambda s: s.dt.minute, 'EXTRACT(minute FROM "TIMESTAMP")'),
-        (lambda s: s.dt.second, 'EXTRACT(second FROM "TIMESTAMP")'),
+        (lambda s: s.dt.second, 'FLOOR(EXTRACT(second FROM "TIMESTAMP"))'),
     ],
 )
 def test_datetime_property_extraction__timestamp(
@@ -69,27 +69,27 @@ def test_accessor_getattr__timestamp(timestamp_series):
     [
         (
             lambda s: s.dt.day,
-            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 86400000000)',
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(86400000000 AS BIGINT))',
         ),
         (
             lambda s: s.dt.hour,
-            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 3600000000)',
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(3600000000 AS BIGINT))',
         ),
         (
             lambda s: s.dt.minute,
-            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 60000000)',
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(60000000 AS BIGINT))',
         ),
         (
             lambda s: s.dt.second,
-            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 1000000)',
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT))',
         ),
         (
             lambda s: s.dt.millisecond,
-            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 1000)',
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(1000 AS BIGINT))',
         ),
         (
             lambda s: s.dt.microsecond,
-            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * 1 / 1)',
+            '(DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(1 AS BIGINT))',
         ),
     ],
 )
@@ -137,27 +137,27 @@ def test_accessor_getattr__timedelta(timedelta_series):
     [
         (
             lambda s: s.dt.day,
-            '("CUST_ID" * 1000000 / 86400000000)',
+            '("CUST_ID" * CAST(1000000 AS BIGINT) / CAST(86400000000 AS BIGINT))',
         ),
         (
             lambda s: s.dt.hour,
-            '("CUST_ID" * 1000000 / 3600000000)',
+            '("CUST_ID" * CAST(1000000 AS BIGINT) / CAST(3600000000 AS BIGINT))',
         ),
         (
             lambda s: s.dt.minute,
-            '("CUST_ID" * 1000000 / 60000000)',
+            '("CUST_ID" * CAST(1000000 AS BIGINT) / CAST(60000000 AS BIGINT))',
         ),
         (
             lambda s: s.dt.second,
-            '("CUST_ID" * 1000000 / 1000000)',
+            '("CUST_ID" * CAST(1000000 AS BIGINT) / CAST(1000000 AS BIGINT))',
         ),
         (
             lambda s: s.dt.millisecond,
-            '("CUST_ID" * 1000000 / 1000)',
+            '("CUST_ID" * CAST(1000000 AS BIGINT) / CAST(1000 AS BIGINT))',
         ),
         (
             lambda s: s.dt.microsecond,
-            '("CUST_ID" * 1000000 / 1)',
+            '("CUST_ID" * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT))',
         ),
     ],
 )

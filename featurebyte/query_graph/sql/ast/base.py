@@ -3,15 +3,14 @@ Module containing base classes and functions for building syntax tree
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Type, TypeVar
+from typing import Optional, Type, TypeVar
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from sqlglot import Expression, expressions, parse_one, select
+from sqlglot import Expression, expressions, select
 
-from featurebyte.common.typing import is_scalar_nan
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node import Node
@@ -277,29 +276,6 @@ class ExpressionNode(SQLNode, ABC):
             A sqlglot Expression object
         """
         return select(self.sql).from_(self.table_node.sql_nested())
-
-
-def make_literal_value(value: Any, cast_as_timestamp: bool = False) -> expressions.Expression:
-    """Create a sqlglot literal value
-
-    Parameters
-    ----------
-    value : Any
-        The literal value
-    cast_as_timestamp : bool
-        Whether to cast the value to timestamp
-
-    Returns
-    -------
-    Expression
-    """
-    if is_scalar_nan(value):
-        return expressions.Null()
-    if cast_as_timestamp:
-        return parse_one(f"CAST('{str(value)}' AS TIMESTAMP)")
-    if isinstance(value, str):
-        return expressions.Literal.string(value)
-    return expressions.Literal.number(value)
 
 
 def has_window_function(expression: Expression) -> bool:

@@ -6,7 +6,7 @@ from __future__ import annotations
 import pandas as pd
 from sqlglot import expressions, select
 
-from featurebyte.query_graph.sql.ast.base import make_literal_value
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
 
 def construct_dataframe_sql_expr(

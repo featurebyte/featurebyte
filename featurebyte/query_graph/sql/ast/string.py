@@ -11,7 +11,8 @@ from sqlglot import Expression, expressions
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql import expression as fb_expressions
-from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, make_literal_value
+from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.util import prepare_unary_input_nodes
 
 
@@ -85,16 +86,9 @@ class TrimNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        expression_class = {
-            "left": fb_expressions.LTrim,
-            "right": fb_expressions.RTrim,
-            "both": fb_expressions.Trim,
-        }[self.side]
-        if self.character:
-            return expression_class(
-                this=self.expr.sql, character=make_literal_value(self.character)
-            )
-        return expression_class(this=self.expr.sql)
+        return self.context.adapter.str_trim(
+            expr=self.expr.sql, character=self.character, side=self.side
+        )
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> TrimNode:
