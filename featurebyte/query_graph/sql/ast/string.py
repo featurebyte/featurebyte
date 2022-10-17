@@ -86,7 +86,7 @@ class TrimNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return self.context.adapter.trim(
+        return self.context.adapter.str_trim(
             expr=self.expr.sql, character=self.character, side=self.side
         )
 

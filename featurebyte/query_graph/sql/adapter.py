@@ -38,7 +38,7 @@ class BaseAdapter:
 
     @classmethod
     @abstractmethod
-    def trim(
+    def str_trim(
         cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
     ) -> Expression:
         """
@@ -108,7 +108,7 @@ class SnowflakeAdapter(BaseAdapter):
         )
 
     @classmethod
-    def trim(
+    def str_trim(
         cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
     ) -> Expression:
         expression_class = {
@@ -151,7 +151,7 @@ class DatabricksAdapter(BaseAdapter):
         return expressions.Anonymous(this="UNIX_TIMESTAMP", expressions=[timestamp_expr])
 
     @classmethod
-    def trim(
+    def str_trim(
         cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
     ) -> Expression:
         if character is None:
