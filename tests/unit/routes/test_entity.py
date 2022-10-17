@@ -137,9 +137,7 @@ class TestEntityApi(BaseApiTestSuite):
         # add user as parent entity to customer entity
         data_id = str(ObjectId())
         parent = {"id": entity_user_id, "data_type": "event_data", "data_id": data_id}
-        response = test_api_client.post(
-            f"{self.base_route}/{entity_cust_id}/relationship", json=parent
-        )
+        response = test_api_client.post(f"{self.base_route}/{entity_cust_id}/parent", json=parent)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.CREATED
         assert response_dict == {
@@ -155,7 +153,7 @@ class TestEntityApi(BaseApiTestSuite):
 
         # remove user as parent entity to customer entity
         response = test_api_client.delete(
-            f"{self.base_route}/{entity_cust_id}/relationship/{parent['id']}"
+            f"{self.base_route}/{entity_cust_id}/parent/{parent['id']}"
         )
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
@@ -201,7 +199,7 @@ class TestEntityApi(BaseApiTestSuite):
             )
         }
         response = test_api_client.post(
-            f"{self.base_route}/{response_dict['_id']}/relationship",
+            f"{self.base_route}/{response_dict['_id']}/parent",
             json={
                 "id": str(unknown_entity_id),
                 "data_type": "event_data",
@@ -212,7 +210,7 @@ class TestEntityApi(BaseApiTestSuite):
         assert response.json() == expected
 
         response = test_api_client.delete(
-            f"{self.base_route}/{response_dict['_id']}/relationship/{unknown_entity_id}",
+            f"{self.base_route}/{response_dict['_id']}/parent/{unknown_entity_id}",
         )
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json() == expected
@@ -269,7 +267,7 @@ class TestEntityApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
         response = test_api_client.post(
-            f"{self.base_route}/{response_dict['_id']}/relationship",
+            f"{self.base_route}/{response_dict['_id']}/parent",
             json={
                 "id": str(response_dict["_id"]),
                 "data_type": "event_data",
@@ -280,7 +278,7 @@ class TestEntityApi(BaseApiTestSuite):
         assert response.json() == {"detail": 'Object "customer" cannot be both parent & child.'}
 
         response = test_api_client.delete(
-            f"{self.base_route}/{response_dict['_id']}/relationship/{response_dict['_id']}",
+            f"{self.base_route}/{response_dict['_id']}/parent/{response_dict['_id']}",
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {

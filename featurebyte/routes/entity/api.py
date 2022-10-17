@@ -89,10 +89,8 @@ async def update_entity(
     return entity
 
 
-@router.post(
-    "/{entity_id}/relationship", response_model=EntityModel, status_code=HTTPStatus.CREATED
-)
-async def create_relationship(
+@router.post("/{entity_id}/parent", response_model=EntityModel, status_code=HTTPStatus.CREATED)
+async def add_parent(
     request: Request, entity_id: PydanticObjectId, data: ParentEntity
 ) -> EntityModel:
     """
@@ -105,8 +103,8 @@ async def create_relationship(
     return entity
 
 
-@router.delete("/{entity_id}/relationship/{parent_entity_id}", response_model=EntityModel)
-async def remove_relationship(
+@router.delete("/{entity_id}/parent/{parent_entity_id}", response_model=EntityModel)
+async def remove_parent(
     request: Request, entity_id: PydanticObjectId, parent_entity_id: PydanticObjectId
 ) -> EntityModel:
     """

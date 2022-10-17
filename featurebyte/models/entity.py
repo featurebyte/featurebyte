@@ -74,7 +74,7 @@ class EntityModel(EntityRelationship):
     created_at: datetime
         Datetime when the Entity object was first saved or published
     updated_at: datetime
-        Datetime when the Entity object get updated
+        Datetime when the Entity object was last updated
     """
 
     serving_names: List[StrictStr] = Field(allow_mutation=False)
