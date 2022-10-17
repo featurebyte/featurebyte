@@ -154,10 +154,10 @@ class TimedeltaExtractNode(ExpressionNode):
 
         input_unit_microsecond = _make_quantity_in_microsecond(input_unit)
         output_unit_microsecond = _make_quantity_in_microsecond(output_unit)
-        converted_expr = expressions.Div(
-            this=expressions.Mul(this=input_expr, expression=input_unit_microsecond),
-            expression=output_unit_microsecond,
+        conversion_factor_expr = expressions.Div(
+            this=input_unit_microsecond, expression=output_unit_microsecond
         )
+        converted_expr = expressions.Mul(this=input_expr, expression=conversion_factor_expr)
         converted_expr = expressions.Paren(this=converted_expr)
         return converted_expr
 
