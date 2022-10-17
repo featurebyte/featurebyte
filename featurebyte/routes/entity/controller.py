@@ -1,5 +1,5 @@
 """
-Entity API routes
+Entity API route controller
 """
 from __future__ import annotations
 

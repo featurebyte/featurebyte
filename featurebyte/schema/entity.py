@@ -17,7 +17,7 @@ from featurebyte.schema.common.operation import DictProject
 
 class EntityCreate(FeatureByteBaseModel):
     """
-    Entity Creation schema
+    Entity creation schema
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")

@@ -71,6 +71,7 @@ class TestEventDataApi(BaseApiTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
+            payload["name"] = f'{self.payload["name"]}_{i}'
             tabular_source = payload["tabular_source"]
             payload["tabular_source"] = {
                 "feature_store_id": tabular_source["feature_store_id"],

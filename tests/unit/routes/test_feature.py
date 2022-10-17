@@ -144,6 +144,7 @@ class TestFeatureApi(BaseApiTestSuite):
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
+            payload["name"] = f'{self.payload["name"]}_{i}'
             payload["feature_namespace_id"] = str(ObjectId())
             tabular_source = payload["tabular_source"]
             payload["tabular_source"] = {
