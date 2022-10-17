@@ -344,7 +344,9 @@ def test_date_difference(input_node):
     input_nodes = [column1, column2]
     context = make_context(parameters={}, input_sql_nodes=input_nodes)
     node = DateDiffNode.build(context)
-    assert node.sql.sql() == "DATEDIFF(second, b, a)"
+    assert node.sql.sql() == (
+        "(DATEDIFF(microsecond, b, a) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT))"
+    )
 
 
 def test_timedelta(input_node):
@@ -364,7 +366,9 @@ def test_date_add__timedelta(input_node):
     date_column = make_str_expression_node(table_node=input_node, expr="date_col")
     context = make_context(parameters={}, input_sql_nodes=[date_column, timedelta_node])
     date_add_node = DateAddNode.build(context)
-    assert date_add_node.sql.sql() == "DATEADD(second, num_seconds, date_col)"
+    assert date_add_node.sql.sql() == (
+        "DATEADD(microsecond, (num_seconds * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)), date_col)"
+    )
 
 
 def test_date_add__datediff(input_node):
@@ -389,18 +393,20 @@ def test_date_add__constant(input_node):
         node_type=None, parameters={"value": 3600}, input_sql_nodes=[date_column]
     )
     date_add_node = DateAddNode.build(context)
-    assert date_add_node.sql.sql() == "DATEADD(second, 3600, date_col)"
+    assert date_add_node.sql.sql() == (
+        "DATEADD(microsecond, (3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)), date_col)"
+    )
 
 
 @pytest.mark.parametrize(
     "input_unit, output_unit, expected",
     [
-        ("second", "minute", "(date_col * 1000000 / 60000000)"),
-        ("hour", "minute", "(date_col * 3600000000 / 60000000)"),
-        ("minute", "minute", "(date_col * 60000000 / 60000000)"),
-        ("second", "minute", "(date_col * 1000000 / 60000000)"),
-        ("millisecond", "minute", "(date_col * 1000 / 60000000)"),
-        ("microsecond", "minute", "(date_col * 1 / 60000000)"),
+        ("second", "minute", "(date_col * CAST(1000000 AS BIGINT) / CAST(60000000 AS BIGINT))"),
+        ("hour", "minute", "(date_col * CAST(3600000000 AS BIGINT) / CAST(60000000 AS BIGINT))"),
+        ("minute", "minute", "(date_col * CAST(60000000 AS BIGINT) / CAST(60000000 AS BIGINT))"),
+        ("second", "minute", "(date_col * CAST(1000000 AS BIGINT) / CAST(60000000 AS BIGINT))"),
+        ("millisecond", "minute", "(date_col * CAST(1000 AS BIGINT) / CAST(60000000 AS BIGINT))"),
+        ("microsecond", "minute", "(date_col * CAST(1 AS BIGINT) / CAST(60000000 AS BIGINT))"),
     ],
 )
 def test_convert_timedelta_unit(input_node, input_unit, output_unit, expected):
