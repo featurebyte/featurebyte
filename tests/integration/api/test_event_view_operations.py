@@ -165,12 +165,13 @@ def assert_feature_preview_output_equal(actual, expected):
             assert actual[k] == expected[k]
 
 
-@pytest.mark.parametrize("event_data", ["databricks"], indirect=True)
+@pytest.mark.parametrize("event_data", ["databricks", "snowflake"], indirect=True)
 def test_query_object_operation(transaction_data_upper_case, event_data, feature_manager):
     """
     Test EventView operations for an EventData
     """
     source_type = event_data.feature_store.type
+    count_dict_supported = source_type == SourceType.SNOWFLAKE
 
     # create event view
     event_view = EventView.from_event_data(event_data)
@@ -261,7 +262,7 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
         },
     )
 
-    if source_type != SourceType.DATABRICKS:
+    if count_dict_supported:
         # preview count per category features
         df_feature_preview = feature_group_per_category.preview(preview_param)
         assert df_feature_preview.shape[0] == 1
@@ -330,10 +331,9 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
     )
 
     special_feature = create_feature_with_filtered_event_view(event_view)
-    special_feature.save()  # pylint: disable=no-member
-
-    if source_type == SourceType.DATABRICKS:
-        return
+    if source_type == SourceType.SNOWFLAKE:
+        # should only save once since the feature names are the same
+        special_feature.save()  # pylint: disable=no-member
 
     # add iet entropy
     feature_group["iet_entropy_24h"] = iet_entropy(
@@ -347,41 +347,39 @@ def test_query_object_operation(transaction_data_upper_case, event_data, feature
     )["amount_sum_24h"]
 
     # preview a more complex feature group (multiple group by, some have the same tile_id)
-    feature_group_combined = FeatureList(
-        [
-            feature_group["COUNT_2h"],
-            feature_group["iet_entropy_24h"],
-            feature_group["pyramid_sum_24h"],
-            feature_group["amount_sum_24h"],
-            feature_group_per_category["COUNT_BY_ACTION_24h"],
-            special_feature,
-        ],
-        name="My FeatureList",
-    )[
-        [
-            "COUNT_2h",
-            "COUNT_BY_ACTION_24h",
-            "NUM_PURCHASE_7d",
-            "iet_entropy_24h",
-            "pyramid_sum_24h",
-            "amount_sum_24h",
-        ]
+    features = [
+        feature_group["COUNT_2h"],
+        feature_group["iet_entropy_24h"],
+        feature_group["pyramid_sum_24h"],
+        feature_group["amount_sum_24h"],
+        special_feature,
     ]
+    if count_dict_supported:
+        features.append(feature_group_per_category["COUNT_BY_ACTION_24h"])
+
+    feature_list_combined = FeatureList(
+        features,
+        name="My FeatureList",
+    )
+    feature_group_combined = feature_list_combined[feature_list_combined.feature_names]
     df_feature_preview = feature_group_combined.preview(preview_param)
     expected_amount_sum_24h = 220.18
-    assert_feature_preview_output_equal(
-        df_feature_preview,
-        {
-            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-            "user id": 1,
-            "COUNT_2h": 2,
-            "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
-            "NUM_PURCHASE_7d": 4,
-            "iet_entropy_24h": 0.6971221346393941,
-            "pyramid_sum_24h": 7 * expected_amount_sum_24h,  # 1 + 2 + 4 = 7
-            "amount_sum_24h": expected_amount_sum_24h,
-        },
-    )
+    expected = {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "user id": 1,
+        "COUNT_2h": 2,
+        "COUNT_BY_ACTION_24h": '{\n  "__MISSING__": 1,\n  "add": 6,\n  "detail": 2,\n  "purchase": 4,\n  "remove": 1\n}',
+        "NUM_PURCHASE_7d": 4,
+        "iet_entropy_24h": 0.6971221346393941,
+        "pyramid_sum_24h": 7 * expected_amount_sum_24h,  # 1 + 2 + 4 = 7
+        "amount_sum_24h": expected_amount_sum_24h,
+    }
+    if not count_dict_supported:
+        expected.pop("COUNT_BY_ACTION_24h")
+    assert_feature_preview_output_equal(df_feature_preview, expected)
+
+    if source_type == SourceType.DATABRICKS:
+        return
 
     # Check using a derived numeric column as category
     check_day_of_week_counts(event_view, preview_param)

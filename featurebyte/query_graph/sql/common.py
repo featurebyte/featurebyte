@@ -90,23 +90,6 @@ def sql_to_string(sql_expr: Expression, source_type: SourceType) -> str:
     return cast(str, sql_expr.sql(dialect=get_dialect_from_source_type(source_type), pretty=True))
 
 
-def string_to_sql(sql_string: str, source_type: SourceType) -> Expression:
-    """Convert a SQL text to SQL expression tree
-
-    Parameters
-    ----------
-    sql_string : str
-        SQL text
-    source_type : SourceType
-        The type of the database engine which will be used to determine the SQL dialect
-
-    Returns
-    -------
-    Expression
-    """
-    return parse_one(sql_string, read=get_dialect_from_source_type(source_type))
-
-
 def apply_serving_names_mapping(serving_names: list[str], mapping: dict[str, str]) -> list[str]:
     """Apply user provided mapping to transform the default serving names
 
