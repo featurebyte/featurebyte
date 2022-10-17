@@ -86,7 +86,7 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
     @validator("feature_ids", "entity_ids", "event_data_ids")
     @classmethod
     def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
-        # make sure list of ids always sorted
+        # make sure list of ids get sorted
         return sorted(value)
 
     class Settings:
@@ -215,7 +215,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     @validator("entity_ids", "event_data_ids")
     @classmethod
     def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
-        # make sure list of ids always sorted
+        # make sure list of ids get sorted
         return sorted(value)
 
     @validator("online_enabled", pre=True)

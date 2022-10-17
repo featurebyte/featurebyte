@@ -38,9 +38,7 @@ class EntityUpdate(FeatureByteBaseModel):
     Entity update schema
     """
 
-    name: Optional[StrictStr]
-    add_parent: Optional[ParentEntity]
-    remove_parent: Optional[ParentEntity]
+    name: StrictStr
 
 
 class EntityServiceUpdate(FeatureByteBaseModel):

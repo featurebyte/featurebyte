@@ -10,7 +10,7 @@ from http import HTTPStatus
 from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.entity import EntityModel, EntityNameHistoryEntry
+from featurebyte.models.entity import EntityModel, EntityNameHistoryEntry, ParentEntity
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (
     AuditLogSortByQuery,
@@ -85,6 +85,36 @@ async def update_entity(
     entity: EntityModel = await controller.update_entity(
         entity_id=entity_id,
         data=data,
+    )
+    return entity
+
+
+@router.post(
+    "/{entity_id}/relationship", response_model=EntityModel, status_code=HTTPStatus.CREATED
+)
+async def create_relationship(
+    request: Request, entity_id: PydanticObjectId, data: ParentEntity
+) -> EntityModel:
+    """
+    Create entity relationship
+    """
+    controller = request.state.app_container.entity_controller
+    entity: EntityModel = await controller.create_entity_relationship(
+        entity_id=entity_id, data=data
+    )
+    return entity
+
+
+@router.delete("/{entity_id}/relationship/{parent_entity_id}", response_model=EntityModel)
+async def remove_relationship(
+    request: Request, entity_id: PydanticObjectId, parent_entity_id: PydanticObjectId
+) -> EntityModel:
+    """
+    Remove entity relationship
+    """
+    controller = request.state.app_container.entity_controller
+    entity: EntityModel = await controller.remove_entity_relationship(
+        entity_id=entity_id, parent_entity_id=parent_entity_id
     )
     return entity
 

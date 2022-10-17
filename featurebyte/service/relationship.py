@@ -123,20 +123,21 @@ class RelationshipService(BaseUpdateService):
 
     @staticmethod
     def _validate_remove_relationship_operation(
-        parent_obj: Relationship, child_obj: Relationship, parent: ParentT
+        parent_obj: Relationship, child_obj: Relationship
     ) -> None:
-        if parent not in child_obj.parents:
+        has_relationship = [par for par in child_obj.parents if par.id == parent_obj.id]
+        if not has_relationship:
             raise DocumentUpdateError(
                 f'Object "{parent_obj.name}" is not the parent of object "{child_obj.name}".'
             )
 
-    async def remove_relationship(self, parent: ParentT, child_id: ObjectId) -> Relationship:
+    async def remove_relationship(self, parent_id: ObjectId, child_id: ObjectId) -> Relationship:
         """
         Remove parent & child relationship between two objects
 
         Parameters
         ----------
-        parent: ParentT
+        parent_id: ObjectId
             Parent object
         child_id: ObjectId
             Child object ID
@@ -145,14 +146,12 @@ class RelationshipService(BaseUpdateService):
         -------
         Updated document
         """
-        parent_object = await self.document_service.get_document(document_id=parent.id)
+        parent_object = await self.document_service.get_document(document_id=parent_id)
         child_object = await self.document_service.get_document(document_id=child_id)
         assert isinstance(parent_object, Relationship)
         assert isinstance(child_object, Relationship)
         self._validate_remove_relationship_operation(
-            parent_obj=parent_object,
-            child_obj=child_object,
-            parent=parent,
+            parent_obj=parent_object, child_obj=child_object
         )
 
         async with self.persistent.start_transaction():
@@ -160,9 +159,9 @@ class RelationshipService(BaseUpdateService):
                 document_id=child_id,
                 data=self.prepare_document_update_payload(
                     ancestor_ids=set(child_object.ancestor_ids).difference(  # type: ignore[arg-type]
-                        self.include_object_id(parent_object.ancestor_ids, parent.id)
+                        self.include_object_id(parent_object.ancestor_ids, parent_id)
                     ),
-                    parents=[par for par in child_object.parents if par.id != parent.id],
+                    parents=[par for par in child_object.parents if par.id != parent_id],
                 ),
                 return_document=True,
             )
@@ -177,7 +176,7 @@ class RelationshipService(BaseUpdateService):
                     document_id=obj["_id"],
                     data=self.prepare_document_update_payload(
                         ancestor_ids=set(obj["ancestor_ids"]).difference(
-                            self.include_object_id(parent_object.ancestor_ids, parent.id)
+                            self.include_object_id(parent_object.ancestor_ids, parent_id)
                         ),
                         parents=obj["parents"],
                     ),

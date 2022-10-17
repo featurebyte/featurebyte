@@ -33,5 +33,11 @@ class Relationship(FeatureByteBaseDocumentModel):
     @validator("ancestor_ids")
     @classmethod
     def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
-        # make sure list of ids always sorted
+        # make sure list of ids get sorted
         return sorted(value)
+
+    @validator("parents")
+    @classmethod
+    def _validate_parents(cls, value: List[Parent]) -> List[Parent]:
+        # make sure list of parents get sorted
+        return sorted(value, key=lambda parent: parent.id)

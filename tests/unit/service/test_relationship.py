@@ -278,7 +278,7 @@ async def test_remove_relationship__not_a_parent(family_relationship_service, ob
     """Test remove_relationship when both objects are not in parent & child relationship"""
     with pytest.raises(DocumentUpdateError) as exc:
         await family_relationship_service.remove_relationship(
-            parent=Parent(id=object_a.id), child_id=object_b.id
+            parent_id=object_a.id, child_id=object_b.id
         )
     expected = 'Object "object_a" is not the parent of object "object_b".'
     assert expected in str(exc.value)
@@ -309,7 +309,7 @@ async def test_remove_relationship__case_1(
 
     # check remove parent A from object B
     await family_relationship_service.remove_relationship(
-        parent=Parent(id=object_a.id), child_id=object_b.id
+        parent_id=object_a.id, child_id=object_b.id
     )
 
     expected_map = {
@@ -350,7 +350,7 @@ async def test_remove_relationship__case_2(
 
     # check remove parent B from object C
     await family_relationship_service.remove_relationship(
-        parent=Parent(id=object_b.id), child_id=object_c.id
+        parent_id=object_b.id, child_id=object_c.id
     )
 
     expected_map = {
@@ -391,7 +391,7 @@ async def test_remove_relationship__case_3(
 
     # check remove parent B from object C
     await family_relationship_service.remove_relationship(
-        parent=Parent(id=object_b.id), child_id=object_c.id
+        parent_id=object_b.id, child_id=object_c.id
     )
 
     expected_map = {

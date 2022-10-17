@@ -49,13 +49,12 @@ class EntityService(BaseDocumentService[EntityModel], GetInfoServiceMixin[Entity
         if document is None:
             await self.get_document(document_id=document_id)
 
-        if data.name:
-            # check any conflict with existing documents
-            await self._check_document_unique_constraint(
-                query_filter={"name": data.name},
-                conflict_signature={"name": data.name},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            )
+        # check any conflict with existing documents
+        await self._check_document_unique_constraint(
+            query_filter={"name": data.name},
+            conflict_signature={"name": data.name},
+            resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+        )
 
         await self.persistent.update_one(
             collection_name=self.collection_name,
