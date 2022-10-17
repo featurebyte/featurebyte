@@ -29,7 +29,7 @@ class ResponseException(Exception):
             if resolution:
                 exc_info += resolution
         except JSONDecodeError:
-            pass
+            exc_info = response.text
 
         if exc_info:
             super().__init__(exc_info, *args, **kwargs)
