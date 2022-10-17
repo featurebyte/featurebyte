@@ -4,18 +4,8 @@ This module contains Semantic related models
 # pylint: disable=too-few-public-methods
 from typing import List
 
-from enum import Enum
-
 from featurebyte.models.base import UniqueValuesConstraint
 from featurebyte.models.relationship import Relationship
-
-
-class SemanticName(str, Enum):
-    """Semantic Names"""
-
-    EVENT_ID = "EVENT_ID"
-    EVENT_TIMESTAMP = "EVENT_TIMESTAMP"
-    ITEM_ID = "ITEM_ID"
 
 
 class SemanticModel(Relationship):
@@ -35,8 +25,6 @@ class SemanticModel(Relationship):
     updated_at: datetime
         Datetime when the Entity object was last updated
     """
-
-    name: SemanticName
 
     class Settings:
         """

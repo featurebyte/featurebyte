@@ -8,7 +8,7 @@ from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.relationship import Parent
-from featurebyte.models.semantic import SemanticModel, SemanticName
+from featurebyte.models.semantic import SemanticModel
 from featurebyte.routes.common.schema import PaginationMixin
 
 
@@ -18,7 +18,7 @@ class SemanticCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: SemanticName
+    name: str
 
 
 class SemanticList(PaginationMixin):
