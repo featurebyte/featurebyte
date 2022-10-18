@@ -3,14 +3,18 @@ On-demand tile computation for feature preview
 """
 from __future__ import annotations
 
+from typing import cast
+
 import pandas as pd
-from sqlglot import expressions, parse_one, select
+from sqlglot import Select, expressions, select
 
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
+from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 
 
 class OnDemandTileComputePlan:
@@ -61,7 +65,7 @@ class OnDemandTileComputePlan:
             self.tile_infos.append(tile_info)
             self.processed_agg_ids.add(tile_info.aggregation_id)
 
-    def construct_tile_sqls(self) -> dict[str, expressions.Select]:
+    def construct_tile_sqls(self) -> dict[str, Select]:
         """Construct SQL expressions for all the required tile tables
 
         Returns
@@ -69,14 +73,14 @@ class OnDemandTileComputePlan:
         dict[str, expressions.Expression]
         """
 
-        tile_sqls: dict[str, expressions.Select] = {}
+        tile_sqls: dict[str, Select] = {}
         prev_aliases: dict[str, str] = {}
 
         for tile_info in self.tile_infos:
             # Convert template SQL with concrete start and end timestamps, based on the requested
             # point-in-time and feature window sizes
-            tile_sql_with_start_end = get_tile_sql_from_point_in_time(
-                sql_template=tile_info.sql,
+            tile_sql_with_start_end_expr = get_tile_sql_from_point_in_time(
+                sql_template=tile_info.sql_template,
                 point_in_time=self.point_in_time,
                 frequency=tile_info.frequency,
                 time_modulo_frequency=tile_info.time_modulo_frequency,
@@ -85,8 +89,8 @@ class OnDemandTileComputePlan:
             )
             # Include global tile index that would have been computed by F_TIMESTAMP_TO_INDEX UDF
             # during scheduled tile jobs
-            final_tile_sql = get_tile_sql_parameterized_by_job_settings(
-                tile_sql_with_start_end,
+            tile_sql_expr = get_tile_sql_parameterized_by_job_settings(
+                tile_sql_with_start_end_expr,
                 frequency=tile_info.frequency,
                 time_modulo_frequency=tile_info.time_modulo_frequency,
                 blind_spot=tile_info.blind_spot,
@@ -95,7 +99,6 @@ class OnDemandTileComputePlan:
             # Build wide tile table by joining tile sqls with the same tile_table_id
             tile_table_id = tile_info.tile_table_id
             agg_id = tile_info.aggregation_id
-            tile_sql_expr = parse_one(final_tile_sql)
             assert isinstance(tile_sql_expr, expressions.Subqueryable)
 
             if tile_table_id not in tile_sqls:
@@ -167,7 +170,7 @@ class OnDemandTileComputePlan:
         """
         return self.max_window_size_by_agg_id[aggregation_id]
 
-    def construct_on_demand_tile_ctes(self) -> list[tuple[str, expressions.Select]]:
+    def construct_on_demand_tile_ctes(self) -> list[tuple[str, Select]]:
         """Construct the CTE statements that would compute all the required tiles
 
         Returns
@@ -275,19 +278,19 @@ def compute_start_end_date_from_point_in_time(
 
 
 def get_tile_sql_from_point_in_time(
-    sql_template: str,
+    sql_template: SqlExpressionTemplate,
     point_in_time: str,
     frequency: int,
     time_modulo_frequency: int,
     blind_spot: int,
     window: int,
-) -> str:
+) -> Select:
     """Fill in start date and end date placeholders for template tile SQL
 
     Parameters
     ----------
-    sql_template : str
-        Tile SQL template
+    sql_template : SqlExpressionTemplate
+        Tile SQL template expression
     point_in_time : str
         Point in time in the request
     frequency : int
@@ -301,7 +304,7 @@ def get_tile_sql_from_point_in_time(
 
     Returns
     -------
-    sql
+    Select
     """
     num_tiles = int(window // frequency)
     start_date, end_date = compute_start_end_date_from_point_in_time(
@@ -311,18 +314,22 @@ def get_tile_sql_from_point_in_time(
         blind_spot=blind_spot,
         num_tiles=num_tiles,
     )
-    sql = sql_template
-    sql = sql.replace(InternalName.TILE_START_DATE_SQL_PLACEHOLDER, f"'{start_date}'")
-    sql = sql.replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, f"'{end_date}'")
-    return sql
+    out_expr = sql_template.render(
+        {
+            InternalName.TILE_START_DATE_SQL_PLACEHOLDER: str(start_date),
+            InternalName.TILE_END_DATE_SQL_PLACEHOLDER: str(end_date),
+        },
+        as_str=False,
+    )
+    return cast(Select, out_expr)
 
 
 def get_tile_sql_parameterized_by_job_settings(
-    tile_sql: str,
+    tile_sql_expr: Select,
     frequency: int,
     time_modulo_frequency: int,
     blind_spot: int,
-) -> str:
+) -> Select:
     """Get the final tile SQL code that would have been executed by the tile schedule job
 
     The template SQL code doesn't contain the tile index, which is computed by the tile schedule job
@@ -330,8 +337,8 @@ def get_tile_sql_parameterized_by_job_settings(
 
     Parameters
     ----------
-    tile_sql : str
-        Tile SQL with placeholders alrady filled
+    tile_sql_expr : Select
+        Tile SQL expression with placeholders already filled
     frequency : int
         Frequency in feature job setting
     time_modulo_frequency : int
@@ -341,20 +348,20 @@ def get_tile_sql_parameterized_by_job_settings(
 
     Returns
     -------
-    str
+    Select
     """
     frequency_minute = frequency // 60
-    index_expr = (
-        f"F_TIMESTAMP_TO_INDEX("
-        f"  {InternalName.TILE_START_DATE},"
-        f"  {time_modulo_frequency},"
-        f"  {blind_spot},"
-        f"  {frequency_minute}"
-        f")"
+    f_time_to_index_expr = expressions.Anonymous(
+        this="F_TIMESTAMP_TO_INDEX",
+        expressions=[
+            InternalName.TILE_START_DATE.value,
+            make_literal_value(time_modulo_frequency),
+            make_literal_value(blind_spot),
+            make_literal_value(frequency_minute),
+        ],
     )
-    sql = f"""
-    SELECT *, {index_expr} AS "INDEX" FROM (
-        {tile_sql}
-    )
-    """
-    return sql
+    expr = select(
+        "*",
+        expressions.alias_(expression=f_time_to_index_expr, alias=quoted_identifier("INDEX")),
+    ).from_(tile_sql_expr.subquery())
+    return expr

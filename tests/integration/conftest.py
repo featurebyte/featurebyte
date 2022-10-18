@@ -235,7 +235,7 @@ def transaction_dataframe_upper_case(transaction_data):
 
     # Temporary workaround of setting up test fixture for Databricks feature store due to
     # unavailability of the DBFS API. This file has to be manually uploaded via Databricks UI.
-    GENERATE_CSV_OUTPUT = True
+    GENERATE_CSV_OUTPUT = False
     if GENERATE_CSV_OUTPUT:
         suffix = str(datetime.today().date())
         data.to_csv(f"transactions_data_upper_case_{suffix}.csv", index=False)

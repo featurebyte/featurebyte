@@ -229,6 +229,7 @@ class DateAddNode(ExpressionNode):
     @property
     def sql(self) -> Expression:
         if isinstance(self.timedelta_node, TimedeltaNode):
+            # timedelta is constructed from to_timedelta()
             date_add_args = [
                 self.timedelta_node.value_with_unit("microsecond"),
                 self.input_date_node.sql,
@@ -240,6 +241,7 @@ class DateAddNode(ExpressionNode):
                 self.input_date_node.sql,
             ]
         else:
+            # timedelta is a constant value
             quantity_expr = TimedeltaExtractNode.convert_timedelta_unit(
                 self.timedelta_node.sql, input_unit="second", output_unit="microsecond"
             )

@@ -39,7 +39,7 @@ def construct_cte_sql(
     return cte_expr
 
 
-def quoted_identifier(column_name: str) -> Expression:
+def quoted_identifier(column_name: str) -> expressions.Identifier:
     """Construct a quoted Identifier
 
     Parameters
@@ -52,6 +52,25 @@ def quoted_identifier(column_name: str) -> Expression:
     Expression
     """
     return expressions.Identifier(this=column_name, quoted=True)
+
+
+def get_dialect_from_source_type(source_type: SourceType) -> str | None:
+    """
+    Get the dialect name given SourceType
+
+    Parameters
+    ----------
+    source_type : SourceType
+        Source type information
+
+    Returns
+    -------
+    str | None
+    """
+    dialect = None
+    if source_type == SourceType.DATABRICKS:
+        dialect = "spark"
+    return dialect
 
 
 def sql_to_string(sql_expr: Expression, source_type: SourceType) -> str:
@@ -68,10 +87,7 @@ def sql_to_string(sql_expr: Expression, source_type: SourceType) -> str:
     -------
     str
     """
-    dialect = None
-    if source_type == SourceType.DATABRICKS:
-        dialect = "spark"
-    return cast(str, sql_expr.sql(dialect=dialect, pretty=True))
+    return cast(str, sql_expr.sql(dialect=get_dialect_from_source_type(source_type), pretty=True))
 
 
 def apply_serving_names_mapping(serving_names: list[str], mapping: dict[str, str]) -> list[str]:

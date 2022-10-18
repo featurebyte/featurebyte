@@ -269,7 +269,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggre
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop("sql")
+    info_dict.pop("sql_template")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
@@ -309,7 +309,7 @@ def test_graph_interpreter_on_demand_tile_gen(
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
 
-    sql = info_dict.pop("sql")
+    sql = tile_gen_sqls[0].sql
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -352,6 +352,7 @@ def test_graph_interpreter_on_demand_tile_gen(
         """
     ).strip()
     assert sql == expected_sql
+    info_dict.pop("sql_template")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
@@ -386,7 +387,6 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     info_dict = asdict(info)
 
     aggregation_id = "639a7b70cdfe06f5c2270c167e3ebf139dcb1725"
-    sql = info_dict.pop("sql")
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -424,7 +424,8 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
           tile_index
         """
     ).strip()
-    assert sql == expected_sql
+    assert info.sql == expected_sql
+    info_dict.pop("sql_template")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_422275c11ff21e200f4c47e66149f25c404b7178",
         "aggregation_id": f"avg_{aggregation_id}",
@@ -460,7 +461,8 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     # Check required tile 1 (groupby keys: cust_id)
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    sql = info_dict.pop("sql")
+    sql = info.sql
+    info_dict.pop("sql_template")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
@@ -529,7 +531,8 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     aggregation_id = "3c43724b30c443ac5ac9049578e0e6061173bb69"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
-    sql = info_dict.pop("sql")
+    sql = info.sql
+    info_dict.pop("sql_template")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_6df75fa33c5905ea927c25219b178c8848027e3c",
         "aggregation_id": f"sum_{aggregation_id}",
@@ -680,11 +683,44 @@ def test_graph_interpreter_snowflake(graph):
     ).strip()
     assert sql_template == expected
 
-    # runnable directly in snowflake for testing
-    sql_template = sql_template.replace("FBT_START_DATE", "'2022-04-18 00:00:00'")
-    sql_template = sql_template.replace("FBT_END_DATE", "'2022-04-19 00:00:00'")
-    print()
-    print(sql_template)
+    rendered_template = tile_gen_sql[0].sql_template.render(
+        {
+            InternalName.TILE_START_DATE_SQL_PLACEHOLDER: "2022-04-18 00:00:00",
+            InternalName.TILE_END_DATE_SQL_PLACEHOLDER: "2022-04-19 00:00:00",
+        },
+    )
+    expected = textwrap.dedent(
+        f"""
+        SELECT
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          "CUST_ID",
+          COUNT(*) AS value_count_b77ab5589880bbe509c57a49d70631deb3aadc7d
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, "SERVER_TIMESTAMP") - DATE_PART(EPOCH_SECOND, CAST('2022-04-18 00:00:00' AS TIMESTAMP))) / 3600) AS tile_index
+            FROM (
+                SELECT
+                  *
+                FROM (
+                    SELECT
+                      "SERVER_TIMESTAMP" AS "SERVER_TIMESTAMP",
+                      "CUST_ID" AS "CUST_ID"
+                    FROM "FB_SIMULATE"."PUBLIC"."BROWSING_TS"
+                )
+                WHERE
+                  "SERVER_TIMESTAMP" >= CAST('2022-04-18 00:00:00' AS TIMESTAMP)
+                  AND "SERVER_TIMESTAMP" < CAST('2022-04-19 00:00:00' AS TIMESTAMP)
+            )
+        )
+        GROUP BY
+          tile_index,
+          "CUST_ID"
+        ORDER BY
+          tile_index
+        """
+    ).strip()
+    assert rendered_template == expected
 
 
 def test_graph_interpreter_preview(graph, node_input):
