@@ -115,7 +115,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         ) as mock_get_session:
             mock_get_session.return_value.list_databases.side_effect = credentials_error
             response = test_api_client.post(f"{self.base_route}/database", json=feature_store)
-        assert response.status_code == HTTPStatus.UNAUTHORIZED
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json() == {"detail": str(credentials_error)}
 
     def test_list_schemas__422(self, test_api_client_persistent, create_success_response):

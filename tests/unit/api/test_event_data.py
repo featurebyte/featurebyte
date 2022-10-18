@@ -431,7 +431,7 @@ def test_update_default_job_setting__saved_event_data(saved_event_data, config):
     }
 
 
-@patch("featurebyte.api.event_data.is_notebook")
+@patch("featurebyte.common.env_util.is_notebook")
 @patch("featurebyte.api.event_data.EventData.post_async_task")
 def test_update_default_feature_job_setting__using_feature_job_analysis(
     mock_post_async_task,

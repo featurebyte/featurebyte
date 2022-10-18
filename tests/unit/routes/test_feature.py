@@ -12,7 +12,6 @@ from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
-from featurebyte.exception import CredentialsError
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -238,15 +237,6 @@ class TestFeatureApi(BaseApiTestSuite):
         assert parameters["time_modulo_frequency"] == 3600
         assert parameters["frequency"] == 86400
         assert parameters["blind_spot"] == 86400
-
-    @pytest.mark.skip("Skip feature registry insertion")
-    def test_create_401(self, test_api_client_persistent, mock_insert_feature_registry_fixture):
-        """Test create (unauthorized)"""
-        mock_insert_feature_registry_fixture.side_effect = CredentialsError
-        test_api_client, _ = test_api_client_persistent
-        self.setup_creation_route(test_api_client)
-        response = test_api_client.post(f"{self.base_route}", json=self.payload)
-        assert response.status_code == HTTPStatus.UNAUTHORIZED
 
     def test_create_422__create_new_version(
         self, test_api_client_persistent, create_success_response
