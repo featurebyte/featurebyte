@@ -190,6 +190,11 @@ class EventViewGroupBy(OpsMixin):
         Returns
         -------
         FeatureGroup
+
+        Raises
+        ------
+        ValueError
+            When the aggregation method does not support input variable type
         """
         # pylint: disable=too-many-locals
         node_params = self._prepare_node_parameters(
@@ -206,6 +211,7 @@ class EventViewGroupBy(OpsMixin):
         )
         items: list[Feature | BaseFeatureGroup] = []
         assert isinstance(feature_names, list)
+        assert method is not None
         agg_method = construct_agg_func(agg_func=method)
         for feature_name in feature_names:
             feature_node = self.obj.graph.add_operation(
@@ -215,7 +221,7 @@ class EventViewGroupBy(OpsMixin):
                 input_nodes=[groupby_node],
             )
             # value_column is None for count-like aggregation method
-            input_var_type = self.obj.column_var_type_map.get(value_column, DBVarType.FLOAT)
+            input_var_type = self.obj.column_var_type_map.get(value_column, DBVarType.FLOAT)  # type: ignore
             if self.category:
                 var_type = DBVarType.OBJECT
             else:
