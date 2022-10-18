@@ -167,9 +167,9 @@ def run_groupby_and_get_tile_table_identifier(
             "max_18f02da071613408b0143a6c56a5af146df9f5db",
         ),
         (
-            {"value_column": "col_text"},
+            {"value_column": "col_int"},
             "sf_table_f1800_m300_b600_f3822df3690ac033f56672194a2f224586d0a5bd",
-            "sum_a9bf2acd166f11c20011bfb129c2003d3f652bb8",
+            "sum_aba3063de01da0315c6ce0ee6d134b53035bc15c",
         ),
         (
             {"frequency": "10m"},

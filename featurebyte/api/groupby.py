@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from typeguard import typechecked
 
+from featurebyte.api.agg_func import construct_agg_func
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.event_view import EventView
@@ -190,6 +191,7 @@ class EventViewGroupBy(OpsMixin):
         -------
         FeatureGroup
         """
+        # pylint: disable=too-many-locals
         node_params = self._prepare_node_parameters(
             method=method,
             value_column=value_column,
@@ -204,6 +206,7 @@ class EventViewGroupBy(OpsMixin):
         )
         items: list[Feature | BaseFeatureGroup] = []
         assert isinstance(feature_names, list)
+        agg_method = construct_agg_func(agg_func=method)
         for feature_name in feature_names:
             feature_node = self.obj.graph.add_operation(
                 node_type=NodeType.PROJECT,
@@ -211,11 +214,16 @@ class EventViewGroupBy(OpsMixin):
                 node_output_type=NodeOutputType.SERIES,
                 input_nodes=[groupby_node],
             )
-            if method in {AggFunc.COUNT, AggFunc.NA_COUNT}:
-                var_type = DBVarType.OBJECT if self.category is not None else DBVarType.FLOAT
+            # value_column is None for count-like aggregation method
+            input_var_type = self.obj.column_var_type_map.get(value_column, DBVarType.FLOAT)
+            if self.category:
+                var_type = DBVarType.OBJECT
             else:
-                assert isinstance(value_column, str)
-                var_type = self.obj.column_var_type_map[value_column]
+                if input_var_type not in agg_method.input_output_var_type_map:
+                    raise ValueError(
+                        f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
+                    )
+                var_type = agg_method.input_output_var_type_map[input_var_type]
 
             feature = Feature(
                 name=feature_name,

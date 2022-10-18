@@ -355,3 +355,22 @@ def test_groupby__prune(snowflake_event_view_with_entity):
         {"source": "assign_2", "target": "groupby_1"},
         {"source": "groupby_1", "target": "project_3"},
     ]
+
+
+def test_groupby__aggregation_method_does_not_support_input_var_type(
+    snowflake_event_view_with_entity,
+):
+    """
+    Test aggregation method does not support the input var type
+    """
+    with pytest.raises(ValueError) as exc:
+        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate(
+            value_column="col_text",
+            method="sum",
+            windows=["30m", "1h", "2h"],
+            feature_names=["feat_30m", "feat_1h", "feat_2h"],
+            feature_job_setting=dict(
+                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+            ),
+        )
+    assert 'Aggregation method "sum" does not support "VARCHAR" input variable' in str(exc.value)

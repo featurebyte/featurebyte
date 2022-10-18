@@ -77,11 +77,14 @@ class DatetimeAccessor:
         try:
             return object.__getattribute__(self, item)
         except AttributeError as exc:
+            var_type = (
+                DBVarType.FLOAT if self._node_type == NodeType.TIMEDELTA_EXTRACT else DBVarType.INT
+            )
             if item in self._property_node_params_map:
                 return series_unary_operation(
                     input_series=self._obj,
                     node_type=self._node_type,
-                    output_var_type=DBVarType.INT,
+                    output_var_type=var_type,
                     node_params={"property": self._property_node_params_map[item]},
                     **self._obj.unary_op_series_params(),
                 )

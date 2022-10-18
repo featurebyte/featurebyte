@@ -103,7 +103,7 @@ def test_datetime_property_extraction__timedelta(
     Test datetime accessor function (TimedeltaExtractNode)
     """
     series = accessor_func(timedelta_series)
-    assert series.dtype == DBVarType.INT
+    assert series.dtype == DBVarType.FLOAT
     assert series.node.type == NodeType.TIMEDELTA_EXTRACT
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
@@ -171,7 +171,7 @@ def test_datetime_property_extraction__timedelta_from_int(
     Test datetime accessor function (TimedeltaExtractNode)
     """
     series = accessor_func(timedelta_series_from_int)
-    assert series.dtype == DBVarType.INT
+    assert series.dtype == DBVarType.FLOAT
     assert series.node.type == NodeType.TIMEDELTA_EXTRACT
     assert series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=exp_expression)
