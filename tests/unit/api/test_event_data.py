@@ -21,7 +21,8 @@ from featurebyte.exception import (
     RecordUpdateException,
     TableSchemaHasBeenChangedError,
 )
-from featurebyte.models.event_data import EventDataStatus, FeatureJobSetting
+from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.models.feature_store import DataStatus
 from tests.util.helper import patch_import_package
 
 
@@ -71,7 +72,7 @@ def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
     snowflake_event_data.save()
     assert snowflake_event_data.saved is True
     assert snowflake_event_data.id == previous_id
-    assert snowflake_event_data.status == EventDataStatus.DRAFT
+    assert snowflake_event_data.status == DataStatus.DRAFT
     assert isinstance(snowflake_event_data.created_at, datetime)
     assert isinstance(snowflake_event_data.tabular_source.feature_store_id, ObjectId)
 

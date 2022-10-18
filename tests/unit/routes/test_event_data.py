@@ -7,7 +7,8 @@ from http import HTTPStatus
 import pytest
 from bson import ObjectId
 
-from featurebyte.models.event_data import EventDataModel, EventDataStatus
+from featurebyte.models.event_data import EventDataModel
+from featurebyte.models.feature_store import DataStatus
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -84,7 +85,7 @@ class TestEventDataApi(BaseApiTestSuite):
     def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
-        assert create_success_response.json()["status"] == EventDataStatus.DRAFT
+        assert create_success_response.json()["status"] == DataStatus.DRAFT
 
     @pytest.fixture(name="columns_info")
     def column_info_fixture(self):
@@ -205,7 +206,7 @@ class TestEventDataApi(BaseApiTestSuite):
 
         # the other fields should be unchanged
         event_data_model_dict.pop("default_feature_job_setting")
-        event_data_model_dict["status"] = EventDataStatus.DRAFT
+        event_data_model_dict["status"] = DataStatus.DRAFT
         assert update_response_dict == event_data_model_dict
 
         # test get audit records
@@ -307,11 +308,11 @@ class TestEventDataApi(BaseApiTestSuite):
         assert insert_id
 
         # expect status to be draft
-        assert response_dict["status"] == EventDataStatus.DRAFT
+        assert response_dict["status"] == DataStatus.DRAFT
 
         event_data_update_dict["name"] = "Some other name"
         event_data_update_dict["source"] = "Some other source"
-        event_data_update_dict["status"] = EventDataStatus.PUBLISHED.value
+        event_data_update_dict["status"] = DataStatus.PUBLISHED.value
         response = test_api_client.patch(f"/event_data/{insert_id}", json=event_data_update_dict)
         assert response.status_code == HTTPStatus.OK
         data = response.json()
@@ -330,7 +331,7 @@ class TestEventDataApi(BaseApiTestSuite):
         assert data == event_data_model_dict
 
         # expect status to be updated to published
-        assert data["status"] == EventDataStatus.PUBLISHED
+        assert data["status"] == DataStatus.PUBLISHED
 
     def test_update_fails_invalid_transition(
         self, test_api_client_persistent, event_data_response, event_data_update_dict
@@ -340,7 +341,7 @@ class TestEventDataApi(BaseApiTestSuite):
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = event_data_response.json()
-        event_data_update_dict["status"] = EventDataStatus.DEPRECATED.value
+        event_data_update_dict["status"] = DataStatus.DEPRECATED.value
         response = test_api_client.patch(
             f"/event_data/{response_dict['_id']}", json=event_data_update_dict
         )
@@ -354,12 +355,12 @@ class TestEventDataApi(BaseApiTestSuite):
         # insert a record
         test_api_client, _ = test_api_client_persistent
         current_data = event_data_response.json()
-        assert current_data.pop("status") == EventDataStatus.DRAFT
+        assert current_data.pop("status") == DataStatus.DRAFT
         assert current_data.pop("updated_at") is None
 
         response = test_api_client.patch(
             f"/event_data/{current_data['_id']}",
-            json={**current_data, "status": EventDataStatus.PUBLISHED.value},
+            json={**current_data, "status": DataStatus.PUBLISHED.value},
         )
         assert response.status_code == HTTPStatus.OK
         updated_data = response.json()
@@ -367,7 +368,7 @@ class TestEventDataApi(BaseApiTestSuite):
         assert updated_at > datetime.datetime.fromisoformat(updated_data["created_at"])
 
         # expect status to be published
-        assert updated_data.pop("status") == EventDataStatus.PUBLISHED
+        assert updated_data.pop("status") == DataStatus.PUBLISHED
 
         # the other fields should be unchanged
         assert updated_data == current_data

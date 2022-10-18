@@ -28,6 +28,8 @@ class ItemDataModel(DataModel, FeatureByteBaseDocumentModel):
         Data warehouse connection information & table name tuple
     columns_info: List[ColumnInfo]
         List of event data columns
+    status: DataStatus
+        Status of the ItemData
     event_id_column: str
         Event ID column name
     item_id_column: str

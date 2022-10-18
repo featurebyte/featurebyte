@@ -8,7 +8,8 @@ from typing import Any, Optional
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.event_data import EventDataModel, EventDataStatus
+from featurebyte.models.event_data import EventDataModel
+from featurebyte.models.feature_store import DataStatus
 from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.entity import EntityBriefInfoList
 from featurebyte.schema.event_data import (
@@ -36,9 +37,7 @@ class EventDataService(BaseDocumentService[EventDataModel], GetInfoServiceMixin[
         _ = await FeatureStoreService(user=self.user, persistent=self.persistent).get_document(
             document_id=data.tabular_source.feature_store_id
         )
-        document = EventDataModel(
-            user_id=self.user.id, status=EventDataStatus.DRAFT, **data.json_dict()
-        )
+        document = EventDataModel(user_id=self.user.id, status=DataStatus.DRAFT, **data.json_dict())
 
         # check any conflict with existing documents
         await self._check_document_unique_constraints(document=document)
@@ -63,9 +62,9 @@ class EventDataService(BaseDocumentService[EventDataModel], GetInfoServiceMixin[
 
         # check eligibility of status transition
         eligible_transitions = {
-            EventDataStatus.DRAFT: {EventDataStatus.PUBLISHED},
-            EventDataStatus.PUBLISHED: {EventDataStatus.DEPRECATED},
-            EventDataStatus.DEPRECATED: {},
+            DataStatus.DRAFT: {DataStatus.PUBLISHED},
+            DataStatus.PUBLISHED: {DataStatus.DEPRECATED},
+            DataStatus.DEPRECATED: {},
         }
         current_status = document.status
         if (

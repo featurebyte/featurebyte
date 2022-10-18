@@ -10,8 +10,8 @@ from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
-from featurebyte.models.feature_store import ColumnInfo, TableDetails, TabularSource
+from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.models.feature_store import ColumnInfo, DataStatus, TableDetails, TabularSource
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
@@ -49,7 +49,7 @@ class EventDataUpdate(FeatureByteBaseModel):
     columns_info: Optional[List[ColumnInfo]]
     default_feature_job_setting: Optional[FeatureJobSetting]
     record_creation_date_column: Optional[StrictStr]
-    status: Optional[EventDataStatus]
+    status: Optional[DataStatus]
 
 
 class EventDataBriefInfo(BaseBriefInfo):
@@ -57,7 +57,7 @@ class EventDataBriefInfo(BaseBriefInfo):
     EventData brief info schema
     """
 
-    status: EventDataStatus
+    status: DataStatus
 
 
 class EventDataBriefInfoList(FeatureByteBaseModel):

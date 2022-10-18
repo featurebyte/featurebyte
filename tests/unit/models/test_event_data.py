@@ -6,8 +6,8 @@ import datetime
 import pytest
 from pydantic.error_wrappers import ValidationError
 
-from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
-from featurebyte.models.feature_store import TableDetails
+from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.models.feature_store import DataStatus, TableDetails
 
 
 @pytest.fixture(name="feature_job_setting")
@@ -43,7 +43,7 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
         record_creation_date_column="created_at",
         default_feature_job_setting=feature_job_setting,
         created_at=datetime.datetime(2022, 2, 1),
-        status=EventDataStatus.PUBLISHED,
+        status=DataStatus.PUBLISHED,
     )
     expected_event_data_dict = {
         "user_id": None,

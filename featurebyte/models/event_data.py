@@ -11,14 +11,13 @@ from datetime import datetime
 from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
-from featurebyte.enum import OrderedStrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
-from featurebyte.models.feature_store import DataModel
+from featurebyte.models.feature_store import DataModel, DataStatus
 
 
 class FeatureJobSetting(FeatureByteBaseModel):
@@ -79,14 +78,6 @@ class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
     setting: Optional[FeatureJobSetting]
 
 
-class EventDataStatus(OrderedStrEnum):
-    """EventData status"""
-
-    DEPRECATED = "DEPRECATED"
-    DRAFT = "DRAFT"
-    PUBLISHED = "PUBLISHED"
-
-
 class EventDataModel(DataModel, FeatureByteBaseDocumentModel):
     """
     Model for EventData entity
@@ -107,7 +98,7 @@ class EventDataModel(DataModel, FeatureByteBaseDocumentModel):
         Record creation date column name
     default_feature_job_setting : Optional[FeatureJobSetting]
         Default feature job setting
-    status : Optional[EventDataStatus]
+    status : DataStatus
         Status of the EventData
     created_at : Optional[datetime]
         Datetime when the EventData was first saved or published
@@ -119,7 +110,6 @@ class EventDataModel(DataModel, FeatureByteBaseDocumentModel):
     event_timestamp_column: StrictStr
     record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]
-    status: EventDataStatus = Field(default=EventDataStatus.DRAFT, allow_mutation=False)
 
     @validator("event_id_column", "event_timestamp_column", "record_creation_date_column")
     @classmethod

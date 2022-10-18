@@ -8,7 +8,7 @@ from typing import ClassVar, List, Optional, Union
 
 from pydantic import Field, StrictStr
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType, OrderedStrEnum, SourceType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -134,6 +134,14 @@ class ColumnInfo(ColumnSpec):
     entity_id: Optional[PydanticObjectId] = Field(default=None)
 
 
+class DataStatus(OrderedStrEnum):
+    """Data status"""
+
+    DEPRECATED = "DEPRECATED"
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
+
+
 class DataModel(DatabaseTableModel):
     """
     DataModel schema
@@ -142,6 +150,9 @@ class DataModel(DatabaseTableModel):
         Data warehouse connection information & table name tuple
     columns_info: List[ColumnInfo]
         List of event data columns
+    status: DataStatus
+        Data status
     """
 
     columns_info: List[ColumnInfo]
+    status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
