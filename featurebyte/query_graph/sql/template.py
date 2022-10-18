@@ -61,5 +61,7 @@ class SqlExpressionTemplate:  # pylint: disable=too-few-public-methods
         cls, node: expressions.Expression, placeholder_name: str, value: Any
     ) -> Expression:
         if isinstance(node, expressions.Identifier) and node.this == placeholder_name:
+            if isinstance(value, expressions.Expression):
+                return value
             return make_literal_value(value)
         return node

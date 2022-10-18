@@ -3,6 +3,8 @@ On-demand tile computation for feature preview
 """
 from __future__ import annotations
 
+from typing import cast
+
 import pandas as pd
 from sqlglot import Select, expressions, select
 
@@ -314,12 +316,12 @@ def get_tile_sql_from_point_in_time(
     )
     out_expr = sql_template.render(
         {
-            InternalName.TILE_START_DATE_SQL_PLACEHOLDER.value: str(start_date),
-            InternalName.TILE_END_DATE_SQL_PLACEHOLDER.value: str(end_date),
+            InternalName.TILE_START_DATE_SQL_PLACEHOLDER: str(start_date),
+            InternalName.TILE_END_DATE_SQL_PLACEHOLDER: str(end_date),
         },
         as_str=False,
     )
-    return out_expr
+    return cast(Select, out_expr)
 
 
 def get_tile_sql_parameterized_by_job_settings(
