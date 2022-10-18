@@ -93,6 +93,7 @@ class TestEventDataApi(BaseApiTestSuite):
             {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
             {"name": "another_created_at", "dtype": "TIMESTAMP", "entity_id": None},
             {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
+            {"name": "event_id", "dtype": "TIMESTAMP", "entity_id": None},
         ]
 
     @pytest.fixture(name="event_data_model_dict")
@@ -109,6 +110,7 @@ class TestEventDataApi(BaseApiTestSuite):
                 },
             },
             "columns_info": columns_info,
+            "event_id_column": "event_id",
             "event_timestamp_column": "event_date",
             "record_creation_date_column": "created_at",
             "default_feature_job_setting": {
@@ -414,10 +416,6 @@ class TestEventDataApi(BaseApiTestSuite):
             response = test_api_client.patch(
                 f"/event_data/{document_id}",
                 json={
-                    "columns_info": [
-                        {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
-                        {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
-                    ],
                     "default_feature_job_setting": {
                         "blind_spot": blind_spot,
                         "frequency": "30m",

@@ -1,9 +1,12 @@
 """
 This module contains ItemData related models
 """
-from typing import List
+# pylint: disable=too-few-public-methods
+from __future__ import annotations
 
-from pydantic import StrictStr
+from typing import Any, List, Optional
+
+from pydantic import StrictStr, validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -37,6 +40,14 @@ class ItemDataModel(DataModel, FeatureByteBaseDocumentModel):
 
     event_id_column: StrictStr
     item_id_column: StrictStr
+
+    @validator("event_id_column", "item_id_column")
+    @classmethod
+    def _check_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
+        columns = {dict(col)["name"] for col in values["columns_info"]}
+        if value is not None and value not in columns:
+            raise ValueError(f'Column "{value}" not found in the table!')
+        return value
 
     class Settings:
         """

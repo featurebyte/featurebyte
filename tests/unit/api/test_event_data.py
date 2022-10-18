@@ -50,6 +50,7 @@ def event_data_dict_fixture(snowflake_database_table):
             {"entity_id": None, "name": "cust_id", "dtype": "INT"},
         ],
         "event_timestamp_column": "event_timestamp",
+        "event_id_column": "col_int",
         "record_creation_date_column": "created_at",
         "default_feature_job_setting": None,
         "created_at": None,
@@ -86,6 +87,7 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
+        event_id_column="col_int",
         event_timestamp_column="event_timestamp",
         record_creation_date_column="created_at",
     )
@@ -107,6 +109,7 @@ def test_from_tabular_source(snowflake_database_table, event_data_dict):
         EventData.from_tabular_source(
             tabular_source=snowflake_database_table,
             name=123,
+            event_id_column="col_int",
             event_timestamp_column=234,
             record_creation_date_column=345,
         )
@@ -122,6 +125,7 @@ def test_from_tabular_source__duplicated_record(saved_event_data, snowflake_data
         EventData.from_tabular_source(
             tabular_source=snowflake_database_table,
             name="sf_event_data",
+            event_id_column="col_int",
             event_timestamp_column="event_timestamp",
             record_creation_date_column="created_at",
         )
@@ -137,6 +141,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
             EventData.from_tabular_source(
                 tabular_source=snowflake_database_table,
                 name="sf_event_data",
+                event_id_column="col_int",
                 event_timestamp_column="event_timestamp",
                 record_creation_date_column="created_at",
             )
@@ -305,6 +310,7 @@ def test_info__event_data_without_record_creation_date(
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
+        event_id_column="col_int",
         event_timestamp_column="event_timestamp",
     )
     event_data.save()
@@ -578,6 +584,7 @@ def test_update_record_creation_date_column__unsaved_object(snowflake_database_t
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="event_data",
+        event_id_column="col_int",
         event_timestamp_column="event_timestamp",
     )
     assert event_data.record_creation_date_column is None
@@ -591,8 +598,10 @@ def test_update_record_creation_date_column__saved_object(saved_event_data):
     assert saved_event_data.record_creation_date_column == "col_float"
 
     # check that validation logic works
-    with pytest.raises(ValidationError):
+    with pytest.raises(RecordUpdateException) as exc:
         saved_event_data.update_record_creation_date_column("random_column_name")
+    expected_msg = 'Column "random_column_name" not found in the table! (type=value_error)'
+    assert expected_msg in str(exc.value)
 
 
 def test_get_event_data(snowflake_feature_store, snowflake_event_data, mock_config_path_env):

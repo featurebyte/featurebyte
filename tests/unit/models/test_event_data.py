@@ -26,6 +26,7 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
     columns_info = [
         {"name": "col", "dtype": "INT", "entity_id": None},
         {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
+        {"name": "event_id", "dtype": "INT", "entity_id": None},
         {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
     ]
     event_data = EventDataModel(
@@ -37,6 +38,7 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
             ),
         },
         columns_info=columns_info,
+        event_id_column="event_id",
         event_timestamp_column="event_date",
         record_creation_date_column="created_at",
         default_feature_job_setting=feature_job_setting,
@@ -54,6 +56,7 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
         },
         "columns_info": columns_info,
         "event_timestamp_column": "event_date",
+        "event_id_column": "event_id",
         "id": event_data.id,
         "name": "my_event_data",
         "record_creation_date_column": "created_at",

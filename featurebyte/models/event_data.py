@@ -99,6 +99,8 @@ class EventDataModel(DataModel, FeatureByteBaseDocumentModel):
         Data warehouse connection information & table name tuple
     columns_info: List[ColumnInfo]
         List of event data columns
+    event_id_column: str
+        Event ID column name
     event_timestamp_column: str
         Event timestamp column name
     record_creation_date_column: Optional[str]
@@ -113,12 +115,13 @@ class EventDataModel(DataModel, FeatureByteBaseDocumentModel):
         Datetime when the EventData object was last updated
     """
 
+    event_id_column: StrictStr
     event_timestamp_column: StrictStr
     record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]
     status: EventDataStatus = Field(default=EventDataStatus.DRAFT, allow_mutation=False)
 
-    @validator("event_timestamp_column", "record_creation_date_column")
+    @validator("event_id_column", "event_timestamp_column", "record_creation_date_column")
     @classmethod
     def _check_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
         columns = {dict(col)["name"] for col in values["columns_info"]}

@@ -27,6 +27,7 @@ class EventDataCreate(FeatureByteBaseModel):
     name: StrictStr
     tabular_source: TabularSource
     columns_info: List[ColumnInfo]
+    event_id_column: StrictStr
     event_timestamp_column: StrictStr
     record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]

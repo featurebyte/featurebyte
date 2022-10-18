@@ -8,7 +8,6 @@ from typing import Any, Optional
 from http import HTTPStatus
 
 from bson.objectid import ObjectId
-from pydantic import validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
@@ -91,6 +90,7 @@ class EventData(EventDataModel, DatabaseTable, SavableApiObject, GetAttrMixin):
         tabular_source: DatabaseTable,
         name: str,
         event_timestamp_column: str,
+        event_id_column: str,
         record_creation_date_column: Optional[str] = None,
         _id: Optional[ObjectId] = None,
     ) -> EventData:
@@ -103,6 +103,8 @@ class EventData(EventDataModel, DatabaseTable, SavableApiObject, GetAttrMixin):
             DatabaseTable object constructed from FeatureStore
         name: str
             Event data name
+        event_id_column: str
+            Event ID column from the given tabular source
         event_timestamp_column: str
             Event timestamp column from the given tabular source
         record_creation_date_column: str
@@ -127,6 +129,7 @@ class EventData(EventDataModel, DatabaseTable, SavableApiObject, GetAttrMixin):
             tabular_source=tabular_source.tabular_source,
             columns_info=tabular_source.columns_info,
             event_timestamp_column=event_timestamp_column,
+            event_id_column=event_id_column,
             record_creation_date_column=record_creation_date_column,
         )
         client = Configurations().get_client()
@@ -182,9 +185,6 @@ class EventData(EventDataModel, DatabaseTable, SavableApiObject, GetAttrMixin):
         record_creation_date_column: str
             Record creation date column used to perform feature job setting analysis
         """
-        # perform record creation datetime column assignment first to
-        # trigger record creation date column validation check
-        self.record_creation_date_column = record_creation_date_column
         self.update(
             update_payload={"record_creation_date_column": record_creation_date_column},
             allow_update_local=True,

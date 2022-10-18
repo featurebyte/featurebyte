@@ -277,6 +277,7 @@ def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_
     event_data = EventData.from_tabular_source(
         tabular_source=snowflake_database_table,
         name="sf_event_data",
+        event_id_column="col_int",
         event_timestamp_column="event_timestamp",
         record_creation_date_column="created_at",
         _id=snowflake_event_data_id,
