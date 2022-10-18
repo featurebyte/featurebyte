@@ -4,7 +4,7 @@ On-demand tile computation for feature preview
 from __future__ import annotations
 
 import pandas as pd
-from sqlglot import Expression, Select, expressions, select
+from sqlglot import Select, expressions, select
 
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.graph import QueryGraph
@@ -12,6 +12,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
+from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 
 
 class OnDemandTileComputePlan:
@@ -77,7 +78,7 @@ class OnDemandTileComputePlan:
             # Convert template SQL with concrete start and end timestamps, based on the requested
             # point-in-time and feature window sizes
             tile_sql_with_start_end_expr = get_tile_sql_from_point_in_time(
-                sql_template=tile_info.sql_expr,
+                sql_template=tile_info.sql_template,
                 point_in_time=self.point_in_time,
                 frequency=tile_info.frequency,
                 time_modulo_frequency=tile_info.time_modulo_frequency,
@@ -275,7 +276,7 @@ def compute_start_end_date_from_point_in_time(
 
 
 def get_tile_sql_from_point_in_time(
-    sql_template: Expression,
+    sql_template: SqlExpressionTemplate,
     point_in_time: str,
     frequency: int,
     time_modulo_frequency: int,
@@ -286,7 +287,7 @@ def get_tile_sql_from_point_in_time(
 
     Parameters
     ----------
-    sql_template : Expression
+    sql_template : SqlExpressionTemplate
         Tile SQL template expression
     point_in_time : str
         Point in time in the request
@@ -311,24 +312,13 @@ def get_tile_sql_from_point_in_time(
         blind_spot=blind_spot,
         num_tiles=num_tiles,
     )
-
-    def _replace_placeholder(
-        node: expressions.Expression, placeholder_name: str, value: pd.Timestamp
-    ) -> Expression:
-        if isinstance(node, expressions.Identifier) and node.this == placeholder_name:
-            return make_literal_value(str(value))
-        return node
-
-    out_expr = sql_template.transform(
-        lambda node: _replace_placeholder(
-            node, InternalName.TILE_START_DATE_SQL_PLACEHOLDER.value, start_date
-        )
-    ).transform(
-        lambda node: _replace_placeholder(
-            node, InternalName.TILE_END_DATE_SQL_PLACEHOLDER.value, end_date
-        )
+    out_expr = sql_template.render(
+        {
+            InternalName.TILE_START_DATE_SQL_PLACEHOLDER.value: str(start_date),
+            InternalName.TILE_END_DATE_SQL_PLACEHOLDER.value: str(end_date),
+        },
+        as_str=False,
     )
-
     return out_expr
 
 

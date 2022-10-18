@@ -15,6 +15,7 @@ from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, sql_to_string
+from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 
 
 @dataclass
@@ -44,8 +45,7 @@ class TileGenSql:
     # pylint: disable=too-many-instance-attributes
     tile_table_id: str
     aggregation_id: str
-    source_type: SourceType
-    sql_expr: sqlglot.Expression
+    sql_template: SqlExpressionTemplate
     columns: list[str]
     entity_columns: list[str]
     serving_names: list[str]
@@ -60,8 +60,12 @@ class TileGenSql:
     def sql(self) -> str:
         """
         Templated SQL code for building tiles
+
+        Returns
+        -------
+        str
         """
-        return sql_to_string(self.sql_expr, self.source_type)
+        return self.sql_template.render()
 
 
 class TileSQLGenerator:
@@ -132,11 +136,11 @@ class TileSQLGenerator:
         tile_value_columns = [spec.tile_column_name for spec in groupby_sql_node.tile_specs]
         assert tile_table_id is not None
         assert aggregation_id is not None
+        sql_template = SqlExpressionTemplate(sql_expr=sql, source_type=self.source_type)
         info = TileGenSql(
             tile_table_id=tile_table_id,
             aggregation_id=aggregation_id,
-            source_type=self.source_type,
-            sql_expr=sql,
+            sql_template=sql_template,
             columns=groupby_sql_node.columns,
             entity_columns=entity_columns,
             tile_value_columns=tile_value_columns,

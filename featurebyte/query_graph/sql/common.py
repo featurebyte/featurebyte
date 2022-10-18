@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 import pandas as pd
-from sqlglot import Expression, expressions, parse_one, select
+from sqlglot import Expression, expressions, select
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.node import Node
