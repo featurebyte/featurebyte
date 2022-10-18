@@ -171,7 +171,7 @@ class SnowflakeSession(BaseSession):
         schema = self.get_columns_schema_from_dataframe(dataframe)
         await self.execute_query(
             f"""
-            CREATE OR REPLACE TABLE {table_name}(
+            CREATE OR REPLACE TEMP TABLE {table_name}(
                 {schema}
             )
             """
