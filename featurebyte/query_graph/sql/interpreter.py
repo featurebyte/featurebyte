@@ -44,7 +44,7 @@ class TileGenSql:
     # pylint: disable=too-many-instance-attributes
     tile_table_id: str
     aggregation_id: str
-    sql: str  # TODO: change this to property and add a source_type information?
+    source_type: SourceType
     sql_expr: sqlglot.Expression
     columns: list[str]
     entity_columns: list[str]
@@ -55,6 +55,13 @@ class TileGenSql:
     frequency: int
     blind_spot: int
     windows: list[str]
+
+    @property
+    def sql(self) -> str:
+        """
+        Templated SQL code for building tiles
+        """
+        return sql_to_string(self.sql_expr, self.source_type)
 
 
 class TileSQLGenerator:
@@ -128,7 +135,7 @@ class TileSQLGenerator:
         info = TileGenSql(
             tile_table_id=tile_table_id,
             aggregation_id=aggregation_id,
-            sql=sql_to_string(sql, source_type=self.source_type),
+            source_type=self.source_type,
             sql_expr=sql,
             columns=groupby_sql_node.columns,
             entity_columns=entity_columns,

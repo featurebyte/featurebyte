@@ -269,7 +269,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggre
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop("sql")
+    info_dict.pop("sql_expr")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
@@ -290,6 +290,7 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggre
         "windows": ["2h", "48h"],
         "serving_names": ["CUSTOMER_ID"],
         "value_by_column": None,
+        "source_type": "snowflake",
     }
 
 
@@ -309,7 +310,7 @@ def test_graph_interpreter_on_demand_tile_gen(
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
 
-    sql = info_dict.pop("sql")
+    sql = tile_gen_sqls[0].sql
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -352,6 +353,7 @@ def test_graph_interpreter_on_demand_tile_gen(
         """
     ).strip()
     assert sql == expected_sql
+    info_dict.pop("sql_expr")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
@@ -372,6 +374,7 @@ def test_graph_interpreter_on_demand_tile_gen(
         "windows": ["2h", "48h"],
         "serving_names": ["CUSTOMER_ID"],
         "value_by_column": None,
+        "source_type": "snowflake",
     }
 
 
@@ -386,7 +389,6 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     info_dict = asdict(info)
 
     aggregation_id = "639a7b70cdfe06f5c2270c167e3ebf139dcb1725"
-    sql = info_dict.pop("sql")
     expected_sql = textwrap.dedent(
         f"""
         SELECT
@@ -424,7 +426,8 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
           tile_index
         """
     ).strip()
-    assert sql == expected_sql
+    assert info.sql == expected_sql
+    info_dict.pop("sql_expr")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_422275c11ff21e200f4c47e66149f25c404b7178",
         "aggregation_id": f"avg_{aggregation_id}",
@@ -445,6 +448,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
         "windows": ["2h", "48h"],
         "serving_names": ["CUSTOMER_ID"],
         "value_by_column": "product_type",
+        "source_type": "snowflake",
     }
 
 
@@ -460,7 +464,8 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     # Check required tile 1 (groupby keys: cust_id)
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    sql = info_dict.pop("sql")
+    sql = info.sql
+    info_dict.pop("sql_expr")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e767dc0d",
         "aggregation_id": f"avg_{groupby_node_aggregation_id}",
@@ -481,6 +486,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["2h", "48h"],
+        "source_type": "snowflake",
     }
     expected = textwrap.dedent(
         f"""
@@ -529,7 +535,8 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     aggregation_id = "3c43724b30c443ac5ac9049578e0e6061173bb69"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
-    sql = info_dict.pop("sql")
+    sql = info.sql
+    info_dict.pop("sql_expr")
     assert info_dict == {
         "tile_table_id": "fake_transactions_table_f3600_m1800_b900_6df75fa33c5905ea927c25219b178c8848027e3c",
         "aggregation_id": f"sum_{aggregation_id}",
@@ -546,6 +553,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
         "frequency": 3600,
         "blind_spot": 900,
         "windows": ["7d"],
+        "source_type": "snowflake",
     }
     expected = textwrap.dedent(
         f"""
