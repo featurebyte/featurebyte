@@ -34,7 +34,10 @@ class SumAggFunc(BaseAggFunc):
 class BaseNumAggFunc(BaseAggFunc):
     """BaseNumAggFunc class"""
 
-    input_output_var_type_map = {DBVarType.INT: DBVarType.FLOAT, DBVarType.FLOAT: DBVarType.FLOAT}
+    input_output_var_type_map = {
+        var_type: DBVarType.FLOAT
+        for var_type in [DBVarType.INT, DBVarType.FLOAT, DBVarType.TIMEDELTA]
+    }
 
 
 class AvgAggFunc(BaseNumAggFunc):
