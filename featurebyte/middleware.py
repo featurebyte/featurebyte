@@ -145,7 +145,7 @@ class ExecutionContext:
         return False
 
 
-ExecutionContext.register(CredentialsError, handle_status_code=HTTPStatus.UNAUTHORIZED)
+ExecutionContext.register(CredentialsError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
 
 ExecutionContext.register(DocumentConflictError, handle_status_code=HTTPStatus.CONFLICT)
 

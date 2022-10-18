@@ -14,7 +14,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.entity import Entity
-from featurebyte.common.env_util import is_notebook
+from featurebyte.common.env_util import display_html_in_notebook
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin
 from featurebyte.enum import TableDataType
@@ -231,11 +231,7 @@ class EventData(EventDataModel, DatabaseTable, SavableApiObject, GetAttrMixin):
                 frequency=f'{recommended_setting["frequency"]}s',
             )
 
-            if is_notebook():
-                # pylint: disable=import-outside-toplevel
-                from IPython.display import HTML, display  # pylint: disable=import-error
-
-                display(HTML(job_setting_analysis["analysis_report"]))
+            display_html_in_notebook(job_setting_analysis["analysis_report"])
 
         self.update(
             update_payload={"default_feature_job_setting": feature_job_setting.dict()},
