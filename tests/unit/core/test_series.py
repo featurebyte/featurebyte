@@ -107,7 +107,7 @@ def test__setitem__bool_series_key_scalar_value(dataframe, bool_series, column, 
     }
 
 
-def test__setitem__bool_int_series_assign_float_value(bool_series, int_series):
+def test__setitem__int_series_assign_float_value(bool_series, int_series):
     """
     Test series conditional assignment with float value
     """
@@ -115,11 +115,6 @@ def test__setitem__bool_int_series_assign_float_value(bool_series, int_series):
     int_series[bool_series] = 1.1
     assert int_series.dtype == DBVarType.FLOAT
     assert int_series.parent.column_var_type_map[int_series.name] == DBVarType.FLOAT
-
-    assert bool_series.dtype == DBVarType.BOOL
-    bool_series[bool_series] = 1.2
-    assert bool_series.dtype == DBVarType.FLOAT
-    assert bool_series.parent.column_var_type_map[bool_series.name] == DBVarType.FLOAT
 
 
 def test__setitem__cond_assign_with_same_input_nodes(bool_series):

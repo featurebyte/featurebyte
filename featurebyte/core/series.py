@@ -124,7 +124,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             whether the assignment operation is valid in terms of variable type
         """
         valid_assignment_map: dict[DBVarType, tuple[type[Any], ...]] = {
-            DBVarType.BOOL: (bool, float),
+            DBVarType.BOOL: (bool,),
             DBVarType.INT: (int, float),
             DBVarType.FLOAT: (int, float),
             DBVarType.CHAR: (),
