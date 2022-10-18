@@ -1,0 +1,63 @@
+"""
+This module contains ItemData related models
+"""
+from typing import List
+
+from pydantic import StrictStr
+
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    UniqueConstraintResolutionSignature,
+    UniqueValuesConstraint,
+)
+from featurebyte.models.feature_store import DataModel
+
+
+class ItemDataModel(DataModel, FeatureByteBaseDocumentModel):
+    """
+    Model for ItemData entity
+
+    id: PydanticObjectId
+        EventData id of the object
+    name : str
+        Name of the EventData
+    tabular_source : TabularSource
+        Data warehouse connection information & table name tuple
+    columns_info: List[ColumnInfo]
+        List of event data columns
+    event_id_column: str
+        Event ID column name
+    item_id_column: str
+        Item ID column name
+    created_at : Optional[datetime]
+        Datetime when the EventData was first saved or published
+    updated_at: Optional[datetime]
+        Datetime when the EventData object was last updated
+    """
+
+    event_id_column: StrictStr
+    item_id_column: StrictStr
+
+    class Settings:
+        """
+        MongoDB settings
+        """
+
+        collection_name: str = "item_data"
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+            UniqueValuesConstraint(
+                fields=("tabular_source",),
+                conflict_fields_signature={"tabular_source": ["tabular_source"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+        ]
