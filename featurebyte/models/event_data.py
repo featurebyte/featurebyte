@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from datetime import datetime
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.enum import OrderedStrEnum
@@ -18,7 +18,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
-from featurebyte.models.feature_store import ColumnInfo, DatabaseTableModel
+from featurebyte.models.feature_store import DataModel
 
 
 class FeatureJobSetting(FeatureByteBaseModel):
@@ -87,7 +87,7 @@ class EventDataStatus(OrderedStrEnum):
     PUBLISHED = "PUBLISHED"
 
 
-class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
+class EventDataModel(DataModel, FeatureByteBaseDocumentModel):
     """
     Model for EventData entity
 
@@ -105,17 +105,28 @@ class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
         Record creation date column name
     default_feature_job_setting : Optional[FeatureJobSetting]
         Default feature job setting
-    created_at : Optional[datetime]
-        Datetime when the EventData was first saved or published
     status : Optional[EventDataStatus]
         Status of the EventData
+    created_at : Optional[datetime]
+        Datetime when the EventData was first saved or published
+    updated_at: Optional[datetime]
+        Datetime when the EventData object was last updated
     """
 
-    columns_info: List[ColumnInfo]
     event_timestamp_column: StrictStr
     record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]
     status: EventDataStatus = Field(default=EventDataStatus.DRAFT, allow_mutation=False)
+
+    @validator("event_timestamp_column", "record_creation_date_column")
+    @classmethod
+    def _check_event_timestamp_column_exists(
+        cls, value: Optional[str], values: dict[str, Any]
+    ) -> Optional[str]:
+        columns = {dict(col)["name"] for col in values["columns_info"]}
+        if value is not None and value not in columns:
+            raise ValueError(f'Column "{value}" not found in the table!')
+        return value
 
     class Settings:
         """

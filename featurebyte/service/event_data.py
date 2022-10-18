@@ -69,7 +69,8 @@ class EventDataService(BaseDocumentService[EventDataModel], GetInfoServiceMixin[
         }
         current_status = document.status
         if (
-            current_status != data.status
+            data.status
+            and current_status != data.status
             and data.status not in eligible_transitions[current_status]
         ):
             raise DocumentUpdateError(

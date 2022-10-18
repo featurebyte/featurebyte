@@ -45,7 +45,7 @@ class EventDataUpdate(FeatureByteBaseModel):
     Event Data Update Schema
     """
 
-    columns_info: List[ColumnInfo]
+    columns_info: Optional[List[ColumnInfo]]
     default_feature_job_setting: Optional[FeatureJobSetting]
     record_creation_date_column: Optional[StrictStr]
     status: Optional[EventDataStatus]

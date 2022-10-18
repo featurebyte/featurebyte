@@ -143,22 +143,6 @@ class EventData(EventDataModel, DatabaseTable, SavableApiObject, GetAttrMixin):
             )
         raise RecordRetrievalException(response)
 
-    @validator("event_timestamp_column")
-    @classmethod
-    def _check_event_timestamp_column_exists(cls, value: str, values: dict[str, Any]) -> str:
-        columns = {dict(col)["name"] for col in values["columns_info"]}
-        if value not in columns:
-            raise ValueError(f'Column "{value}" not found in the table!')
-        return value
-
-    @validator("record_creation_date_column")
-    @classmethod
-    def _check_record_creation_date_column_exists(cls, value: str, values: dict[str, Any]) -> str:
-        columns = {dict(col)["name"] for col in values["columns_info"]}
-        if value and value not in columns:
-            raise ValueError(f'Column "{value}" not found in the table!')
-        return value
-
     @typechecked
     def __getitem__(self, item: str) -> EventDataColumn:
         """

@@ -23,6 +23,11 @@ def feature_job_setting_fixture():
 
 def test_event_data_model(snowflake_feature_store, feature_job_setting):
     """Test creation, serialization and deserialization of an EventData"""
+    columns_info = [
+        {"name": "col", "dtype": "INT", "entity_id": None},
+        {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
+        {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
+    ]
     event_data = EventDataModel(
         name="my_event_data",
         tabular_source={
@@ -31,7 +36,7 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
                 database_name="database", schema_name="schema", table_name="table"
             ),
         },
-        columns_info=[{"name": "col", "dtype": "INT", "entity_id": None}],
+        columns_info=columns_info,
         event_timestamp_column="event_date",
         record_creation_date_column="created_at",
         default_feature_job_setting=feature_job_setting,
@@ -47,7 +52,7 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
             "frequency": "30m",
             "time_modulo_frequency": "5m",
         },
-        "columns_info": [{"name": "col", "dtype": "INT", "entity_id": None}],
+        "columns_info": columns_info,
         "event_timestamp_column": "event_date",
         "id": event_data.id,
         "name": "my_event_data",

@@ -132,3 +132,16 @@ class ColumnInfo(ColumnSpec):
     """
 
     entity_id: Optional[PydanticObjectId] = Field(default=None)
+
+
+class DataModel(DatabaseTableModel):
+    """
+    DataModel schema
+
+    tabular_source : TabularSource
+        Data warehouse connection information & table name tuple
+    columns_info: List[ColumnInfo]
+        List of event data columns
+    """
+
+    columns_info: List[ColumnInfo]

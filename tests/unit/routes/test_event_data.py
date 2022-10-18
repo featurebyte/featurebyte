@@ -86,8 +86,17 @@ class TestEventDataApi(BaseApiTestSuite):
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
         assert create_success_response.json()["status"] == EventDataStatus.DRAFT
 
+    @pytest.fixture(name="columns_info")
+    def column_info_fixture(self):
+        """Fixture for columns info"""
+        return [
+            {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
+            {"name": "another_created_at", "dtype": "TIMESTAMP", "entity_id": None},
+            {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
+        ]
+
     @pytest.fixture(name="event_data_model_dict")
-    def event_data_model_dict_fixture(self, snowflake_feature_store, user_id):
+    def event_data_model_dict_fixture(self, snowflake_feature_store, user_id, columns_info):
         """Fixture for a Event Data dict"""
         event_data_dict = {
             "name": "订单表",
@@ -99,10 +108,7 @@ class TestEventDataApi(BaseApiTestSuite):
                     "table_name": "table",
                 },
             },
-            "columns_info": [
-                {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
-                {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
-            ],
+            "columns_info": columns_info,
             "event_timestamp_column": "event_date",
             "record_creation_date_column": "created_at",
             "default_feature_job_setting": {
@@ -137,15 +143,12 @@ class TestEventDataApi(BaseApiTestSuite):
         return output
 
     @pytest.fixture(name="event_data_update_dict")
-    def event_data_update_dict_fixture(self):
+    def event_data_update_dict_fixture(self, columns_info):
         """
         Table Event update dict object
         """
         return {
-            "columns_info": [
-                {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
-                {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
-            ],
+            "columns_info": columns_info,
             "default_feature_job_setting": {
                 "blind_spot": "12m",
                 "frequency": "30m",
@@ -240,17 +243,39 @@ class TestEventDataApi(BaseApiTestSuite):
 
         update_response = test_api_client.patch(
             f"/event_data/{insert_id}",
-            json={**event_data_update_dict, "record_creation_date_column": "some_date_col"},
+            json={**event_data_update_dict, "record_creation_date_column": "another_created_at"},
         )
         update_response_dict = update_response.json()
         expected_response = {
             **response_dict,
             **event_data_update_dict,
-            "record_creation_date_column": "some_date_col",
+            "record_creation_date_column": "another_created_at",
         }
         expected_response.pop("updated_at")
         assert update_response_dict.items() > expected_response.items()
         assert update_response_dict["updated_at"] is not None
+
+    def test_update_record_creation_date__column_not_exists(
+        self, test_api_client_persistent, event_data_response
+    ):
+        """
+        Update Event Data record creation date column (when the column does not exist)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = event_data_response.json()
+        insert_id = response_dict["_id"]
+
+        update_response = test_api_client.patch(
+            f"/event_data/{insert_id}",
+            json={"record_creation_date_column": "non-exist-columns"},
+        )
+        update_response_dict = update_response.json()
+        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert update_response_dict["detail"] == (
+            "1 validation error for EventDataModel\n"
+            "record_creation_date_column\n  "
+            'Column "non-exist-columns" not found in the table! (type=value_error)'
+        )
 
     def test_update_fails_table_not_found(self, test_api_client_persistent, event_data_update_dict):
         """
