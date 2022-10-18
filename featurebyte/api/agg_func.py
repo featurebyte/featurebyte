@@ -24,16 +24,17 @@ class BaseAggFunc(FeatureByteBaseModel):
             AGG_FUNCS.append(cls)
 
 
-class BaseNumAggFunc(BaseAggFunc):
-    """BaseNumAggFunc class"""
-
-    input_output_var_type_map = {DBVarType.INT: DBVarType.INT, DBVarType.FLOAT: DBVarType.FLOAT}
-
-
-class SumAggFunc(BaseNumAggFunc):
+class SumAggFunc(BaseAggFunc):
     """SumAggFunc class"""
 
     type: Literal[AggFunc.SUM] = Field(AggFunc.SUM, const=True)
+    input_output_var_type_map = {DBVarType.INT: DBVarType.INT, DBVarType.FLOAT: DBVarType.FLOAT}
+
+
+class BaseNumAggFunc(BaseAggFunc):
+    """BaseNumAggFunc class"""
+
+    input_output_var_type_map = {DBVarType.INT: DBVarType.FLOAT, DBVarType.FLOAT: DBVarType.FLOAT}
 
 
 class AvgAggFunc(BaseNumAggFunc):
