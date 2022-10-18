@@ -618,7 +618,7 @@ def check_datetime_operations(event_view, column_name, limit=100):
     event_view["event_interval_microsecond"] = event_view["event_interval"].dt.microsecond
 
     # add timedelta constructed from to_timedelta
-    timedelta = to_timedelta(event_view["event_interval_microsecond"], "microsecond")
+    timedelta = to_timedelta(event_view["event_interval_microsecond"].astype(int), "microsecond")
     event_view["timestamp_added"] = datetime_series + timedelta
     event_view["timestamp_added_from_timediff"] = datetime_series + event_view["event_interval"]
     event_view["timestamp_added_constant"] = datetime_series + pd.Timedelta("1d")
