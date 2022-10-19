@@ -21,6 +21,7 @@ from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     apply_serving_names_mapping,
     quoted_identifier,
+    sql_to_string,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.session.base import BaseSession
@@ -457,14 +458,13 @@ class SnowflakeTileCache(TileCache):
             .group_by(*serving_names)
         )
 
-        entity_table_sql = entity_table_expr.sql(pretty=True)
-        tile_compute_sql = tile_info.sql.replace(
-            InternalName.ENTITY_TABLE_SQL_PLACEHOLDER, f"({entity_table_sql})"
+        tile_compute_sql = tile_info.sql_template.render(
+            {InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery()}
         )
         request = SnowflakeOnDemandTileComputeRequest(
             tile_table_id=tile_id,
             aggregation_id=aggregation_id,
-            tracker_sql=entity_table_sql,
+            tracker_sql=sql_to_string(entity_table_expr, source_type=SourceType.SNOWFLAKE),
             tile_compute_sql=tile_compute_sql,
             tile_gen_info=tile_info,
         )
