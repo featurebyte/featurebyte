@@ -4,19 +4,14 @@ This module contains EventData related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from datetime import datetime
 
 from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
-from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
-    FeatureByteBaseModel,
-    UniqueConstraintResolutionSignature,
-    UniqueValuesConstraint,
-)
+from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.feature_store import DataModel
 
 
@@ -119,26 +114,9 @@ class EventDataModel(DataModel, FeatureByteBaseDocumentModel):
             raise ValueError(f'Column "{value}" not found in the table!')
         return value
 
-    class Settings:
+    class Settings(DataModel.Settings):
         """
         MongoDB settings
         """
 
         collection_name: str = "event_data"
-        unique_constraints: List[UniqueValuesConstraint] = [
-            UniqueValuesConstraint(
-                fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"name": ["name"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("tabular_source",),
-                conflict_fields_signature={"tabular_source": ["tabular_source"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-        ]

@@ -4,15 +4,11 @@ This module contains ItemData related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from pydantic import StrictStr, validator
 
-from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
-    UniqueConstraintResolutionSignature,
-    UniqueValuesConstraint,
-)
+from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.feature_store import DataModel
 
 
@@ -51,26 +47,9 @@ class ItemDataModel(DataModel, FeatureByteBaseDocumentModel):
             raise ValueError(f'Column "{value}" not found in the table!')
         return value
 
-    class Settings:
+    class Settings(DataModel.Settings):
         """
         MongoDB settings
         """
 
         collection_name: str = "item_data"
-        unique_constraints: List[UniqueValuesConstraint] = [
-            UniqueValuesConstraint(
-                fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"name": ["name"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("tabular_source",),
-                conflict_fields_signature={"tabular_source": ["tabular_source"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-        ]
