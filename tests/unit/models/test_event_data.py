@@ -75,6 +75,11 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
     event_data_loaded = EventDataModel.parse_raw(event_data_json)
     assert event_data_loaded == event_data
 
+    # DEV-556: check older record can be loaded
+    expected_event_data_dict.pop("event_id_column")
+    loaded_old_event_data = EventDataModel.parse_obj(expected_event_data_dict)
+    assert loaded_old_event_data.event_id_column is None
+
 
 @pytest.mark.parametrize(
     "field,value",
