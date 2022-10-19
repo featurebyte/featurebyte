@@ -39,7 +39,8 @@ def test_query_object_operation_on_sqlite_source(
     event_data = EventData.from_tabular_source(
         tabular_source=sqlite_database_table,
         name="sqlite_event_data",
-        event_timestamp_column="created_at",
+        event_id_column="created_at",
+        event_timestamp_column="event_timestamp",
     )
     event_view = EventView.from_event_data(event_data)
     assert event_view.columns == [

@@ -20,7 +20,7 @@ from featurebyte.schema.entity import EntityBriefInfoList
 
 class EventDataCreate(FeatureByteBaseModel):
     """
-    Event Data Creation Schema
+    EventData Creation Schema
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
@@ -43,7 +43,7 @@ class EventDataList(PaginationMixin):
 
 class EventDataUpdate(FeatureByteBaseModel):
     """
-    Event Data Update Schema
+    EventData Update Schema
     """
 
     columns_info: Optional[List[ColumnInfo]]

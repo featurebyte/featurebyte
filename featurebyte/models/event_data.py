@@ -17,7 +17,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
-from featurebyte.models.feature_store import DataModel, DataStatus
+from featurebyte.models.feature_store import DataModel
 
 
 class FeatureJobSetting(FeatureByteBaseModel):
@@ -106,7 +106,7 @@ class EventDataModel(DataModel, FeatureByteBaseDocumentModel):
         Datetime when the EventData object was last updated
     """
 
-    event_id_column: StrictStr
+    event_id_column: Optional[StrictStr] = Field(default=None)  # DEV-556: this should be compulsory
     event_timestamp_column: StrictStr
     record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]

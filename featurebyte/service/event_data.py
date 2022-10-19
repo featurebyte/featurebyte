@@ -7,7 +7,6 @@ from typing import Any, Optional
 
 from bson.objectid import ObjectId
 
-from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.schema.common.operation import DictProject
@@ -58,23 +57,7 @@ class EventDataService(BaseDocumentService[EventDataModel], GetInfoServiceMixin[
         return_document: bool = True,
     ) -> Optional[EventDataModel]:
         if document is None:
-            document = await self.get_document(document_id=document_id)
-
-        # check eligibility of status transition
-        eligible_transitions = {
-            DataStatus.DRAFT: {DataStatus.PUBLISHED},
-            DataStatus.PUBLISHED: {DataStatus.DEPRECATED},
-            DataStatus.DEPRECATED: {},
-        }
-        current_status = document.status
-        if (
-            data.status
-            and current_status != data.status
-            and data.status not in eligible_transitions[current_status]
-        ):
-            raise DocumentUpdateError(
-                f"Invalid status transition from {current_status} to {data.status}."
-            )
+            await self.get_document(document_id=document_id)
 
         update_dict = data.dict(exclude_none=True)
         if data.columns_info:

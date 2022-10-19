@@ -17,6 +17,8 @@ from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
+from featurebyte.service.columns_info import ColumnsInfoService
+from featurebyte.service.data_status import DataStatusService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.entity import EntityService
@@ -79,6 +81,14 @@ app_container_config = {
             "clazz": FeatureNamespaceService,
         },
         {
+            "name": "columns_info_service",
+            "clazz": ColumnsInfoService,
+        },
+        {
+            "name": "data_status_service",
+            "clazz": DataStatusService,
+        },
+        {
             "name": "default_version_mode_service",
             "clazz": DefaultVersionModeService,
         },
@@ -119,9 +129,7 @@ app_container_config = {
         {
             "name": "event_data_controller",
             "clazz": EventDataController,
-            "depends": [
-                "event_data_service",
-            ],
+            "depends": ["event_data_service", "columns_info_service", "data_status_service"],
         },
         {
             "name": "feature_controller",

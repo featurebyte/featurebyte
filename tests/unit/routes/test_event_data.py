@@ -360,7 +360,7 @@ class TestEventDataApi(BaseApiTestSuite):
 
         response = test_api_client.patch(
             f"/event_data/{current_data['_id']}",
-            json={**current_data, "status": DataStatus.PUBLISHED.value},
+            json={"status": DataStatus.PUBLISHED.value},
         )
         assert response.status_code == HTTPStatus.OK
         updated_data = response.json()
