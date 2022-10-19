@@ -6,8 +6,8 @@ import datetime
 import pytest
 from pydantic.error_wrappers import ValidationError
 
-from featurebyte.models.event_data import EventDataModel, EventDataStatus, FeatureJobSetting
-from featurebyte.models.feature_store import TableDetails
+from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
+from featurebyte.models.feature_store import DataStatus, TableDetails
 
 
 @pytest.fixture(name="feature_job_setting")
@@ -23,6 +23,12 @@ def feature_job_setting_fixture():
 
 def test_event_data_model(snowflake_feature_store, feature_job_setting):
     """Test creation, serialization and deserialization of an EventData"""
+    columns_info = [
+        {"name": "col", "dtype": "INT", "entity_id": None},
+        {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
+        {"name": "event_id", "dtype": "INT", "entity_id": None},
+        {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
+    ]
     event_data = EventDataModel(
         name="my_event_data",
         tabular_source={
@@ -31,12 +37,13 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
                 database_name="database", schema_name="schema", table_name="table"
             ),
         },
-        columns_info=[{"name": "col", "dtype": "INT", "entity_id": None}],
+        columns_info=columns_info,
+        event_id_column="event_id",
         event_timestamp_column="event_date",
         record_creation_date_column="created_at",
         default_feature_job_setting=feature_job_setting,
         created_at=datetime.datetime(2022, 2, 1),
-        status=EventDataStatus.PUBLISHED,
+        status=DataStatus.PUBLISHED,
     )
     expected_event_data_dict = {
         "user_id": None,
@@ -47,8 +54,9 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
             "frequency": "30m",
             "time_modulo_frequency": "5m",
         },
-        "columns_info": [{"name": "col", "dtype": "INT", "entity_id": None}],
+        "columns_info": columns_info,
         "event_timestamp_column": "event_date",
+        "event_id_column": "event_id",
         "id": event_data.id,
         "name": "my_event_data",
         "record_creation_date_column": "created_at",
@@ -66,6 +74,11 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
     event_data_json = event_data.json(by_alias=True)
     event_data_loaded = EventDataModel.parse_raw(event_data_json)
     assert event_data_loaded == event_data
+
+    # DEV-556: check older record can be loaded
+    expected_event_data_dict.pop("event_id_column")
+    loaded_old_event_data = EventDataModel.parse_obj(expected_event_data_dict)
+    assert loaded_old_event_data.event_id_column is None
 
 
 @pytest.mark.parametrize(

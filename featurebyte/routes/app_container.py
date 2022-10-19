@@ -14,9 +14,11 @@ from featurebyte.routes.feature_list.controller import FeatureListController
 from featurebyte.routes.feature_list_namespace.controller import FeatureListNamespaceController
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.feature_store.controller import FeatureStoreController
+from featurebyte.routes.item_data.controller import ItemDataController
 from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
+from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.entity import EntityService
@@ -28,6 +30,7 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
@@ -45,6 +48,10 @@ app_container_config = {
         {
             "name": "event_data_service",
             "clazz": EventDataService,
+        },
+        {
+            "name": "item_data_service",
+            "clazz": ItemDataService,
         },
         {
             "name": "feature_service",
@@ -77,6 +84,10 @@ app_container_config = {
         {
             "name": "feature_namespace_service",
             "clazz": FeatureNamespaceService,
+        },
+        {
+            "name": "data_update_service",
+            "clazz": DataUpdateService,
         },
         {
             "name": "default_version_mode_service",
@@ -119,9 +130,12 @@ app_container_config = {
         {
             "name": "event_data_controller",
             "clazz": EventDataController,
-            "depends": [
-                "event_data_service",
-            ],
+            "depends": ["event_data_service", "data_update_service"],
+        },
+        {
+            "name": "item_data_controller",
+            "clazz": ItemDataController,
+            "depends": ["item_data_service", "data_update_service"],
         },
         {
             "name": "feature_controller",

@@ -180,3 +180,4 @@ class TableDataType(str, Enum):
 
     GENERIC = "generic"
     EVENT_DATA = "event_data"
+    ITEM_DATA = "item_data"

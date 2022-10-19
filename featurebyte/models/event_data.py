@@ -4,21 +4,15 @@ This module contains EventData related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from datetime import datetime
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
-from featurebyte.enum import OrderedStrEnum
-from featurebyte.models.base import (
-    FeatureByteBaseDocumentModel,
-    FeatureByteBaseModel,
-    UniqueConstraintResolutionSignature,
-    UniqueValuesConstraint,
-)
-from featurebyte.models.feature_store import ColumnInfo, DatabaseTableModel
+from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.feature_store import DataModel
 
 
 class FeatureJobSetting(FeatureByteBaseModel):
@@ -79,15 +73,7 @@ class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
     setting: Optional[FeatureJobSetting]
 
 
-class EventDataStatus(OrderedStrEnum):
-    """EventData status"""
-
-    DEPRECATED = "DEPRECATED"
-    DRAFT = "DRAFT"
-    PUBLISHED = "PUBLISHED"
-
-
-class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
+class EventDataModel(DataModel):
     """
     Model for EventData entity
 
@@ -99,44 +85,32 @@ class EventDataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
         Data warehouse connection information & table name tuple
     columns_info: List[ColumnInfo]
         List of event data columns
+    event_id_column: str
+        Event ID column name
     event_timestamp_column: str
         Event timestamp column name
-    record_creation_date_column: Optional[str]
-        Record creation date column name
     default_feature_job_setting : Optional[FeatureJobSetting]
         Default feature job setting
+    status : DataStatus
+        Status of the EventData
     created_at : Optional[datetime]
         Datetime when the EventData was first saved or published
-    status : Optional[EventDataStatus]
-        Status of the EventData
+    updated_at: Optional[datetime]
+        Datetime when the EventData object was last updated
     """
 
-    columns_info: List[ColumnInfo]
+    event_id_column: Optional[StrictStr] = Field(default=None)  # DEV-556: this should be compulsory
     event_timestamp_column: StrictStr
-    record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]
-    status: EventDataStatus = Field(default=EventDataStatus.DRAFT, allow_mutation=False)
 
-    class Settings:
+    @validator("event_id_column", "event_timestamp_column", "record_creation_date_column")
+    @classmethod
+    def _check_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
+        return DataModel.validate_column_exists(value, values)
+
+    class Settings(DataModel.Settings):
         """
         MongoDB settings
         """
 
         collection_name: str = "event_data"
-        unique_constraints: List[UniqueValuesConstraint] = [
-            UniqueValuesConstraint(
-                fields=("_id",),
-                conflict_fields_signature={"id": ["_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("name",),
-                conflict_fields_signature={"name": ["name"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-            UniqueValuesConstraint(
-                fields=("tabular_source",),
-                conflict_fields_signature={"tabular_source": ["tabular_source"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-            ),
-        ]

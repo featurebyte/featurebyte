@@ -39,7 +39,8 @@ def test_query_object_operation_on_sqlite_source(
     event_data = EventData.from_tabular_source(
         tabular_source=sqlite_database_table,
         name="sqlite_event_data",
-        event_timestamp_column="created_at",
+        event_id_column="created_at",
+        event_timestamp_column="event_timestamp",
     )
     event_view = EventView.from_event_data(event_data)
     assert event_view.columns == [
@@ -65,7 +66,9 @@ def test_query_object_operation_on_sqlite_source(
     output = event_view.preview(limit=expected.shape[0])
     # sqlite returns str for timestamp columns, formatted up to %f precision with quirks
     expected["event_timestamp"] = expected["event_timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
-    expected["event_timestamp"] = expected["event_timestamp"].str.replace(".000000", "")
+    expected["event_timestamp"] = expected["event_timestamp"].str.replace(
+        ".000000", "", regex=False
+    )
     pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
 
@@ -668,7 +671,10 @@ def check_datetime_operations(event_view, column_name, limit=100):
     dt_df = event_view.preview(limit=limit)
     pandas_series = dt_df[column_name]
     for prop in properties:
-        series_prop = getattr(pandas_series.dt, prop)
+        if prop in {"week", "weekofyear"}:
+            series_prop = pandas_series.dt.isocalendar().week
+        else:
+            series_prop = getattr(pandas_series.dt, prop)
         pd.testing.assert_series_equal(
             dt_df[f"dt_{prop}"],
             series_prop,

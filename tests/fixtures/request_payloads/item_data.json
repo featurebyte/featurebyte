@@ -47,11 +47,9 @@
             "name": "cust_id"
         }
     ],
-    "default_feature_job_setting": null,
     "event_id_column": "col_int",
-    "event_timestamp_column": "event_timestamp",
-    "name": "sf_event_data",
-    "record_creation_date_column": "created_at",
+    "item_id_column": "cust_id",
+    "name": "sf_item_data",
     "tabular_source": {
         "feature_store_id": "6332fdb21e8f0eeccc414510",
         "table_details": {

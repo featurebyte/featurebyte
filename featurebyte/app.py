@@ -18,6 +18,7 @@ import featurebyte.routes.feature_list.api as feature_list_api
 import featurebyte.routes.feature_list_namespace.api as feature_list_namespace_api
 import featurebyte.routes.feature_namespace.api as feature_namespace_api
 import featurebyte.routes.feature_store.api as feature_store_api
+import featurebyte.routes.item_data.api as item_data_api
 import featurebyte.routes.semantic.api as semantic_api
 import featurebyte.routes.task.api as task_api
 import featurebyte.routes.temp_data.api as temp_data_api
@@ -88,6 +89,7 @@ def get_app() -> FastAPI:
     # add routers into the app
     resource_apis = [
         event_data_api,
+        item_data_api,
         entity_api,
         feature_api,
         feature_job_setting_analysis_api,

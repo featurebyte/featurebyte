@@ -23,7 +23,8 @@ def mocked_session_fixture():
     """Fixture for a mocked session object"""
     with patch("featurebyte.core.generic.SessionManager") as session_manager_cls:
         session_manager = AsyncMock(name="MockedSessionManager")
-        mocked_session = AsyncMock(name="MockedSession", sf_schema="FEATUREBYTE")
+        mocked_session = Mock(name="MockedSession", sf_schema="FEATUREBYTE")
+        mocked_session.register_temp_table = AsyncMock()
         session_manager.get_session.return_value = mocked_session
         session_manager_cls.return_value = session_manager
         yield mocked_session
@@ -145,8 +146,8 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     )
 
     # Check POINT_IN_TIME is converted to datetime
-    mocked_session.register_temp_table.assert_called_once()
-    args, _ = mocked_session.register_temp_table.call_args_list[0]
+    mocked_session.register_temp_table.assert_awaited_once()
+    args, _ = mocked_session.register_temp_table.await_args_list[0]
     df_training_events_registered = args[1]
     assert df_training_events_registered.dtypes["POINT_IN_TIME"] == "datetime64[ns]"
 

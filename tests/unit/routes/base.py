@@ -6,8 +6,11 @@ from datetime import datetime
 from http import HTTPStatus
 from time import sleep
 
+import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
+
+from featurebyte.schema.data import DataCreate
 
 
 class BaseApiTestSuite:
@@ -585,3 +588,228 @@ class BaseRelationshipApiTestSuite(BaseApiTestSuite):
         assert response.json() == {
             "detail": f'Object "{name}" is not the parent of object "{name}".'
         }
+
+
+class BaseDataApiTestSuite(BaseApiTestSuite):
+    """
+    BaseDataApiTestSuite contains tests related to data service
+    """
+
+    data_create_schema_class = DataCreate
+
+    def setup_creation_route(self, api_client):
+        """
+        Setup for post route
+        """
+        api_object_filename_pairs = [
+            ("feature_store", "feature_store"),
+            ("entity", "entity"),
+        ]
+        for api_object, filename in api_object_filename_pairs:
+            payload = self.load_payload(f"tests/fixtures/request_payloads/{filename}.json")
+            response = api_client.post(f"/{api_object}", json=payload)
+            assert response.status_code == HTTPStatus.CREATED
+
+    def multiple_success_payload_generator(self, api_client):
+        """Create multiple payload for setting up create_multiple_success_responses fixture"""
+        _ = api_client
+        for i in range(3):
+            payload = self.payload.copy()
+            payload["_id"] = str(ObjectId())
+            payload["name"] = f'{self.payload["name"]}_{i}'
+            tabular_source = payload["tabular_source"]
+            payload["tabular_source"] = {
+                "feature_store_id": tabular_source["feature_store_id"],
+                "table_details": {
+                    key: f"{value}_{i}" for key, value in tabular_source["table_details"].items()
+                },
+            }
+            yield payload
+
+    @pytest.fixture(name="tabular_source")
+    def tabular_source_fixture(self, snowflake_feature_store):
+        """Fixture for tabular source"""
+        return {
+            "feature_store_id": str(snowflake_feature_store.id),
+            "table_details": {
+                "database_name": "database",
+                "schema_name": "schema",
+                "table_name": "table",
+            },
+        }
+
+    @pytest.fixture(name="columns_info")
+    def column_info_fixture(self):
+        """Fixture for columns info"""
+        return [
+            {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
+            {"name": "another_created_at", "dtype": "TIMESTAMP", "entity_id": None},
+            {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
+            {"name": "event_id", "dtype": "INT", "entity_id": None},
+            {"name": "item_id", "dtype": "INT", "entity_id": None},
+        ]
+
+    @pytest.fixture(name="data_response")
+    def data_response_fixture(
+        self, test_api_client_persistent, data_model_dict, snowflake_feature_store
+    ):
+        """
+        Event data response fixture
+        """
+        test_api_client, _ = test_api_client_persistent
+        snowflake_feature_store.save()
+        response = test_api_client.post(
+            self.base_route, json=self.data_create_schema_class(**data_model_dict).json_dict()
+        )
+        assert response.status_code == HTTPStatus.CREATED
+        assert response.json()["_id"] == data_model_dict["_id"]
+        return response
+
+    def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
+        """Test creation (success)"""
+        super().test_create_201(test_api_client_persistent, create_success_response, user_id)
+        assert create_success_response.json()["status"] == "DRAFT"
+
+    def test_update_fails_table_not_found(self, test_api_client_persistent, data_update_dict):
+        """
+        Update Data fails if table not found
+        """
+        test_api_client, _ = test_api_client_persistent
+        random_id = ObjectId()
+        response = test_api_client.patch(f"{self.base_route}/{random_id}", json=data_update_dict)
+        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert response.json() == {
+            "detail": (
+                f'{self.class_name} (id: "{random_id}") not found. '
+                f"Please save the {self.class_name} object first."
+            )
+        }
+
+    def test_update_fails_invalid_transition(
+        self, test_api_client_persistent, data_response, data_update_dict
+    ):
+        """
+        Update Data fails if status transition is no valid
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = data_response.json()
+        data_update_dict["status"] = "DEPRECATED"
+        response = test_api_client.patch(
+            f"{self.base_route}/{response_dict['_id']}", json=data_update_dict
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json() == {"detail": "Invalid status transition from DRAFT to DEPRECATED."}
+
+    def test_update_status_only(self, test_api_client_persistent, data_response):
+        """
+        Update Event Data status only
+        """
+        # insert a record
+        test_api_client, _ = test_api_client_persistent
+        current_data = data_response.json()
+        assert current_data.pop("status") == "DRAFT"
+        assert current_data.pop("updated_at") is None
+
+        response = test_api_client.patch(
+            f"{self.base_route}/{current_data['_id']}",
+            json={"status": "PUBLISHED"},
+        )
+        assert response.status_code == HTTPStatus.OK
+        updated_data = response.json()
+        updated_at = datetime.fromisoformat(updated_data.pop("updated_at"))
+        assert updated_at > datetime.fromisoformat(updated_data["created_at"])
+
+        # expect status to be published
+        assert updated_data.pop("status") == "PUBLISHED"
+
+        # the other fields should be unchanged
+        assert updated_data == current_data
+
+        # test get audit records
+        response = test_api_client.get(f"{self.base_route}/audit/{current_data['_id']}")
+        assert response.status_code == HTTPStatus.OK
+        results = response.json()
+        assert results["total"] == 2
+        assert [record["action_type"] for record in results["data"]] == ["UPDATE", "INSERT"]
+        assert [record["previous_values"].get("status") for record in results["data"]] == [
+            "DRAFT",
+            None,
+        ]
+
+    def test_update_422(self, test_api_client_persistent, data_update_dict):
+        """Test update (unprocessable) - invalid id value"""
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.patch(f"{self.base_route}/abc", json=data_update_dict)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == [
+            {
+                "loc": ["path", self.id_field_name],
+                "msg": "Id must be of type PydanticObjectId",
+                "type": "type_error",
+            }
+        ]
+
+    def test_update_422__entity_id_not_found(
+        self, test_api_client_persistent, data_response, columns_info
+    ):
+        """Test update (unprocessable) - entity ID not found"""
+        test_api_client, _ = test_api_client_persistent
+        data_response_dict = data_response.json()
+
+        unknown_entity_id = str(ObjectId())
+        columns_info[-1]["entity_id"] = unknown_entity_id
+        response = test_api_client.patch(
+            f"{self.base_route}/{data_response_dict['_id']}",
+            json={"columns_info": columns_info},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == (
+            f"Entity IDs [ObjectId('{unknown_entity_id}')] not found for columns ['item_id']."
+        )
+
+    def test_update_record_creation_date(
+        self,
+        test_api_client_persistent,
+        data_response,
+    ):
+        """
+        Update Event Data record creation date column
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = data_response.json()
+        insert_id = response_dict["_id"]
+
+        update_response = test_api_client.patch(
+            f"{self.base_route}/{insert_id}",
+            json={"record_creation_date_column": "another_created_at"},
+        )
+        update_response_dict = update_response.json()
+        expected_response = {
+            **response_dict,
+            "record_creation_date_column": "another_created_at",
+        }
+        expected_response.pop("updated_at")
+        assert update_response_dict.items() > expected_response.items()
+        assert update_response_dict["updated_at"] is not None
+
+    def test_update_record_creation_date__column_not_exists(
+        self, test_api_client_persistent, data_response
+    ):
+        """
+        Update Event Data record creation date column (when the column does not exist)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = data_response.json()
+        insert_id = response_dict["_id"]
+
+        update_response = test_api_client.patch(
+            f"{self.base_route}/{insert_id}",
+            json={"record_creation_date_column": "non-exist-columns"},
+        )
+        update_response_dict = update_response.json()
+        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert update_response_dict["detail"] == (
+            f"1 validation error for {self.class_name}Model\n"
+            "record_creation_date_column\n  "
+            'Column "non-exist-columns" not found in the table! (type=value_error)'
+        )

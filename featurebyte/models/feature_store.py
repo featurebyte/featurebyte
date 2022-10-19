@@ -4,11 +4,11 @@ This module contains DatabaseSource related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import ClassVar, List, Optional, Union
+from typing import Any, ClassVar, List, Optional, Union
 
 from pydantic import Field, StrictStr
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType, OrderedStrEnum, SourceType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -132,3 +132,79 @@ class ColumnInfo(ColumnSpec):
     """
 
     entity_id: Optional[PydanticObjectId] = Field(default=None)
+
+
+class DataStatus(OrderedStrEnum):
+    """Data status"""
+
+    DEPRECATED = "DEPRECATED"
+    DRAFT = "DRAFT"
+    PUBLISHED = "PUBLISHED"
+
+
+class DataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
+    """
+    DataModel schema
+
+    tabular_source : TabularSource
+        Data warehouse connection information & table name tuple
+    columns_info: List[ColumnInfo]
+        List of event data columns
+    status: DataStatus
+        Data status
+    record_creation_date_column: Optional[str]
+        Record creation date column name
+    """
+
+    columns_info: List[ColumnInfo]
+    status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
+    record_creation_date_column: Optional[StrictStr]
+
+    @classmethod
+    def validate_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
+        """
+        Validate whether the column name exists in the columns info
+
+        Parameters
+        ----------
+        value: Optional[str]
+            Column name value
+        values: dict[str, Any]
+            Input dictionary to data model
+
+        Returns
+        -------
+        Optional[str]
+
+        Raises
+        ------
+        ValueError
+            If the column name does not exist in columns_info
+        """
+        columns = {dict(col)["name"] for col in values["columns_info"]}
+        if value is not None and value not in columns:
+            raise ValueError(f'Column "{value}" not found in the table!')
+        return value
+
+    class Settings(FeatureByteBaseDocumentModel.Settings):
+        """
+        MongoDB settings
+        """
+
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("_id",),
+                conflict_fields_signature={"id": ["_id"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+            UniqueValuesConstraint(
+                fields=("tabular_source",),
+                conflict_fields_signature={"tabular_source": ["tabular_source"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+        ]

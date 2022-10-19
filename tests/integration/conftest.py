@@ -547,6 +547,7 @@ def create_transactions_event_data_from_feature_store(
     event_data = EventData.from_tabular_source(
         tabular_source=database_table,
         name=event_data_name,
+        event_id_column="CREATED_AT",
         event_timestamp_column="EVENT_TIMESTAMP",
     )
     event_data.update_default_feature_job_setting(

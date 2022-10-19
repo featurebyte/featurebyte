@@ -7,6 +7,7 @@ import inspect
 from http import HTTPStatus
 
 from fastapi import Request, Response
+from pydantic import ValidationError
 from starlette.responses import JSONResponse
 
 from featurebyte.exception import (
@@ -157,6 +158,8 @@ ExecutionContext.register(
 )
 
 ExecutionContext.register(DocumentError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
+
+ExecutionContext.register(ValidationError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
 
 ExecutionContext.register(
     NotImplementedError,
