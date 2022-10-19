@@ -3,25 +3,16 @@ EventData API route controller
 """
 from __future__ import annotations
 
-from typing import cast
-
 from bson.objectid import ObjectId
 
 from featurebyte.models.event_data import EventDataModel
-from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
-from featurebyte.schema.event_data import (
-    EventDataCreate,
-    EventDataInfo,
-    EventDataList,
-    EventDataUpdate,
-)
-from featurebyte.service.columns_info import ColumnsInfoService
-from featurebyte.service.data_status import DataStatusService
-from featurebyte.service.event_data import EventDataService
+from featurebyte.routes.common.base import GetInfoControllerMixin
+from featurebyte.routes.common.base_data import BaseDataDocumentController
+from featurebyte.schema.event_data import EventDataInfo, EventDataList, EventDataUpdate
 
 
 class EventDataController(  # type: ignore[misc]
-    BaseDocumentController[EventDataModel, EventDataList], GetInfoControllerMixin[EventDataInfo]
+    BaseDataDocumentController[EventDataModel, EventDataList], GetInfoControllerMixin[EventDataInfo]
 ):
     """
     EventData controller
@@ -29,47 +20,15 @@ class EventDataController(  # type: ignore[misc]
 
     paginated_document_class = EventDataList
 
-    def __init__(
-        self,
-        service: EventDataService,
-        columns_info_service: ColumnsInfoService,
-        data_status_service: DataStatusService,
-    ):
-        super().__init__(service)  # type: ignore[arg-type]
-        self.columns_info_service = columns_info_service
-        self.data_status_service = data_status_service
-
-    async def create_event_data(
-        self,
-        data: EventDataCreate,
-    ) -> EventDataModel:
-        """
-        Create Event Data at persistent
-
-        Parameters
-        ----------
-        data: EventDataCreate
-            EventData creation payload
-
-        Returns
-        -------
-        EventDataModel
-            Newly created event data object
-        """
-        document = await self.service.create_document(data)
-        return cast(EventDataModel, document)
-
-    async def update_event_data(
-        self,
-        event_data_id: ObjectId,
-        data: EventDataUpdate,
+    async def update_data(  # type: ignore
+        self, document_id: ObjectId, data: EventDataUpdate
     ) -> EventDataModel:
         """
         Update EventData (for example, to update scheduled task) at persistent (GitDB or MongoDB)
 
         Parameters
         ----------
-        event_data_id: ObjectId
+        document_id: ObjectId
             EventData ID
         data: EventDataUpdate
             Event data update payload
@@ -79,21 +38,14 @@ class EventDataController(  # type: ignore[misc]
         EventDataModel
             EventData object with updated attribute(s)
         """
-        if data.columns_info:
-            await self.columns_info_service.update_event_data_columns_info(
-                document_id=event_data_id, columns_info=data.columns_info
-            )
+        await super().update_data(document_id=document_id, data=data)
 
-        if data.status:
-            await self.data_status_service.update_event_data_status(
-                document_id=event_data_id, status=data.status
-            )
-
-        if data.dict(exclude={"status": True, "columns_info": True}, exclude_none=True):
+        update_dict = data.dict(exclude={"status": True, "columns_info": True}, exclude_none=True)
+        if update_dict:
             await self.service.update_document(
-                document_id=event_data_id,
-                data=EventDataUpdate(**data.dict(exclude={"status": True})),
+                document_id=document_id,
+                data=EventDataUpdate(**update_dict),
                 return_document=False,
             )
 
-        return await self.get(document_id=event_data_id)
+        return await self.get(document_id=document_id)

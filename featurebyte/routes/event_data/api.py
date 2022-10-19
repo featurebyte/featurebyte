@@ -33,15 +33,12 @@ router = APIRouter(prefix="/event_data")
 
 
 @router.post("", response_model=EventDataModel, status_code=HTTPStatus.CREATED)
-async def create_event_data(
-    request: Request,
-    data: EventDataCreate,
-) -> EventDataModel:
+async def create_event_data(request: Request, data: EventDataCreate) -> EventDataModel:
     """
     Create Event Data
     """
     controller = request.state.app_container.event_data_controller
-    event_data: EventDataModel = await controller.create_event_data(data=data)
+    event_data: EventDataModel = await controller.create_data(data=data)
     return event_data
 
 
@@ -89,11 +86,11 @@ async def update_event_data(
     data: EventDataUpdate,
 ) -> EventDataModel:
     """
-    Update scheduled task
+    Update Event Data
     """
     controller = request.state.app_container.event_data_controller
-    event_data: EventDataModel = await controller.update_event_data(
-        event_data_id=event_data_id,
+    event_data: EventDataModel = await controller.update_data(
+        document_id=event_data_id,
         data=data,
     )
     return event_data

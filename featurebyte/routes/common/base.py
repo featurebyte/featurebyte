@@ -25,7 +25,7 @@ ParentT = TypeVar("ParentT", bound=Parent)
 
 class BaseDocumentController(Generic[Document, PaginatedDocument]):
     """
-    BaseController for API routes
+    BaseDocumentController for API routes
     """
 
     paginated_document_class: Type[PaginationMixin] = PaginationMixin

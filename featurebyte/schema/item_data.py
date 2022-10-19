@@ -7,7 +7,10 @@ from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.models.feature_store import ColumnInfo, DataStatus, TabularSource
+from featurebyte.models.feature_store import ColumnInfo, TabularSource
+from featurebyte.models.item_data import ItemDataModel
+from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.data import DataUpdate
 
 
 class ItemDataCreate(FeatureByteBaseModel):
@@ -23,10 +26,15 @@ class ItemDataCreate(FeatureByteBaseModel):
     item_id_column: StrictStr
 
 
-class ItemDataUpdate(FeatureByteBaseModel):
+class ItemDataList(PaginationMixin):
+    """
+    Paginated list of Item Data
+    """
+
+    data: List[ItemDataModel]
+
+
+class ItemDataUpdate(DataUpdate):
     """
     ItemData update schema
     """
-
-    columns_info: Optional[List[ColumnInfo]]
-    status: Optional[DataStatus]

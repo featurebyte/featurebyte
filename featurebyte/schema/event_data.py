@@ -15,6 +15,7 @@ from featurebyte.models.feature_store import ColumnInfo, DataStatus, TableDetail
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
+from featurebyte.schema.data import DataUpdate
 from featurebyte.schema.entity import EntityBriefInfoList
 
 
@@ -41,15 +42,13 @@ class EventDataList(PaginationMixin):
     data: List[EventDataModel]
 
 
-class EventDataUpdate(FeatureByteBaseModel):
+class EventDataUpdate(DataUpdate):
     """
     EventData Update Schema
     """
 
-    columns_info: Optional[List[ColumnInfo]]
     default_feature_job_setting: Optional[FeatureJobSetting]
     record_creation_date_column: Optional[StrictStr]
-    status: Optional[DataStatus]
 
 
 class EventDataBriefInfo(BaseBriefInfo):
