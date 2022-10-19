@@ -746,3 +746,21 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
                 "type": "type_error",
             }
         ]
+
+    def test_update_422__entity_id_not_found(
+        self, test_api_client_persistent, data_response, columns_info
+    ):
+        """Test update (unprocessable) - entity ID not found"""
+        test_api_client, _ = test_api_client_persistent
+        data_response_dict = data_response.json()
+
+        unknown_entity_id = str(ObjectId())
+        columns_info[-1]["entity_id"] = unknown_entity_id
+        response = test_api_client.patch(
+            f"{self.base_route}/{data_response_dict['_id']}",
+            json={"columns_info": columns_info},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == (
+            f"Entity IDs [ObjectId('{unknown_entity_id}')] not found for columns ['item_id']."
+        )
