@@ -89,8 +89,6 @@ class EventDataModel(DataModel):
         Event ID column name
     event_timestamp_column: str
         Event timestamp column name
-    record_creation_date_column: Optional[str]
-        Record creation date column name
     default_feature_job_setting : Optional[FeatureJobSetting]
         Default feature job setting
     status : DataStatus
@@ -103,7 +101,6 @@ class EventDataModel(DataModel):
 
     event_id_column: Optional[StrictStr] = Field(default=None)  # DEV-556: this should be compulsory
     event_timestamp_column: StrictStr
-    record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]
 
     @validator("event_id_column", "event_timestamp_column", "record_creation_date_column")

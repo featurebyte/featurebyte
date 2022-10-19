@@ -25,7 +25,6 @@ class EventDataCreate(DataCreate):
 
     event_id_column: StrictStr
     event_timestamp_column: StrictStr
-    record_creation_date_column: Optional[StrictStr]
     default_feature_job_setting: Optional[FeatureJobSetting]
 
 
@@ -43,7 +42,6 @@ class EventDataUpdate(DataUpdate):
     """
 
     default_feature_job_setting: Optional[FeatureJobSetting]
-    record_creation_date_column: Optional[StrictStr]
 
 
 class EventDataBriefInfo(BaseBriefInfo):
@@ -107,5 +105,4 @@ class EventDataInfo(EventDataBriefInfo, BaseInfo):
     default_feature_job_setting: Optional[FeatureJobSetting]
     entities: EntityBriefInfoList
     column_count: int
-    # feature_count: int
     columns_info: Optional[List[EventDataColumnInfo]]

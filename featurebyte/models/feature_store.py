@@ -152,10 +152,13 @@ class DataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
         List of event data columns
     status: DataStatus
         Data status
+    record_creation_date_column: Optional[str]
+        Record creation date column name
     """
 
     columns_info: List[ColumnInfo]
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
+    record_creation_date_column: Optional[StrictStr]
 
     @classmethod
     def validate_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:

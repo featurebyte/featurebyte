@@ -19,6 +19,7 @@ class DataCreate(FeatureByteBaseModel):
     name: StrictStr
     tabular_source: TabularSource
     columns_info: List[ColumnInfo]
+    record_creation_date_column: Optional[StrictStr]
 
 
 class DataUpdate(FeatureByteBaseModel):
@@ -28,3 +29,4 @@ class DataUpdate(FeatureByteBaseModel):
 
     columns_info: Optional[List[ColumnInfo]]
     status: Optional[DataStatus]
+    record_creation_date_column: Optional[StrictStr]

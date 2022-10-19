@@ -38,7 +38,7 @@ class ItemDataModel(DataModel):
     event_id_column: StrictStr
     item_id_column: StrictStr
 
-    @validator("event_id_column", "item_id_column")
+    @validator("event_id_column", "item_id_column", "record_creation_date_column")
     @classmethod
     def _check_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
         return DataModel.validate_column_exists(value, values)

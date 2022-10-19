@@ -145,55 +145,6 @@ class TestEventDataApi(BaseDataApiTestSuite):
             {"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"},
         ]
 
-    def test_update_record_creation_date(
-        self,
-        test_api_client_persistent,
-        data_response,
-        data_update_dict,
-    ):
-        """
-        Update Event Data record creation date column
-        """
-        test_api_client, _ = test_api_client_persistent
-        response_dict = data_response.json()
-        insert_id = response_dict["_id"]
-
-        update_response = test_api_client.patch(
-            f"/event_data/{insert_id}",
-            json={**data_update_dict, "record_creation_date_column": "another_created_at"},
-        )
-        update_response_dict = update_response.json()
-        expected_response = {
-            **response_dict,
-            **data_update_dict,
-            "record_creation_date_column": "another_created_at",
-        }
-        expected_response.pop("updated_at")
-        assert update_response_dict.items() > expected_response.items()
-        assert update_response_dict["updated_at"] is not None
-
-    def test_update_record_creation_date__column_not_exists(
-        self, test_api_client_persistent, data_response
-    ):
-        """
-        Update Event Data record creation date column (when the column does not exist)
-        """
-        test_api_client, _ = test_api_client_persistent
-        response_dict = data_response.json()
-        insert_id = response_dict["_id"]
-
-        update_response = test_api_client.patch(
-            f"/event_data/{insert_id}",
-            json={"record_creation_date_column": "non-exist-columns"},
-        )
-        update_response_dict = update_response.json()
-        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert update_response_dict["detail"] == (
-            "1 validation error for EventDataModel\n"
-            "record_creation_date_column\n  "
-            'Column "non-exist-columns" not found in the table! (type=value_error)'
-        )
-
     def test_update_excludes_unsupported_fields(
         self,
         test_api_client_persistent,
