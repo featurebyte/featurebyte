@@ -11,7 +11,7 @@ from datetime import datetime
 from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
-from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DataModel
 
 
@@ -73,7 +73,7 @@ class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
     setting: Optional[FeatureJobSetting]
 
 
-class EventDataModel(DataModel, FeatureByteBaseDocumentModel):
+class EventDataModel(DataModel):
     """
     Model for EventData entity
 

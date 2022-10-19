@@ -142,7 +142,7 @@ class DataStatus(OrderedStrEnum):
     PUBLISHED = "PUBLISHED"
 
 
-class DataModel(DatabaseTableModel):
+class DataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
     """
     DataModel schema
 
@@ -157,7 +157,7 @@ class DataModel(DatabaseTableModel):
     columns_info: List[ColumnInfo]
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
 
-    class Settings:
+    class Settings(FeatureByteBaseDocumentModel.Settings):
         """
         MongoDB settings
         """

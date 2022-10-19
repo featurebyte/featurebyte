@@ -8,11 +8,10 @@ from typing import Any, Optional
 
 from pydantic import StrictStr, validator
 
-from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.feature_store import DataModel
 
 
-class ItemDataModel(DataModel, FeatureByteBaseDocumentModel):
+class ItemDataModel(DataModel):
     """
     Model for ItemData entity
 
