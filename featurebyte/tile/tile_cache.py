@@ -18,6 +18,7 @@ from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import BaseAdapter, SnowflakeAdapter
+from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
@@ -559,9 +560,8 @@ class TileCache(ABC):
         )
         return last_tile_start_date_expr
 
-    @staticmethod
     def _get_tile_start_end_date_expr(
-        point_in_time_epoch_expr: Expression, tile_info: TileGenSql
+        self, point_in_time_epoch_expr: Expression, tile_info: TileGenSql
     ) -> tuple[Expression, Expression]:
         """Get the start and end dates based on which to compute the tiles
 
@@ -591,15 +591,16 @@ class TileCache(ABC):
             expressions=[expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)],
         )
 
-        # DATEADD(s, TIME_MODULO_FREQUENCY - BLIND_SPOT, CAST('1970-01-01' AS TIMESTAMP))"
-        tile_boundaries_offset = expressions.Sub(this=time_modulo_frequency, expression=blind_spot)
-        start_date_expr = expressions.Anonymous(
-            this="DATEADD",
-            expressions=[
-                expressions.Identifier(this="s"),
-                tile_boundaries_offset,
-                parse_one("CAST('1970-01-01' AS TIMESTAMP)"),
-            ],
+        # DATEADD(s, TIME_MODULO_FREQUENCY - BLIND_SPOT, CAST('1970-01-01' AS TIMESTAMP))
+        tile_boundaries_offset = expressions.Paren(
+            this=expressions.Sub(this=time_modulo_frequency, expression=blind_spot)
+        )
+        tile_boundaries_offset_microsecond = TimedeltaExtractNode.convert_timedelta_unit(
+            tile_boundaries_offset, "second", "microsecond"
+        )
+        start_date_expr = self.adapter.dateadd_microsecond(
+            tile_boundaries_offset_microsecond,
+            parse_one("CAST('1970-01-01' AS TIMESTAMP)"),
         )
         return start_date_expr, end_date_expr
 
