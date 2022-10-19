@@ -109,10 +109,7 @@ class EventDataModel(DataModel):
     @validator("event_id_column", "event_timestamp_column", "record_creation_date_column")
     @classmethod
     def _check_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
-        columns = {dict(col)["name"] for col in values["columns_info"]}
-        if value is not None and value not in columns:
-            raise ValueError(f'Column "{value}" not found in the table!')
-        return value
+        return DataModel.validate_column_exists(value, values)
 
     class Settings(DataModel.Settings):
         """

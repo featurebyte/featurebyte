@@ -16,6 +16,9 @@ from featurebyte.schema.item_data import ItemDataUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.base_update import BaseUpdateService
 
+DataDocumentService = Union[BaseDocumentService[EventDataModel], BaseDocumentService[ItemDataModel]]
+DataUpdateSchema = Union[EventDataUpdate, ItemDataUpdate]
+
 
 class DataUpdateService(BaseUpdateService):
     """
@@ -24,20 +27,18 @@ class DataUpdateService(BaseUpdateService):
 
     @staticmethod
     async def update_data_status(
-        service: Union[BaseDocumentService[EventDataModel], BaseDocumentService[ItemDataModel]],
-        document_id: ObjectId,
-        data: Union[EventDataUpdate, ItemDataUpdate],
+        service: DataDocumentService, document_id: ObjectId, data: DataUpdateSchema
     ) -> None:
         """
         Update data status
 
         Parameters
         ----------
-        service: Union[BaseDocumentService[EventDataModel], BaseDocumentService[ItemDataModel]]
+        service: DataDocumentService
             Data service object
         document_id: ObjectId
             Document ID
-        data: Union[EventDataUpdate, ItemDataUpdate]
+        data: DataUpdateSchema
             Data upload payload
 
         Raises
@@ -66,21 +67,18 @@ class DataUpdateService(BaseUpdateService):
             )
 
     async def update_columns_info(
-        self,
-        service: Union[BaseDocumentService[EventDataModel], BaseDocumentService[ItemDataModel]],
-        document_id: ObjectId,
-        data: Union[EventDataUpdate, ItemDataUpdate],
+        self, service: DataDocumentService, document_id: ObjectId, data: DataUpdateSchema
     ) -> None:
         """
         Update data columns info
 
         Parameters
         ----------
-        service: Union[BaseDocumentService[EventDataModel], BaseDocumentService[ItemDataModel]]
+        service: DataDocumentService
             Data service object
         document_id: ObjectId
             Document ID
-        data: Union[EventDataUpdate, ItemDataUpdate]
+        data: DataUpdateSchema
             Data upload payload
 
         Raises

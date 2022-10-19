@@ -4,7 +4,7 @@ This module contains DatabaseSource related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import ClassVar, List, Optional, Union
+from typing import Any, ClassVar, List, Optional, Union
 
 from pydantic import Field, StrictStr
 
@@ -156,6 +156,32 @@ class DataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
 
     columns_info: List[ColumnInfo]
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
+
+    @classmethod
+    def validate_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
+        """
+        Validate whether the column name exists in the columns info
+
+        Parameters
+        ----------
+        value: Optional[str]
+            Column name value
+        values: dict[str, Any]
+            Input dictionary to data model
+
+        Returns
+        -------
+        Optional[str]
+
+        Raises
+        ------
+        ValueError
+            If the column name does not exist in columns_info
+        """
+        columns = {dict(col)["name"] for col in values["columns_info"]}
+        if value is not None and value not in columns:
+            raise ValueError(f'Column "{value}" not found in the table!')
+        return value
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """
