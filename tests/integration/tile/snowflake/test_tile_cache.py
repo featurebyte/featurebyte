@@ -7,7 +7,7 @@ import pytest
 from featurebyte.api.event_view import EventView
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
-from featurebyte.tile.tile_cache import SnowflakeOnDemandTileComputeRequest, SnowflakeTileCache
+from featurebyte.tile.tile_cache import OnDemandTileComputeRequest, SnowflakeTileCache
 
 
 @pytest.fixture(name="feature_for_tile_cache_tests")
@@ -33,7 +33,7 @@ def feature_for_tile_cache_tests_fixture(event_data, groupby_category):
 
 async def check_entity_table_sql_and_tile_compute_sql(
     session,
-    request: SnowflakeOnDemandTileComputeRequest,
+    request: OnDemandTileComputeRequest,
     entity_column,
     expected_entities,
 ):

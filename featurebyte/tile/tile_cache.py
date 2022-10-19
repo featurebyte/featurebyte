@@ -9,7 +9,7 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from sqlglot import expressions, select
+from sqlglot import Expression, expressions, parse_one, select
 
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
@@ -17,6 +17,8 @@ from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.sql.adapter import BaseAdapter, SnowflakeAdapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     apply_serving_names_mapping,
@@ -27,42 +29,8 @@ from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.session.base import BaseSession
 
 
-class TileCache(ABC):
-    """Responsible for on-demand tile computation for historical features
-
-    Parameters
-    ----------
-    session : BaseSession
-        Session object to interact with database
-    """
-
-    # pylint: disable=too-few-public-methods
-
-    def __init__(self, session: BaseSession):
-        self.session = session
-
-    @abstractmethod
-    async def compute_tiles_on_demand(
-        self,
-        graph: QueryGraph,
-        nodes: list[Node],
-        serving_names_mapping: dict[str, str] | None = None,
-    ) -> None:
-        """Check tile status for the provided features and compute missing tiles if required
-
-        Parameters
-        ----------
-        graph : QueryGraph
-            Query graph
-        nodes : list[Node]
-            List of query graph node
-        serving_names_mapping : dict[str, str] | None
-            Optional mapping from original serving name to new serving name
-        """
-
-
 @dataclass
-class SnowflakeOnDemandTileComputeRequest:
+class OnDemandTileComputeRequest:
     """Information required to compute and update a single tile table"""
 
     tile_table_id: str
@@ -97,12 +65,25 @@ class SnowflakeOnDemandTileComputeRequest:
         return tile_spec, self.tracker_sql
 
 
-class SnowflakeTileCache(TileCache):
-    """Responsible for on-demand tile computation and caching for Snowflake"""
+class TileCache(ABC):
+    """Responsible for on-demand tile computation for historical features
 
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
+    Parameters
+    ----------
+    session : BaseSession
+        Session object to interact with database
+    """
+
+    tile_manager_class = None
+
+    def __init__(self, session: BaseSession):
+        self.session = session
         self._materialized_temp_table_names: set[str] = set()
+
+    @property
+    @abstractmethod
+    def adapter(self) -> BaseAdapter:
+        """Returns an instance of BaseAdapter for engine specific SQL expressions generation"""
 
     async def compute_tiles_on_demand(
         self,
@@ -110,7 +91,7 @@ class SnowflakeTileCache(TileCache):
         nodes: list[Node],
         serving_names_mapping: dict[str, str] | None = None,
     ) -> None:
-        """Compute missing tiles for the given list of FeatureModel objects
+        """Check tile status for the provided features and compute missing tiles if required
 
         Parameters
         ----------
@@ -141,16 +122,16 @@ class SnowflakeTileCache(TileCache):
         await self.cleanup_temp_tables()
 
     async def invoke_tile_manager(
-        self, required_requests: list[SnowflakeOnDemandTileComputeRequest]
+        self, required_requests: list[OnDemandTileComputeRequest]
     ) -> None:
         """Interacts with FeatureListManagerSnowflake to compute tiles and update cache
 
         Parameters
         ----------
-        required_requests : list[SnowflakeOnDemandTileComputeRequest]
+        required_requests : list[OnDemandTileComputeRequest]
             List of required compute requests (where entity table is non-empty)
         """
-        tile_manager = FeatureListManagerSnowflake(session=self.session)
+        tile_manager = self.tile_manager_class(session=self.session)
         tile_inputs = []
         for request in required_requests:
             tile_input = request.to_tile_manager_input()
@@ -168,7 +149,7 @@ class SnowflakeTileCache(TileCache):
         graph: QueryGraph,
         nodes: list[Node],
         serving_names_mapping: dict[str, str] | None = None,
-    ) -> list[SnowflakeOnDemandTileComputeRequest]:
+    ) -> list[OnDemandTileComputeRequest]:
         """Query the entity tracker tables on Snowflake and obtain a list of tile computations that
         are required
 
@@ -183,7 +164,7 @@ class SnowflakeTileCache(TileCache):
 
         Returns
         -------
-        list[SnowflakeOnDemandTileComputeRequest]
+        list[OnDemandTileComputeRequest]
         """
         unique_tile_infos = SnowflakeTileCache._get_unique_tile_infos(
             graph=graph, nodes=nodes, serving_names_mapping=serving_names_mapping
@@ -351,7 +332,12 @@ class SnowflakeTileCache(TileCache):
                     f"REQ.{quoted_identifier(serving_name).sql()} = {table_alias}.{quoted_identifier(key).sql()}"
                 )
             join_conditions.append(
-                f"{last_tile_start_date_expr} <= {table_alias}.{InternalName.TILE_LAST_START_DATE}"
+                expressions.LTE(
+                    this=last_tile_start_date_expr,
+                    expression=expressions.Identifier(
+                        this=f"{table_alias}.{InternalName.TILE_LAST_START_DATE}"
+                    ),
+                )
             )
             table_expr = table_expr.join(
                 tracker_table_name,
@@ -410,7 +396,7 @@ class SnowflakeTileCache(TileCache):
 
     def _construct_request_from_working_table(
         self, tile_info: TileGenSql
-    ) -> SnowflakeOnDemandTileComputeRequest:
+    ) -> OnDemandTileComputeRequest:
         """Construct a compute request for a tile table that is known to require computation
 
         Parameters
@@ -420,7 +406,7 @@ class SnowflakeTileCache(TileCache):
 
         Returns
         -------
-        SnowflakeOnDemandTileComputeRequest
+        OnDemandTileComputeRequest
         """
         tile_id = tile_info.tile_table_id
         aggregation_id = tile_info.aggregation_id
@@ -449,9 +435,11 @@ class SnowflakeTileCache(TileCache):
         entity_table_expr = (
             select(
                 *serving_names_to_keys,
-                f"{last_tile_start_date_expr} AS {InternalName.TILE_LAST_START_DATE}",
-                f"{start_date_expr} AS {InternalName.ENTITY_TABLE_START_DATE}",
-                f"{end_date_expr} AS {InternalName.ENTITY_TABLE_END_DATE}",
+                expressions.alias_(
+                    last_tile_start_date_expr, InternalName.TILE_LAST_START_DATE.value
+                ),
+                expressions.alias_(start_date_expr, InternalName.ENTITY_TABLE_START_DATE.value),
+                expressions.alias_(end_date_expr, InternalName.ENTITY_TABLE_END_DATE.value),
             )
             .from_(InternalName.TILE_CACHE_WORKING_TABLE.value)
             .where(working_table_filter)
@@ -461,7 +449,7 @@ class SnowflakeTileCache(TileCache):
         tile_compute_sql = tile_info.sql_template.render(
             {InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery()}
         )
-        request = SnowflakeOnDemandTileComputeRequest(
+        request = OnDemandTileComputeRequest(
             tile_table_id=tile_id,
             aggregation_id=aggregation_id,
             tracker_sql=sql_to_string(entity_table_expr, source_type=SourceType.SNOWFLAKE),
@@ -470,8 +458,7 @@ class SnowflakeTileCache(TileCache):
         )
         return request
 
-    @staticmethod
-    def _get_point_in_time_epoch_expr(in_groupby_context: bool) -> str:
+    def _get_point_in_time_epoch_expr(self, in_groupby_context: bool) -> Expression:
         """Get the SQL expression for point-in-time
 
         Parameters
@@ -483,16 +470,23 @@ class SnowflakeTileCache(TileCache):
         -------
         str
         """
+        point_in_time_identifier = expressions.Identifier(
+            this=SpecialColumnName.POINT_IN_TIME.value
+        )
         if in_groupby_context:
             # When this is True, we are interested in the latest point-in-time for each entity (the
             # groupby key).
-            point_in_time_epoch_expr = f"DATE_PART(epoch, MAX({SpecialColumnName.POINT_IN_TIME}))"
+            point_in_time_epoch_expr = self.adapter.to_epoch_seconds(
+                expressions.Max(this=point_in_time_identifier)
+            )
         else:
-            point_in_time_epoch_expr = f"DATE_PART(epoch, {SpecialColumnName.POINT_IN_TIME})"
+            point_in_time_epoch_expr = self.adapter.to_epoch_seconds(point_in_time_identifier)
         return point_in_time_epoch_expr
 
     @staticmethod
-    def _get_previous_job_epoch_expr(point_in_time_epoch_expr: str, tile_info: TileGenSql) -> str:
+    def _get_previous_job_epoch_expr(
+        point_in_time_epoch_expr: Expression, tile_info: TileGenSql
+    ) -> Expression:
         """Get the SQL expression for the epoch second of previous feature job
 
         Parameters
@@ -506,19 +500,33 @@ class SnowflakeTileCache(TileCache):
         -------
         str
         """
-        frequency = tile_info.frequency
-        time_modulo_frequency = tile_info.time_modulo_frequency
-        previous_job_index_expr = (
-            f"FLOOR(({point_in_time_epoch_expr} - {time_modulo_frequency}) / {frequency})"
+        frequency = make_literal_value(tile_info.frequency)
+        time_modulo_frequency = make_literal_value(tile_info.time_modulo_frequency)
+
+        # FLOOR((POINT_IN_TIME - TIME_MODULO_FREQUENCY) / FREQUENCY)
+        previous_job_index_expr = expressions.Floor(
+            this=expressions.Div(
+                this=expressions.Paren(
+                    this=expressions.Sub(
+                        this=point_in_time_epoch_expr, expression=time_modulo_frequency
+                    )
+                ),
+                expression=frequency,
+            )
         )
-        previous_job_epoch_expr = (
-            f"({previous_job_index_expr}) * {frequency} + {time_modulo_frequency}"
+
+        # PREVIOUS_JOB_INDEX * FREQUENCY + TIME_MODULO_FREQUENCY
+        previous_job_epoch_expr = expressions.Add(
+            this=expressions.Mul(this=previous_job_index_expr, expression=frequency),
+            expression=time_modulo_frequency,
         )
 
         return previous_job_epoch_expr
 
     @staticmethod
-    def _get_last_tile_start_date_expr(point_in_time_epoch_expr: str, tile_info: TileGenSql) -> str:
+    def _get_last_tile_start_date_expr(
+        point_in_time_epoch_expr: Expression, tile_info: TileGenSql
+    ) -> Expression:
         """Get the SQL expression for the "last tile start date" corresponding to the point-in-time
 
         Parameters
@@ -536,18 +544,25 @@ class SnowflakeTileCache(TileCache):
         previous_job_epoch_expr = SnowflakeTileCache._get_previous_job_epoch_expr(
             point_in_time_epoch_expr, tile_info
         )
-        blind_spot = tile_info.blind_spot
-        frequency = tile_info.frequency
-        last_tile_start_date_expr = (
-            f"TO_TIMESTAMP({previous_job_epoch_expr} - {blind_spot} - {frequency})"
-        )
+        blind_spot = make_literal_value(tile_info.blind_spot)
+        frequency = make_literal_value(tile_info.frequency)
 
+        # TO_TIMESTAMP(PREVIOUS_JOB_EPOCH_EXPR - BLIND_SPOT - FREQUENCY
+        last_tile_start_date_expr = expressions.Anonymous(
+            this="TO_TIMESTAMP",
+            expressions=[
+                expressions.Sub(
+                    this=expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot),
+                    expression=frequency,
+                ),
+            ],
+        )
         return last_tile_start_date_expr
 
     @staticmethod
     def _get_tile_start_end_date_expr(
-        point_in_time_epoch_expr: str, tile_info: TileGenSql
-    ) -> tuple[str, str]:
+        point_in_time_epoch_expr: Expression, tile_info: TileGenSql
+    ) -> tuple[Expression, Expression]:
         """Get the start and end dates based on which to compute the tiles
 
         These will be used to construct the entity table that will be used to filter the event data
@@ -562,15 +577,47 @@ class SnowflakeTileCache(TileCache):
 
         Returns
         -------
-        str
+        Tuple[Expression, Expression]
         """
         previous_job_epoch_expr = SnowflakeTileCache._get_previous_job_epoch_expr(
             point_in_time_epoch_expr, tile_info
         )
-        blind_spot = tile_info.blind_spot
-        time_modulo_frequency = tile_info.time_modulo_frequency
-        end_date_expr = f"TO_TIMESTAMP({previous_job_epoch_expr} - {blind_spot})"
-        start_date_expr = (
-            f"DATEADD(s, {time_modulo_frequency} - {blind_spot}, CAST('1970-01-01' AS TIMESTAMP))"
+        blind_spot = make_literal_value(tile_info.blind_spot)
+        time_modulo_frequency = make_literal_value(tile_info.time_modulo_frequency)
+
+        # TO_TIMESTAMP(PREVIOUS_JOB_EPOCH - BLIND_SPOT)
+        end_date_expr = expressions.Anonymous(
+            this="TO_TIMESTAMP",
+            expressions=[expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)],
+        )
+
+        # DATEADD(s, TIME_MODULO_FREQUENCY - BLIND_SPOT, CAST('1970-01-01' AS TIMESTAMP))"
+        tile_boundaries_offset = expressions.Sub(this=time_modulo_frequency, expression=blind_spot)
+        start_date_expr = expressions.Anonymous(
+            this="DATEADD",
+            expressions=[
+                expressions.Identifier(this="s"),
+                tile_boundaries_offset,
+                parse_one("CAST('1970-01-01' AS TIMESTAMP)"),
+            ],
         )
         return start_date_expr, end_date_expr
+
+
+class SnowflakeTileCache(TileCache):
+    """Responsible for on-demand tile computation and caching for Snowflake"""
+
+    tile_manager_class = FeatureListManagerSnowflake
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+
+    @property
+    def adapter(self) -> BaseAdapter:
+        return SnowflakeAdapter()
+
+
+def get_tile_cache(source_type: SourceType):
+    if source_type == SourceType.SNOWFLAKE:
+        return SnowflakeTileCache
+    raise NotImplementedError()
