@@ -41,7 +41,7 @@ class OnDemandTileComputeRequest:
     tile_gen_info: TileGenSql
 
     def to_tile_manager_input(self) -> tuple[TileSpec, str]:
-        """Returns a tuple required by FeatureListManagerSnowflake to compute tiles on-demand
+        """Returns a tuple required by FeatureListManager to compute tiles on-demand
 
         Returns
         -------
@@ -76,6 +76,7 @@ class TileCache(ABC):
     """
 
     tile_manager_class = None
+    source_type = None
 
     def __init__(self, session: BaseSession):
         self.session = session
@@ -125,7 +126,7 @@ class TileCache(ABC):
     async def invoke_tile_manager(
         self, required_requests: list[OnDemandTileComputeRequest]
     ) -> None:
-        """Interacts with FeatureListManagerSnowflake to compute tiles and update cache
+        """Interacts with FeatureListManager to compute tiles and update cache
 
         Parameters
         ----------
@@ -140,7 +141,7 @@ class TileCache(ABC):
         await tile_manager.generate_tiles_on_demand(tile_inputs=tile_inputs)
 
     async def cleanup_temp_tables(self) -> None:
-        """Drops all the temp tables that was created by SnowflakeTileCache"""
+        """Drops all the temp tables that was created by TileCache"""
         for temp_table_name in self._materialized_temp_table_names:
             await self.session.execute_query(f"DROP TABLE IF EXISTS {temp_table_name}")
         self._materialized_temp_table_names = set()
@@ -151,8 +152,7 @@ class TileCache(ABC):
         nodes: list[Node],
         serving_names_mapping: dict[str, str] | None = None,
     ) -> list[OnDemandTileComputeRequest]:
-        """Query the entity tracker tables on Snowflake and obtain a list of tile computations that
-        are required
+        """Query the entity tracker tables and obtain a list of tile computations that are required
 
         Parameters
         ----------
@@ -167,7 +167,7 @@ class TileCache(ABC):
         -------
         list[OnDemandTileComputeRequest]
         """
-        unique_tile_infos = SnowflakeTileCache._get_unique_tile_infos(
+        unique_tile_infos = self._get_unique_tile_infos(
             graph=graph, nodes=nodes, serving_names_mapping=serving_names_mapping
         )
         tile_ids_with_tracker = await self._filter_tile_ids_with_tracker(
@@ -209,9 +209,8 @@ class TileCache(ABC):
 
         return requests
 
-    @staticmethod
     def _get_unique_tile_infos(
-        graph: QueryGraph, nodes: list[Node], serving_names_mapping: dict[str, str] | None
+        self, graph: QueryGraph, nodes: list[Node], serving_names_mapping: dict[str, str] | None
     ) -> dict[str, TileGenSql]:
         """Construct mapping from tile_table_id to TileGenSql for easier manipulation
 
@@ -229,7 +228,7 @@ class TileCache(ABC):
         dict[str, TileGenSql]
         """
         out = {}
-        interpreter = GraphInterpreter(graph, source_type=SourceType.SNOWFLAKE)
+        interpreter = GraphInterpreter(graph, source_type=self.source_type)
         for node in nodes:
             infos = interpreter.construct_tile_gen_sql(node, is_on_demand=True)
             for info in infos:
@@ -242,7 +241,7 @@ class TileCache(ABC):
         return out
 
     async def _filter_tile_ids_with_tracker(self, tile_ids: list[str]) -> list[str]:
-        """Query tracker tables in Snowflake to identify tile IDs with existing tracking tables
+        """Query tracker tables in data warehouse to identify tile IDs with existing tracking tables
 
         Parameters
         ----------
@@ -268,7 +267,7 @@ class TileCache(ABC):
             all_trackers = set()
         out = []
         for tile_id in tile_ids:
-            tile_id_tracker_name = SnowflakeTileCache._get_tracker_name_from_tile_id(tile_id)
+            tile_id_tracker_name = self._get_tracker_name_from_tile_id(tile_id)
             if tile_id_tracker_name in all_trackers:
                 out.append(tile_id)
         return out
@@ -286,7 +285,7 @@ class TileCache(ABC):
         """Register a temp table from which we can query whether each (POINT_IN_TIME, ENTITY_ID,
         TILE_ID) pair has updated tile cache: a null value in this table indicates that the pair has
         outdated tile cache. A non-null value refers to the valid last tile start date registered in
-        the Snowflake tracking table for that pair.
+        the data warehouse's tracking table for that pair.
 
         Two possible reasons that can cause tile cache to be outdated: 1) tiles were never computed
         for the entity; or 2) tiles were previously computed for the entity but more recent tiles
@@ -311,9 +310,9 @@ class TileCache(ABC):
         unique_tile_infos : dict[str, TileGenSql]
             Mapping from tile id to TileGenSql
         tile_ids_with_tracker : list[str]
-            List of tile ids with existing tracker tables on Snowflake
+            List of tile ids with existing tracker tables
         tile_ids_no_tracker : list[str]
-            List of tile ids without existing tracker table on Snowflake
+            List of tile ids without existing tracker table
         """
         # pylint: disable=too-many-locals
         table_expr = select().from_(f"{REQUEST_TABLE_NAME} AS REQ")
@@ -453,7 +452,7 @@ class TileCache(ABC):
         request = OnDemandTileComputeRequest(
             tile_table_id=tile_id,
             aggregation_id=aggregation_id,
-            tracker_sql=sql_to_string(entity_table_expr, source_type=SourceType.SNOWFLAKE),
+            tracker_sql=sql_to_string(entity_table_expr, source_type=self.source_type),
             tile_compute_sql=tile_compute_sql,
             tile_gen_info=tile_info,
         )
@@ -542,7 +541,7 @@ class TileCache(ABC):
         str
         """
         # Convert point in time to feature job time, then last tile start date
-        previous_job_epoch_expr = SnowflakeTileCache._get_previous_job_epoch_expr(
+        previous_job_epoch_expr = TileCache._get_previous_job_epoch_expr(
             point_in_time_epoch_expr, tile_info
         )
         blind_spot = make_literal_value(tile_info.blind_spot)
@@ -579,7 +578,7 @@ class TileCache(ABC):
         -------
         Tuple[Expression, Expression]
         """
-        previous_job_epoch_expr = SnowflakeTileCache._get_previous_job_epoch_expr(
+        previous_job_epoch_expr = self._get_previous_job_epoch_expr(
             point_in_time_epoch_expr, tile_info
         )
         blind_spot = make_literal_value(tile_info.blind_spot)
@@ -609,6 +608,7 @@ class SnowflakeTileCache(TileCache):
     """Responsible for on-demand tile computation and caching for Snowflake"""
 
     tile_manager_class = FeatureListManagerSnowflake
+    source_type = SourceType.SNOWFLAKE
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
