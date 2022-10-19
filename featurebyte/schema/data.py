@@ -3,13 +3,27 @@ Data model's attribute payload schema
 """
 from typing import List, Optional
 
-from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.feature_store import ColumnInfo, DataStatus
+from bson.objectid import ObjectId
+from pydantic import Field, StrictStr
+
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.feature_store import ColumnInfo, DataStatus, TabularSource
+
+
+class DataCreate(FeatureByteBaseModel):
+    """
+    DataService create schema
+    """
+
+    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    name: StrictStr
+    tabular_source: TabularSource
+    columns_info: List[ColumnInfo]
 
 
 class DataUpdate(FeatureByteBaseModel):
     """
-    ColumnsInfoService update schema
+    DataService update schema
     """
 
     columns_info: Optional[List[ColumnInfo]]

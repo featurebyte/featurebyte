@@ -5,29 +5,24 @@ from __future__ import annotations
 
 from typing import Any, List, Optional
 
-from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
 from featurebyte.enum import DBVarType
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
-from featurebyte.models.feature_store import ColumnInfo, DataStatus, TableDetails, TabularSource
+from featurebyte.models.feature_store import DataStatus, TableDetails
 from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
-from featurebyte.schema.data import DataUpdate
+from featurebyte.schema.data import DataCreate, DataUpdate
 from featurebyte.schema.entity import EntityBriefInfoList
 
 
-class EventDataCreate(FeatureByteBaseModel):
+class EventDataCreate(DataCreate):
     """
     EventData Creation Schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: StrictStr
-    tabular_source: TabularSource
-    columns_info: List[ColumnInfo]
     event_id_column: StrictStr
     event_timestamp_column: StrictStr
     record_creation_date_column: Optional[StrictStr]
