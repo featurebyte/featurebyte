@@ -1,7 +1,6 @@
 """
 Tests for EventData routes
 """
-import datetime
 from http import HTTPStatus
 
 import pytest

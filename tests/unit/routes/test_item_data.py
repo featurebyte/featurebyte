@@ -69,7 +69,7 @@ class TestItemDataApi(BaseDataApiTestSuite):
         return output
 
     @pytest.fixture(name="data_update_dict")
-    def data_update_dict_fixture(self, columns_info):
+    def data_update_dict_fixture(self):
         """
         Item data update dict object
         """

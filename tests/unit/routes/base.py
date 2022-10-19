@@ -10,6 +10,8 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
+from featurebyte.schema.data import DataCreate
+
 
 class BaseApiTestSuite:
     """
@@ -593,7 +595,7 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
     BaseDataApiTestSuite contains tests related to data service
     """
 
-    data_create_schema_class = None
+    data_create_schema_class = DataCreate
 
     def setup_creation_route(self, api_client):
         """
