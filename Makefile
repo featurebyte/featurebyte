@@ -95,7 +95,7 @@ lint-type:
 	@poetry run mypy --install-types --non-interactive --config-file pyproject.toml .
 
 lint-safety:
-	@poetry run pip-audit
+	@poetry run pip-audit --ignore-vuln GHSA-w596-4wvx-j9j6
 	@poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing

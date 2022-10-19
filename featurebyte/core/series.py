@@ -125,7 +125,7 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
         """
         valid_assignment_map: dict[DBVarType, tuple[type[Any], ...]] = {
             DBVarType.BOOL: (bool,),
-            DBVarType.INT: (int,),
+            DBVarType.INT: (int, float),
             DBVarType.FLOAT: (int, float),
             DBVarType.CHAR: (),
             DBVarType.VARCHAR: (str,),
@@ -151,6 +151,9 @@ class Series(QueryObject, OpsMixin, ParentMixin, StrAccessorMixin, DtAccessorMix
             input_nodes=[self.node, key.node],
         )
         self.node_name = node.name
+        if isinstance(value, float) and self.dtype != DBVarType.FLOAT:
+            # convert dtype to float if the assign value is float
+            self.__dict__["dtype"] = DBVarType.FLOAT
 
         # For Series with a parent, apply the change to the parent (either an EventView or a
         # FeatureGroup)
