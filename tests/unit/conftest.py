@@ -652,7 +652,7 @@ def mocked_tile_cache_fixture():
         mocked_tile_cache = mock.Mock()
         mocked_tile_cache.compute_tiles_on_demand.side_effect = _mock_compute_tiles_on_demand
         mocked_get_tile_cache.return_value = mocked_tile_cache
-        yield mocked_get_tile_cache
+        yield mocked_tile_cache
 
 
 def test_save_payload_fixtures(
