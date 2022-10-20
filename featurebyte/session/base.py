@@ -339,7 +339,7 @@ class BaseSession(BaseModel):
         ----------
         table_name : str
             Temp table name
-        dataframe : str
+        query : str
             SQL query for the table
         """
         await self.execute_query(f"CREATE OR REPLACE TEMPORARY TABLE {table_name} AS {query}")

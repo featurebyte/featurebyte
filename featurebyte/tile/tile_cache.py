@@ -81,18 +81,34 @@ class TileCache(ABC):
 
     @property
     @abstractmethod
-    def adapter(self) -> BaseAdapter:
-        """Returns an instance of BaseAdapter for engine specific SQL expressions generation"""
+    def adapter(self) -> Type[BaseAdapter]:
+        """
+        Returns the adapter class for engine specific SQL expressions generation
+
+        Returns
+        -------
+        Type[BaseAdapter]
+        """
 
     @property
     @abstractmethod
     def tile_manager_class(self) -> Type[FeatureListManagerSnowflake]:
-        """Returns the TileManager class to be used"""
+        """
+        Returns the TileManager class to be used
+
+        Returns
+        -------
+        Type[FeatureListManagerSnowflake]
+        """
 
     @property
     def source_type(self) -> SourceType:
         """
         Returns the source type that corresponds to this TileCache
+
+        Returns
+        -------
+        SourceType
         """
         return self.session.source_type
 
@@ -493,7 +509,7 @@ class TileCache(ABC):
 
         Parameters
         ----------
-        point_in_time_epoch_expr : str
+        point_in_time_epoch_expr : Expression
             Expression for point-in-time in epoch second
         tile_info : TileGenSql
             Tile table information
@@ -533,14 +549,14 @@ class TileCache(ABC):
 
         Parameters
         ----------
-        point_in_time_epoch_expr : str
+        point_in_time_epoch_expr : Expression
             Expression for point-in-time in epoch second
         tile_info : TileGenSql
             Tile table information
 
         Returns
         -------
-        str
+        Expression
         """
         # Convert point in time to feature job time, then last tile start date
         previous_job_epoch_expr = TileCache._get_previous_job_epoch_expr(
@@ -571,7 +587,7 @@ class TileCache(ABC):
 
         Parameters
         ----------
-        point_in_time_epoch_expr : str
+        point_in_time_epoch_expr : Expression
             Expression for point-in-time in epoch second
         tile_info : TileGenSql
             Tile table information
@@ -630,6 +646,11 @@ def get_tile_cache(session: BaseSession) -> TileCache:
     Returns
     -------
     TileCache
+
+    Raises
+    ------
+    NotImplementedError
+        if the TileCache for the source type is not implemented
     """
     source_type = session.source_type
     if source_type == SourceType.SNOWFLAKE:
