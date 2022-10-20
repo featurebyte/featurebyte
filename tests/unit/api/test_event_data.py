@@ -3,12 +3,12 @@ Unit test for EventData class
 """
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from bson.objectid import ObjectId
-from pydantic import ValidationError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData, EventDataColumn
@@ -595,13 +595,18 @@ def test_update_record_creation_date_column__unsaved_object(snowflake_database_t
 
 def test_update_record_creation_date_column__saved_object(saved_event_data):
     """Test update record creation date column (saved event data)"""
-    saved_event_data.update_record_creation_date_column("col_float")
-    assert saved_event_data.record_creation_date_column == "col_float"
+    saved_event_data.update_record_creation_date_column("created_at")
+    assert saved_event_data.record_creation_date_column == "created_at"
 
     # check that validation logic works
     with pytest.raises(RecordUpdateException) as exc:
         saved_event_data.update_record_creation_date_column("random_column_name")
     expected_msg = 'Column "random_column_name" not found in the table! (type=value_error)'
+    assert expected_msg in str(exc.value)
+
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_event_data.update_record_creation_date_column("col_float")
+    expected_msg = "Column \"col_float\" is expected to have type(s): ['DBVarType.TIMESTAMP'] (type=value_error)"
     assert expected_msg in str(exc.value)
 
 

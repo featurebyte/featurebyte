@@ -53,6 +53,7 @@ class TestEventDataApi(BaseDataApiTestSuite):
             ],
         )
     ]
+    update_unprocessable_payload_expected_detail_pairs = []
 
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(self, tabular_source, columns_info, user_id):

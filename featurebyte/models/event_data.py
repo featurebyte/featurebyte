@@ -11,6 +11,7 @@ from datetime import datetime
 from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DataModel
 
@@ -103,10 +104,21 @@ class EventDataModel(DataModel):
     event_timestamp_column: StrictStr
     default_feature_job_setting: Optional[FeatureJobSetting]
 
-    @validator("event_id_column", "event_timestamp_column", "record_creation_date_column")
+    @validator("event_timestamp_column", "record_creation_date_column")
     @classmethod
-    def _check_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
-        return DataModel.validate_column_exists(value, values)
+    def _check_timestamp_column_exists(
+        cls, value: Optional[str], values: dict[str, Any]
+    ) -> Optional[str]:
+        return DataModel.validate_column_exists(
+            column_name=value, values=values, expected_types={DBVarType.TIMESTAMP}
+        )
+
+    @validator("event_id_column")
+    @classmethod
+    def _check_id_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
+        return DataModel.validate_column_exists(
+            column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
+        )
 
     class Settings(DataModel.Settings):
         """
