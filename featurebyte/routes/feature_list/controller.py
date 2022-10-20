@@ -16,7 +16,7 @@ from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListModel
-from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
+from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
@@ -29,14 +29,12 @@ from featurebyte.schema.feature_list import (
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService
+from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 
 
-class FeatureListController(  # type: ignore[misc]
-    BaseDocumentController[FeatureListModel, FeatureListPaginatedList],
-    GetInfoControllerMixin[FeatureListInfo],
-):
+class FeatureListController(BaseDocumentController[FeatureListModel, FeatureListPaginatedList]):
     """
     FeatureList controller
     """
@@ -50,12 +48,14 @@ class FeatureListController(  # type: ignore[misc]
         deploy_service: DeployService,
         preview_service: PreviewService,
         version_service: VersionService,
+        info_service: InfoService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.feature_readiness_service = feature_readiness_service
         self.deploy_service = deploy_service
         self.preview_service = preview_service
         self.version_service = version_service
+        self.info_service = info_service
 
     async def create_feature_list(
         self, get_credential: Any, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
@@ -244,3 +244,27 @@ class FeatureListController(  # type: ignore[misc]
             bytestream,
             media_type="application/octet-stream",
         )
+
+    async def get_info(
+        self,
+        document_id: ObjectId,
+        verbose: bool,
+    ) -> FeatureListInfo:
+        """
+        Get document info given document ID
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Flag to control verbose level
+
+        Returns
+        -------
+        InfoDocument
+        """
+        info_document = await self.info_service.get_feature_list_info(
+            document_id=document_id, verbose=verbose
+        )
+        return info_document

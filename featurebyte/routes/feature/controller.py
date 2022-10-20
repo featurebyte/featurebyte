@@ -11,7 +11,7 @@ from bson.objectid import ObjectId
 from fastapi.exceptions import HTTPException
 
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
-from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
+from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature import (
     FeatureCreate,
     FeatureInfo,
@@ -23,13 +23,12 @@ from featurebyte.schema.feature import (
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_readiness import FeatureReadinessService
+from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 
 
-class FeatureController(  # type: ignore[misc]
-    BaseDocumentController[FeatureModel, FeaturePaginatedList], GetInfoControllerMixin[FeatureInfo]
-):
+class FeatureController(BaseDocumentController[FeatureModel, FeaturePaginatedList]):
     """
     Feature controller
     """
@@ -43,12 +42,14 @@ class FeatureController(  # type: ignore[misc]
         feature_readiness_service: FeatureReadinessService,
         preview_service: PreviewService,
         version_service: VersionService,
+        info_service: InfoService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.feature_list_service = feature_list_service
         self.feature_readiness_service = feature_readiness_service
         self.preview_service = preview_service
         self.version_service = version_service
+        self.info_service = info_service
 
     async def create_feature(
         self, get_credential: Any, data: Union[FeatureCreate, FeatureNewVersionCreate]
@@ -193,3 +194,27 @@ class FeatureController(  # type: ignore[misc]
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
+
+    async def get_info(
+        self,
+        document_id: ObjectId,
+        verbose: bool,
+    ) -> FeatureInfo:
+        """
+        Get document info given document ID
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Flag to control verbose level
+
+        Returns
+        -------
+        InfoDocument
+        """
+        info_document = await self.info_service.get_feature_info(
+            document_id=document_id, verbose=verbose
+        )
+        return info_document

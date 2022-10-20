@@ -16,6 +16,7 @@ from featurebyte.schema.item_data import ItemDataCreate
 from featurebyte.service.base_document import Document
 from featurebyte.service.data_update import DataUpdateSchema, DataUpdateService
 from featurebyte.service.event_data import EventDataService
+from featurebyte.service.info import InfoService
 from featurebyte.service.item_data import ItemDataService
 
 DataCreateSchema = Union[EventDataCreate, ItemDataCreate]
@@ -33,9 +34,11 @@ class BaseDataDocumentController(BaseDocumentController[Document, PaginatedDocum
         self,
         service: Union[EventDataService, ItemDataService],
         data_update_service: DataUpdateService,
+        info_service: InfoService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.data_update_service = data_update_service
+        self.info_service = info_service
 
     async def create_data(self, data: DataCreateSchema) -> DataModelSchema:
         """
