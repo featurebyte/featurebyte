@@ -3,7 +3,7 @@ Module for TileCache and its implementors
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Type
 
 import time
 from abc import ABC, abstractmethod
@@ -75,9 +75,6 @@ class TileCache(ABC):
         Session object to interact with database
     """
 
-    tile_manager_class = None
-    source_type = None
-
     def __init__(self, session: BaseSession):
         self.session = session
         self._materialized_temp_table_names: set[str] = set()
@@ -86,6 +83,18 @@ class TileCache(ABC):
     @abstractmethod
     def adapter(self) -> BaseAdapter:
         """Returns an instance of BaseAdapter for engine specific SQL expressions generation"""
+
+    @property
+    @abstractmethod
+    def tile_manager_class(self) -> Type[FeatureListManagerSnowflake]:
+        """Returns the TileManager class to be used"""
+
+    @property
+    def source_type(self) -> SourceType:
+        """
+        Returns the source type that corresponds to this TileCache
+        """
+        return self.session.source_type
 
     async def compute_tiles_on_demand(
         self,
@@ -600,18 +609,29 @@ class TileCache(ABC):
 class SnowflakeTileCache(TileCache):
     """Responsible for on-demand tile computation and caching for Snowflake"""
 
-    tile_manager_class = FeatureListManagerSnowflake
-    source_type = SourceType.SNOWFLAKE
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
+    @property
+    def adapter(self) -> Type[BaseAdapter]:
+        return SnowflakeAdapter
 
     @property
-    def adapter(self) -> BaseAdapter:
-        return SnowflakeAdapter()
+    def tile_manager_class(self) -> Type[FeatureListManagerSnowflake]:
+        return FeatureListManagerSnowflake
 
 
-def get_tile_cache(source_type: SourceType):
+def get_tile_cache(session: BaseSession) -> TileCache:
+    """
+    Returns an instance of TileCache compatible with the source type
+
+    Parameters
+    ----------
+    session : BaseSession
+        The session object
+
+    Returns
+    -------
+    TileCache
+    """
+    source_type = session.source_type
     if source_type == SourceType.SNOWFLAKE:
-        return SnowflakeTileCache
+        return SnowflakeTileCache(session)
     raise NotImplementedError()
