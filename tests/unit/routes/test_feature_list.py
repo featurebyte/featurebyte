@@ -13,6 +13,7 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.common.model_util import get_version
 from featurebyte.common.utils import dataframe_from_arrow_stream, dataframe_to_arrow_bytes
+from featurebyte.enum import SourceType
 from tests.unit.routes.base import BaseApiTestSuite
 
 
@@ -494,6 +495,7 @@ class TestFeatureListApi(BaseApiTestSuite):
         ) as mock_get_session:
             expected_df = pd.DataFrame({"a": [0, 1, 2]})
             mock_get_session.return_value.get_async_query_stream = mock_get_async_query_stream
+            mock_get_session.return_value.source_type = SourceType.SNOWFLAKE
 
             response = test_api_client.post(
                 f"{self.base_route}/historical_features",

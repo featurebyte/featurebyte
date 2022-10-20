@@ -23,7 +23,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.session.base import BaseSession
-from featurebyte.tile.tile_cache import SnowflakeTileCache
+from featurebyte.tile.tile_cache import get_tile_cache
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
@@ -188,7 +188,7 @@ async def get_historical_features(
 
     # Compute tiles on demand if required
     tic = time.time()
-    tile_cache = SnowflakeTileCache(session=session)
+    tile_cache = get_tile_cache(session=session)
     await tile_cache.compute_tiles_on_demand(
         graph=graph, nodes=nodes, serving_names_mapping=serving_names_mapping
     )
