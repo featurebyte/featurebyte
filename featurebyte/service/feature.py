@@ -81,7 +81,8 @@ async def validate_feature_version_and_namespace_consistency(
 
 
 class FeatureService(
-    BaseDocumentService[FeatureModel, FeatureServiceUpdate], GetInfoServiceMixin[FeatureInfo]
+    BaseDocumentService[FeatureModel, FeatureCreate, FeatureServiceUpdate],
+    GetInfoServiceMixin[FeatureInfo],
 ):
     """
     FeatureService class
@@ -141,7 +142,7 @@ class FeatureService(
         )
         return VersionIdentifier(name=version_name, suffix=count or None)
 
-    async def create_document(  # type: ignore[override]
+    async def create_document(
         self, data: FeatureCreate, get_credential: Any = None
     ) -> FeatureModel:
         document = FeatureModel(

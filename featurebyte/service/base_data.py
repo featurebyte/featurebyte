@@ -3,7 +3,7 @@ BaseDataDocumentService class
 """
 from __future__ import annotations
 
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Optional, TypeVar
 
 from bson.objectid import ObjectId
 
@@ -16,16 +16,12 @@ DocumentCreate = TypeVar("DocumentCreate", bound=DataCreate)
 DocumentUpdate = TypeVar("DocumentUpdate", bound=DataUpdate)
 
 
-class BaseDataDocumentService(
-    Generic[Document, DocumentCreate, DocumentUpdate], BaseDocumentService[Document, DocumentUpdate]
-):
+class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, DocumentUpdate]):
     """
     BaseDataDocumentService class
     """
 
-    async def create_document(  # type: ignore[override]
-        self, data: DocumentCreate, get_credential: Any = None
-    ) -> Document:
+    async def create_document(self, data: DocumentCreate, get_credential: Any = None) -> Document:
         _ = get_credential
         _ = await FeatureStoreService(user=self.user, persistent=self.persistent).get_document(
             document_id=data.tabular_source.feature_store_id

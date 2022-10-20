@@ -16,6 +16,9 @@ from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.base_update import BaseUpdateService
 
 ParentT = TypeVar("ParentT", bound=Parent)
+BaseDocumentServiceT = BaseDocumentService[
+    FeatureByteBaseDocumentModel, FeatureByteBaseModel, FeatureByteBaseModel
+]
 
 
 class RelationshipService(BaseUpdateService):
@@ -26,9 +29,7 @@ class RelationshipService(BaseUpdateService):
     """
 
     @property
-    def document_service(
-        self,
-    ) -> BaseDocumentService[FeatureByteBaseDocumentModel, FeatureByteBaseModel]:
+    def document_service(self) -> BaseDocumentServiceT:
         """
         DocumentService that is used to update relationship attributes
 
@@ -193,9 +194,7 @@ class EntityRelationshipService(RelationshipService):
     """
 
     @property
-    def document_service(
-        self,
-    ) -> BaseDocumentService[FeatureByteBaseDocumentModel, FeatureByteBaseModel]:
+    def document_service(self) -> BaseDocumentServiceT:
         return self.entity_service  # type: ignore[return-value]
 
     @classmethod
@@ -211,9 +210,7 @@ class SemanticRelationshipService(RelationshipService):
     """
 
     @property
-    def document_service(
-        self,
-    ) -> BaseDocumentService[FeatureByteBaseDocumentModel, FeatureByteBaseModel]:
+    def document_service(self) -> BaseDocumentServiceT:
         return self.semantic_service  # type: ignore[return-value]
 
     @classmethod

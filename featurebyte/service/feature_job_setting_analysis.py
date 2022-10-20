@@ -25,7 +25,7 @@ from featurebyte.service.task_manager import AbstractTaskManager, TaskId
 
 
 class FeatureJobSettingAnalysisService(
-    BaseDocumentService[FeatureJobSettingAnalysisModel, FeatureByteBaseModel]
+    BaseDocumentService[FeatureJobSettingAnalysisModel, FeatureByteBaseModel, FeatureByteBaseModel]
 ):
     """
     FeatureJobSettingAnalysisService class

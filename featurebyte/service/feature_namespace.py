@@ -3,8 +3,6 @@ FeatureNamespaceService class
 """
 from __future__ import annotations
 
-from typing import Any
-
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature import FeatureNamespaceModel
@@ -21,7 +19,9 @@ from featurebyte.service.event_data import EventDataService
 
 
 class FeatureNamespaceService(
-    BaseDocumentService[FeatureNamespaceModel, FeatureNamespaceServiceUpdate],
+    BaseDocumentService[
+        FeatureNamespaceModel, FeatureNamespaceCreate, FeatureNamespaceServiceUpdate
+    ],
     GetInfoServiceMixin[FeatureNamespaceInfo],
 ):
     """
@@ -29,21 +29,6 @@ class FeatureNamespaceService(
     """
 
     document_class = FeatureNamespaceModel
-
-    async def create_document(  # type: ignore[override]
-        self, data: FeatureNamespaceCreate, get_credential: Any = None
-    ) -> FeatureNamespaceModel:
-        _ = get_credential
-        document = FeatureNamespaceModel(**data.json_dict(), user_id=self.user.id)
-        # check any conflict with existing documents
-        await self._check_document_unique_constraints(document=document)
-        insert_id = await self.persistent.insert_one(
-            collection_name=self.collection_name,
-            document=document.dict(by_alias=True),
-            user_id=self.user.id,
-        )
-        assert insert_id == document.id
-        return await self.get_document(document_id=insert_id)
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureNamespaceInfo:
         namespace = await self.get_document(document_id=document_id)

@@ -67,7 +67,7 @@ async def validate_feature_list_version_and_namespace_consistency(
 
 
 class FeatureListService(
-    BaseDocumentService[FeatureListModel, FeatureListServiceUpdate],
+    BaseDocumentService[FeatureListModel, FeatureListCreate, FeatureListServiceUpdate],
     GetInfoServiceMixin[FeatureListInfo],
 ):
     """
@@ -132,7 +132,7 @@ class FeatureListService(
         )
         return VersionIdentifier(name=version_name, suffix=count or None)
 
-    async def create_document(  # type: ignore[override]
+    async def create_document(
         self, data: FeatureListCreate, get_credential: Any = None
     ) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
