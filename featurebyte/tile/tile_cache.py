@@ -253,19 +253,13 @@ class TileCache(ABC):
         list[str]
             List of tile table IDs with existing entity tracker tables
         """
-        # TODO: this should be made more generic
-        session = self.session
-        working_schema = getattr(session, "sf_schema")
-        query = f"""
-            SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
-            WHERE TABLE_SCHEMA = '{working_schema}'
-            AND TABLE_NAME LIKE '%{InternalName.TILE_ENTITY_TRACKER_SUFFIX}'
-            """
-        existing_tracker_tables = await session.execute_query(query)
-        if existing_tracker_tables is not None:
-            all_trackers = set(existing_tracker_tables["TABLE_NAME"].tolist())
-        else:
-            all_trackers = set()
+        all_trackers = {
+            table
+            for table in await self.session.list_tables(
+                database_name=self.session.database_name, schema_name=self.session.schema_name
+            )
+            if table.endswith(InternalName.TILE_ENTITY_TRACKER_SUFFIX.value)
+        }
         out = []
         for tile_id in tile_ids:
             tile_id_tracker_name = self._get_tracker_name_from_tile_id(tile_id)
