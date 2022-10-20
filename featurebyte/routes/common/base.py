@@ -7,7 +7,7 @@ from typing import Any, Generic, List, Literal, Optional, Type, TypeVar, cast
 
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import FeatureByteBaseDocumentModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.models.relationship import Parent
 from featurebyte.routes.common.schema import PaginationMixin
@@ -30,7 +30,9 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
 
     paginated_document_class: Type[PaginationMixin] = PaginationMixin
 
-    def __init__(self, service: BaseDocumentService[FeatureByteBaseDocumentModel]):
+    def __init__(
+        self, service: BaseDocumentService[FeatureByteBaseDocumentModel, FeatureByteBaseModel]
+    ):
         self.service = service
 
     async def get(

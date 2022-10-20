@@ -3,16 +3,14 @@ SemanticService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
-
-from bson.objectid import ObjectId
+from typing import Any
 
 from featurebyte.models.semantic import SemanticModel
 from featurebyte.schema.semantic import SemanticCreate, SemanticServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 
 
-class SemanticService(BaseDocumentService[SemanticModel]):
+class SemanticService(BaseDocumentService[SemanticModel, SemanticServiceUpdate]):
     """
     SemanticService class
     """
@@ -34,25 +32,3 @@ class SemanticService(BaseDocumentService[SemanticModel]):
         )
         assert insert_id == document.id
         return await self.get_document(document_id=insert_id)
-
-    async def update_document(  # type: ignore[override]
-        self,
-        document_id: ObjectId,
-        data: SemanticServiceUpdate,
-        exclude_none: bool = True,
-        document: Optional[SemanticModel] = None,
-        return_document: bool = True,
-    ) -> Optional[SemanticModel]:
-        if document is None:
-            await self.get_document(document_id=document_id)
-
-        await self.persistent.update_one(
-            collection_name=self.collection_name,
-            query_filter=self._construct_get_query_filter(document_id=document_id),
-            update={"$set": data.dict(exclude_none=exclude_none)},
-            user_id=self.user.id,
-        )
-
-        if return_document:
-            return await self.get_document(document_id=document_id)
-        return None

@@ -17,7 +17,7 @@ DocumentUpdate = TypeVar("DocumentUpdate", bound=DataUpdate)
 
 
 class BaseDataDocumentService(
-    Generic[Document, DocumentCreate, DocumentUpdate], BaseDocumentService[Document]
+    Generic[Document, DocumentCreate, DocumentUpdate], BaseDocumentService[Document, DocumentUpdate]
 ):
     """
     BaseDataDocumentService class
@@ -44,7 +44,7 @@ class BaseDataDocumentService(
         assert insert_id == document.id
         return await self.get_document(document_id=insert_id)
 
-    async def update_document(  # type: ignore[override]
+    async def update_document(
         self,
         document_id: ObjectId,
         data: DocumentUpdate,
@@ -55,7 +55,7 @@ class BaseDataDocumentService(
         if document is None:
             await self.get_document(document_id=document_id)
 
-        update_dict = data.dict(exclude_none=True)
+        update_dict = data.dict(exclude_none=exclude_none)
         if data.columns_info:
             # do not exclude None in columns_info
             update_dict["columns_info"] = data.dict()["columns_info"]

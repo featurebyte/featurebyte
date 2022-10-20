@@ -26,10 +26,11 @@ from featurebyte.schema.common.base import BaseInfo
 from featurebyte.service.mixin import OpsServiceMixin
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
+DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=FeatureByteBaseModel)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
 
 
-class BaseDocumentService(Generic[Document], OpsServiceMixin):
+class BaseDocumentService(Generic[Document, DocumentUpdateSchema], OpsServiceMixin):
     """
     BaseService class
     """
@@ -475,6 +476,69 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
                 resolution_signature=resolution_signature,
             )
 
+    async def _check_document_unique_constraint_when_update_document(
+        self, data: DocumentUpdateSchema
+    ) -> None:
+        """
+        Perform uniqueness check during document update
+
+        Parameters
+        ----------
+        data: DocumentUpdateSchema
+            Document update payload
+        """
+        _ = data
+        return
+
+    async def update_document(
+        self,
+        document_id: ObjectId,
+        data: DocumentUpdateSchema,
+        exclude_none: bool = True,
+        document: Optional[Document] = None,
+        return_document: bool = True,
+    ) -> Optional[Document]:
+        """
+        Update document at persistent
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        data: DocumentUpdateSchema
+            Document update payload object
+        exclude_none: bool
+            Whether to exclude None value(s) from the data
+        document: Optional[Document]
+            Document to be updated (when provided, this method won't query persistent for retrieval)
+        return_document: bool
+            Whether to make additional query to retrieval updated document & return
+
+        Returns
+        -------
+        Optional[Document]
+        """
+        if document is None:
+            document = await self.get_document(document_id=document_id)
+
+        # perform validation first before actual update
+        update_dict = data.dict(exclude_none=exclude_none)
+        _ = self.document_class(**{**document.json_dict(), **update_dict})
+
+        # check any conflict with existing documents
+        await self._check_document_unique_constraint_when_update_document(data=data)
+
+        await self.persistent.update_one(
+            collection_name=self.collection_name,
+            query_filter=self._construct_get_query_filter(document_id=document_id),
+            update={"$set": update_dict},
+            user_id=self.user.id,
+        )
+
+        if return_document:
+            return await self.get_document(document_id=document_id)
+        return None
+
     @abstractmethod
     async def create_document(
         self, data: FeatureByteBaseModel, get_credential: Any = None
@@ -492,36 +556,6 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         Returns
         -------
         Document
-        """
-
-    @abstractmethod
-    async def update_document(
-        self,
-        document_id: ObjectId,
-        data: FeatureByteBaseModel,
-        exclude_none: bool = True,
-        document: Optional[FeatureByteBaseDocumentModel] = None,
-        return_document: bool = True,
-    ) -> Optional[Document]:
-        """
-        Update document at persistent
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            Document ID
-        data: FeatureByteBaseModel
-            Document update payload object
-        exclude_none: bool
-            Whether to exclude None value(s) from the data
-        document: Optional[FeatureByteBaseDocumentModel]
-            Document to be updated (when provided, this method won't query persistent for retrieval)
-        return_document: bool
-            Whether to make additional query to retrieval updated document & return
-
-        Returns
-        -------
-        Optional[Document]
         """
 
 

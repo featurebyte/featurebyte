@@ -8,15 +8,14 @@ from typing import Union
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import DataStatus
-from featurebyte.models.item_data import ItemDataModel
 from featurebyte.schema.event_data import EventDataUpdate
 from featurebyte.schema.item_data import ItemDataUpdate
-from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.base_update import BaseUpdateService
+from featurebyte.service.event_data import EventDataService
+from featurebyte.service.item_data import ItemDataService
 
-DataDocumentService = Union[BaseDocumentService[EventDataModel], BaseDocumentService[ItemDataModel]]
+DataDocumentService = Union[EventDataService, ItemDataService]
 DataUpdateSchema = Union[EventDataUpdate, ItemDataUpdate]
 
 
@@ -62,7 +61,7 @@ class DataUpdateService(BaseUpdateService):
                 )
             await service.update_document(
                 document_id=document_id,
-                data=type(data)(status=data.status),
+                data=type(data)(status=data.status),  # type: ignore
                 return_document=False,
             )
 
@@ -109,6 +108,6 @@ class DataUpdateService(BaseUpdateService):
                 )
             await service.update_document(
                 document_id=document_id,
-                data=type(data)(columns_info=data.columns_info),
+                data=type(data)(columns_info=data.columns_info),  # type: ignore
                 return_document=False,
             )
