@@ -67,7 +67,8 @@ async def validate_feature_list_version_and_namespace_consistency(
 
 
 class FeatureListService(
-    BaseDocumentService[FeatureListModel], GetInfoServiceMixin[FeatureListInfo]
+    BaseDocumentService[FeatureListModel, FeatureListServiceUpdate],
+    GetInfoServiceMixin[FeatureListInfo],
 ):
     """
     FeatureListService class
@@ -202,29 +203,6 @@ class FeatureListService(
             # update feature's feature_list_ids attribute
             await self._update_features(feature_data["features"], insert_id)
         return await self.get_document(document_id=insert_id)
-
-    async def update_document(  # type: ignore[override]
-        self,
-        document_id: ObjectId,
-        data: FeatureListServiceUpdate,
-        exclude_none: bool = True,
-        document: Optional[FeatureListModel] = None,
-        return_document: bool = True,
-    ) -> Optional[FeatureListModel]:
-        # pylint: disable=duplicate-code
-        if document is None:
-            await self.get_document(document_id=document_id)
-
-        await self.persistent.update_one(
-            collection_name=self.collection_name,
-            query_filter=self._construct_get_query_filter(document_id=document_id),
-            update={"$set": data.dict(exclude_none=exclude_none)},
-            user_id=self.user.id,
-        )
-
-        if return_document:
-            return await self.get_document(document_id=document_id)
-        return None
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureListInfo:
         feature_list = await self.get_document(document_id=document_id)

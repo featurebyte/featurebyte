@@ -8,7 +8,7 @@ from typing import TypeVar, cast
 from bson import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.base import FeatureByteBaseDocumentModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.relationship import Parent, Relationship
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.semantic import SemanticServiceUpdate
@@ -26,7 +26,9 @@ class RelationshipService(BaseUpdateService):
     """
 
     @property
-    def document_service(self) -> BaseDocumentService[FeatureByteBaseDocumentModel]:
+    def document_service(
+        self,
+    ) -> BaseDocumentService[FeatureByteBaseDocumentModel, FeatureByteBaseModel]:
         """
         DocumentService that is used to update relationship attributes
 
@@ -191,7 +193,9 @@ class EntityRelationshipService(RelationshipService):
     """
 
     @property
-    def document_service(self) -> BaseDocumentService[FeatureByteBaseDocumentModel]:
+    def document_service(
+        self,
+    ) -> BaseDocumentService[FeatureByteBaseDocumentModel, FeatureByteBaseModel]:
         return self.entity_service  # type: ignore[return-value]
 
     @classmethod
@@ -207,7 +211,9 @@ class SemanticRelationshipService(RelationshipService):
     """
 
     @property
-    def document_service(self) -> BaseDocumentService[FeatureByteBaseDocumentModel]:
+    def document_service(
+        self,
+    ) -> BaseDocumentService[FeatureByteBaseDocumentModel, FeatureByteBaseModel]:
         return self.semantic_service  # type: ignore[return-value]
 
     @classmethod
