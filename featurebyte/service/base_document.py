@@ -51,10 +51,6 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         """
         return self.document_class.collection_name()
 
-    @staticmethod
-    def _snake_to_camel_case(value: str) -> str:
-        return "".join(elem.title() for elem in value.split("_"))
-
     @property
     def class_name(self) -> str:
         """
@@ -64,7 +60,7 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         -------
         camel case collection name
         """
-        return self._snake_to_camel_case(self.collection_name)
+        return "".join(elem.title() for elem in self.collection_name.split("_"))
 
     def _construct_get_query_filter(self, document_id: ObjectId, **kwargs: Any) -> QueryFilter:
         """
@@ -83,29 +79,6 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         """
         _ = self, kwargs
         return {"_id": ObjectId(document_id)}
-
-    async def _get_document(
-        self,
-        document_id: ObjectId,
-        exception_detail: str | None = None,
-        collection_name: str | None = None,
-        **kwargs: Any,
-    ) -> dict[str, Any]:
-        query_filter = self._construct_get_query_filter(document_id=document_id, **kwargs)
-        document = await self.persistent.find_one(
-            collection_name=collection_name or self.collection_name,
-            query_filter=query_filter,
-            user_id=self.user.id,
-        )
-        if document is None:
-            class_name = (
-                self._snake_to_camel_case(collection_name) if collection_name else self.class_name
-            )
-            exception_detail = exception_detail or (
-                f'{class_name} (id: "{document_id}") not found. Please save the {class_name} object first.'
-            )
-            raise DocumentNotFoundError(exception_detail)
-        return dict(document)
 
     async def get_document(
         self,
@@ -128,10 +101,23 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         Returns
         -------
         Document
+
+        Raises
+        ------
+        DocumentNotFoundError
+            If the requested document not found
         """
-        document_dict = await self._get_document(
-            document_id=document_id, exception_detail=exception_detail, **kwargs
+        query_filter = self._construct_get_query_filter(document_id=document_id, **kwargs)
+        document_dict = await self.persistent.find_one(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            user_id=self.user.id,
         )
+        if document_dict is None:
+            exception_detail = exception_detail or (
+                f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
+            )
+            raise DocumentNotFoundError(exception_detail)
         return self.document_class(**document_dict)
 
     def _construct_list_query_filter(
