@@ -253,6 +253,7 @@ class TileCache(ABC):
         list[str]
             List of tile table IDs with existing entity tracker tables
         """
+        # TODO: this should be made more generic
         session = self.session
         working_schema = getattr(session, "sf_schema")
         query = f"""
@@ -351,13 +352,11 @@ class TileCache(ABC):
             columns.append(f"null AS {tile_id}")
 
         table_expr = table_expr.select("REQ.*", *columns)
-        table_sql = table_expr.sql(pretty=True)
+        table_sql = sql_to_string(table_expr, source_type=self.source_type)
 
-        await self.session.execute_query(
-            f"CREATE OR REPLACE TEMP TABLE {InternalName.TILE_CACHE_WORKING_TABLE} AS "
-            f"{table_sql}"
+        await self.session.register_temp_table_with_query(
+            InternalName.TILE_CACHE_WORKING_TABLE.value, table_sql
         )
-
         self._materialized_temp_table_names.add(InternalName.TILE_CACHE_WORKING_TABLE)
 
     async def _get_tile_cache_validity_from_working_table(
