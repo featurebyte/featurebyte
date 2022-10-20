@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from bson.objectid import ObjectId
-
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import SourceType
 from featurebyte.exception import (
@@ -25,17 +23,12 @@ from featurebyte.models.feature import (
     FeatureNamespaceModel,
     FeatureReadiness,
 )
-from featurebyte.schema.feature import (
-    FeatureBriefInfoList,
-    FeatureCreate,
-    FeatureInfo,
-    FeatureServiceUpdate,
-)
+from featurebyte.schema.feature import FeatureCreate, FeatureServiceUpdate
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceCreate,
     FeatureNamespaceServiceUpdate,
 )
-from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
+from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 
@@ -80,10 +73,7 @@ async def validate_feature_version_and_namespace_consistency(
             )
 
 
-class FeatureService(
-    BaseDocumentService[FeatureModel, FeatureCreate, FeatureServiceUpdate],
-    GetInfoServiceMixin[FeatureInfo],
-):
+class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureServiceUpdate]):
     """
     FeatureService class
     """
@@ -239,33 +229,3 @@ class FeatureService(
             )
             raise DocumentNotFoundError(exception_detail)
         return FeatureModel(**document_dict)
-
-    async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureInfo:
-        feature = await self.get_document(document_id=document_id)
-        feature_namespace_service = FeatureNamespaceService(
-            user=self.user, persistent=self.persistent
-        )
-        namespace_info = await feature_namespace_service.get_info(
-            document_id=feature.feature_namespace_id,
-            verbose=verbose,
-        )
-        default_feature = await self.get_document(document_id=namespace_info.default_feature_id)
-        versions_info = None
-        if verbose:
-            namespace = await feature_namespace_service.get_document(
-                document_id=feature.feature_namespace_id
-            )
-            versions_info = FeatureBriefInfoList.from_paginated_data(
-                await self.list_documents(
-                    page=1,
-                    page_size=0,
-                    query_filter={"_id": {"$in": namespace.feature_ids}},
-                )
-            )
-
-        return FeatureInfo(
-            **namespace_info.dict(),
-            version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
-            readiness={"this": feature.readiness, "default": default_feature.readiness},
-            versions_info=versions_info,
-        )

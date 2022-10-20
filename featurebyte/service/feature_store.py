@@ -5,34 +5,20 @@ from __future__ import annotations
 
 from typing import Any, List, Type
 
-from bson.objectid import ObjectId
-
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
-from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreInfo
-from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
+from featurebyte.schema.feature_store import FeatureStoreCreate
+from featurebyte.service.base_document import BaseDocumentService
 
 
 class FeatureStoreService(
     BaseDocumentService[FeatureStoreModel, FeatureStoreCreate, FeatureByteBaseModel],
-    GetInfoServiceMixin[FeatureStoreInfo],
 ):
     """
     FeatureStoreService class
     """
 
     document_class: Type[FeatureStoreModel] = FeatureStoreModel
-
-    async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureStoreInfo:
-        _ = verbose
-        feature_store = await self.get_document(document_id=document_id)
-        return FeatureStoreInfo(
-            name=feature_store.name,
-            created_at=feature_store.created_at,
-            updated_at=feature_store.updated_at,
-            source=feature_store.type,
-            database_details=feature_store.details,
-        )
 
     async def list_databases(
         self, feature_store: FeatureStoreModel, get_credential: Any

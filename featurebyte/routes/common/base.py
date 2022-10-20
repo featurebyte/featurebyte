@@ -11,12 +11,7 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBas
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.models.relationship import Parent
 from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.service.base_document import (
-    BaseDocumentService,
-    Document,
-    GetInfoServiceMixin,
-    InfoDocument,
-)
+from featurebyte.service.base_document import BaseDocumentService, Document
 from featurebyte.service.relationship import RelationshipService
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
@@ -119,10 +114,6 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Persistent to retrieve audit docs from
         document_id: ObjectId
             ID of document to retrieve
         query_filter: Optional[QueryFilter]
@@ -164,10 +155,6 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Persistent to retrieve audit docs from
         document_id: ObjectId
             ID of document to retrieve
         field: str
@@ -182,39 +169,6 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
             document_id=document_id, field=field
         )
         return document_data
-
-
-class GetInfoControllerMixin(Generic[InfoDocument]):
-    """
-    GetInfoControllerMixin contains method to retrieve document info
-    """
-
-    # pylint: disable=too-few-public-methods
-
-    def __init__(self, service: GetInfoServiceMixin[InfoDocument]):
-        self.service = service
-
-    async def get_info(
-        self,
-        document_id: ObjectId,
-        verbose: bool,
-    ) -> InfoDocument:
-        """
-        Get document info given document ID
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            Document ID
-        verbose: bool
-            Flag to control verbose level
-
-        Returns
-        -------
-        InfoDocument
-        """
-        info_document = await self.service.get_info(document_id=document_id, verbose=verbose)
-        return info_document
 
 
 class RelationshipMixin(Generic[Document, ParentT]):

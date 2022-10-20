@@ -8,18 +8,14 @@ from typing import cast
 from bson.objectid import ObjectId
 
 from featurebyte.models.entity import EntityModel, ParentEntity
-from featurebyte.routes.common.base import (
-    BaseDocumentController,
-    GetInfoControllerMixin,
-    RelationshipMixin,
-)
+from featurebyte.routes.common.base import BaseDocumentController, RelationshipMixin
 from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityList, EntityUpdate
 from featurebyte.service.entity import EntityService
+from featurebyte.service.info import InfoService
 from featurebyte.service.relationship import EntityRelationshipService
 
 
-class EntityController(  # type: ignore[misc]
-    GetInfoControllerMixin[EntityInfo],
+class EntityController(
     BaseDocumentController[EntityModel, EntityList],
     RelationshipMixin[EntityModel, ParentEntity],
 ):
@@ -33,9 +29,11 @@ class EntityController(  # type: ignore[misc]
         self,
         service: EntityService,
         entity_relationship_service: EntityRelationshipService,
+        info_service: InfoService,
     ):
-        super().__init__(service)
+        super().__init__(service)  # type: ignore[arg-type]
         self.relationship_service = entity_relationship_service
+        self.info_service = info_service
 
     async def create_entity(
         self,
@@ -54,7 +52,7 @@ class EntityController(  # type: ignore[misc]
         EntityModel
             Newly created entity object
         """
-        document = await self.service.create_document(data)  # type: ignore[attr-defined]
+        document = await self.service.create_document(data)
         return cast(EntityModel, document)
 
     async def update_entity(
@@ -77,8 +75,29 @@ class EntityController(  # type: ignore[misc]
         EntityModel
             Entity object with updated attribute(s)
         """
-        document: EntityModel = await self.service.update_document(  # type: ignore[attr-defined]
-            document_id=entity_id, data=data
+        await self.service.update_document(document_id=entity_id, data=data, return_document=False)
+        return await self.get(document_id=entity_id)
+
+    async def get_info(
+        self,
+        document_id: ObjectId,
+        verbose: bool,
+    ) -> EntityInfo:
+        """
+        Get document info given document ID
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Flag to control verbose level
+
+        Returns
+        -------
+        InfoDocument
+        """
+        info_document = await self.info_service.get_entity_info(
+            document_id=document_id, verbose=verbose
         )
-        assert document is not None
-        return document
+        return info_document
