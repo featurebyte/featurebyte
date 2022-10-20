@@ -19,7 +19,6 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.logger import logger
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import (
     DefaultVersionMode,
     FeatureModel,
@@ -37,6 +36,7 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceServiceUpdate,
 )
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
+from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 
 
@@ -156,11 +156,9 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
             await self._check_document_unique_constraints(document=document)
 
             # check event_data has been saved at persistent storage or not
+            event_data_service = EventDataService(user=self.user, persistent=self.persistent)
             for event_data_id in data.event_data_ids:
-                _ = await self._get_document(
-                    document_id=event_data_id,
-                    collection_name=EventDataModel.collection_name(),
-                )
+                _ = await event_data_service.get_document(document_id=event_data_id)
 
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
@@ -179,7 +177,7 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                 await validate_feature_version_and_namespace_consistency(
                     feature=document, feature_namespace=feature_namespace
                 )
-                feature_namespace = await feature_namespace_service.update_document(
+                await feature_namespace_service.update_document(
                     document_id=document.feature_namespace_id,
                     data=FeatureNamespaceServiceUpdate(
                         feature_ids=self.include_object_id(
@@ -187,11 +185,9 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
                         )
                     ),
                     return_document=True,
-                )  # type: ignore[assignment]
-                assert feature_namespace is not None
-
+                )
             except DocumentNotFoundError:
-                feature_namespace = await feature_namespace_service.create_document(
+                await feature_namespace_service.create_document(
                     data=FeatureNamespaceCreate(
                         _id=document.feature_namespace_id,
                         name=document.name,
@@ -234,10 +230,9 @@ class FeatureService(BaseDocumentService[FeatureModel], GetInfoServiceMixin[Feat
             user_id=self.user.id,
         )
         if document_dict is None:
-            class_name = self._snake_to_camel_case(self.collection_name)
             exception_detail = (
-                f'{class_name} (name: "{name}", version: "{version.to_str()}") not found. '
-                f"Please save the {class_name} object first."
+                f'{self.class_name} (name: "{name}", version: "{version.to_str()}") not found. '
+                f"Please save the {self.class_name} object first."
             )
             raise DocumentNotFoundError(exception_detail)
         return FeatureModel(**document_dict)
