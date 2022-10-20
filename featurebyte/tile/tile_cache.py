@@ -17,7 +17,7 @@ from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.adapter import BaseAdapter, SnowflakeAdapter
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -81,17 +81,6 @@ class TileCache(ABC):
 
     @property
     @abstractmethod
-    def adapter(self) -> Type[BaseAdapter]:
-        """
-        Returns the adapter class for engine specific SQL expressions generation
-
-        Returns
-        -------
-        Type[BaseAdapter]
-        """
-
-    @property
-    @abstractmethod
     def tile_manager_class(self) -> Type[FeatureListManagerSnowflake]:
         """
         Returns the TileManager class to be used
@@ -100,6 +89,17 @@ class TileCache(ABC):
         -------
         Type[FeatureListManagerSnowflake]
         """
+
+    @property
+    def adapter(self) -> BaseAdapter:
+        """
+        Returns an instance of adapter for engine specific SQL expressions generation
+
+        Returns
+        -------
+        BaseAdapter
+        """
+        return get_sql_adapter(self.source_type)
 
     @property
     def source_type(self) -> SourceType:
@@ -624,10 +624,6 @@ class TileCache(ABC):
 
 class SnowflakeTileCache(TileCache):
     """Responsible for on-demand tile computation and caching for Snowflake"""
-
-    @property
-    def adapter(self) -> Type[BaseAdapter]:
-        return SnowflakeAdapter
 
     @property
     def tile_manager_class(self) -> Type[FeatureListManagerSnowflake]:
