@@ -26,11 +26,14 @@ from featurebyte.schema.common.base import BaseInfo
 from featurebyte.service.mixin import OpsServiceMixin
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
+DocumentCreateSchema = TypeVar("DocumentCreateSchema", bound=FeatureByteBaseModel)
 DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=FeatureByteBaseModel)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
 
 
-class BaseDocumentService(Generic[Document, DocumentUpdateSchema], OpsServiceMixin):
+class BaseDocumentService(
+    Generic[Document, DocumentCreateSchema, DocumentUpdateSchema], OpsServiceMixin
+):
     """
     BaseService class
     """
@@ -62,6 +65,59 @@ class BaseDocumentService(Generic[Document, DocumentUpdateSchema], OpsServiceMix
         camel case collection name
         """
         return "".join(elem.title() for elem in self.collection_name.split("_"))
+
+    @staticmethod
+    def _extract_additional_creation_kwargs(data: DocumentCreateSchema) -> dict[str, Any]:
+        """
+        Extract additional document creation from document creation schema
+
+        Parameters
+        ----------
+        data: DocumentCreateSchema
+            Document creation schema
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        _ = data
+        return {}
+
+    async def create_document(
+        self, data: DocumentCreateSchema, get_credential: Any = None
+    ) -> Document:
+        """
+        Create document at persistent
+
+        Parameters
+        ----------
+        data: DocumentCreateSchema
+            Document creation payload object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        Document
+        """
+        _ = get_credential
+        document = self.document_class(
+            **{
+                **data.json_dict(),
+                **self._extract_additional_creation_kwargs(data),
+                "user_id": self.user.id,
+            },
+        )
+
+        # check any conflict with existing documents
+        await self._check_document_unique_constraints(document=document)
+        insert_id = await self.persistent.insert_one(
+            collection_name=self.collection_name,
+            document=document.dict(by_alias=True),
+            user_id=self.user.id,
+        )
+        assert insert_id == document.id
+        return await self.get_document(document_id=insert_id)
 
     def _construct_get_query_filter(self, document_id: ObjectId, **kwargs: Any) -> QueryFilter:
         """
@@ -538,25 +594,6 @@ class BaseDocumentService(Generic[Document, DocumentUpdateSchema], OpsServiceMix
         if return_document:
             return await self.get_document(document_id=document_id)
         return None
-
-    @abstractmethod
-    async def create_document(
-        self, data: FeatureByteBaseModel, get_credential: Any = None
-    ) -> Document:
-        """
-        Create document at persistent
-
-        Parameters
-        ----------
-        data: FeatureByteBaseModel
-            Document creation payload object
-        get_credential: Any
-            Get credential handler function
-
-        Returns
-        -------
-        Document
-        """
 
 
 class GetInfoServiceMixin(Generic[InfoDocument]):

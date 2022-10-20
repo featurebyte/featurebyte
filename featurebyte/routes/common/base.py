@@ -21,6 +21,9 @@ from featurebyte.service.relationship import RelationshipService
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
 ParentT = TypeVar("ParentT", bound=Parent)
+BaseDocumentServiceT = BaseDocumentService[
+    FeatureByteBaseDocumentModel, FeatureByteBaseModel, FeatureByteBaseModel
+]
 
 
 class BaseDocumentController(Generic[Document, PaginatedDocument]):
@@ -30,9 +33,7 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
 
     paginated_document_class: Type[PaginationMixin] = PaginationMixin
 
-    def __init__(
-        self, service: BaseDocumentService[FeatureByteBaseDocumentModel, FeatureByteBaseModel]
-    ):
+    def __init__(self, service: BaseDocumentServiceT):
         self.service = service
 
     async def get(
