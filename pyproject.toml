@@ -18,6 +18,7 @@ exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",
     "@overload",
+    "@abstractmethod",
 ]
 fail_under = 50
 show_missing = true

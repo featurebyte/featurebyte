@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TypeVar, cast
 
+from abc import abstractmethod
+
 from bson import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
@@ -30,6 +32,7 @@ class RelationshipService(BaseService):
     """
 
     @property
+    @abstractmethod
     def document_service(self) -> BaseDocumentServiceT:
         """
         DocumentService that is used to update relationship attributes
@@ -39,9 +42,9 @@ class RelationshipService(BaseService):
         NotImplementedError
             If the property has not been overriden
         """
-        raise NotImplementedError
 
     @classmethod
+    @abstractmethod
     def prepare_document_update_payload(
         cls, ancestor_ids: set[ObjectId], parents: list[ParentT]
     ) -> BaseDocumentServiceUpdateSchema:
@@ -60,7 +63,6 @@ class RelationshipService(BaseService):
         NotImplementedError
             If the method has not been overriden
         """
-        raise NotImplementedError
 
     @staticmethod
     def _validate_add_relationship_operation(

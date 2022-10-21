@@ -39,7 +39,9 @@ class InfoService(BaseService):
         FeatureStoreInfo
         """
         _ = verbose
-        feature_store = await self.feature_store_service.get_document(document_id=document_id)
+        feature_store = await self.get_document(
+            DocServiceName.FEATURE_STORE, document_id=document_id
+        )
         return FeatureStoreInfo(
             name=feature_store.name,
             created_at=feature_store.created_at,
@@ -87,7 +89,7 @@ class InfoService(BaseService):
         -------
         EventDataInfo
         """
-        event_data = await self.event_data_service.get_document(document_id=document_id)
+        event_data = await self.get_document(DocServiceName.EVENT_DATA, document_id)
         entity_ids = DictProject(rule=("columns_info", "entity_id")).project(event_data.dict())
         entities = await self.entity_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": entity_ids}}
@@ -132,18 +134,18 @@ class InfoService(BaseService):
         -------
         FeatureInfo
         """
-        feature = await self.feature_service.get_document(document_id=document_id)
+        feature = await self.get_document(DocServiceName.FEATURE, document_id)
         namespace_info = await self.get_feature_namespace_info(
             document_id=feature.feature_namespace_id,
             verbose=verbose,
         )
-        default_feature = await self.feature_service.get_document(
-            document_id=namespace_info.default_feature_id
+        default_feature = await self.get_document(
+            DocServiceName.FEATURE, namespace_info.default_feature_id
         )
         versions_info = None
         if verbose:
-            namespace = await self.feature_namespace_service.get_document(
-                document_id=feature.feature_namespace_id
+            namespace = await self.get_document(
+                DocServiceName.FEATURE_NAMESPACE, feature.feature_namespace_id
             )
             versions_info = FeatureBriefInfoList.from_paginated_data(
                 await self.feature_service.list_documents(
@@ -178,7 +180,7 @@ class InfoService(BaseService):
         FeatureNamespaceInfo
         """
         _ = verbose
-        namespace = await self.feature_namespace_service.get_document(document_id=document_id)
+        namespace = await self.get_document(DocServiceName.FEATURE_NAMESPACE, document_id)
         entities = await self.entity_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
@@ -213,18 +215,18 @@ class InfoService(BaseService):
         -------
         FeatureListInfo
         """
-        feature_list = await self.feature_list_service.get_document(document_id=document_id)
+        feature_list = await self.get_document(DocServiceName.FEATURE_LIST, document_id)
         namespace_info = await self.get_feature_list_namespace_info(
             document_id=feature_list.feature_list_namespace_id,
             verbose=verbose,
         )
-        default_feature_list = await self.feature_list_service.get_document(
-            document_id=namespace_info.default_feature_list_id
+        default_feature_list = await self.get_document(
+            DocServiceName.FEATURE_LIST, namespace_info.default_feature_list_id
         )
         versions_info = None
         if verbose:
-            namespace = await self.feature_list_namespace_service.get_document(
-                document_id=feature_list.feature_list_namespace_id
+            namespace = await self.get_document(
+                DocServiceName.FEATURE_LIST_NAMESPACE, feature_list.feature_list_namespace_id
             )
             versions_info = FeatureListBriefInfoList.from_paginated_data(
                 await self.feature_list_service.list_documents(
@@ -267,7 +269,7 @@ class InfoService(BaseService):
         FeatureListNamespaceInfo
         """
         _ = verbose
-        namespace = await self.feature_list_namespace_service.get_document(document_id=document_id)
+        namespace = await self.get_document(DocServiceName.FEATURE_LIST_NAMESPACE, document_id)
         entities = await self.entity_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )

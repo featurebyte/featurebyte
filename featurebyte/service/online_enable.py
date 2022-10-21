@@ -154,5 +154,5 @@ class OnlineEnableService(BaseService):
                         return_document=False,
                     )
                 if return_document:
-                    return await self.feature_service.get_document(document_id=feature_id)
+                    return await self.get_document(DocServiceName.FEATURE, feature_id)
         return self.conditional_return(document=document, condition=return_document)
