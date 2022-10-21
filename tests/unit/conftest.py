@@ -642,9 +642,18 @@ async def feature_list_manager(mock_execute_query, session_manager, snowflake_fe
 def mocked_tile_cache_fixture():
     """Fixture for a mocked SnowflakeTileCache object"""
     with mock.patch(
-        "featurebyte.query_graph.sql.feature_historical.SnowflakeTileCache", autospec=True
-    ) as mocked_cls:
-        yield mocked_cls.return_value
+        "featurebyte.query_graph.sql.feature_historical.get_tile_cache"
+    ) as mocked_get_tile_cache:
+
+        async def _mock_compute_tiles_on_demand(*args, **kwargs):
+            _ = args
+            _ = kwargs
+            return None
+
+        mocked_tile_cache = mock.Mock()
+        mocked_tile_cache.compute_tiles_on_demand.side_effect = _mock_compute_tiles_on_demand
+        mocked_get_tile_cache.return_value = mocked_tile_cache
+        yield mocked_tile_cache
 
 
 def test_save_payload_fixtures(

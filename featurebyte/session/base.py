@@ -331,6 +331,19 @@ class BaseSession(BaseModel):
             DataFrame to register
         """
 
+    async def register_temp_table_with_query(self, table_name: str, query: str) -> None:
+        """
+        Register a temporary table using a Select query
+
+        Parameters
+        ----------
+        table_name : str
+            Temp table name
+        query : str
+            SQL query for the table
+        """
+        await self.execute_query(f"CREATE OR REPLACE TEMPORARY TABLE {table_name} AS {query}")
+
     @property
     @abstractmethod
     def schema_name(self) -> str:
