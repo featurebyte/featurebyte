@@ -56,15 +56,15 @@ class FeatureReadinessService(BaseService):
         document = await self.get_document(
             DocServiceName.FEATURE_LIST_NAMESPACE, feature_list_namespace_id, document=document
         )
-        default_feature_list = await self.feature_list_service.get_document(
-            document_id=document.default_feature_list_id
+        default_feature_list = await self.get_document(
+            DocServiceName.FEATURE_LIST, document.default_feature_list_id
         )
         update_dict: dict[str, Any] = {}
         if document.default_version_mode == DefaultVersionMode.AUTO:
             # when default version mode is AUTO & (feature is not specified or already in current namespace)
             readiness_distribution = document.readiness_distribution.worst_case()
             for feature_list_id in document.feature_list_ids:
-                version = await self.feature_list_service.get_document(document_id=feature_list_id)
+                version = await self.get_document(DocServiceName.FEATURE_LIST, feature_list_id)
                 if version.readiness_distribution > readiness_distribution:
                     readiness_distribution = version.readiness_distribution
                     default_feature_list = version
@@ -161,15 +161,15 @@ class FeatureReadinessService(BaseService):
         document = await self.get_document(
             DocServiceName.FEATURE_NAMESPACE, feature_namespace_id, document=document
         )
-        default_feature = await self.feature_service.get_document(
-            document_id=document.default_feature_id
+        default_feature = await self.get_document(
+            DocServiceName.FEATURE, document.default_feature_id
         )
         update_dict: dict[str, Any] = {}
         if document.default_version_mode == DefaultVersionMode.AUTO:
             # when default version mode is AUTO & (feature is not specified or already in current namespace)
             readiness = min(FeatureReadiness)
             for feature_id in document.feature_ids:
-                version = await self.feature_service.get_document(document_id=feature_id)
+                version = await self.get_document(DocServiceName.FEATURE, feature_id)
                 if version.readiness > readiness:
                     readiness = FeatureReadiness(version.readiness)
                     default_feature = version

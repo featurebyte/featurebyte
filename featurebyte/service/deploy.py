@@ -194,5 +194,5 @@ class DeployService(BaseService):
                         return_document=False,
                     )
                 if return_document:
-                    return await self.feature_list_service.get_document(document_id=feature_list_id)
+                    return await self.get_document(DocServiceName.FEATURE_LIST, feature_list_id)
         return self.conditional_return(document=document, condition=return_document)
