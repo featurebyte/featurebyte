@@ -3,7 +3,7 @@ BaseDataController for API routes
 """
 from __future__ import annotations
 
-from typing import Type, Union
+from typing import Type, TypeVar, Union, overload
 
 from bson.objectid import ObjectId
 
@@ -11,19 +11,20 @@ from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.item_data import ItemDataModel
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.schema.data import DataUpdate
-from featurebyte.schema.event_data import EventDataCreate
-from featurebyte.schema.item_data import ItemDataCreate
-from featurebyte.service.base_document import Document
-from featurebyte.service.data_update import DataUpdateSchema, DataUpdateService
+from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
+from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
+from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.info import InfoService
 from featurebyte.service.item_data import ItemDataService
 
-DataCreateSchema = Union[EventDataCreate, ItemDataCreate]
-DataModelSchema = Union[EventDataModel, ItemDataModel]
+DataDocumentT = TypeVar("DataDocumentT", EventDataModel, ItemDataModel)
+DataDocumentServiceT = TypeVar("DataDocumentServiceT", EventDataService, ItemDataService)
 
 
-class BaseDataDocumentController(BaseDocumentController[Document, PaginatedDocument]):
+class BaseDataDocumentController(
+    BaseDocumentController[DataDocumentT, DataDocumentServiceT, PaginatedDocument]
+):
     """
     BaseDataDocumentController for API routes
     """
@@ -40,24 +41,43 @@ class BaseDataDocumentController(BaseDocumentController[Document, PaginatedDocum
         self.data_update_service = data_update_service
         self.info_service = info_service
 
-    async def create_data(self, data: DataCreateSchema) -> DataModelSchema:
+    @overload
+    async def create_data(self, data: EventDataCreate) -> EventDataModel:
+        ...
+
+    @overload
+    async def create_data(self, data: ItemDataCreate) -> ItemDataModel:
+        ...
+
+    async def create_data(
+        self, data: Union[EventDataCreate, ItemDataCreate]
+    ) -> Union[EventDataModel, ItemDataModel]:
         """
         Create Data at persistent
 
         Parameters
         ----------
-        data: DataCreateSchema
+        data: Union[EventDataCreate, ItemDataCreate]
             EventData or ItemData creation payload
 
         Returns
         -------
-        DataModelSchema
+        Union[EventDataModel, ItemDataModel]
             Newly created data object
         """
-        document = await self.service.create_document(data)
-        return document  # type: ignore
+        return await self.service.create_document(data)  # type: ignore[arg-type]
 
-    async def update_data(self, document_id: ObjectId, data: DataUpdateSchema) -> DataModelSchema:
+    @overload
+    async def update_data(self, document_id: ObjectId, data: EventDataUpdate) -> EventDataModel:
+        ...
+
+    @overload
+    async def update_data(self, document_id: ObjectId, data: ItemDataUpdate) -> ItemDataModel:
+        ...
+
+    async def update_data(
+        self, document_id: ObjectId, data: Union[EventDataUpdate, ItemDataUpdate]
+    ) -> Union[EventDataModel, ItemDataModel]:
         """
         Update EventData (for example, to update scheduled task) at persistent (GitDB or MongoDB)
 
@@ -65,24 +85,24 @@ class BaseDataDocumentController(BaseDocumentController[Document, PaginatedDocum
         ----------
         document_id: ObjectId
             Data document ID
-        data: DataUpdateSchema
+        data: Union[EventDataUpdate, ItemDataUpdate]
             Data update payload
 
         Returns
         -------
-        DataModelSchema
+        Union[EventDataModel, ItemDataModel]
             Data object with updated attribute(s)
         """
         if data.columns_info:
             await self.data_update_service.update_columns_info(
-                service=self.service,  # type: ignore
+                service=self.service,
                 document_id=document_id,
                 data=data,
             )
 
         if data.status:
             await self.data_update_service.update_data_status(
-                service=self.service,  # type: ignore
+                service=self.service,
                 document_id=document_id,
                 data=data,
             )
@@ -91,8 +111,8 @@ class BaseDataDocumentController(BaseDocumentController[Document, PaginatedDocum
         if update_dict:
             await self.service.update_document(
                 document_id=document_id,
-                data=self.document_update_schema_class(**update_dict),
+                data=self.document_update_schema_class(**update_dict),  # type: ignore[arg-type]
                 return_document=False,
             )
 
-        return await self.get(document_id=document_id)  # type: ignore
+        return await self.get(document_id=document_id)

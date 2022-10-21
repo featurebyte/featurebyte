@@ -3,8 +3,6 @@ Entity API route controller
 """
 from __future__ import annotations
 
-from typing import cast
-
 from bson.objectid import ObjectId
 
 from featurebyte.models.entity import EntityModel, ParentEntity
@@ -22,7 +20,7 @@ from featurebyte.service.relationship import EntityRelationshipService
 
 
 class EntityController(
-    BaseDocumentController[EntityModel, EntityList],
+    BaseDocumentController[EntityModel, EntityService, EntityList],
     RelationshipMixin[EntityModel, ParentEntity],
 ):
     """
@@ -37,7 +35,7 @@ class EntityController(
         entity_relationship_service: EntityRelationshipService,
         info_service: InfoService,
     ):
-        super().__init__(service)  # type: ignore[arg-type]
+        super().__init__(service)
         self.relationship_service = entity_relationship_service
         self.info_service = info_service
 
@@ -58,8 +56,7 @@ class EntityController(
         EntityModel
             Newly created entity object
         """
-        document = await self.service.create_document(data)
-        return cast(EntityModel, document)
+        return await self.service.create_document(data)
 
     async def update_entity(
         self,

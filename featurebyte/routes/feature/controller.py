@@ -3,7 +3,7 @@ Feature API route controller
 """
 from __future__ import annotations
 
-from typing import Any, Literal, Union, cast
+from typing import Any, Literal, Union
 
 from http import HTTPStatus
 
@@ -28,7 +28,7 @@ from featurebyte.service.preview import PreviewService
 from featurebyte.service.version import VersionService
 
 
-class FeatureController(BaseDocumentController[FeatureModel, FeaturePaginatedList]):
+class FeatureController(BaseDocumentController[FeatureModel, FeatureService, FeaturePaginatedList]):
     """
     Feature controller
     """
@@ -44,7 +44,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeaturePaginatedLis
         version_service: VersionService,
         info_service: InfoService,
     ):
-        super().__init__(service)  # type: ignore[arg-type]
+        super().__init__(service)
         self.feature_list_service = feature_list_service
         self.feature_readiness_service = feature_readiness_service
         self.preview_service = preview_service
@@ -70,10 +70,7 @@ class FeatureController(BaseDocumentController[FeatureModel, FeaturePaginatedLis
             Newly created feature object
         """
         if isinstance(data, FeatureCreate):
-            document = cast(
-                FeatureModel,
-                await self.service.create_document(data=data, get_credential=get_credential),
-            )
+            document = await self.service.create_document(data=data, get_credential=get_credential)
         else:
             document = await self.version_service.create_new_feature_version(
                 data=data, get_credential=get_credential

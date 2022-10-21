@@ -12,6 +12,7 @@ from bson.objectid import ObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
+from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.item_data import ItemDataModel
@@ -20,6 +21,7 @@ from featurebyte.persistent.base import Persistent
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
@@ -28,7 +30,7 @@ from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.semantic import SemanticService
 
-DocumentServiceT = Union[
+DocumentService = Union[
     FeatureStoreService,
     EntityService,
     SemanticService,
@@ -38,8 +40,9 @@ DocumentServiceT = Union[
     FeatureNamespaceService,
     FeatureListService,
     FeatureListNamespaceService,
+    FeatureJobSettingAnalysisService,
 ]
-DocumentT = Union[
+DocumentModel = Union[
     FeatureStoreModel,
     EntityModel,
     SemanticModel,
@@ -49,6 +52,7 @@ DocumentT = Union[
     FeatureNamespaceModel,
     FeatureListModel,
     FeatureListNamespaceModel,
+    FeatureJobSettingAnalysisModel,
 ]
 
 
@@ -66,6 +70,7 @@ class DocServiceName(str, Enum):
     FEATURE_NAMESPACE = "feature_namespace"
     FEATURE_LIST = "feature_list"
     FEATURE_LIST_NAMESPACE = "feature_list_namespace"
+    FEATURE_JOB_SETTING_ANALYSIS = "feature_job_setting_analysis"
 
 
 class BaseService(OpsServiceMixin):
@@ -176,6 +181,17 @@ class BaseService(OpsServiceMixin):
         """
         return FeatureListNamespaceService(user=self.user, persistent=self.persistent)
 
+    @property
+    def feature_job_setting_analysis_service(self) -> FeatureJobSettingAnalysisService:
+        """
+        FeatureJobSettingAnalysisService object
+
+        Returns
+        -------
+        FeatureJobSettingAnalysisService
+        """
+        return FeatureJobSettingAnalysisService(user=self.user, persistent=self.persistent)
+
     @overload
     def as_service(
         self, doc_service_name: Literal[DocServiceName.FEATURE_STORE]
@@ -220,7 +236,13 @@ class BaseService(OpsServiceMixin):
     ) -> FeatureListNamespaceService:
         ...
 
-    def as_service(self, doc_service_name: DocServiceName) -> DocumentServiceT:
+    @overload
+    def as_service(
+        self, doc_service_name: Literal[DocServiceName.FEATURE_JOB_SETTING_ANALYSIS]
+    ) -> FeatureJobSettingAnalysisService:
+        ...
+
+    def as_service(self, doc_service_name: DocServiceName) -> DocumentService:
         """
         Convert document service name to document service object
 
@@ -233,7 +255,7 @@ class BaseService(OpsServiceMixin):
         -------
         DocumentServiceT
         """
-        doc_service_name_map: dict[DocServiceName, DocumentServiceT] = {
+        doc_service_name_map: dict[DocServiceName, DocumentService] = {
             DocServiceName.FEATURE_STORE: self.feature_store_service,
             DocServiceName.ENTITY: self.entity_service,
             DocServiceName.SEMANTIC: self.semantic_service,
@@ -243,6 +265,7 @@ class BaseService(OpsServiceMixin):
             DocServiceName.FEATURE_NAMESPACE: self.feature_namespace_service,
             DocServiceName.FEATURE_LIST: self.feature_list_service,
             DocServiceName.FEATURE_LIST_NAMESPACE: self.feature_list_namespace_service,
+            DocServiceName.FEATURE_JOB_SETTING_ANALYSIS: self.feature_job_setting_analysis_service,
         }
         return doc_service_name_map[doc_service_name]
 
@@ -327,6 +350,15 @@ class BaseService(OpsServiceMixin):
     ) -> FeatureListNamespaceModel:
         ...
 
+    @overload
+    async def get_document(
+        self,
+        doc_service_name: Literal[DocServiceName.FEATURE_JOB_SETTING_ANALYSIS],
+        document_id: ObjectId,
+        document: Optional[FeatureJobSettingAnalysisModel] = None,
+    ) -> FeatureJobSettingAnalysisModel:
+        ...
+
     async def get_document(
         self,
         doc_service_name: Literal[
@@ -339,10 +371,11 @@ class BaseService(OpsServiceMixin):
             DocServiceName.FEATURE_NAMESPACE,
             DocServiceName.FEATURE_LIST,
             DocServiceName.FEATURE_LIST_NAMESPACE,
+            DocServiceName.FEATURE_JOB_SETTING_ANALYSIS,
         ],
         document_id: ObjectId,
-        document: Optional[DocumentT] = None,
-    ) -> DocumentT:
+        document: Optional[DocumentModel] = None,
+    ) -> DocumentModel:
         """
         Retrieve document given document service name and document ID if the document is empty
 

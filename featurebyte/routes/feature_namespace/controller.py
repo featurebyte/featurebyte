@@ -18,7 +18,7 @@ from featurebyte.service.info import InfoService
 
 
 class FeatureNamespaceController(
-    BaseDocumentController[FeatureNamespaceModel, FeatureNamespaceList]
+    BaseDocumentController[FeatureNamespaceModel, FeatureNamespaceService, FeatureNamespaceList]
 ):
     """
     FeatureName controller
@@ -32,7 +32,7 @@ class FeatureNamespaceController(
         default_version_mode_service: DefaultVersionModeService,
         info_service: InfoService,
     ):
-        super().__init__(service)  # type: ignore[arg-type]
+        super().__init__(service)
         self.default_version_mode_service = default_version_mode_service
         self.info_service = info_service
 

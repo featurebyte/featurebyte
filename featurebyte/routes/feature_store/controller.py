@@ -3,7 +3,7 @@ FeatureStore API route controller
 """
 from __future__ import annotations
 
-from typing import Any, List, cast
+from typing import Any, List
 
 from bson.objectid import ObjectId
 
@@ -20,7 +20,9 @@ from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
 
 
-class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureStoreList]):
+class FeatureStoreController(
+    BaseDocumentController[FeatureStoreModel, FeatureStoreService, FeatureStoreList]
+):
     """
     FeatureStore controller
     """
@@ -33,7 +35,7 @@ class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureSt
         preview_service: PreviewService,
         info_service: InfoService,
     ):
-        super().__init__(service)  # type: ignore[arg-type]
+        super().__init__(service)
         self.preview_service = preview_service
         self.info_service = info_service
 
@@ -54,8 +56,7 @@ class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureSt
         FeatureStoreModel
             Newly created feature store document
         """
-        document = await self.service.create_document(data)
-        return cast(FeatureStoreModel, document)
+        return await self.service.create_document(data)
 
     async def list_databases(
         self,
@@ -77,8 +78,7 @@ class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureSt
         List[str]
             List of database names
         """
-        service = cast(FeatureStoreService, self.service)
-        return await service.list_databases(
+        return await self.service.list_databases(
             feature_store=feature_store, get_credential=get_credential
         )
 
@@ -105,8 +105,7 @@ class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureSt
         List[str]
             List of schema names
         """
-        service = cast(FeatureStoreService, self.service)
-        return await service.list_schemas(
+        return await self.service.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
             get_credential=get_credential,
@@ -138,8 +137,7 @@ class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureSt
         List[str]
             List of table names
         """
-        service = cast(FeatureStoreService, self.service)
-        return await service.list_tables(
+        return await self.service.list_tables(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
@@ -175,8 +173,7 @@ class FeatureStoreController(BaseDocumentController[FeatureStoreModel, FeatureSt
         List[ColumnSpec]
             List of ColumnSpec object
         """
-        service = cast(FeatureStoreService, self.service)
-        return await service.list_columns(
+        return await self.service.list_columns(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,

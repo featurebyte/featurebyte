@@ -3,8 +3,6 @@ Semantic API route controller
 """
 from __future__ import annotations
 
-from typing import cast
-
 from featurebyte.models.relationship import Parent
 from featurebyte.models.semantic import SemanticModel
 from featurebyte.routes.common.base import BaseDocumentController, RelationshipMixin
@@ -14,7 +12,7 @@ from featurebyte.service.semantic import SemanticService
 
 
 class SemanticController(
-    BaseDocumentController[SemanticModel, SemanticList],
+    BaseDocumentController[SemanticModel, SemanticService, SemanticList],
     RelationshipMixin[SemanticModel, Parent],
 ):
     """
@@ -28,7 +26,7 @@ class SemanticController(
         service: SemanticService,
         semantic_relationship_service: SemanticRelationshipService,
     ):
-        super().__init__(service)  # type: ignore[arg-type]
+        super().__init__(service)
         self.relationship_service = semantic_relationship_service
 
     async def create_semantic(
@@ -48,5 +46,4 @@ class SemanticController(
         SemanticModel
             Newly created semantic object
         """
-        document = await self.service.create_document(data)
-        return cast(SemanticModel, document)
+        return await self.service.create_document(data)
