@@ -17,6 +17,7 @@ target-version = ["py38"]
 exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",
+    "@overload",
 ]
 fail_under = 50
 show_missing = true
