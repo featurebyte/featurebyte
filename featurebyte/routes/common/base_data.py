@@ -13,7 +13,7 @@ from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocu
 from featurebyte.schema.data import DataUpdate
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
-from featurebyte.service.data_update import DataUpdateService
+from featurebyte.service.data_update import DataDocumentService, DataUpdateService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.info import InfoService
 from featurebyte.service.item_data import ItemDataService
@@ -33,7 +33,7 @@ class BaseDataDocumentController(
 
     def __init__(
         self,
-        service: Union[EventDataService, ItemDataService],
+        service: DataDocumentService,
         data_update_service: DataUpdateService,
         info_service: InfoService,
     ):
