@@ -3,7 +3,7 @@ BaseService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Generic, Iterator, List, Literal, Optional, Type, TypeVar
+from typing import Any, Dict, Generic, Iterator, List, Literal, Optional, Type, TypeVar, Union
 
 import copy
 from abc import abstractmethod
@@ -22,16 +22,22 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.persistent import AuditActionType, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
-from featurebyte.schema.common.base import BaseInfo
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
 from featurebyte.service.mixin import OpsServiceMixin
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
+DocumentCreateSchema = TypeVar("DocumentCreateSchema", bound=FeatureByteBaseModel)
+DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=BaseDocumentServiceUpdateSchema)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
 
 
-class BaseDocumentService(Generic[Document], OpsServiceMixin):
+class BaseDocumentService(
+    Generic[Document, DocumentCreateSchema, DocumentUpdateSchema], OpsServiceMixin
+):
     """
-    BaseService class
+    BaseDocumentService class is responsible to perform CRUD of the underlying persistent
+    collection. It will perform model level validation before writing to persistent and after
+    reading from the persistent.
     """
 
     document_class: Type[Document]
@@ -51,10 +57,6 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         """
         return self.document_class.collection_name()
 
-    @staticmethod
-    def _snake_to_camel_case(value: str) -> str:
-        return "".join(elem.title() for elem in value.split("_"))
-
     @property
     def class_name(self) -> str:
         """
@@ -64,7 +66,63 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         -------
         camel case collection name
         """
-        return self._snake_to_camel_case(self.collection_name)
+        return "".join(elem.title() for elem in self.collection_name.split("_"))
+
+    @staticmethod
+    def _extract_additional_creation_kwargs(data: DocumentCreateSchema) -> dict[str, Any]:
+        """
+        Extract additional document creation from document creation schema
+
+        Parameters
+        ----------
+        data: DocumentCreateSchema
+            Document creation schema
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        _ = data
+        return {}
+
+    async def create_document(
+        self, data: DocumentCreateSchema, get_credential: Any = None
+    ) -> Document:
+        """
+        Create document at persistent
+
+        Parameters
+        ----------
+        data: DocumentCreateSchema
+            Document creation payload object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        Document
+        """
+        _ = get_credential
+        document = self.document_class(
+            **{
+                **data.json_dict(),
+                **self._extract_additional_creation_kwargs(data),
+                "user_id": self.user.id,
+            },
+        )
+
+        # check any conflict with existing documents
+        await self._check_document_unique_constraints(
+            document=document,
+            document_class=self.document_class,
+        )
+        insert_id = await self.persistent.insert_one(
+            collection_name=self.collection_name,
+            document=document.dict(by_alias=True),
+            user_id=self.user.id,
+        )
+        assert insert_id == document.id
+        return await self.get_document(document_id=insert_id)
 
     def _construct_get_query_filter(self, document_id: ObjectId, **kwargs: Any) -> QueryFilter:
         """
@@ -83,29 +141,6 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         """
         _ = self, kwargs
         return {"_id": ObjectId(document_id)}
-
-    async def _get_document(
-        self,
-        document_id: ObjectId,
-        exception_detail: str | None = None,
-        collection_name: str | None = None,
-        **kwargs: Any,
-    ) -> dict[str, Any]:
-        query_filter = self._construct_get_query_filter(document_id=document_id, **kwargs)
-        document = await self.persistent.find_one(
-            collection_name=collection_name or self.collection_name,
-            query_filter=query_filter,
-            user_id=self.user.id,
-        )
-        if document is None:
-            class_name = (
-                self._snake_to_camel_case(collection_name) if collection_name else self.class_name
-            )
-            exception_detail = exception_detail or (
-                f'{class_name} (id: "{document_id}") not found. Please save the {class_name} object first.'
-            )
-            raise DocumentNotFoundError(exception_detail)
-        return dict(document)
 
     async def get_document(
         self,
@@ -128,10 +163,23 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         Returns
         -------
         Document
+
+        Raises
+        ------
+        DocumentNotFoundError
+            If the requested document not found
         """
-        document_dict = await self._get_document(
-            document_id=document_id, exception_detail=exception_detail, **kwargs
+        query_filter = self._construct_get_query_filter(document_id=document_id, **kwargs)
+        document_dict = await self.persistent.find_one(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            user_id=self.user.id,
         )
+        if document_dict is None:
+            exception_detail = exception_detail or (
+                f'{self.class_name} (id: "{document_id}") not found. Please save the {self.class_name} object first.'
+            )
+            raise DocumentNotFoundError(exception_detail)
         return self.document_class(**document_dict)
 
     def _construct_list_query_filter(
@@ -417,13 +465,6 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         DocumentConflictError
             When there is a conflict with existing document(s) stored at the persistent
         """
-        if query_filter:
-            # this is temporary fix to make sure we handle tabular_source tuple properly.
-            # after revising current document models by removing all tuple attributes, this will be fixed.
-            for key, value in query_filter.items():
-                if isinstance(value, tuple):
-                    query_filter[key] = list(query_filter[key])
-
         conflict_doc = await self.persistent.find_one(
             collection_name=self.collection_name,
             query_filter=query_filter,
@@ -437,9 +478,11 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
             )
             raise DocumentConflictError(exception_detail)
 
-    @classmethod
+    @staticmethod
     def _get_unique_constraints(
-        cls, document: FeatureByteBaseDocumentModel
+        document: FeatureByteBaseDocumentModel,
+        document_class: Union[Type[Document], Type[DocumentUpdateSchema]],
+        original_document: Optional[FeatureByteBaseDocumentModel],
     ) -> Iterator[
         tuple[dict[str, Any], dict[str, Any], Optional[UniqueConstraintResolutionSignature]]
     ]:
@@ -450,6 +493,10 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         ----------
         document: FeatureByteBaseDocumentModel
             Document contains information to construct query filter & conflict signature
+        document_class: Union[Type[Document], Type[DocumentUpdateSchema]]
+            Document class used to retrieve unique constraints
+        original_document: Optional[FeatureByteBaseDocumentModel]
+            Original document before update (provide when checking document update conflict)
 
         Yields
         ------
@@ -457,8 +504,15 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
             List of tuples used to construct unique constraint validations
         """
         doc_dict = document.dict(by_alias=True)
-        for constraint in cls.document_class.Settings.unique_constraints:
+        original_dict = original_document.dict(by_alias=True) if original_document else None
+        for constraint in document_class.Settings.unique_constraints:
             query_filter = {field: doc_dict[field] for field in constraint.fields}
+            if original_dict:
+                # skip checking if the original document value are the same with the updated one
+                original_value = {field: original_dict[field] for field in constraint.fields}
+                if original_value == query_filter:
+                    continue
+
             conflict_signature = {
                 name: get_field_path_value(doc_dict, fields)
                 for name, fields in constraint.conflict_fields_signature.items()
@@ -470,7 +524,10 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
             yield query_filter, conflict_signature, constraint.resolution_signature
 
     async def _check_document_unique_constraints(
-        self, document: FeatureByteBaseDocumentModel
+        self,
+        document: FeatureByteBaseDocumentModel,
+        document_class: Optional[Union[Type[Document], Type[DocumentUpdateSchema]]] = None,
+        original_document: Optional[FeatureByteBaseDocumentModel] = None,
     ) -> None:
         """
         Check document uniqueness constraints given document
@@ -479,9 +536,15 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         ----------
         document: FeatureByteBaseDocumentModel
             document to be checked
+        document_class: Union[Type[Document], Type[DocumentUpdateSchema]]
+            Document class used to retrieve unique constraints
+        original_document: Optional[FeatureByteBaseDocumentModel]
+            Original document before update (provide when checking document update conflict)
         """
         for query_filter, conflict_signature, resolution_signature in self._get_unique_constraints(
-            document
+            document=document,
+            document_class=document_class or self.document_class,
+            original_document=original_document,
         ):
             await self._check_document_unique_constraint(
                 query_filter=query_filter,
@@ -489,32 +552,12 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
                 resolution_signature=resolution_signature,
             )
 
-    @abstractmethod
-    async def create_document(
-        self, data: FeatureByteBaseModel, get_credential: Any = None
-    ) -> Document:
-        """
-        Create document at persistent
-
-        Parameters
-        ----------
-        data: FeatureByteBaseModel
-            Document creation payload object
-        get_credential: Any
-            Get credential handler function
-
-        Returns
-        -------
-        Document
-        """
-
-    @abstractmethod
     async def update_document(
         self,
         document_id: ObjectId,
-        data: FeatureByteBaseModel,
+        data: DocumentUpdateSchema,
         exclude_none: bool = True,
-        document: Optional[FeatureByteBaseDocumentModel] = None,
+        document: Optional[Document] = None,
         return_document: bool = True,
     ) -> Optional[Document]:
         """
@@ -524,11 +567,11 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         ----------
         document_id: ObjectId
             Document ID
-        data: FeatureByteBaseModel
+        data: DocumentUpdateSchema
             Document update payload object
         exclude_none: bool
             Whether to exclude None value(s) from the data
-        document: Optional[FeatureByteBaseDocumentModel]
+        document: Optional[Document]
             Document to be updated (when provided, this method won't query persistent for retrieval)
         return_document: bool
             Whether to make additional query to retrieval updated document & return
@@ -537,6 +580,30 @@ class BaseDocumentService(Generic[Document], OpsServiceMixin):
         -------
         Optional[Document]
         """
+        if document is None:
+            document = await self.get_document(document_id=document_id)
+
+        # perform validation first before actual update
+        update_dict = data.dict(exclude_none=exclude_none)
+        updated_document = self.document_class(**{**document.json_dict(), **update_dict})
+
+        # check any conflict with existing documents
+        await self._check_document_unique_constraints(
+            document=updated_document, document_class=type(data), original_document=document
+        )
+
+        if document != updated_document:
+            # only update if change is detected
+            await self.persistent.update_one(
+                collection_name=self.collection_name,
+                query_filter=self._construct_get_query_filter(document_id=document_id),
+                update={"$set": update_dict},
+                user_id=self.user.id,
+            )
+
+        if return_document:
+            return await self.get_document(document_id=document_id)
+        return None
 
 
 class GetInfoServiceMixin(Generic[InfoDocument]):

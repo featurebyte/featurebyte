@@ -13,7 +13,13 @@ from featurebyte.routes.common.base import (
     GetInfoControllerMixin,
     RelationshipMixin,
 )
-from featurebyte.schema.entity import EntityCreate, EntityInfo, EntityList, EntityUpdate
+from featurebyte.schema.entity import (
+    EntityCreate,
+    EntityInfo,
+    EntityList,
+    EntityServiceUpdate,
+    EntityUpdate,
+)
 from featurebyte.service.entity import EntityService
 from featurebyte.service.relationship import EntityRelationshipService
 
@@ -78,7 +84,7 @@ class EntityController(  # type: ignore[misc]
             Entity object with updated attribute(s)
         """
         document: EntityModel = await self.service.update_document(  # type: ignore[attr-defined]
-            document_id=entity_id, data=data
+            document_id=entity_id, data=EntityServiceUpdate(**data.dict())
         )
         assert document is not None
         return document

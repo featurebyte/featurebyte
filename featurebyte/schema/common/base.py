@@ -1,11 +1,12 @@
 """
 Base info related schema
 """
-from typing import Optional
+# pylint: disable=too-few-public-methods
+from typing import List, Optional
 
 from datetime import datetime
 
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, UniqueValuesConstraint
 
 
 class BaseBriefInfo(FeatureByteBaseModel):
@@ -23,3 +24,16 @@ class BaseInfo(BaseBriefInfo):
 
     created_at: datetime
     updated_at: Optional[datetime]
+
+
+class BaseDocumentServiceUpdateSchema(FeatureByteBaseModel):
+    """
+    Base schema used for document service update
+    """
+
+    class Settings:
+        """
+        Unique constraints checking during update
+        """
+
+        unique_constraints: List[UniqueValuesConstraint] = []

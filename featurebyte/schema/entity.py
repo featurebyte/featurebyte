@@ -1,6 +1,7 @@
 """
 Entity API payload schema
 """
+# pylint: disable=too-few-public-methods
 from __future__ import annotations
 
 from typing import Any, List, Optional
@@ -8,10 +9,15 @@ from typing import Any, List, Optional
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr
 
-from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.base import (
+    FeatureByteBaseModel,
+    PydanticObjectId,
+    UniqueConstraintResolutionSignature,
+    UniqueValuesConstraint,
+)
 from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
+from featurebyte.schema.common.base import BaseBriefInfo, BaseDocumentServiceUpdateSchema, BaseInfo
 from featurebyte.schema.common.operation import DictProject
 
 
@@ -41,7 +47,7 @@ class EntityUpdate(FeatureByteBaseModel):
     name: StrictStr
 
 
-class EntityServiceUpdate(FeatureByteBaseModel):
+class EntityServiceUpdate(BaseDocumentServiceUpdateSchema):
     """
     Entity service update schema
     """
@@ -49,6 +55,19 @@ class EntityServiceUpdate(FeatureByteBaseModel):
     name: Optional[str]
     ancestor_ids: Optional[List[PydanticObjectId]]
     parents: Optional[List[ParentEntity]]
+
+    class Settings(BaseDocumentServiceUpdateSchema.Settings):
+        """
+        Unique contraints checking
+        """
+
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+        ]
 
 
 class EntityBriefInfo(BaseBriefInfo):

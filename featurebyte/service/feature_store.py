@@ -3,56 +3,25 @@ FeatureStoreService class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Type
+from typing import Any, List, Type
 
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreInfo
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 
 
 class FeatureStoreService(
-    BaseDocumentService[FeatureStoreModel], GetInfoServiceMixin[FeatureStoreInfo]
+    BaseDocumentService[FeatureStoreModel, FeatureStoreCreate, BaseDocumentServiceUpdateSchema],
+    GetInfoServiceMixin[FeatureStoreInfo],
 ):
     """
     FeatureStoreService class
     """
 
     document_class: Type[FeatureStoreModel] = FeatureStoreModel
-
-    async def create_document(  # type: ignore[override]
-        self, data: FeatureStoreCreate, get_credential: Any = None
-    ) -> FeatureStoreModel:
-        _ = get_credential
-        document = FeatureStoreModel(**data.json_dict(), user_id=self.user.id)
-
-        # check any conflict with existing documents
-        await self._check_document_unique_constraints(document=document)
-        insert_id = await self.persistent.insert_one(
-            collection_name=self.collection_name,
-            document=document.dict(by_alias=True),
-            user_id=self.user.id,
-        )
-        assert insert_id == document.id
-        return await self.get_document(document_id=insert_id)
-
-    async def update_document(  # type: ignore[override]
-        self,
-        document_id: ObjectId,
-        data: FeatureByteBaseModel,
-        exclude_none: bool = True,
-        document: Optional[FeatureStoreModel] = None,
-        return_document: bool = True,
-    ) -> Optional[FeatureStoreModel]:
-        # TODO: implement proper logic to update feature store document
-        if document is None:
-            document = await self.get_document(document_id=document_id)
-
-        if return_document:
-            return document
-        return None
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> FeatureStoreInfo:
         _ = verbose

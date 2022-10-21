@@ -8,6 +8,7 @@ from pydantic import Field, StrictStr
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature_store import ColumnInfo, DataStatus, TabularSource
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
 class DataCreate(FeatureByteBaseModel):
@@ -22,7 +23,7 @@ class DataCreate(FeatureByteBaseModel):
     record_creation_date_column: Optional[StrictStr]
 
 
-class DataUpdate(FeatureByteBaseModel):
+class DataUpdate(BaseDocumentServiceUpdateSchema):
     """
     DataService update schema
     """

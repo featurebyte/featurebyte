@@ -17,6 +17,7 @@ from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.feature_namespace import FeatureNamespaceInfo
 
@@ -63,7 +64,7 @@ class FeatureUpdate(FeatureByteBaseModel):
     readiness: Optional[FeatureReadiness]
 
 
-class FeatureServiceUpdate(FeatureUpdate):
+class FeatureServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureUpdate):
     """
     Feature service update schema
     """

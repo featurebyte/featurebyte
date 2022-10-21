@@ -12,6 +12,7 @@ from featurebyte.models.feature_list import (
     FeatureTypeFeatureCount,
 )
 from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.feature_namespace import NamespaceInfo
 
 
@@ -32,7 +33,9 @@ class FeatureListNamespaceUpdate(FeatureByteBaseModel):
     default_version_mode: Optional[DefaultVersionMode]
 
 
-class FeatureListNamespaceServiceUpdate(FeatureListNamespaceUpdate):
+class FeatureListNamespaceServiceUpdate(
+    BaseDocumentServiceUpdateSchema, FeatureListNamespaceUpdate
+):
     """
     FeatureListNamespace service update schema
     """

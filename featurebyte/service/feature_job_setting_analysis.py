@@ -3,14 +3,13 @@ FeatureJobSettingAnalysisService class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
-
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentError
-from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktest,
     FeatureJobSettingAnalysisCreate,
@@ -24,17 +23,18 @@ from featurebyte.service.event_data import EventDataService
 from featurebyte.service.task_manager import AbstractTaskManager, TaskId
 
 
-class FeatureJobSettingAnalysisService(BaseDocumentService[FeatureJobSettingAnalysisModel]):
+class FeatureJobSettingAnalysisService(
+    BaseDocumentService[
+        FeatureJobSettingAnalysisModel,
+        FeatureJobSettingAnalysisModel,
+        BaseDocumentServiceUpdateSchema,
+    ]
+):
     """
     FeatureJobSettingAnalysisService class
     """
 
     document_class = FeatureJobSettingAnalysisModel
-
-    async def create_document(
-        self, data: FeatureByteBaseModel, get_credential: Any = None
-    ) -> FeatureJobSettingAnalysisModel:
-        raise NotImplementedError
 
     async def create_document_creation_task(
         self, data: FeatureJobSettingAnalysisCreate, task_manager: AbstractTaskManager
@@ -82,22 +82,6 @@ class FeatureJobSettingAnalysisService(BaseDocumentService[FeatureJobSettingAnal
 
         # submit a task to run analysis
         return await task_manager.submit(payload=payload)
-
-    async def update_document(  # type: ignore[override]
-        self,
-        document_id: ObjectId,
-        data: FeatureByteBaseModel,
-        exclude_none: bool = True,
-        document: Optional[FeatureJobSettingAnalysisModel] = None,
-        return_document: bool = True,
-    ) -> Optional[FeatureJobSettingAnalysisModel]:
-        # TODO: implement proper logic to update feature job analysis document
-        if document is None:
-            document = await self.get_document(document_id=document_id)
-
-        if return_document:
-            return document
-        return None
 
     async def create_backtest_task(
         self, data: FeatureJobSettingAnalysisBacktest, task_manager: AbstractTaskManager

@@ -12,7 +12,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature import DefaultVersionMode, FeatureNamespaceModel, FeatureReadiness
 from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.schema.common.base import BaseInfo
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
 from featurebyte.schema.entity import EntityBriefInfoList
 from featurebyte.schema.event_data import EventDataBriefInfoList
 
@@ -41,7 +41,7 @@ class FeatureNamespaceList(PaginationMixin):
     data: List[FeatureNamespaceModel]
 
 
-class FeatureNamespaceUpdate(FeatureByteBaseModel):
+class FeatureNamespaceUpdate(BaseDocumentServiceUpdateSchema, FeatureByteBaseModel):
     """
     FeatureNamespace update schema
     """

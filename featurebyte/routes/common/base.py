@@ -7,10 +7,11 @@ from typing import Any, Generic, List, Literal, Optional, Type, TypeVar, cast
 
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import FeatureByteBaseDocumentModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.models.relationship import Parent
 from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import (
     BaseDocumentService,
     Document,
@@ -21,6 +22,9 @@ from featurebyte.service.relationship import RelationshipService
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
 ParentT = TypeVar("ParentT", bound=Parent)
+BaseDocumentServiceT = BaseDocumentService[
+    FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema
+]
 
 
 class BaseDocumentController(Generic[Document, PaginatedDocument]):
@@ -30,7 +34,7 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
 
     paginated_document_class: Type[PaginationMixin] = PaginationMixin
 
-    def __init__(self, service: BaseDocumentService[FeatureByteBaseDocumentModel]):
+    def __init__(self, service: BaseDocumentServiceT):
         self.service = service
 
     async def get(
@@ -116,10 +120,6 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Persistent to retrieve audit docs from
         document_id: ObjectId
             ID of document to retrieve
         query_filter: Optional[QueryFilter]
@@ -161,10 +161,6 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Persistent to retrieve audit docs from
         document_id: ObjectId
             ID of document to retrieve
         field: str

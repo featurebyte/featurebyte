@@ -22,6 +22,7 @@ from featurebyte.models.feature_list import (
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.feature import VersionComparison
 from featurebyte.schema.feature_namespace import NamespaceInfo
@@ -82,7 +83,7 @@ class FeatureListUpdate(FeatureByteBaseModel):
     deployed: Optional[bool]
 
 
-class FeatureListServiceUpdate(FeatureListUpdate):
+class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdate):
     """
     FeatureList service update schema
     """

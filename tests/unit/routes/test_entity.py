@@ -115,14 +115,11 @@ class TestEntityApi(BaseRelationshipApiTestSuite):
         result = response.json()
         assert result["name"] == "Customer"
 
-        # conflict due the name already exist (event if it is the same as the existing one)
+        # it is ok if the updated name is the same as the existing one
         response = test_api_client.patch(
             f"{self.base_route}/{entity_id}", json={"name": "Customer"}
         )
-        assert response.status_code == HTTPStatus.CONFLICT
-        assert response.json()["detail"] == (
-            'Entity (name: "Customer") already exists. Get the existing object by `Entity.get(name="Customer")`.'
-        )
+        assert response.status_code == HTTPStatus.OK
 
         # test get audit records
         response = test_api_client.get(f"{self.base_route}/audit/{entity_id}")
