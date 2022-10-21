@@ -12,10 +12,10 @@ from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
-from featurebyte.service.base_update import BaseUpdateService
+from featurebyte.service.base_service import BaseService, DocServiceName
 
 
-class OnlineEnableService(BaseUpdateService):
+class OnlineEnableService(BaseService):
     """
     OnlineEnableService class is responsible for maintaining the feature & feature list structure
     of feature online enablement.
@@ -54,8 +54,8 @@ class OnlineEnableService(BaseUpdateService):
         -------
         Optional[FeatureListModel]
         """
-        document = await self.get_feature_list_document(
-            document_id=feature_list_id, document=document
+        document = await self.get_document(
+            DocServiceName.FEATURE_LIST, feature_list_id, document=document
         )
         return await self.feature_list_service.update_document(
             document_id=feature_list_id,
@@ -93,8 +93,8 @@ class OnlineEnableService(BaseUpdateService):
         -------
         Optional[FeatureNamespaceModel]
         """
-        document = await self.get_feature_namespace_document(
-            document_id=feature_namespace_id, document=document
+        document = await self.get_document(
+            DocServiceName.FEATURE_NAMESPACE, feature_namespace_id, document=document
         )
         return await self.feature_namespace_service.update_document(
             document_id=feature_namespace_id,
@@ -132,7 +132,7 @@ class OnlineEnableService(BaseUpdateService):
         -------
         Optional[FeatureModel]
         """
-        document = await self.get_feature_document(document_id=feature_id, document=document)
+        document = await self.get_document(DocServiceName.FEATURE, feature_id, document=document)
         if document.online_enabled != online_enabled:
             async with self.persistent.start_transaction():
                 feature = await self.feature_service.update_document(

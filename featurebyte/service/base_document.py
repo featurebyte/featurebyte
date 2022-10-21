@@ -34,7 +34,9 @@ class BaseDocumentService(
     Generic[Document, DocumentCreateSchema, DocumentUpdateSchema], OpsServiceMixin
 ):
     """
-    BaseService class
+    BaseDocumentService class is responsible to perform CRUD of the underlying persistent
+    collection. It will perform model level validation before writing to persistent and after
+    reading from the persistent.
     """
 
     document_class: Type[Document]

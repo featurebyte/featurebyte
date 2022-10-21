@@ -11,11 +11,11 @@ from featurebyte.models.feature import DefaultVersionMode, FeatureNamespaceModel
 from featurebyte.models.feature_list import FeatureListNamespaceModel
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
-from featurebyte.service.base_update import BaseUpdateService
+from featurebyte.service.base_service import BaseService, DocServiceName
 from featurebyte.service.feature_readiness import FeatureReadinessService
 
 
-class DefaultVersionModeService(BaseUpdateService):
+class DefaultVersionModeService(BaseService):
     """
     DefaultVersionModeService class is responsible for handling feature & feature list version mode.
     When there is a change in default version mode, this class will orchestrate feature readiness update
@@ -58,8 +58,8 @@ class DefaultVersionModeService(BaseUpdateService):
         -------
         Optional[FeatureNamespaceModel]
         """
-        document = await self.get_feature_namespace_document(
-            document_id=feature_namespace_id, document=document
+        document = await self.get_document(
+            DocServiceName.FEATURE_NAMESPACE, feature_namespace_id, document=document
         )
         if document.default_version_mode != default_version_mode:
             await self.feature_namespace_service.update_document(
@@ -100,8 +100,8 @@ class DefaultVersionModeService(BaseUpdateService):
         -------
         Optional[FeatureListNamespaceModel]
         """
-        document = await self.get_feature_list_namespace_document(
-            document_id=feature_list_namespace_id, document=document
+        document = await self.get_document(
+            DocServiceName.FEATURE_LIST_NAMESPACE, feature_list_namespace_id, document=document
         )
         if document.default_version_mode != default_version_mode:
             await self.feature_list_namespace_service.update_document(

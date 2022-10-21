@@ -18,10 +18,10 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupbyNode, InputNode
 from featurebyte.schema.feature import FeatureCreate, FeatureNewVersionCreate
 from featurebyte.schema.feature_list import FeatureListCreate, FeatureListNewVersionCreate
-from featurebyte.service.base_update import BaseUpdateService
+from featurebyte.service.base_service import BaseService
 
 
-class VersionService(BaseUpdateService):
+class VersionService(BaseService):
     """
     VersionService class is responsible for creating new feature version
     """

@@ -13,7 +13,7 @@ from featurebyte.models.relationship import Parent, Relationship
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.semantic import SemanticServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.base_update import BaseUpdateService
+from featurebyte.service.base_service import BaseService
 
 ParentT = TypeVar("ParentT", bound=Parent)
 BaseDocumentServiceT = BaseDocumentService[
@@ -21,7 +21,7 @@ BaseDocumentServiceT = BaseDocumentService[
 ]
 
 
-class RelationshipService(BaseUpdateService):
+class RelationshipService(BaseService):
     """
     RelationshipService class is responsible for manipulating object relationship and maintaining
     the expected relationship property (example, no cyclic relationship like A is an ancestor of B and
