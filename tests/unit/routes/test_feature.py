@@ -179,7 +179,7 @@ class TestFeatureApi(BaseApiTestSuite):
         assert feat_namespace_docs[0]["created_at"] >= datetime.fromisoformat(
             response_dict["created_at"]
         )
-        assert feat_namespace_docs[0]["updated_at"] is not None
+        assert feat_namespace_docs[0]["updated_at"] is None
 
         # create a new feature version with the same namespace
         new_payload = self.payload.copy()

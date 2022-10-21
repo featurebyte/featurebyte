@@ -10,6 +10,7 @@ from bson import ObjectId
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.relationship import Parent, Relationship
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.semantic import SemanticServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
@@ -17,7 +18,7 @@ from featurebyte.service.base_update import BaseUpdateService
 
 ParentT = TypeVar("ParentT", bound=Parent)
 BaseDocumentServiceT = BaseDocumentService[
-    FeatureByteBaseDocumentModel, FeatureByteBaseModel, FeatureByteBaseModel
+    FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema
 ]
 
 
@@ -43,7 +44,7 @@ class RelationshipService(BaseUpdateService):
     @classmethod
     def prepare_document_update_payload(
         cls, ancestor_ids: set[ObjectId], parents: list[ParentT]
-    ) -> FeatureByteBaseDocumentModel:
+    ) -> BaseDocumentServiceUpdateSchema:
         """
         Prepare document update payload (by converting Relationship schema into service update schema)
 
@@ -200,8 +201,8 @@ class EntityRelationshipService(RelationshipService):
     @classmethod
     def prepare_document_update_payload(
         cls, ancestor_ids: set[ObjectId], parents: list[ParentT]
-    ) -> FeatureByteBaseDocumentModel:
-        return EntityServiceUpdate(ancestor_ids=ancestor_ids, parents=parents)  # type: ignore[return-value]
+    ) -> BaseDocumentServiceUpdateSchema:
+        return EntityServiceUpdate(ancestor_ids=ancestor_ids, parents=parents)
 
 
 class SemanticRelationshipService(RelationshipService):
@@ -216,5 +217,5 @@ class SemanticRelationshipService(RelationshipService):
     @classmethod
     def prepare_document_update_payload(
         cls, ancestor_ids: set[ObjectId], parents: list[ParentT]
-    ) -> FeatureByteBaseDocumentModel:
-        return SemanticServiceUpdate(ancestor_ids=ancestor_ids, parents=parents)  # type: ignore[return-value]
+    ) -> BaseDocumentServiceUpdateSchema:
+        return SemanticServiceUpdate(ancestor_ids=ancestor_ids, parents=parents)

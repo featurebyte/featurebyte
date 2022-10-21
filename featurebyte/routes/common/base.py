@@ -11,6 +11,7 @@ from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBas
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.models.relationship import Parent
 from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import (
     BaseDocumentService,
     Document,
@@ -22,7 +23,7 @@ from featurebyte.service.relationship import RelationshipService
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
 ParentT = TypeVar("ParentT", bound=Parent)
 BaseDocumentServiceT = BaseDocumentService[
-    FeatureByteBaseDocumentModel, FeatureByteBaseModel, FeatureByteBaseModel
+    FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema
 ]
 
 
@@ -119,10 +120,6 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Persistent to retrieve audit docs from
         document_id: ObjectId
             ID of document to retrieve
         query_filter: Optional[QueryFilter]
@@ -164,10 +161,6 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
 
         Parameters
         ----------
-        user: Any
-            User class to provide user identifier
-        persistent: Persistent
-            Persistent to retrieve audit docs from
         document_id: ObjectId
             ID of document to retrieve
         field: str

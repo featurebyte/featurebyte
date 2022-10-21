@@ -7,14 +7,14 @@ from typing import Any, List, Type
 
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.feature_store import FeatureStoreCreate, FeatureStoreInfo
 from featurebyte.service.base_document import BaseDocumentService, GetInfoServiceMixin
 
 
 class FeatureStoreService(
-    BaseDocumentService[FeatureStoreModel, FeatureStoreCreate, FeatureByteBaseModel],
+    BaseDocumentService[FeatureStoreModel, FeatureStoreCreate, BaseDocumentServiceUpdateSchema],
     GetInfoServiceMixin[FeatureStoreInfo],
 ):
     """

@@ -6,9 +6,10 @@ from __future__ import annotations
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentError
-from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBacktest,
     FeatureJobSettingAnalysisCreate,
@@ -24,7 +25,9 @@ from featurebyte.service.task_manager import AbstractTaskManager, TaskId
 
 class FeatureJobSettingAnalysisService(
     BaseDocumentService[
-        FeatureJobSettingAnalysisModel, FeatureJobSettingAnalysisModel, FeatureByteBaseModel
+        FeatureJobSettingAnalysisModel,
+        FeatureJobSettingAnalysisModel,
+        BaseDocumentServiceUpdateSchema,
     ]
 ):
     """

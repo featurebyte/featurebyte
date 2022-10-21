@@ -3,7 +3,7 @@ BaseService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Generic, Iterator, List, Literal, Optional, Type, TypeVar
+from typing import Any, Dict, Generic, Iterator, List, Literal, Optional, Type, TypeVar, Union
 
 import copy
 from abc import abstractmethod
@@ -22,12 +22,12 @@ from featurebyte.models.base import (
 )
 from featurebyte.models.persistent import AuditActionType, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
-from featurebyte.schema.common.base import BaseInfo
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
 from featurebyte.service.mixin import OpsServiceMixin
 
 Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
 DocumentCreateSchema = TypeVar("DocumentCreateSchema", bound=FeatureByteBaseModel)
-DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=FeatureByteBaseModel)
+DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=BaseDocumentServiceUpdateSchema)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
 
 
@@ -112,7 +112,10 @@ class BaseDocumentService(
         )
 
         # check any conflict with existing documents
-        await self._check_document_unique_constraints(document=document)
+        await self._check_document_unique_constraints(
+            document=document,
+            document_class=self.document_class,
+        )
         insert_id = await self.persistent.insert_one(
             collection_name=self.collection_name,
             document=document.dict(by_alias=True),
@@ -462,13 +465,6 @@ class BaseDocumentService(
         DocumentConflictError
             When there is a conflict with existing document(s) stored at the persistent
         """
-        if query_filter:
-            # this is temporary fix to make sure we handle tabular_source tuple properly.
-            # after revising current document models by removing all tuple attributes, this will be fixed.
-            for key, value in query_filter.items():
-                if isinstance(value, tuple):
-                    query_filter[key] = list(query_filter[key])
-
         conflict_doc = await self.persistent.find_one(
             collection_name=self.collection_name,
             query_filter=query_filter,
@@ -482,9 +478,11 @@ class BaseDocumentService(
             )
             raise DocumentConflictError(exception_detail)
 
-    @classmethod
+    @staticmethod
     def _get_unique_constraints(
-        cls, document: FeatureByteBaseDocumentModel
+        document: FeatureByteBaseDocumentModel,
+        document_class: Union[Type[Document], Type[DocumentUpdateSchema]],
+        original_document: Optional[FeatureByteBaseDocumentModel],
     ) -> Iterator[
         tuple[dict[str, Any], dict[str, Any], Optional[UniqueConstraintResolutionSignature]]
     ]:
@@ -495,6 +493,10 @@ class BaseDocumentService(
         ----------
         document: FeatureByteBaseDocumentModel
             Document contains information to construct query filter & conflict signature
+        document_class: Union[Type[Document], Type[DocumentUpdateSchema]]
+            Document class used to retrieve unique constraints
+        original_document: Optional[FeatureByteBaseDocumentModel]
+            Original document before update (provide when checking document update conflict)
 
         Yields
         ------
@@ -502,8 +504,15 @@ class BaseDocumentService(
             List of tuples used to construct unique constraint validations
         """
         doc_dict = document.dict(by_alias=True)
-        for constraint in cls.document_class.Settings.unique_constraints:
+        original_dict = original_document.dict(by_alias=True) if original_document else None
+        for constraint in document_class.Settings.unique_constraints:
             query_filter = {field: doc_dict[field] for field in constraint.fields}
+            if original_dict:
+                # skip checking if the original document value are the same with the updated one
+                original_value = {field: original_dict[field] for field in constraint.fields}
+                if original_value == query_filter:
+                    continue
+
             conflict_signature = {
                 name: get_field_path_value(doc_dict, fields)
                 for name, fields in constraint.conflict_fields_signature.items()
@@ -515,7 +524,10 @@ class BaseDocumentService(
             yield query_filter, conflict_signature, constraint.resolution_signature
 
     async def _check_document_unique_constraints(
-        self, document: FeatureByteBaseDocumentModel
+        self,
+        document: FeatureByteBaseDocumentModel,
+        document_class: Optional[Union[Type[Document], Type[DocumentUpdateSchema]]] = None,
+        original_document: Optional[FeatureByteBaseDocumentModel] = None,
     ) -> None:
         """
         Check document uniqueness constraints given document
@@ -524,29 +536,21 @@ class BaseDocumentService(
         ----------
         document: FeatureByteBaseDocumentModel
             document to be checked
+        document_class: Union[Type[Document], Type[DocumentUpdateSchema]]
+            Document class used to retrieve unique constraints
+        original_document: Optional[FeatureByteBaseDocumentModel]
+            Original document before update (provide when checking document update conflict)
         """
         for query_filter, conflict_signature, resolution_signature in self._get_unique_constraints(
-            document
+            document=document,
+            document_class=document_class or self.document_class,
+            original_document=original_document,
         ):
             await self._check_document_unique_constraint(
                 query_filter=query_filter,
                 conflict_signature=conflict_signature,
                 resolution_signature=resolution_signature,
             )
-
-    async def _check_document_unique_constraint_when_update_document(
-        self, data: DocumentUpdateSchema
-    ) -> None:
-        """
-        Perform uniqueness check during document update
-
-        Parameters
-        ----------
-        data: DocumentUpdateSchema
-            Document update payload
-        """
-        _ = data
-        return
 
     async def update_document(
         self,
@@ -581,17 +585,21 @@ class BaseDocumentService(
 
         # perform validation first before actual update
         update_dict = data.dict(exclude_none=exclude_none)
-        _ = self.document_class(**{**document.json_dict(), **update_dict})
+        updated_document = self.document_class(**{**document.json_dict(), **update_dict})
 
         # check any conflict with existing documents
-        await self._check_document_unique_constraint_when_update_document(data=data)
-
-        await self.persistent.update_one(
-            collection_name=self.collection_name,
-            query_filter=self._construct_get_query_filter(document_id=document_id),
-            update={"$set": update_dict},
-            user_id=self.user.id,
+        await self._check_document_unique_constraints(
+            document=updated_document, document_class=type(data), original_document=document
         )
+
+        if document != updated_document:
+            # only update if change is detected
+            await self.persistent.update_one(
+                collection_name=self.collection_name,
+                query_filter=self._construct_get_query_filter(document_id=document_id),
+                update={"$set": update_dict},
+                user_id=self.user.id,
+            )
 
         if return_document:
             return await self.get_document(document_id=document_id)

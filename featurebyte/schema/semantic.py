@@ -10,6 +10,7 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.relationship import Parent
 from featurebyte.models.semantic import SemanticModel
 from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
 class SemanticCreate(FeatureByteBaseModel):
@@ -29,7 +30,7 @@ class SemanticList(PaginationMixin):
     data: List[SemanticModel]
 
 
-class SemanticServiceUpdate(FeatureByteBaseModel):
+class SemanticServiceUpdate(BaseDocumentServiceUpdateSchema):
     """
     Semantic service update schema
     """
