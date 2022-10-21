@@ -3,8 +3,6 @@ FeatureJobSettingAnalysisService class
 """
 from __future__ import annotations
 
-from typing import Any
-
 from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentError
@@ -25,18 +23,15 @@ from featurebyte.service.task_manager import AbstractTaskManager, TaskId
 
 
 class FeatureJobSettingAnalysisService(
-    BaseDocumentService[FeatureJobSettingAnalysisModel, FeatureByteBaseModel, FeatureByteBaseModel]
+    BaseDocumentService[
+        FeatureJobSettingAnalysisModel, FeatureJobSettingAnalysisModel, FeatureByteBaseModel
+    ]
 ):
     """
     FeatureJobSettingAnalysisService class
     """
 
     document_class = FeatureJobSettingAnalysisModel
-
-    async def create_document(
-        self, data: FeatureByteBaseModel, get_credential: Any = None
-    ) -> FeatureJobSettingAnalysisModel:
-        raise NotImplementedError
 
     async def create_document_creation_task(
         self, data: FeatureJobSettingAnalysisCreate, task_manager: AbstractTaskManager
