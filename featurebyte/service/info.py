@@ -13,10 +13,10 @@ from featurebyte.schema.feature_list import FeatureListBriefInfoList, FeatureLis
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceInfo
 from featurebyte.schema.feature_namespace import FeatureNamespaceInfo
 from featurebyte.schema.feature_store import FeatureStoreInfo
-from featurebyte.service.base_update import BaseUpdateService
+from featurebyte.service.base_service import BaseService, DocServiceName
 
 
-class InfoService(BaseUpdateService):
+class InfoService(BaseService):
     """
     InfoService class is responsible for rendering the info of a specific api object.
     """
@@ -64,7 +64,7 @@ class InfoService(BaseUpdateService):
         EntityInfo
         """
         _ = verbose
-        entity = await self.entity_service.get_document(document_id=document_id)
+        entity = await self.get_document(DocServiceName.ENTITY, document_id)
         return EntityInfo(
             name=entity.name,
             created_at=entity.created_at,

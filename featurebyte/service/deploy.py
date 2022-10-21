@@ -13,11 +13,11 @@ from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespa
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
-from featurebyte.service.base_update import BaseUpdateService
+from featurebyte.service.base_service import BaseService, DocServiceName
 from featurebyte.service.online_enable import OnlineEnableService
 
 
-class DeployService(BaseUpdateService):
+class DeployService(BaseService):
     """
     DeployService class is responsible for maintaining the feature & feature list structure
     of feature list deployment.
@@ -68,7 +68,7 @@ class DeployService(BaseUpdateService):
         -------
         Optional[FeatureModel]:
         """
-        document = await self.get_feature_document(document_id=feature_id, document=document)
+        document = await self.get_document(DocServiceName.FEATURE, feature_id, document=document)
         deployed_feature_list_ids = self._extract_deployed_feature_list_ids(
             feature_list=feature_list, document=document
         )
@@ -114,8 +114,8 @@ class DeployService(BaseUpdateService):
         -------
         Optional[FeatureListNamespaceModel]
         """
-        document = await self.get_feature_list_namespace_document(
-            document_id=feature_list_namespace_id, document=document
+        document = await self.get_document(
+            DocServiceName.FEATURE_LIST_NAMESPACE, feature_list_namespace_id, document=document
         )
         return await self.feature_list_namespace_service.update_document(
             document_id=feature_list_namespace_id,
@@ -169,8 +169,8 @@ class DeployService(BaseUpdateService):
         -------
         Optional[FeatureListModel]
         """
-        document = await self.get_feature_list_document(
-            document_id=feature_list_id, document=document
+        document = await self.get_document(
+            DocServiceName.FEATURE_LIST, feature_list_id, document=document
         )
         if document.deployed != deployed:
             await self._validate_deployed_operation(document, deployed)
