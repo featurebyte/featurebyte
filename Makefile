@@ -3,6 +3,18 @@ MAKE := make
 EXECUTABLES = poetry git
 PYLINT_DISABLE_FOR_TESTS := redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding,duplicate-code
 POETRY_ENV_PIP := $(shell poetry env info --path)/bin/pip
+PERMISSIVE_LICENSES := "\
+	Public Domain;\
+	MIT;\
+	MIT License;\
+	BSD License;\
+	ISC License (ISCL);\
+	Python Software Foundation License;\
+	Apache Software License;\
+	Mozilla Public License 2.0 (MPL 2.0);\
+	MPL-2.0;\
+	Historical Permission Notice and Disclaimer (HPND);\
+"
 
 .PHONY: init
 .PHONY: install install-nolock install-lock install-main install-dev install-lint install-docs
@@ -53,6 +65,9 @@ install-databricks-sql-connector:
 	${POETRY_ENV_PIP} install databricks-sql-connector==2.1.0
 	${POETRY_ENV_PIP} install pyarrow==8.0.0
 
+generate-requirements-file:
+	@poetry export --without-hashes > requirements.txt
+
 #* Update
 update:
 	${MAKE} update-main
@@ -94,8 +109,9 @@ lint-style:
 lint-type:
 	@poetry run mypy --install-types --non-interactive --config-file pyproject.toml .
 
-lint-safety:
-	@poetry run pip-audit --ignore-vuln GHSA-w596-4wvx-j9j6
+lint-safety: generate-requirements-file
+	@poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\-\-" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
+	@poetry run pip-audit --no-deps -r requirements.txt
 	@poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing
