@@ -544,7 +544,7 @@ class FeatureExecutionPlan(ABC):
         return updated_table_expr, agg_result_name_aliases
 
     def construct_combined_aggregation_cte(
-        self, point_in_time_column: str, request_table_columns: list[str]
+        self, point_in_time_column: str, request_table_columns: Optional[list[str]]
     ) -> tuple[str, expressions.Select]:
         """Construct SQL code for all aggregations
 
@@ -552,7 +552,7 @@ class FeatureExecutionPlan(ABC):
         ----------
         point_in_time_column : str
             Point in time column
-        request_table_columns : list[str]
+        request_table_columns : Optional[list[str]]
             Request table columns
 
         Returns
@@ -593,13 +593,18 @@ class FeatureExecutionPlan(ABC):
             )
             qualified_aggregation_names.extend(agg_result_name_aliases)
 
-        request_table_columns = [f"REQ.{quoted_identifier(c).sql()}" for c in request_table_columns]
+        if request_table_columns:
+            request_table_columns = [
+                f"REQ.{quoted_identifier(c).sql()}" for c in request_table_columns
+            ]
+        else:
+            request_table_columns = []
         table_expr = table_expr.select(*request_table_columns, *qualified_aggregation_names)
 
         return self.AGGREGATION_TABLE_NAME, table_expr
 
     def construct_post_aggregation_sql(
-        self, cte_context: expressions.Select, request_table_columns: list[str]
+        self, cte_context: expressions.Select, request_table_columns: Optional[list[str]]
     ) -> expressions.Select:
         """Construct SQL code for post-aggregation that transforms aggregated results to features
 
@@ -613,7 +618,7 @@ class FeatureExecutionPlan(ABC):
         ----------
         cte_context : expressions.Select
             A partial Select statement with CTEs defined
-        request_table_columns : list[str]
+        request_table_columns : Optional[list[str]]
             Columns in the input request table
 
         Returns
@@ -624,9 +629,14 @@ class FeatureExecutionPlan(ABC):
         for feature_spec in self.feature_specs.values():
             feature_alias = f"{feature_spec.feature_expr} AS {quoted_identifier(feature_spec.feature_name).sql()}"
             qualified_feature_names.append(feature_alias)
-        request_table_column_names = [
-            f"AGG.{quoted_identifier(col).sql()}" for col in request_table_columns
-        ]
+
+        if request_table_columns:
+            request_table_column_names = [
+                f"AGG.{quoted_identifier(col).sql()}" for col in request_table_columns
+            ]
+        else:
+            request_table_column_names = []
+
         table_expr = cte_context.select(
             *request_table_column_names, *qualified_feature_names
         ).from_(f"{self.AGGREGATION_TABLE_NAME} AS AGG")

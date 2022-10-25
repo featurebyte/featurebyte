@@ -772,3 +772,16 @@ def test_deploy(feature_list, production_ready_feature, draft_feature):
         feature = Feature.get_by_id(feature_id)
         assert not feature.online_enabled
         assert feature.deployed_feature_list_ids == []
+
+
+def test_get_sql(feature_list):
+    """Test get sql for feature"""
+    assert feature_list.sql.endswith(
+        "SELECT\n"
+        '  ("agg_w1800_sum_8b878f7930698eb4e97cf8e756044109f968dc7a" + 123) AS "production_ready_feature",\n'
+        '  (("agg_w1800_sum_8b878f7930698eb4e97cf8e756044109f968dc7a" + 123) + 123) AS "draft_feature",\n'
+        '  ((("agg_w1800_sum_8b878f7930698eb4e97cf8e756044109f968dc7a" + 123) + 123) + 123) AS "quarantine_feature",\n'
+        '  (((("agg_w1800_sum_8b878f7930698eb4e97cf8e756044109f968dc7a" + 123) + 123) + 123) + 123) AS '
+        '"deprecated_feature"\n'
+        "FROM _FB_AGGREGATED AS AGG"
+    )

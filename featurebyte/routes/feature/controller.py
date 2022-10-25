@@ -18,6 +18,7 @@ from featurebyte.schema.feature import (
     FeatureNewVersionCreate,
     FeaturePaginatedList,
     FeaturePreview,
+    FeatureSQL,
     FeatureUpdate,
 )
 from featurebyte.service.feature import FeatureService
@@ -215,3 +216,29 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
             document_id=document_id, verbose=verbose
         )
         return info_document
+
+    async def sql(self, feature_sql: FeatureSQL) -> str:
+        """
+        Get Feature SQL
+
+        Parameters
+        ----------
+        feature_sql: FeatureSQL
+            FeatureSQL object
+
+        Returns
+        -------
+        str
+            Dataframe converted to json string
+
+        Raises
+        ------
+        HTTPException
+            Invalid request payload
+        """
+        try:
+            return await self.preview_service.feature_sql(feature_sql=feature_sql)
+        except KeyError as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
+            ) from exc

@@ -512,3 +512,13 @@ class TestFeatureListApi(BaseApiTestSuite):
 
         df = dataframe_from_arrow_stream(content)
         assert_frame_equal(df, expected_df)
+
+    def test_sql_200(self, test_api_client_persistent, featurelist_preview_payload):
+        """Test featurelist sql (success)"""
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.post(f"{self.base_route}/sql", json=featurelist_preview_payload)
+        assert response.status_code == HTTPStatus.OK
+        assert response.json().endswith(
+            'SELECT\n  "agg_w1800_sum_afb4d56e30a685ee9128bfa58fe4ad76d32af512" AS "sum_30m"\n'
+            "FROM _FB_AGGREGATED AS AGG"
+        )

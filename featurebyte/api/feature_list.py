@@ -59,6 +59,7 @@ from featurebyte.schema.feature_list import (
     FeatureListCreate,
     FeatureListGetHistoricalFeatures,
     FeatureListPreview,
+    FeatureListSQL,
     FeatureListUpdate,
     FeatureVersionInfo,
 )
@@ -254,6 +255,28 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
         return pd.read_json(result, orient="table", convert_dates=False)
+
+    @property
+    def sql(self) -> str:
+        """
+        Get FeatureGroup SQL
+
+        Returns
+        -------
+        str
+            FeatureGroup SQL
+        """
+        payload = FeatureListSQL(
+            feature_clusters=self._get_feature_clusters(),
+        )
+
+        return cast(
+            str,
+            run_async(
+                PreviewService(user=None, persistent=None).featurelist_sql,
+                featurelist_sql=payload,
+            ),
+        )
 
 
 class FeatureGroup(BaseFeatureGroup, ParentMixin):

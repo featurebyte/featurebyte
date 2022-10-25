@@ -32,6 +32,7 @@ from featurebyte.schema.feature_list import (
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
     FeatureListPreview,
+    FeatureListSQL,
     FeatureListUpdate,
 )
 
@@ -181,3 +182,18 @@ async def get_historical_features(
         get_credential=request.state.get_credential,
     )
     return result
+
+
+@router.post("/sql", response_model=str)
+async def get_feature_list_sql(
+    request: Request,
+    featurelist_sql: FeatureListSQL,
+) -> str:
+    """
+    Retrieve FeatureList SQL
+    """
+    controller = request.state.app_container.feature_list_controller
+    return cast(
+        str,
+        await controller.sql(featurelist_sql=featurelist_sql),
+    )
