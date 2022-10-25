@@ -11,7 +11,7 @@ from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.schema.event_data import EventDataUpdate
 from featurebyte.schema.item_data import ItemDataUpdate
-from featurebyte.service.base_update import BaseUpdateService
+from featurebyte.service.base_service import BaseService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.item_data import ItemDataService
 
@@ -19,7 +19,7 @@ DataDocumentService = Union[EventDataService, ItemDataService]
 DataUpdateSchema = Union[EventDataUpdate, ItemDataUpdate]
 
 
-class DataUpdateService(BaseUpdateService):
+class DataUpdateService(BaseService):
     """
     DataStatusService is responsible to update the data status.
     """

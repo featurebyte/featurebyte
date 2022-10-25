@@ -16,7 +16,11 @@ from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAn
 
 
 class FeatureJobSettingAnalysisController(
-    BaseDocumentController[FeatureJobSettingAnalysisModel, FeatureJobSettingAnalysisList]
+    BaseDocumentController[
+        FeatureJobSettingAnalysisModel,
+        FeatureJobSettingAnalysisService,
+        FeatureJobSettingAnalysisList,
+    ]
 ):
     """
     FeatureJobSettingAnalysis controller
@@ -29,7 +33,7 @@ class FeatureJobSettingAnalysisController(
         service: FeatureJobSettingAnalysisService,
         task_controller: TaskController,
     ):
-        super().__init__(service)  # type: ignore[arg-type]
+        super().__init__(service)
         self.task_controller = task_controller
 
     async def create_feature_job_setting_analysis(
@@ -49,7 +53,7 @@ class FeatureJobSettingAnalysisController(
         Task
             Task object for the submitted task
         """
-        task_id = await self.service.create_document_creation_task(  # type: ignore[attr-defined]
+        task_id = await self.service.create_document_creation_task(
             data=data, task_manager=self.task_controller.task_manager
         )
         return await self.task_controller.get_task(task_id=str(task_id))
@@ -71,7 +75,7 @@ class FeatureJobSettingAnalysisController(
         Task
             Task object for the submitted task
         """
-        task_id = await self.service.create_backtest_task(  # type: ignore[attr-defined]
+        task_id = await self.service.create_backtest_task(
             data=data, task_manager=self.task_controller.task_manager
         )
         return await self.task_controller.get_task(task_id=str(task_id))

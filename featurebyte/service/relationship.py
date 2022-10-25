@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import TypeVar, cast
 
+from abc import abstractmethod
+
 from bson import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
@@ -14,7 +16,7 @@ from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.semantic import SemanticServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.base_update import BaseUpdateService
+from featurebyte.service.base_service import BaseService
 
 ParentT = TypeVar("ParentT", bound=Parent)
 BaseDocumentServiceT = BaseDocumentService[
@@ -22,7 +24,7 @@ BaseDocumentServiceT = BaseDocumentService[
 ]
 
 
-class RelationshipService(BaseUpdateService):
+class RelationshipService(BaseService):
     """
     RelationshipService class is responsible for manipulating object relationship and maintaining
     the expected relationship property (example, no cyclic relationship like A is an ancestor of B and
@@ -30,6 +32,7 @@ class RelationshipService(BaseUpdateService):
     """
 
     @property
+    @abstractmethod
     def document_service(self) -> BaseDocumentServiceT:
         """
         DocumentService that is used to update relationship attributes
@@ -39,9 +42,9 @@ class RelationshipService(BaseUpdateService):
         NotImplementedError
             If the property has not been overriden
         """
-        raise NotImplementedError
 
     @classmethod
+    @abstractmethod
     def prepare_document_update_payload(
         cls, ancestor_ids: set[ObjectId], parents: list[ParentT]
     ) -> BaseDocumentServiceUpdateSchema:
@@ -60,7 +63,6 @@ class RelationshipService(BaseUpdateService):
         NotImplementedError
             If the method has not been overriden
         """
-        raise NotImplementedError
 
     @staticmethod
     def _validate_add_relationship_operation(

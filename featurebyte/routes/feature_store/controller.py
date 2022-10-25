@@ -3,10 +3,12 @@ FeatureStore API route controller
 """
 from __future__ import annotations
 
-from typing import Any, List, cast
+from typing import Any, List
+
+from bson.objectid import ObjectId
 
 from featurebyte.models.feature_store import ColumnSpec, FeatureStoreModel
-from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
+from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
     FeatureStoreInfo,
@@ -14,12 +16,12 @@ from featurebyte.schema.feature_store import (
     FeatureStorePreview,
 )
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.info import InfoService
 from featurebyte.service.preview import PreviewService
 
 
-class FeatureStoreController(  # type: ignore[misc]
-    BaseDocumentController[FeatureStoreModel, FeatureStoreList],
-    GetInfoControllerMixin[FeatureStoreInfo],
+class FeatureStoreController(
+    BaseDocumentController[FeatureStoreModel, FeatureStoreService, FeatureStoreList]
 ):
     """
     FeatureStore controller
@@ -27,9 +29,15 @@ class FeatureStoreController(  # type: ignore[misc]
 
     paginated_document_class = FeatureStoreList
 
-    def __init__(self, service: FeatureStoreService, preview_service: PreviewService):
-        super().__init__(service)  # type: ignore[arg-type]
+    def __init__(
+        self,
+        service: FeatureStoreService,
+        preview_service: PreviewService,
+        info_service: InfoService,
+    ):
+        super().__init__(service)
         self.preview_service = preview_service
+        self.info_service = info_service
 
     async def create_feature_store(
         self,
@@ -48,8 +56,7 @@ class FeatureStoreController(  # type: ignore[misc]
         FeatureStoreModel
             Newly created feature store document
         """
-        document = await self.service.create_document(data)
-        return cast(FeatureStoreModel, document)
+        return await self.service.create_document(data)
 
     async def list_databases(
         self,
@@ -71,8 +78,7 @@ class FeatureStoreController(  # type: ignore[misc]
         List[str]
             List of database names
         """
-        service = cast(FeatureStoreService, self.service)
-        return await service.list_databases(
+        return await self.service.list_databases(
             feature_store=feature_store, get_credential=get_credential
         )
 
@@ -99,8 +105,7 @@ class FeatureStoreController(  # type: ignore[misc]
         List[str]
             List of schema names
         """
-        service = cast(FeatureStoreService, self.service)
-        return await service.list_schemas(
+        return await self.service.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
             get_credential=get_credential,
@@ -132,8 +137,7 @@ class FeatureStoreController(  # type: ignore[misc]
         List[str]
             List of table names
         """
-        service = cast(FeatureStoreService, self.service)
-        return await service.list_tables(
+        return await self.service.list_tables(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
@@ -169,8 +173,7 @@ class FeatureStoreController(  # type: ignore[misc]
         List[ColumnSpec]
             List of ColumnSpec object
         """
-        service = cast(FeatureStoreService, self.service)
-        return await service.list_columns(
+        return await self.service.list_columns(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
@@ -199,3 +202,27 @@ class FeatureStoreController(  # type: ignore[misc]
         return await self.preview_service.preview(
             preview=preview, limit=limit, get_credential=get_credential
         )
+
+    async def get_info(
+        self,
+        document_id: ObjectId,
+        verbose: bool,
+    ) -> FeatureStoreInfo:
+        """
+        Get document info given document ID
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Flag to control verbose level
+
+        Returns
+        -------
+        InfoDocument
+        """
+        info_document = await self.info_service.get_feature_store_info(
+            document_id=document_id, verbose=verbose
+        )
+        return info_document

@@ -6,7 +6,7 @@ from __future__ import annotations
 from bson.objectid import ObjectId
 
 from featurebyte.models.feature_list import FeatureListNamespaceModel
-from featurebyte.routes.common.base import BaseDocumentController, GetInfoControllerMixin
+from featurebyte.routes.common.base import BaseDocumentController
 from featurebyte.schema.feature_list_namespace import (
     FeatureListNamespaceInfo,
     FeatureListNamespaceList,
@@ -15,11 +15,13 @@ from featurebyte.schema.feature_list_namespace import (
 )
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
+from featurebyte.service.info import InfoService
 
 
-class FeatureListNamespaceController(  # type: ignore[misc]
-    BaseDocumentController[FeatureListNamespaceModel, FeatureListNamespaceList],
-    GetInfoControllerMixin[FeatureListNamespaceInfo],
+class FeatureListNamespaceController(
+    BaseDocumentController[
+        FeatureListNamespaceModel, FeatureListNamespaceService, FeatureListNamespaceList
+    ]
 ):
     """
     FeatureList controller
@@ -31,9 +33,11 @@ class FeatureListNamespaceController(  # type: ignore[misc]
         self,
         service: FeatureListNamespaceService,
         default_version_mode_service: DefaultVersionModeService,
+        info_service: InfoService,
     ):
-        super().__init__(service)  # type: ignore[arg-type]
+        super().__init__(service)
         self.default_version_mode_service = default_version_mode_service
+        self.info_service = info_service
 
     async def update_feature_list_namespace(
         self,
@@ -68,3 +72,27 @@ class FeatureListNamespaceController(  # type: ignore[misc]
                 return_document=False,
             )
         return await self.get(document_id=feature_list_namespace_id)
+
+    async def get_info(
+        self,
+        document_id: ObjectId,
+        verbose: bool,
+    ) -> FeatureListNamespaceInfo:
+        """
+        Get document info given document ID
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+        verbose: bool
+            Flag to control verbose level
+
+        Returns
+        -------
+        InfoDocument
+        """
+        info_document = await self.info_service.get_feature_list_namespace_info(
+            document_id=document_id, verbose=verbose
+        )
+        return info_document

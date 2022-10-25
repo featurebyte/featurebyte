@@ -30,6 +30,7 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.info import InfoService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.preview import PreviewService
@@ -117,25 +118,26 @@ app_container_config = {
             "name": "semantic_relationship_service",
             "clazz": SemanticRelationshipService,
         },
+        {
+            "name": "info_service",
+            "clazz": InfoService,
+        },
     ],
     "controllers": [
         {
             "name": "entity_controller",
             "clazz": EntityController,
-            "depends": [
-                "entity_service",
-                "entity_relationship_service",
-            ],
+            "depends": ["entity_service", "entity_relationship_service", "info_service"],
         },
         {
             "name": "event_data_controller",
             "clazz": EventDataController,
-            "depends": ["event_data_service", "data_update_service"],
+            "depends": ["event_data_service", "data_update_service", "info_service"],
         },
         {
             "name": "item_data_controller",
             "clazz": ItemDataController,
-            "depends": ["item_data_service", "data_update_service"],
+            "depends": ["item_data_service", "data_update_service", "info_service"],
         },
         {
             "name": "feature_controller",
@@ -146,6 +148,7 @@ app_container_config = {
                 "feature_readiness_service",
                 "preview_service",
                 "version_service",
+                "info_service",
             ],
         },
         {
@@ -157,6 +160,7 @@ app_container_config = {
                 "deploy_service",
                 "preview_service",
                 "version_service",
+                "info_service",
             ],
         },
         {
@@ -167,20 +171,25 @@ app_container_config = {
         {
             "name": "feature_list_namespace_controller",
             "clazz": FeatureListNamespaceController,
-            "depends": ["feature_list_namespace_service", "default_version_mode_service"],
+            "depends": [
+                "feature_list_namespace_service",
+                "default_version_mode_service",
+                "info_service",
+            ],
         },
         {
             "name": "feature_namespace_controller",
             "clazz": FeatureNamespaceController,
-            "depends": ["feature_namespace_service", "default_version_mode_service"],
+            "depends": [
+                "feature_namespace_service",
+                "default_version_mode_service",
+                "info_service",
+            ],
         },
         {
             "name": "feature_store_controller",
             "clazz": FeatureStoreController,
-            "depends": [
-                "feature_store_service",
-                "preview_service",
-            ],
+            "depends": ["feature_store_service", "preview_service", "info_service"],
         },
         {
             "name": "semantic_controller",

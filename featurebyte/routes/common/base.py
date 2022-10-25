@@ -7,35 +7,46 @@ from typing import Any, Generic, List, Literal, Optional, Type, TypeVar, cast
 
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
-from featurebyte.models.relationship import Parent
 from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
-from featurebyte.service.base_document import (
-    BaseDocumentService,
-    Document,
-    GetInfoServiceMixin,
-    InfoDocument,
-)
-from featurebyte.service.relationship import RelationshipService
+from featurebyte.service.base_document import Document
+from featurebyte.service.entity import EntityService
+from featurebyte.service.event_data import EventDataService
+from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
+from featurebyte.service.feature_list import FeatureListService
+from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
+from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.item_data import ItemDataService
+from featurebyte.service.relationship import ParentT, RelationshipService
+from featurebyte.service.semantic import SemanticService
 
 PaginatedDocument = TypeVar("PaginatedDocument", bound=PaginationMixin)
-ParentT = TypeVar("ParentT", bound=Parent)
-BaseDocumentServiceT = BaseDocumentService[
-    FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema
-]
+DocumentServiceT = TypeVar(
+    "DocumentServiceT",
+    FeatureStoreService,
+    EntityService,
+    SemanticService,
+    EventDataService,
+    ItemDataService,
+    FeatureService,
+    FeatureNamespaceService,
+    FeatureListService,
+    FeatureListNamespaceService,
+    FeatureJobSettingAnalysisService,
+)
 
 
-class BaseDocumentController(Generic[Document, PaginatedDocument]):
+class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocument]):
     """
     BaseDocumentController for API routes
     """
 
     paginated_document_class: Type[PaginationMixin] = PaginationMixin
 
-    def __init__(self, service: BaseDocumentServiceT):
-        self.service = service
+    def __init__(self, service: DocumentServiceT):
+        self.service: DocumentServiceT = service
 
     async def get(
         self,
@@ -175,39 +186,6 @@ class BaseDocumentController(Generic[Document, PaginatedDocument]):
             document_id=document_id, field=field
         )
         return document_data
-
-
-class GetInfoControllerMixin(Generic[InfoDocument]):
-    """
-    GetInfoControllerMixin contains method to retrieve document info
-    """
-
-    # pylint: disable=too-few-public-methods
-
-    def __init__(self, service: GetInfoServiceMixin[InfoDocument]):
-        self.service = service
-
-    async def get_info(
-        self,
-        document_id: ObjectId,
-        verbose: bool,
-    ) -> InfoDocument:
-        """
-        Get document info given document ID
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            Document ID
-        verbose: bool
-            Flag to control verbose level
-
-        Returns
-        -------
-        InfoDocument
-        """
-        info_document = await self.service.get_info(document_id=document_id, verbose=verbose)
-        return info_document
 
 
 class RelationshipMixin(Generic[Document, ParentT]):

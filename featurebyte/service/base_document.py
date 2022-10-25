@@ -6,7 +6,6 @@ from __future__ import annotations
 from typing import Any, Dict, Generic, Iterator, List, Literal, Optional, Type, TypeVar, Union
 
 import copy
-from abc import abstractmethod
 
 import numpy as np
 import pandas as pd
@@ -604,28 +603,3 @@ class BaseDocumentService(
         if return_document:
             return await self.get_document(document_id=document_id)
         return None
-
-
-class GetInfoServiceMixin(Generic[InfoDocument]):
-    """
-    GetInfoServiceMixin contains method to retrieve document info
-    """
-
-    # pylint: disable=too-few-public-methods
-
-    @abstractmethod
-    async def get_info(self, document_id: ObjectId, verbose: bool) -> InfoDocument:
-        """
-        Retrieve document related info given document ID
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            Document ID
-        verbose: bool
-            Flag to control info verbose level
-
-        Returns
-        -------
-        InfoDocument
-        """
