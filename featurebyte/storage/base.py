@@ -39,6 +39,21 @@ class Storage(ABC):
         """
 
     @abstractmethod
+    async def delete(self, remote_path: Path) -> None:
+        """
+        Delete file in storage
+
+        Parameters
+        ----------
+        remote_path: Path
+            Path of remote file to be deleted
+
+        Raises
+        ------
+        FileNotFoundError
+        """
+
+    @abstractmethod
     async def get(self, remote_path: Path, local_path: Path) -> None:
         """
         Download file from storage to local path

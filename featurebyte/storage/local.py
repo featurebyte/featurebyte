@@ -7,6 +7,7 @@ import shutil
 from pathlib import Path
 
 import aiofiles
+from aiofiles import os as async_os
 
 from featurebyte.storage.base import Storage
 
@@ -86,6 +87,26 @@ class LocalStorage(Storage):
             raise FileNotFoundError("Remote file does not exist")
 
         shutil.copy(source_path, local_path)
+
+    async def delete(self, remote_path: Path) -> None:
+        """
+        Delete file in storage
+
+        Parameters
+        ----------
+        remote_path: Path
+            Path of remote file to be deleted
+
+        Raises
+        ------
+        FileNotFoundError
+            Remote file does not exist
+        """
+        source_path = self._base_path.joinpath(remote_path)
+        if not source_path.exists():
+            raise FileNotFoundError("Remote file does not exist")
+
+        await async_os.remove(source_path)
 
     async def get_file_stream(
         self, remote_path: Path, chunk_size: int = 255 * 1024
