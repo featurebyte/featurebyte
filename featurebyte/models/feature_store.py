@@ -194,6 +194,7 @@ class DataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
                 col_dict = dict(col)
                 if col_dict["name"] == column_name:
                     matched_col_dict = col_dict
+                    break
 
             if matched_col_dict is None:
                 raise ValueError(f'Column "{column_name}" not found in the table!')
