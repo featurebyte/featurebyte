@@ -3,7 +3,6 @@ Local storage class
 """
 from typing import AsyncGenerator
 
-import os
 import shutil
 from pathlib import Path
 
