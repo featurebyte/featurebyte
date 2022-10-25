@@ -100,6 +100,7 @@ class LocalStorage(Storage):
         Raises
         ------
         FileNotFoundError
+            Remote file does not exist
         """
         source_path = self._base_path.joinpath(remote_path)
         if not source_path.exists():

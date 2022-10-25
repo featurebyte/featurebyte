@@ -152,6 +152,9 @@ class BaseStorageTestSuite:
 
     @pytest.mark.asyncio
     async def test_delete_object_fail(self, storage: Storage):
+        """
+        Test file delete (missing)
+        """
         with pytest.raises(FileNotFoundError) as exc_info:
             await storage.delete(Path("non/existent/path"))
 
@@ -159,6 +162,9 @@ class BaseStorageTestSuite:
 
     @pytest.mark.asyncio
     async def test_delete_object_success(self, storage: Storage, text_file_content):
+        """
+        Test file delete
+        """
         # upload text
         remote_path = Path("some/delete/file")
         await storage.put_text(text=text_file_content, remote_path=remote_path)
