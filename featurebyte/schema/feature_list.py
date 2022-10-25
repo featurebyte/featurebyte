@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 from bson.objectid import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.model_util import convert_version_string_to_dict
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
@@ -111,12 +111,14 @@ class FeatureListBriefInfo(FeatureByteBaseModel):
     created_at: datetime
     production_ready_fraction: Optional[float] = Field(default=None)
 
-    @validator("production_ready_fraction")
+    @root_validator
     @classmethod
-    def _derive_production_ready_fraction(cls, value: Any, values: dict[str, Any]) -> Any:
-        if value is None:
-            return values["readiness_distribution"].derive_production_ready_fraction()
-        return value
+    def _derive_production_ready_fraction(cls, values: dict[str, Any]) -> Any:
+        if "readiness_distribution" in values and values.get("production_ready_fraction") is None:
+            values["production_ready_fraction"] = values[
+                "readiness_distribution"
+            ].derive_production_ready_fraction()
+        return values
 
 
 class FeatureListBriefInfoList(FeatureByteBaseModel):
