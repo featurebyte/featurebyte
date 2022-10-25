@@ -8,6 +8,7 @@ from typing import Any, Optional
 
 from pydantic import StrictStr, validator
 
+from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import DataModel
 
 
@@ -38,10 +39,21 @@ class ItemDataModel(DataModel):
     event_id_column: StrictStr
     item_id_column: StrictStr
 
-    @validator("event_id_column", "item_id_column", "record_creation_date_column")
+    @validator("record_creation_date_column")
     @classmethod
-    def _check_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
-        return DataModel.validate_column_exists(value, values)
+    def _check_timestamp_column_exists(
+        cls, value: Optional[str], values: dict[str, Any]
+    ) -> Optional[str]:
+        return DataModel.validate_column_exists(
+            column_name=value, values=values, expected_types={DBVarType.TIMESTAMP}
+        )
+
+    @validator("event_id_column", "item_id_column")
+    @classmethod
+    def _check_id_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
+        return DataModel.validate_column_exists(
+            column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
+        )
 
     class Settings(DataModel.Settings):
         """

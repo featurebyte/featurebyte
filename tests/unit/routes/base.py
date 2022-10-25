@@ -596,6 +596,38 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
     """
 
     data_create_schema_class = DataCreate
+    update_unprocessable_payload_expected_detail_pairs = []
+
+    def pytest_generate_tests(self, metafunc):
+        """Parametrize fixture at runtime"""
+        base_update_unprocessable_payload_expected_detail_pairs = [
+            (
+                {"record_creation_date_column": "non-exist-columns"},
+                (
+                    f"1 validation error for {self.class_name}Model\n"
+                    "record_creation_date_column\n  "
+                    'Column "non-exist-columns" not found in the table! (type=value_error)'
+                ),
+            ),
+            (
+                {"record_creation_date_column": "item_id"},
+                (
+                    f"1 validation error for {self.class_name}Model\n"
+                    f"record_creation_date_column\n  "
+                    f"Column \"item_id\" is expected to have type(s): ['DBVarType.TIMESTAMP'] (type=value_error)"
+                ),
+            ),
+        ]
+
+        super().pytest_generate_tests(metafunc)
+        if "update_unprocessable_payload_expected_detail" in metafunc.fixturenames:
+            metafunc.parametrize(
+                "update_unprocessable_payload_expected_detail",
+                (
+                    base_update_unprocessable_payload_expected_detail_pairs
+                    + self.update_unprocessable_payload_expected_detail_pairs
+                ),
+            )
 
     def setup_creation_route(self, api_client):
         """
@@ -736,7 +768,7 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
             None,
         ]
 
-    def test_update_422(self, test_api_client_persistent, data_update_dict):
+    def test_update_422__invalid_id_value(self, test_api_client_persistent, data_update_dict):
         """Test update (unprocessable) - invalid id value"""
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.patch(f"{self.base_route}/abc", json=data_update_dict)
@@ -792,24 +824,26 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         assert update_response_dict.items() > expected_response.items()
         assert update_response_dict["updated_at"] is not None
 
-    def test_update_record_creation_date__column_not_exists(
-        self, test_api_client_persistent, data_response
+    def test_update_422(
+        self,
+        data_response,
+        test_api_client_persistent,
+        update_unprocessable_payload_expected_detail,
     ):
         """
-        Update Event Data record creation date column (when the column does not exist)
+        Test Update (unprocessible entity)
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
         insert_id = response_dict["_id"]
 
-        update_response = test_api_client.patch(
+        (
+            unprocessible_entity_payload,
+            expected_message,
+        ) = update_unprocessable_payload_expected_detail
+        response = test_api_client.patch(
             f"{self.base_route}/{insert_id}",
-            json={"record_creation_date_column": "non-exist-columns"},
+            json=unprocessible_entity_payload,
         )
-        update_response_dict = update_response.json()
-        assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert update_response_dict["detail"] == (
-            f"1 validation error for {self.class_name}Model\n"
-            "record_creation_date_column\n  "
-            'Column "non-exist-columns" not found in the table! (type=value_error)'
-        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json()["detail"] == expected_message
