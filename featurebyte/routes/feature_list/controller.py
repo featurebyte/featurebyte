@@ -282,15 +282,5 @@ class FeatureListController(
         -------
         str
             Dataframe converted to json string
-
-        Raises
-        ------
-        HTTPException
-            Invalid request payload
         """
-        try:
-            return await self.preview_service.featurelist_sql(featurelist_sql=featurelist_sql)
-        except KeyError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
-            ) from exc
+        return await self.preview_service.featurelist_sql(featurelist_sql=featurelist_sql)

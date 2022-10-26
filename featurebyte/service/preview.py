@@ -266,13 +266,13 @@ class PreviewService(OpsServiceMixin):
         graph = feature_sql.graph
         feature_node = graph.get_node_by_name(feature_sql.node_name)
 
-        feature_store_dict = graph.get_input_node(
+        source_type = graph.get_input_node(
             feature_sql.node_name
-        ).parameters.feature_store_details.dict()
+        ).parameters.feature_store_details.type
         preview_sql = get_feature_preview_sql(
             graph=graph,
             nodes=[feature_node],
-            source_type=feature_store_dict["type"],
+            source_type=source_type,
         )
         return preview_sql
 
@@ -293,13 +293,13 @@ class PreviewService(OpsServiceMixin):
 
         preview_sqls = []
         for feature_cluster in featurelist_sql.feature_clusters:
-            feature_store_dict = feature_cluster.graph.get_input_node(
+            source_type = feature_cluster.graph.get_input_node(
                 feature_cluster.node_names[0]
-            ).parameters.feature_store_details.dict()
+            ).parameters.feature_store_details.type
             preview_sql = get_feature_preview_sql(
                 graph=feature_cluster.graph,
                 nodes=feature_cluster.nodes,
-                source_type=feature_store_dict["type"],
+                source_type=source_type,
             )
             preview_sqls.append(preview_sql)
 

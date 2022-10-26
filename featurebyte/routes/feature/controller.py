@@ -230,15 +230,5 @@ class FeatureController(BaseDocumentController[FeatureModel, FeatureService, Fea
         -------
         str
             Dataframe converted to json string
-
-        Raises
-        ------
-        HTTPException
-            Invalid request payload
         """
-        try:
-            return await self.preview_service.feature_sql(feature_sql=feature_sql)
-        except KeyError as exc:
-            raise HTTPException(
-                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
-            ) from exc
+        return await self.preview_service.feature_sql(feature_sql=feature_sql)
