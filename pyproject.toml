@@ -111,7 +111,6 @@ sqlglot = "^2.3.2,<3.0"   # ^3.0.0 causes test failure maybe due to syntax chang
 typeguard = "^2.13.3"
 
 [tool.poetry.group.dev.dependencies]
-coverage = {extras = ["toml"], version = "^6.4.2"}
 freezegun = "^1.2.1"
 mongomock = "^4.0.0"
 mongomock-motor = "^0.0.12"
@@ -119,7 +118,9 @@ pip-licenses = "^3.5.4"
 pre-commit = "^2.20.0"
 pytest = "^7.2.0"
 pytest-asyncio = "^0.19.0"
+pytest-cov = "^4.0.0"
 pytest-timeout = "^2.1.0"
+pytest-xdist = "^3.0.2"
 pyupgrade = "^2.37.2"
 requests = "^2.27.1"
 toml-sort = "^0.20.0"

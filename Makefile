@@ -117,11 +117,8 @@ lint-safety: generate-requirements-file
 
 #* Testing
 test: test-setup
-	@poetry run coverage run -m pytest -c pyproject.toml --timeout=180 --junitxml=pytest.xml tests featurebyte | tee pytest-coverage.txt
-	# Hack to support github-coverage action
-	@echo "coverage: platform" >> pytest-coverage.txt
+	@poetry run pytest --timeout=180 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
 
-	@poetry run coverage report -m | tee -a pytest-coverage.txt
 	${MAKE} test-teardown
 
 test-setup:
