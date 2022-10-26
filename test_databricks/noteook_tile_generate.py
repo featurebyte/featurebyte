@@ -22,7 +22,7 @@ frequency_minute = dbutils.widgets.get("FREQUENCY_MINUTE")
 entity_column_names = dbutils.widgets.get("ENTITY_COLUMN_NAMES")
 value_column_names = dbutils.widgets.get("VALUE_COLUMN_NAMES")
 tile_id = dbutils.widgets.get("TILE_ID")
-tile_type = dbutils.widgets.get("TILE_TYPE")
+tile_type = dbutils.widgets.get("TILE_TYPE") or "ONLINE"
 last_tile_start_str = dbutils.widgets.get("LAST_TILE_START_STR")
 
 print("sql: ", sql)
@@ -40,6 +40,47 @@ print("last_tile_start_str: ", last_tile_start_str)
 
 tile_table_exist = spark.catalog.tableExists(tile_id)
 
+# 2. Update TILE_REGISTRY & Add New Columns TILE Table
+
+### 2.1. Derive new VALUE columns
+
+new_cols = set()
+
+if tile_table_exist:
+    existing_cols = {c.name for c in spark.catalog.listColumns(tile_id)}
+    input_cols = set(value_column_names.split(","))
+    new_cols = input_cols.difference(existing_cols)
+    print("new_cols: ", new_cols)
+
+    # when tile table exist, add new columns to the tile table when there is new column
+    for new_c in new_cols:
+        spark.sql(f"alter table {tile_id} add column {new_c} double")
+
+### 2.2. Update TILE_REGISTRY
+
+if tile_table_exist:
+    if new_cols:
+        new_cols_str = "," + ",".join(new_cols)
+        update_sql = f"update tile_registry set VALUE_COLUMN_NAMES = concat(VALUE_COLUMN_NAMES, '{new_cols_str}') where tile_id = '{tile_id}'"
+        spark.sql(update_sql)
+else:
+    insert_sql = f"""
+        insert into tile_registry(
+            TILE_ID, TILE_SQL, ENTITY_COLUMN_NAMES, VALUE_COLUMN_NAMES, FREQUENCY_MINUTE, TIME_MODULO_FREQUENCY_SECOND,
+            BLIND_SPOT_SECOND, IS_ENABLED, CREATED_AT,
+            LAST_TILE_START_DATE_ONLINE, LAST_TILE_INDEX_ONLINE, LAST_TILE_START_DATE_OFFLINE, LAST_TILE_INDEX_OFFLINE
+        )
+        VALUES (
+            '{tile_id}', '{sql}', '{entity_column_names}', '{value_column_names}', {frequency_minute}, {tile_modulo_frequency_second},
+            {blind_spot_second}, TRUE, current_timestamp(),
+            null, null, null, null
+        )
+    """
+    spark.sql(insert_sql)
+
+
+### 2.3. Derive TILE Create or Merge SQL
+
 tile_sql = f"""
 select
             F_TIMESTAMP_TO_INDEX({tile_start_date_coulmn}, {tile_modulo_frequency_second}, {blind_spot_second}, {frequency_minute}) as index,
@@ -49,19 +90,6 @@ select
 """
 
 print("tile_sql:", tile_sql)
-
-if not tile_table_exist:
-    spark.sql(f"create table {tile_id} as {tile_sql}")
-
-
-# add new columns to the tile table when there is new column
-if tile_table_exist:
-    existing_cols = {c.name for c in spark.catalog.listColumns(tile_id)}
-    input_cols = set(value_column_names.split(","))
-    new_cols = input_cols.difference(existing_cols)
-
-    for new_c in new_cols:
-        spark.sql(f"alter table {tile_id} add column {new_c} double")
 
 
 entity_insert_cols = []
@@ -103,6 +131,24 @@ merge_sql = f"""
 print("merge_sql:", merge_sql)
 
 
+### 2.4. Create or Merge TILE table
+
 # insert new records and update existing records
-if tile_table_exist:
+if not tile_table_exist:
+    spark.sql(f"create table {tile_id} as {tile_sql}")
+else:
     spark.sql(merge_sql)
+
+
+if last_tile_start_str:
+    df = spark.sql(
+        f"select F_TIMESTAMP_TO_INDEX('{last_tile_start_str}', {tile_modulo_frequency_second}, {blind_spot_second}, {frequency_minute}) as value"
+    )
+    ind_value = df.select("value").collect()[0].value
+
+    update_tile_last_ind_sql = f"""
+        UPDATE TILE_REGISTRY SET LAST_TILE_INDEX_{tile_type} = {ind_value}, LAST_TILE_START_DATE_{tile_type} = '{last_tile_start_str}'
+        WHERE TILE_ID = '{tile_id}'
+    """
+    print(update_tile_last_ind_sql)
+    spark.sql(update_tile_last_ind_sql)
