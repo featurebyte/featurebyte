@@ -8,6 +8,7 @@ PERMISSIVE_LICENSES := "\
 	MIT;\
 	MIT License;\
 	BSD License;\
+	ISC;\
 	ISC License (ISCL);\
 	Python Software Foundation License;\
 	Apache Software License;\
@@ -110,17 +111,14 @@ lint-type:
 	@poetry run mypy --install-types --non-interactive --config-file pyproject.toml .
 
 lint-safety: generate-requirements-file
-	@poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\-\-" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
+	@poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\--" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
 	@poetry run pip-audit --no-deps -r requirements.txt --ignore-vuln OSV-2022-715
 	@poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing
 test: test-setup
-	@poetry run coverage run -m pytest -c pyproject.toml --timeout=180 --junitxml=pytest.xml tests featurebyte | tee pytest-coverage.txt
-	# Hack to support github-coverage action
-	@echo "coverage: platform" >> pytest-coverage.txt
+	@poetry run pytest --timeout=180 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
 
-	@poetry run coverage report -m | tee -a pytest-coverage.txt
 	${MAKE} test-teardown
 
 test-setup:
