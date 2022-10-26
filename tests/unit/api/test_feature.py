@@ -563,3 +563,11 @@ def test_update_readiness_and_default_version_mode__unsaved_feature(float_featur
         f'FeatureNamespace (id: "{namespace_id}") not found. Please save the Feature object first.'
     )
     assert expected in str(exc.value)
+
+
+def test_get_sql(float_feature):
+    """Test get sql for feature"""
+    assert float_feature.sql.endswith(
+        'SELECT\n  "agg_w86400_sum_8b878f7930698eb4e97cf8e756044109f968dc7a" AS "sum_1d"\n'
+        "FROM _FB_AGGREGATED AS AGG"
+    )

@@ -31,7 +31,7 @@ from featurebyte.models.feature import (
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.generic import AliasNode, GroupbyNode, ProjectNode
-from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureUpdate
+from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL, FeatureUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
 from featurebyte.service.preview import PreviewService
 from featurebyte.utils.credential import get_credential
@@ -243,6 +243,20 @@ class Feature(
     def unary_op_series_params(self) -> dict[str, Any]:
         return {"event_data_ids": self.event_data_ids, "entity_ids": self.entity_ids}
 
+    def _get_pruned_feature_model(self) -> FeatureModel:
+        """
+        Get pruned model of feature
+
+        Returns
+        -------
+        FeatureModel
+        """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        feature_dict = self.dict()
+        feature_dict["graph"] = pruned_graph
+        feature_dict["node"] = mapped_node
+        return FeatureModel(**feature_dict)
+
     @typechecked
     def preview(  # type: ignore[override]  # pylint: disable=arguments-renamed
         self,
@@ -268,11 +282,7 @@ class Feature(
         """
         tic = time.time()
 
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
-        feature_dict = self.dict()
-        feature_dict["graph"] = pruned_graph
-        feature_dict["node"] = mapped_node
-        feature = FeatureModel(**feature_dict)
+        feature = self._get_pruned_feature_model()
 
         payload = FeaturePreview(
             feature_store_name=self.feature_store.name,
@@ -358,4 +368,29 @@ class Feature(
         self.feature_namespace.update(
             update_payload={"default_version_mode": DefaultVersionMode(default_version_mode).value},
             allow_update_local=False,
+        )
+
+    @property
+    def sql(self) -> str:
+        """
+        Get Feature SQL
+
+        Returns
+        -------
+        str
+            Feature SQL
+        """
+        feature = self._get_pruned_feature_model()
+
+        payload = FeatureSQL(
+            graph=feature.graph,
+            node_name=feature.node_name,
+        )
+
+        return cast(
+            str,
+            run_async(
+                PreviewService(user=None, persistent=None).feature_sql,
+                feature_sql=payload,
+            ),
         )

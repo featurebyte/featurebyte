@@ -16,8 +16,12 @@ from featurebyte.query_graph.node.generic import GroupbyNode
 from featurebyte.query_graph.sql.feature_historical import get_historical_features
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.schema.feature import FeaturePreview
-from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures, FeatureListPreview
+from featurebyte.schema.feature import FeaturePreview, FeatureSQL
+from featurebyte.schema.feature_list import (
+    FeatureListGetHistoricalFeatures,
+    FeatureListPreview,
+    FeatureListSQL,
+)
 from featurebyte.schema.feature_store import FeatureStorePreview
 from featurebyte.service.mixin import OpsServiceMixin
 
@@ -244,3 +248,59 @@ class PreviewService(OpsServiceMixin):
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
             source_type=feature_store.type,
         )
+
+    async def feature_sql(self, feature_sql: FeatureSQL) -> str:
+        """
+        Get Feature SQL
+
+        Parameters
+        ----------
+        feature_sql: FeatureSQL
+            FeatureGraph object
+
+        Returns
+        -------
+        str
+            SQL statements
+        """
+        graph = feature_sql.graph
+        feature_node = graph.get_node_by_name(feature_sql.node_name)
+
+        source_type = graph.get_input_node(
+            feature_sql.node_name
+        ).parameters.feature_store_details.type
+        preview_sql = get_feature_preview_sql(
+            graph=graph,
+            nodes=[feature_node],
+            source_type=source_type,
+        )
+        return preview_sql
+
+    async def featurelist_sql(self, featurelist_sql: FeatureListSQL) -> str:
+        """
+        Preview a FeatureList
+
+        Parameters
+        ----------
+        featurelist_sql: FeatureListSQL
+            FeatureListSQL object
+
+        Returns
+        -------
+        str
+            Dataframe converted to json string
+        """
+
+        preview_sqls = []
+        for feature_cluster in featurelist_sql.feature_clusters:
+            source_type = feature_cluster.graph.get_input_node(
+                feature_cluster.node_names[0]
+            ).parameters.feature_store_details.type
+            preview_sql = get_feature_preview_sql(
+                graph=feature_cluster.graph,
+                nodes=feature_cluster.nodes,
+                source_type=source_type,
+            )
+            preview_sqls.append(preview_sql)
+
+        return "\n\n".join(preview_sqls)

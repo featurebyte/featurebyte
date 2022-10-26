@@ -28,6 +28,7 @@ from featurebyte.schema.feature import (
     FeatureNewVersionCreate,
     FeaturePaginatedList,
     FeaturePreview,
+    FeatureSQL,
     FeatureUpdate,
 )
 
@@ -159,4 +160,19 @@ async def get_feature_preview(
         await controller.preview(
             feature_preview=feature_preview, get_credential=request.state.get_credential
         ),
+    )
+
+
+@router.post("/sql", response_model=str)
+async def get_feature_sql(
+    request: Request,
+    feature_sql: FeatureSQL,
+) -> str:
+    """
+    Retrieve Feature SQL
+    """
+    controller = request.state.app_container.feature_controller
+    return cast(
+        str,
+        await controller.sql(feature_sql=feature_sql),
     )

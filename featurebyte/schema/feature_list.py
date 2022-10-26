@@ -182,12 +182,19 @@ class FeatureCluster(FeatureByteBaseModel):
         return [self.graph.get_node_by_name(name) for name in self.node_names]
 
 
-class FeatureListPreview(FeatureByteBaseModel):
+class FeatureListSQL(FeatureByteBaseModel):
+    """
+    FeatureList SQL schema
+    """
+
+    feature_clusters: List[FeatureCluster]
+
+
+class FeatureListPreview(FeatureListSQL):
     """
     FeatureList preview schema
     """
 
-    feature_clusters: List[FeatureCluster]
     point_in_time_and_serving_name: Dict[str, Any]
 
 

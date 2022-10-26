@@ -24,6 +24,7 @@ from featurebyte.schema.feature_list import (
     FeatureListNewVersionCreate,
     FeatureListPaginatedList,
     FeatureListPreview,
+    FeatureListSQL,
     FeatureListUpdate,
 )
 from featurebyte.service.deploy import DeployService
@@ -267,3 +268,19 @@ class FeatureListController(
             document_id=document_id, verbose=verbose
         )
         return info_document
+
+    async def sql(self, featurelist_sql: FeatureListSQL) -> str:
+        """
+        Preview a Feature List
+
+        Parameters
+        ----------
+        featurelist_sql: FeatureListSQL
+            FeatureListSQL object
+
+        Returns
+        -------
+        str
+            Dataframe converted to json string
+        """
+        return await self.preview_service.featurelist_sql(featurelist_sql=featurelist_sql)

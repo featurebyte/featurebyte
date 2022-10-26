@@ -158,12 +158,19 @@ class FeatureInfo(FeatureNamespaceInfo):
     versions_info: Optional[FeatureBriefInfoList]
 
 
-class FeaturePreview(FeatureByteBaseModel):
+class FeatureSQL(FeatureByteBaseModel):
+    """
+    Feature SQL schema
+    """
+
+    graph: QueryGraph
+    node_name: str
+
+
+class FeaturePreview(FeatureSQL):
     """
     Feature Preview schema
     """
 
     feature_store_name: StrictStr
-    graph: QueryGraph
-    node_name: str
     point_in_time_and_serving_name: Dict[str, Any]
