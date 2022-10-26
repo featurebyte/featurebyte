@@ -160,7 +160,7 @@ class FeatureInfo(FeatureNamespaceInfo):
 
 class FeatureSQL(FeatureByteBaseModel):
     """
-    Feature Graph schema
+    Feature SQL schema
     """
 
     graph: QueryGraph
