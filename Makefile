@@ -8,6 +8,7 @@ PERMISSIVE_LICENSES := "\
 	MIT;\
 	MIT License;\
 	BSD License;\
+	ISC;\
 	ISC License (ISCL);\
 	Python Software Foundation License;\
 	Apache Software License;\
@@ -110,7 +111,7 @@ lint-type:
 	@poetry run mypy --install-types --non-interactive --config-file pyproject.toml .
 
 lint-safety: generate-requirements-file
-	@poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\-\-" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
+	@poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\--" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
 	@poetry run pip-audit --no-deps -r requirements.txt --ignore-vuln OSV-2022-715
 	@poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
