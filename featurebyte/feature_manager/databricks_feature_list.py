@@ -5,15 +5,16 @@ from __future__ import annotations
 
 from typing import Any, List, Tuple
 
-from pydantic import BaseModel, PrivateAttr
+from pydantic import PrivateAttr
 
+from featurebyte.feature_manager.base import BaseFeatureListManager
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.databricks_tile import TileManagerDatabricks
 
 
-class FeatureListManagerDatabricks(BaseModel):
+class FeatureListManagerDatabricks(BaseFeatureListManager):
     """
     Snowflake Feature Manager class
     """
@@ -31,8 +32,7 @@ class FeatureListManagerDatabricks(BaseModel):
         kw: Any
             constructor arguments
         """
-        super().__init__(**kw)
-        self._session = session
+        super().__init__(session=session, **kw)
 
     async def generate_tiles_on_demand(self, tile_inputs: List[Tuple[TileSpec, str]]) -> None:
         """

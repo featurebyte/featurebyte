@@ -384,7 +384,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "exceptiongroup"
-version = "1.0.0rc9"
+version = "1.0.0"
 description = "Backport of PEP 654 (exception groups)"
 category = "dev"
 optional = false
@@ -1007,7 +1007,7 @@ python-versions = "*"
 name = "py4j"
 version = "0.10.9.5"
 description = "Enables Python programs to dynamically access arbitrary Java objects"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -1150,7 +1150,7 @@ diagrams = ["railroad-diagrams", "jinja2"]
 name = "pyspark"
 version = "3.3.1"
 description = "Apache Spark Python API"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1676,11 +1676,11 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "tomlkit"
-version = "0.11.5"
+version = "0.11.6"
 description = "Style preserving TOML library"
 category = "dev"
 optional = false
-python-versions = ">=3.6,<4.0"
+python-versions = ">=3.6"
 
 [[package]]
 name = "typeguard"
@@ -1918,7 +1918,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "flake8 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "33a9307db3936b5a04380f9c0f1b2a805eaa88222d88f295a576d07bcc7c5f30"
+content-hash = "1a5d1b54feba56e1cc032b4bd150ab2626024563f21ce6a9b03fbcf2d59cd8f7"
 
 [metadata.files]
 about-time = [
@@ -2195,8 +2195,8 @@ docutils = [
     {file = "docutils-0.17.1.tar.gz", hash = "sha256:686577d2e4c32380bb50cbb22f575ed742d58168cee37e99117a854bcd88f125"},
 ]
 exceptiongroup = [
-    {file = "exceptiongroup-1.0.0rc9-py3-none-any.whl", hash = "sha256:2e3c3fc1538a094aab74fad52d6c33fc94de3dfee3ee01f187c0e0c72aec5337"},
-    {file = "exceptiongroup-1.0.0rc9.tar.gz", hash = "sha256:9086a4a21ef9b31c72181c77c040a074ba0889ee56a7b289ff0afb0d97655f96"},
+    {file = "exceptiongroup-1.0.0-py3-none-any.whl", hash = "sha256:2ac84b496be68464a2da60da518af3785fff8b7ec0d090a581604bc870bdee41"},
+    {file = "exceptiongroup-1.0.0.tar.gz", hash = "sha256:affbabf13fb6e98988c38d9c5650e701569fe3c1de3233cfb61c5f33774690ad"},
 ]
 execnet = [
     {file = "execnet-1.9.0-py2.py3-none-any.whl", hash = "sha256:a295f7cc774947aac58dde7fdc85f4aa00c42adf5d8f5468fc630c1acf30a142"},
@@ -3119,8 +3119,8 @@ tomli = [
     {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
 ]
 tomlkit = [
-    {file = "tomlkit-0.11.5-py3-none-any.whl", hash = "sha256:f2ef9da9cef846ee027947dc99a45d6b68a63b0ebc21944649505bf2e8bc5fe7"},
-    {file = "tomlkit-0.11.5.tar.gz", hash = "sha256:571854ebbb5eac89abcb4a2e47d7ea27b89bf29e09c35395da6f03dd4ae23d1c"},
+    {file = "tomlkit-0.11.6-py3-none-any.whl", hash = "sha256:07de26b0d8cfc18f871aec595fda24d95b08fef89d147caa861939f37230bf4b"},
+    {file = "tomlkit-0.11.6.tar.gz", hash = "sha256:71b952e5721688937fb02cf9d354dbcf0785066149d2855e44531ebdd2b65d73"},
 ]
 typeguard = [
     {file = "typeguard-2.13.3-py3-none-any.whl", hash = "sha256:5e3e3be01e887e7eafae5af63d1f36c849aaa94e3a0112097312aabfa16284f1"},

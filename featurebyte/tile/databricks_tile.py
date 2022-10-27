@@ -3,7 +3,7 @@ Databricks Tile class
 """
 from typing import Any, Optional, cast
 
-import time
+import asyncio
 
 from databricks_cli.jobs.api import JobsApi
 from databricks_cli.runs.api import RunsApi
@@ -82,7 +82,7 @@ class TileManagerDatabricks(BaseModel):
             python_params=job_params,
             spark_submit_params=None,
         )
-        self._wait_for_job_completion(job_run)
+        await self._wait_for_job_completion(job_run)
 
         return str(job_run)
 
@@ -149,11 +149,11 @@ class TileManagerDatabricks(BaseModel):
             python_params=job_params,
             spark_submit_params=None,
         )
-        self._wait_for_job_completion(job_run)
+        await self._wait_for_job_completion(job_run)
 
         return str(job_run)
 
-    def _wait_for_job_completion(self, job_run: Any, max_wait_seconds: int = 15) -> None:
+    async def _wait_for_job_completion(self, job_run: Any, max_wait_seconds: int = 15) -> None:
         """
         Wait for Stored Proc(Job) to finish
 
@@ -166,7 +166,7 @@ class TileManagerDatabricks(BaseModel):
             max seconds to wait
         """
         for _ in range(max_wait_seconds):
-            time.sleep(1)
+            await asyncio.sleep(1)
             run_details = self._runs_api.get_run(job_run["run_id"])
             if run_details["state"]["life_cycle_state"] == "TERMINATED":
                 break
