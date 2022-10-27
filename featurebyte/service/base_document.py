@@ -3,7 +3,19 @@ BaseService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Generic, Iterator, List, Literal, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Generic,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import copy
 
@@ -603,3 +615,25 @@ class BaseDocumentService(
         if return_document:
             return await self.get_document(document_id=document_id)
         return None
+
+    async def historical_document_generator(self, document_id) -> AsyncIterator[Optional[Document]]:
+        """
+        Reconstruct documents of older history
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+
+        Yields
+        -------
+        AsyncIterator[Optional[Document]]
+            Async iterator of older historical records
+        """
+        async for _, audit_doc in self.persistent.historical_document_generator(
+            collection_name=self.collection_name, document_id=document_id
+        ):
+            if audit_doc is not None:
+                yield self.document_class(**audit_doc)
+            else:
+                yield None

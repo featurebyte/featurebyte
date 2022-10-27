@@ -296,6 +296,19 @@ class MongoDB(Persistent):
         )
         return result.deleted_count
 
+    async def _rename_collection(self, collection_name: str, new_collection_name: str) -> None:
+        """
+        Rename collection name
+
+        Parameters
+        ----------
+        collection_name: str
+            From collection name
+        new_collection_name: str
+            To collection name
+        """
+        await self._db[collection_name].rename(new_collection_name)
+
     @asynccontextmanager
     async def _start_transaction(self) -> AsyncIterator[MongoDB]:
         """

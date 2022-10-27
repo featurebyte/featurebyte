@@ -3,7 +3,7 @@ Persistent base class
 """
 from __future__ import annotations
 
-from typing import AsyncIterator, Iterable, List, Literal, Optional, Tuple
+from typing import Any, AsyncIterator, Callable, Iterable, List, Literal, Optional, Tuple
 
 import copy
 from abc import ABC, abstractmethod
@@ -13,12 +13,17 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.persistent import (
     AuditActionType,
+    AuditDocument,
     AuditTransactionMode,
     Document,
     DocumentUpdate,
     QueryFilter,
 )
-from featurebyte.persistent.audit import audit_transaction, get_audit_collection_name
+from featurebyte.persistent.audit import (
+    audit_transaction,
+    get_audit_collection_name,
+    get_previous_and_current_values,
+)
 from featurebyte.routes.common.util import get_utc_now
 
 
@@ -402,6 +407,90 @@ class Persistent(ABC):
             page_size=page_size,
         )
 
+    async def historical_document_generator(
+        self, collection_name: str, document_id: ObjectId
+    ) -> AsyncIterator[AuditDocument, Optional[dict[str, Any]]]:
+        docs, _ = await self.get_audit_logs(
+            collection_name=collection_name, document_id=document_id, page=1, page_size=0
+        )
+        sorted_audit_data = sorted(docs, key=lambda record: (record["action_at"], record["_id"]))
+
+        doc = {}
+        for audit_doc in sorted_audit_data:
+            previous_values = audit_doc["previous_values"]
+            current_values = audit_doc["current_values"]
+            if audit_doc["action_type"] in {AuditActionType.INSERT, AuditActionType.REPLACE}:
+                doc = current_values
+                doc["_id"] = audit_doc["document_id"]
+            elif audit_doc["action_type"] == AuditActionType.UPDATE:
+                doc = {
+                    key: current_values.get(key, doc.get(key))
+                    for key in set(current_values).union(set(doc).difference(previous_values))
+                }
+            else:
+                doc = None
+            yield AuditDocument(**audit_doc), doc
+
+    async def migrate_record(
+        self,
+        collection_name: str,
+        document_id: ObjectId,
+        migrate_func: Callable[[dict[str, Any]], dict[str, Any]],
+    ) -> None:
+        query_filter = {"_id": document_id}
+        original_doc = await self._find_one(
+            collection_name=collection_name, query_filter=query_filter
+        )
+        if original_doc:
+            await self._update_one(
+                collection_name=collection_name,
+                query_filter=query_filter,
+                update={"$set": migrate_func(original_doc)},
+            )
+
+    async def migrate_audit_records(
+        self,
+        collection_name: str,
+        document_id: ObjectId,
+        migrate_func: Callable[[dict[str, Any]], dict[str, Any]],
+    ) -> None:
+        doc_generator = self.historical_document_generator(
+            collection_name=collection_name, document_id=document_id
+        )
+        previous = {}
+        async for audit_doc, doc_dict in doc_generator:
+            doc_dict = migrate_func(doc_dict) if doc_dict else {}
+
+            if audit_doc.action_type == AuditActionType.INSERT:
+                original_doc = {"_id": doc_dict["_id"]}
+            else:
+                original_doc = previous
+
+            previous_values, current_values = get_previous_and_current_values(
+                original_doc, doc_dict
+            )
+
+            updated_audit_doc = AuditDocument(
+                **{
+                    **audit_doc.dict(by_alias=True),
+                    "previous_values": previous_values,
+                    "current_values": current_values,
+                }
+            )
+            await self._update_one(
+                collection_name=get_audit_collection_name(collection_name),
+                query_filter={"_id": audit_doc.id},
+                update={
+                    "$set": {
+                        "previous_values": updated_audit_doc.previous_values,
+                        "current_values": updated_audit_doc.current_values,
+                    }
+                },
+            )
+
+            # track previous values
+            previous = doc_dict
+
     @abstractmethod
     @asynccontextmanager
     async def _start_transaction(self) -> AsyncIterator[Persistent]:
@@ -476,4 +565,25 @@ class Persistent(ABC):
 
     @abstractmethod
     async def _delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
+        pass
+
+    async def rename_collection(self, collection_name: str, new_collection_name: str) -> None:
+        """
+        Rename collection
+
+        Parameters
+        ----------
+        collection_name: str
+            From collection name
+        new_collection_name: str
+            To collection name
+        """
+        await self._rename_collection(collection_name, new_collection_name)
+        await self._rename_collection(
+            get_audit_collection_name(collection_name),
+            get_audit_collection_name(new_collection_name),
+        )
+
+    @abstractmethod
+    async def _rename_collection(self, collection_name: str, to_name: str) -> None:
         pass

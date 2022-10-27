@@ -117,37 +117,6 @@ async def migrate_method_generator(
         yield migrate_service, migrate_method
 
 
-def document_historical_travel_generator(
-    audit_docs: list[dict[str, Any]]
-) -> Iterator[dict[str, Any]]:
-    """
-    Reconstruct documents of older history
-
-    Parameters
-    ----------
-    audit_docs: list[dict[str, Any]]
-        Audit records
-
-    Yields
-    -------
-    Iterator[dict[str, Any]]
-        Iterator of older historical records
-    """
-    doc = {}
-    for audit_doc in sorted(audit_docs, key=lambda record: (record["action_at"], record["_id"])):
-        previous_values = audit_doc["previous_values"]
-        current_values = audit_doc["current_values"]
-        if audit_doc["action_type"] == "INSERT":
-            doc = current_values
-            doc["_id"] = audit_doc["document_id"]
-        else:
-            doc = {
-                key: current_values.get(key, doc.get(key))
-                for key in set(current_values).union(set(doc).difference(previous_values))
-            }
-        yield doc
-
-
 async def post_migration_sanity_check(service: BaseDocumentServiceT) -> None:
     """
     Post migration sanity check
@@ -160,14 +129,18 @@ async def post_migration_sanity_check(service: BaseDocumentServiceT) -> None:
     # check document deserialization
     docs = await service.list_documents(page_size=0)
     step_size = max(len(docs["data"]) // 5, 1)
+    audit_record_count = 0
     for i, doc_dict in enumerate(docs["data"]):
         document = service.document_class(**doc_dict)
 
         # check audit records
         if i % step_size == 0:
-            audit_docs = await service.list_document_audits(document_id=document.id, page_size=0)
-            for hist_doc_dict in document_historical_travel_generator(audit_docs["data"]):
-                _ = service.document_class(**hist_doc_dict)
+            async for _ in service.historical_document_generator(document_id=document.id):
+                audit_record_count += 1
+
+    logger.info(
+        f"Successfully loaded {len(docs['data'])} records & {audit_record_count} audit records."
+    )
 
 
 async def run_migration(user: Any, persistent: Persistent) -> None:

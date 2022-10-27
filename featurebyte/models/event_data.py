@@ -11,7 +11,7 @@ from datetime import datetime
 from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.model_util import validate_job_setting_parameters
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import DataModel
 
@@ -100,6 +100,7 @@ class EventDataModel(DataModel):
         Datetime when the EventData object was last updated
     """
 
+    type: TableDataType = Field(TableDataType.EVENT_DATA, const=True)
     event_id_column: Optional[StrictStr] = Field(default=None)  # DEV-556: this should be compulsory
     event_timestamp_column: StrictStr
     default_feature_job_setting: Optional[FeatureJobSetting]
@@ -119,10 +120,3 @@ class EventDataModel(DataModel):
         return DataModel.validate_column_exists(
             column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
         )
-
-    class Settings(DataModel.Settings):
-        """
-        MongoDB settings
-        """
-
-        collection_name: str = "event_data"

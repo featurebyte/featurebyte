@@ -39,7 +39,7 @@ def test_retrieve_all_migration_methods__duplicated_version(mock_extract_method)
 
     def new_extract_method(service_class):
         methods = _extract_migrate_methods(service_class)
-        return [(1, attr_name) for _, attr_name in methods]
+        return 2 * [(1, attr_name) for _, attr_name in methods]
 
     mock_extract_method.side_effect = new_extract_method
     with pytest.raises(ValueError) as exc:
@@ -96,14 +96,16 @@ async def test_post_migration_sanity_check(persistent, user):
 
     # run test_post_migration_sanity_check (should run without error as no migration is performed)
     with patch.object(
-        EntityService, "list_document_audits", wraps=service.list_document_audits
-    ) as mock_list_document_audits:
+        EntityService,
+        "historical_document_generator",
+        wraps=service.historical_document_generator,
+    ) as mock_call:
         await post_migration_sanity_check(service)
 
     docs = sorted(docs, key=lambda d: d.created_at, reverse=True)
     step_size = len(docs) // 5
     called_document_ids = [
-        call_args.kwargs["document_id"] for call_args in mock_list_document_audits.call_args_list
+        call_args.kwargs["document_id"] for call_args in mock_call.call_args_list
     ]
     expected_document_ids = [doc.id for i, doc in enumerate(docs) if i % step_size == 0]
     assert called_document_ids == expected_document_ids
@@ -114,7 +116,10 @@ async def test_run_migration(migration_check_persistent, user):
     """Test run migration function"""
     persistent = migration_check_persistent
 
-    # check that all collections to be migrated contains some examples for testing
+    # perform migration on testing samples to check the migration logic
+    await run_migration(user=user, persistent=persistent)
+
+    # check that all migrated collections contains some examples for testing
     async for service, _ in migrate_method_generator(user=user, persistent=persistent):
         docs = await service.list_documents()
         assert docs["total"] > 0
@@ -125,6 +130,3 @@ async def test_run_migration(migration_check_persistent, user):
             audit_docs = await service.list_document_audits(document_id=doc["_id"])
             max_audit_record_nums = max(max_audit_record_nums, audit_docs["total"])
         assert max_audit_record_nums > 1
-
-    # perform migration on testing samples to check the migration logic
-    await run_migration(user=user, persistent=persistent)
