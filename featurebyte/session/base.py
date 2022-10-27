@@ -499,6 +499,9 @@ class BaseSchemaInitializer(ABC):
 
         for filename in os.listdir(sql_directory):
 
+            if not filename.endswith(".sql"):
+                continue
+
             sql_object_type = None
             if filename.startswith("F_"):
                 sql_object_type = SqlObjectType.FUNCTION

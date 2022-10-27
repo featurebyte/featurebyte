@@ -22,7 +22,7 @@ class TileManagerDatabricks(BaseModel):
     Databricks Tile class
     """
 
-    _session: BaseSession = PrivateAttr()
+    _session: DatabricksSession = PrivateAttr()
     _jobs_api: JobsApi = PrivateAttr()
     _runs_api: RunsApi = PrivateAttr()
 
@@ -38,7 +38,7 @@ class TileManagerDatabricks(BaseModel):
             constructor arguments
         """
         super().__init__(**kw)
-        self._session: DatabricksSession = cast(DatabricksSession, session)
+        self._session = cast(DatabricksSession, session)
 
         api_client = ApiClient(
             host=f"https://{self._session.server_hostname}", token=self._session.access_token
@@ -64,26 +64,27 @@ class TileManagerDatabricks(BaseModel):
         """
         job_name = "tile_generate_entity_tracking"
 
-        result = self._jobs_api._list_jobs_by_name(name=job_name)
+        result = self._jobs_api._list_jobs_by_name(name=job_name)  # pylint: disable=W0212
         job_id = result[0]["job_id"]
-        job_params = {
-            "FEATUREBYTE_DATABASE": self._session.featurebyte_schema,
-            "TILE_ID": tile_spec.aggregation_id,
-            "ENTITY_COLUMN_NAMES": ",".join(tile_spec.entity_column_names),
-            "ENTITY_TABLE": temp_entity_table,
-            "TILE_LAST_START_DATE_COLUMN": InternalName.TILE_LAST_START_DATE.value,
-        }
+
+        job_params = [
+            self._session.featurebyte_schema,
+            InternalName.TILE_LAST_START_DATE.value,
+            ",".join(tile_spec.entity_column_names),
+            tile_spec.aggregation_id,
+            temp_entity_table,
+        ]
 
         job_run = self._jobs_api.run_now(
             job_id=job_id,
-            notebook_params=job_params,
+            notebook_params=None,
             jar_params=None,
-            python_params=None,
+            python_params=job_params,
             spark_submit_params=None,
         )
         self._wait_for_job_completion(job_run)
 
-        return job_run
+        return str(job_run)
 
     async def generate_tiles(
         self,
@@ -114,7 +115,7 @@ class TileManagerDatabricks(BaseModel):
             databricks job run details
         """
         job_name = "tile_generate"
-        result = self._jobs_api._list_jobs_by_name(name=job_name)
+        result = self._jobs_api._list_jobs_by_name(name=job_name)  # pylint: disable=W0212
         job_id = result[0]["job_id"]
 
         if start_ts_str and end_ts_str:
@@ -126,31 +127,31 @@ class TileManagerDatabricks(BaseModel):
 
         logger.debug(f"tile_sql: {tile_sql}")
 
-        job_params = {
-            "FEATUREBYTE_DATABASE": self._session.featurebyte_schema,
-            "SQL": tile_sql,
-            "TILE_ID": tile_spec.tile_id,
-            "TILE_TYPE": tile_type.value,
-            "TILE_START_DATE_COLUMN": InternalName.TILE_START_DATE.value,
-            "TILE_LAST_START_DATE_COLUMN": InternalName.TILE_LAST_START_DATE.value,
-            "TIME_MODULO_FREQUENCY_SECOND": tile_spec.time_modulo_frequency_second,
-            "BLIND_SPOT_SECOND": tile_spec.blind_spot_second,
-            "FREQUENCY_MINUTE": tile_spec.frequency_minute,
-            "ENTITY_COLUMN_NAMES": ",".join(tile_spec.entity_column_names),
-            "VALUE_COLUMN_NAMES": ",".join(tile_spec.value_column_names),
-            "LAST_TILE_START_STR": last_tile_start_ts_str or "",
-        }
+        job_params = [
+            self._session.featurebyte_schema,
+            tile_sql,
+            InternalName.TILE_START_DATE.value,
+            InternalName.TILE_LAST_START_DATE.value,
+            tile_spec.time_modulo_frequency_second,
+            tile_spec.blind_spot_second,
+            tile_spec.frequency_minute,
+            ",".join(tile_spec.entity_column_names),
+            ",".join(tile_spec.value_column_names),
+            tile_spec.tile_id,
+            tile_type.value,
+            last_tile_start_ts_str or "",
+        ]
 
         job_run = self._jobs_api.run_now(
             job_id=job_id,
-            notebook_params=job_params,
+            notebook_params=None,
             jar_params=None,
-            python_params=None,
+            python_params=job_params,
             spark_submit_params=None,
         )
         self._wait_for_job_completion(job_run)
 
-        return job_run
+        return str(job_run)
 
     def _wait_for_job_completion(self, job_run: Any, max_wait_seconds: int = 15) -> None:
         """
@@ -161,10 +162,10 @@ class TileManagerDatabricks(BaseModel):
         job_run: Any
             job run details
 
-        max_wait_seconds:
+        max_wait_seconds: int
             max seconds to wait
         """
-        for i in range(max_wait_seconds):
+        for _ in range(max_wait_seconds):
             time.sleep(1)
             run_details = self._runs_api.get_run(job_run["run_id"])
             if run_details["state"]["life_cycle_state"] == "TERMINATED":

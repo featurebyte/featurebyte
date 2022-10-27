@@ -375,7 +375,6 @@ async def databricks_tile_spec(databricks_session):
 
     yield tile_spec
 
-    await databricks_session.execute_query(f"DELETE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'")
     await databricks_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
 
 
