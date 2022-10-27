@@ -26,6 +26,14 @@ def global_query_graph():
     yield GlobalQueryGraph()
 
 
+@pytest.fixture(autouse=True)
+def use_mock_get_client(mock_get_client):
+    """
+    Use mock get client for route tests
+    """
+    yield
+
+
 @pytest.fixture(name="dataframe")
 def dataframe_fixture(global_graph, snowflake_feature_store):
     """

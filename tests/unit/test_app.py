@@ -18,7 +18,7 @@ async def test_get_credential():
     """
     Test get_credential works as expected
     """
-    config = Configurations("tests/fixtures/config_git_persistent.yaml")
+    config = Configurations("tests/fixtures/config.yaml")
     feature_store_name = list(config.credentials.keys())[0]
 
     with patch("featurebyte.utils.credential.Configurations") as mock_config:
@@ -31,15 +31,15 @@ def test_get_persistent():
     """
     Test get_persistent works as expected
     """
-    config = Configurations("tests/fixtures/config_git_persistent.yaml")
+    config = Configurations("tests/fixtures/config.yaml")
 
     with patch("featurebyte.utils.persistent.Configurations") as mock_config:
         mock_config.return_value = config
-        with patch("featurebyte.utils.persistent.GitDB") as mock_git:
+        with patch("featurebyte.utils.persistent.MongoDB") as mock_mongodb:
             with pytest.raises(ValueError):
-                mock_git.side_effect = ValueError()
+                mock_mongodb.side_effect = ValueError()
                 get_persistent()
-    mock_git.assert_called_once_with(**config.git.dict())
+    mock_mongodb.assert_called_once_with("mongodb://localhost:27021")
 
 
 def test_get_app__loading_time():

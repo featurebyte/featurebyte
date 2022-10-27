@@ -1,18 +1,16 @@
 """
 Read configurations from ini file
 """
-from typing import Any, Dict, List, Optional, Pattern, Union
+from typing import Any, Dict, List, Optional, Union
 
 import os
-import re
 from enum import Enum
 from pathlib import Path
 
 # pylint: disable=too-few-public-methods
 import requests
 import yaml
-from fastapi.testclient import TestClient
-from pydantic import BaseModel, ConstrainedStr, Field, HttpUrl, validator
+from pydantic import AnyHttpUrl, BaseModel, Field, validator
 from pydantic.error_wrappers import ValidationError
 from requests import Response
 
@@ -51,24 +49,6 @@ class LoggingSettings(BaseModel):
     serialize: bool = False
 
 
-class GitRepoUrl(ConstrainedStr):
-    """
-    Git repo string
-    """
-
-    regex: Optional[Pattern[str]] = re.compile(r"^(.*\.git|file:///.*)$")
-
-
-class GitSettings(BaseModel):
-    """
-    Settings for git access
-    """
-
-    remote_url: GitRepoUrl
-    key_path: Optional[Path]
-    branch: str
-
-
 class LocalStorageSettings(BaseModel):
     """
     Settings for local file storage
@@ -101,7 +81,7 @@ class Profile(BaseModel):
     """
 
     name: str
-    api_url: HttpUrl
+    api_url: AnyHttpUrl
     api_token: str
 
 
@@ -200,7 +180,6 @@ class Configurations:
                 "# featurebyte configurations\n\nlogging:\n  level: INFO\n"
             )
 
-        self.git: Optional[GitSettings] = None
         self.storage: LocalStorageSettings = LocalStorageSettings()
         self.profile: Optional[Profile] = None
         self.profiles: Optional[List[Profile]] = None
@@ -264,11 +243,6 @@ class Configurations:
             # parse logging settings
             self.logging = LoggingSettings(**logging_settings)
 
-        git_settings = self.settings.pop("git", None)
-        if git_settings:
-            # parse git settings
-            self.git = GitSettings(**git_settings)
-
         storage_settings = self.settings.pop("storage", None)
         if storage_settings:
             # parse storage settings
@@ -301,13 +275,13 @@ class Configurations:
         """
         os.environ["FEATUREBYTE_PROFILE"] = profile_name
 
-    def get_client(self) -> Union[TestClient, APIClient]:
+    def get_client(self) -> APIClient:
         """
         Retrieve API client
 
         Returns
         -------
-        Union[TestClient, APIClient]
+        APIClient
             API client
 
         Raises
@@ -321,18 +295,9 @@ class Configurations:
         # configure logger
         configure_logger(logger, self)
 
-        client: Union[TestClient, APIClient]
-
         if self.profile:
-            if self.git:
-                logger.warning("Ignoring Git settings in configurations")
             client = APIClient(api_url=self.profile.api_url, api_token=self.profile.api_token)
-        elif self.git:
-            # avoid git binary as a requirement for remote api url
-            from featurebyte.app import app
-
-            client = TestClient(app)
         else:
-            raise InvalidSettingsError("Git or FeatureByte profile settings must be specified")
+            raise InvalidSettingsError("No profile setting specified")
 
         return client

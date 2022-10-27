@@ -55,11 +55,11 @@ class BaseTaskTestSuite:
         yield
 
     @pytest_asyncio.fixture(autouse=True)
-    async def setup(self, git_persistent, storage, temp_storage):
+    async def setup(self, mongo_persistent, storage, temp_storage):
         """
         Run setup
         """
-        persistent, _ = git_persistent
+        persistent, _ = mongo_persistent
         await self.setup_persistent_storage(persistent, storage, temp_storage)
 
     @pytest.fixture(name="progress")
@@ -86,11 +86,11 @@ class BaseTaskTestSuite:
         await task.execute()
 
     @pytest_asyncio.fixture()
-    async def task_completed(self, git_persistent, progress, storage, temp_storage):
+    async def task_completed(self, mongo_persistent, progress, storage, temp_storage):
         """
         Test execution of the task
         """
-        persistent, _ = git_persistent
+        persistent, _ = mongo_persistent
         await self.execute_task(
             task_class=self.task_class,
             payload=self.payload,

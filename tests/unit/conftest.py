@@ -11,6 +11,7 @@ import pytest
 import pytest_asyncio
 import yaml
 from bson.objectid import ObjectId
+from fastapi.testclient import TestClient
 from snowflake.connector.constants import QueryStatus
 
 from featurebyte.api.entity import Entity
@@ -20,6 +21,7 @@ from featurebyte.api.feature import DefaultVersionMode, Feature
 from featurebyte.api.feature_list import FeatureGroup, FeatureList
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.groupby import EventViewGroupBy
+from featurebyte.app import app
 from featurebyte.common.model_util import get_version
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType, InternalName
@@ -31,7 +33,6 @@ from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.feature_list import FeatureListNamespaceModel, FeatureListStatus
 from featurebyte.models.feature_store import SnowflakeDetails
 from featurebyte.models.tile import TileSpec
-from featurebyte.persistent.git import GitDB
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.node import construct_node
@@ -62,10 +63,13 @@ def config_file_fixture():
                 "name": "sq_featurestore",
             },
         ],
-        "git": {
-            "remote_url": "git@github.com:account repo.git",
-            "branch": "test",
-        },
+        "profile": [
+            {
+                "name": "local",
+                "api_url": "http://localhost:8080",
+                "api_token": "token",
+            },
+        ],
     }
     with tempfile.NamedTemporaryFile("w") as file_handle:
         file_handle.write(yaml.dump(config_dict))
@@ -98,23 +102,15 @@ def mock_config_path_env_fixture(config_file):
         yield
 
 
-@pytest.fixture(name="git_persistent")
-def git_persistent_fixture():
+@pytest.fixture(name="mock_get_client")
+def mock_get_client_fixture():
     """
-    Patched GitDB fixture for testing
-    Returns
-    -------
-    Tuple[GitDB, Repo]
-        Local GitDB object and local git repo
+    Mock Configurations.get_client to use test client
     """
-    persistent = GitDB(branch="test")
-    persistent.insert_doc_name_func("event_data", lambda doc: doc["name"])
-    persistent.insert_doc_name_func("data", lambda doc: doc["name"])
-    persistent.insert_doc_name_func("test_col", lambda doc: doc.get("name", doc["_id"]))
-    # persistent.insert_doc_name_func("__audit__event_data", lambda doc: doc["name"])
-    # persistent.insert_doc_name_func("__audit__data", lambda doc: doc["name"])
-    # persistent.insert_doc_name_func("__audit__test_col", lambda doc: doc["name"])
-    yield persistent, persistent.repo
+    with mock.patch("featurebyte.config.Configurations.get_client") as mock_get_client:
+        with TestClient(app) as client:
+            mock_get_client.return_value = client
+            yield
 
 
 @pytest.fixture(name="storage")
@@ -136,12 +132,12 @@ def temp_storage_fixture():
 
 
 @pytest.fixture(name="mock_get_persistent")
-def mock_get_persistent_function(git_persistent):
+def mock_get_persistent_function(mongo_persistent):
     """
-    Mock GitDB in featurebyte.app
+    Mock get_persistent in featurebyte.app
     """
     with mock.patch("featurebyte.app.get_persistent") as mock_persistent:
-        persistent, _ = git_persistent
+        persistent, _ = mongo_persistent
         mock_persistent.return_value = persistent
         yield mock_persistent
 

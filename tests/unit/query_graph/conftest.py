@@ -41,6 +41,14 @@ def global_query_graph():
     yield GlobalQueryGraph()
 
 
+@pytest.fixture(autouse=True)
+def use_mock_get_client(mock_get_client):
+    """
+    Use mock get client for route tests
+    """
+    yield
+
+
 @pytest.fixture(name="input_details")
 def input_details_fixture(request):
     """

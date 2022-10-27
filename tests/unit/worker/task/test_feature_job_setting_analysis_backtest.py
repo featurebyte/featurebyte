@@ -64,10 +64,10 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
 
     @pytest_asyncio.fixture(autouse=True)
     async def setup(  # pylint: disable=W0221
-        self, git_persistent, storage, temp_storage, mock_event_dataset
+        self, mongo_persistent, storage, temp_storage, mock_event_dataset
     ):
         _ = mock_event_dataset
-        persistent, _ = git_persistent
+        persistent, _ = mongo_persistent
         await self.setup_persistent_storage(persistent, storage, temp_storage)
 
     @pytest.mark.asyncio
@@ -112,11 +112,11 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         ]
 
     @pytest.mark.asyncio
-    async def test_execute_fail(self, git_persistent, progress, storage, temp_storage):
+    async def test_execute_fail(self, mongo_persistent, progress, storage, temp_storage):
         """
         Test failed task execution
         """
-        persistent, _ = git_persistent
+        persistent, _ = mongo_persistent
 
         # execute task with payload
         payload = copy.deepcopy(self.payload)

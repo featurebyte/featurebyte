@@ -1,12 +1,15 @@
 """
 Common test fixtures used across files in integration directory
 """
+from typing import AsyncIterator
+
 import asyncio
 import json
 import os
 import sqlite3
 import tempfile
 import textwrap
+from contextlib import asynccontextmanager
 from datetime import datetime
 from unittest import mock
 
@@ -16,11 +19,13 @@ import pytest
 import pytest_asyncio
 import yaml
 from bson.objectid import ObjectId
-from git import Git
+from fastapi.testclient import TestClient
+from mongomock_motor import AsyncMongoMockClient
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_data import EventData
 from featurebyte.api.feature_store import FeatureStore
+from featurebyte.app import app
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.databricks_feature_list import FeatureListManagerDatabricks
@@ -36,7 +41,7 @@ from featurebyte.models.feature_store import (
     SQLiteDetails,
     TableDetails,
 )
-from featurebyte.persistent.git import GitDB
+from featurebyte.persistent.mongo import MongoDB
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
@@ -66,22 +71,22 @@ def config_fixture():
                 "access_token": os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
             },
         ],
+        "profile": [
+            {
+                "name": "local",
+                "api_url": "http://localhost:8080",
+                "api_token": "token",
+            }
+        ],
     }
-    with tempfile.TemporaryDirectory() as temp_dir_path:
-        # initialize git
-        git = Git(temp_dir_path)
-        git.init()
 
-        # use local git as remote
-        config_dict["git"] = {
-            "remote_url": f"file://{temp_dir_path}",
-            "key_path": None,
-            "branch": f"integration-test-{str(ObjectId())}",
-        }
-        with tempfile.NamedTemporaryFile("w") as file_handle:
-            file_handle.write(yaml.dump(config_dict))
-            file_handle.flush()
-            yield Configurations(config_file_path=file_handle.name)
+    with tempfile.NamedTemporaryFile("w") as file_handle:
+        file_handle.write(yaml.dump(config_dict))
+        file_handle.flush()
+        with mock.patch("featurebyte.config.Configurations.get_client") as mock_get_client:
+            with TestClient(app) as client:
+                mock_get_client.return_value = client
+                yield Configurations(config_file_path=file_handle.name)
 
 
 @pytest.fixture(scope="session")
@@ -92,15 +97,33 @@ def event_loop():
     return asyncio.get_event_loop()
 
 
+@pytest.fixture(name="persistent", scope="session")
+def mock_persistent_fixture():
+    """
+    Mock mongodb persistent
+    """
+    with mock.patch("motor.motor_asyncio.AsyncIOMotorClient.__new__") as mock_new:
+        mongo_client = AsyncMongoMockClient()
+        mock_new.return_value = mongo_client
+        persistent = MongoDB(uri="mongodb://server.example.com:27017", database="test")
+
+        # skip session in unit tests
+        @asynccontextmanager
+        async def start_transaction() -> AsyncIterator[MongoDB]:
+            yield persistent
+
+        with mock.patch.object(persistent, "start_transaction", start_transaction):
+            yield persistent
+
+
 @pytest.fixture(name="mock_get_persistent", scope="session")
-def mock_get_persistent_fixture(config):
+def mock_get_persistent_fixture(persistent):
     """
     Mock get_persistent in featurebyte/app.py
     """
-    git_db = GitDB(**config.git.dict())
-    with mock.patch("featurebyte.app.get_persistent") as mock_get_persistent:
-        mock_get_persistent.return_value = git_db
-        yield mock_get_persistent
+    with mock.patch("featurebyte.app.get_persistent") as mock_persistent:
+        mock_persistent.return_value = persistent
+        yield
 
 
 @pytest.fixture(name="snowflake_feature_store", scope="session")

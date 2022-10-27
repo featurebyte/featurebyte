@@ -5,12 +5,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from fastapi.testclient import TestClient
 
 from featurebyte.config import (
     APIClient,
     Configurations,
-    GitSettings,
     LocalStorageSettings,
     LoggingSettings,
     Profile,
@@ -24,7 +22,7 @@ def test_configurations():
     """
     Test creating configuration from config file
     """
-    config = Configurations("tests/fixtures/config_multiple_persistent.yaml")
+    config = Configurations("tests/fixtures/config.yaml")
 
     # one credential with db source as key
     assert len(config.credentials) == 1
@@ -41,13 +39,6 @@ def test_configurations():
         serialize=True,
     )
 
-    # git settings
-    assert config.git == GitSettings(
-        remote_url="git@github.com:featurebyte/playground.git",
-        key_path="~/.ssh/id_rsa",
-        branch="test",
-    )
-
     # storage settings
     assert config.storage == LocalStorageSettings(local_path="~/.featurebyte_custom/data")
 
@@ -57,10 +48,15 @@ def test_configurations():
     # featurebyte settings
     assert config.profiles == [
         Profile(
-            name="featurebyte",
-            api_url="https://app.featurebyte.com/api/v1",
-            api_token="API_TOKEN_VALUE",
-        )
+            name="featurebyte1",
+            api_url="https://app1.featurebyte.com/api/v1",
+            api_token="API_TOKEN_VALUE1",
+        ),
+        Profile(
+            name="featurebyte2",
+            api_url="https://app2.featurebyte.com/api/v1",
+            api_token="API_TOKEN_VALUE2",
+        ),
     ]
 
 
@@ -70,26 +66,17 @@ def test_get_client_no_persistence_settings():
     """
     with pytest.raises(InvalidSettingsError) as exc_info:
         Configurations("tests/fixtures/invalid_config.yaml").get_client()
-    assert str(exc_info.value) == "Git or FeatureByte profile settings must be specified"
+    assert str(exc_info.value) == "No profile setting specified"
 
 
-def test_get_client_git_persistent_settings():
+def test_get_client__success():
     """
-    Test getting client with git persistent only
-    """
-    # expect a local fastapi test client
-    client = Configurations("tests/fixtures/config_git_persistent.yaml").get_client()
-    assert isinstance(client, TestClient)
-
-
-def test_get_client_featurebyte_persistent_settings__success():
-    """
-    Test getting client with featurebyte persistent
+    Test getting client
     """
     # expect a local fastapi test client
     with patch("requests.Session.send") as mock_requests_get:
         mock_requests_get.return_value.status_code = 200
-        client = Configurations("tests/fixtures/config_featurebyte_persistent.yaml").get_client()
+        client = Configurations("tests/fixtures/config.yaml").get_client()
         client.get("/user/me")
     assert isinstance(client, APIClient)
 
@@ -112,7 +99,7 @@ def test_logging_level_change():
     # fix core log level to 10
     logger._core.min_level = 10
 
-    config = Configurations()
+    config = Configurations("tests/fixtures/config.yaml")
     config.logging.level = 20
 
     # expect logging to adopt logging level specified in the config
@@ -124,7 +111,7 @@ def test_default_local_storage():
     """
     Test default local storage location if not specified
     """
-    config = Configurations("tests/fixtures/config_no_persistent.yaml")
+    config = Configurations("tests/fixtures/config_no_profile.yaml")
     assert config.storage.local_path == Path("~/.featurebyte/data").expanduser()
 
 
@@ -134,7 +121,7 @@ def test_use_profile(mock_requests_get):
     Test selecting profile for api service
     """
     mock_requests_get.return_value.status_code = 200
-    config_path = "tests/fixtures/config_featurebyte_persistent.yaml"
+    config_path = "tests/fixtures/config.yaml"
     config = Configurations(config_path)
     assert config.profile.name == "featurebyte1"
     assert config.get_client().base_url == "https://app1.featurebyte.com/api/v1"

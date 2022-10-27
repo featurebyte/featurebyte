@@ -55,13 +55,13 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
 
     @pytest.mark.asyncio
     async def test_execute_success(  # pylint: disable=too-many-locals
-        self, task_completed, git_persistent, progress, update_fixtures, storage
+        self, task_completed, mongo_persistent, progress, update_fixtures, storage
     ):
         """
         Test successful task execution
         """
         _ = task_completed
-        persistent, _ = git_persistent
+        persistent, _ = mongo_persistent
         output_document_id = self.payload["output_document_id"]
 
         # check that analysis result is stored in persistent
@@ -71,7 +71,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             user_id=None,
         )
         assert document
-        result = FeatureJobSettingAnalysisModel(**document)
+        result = FeatureJobSettingAnalysisModel(
+            **json.loads(FeatureJobSettingAnalysisModel(**document).json())
+        )
 
         # check document output
         fixture_path = "tests/fixtures/feature_job_setting_analysis/result.json"
@@ -109,11 +111,11 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         ]
 
     @pytest.mark.asyncio
-    async def test_execute_fail(self, git_persistent, progress, storage, temp_storage):
+    async def test_execute_fail(self, mongo_persistent, progress, storage, temp_storage):
         """
         Test failed task execution
         """
-        persistent, _ = git_persistent
+        persistent, _ = mongo_persistent
 
         # execute task with payload
         payload = copy.deepcopy(self.payload)

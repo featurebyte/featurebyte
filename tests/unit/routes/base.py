@@ -689,7 +689,10 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         Event data response fixture
         """
         test_api_client, _ = test_api_client_persistent
-        snowflake_feature_store.save()
+
+        response = test_api_client.post("/feature_store", json=snowflake_feature_store.json_dict())
+        assert response.status_code == HTTPStatus.CREATED
+
         response = test_api_client.post(
             self.base_route, json=self.data_create_schema_class(**data_model_dict).json_dict()
         )

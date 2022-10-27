@@ -9,11 +9,17 @@ featurestore:
     username: user
     password: password
 
-git:
-  remote_url: git@github.com:featurebyte/playground.git
-  key_path: ~/.ssh/id_rsa
-  branch: test
+profile:
+  - name: featurebyte1
+    api_url: https://app1.featurebyte.com/api/v1
+    api_token: API_TOKEN_VALUE1
+  - name: featurebyte2
+    api_url: https://app2.featurebyte.com/api/v1
+    api_token: API_TOKEN_VALUE2
 
 logging:
   level: INFO
   serialize: True
+
+storage:
+  local_path: ~/.featurebyte_custom/data
