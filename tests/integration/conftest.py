@@ -23,6 +23,7 @@ from featurebyte.api.event_data import EventData
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.config import Configurations
 from featurebyte.enum import InternalName
+from featurebyte.feature_manager.databricks_feature_list import FeatureListManagerDatabricks
 from featurebyte.feature_manager.model import ExtendedFeatureListModel, ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
 from featurebyte.feature_manager.snowflake_feature_list import FeatureListManagerSnowflake
@@ -39,6 +40,7 @@ from featurebyte.persistent.git import GitDB
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
+from featurebyte.tile.databricks_tile import TileManagerDatabricks
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake, TileSpec
 
 
@@ -345,12 +347,52 @@ async def snowflake_tile(snowflake_session):
     await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
 
 
+@pytest_asyncio.fixture
+async def databricks_tile_spec(databricks_session):
+    """
+    Pytest Fixture for TileSnowflake instance
+    """
+    col_names_list = [InternalName.TILE_START_DATE, "PRODUCT_ACTION", "CUST_ID", "VALUE"]
+    col_names = ",".join(col_names_list)
+    table_name = "default.TEST_TILE_TABLE_2"
+    start = InternalName.TILE_START_DATE_SQL_PLACEHOLDER
+    end = InternalName.TILE_END_DATE_SQL_PLACEHOLDER
+
+    tile_sql = f"SELECT {col_names} FROM {table_name} WHERE {InternalName.TILE_START_DATE} >= {start} and {InternalName.TILE_START_DATE} < {end}"
+    tile_id = "tile_id1"
+
+    tile_spec = TileSpec(
+        time_modulo_frequency_second=183,
+        blind_spot_second=3,
+        frequency_minute=5,
+        tile_sql=tile_sql,
+        column_names=col_names_list,
+        entity_column_names=["PRODUCT_ACTION", "CUST_ID"],
+        value_column_names=["VALUE"],
+        tile_id="tile_id1",
+        aggregation_id="agg_id1",
+    )
+
+    yield tile_spec
+
+    await databricks_session.execute_query(f"DELETE FROM TILE_REGISTRY WHERE TILE_ID = '{tile_id}'")
+    await databricks_session.execute_query(f"DROP TABLE IF EXISTS {tile_id}")
+
+
 @pytest.fixture
 def tile_manager(snowflake_session):
     """
     Feature Manager fixture
     """
     return TileManagerSnowflake(session=snowflake_session)
+
+
+@pytest.fixture
+def tile_manager_databricks(databricks_session):
+    """
+    Feature Manager fixture
+    """
+    return TileManagerDatabricks(session=databricks_session)
 
 
 @pytest.fixture(name="feature_model_dict")
@@ -501,6 +543,14 @@ def feature_list_manager(snowflake_session):
     Feature Manager fixture
     """
     return FeatureListManagerSnowflake(session=snowflake_session)
+
+
+@pytest.fixture
+def feature_list_manager_databricks(databricks_session):
+    """
+    Feature Manager fixture for Databricks
+    """
+    return FeatureListManagerDatabricks(session=databricks_session)
 
 
 @pytest.fixture(name="user_entity", scope="session")
