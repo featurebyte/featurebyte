@@ -93,6 +93,7 @@ aiofiles = "^22.1.0"
 alive-progress = "^2.4.1"
 asyncache = "^0.1.1"
 cachetools = "^5.2.0"
+databricks-cli = "^0.17.3"
 fastapi = "^0.85.1"
 featurebyte-freeware = { version = "^0.1.0", allow-prereleases = true, source = "featurebyte_np" }
 importlib_metadata = {version = "^4.5.0", python = "^3.8"}
