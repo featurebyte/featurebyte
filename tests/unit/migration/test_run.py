@@ -15,9 +15,12 @@ from featurebyte.migration.run import (
     _extract_migrate_method_marker,
     _extract_migrate_methods,
     migrate_method_generator,
+    post_migration_sanity_check,
     retrieve_all_migration_methods,
     run_migration,
 )
+from featurebyte.schema.entity import EntityCreate
+from featurebyte.service.entity import EntityService
 
 
 def test_retrieve_all_migration_methods():
@@ -78,6 +81,32 @@ async def migration_check_user_persistent_fixture(test_dir, persistent):
         collection_name = os.path.basename(file_name)
         await persistent._insert_many(collection_name=collection_name, documents=records)
     return persistent
+
+
+@pytest.mark.asyncio
+async def test_post_migration_sanity_check(persistent, user):
+    """Test post_migration_sanity_check"""
+    service = EntityService(user=user, persistent=persistent)
+    docs = []
+    for i in range(20):
+        doc = await service.create_document(
+            data=EntityCreate(name=f"entity_{i}", serving_name=f"serving_name_{i}")
+        )
+        docs.append(doc)
+
+    # run test_post_migration_sanity_check (should run without error as no migration is performed)
+    with patch.object(
+        EntityService, "list_document_audits", wraps=service.list_document_audits
+    ) as mock_list_document_audits:
+        await post_migration_sanity_check(service)
+
+    docs = sorted(docs, key=lambda d: d.created_at, reverse=True)
+    step_size = len(docs) // 5
+    called_document_ids = [
+        call_args.kwargs["document_id"] for call_args in mock_list_document_audits.call_args_list
+    ]
+    expected_document_ids = [doc.id for i, doc in enumerate(docs) if i % step_size == 0]
+    assert called_document_ids == expected_document_ids
 
 
 @pytest.mark.asyncio
