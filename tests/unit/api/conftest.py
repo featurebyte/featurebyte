@@ -32,14 +32,6 @@ def expected_snowflake_table_preview_query() -> str:
     ).strip()
 
 
-@pytest.fixture(autouse=True)
-def use_mock_get_client(mock_get_client):
-    """
-    Use mock get client for route tests
-    """
-    yield
-
-
 def pytest_generate_tests(metafunc):
     """
     Parametrize fixtures to use config object or config file specified by global environmental variable

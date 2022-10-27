@@ -55,18 +55,18 @@ async def mongo_persistent_fixture() -> Tuple[MongoDB, AsyncMongoMockClient]:
     Tuple[MongoDB, AsyncMongoMockClient]
         Patched MongoDB object and MongoClient
     """
-    with patch("motor.motor_asyncio.AsyncIOMotorClient.__new__") as mock_new:
-        mongo_client = AsyncMongoMockClient()
-        mock_new.return_value = mongo_client
-        persistent = MongoDB(uri="mongodb://server.example.com:27017", database="test")
+    mongo_client = AsyncMongoMockClient()
+    persistent = MongoDB(
+        uri="mongodb://server.example.com:27017", database="test", client=mongo_client
+    )
 
-        # skip session in unit tests
-        @asynccontextmanager
-        async def start_transaction() -> AsyncIterator[MongoDB]:
-            yield persistent
+    # skip session in unit tests
+    @asynccontextmanager
+    async def start_transaction() -> AsyncIterator[MongoDB]:
+        yield persistent
 
-        with patch.object(persistent, "start_transaction", start_transaction):
-            yield persistent, mongo_client
+    with patch.object(persistent, "start_transaction", start_transaction):
+        yield persistent, mongo_client
 
 
 @pytest_asyncio.fixture(name="persistent")

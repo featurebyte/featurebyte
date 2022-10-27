@@ -21,7 +21,7 @@ class MongoDB(Persistent):
     Persistent storage using MongoDB
     """
 
-    def __init__(self, uri: str, database: str = "featurebyte") -> None:
+    def __init__(self, uri: str, database: str = "featurebyte", client: Any = None) -> None:
         """
         Constructor for MongoDB
 
@@ -31,10 +31,12 @@ class MongoDB(Persistent):
             MongoDB connection string (e.g. "mongodb://user:pass@localhost:27017")
         database: str
             Database to use
+        client: Any
+            Client to use
         """
         super().__init__()
         self._database = database
-        self._client = AsyncIOMotorClient(uri, uuidRepresentation="standard")
+        self._client = client or AsyncIOMotorClient(uri, uuidRepresentation="standard")
         self._db = self._client[self._database]
         self._session: Any = None
 

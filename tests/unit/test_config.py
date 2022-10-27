@@ -74,21 +74,21 @@ def test_get_client__success():
     Test getting client
     """
     # expect a local fastapi test client
-    with patch("requests.Session.send") as mock_requests_get:
-        mock_requests_get.return_value.status_code = 200
-        client = Configurations("tests/fixtures/config.yaml").get_client()
+    client = Configurations("tests/fixtures/config.yaml").get_client()
+    with patch.object(client, "request") as mock_request:
+        mock_request.return_value.status_code = 200
         client.get("/user/me")
-    assert isinstance(client, APIClient)
+        assert isinstance(client, APIClient)
+        mock_request.assert_called_once_with("GET", "/user/me", allow_redirects=True)
 
-    # check api token included in header
-    mock_requests_get.assert_called_once()
-    assert mock_requests_get.call_args[0][0].headers == {
-        "user-agent": "Python SDK",
-        "Accept-Encoding": "gzip, deflate",
-        "accept": "application/json",
-        "Connection": "keep-alive",
-        "Authorization": "Bearer API_TOKEN_VALUE1",
-    }
+        # check api token included in header
+        assert client.headers == {
+            "user-agent": "Python SDK",
+            "Accept-Encoding": "gzip, deflate",
+            "accept": "application/json",
+            "Connection": "keep-alive",
+            "Authorization": "Bearer API_TOKEN_VALUE1",
+        }
 
 
 def test_logging_level_change():

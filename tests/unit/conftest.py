@@ -102,14 +102,14 @@ def mock_config_path_env_fixture(config_file):
         yield
 
 
-@pytest.fixture(name="mock_get_client")
-def mock_get_client_fixture():
+@pytest.fixture(autouse=True)
+def mock_api_client_fixture():
     """
     Mock Configurations.get_client to use test client
     """
-    with mock.patch("featurebyte.config.Configurations.get_client") as mock_get_client:
+    with mock.patch("featurebyte.config.APIClient.request") as mock_request:
         with TestClient(app) as client:
-            mock_get_client.return_value = client
+            mock_request.side_effect = client.request
             yield
 
 

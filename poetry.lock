@@ -10,8 +10,8 @@ python-versions = "*"
 name = "aiofiles"
 version = "22.1.0"
 description = "File support for asyncio."
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7,<4.0"
 
 [[package]]
@@ -38,8 +38,8 @@ grapheme = "0.6.0"
 name = "anyio"
 version = "3.6.2"
 description = "High level compatibility layer for multiple asynchronous event loop implementations"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.6.2"
 
 [package.dependencies]
@@ -55,8 +55,8 @@ trio = ["trio (>=0.16,<0.22)"]
 name = "asn1crypto"
 version = "1.5.1"
 description = "Fast ASN.1 parser and serializer with definitions for private keys, public keys, certificates, CRL, OCSP, CMS, PKCS#3, PKCS#7, PKCS#8, PKCS#12, PKCS#5, X.509 and TSP"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = "*"
 
 [[package]]
@@ -178,7 +178,7 @@ python-versions = "~=3.7"
 name = "certifi"
 version = "2022.9.24"
 description = "Python package for providing Mozilla's CA Bundle."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -186,8 +186,8 @@ python-versions = ">=3.6"
 name = "cffi"
 version = "1.15.1"
 description = "Foreign Function Interface for Python calling C code."
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = "*"
 
 [package.dependencies]
@@ -205,7 +205,7 @@ python-versions = ">=3.6.1"
 name = "charset-normalizer"
 version = "2.1.1"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6.0"
 
@@ -216,7 +216,7 @@ unicode_backport = ["unicodedata2"]
 name = "click"
 version = "8.1.3"
 description = "Composable command line interface toolkit"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -246,8 +246,8 @@ test = ["flake8 (==3.7.8)", "hypothesis (==3.55.3)"]
 name = "contourpy"
 version = "1.0.5"
 description = "Python library for calculating contours of 2D quadrilateral grids"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -278,8 +278,8 @@ toml = ["tomli"]
 name = "cryptography"
 version = "36.0.2"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
@@ -297,8 +297,8 @@ test = ["pytest (>=6.2.0)", "pytest-cov", "pytest-subtests", "pytest-xdist", "pr
 name = "cycler"
 version = "0.11.0"
 description = "Composable style cycles"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.6"
 
 [[package]]
@@ -327,7 +327,7 @@ python-versions = ">=3.6,<4.0"
 name = "databricks-cli"
 version = "0.17.3"
 description = "A command line interface for Databricks"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -362,8 +362,8 @@ python-versions = "*"
 name = "dnspython"
 version = "2.2.1"
 description = "DNS toolkit"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.6,<4.0"
 
 [package.extras]
@@ -408,8 +408,8 @@ testing = ["pre-commit"]
 name = "fastapi"
 version = "0.85.1"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -426,8 +426,8 @@ test = ["anyio[trio] (>=3.2.1,<4.0.0)", "black (==22.8.0)", "databases[sqlite] (
 name = "featurebyte-freeware"
 version = "0.1.8a1"
 description = "Free utilities from FeatureByte"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.8,<3.11"
 
 [package.dependencies]
@@ -444,7 +444,7 @@ reference = "featurebyte_np"
 name = "filelock"
 version = "3.8.0"
 description = "A platform independent file lock."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -456,8 +456,8 @@ docs = ["sphinx-autodoc-typehints (>=1.19.1)", "sphinx (>=5.1.1)", "furo (>=2022
 name = "fonttools"
 version = "4.38.0"
 description = "Tools to manipulate font files"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7"
 
 [package.extras]
@@ -559,7 +559,7 @@ license = ["ukkonen"]
 name = "idna"
 version = "3.4"
 description = "Internationalized Domain Names in Applications (IDNA)"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
 
@@ -616,7 +616,7 @@ plugins = ["setuptools"]
 name = "jinja2"
 version = "3.1.2"
 description = "A very fast and expressive template engine."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -630,8 +630,8 @@ i18n = ["Babel (>=2.7)"]
 name = "kiwisolver"
 version = "1.4.4"
 description = "A fast implementation of the Cassowary constraint solver"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7"
 
 [[package]]
@@ -661,7 +661,7 @@ dev = ["colorama (>=0.3.4)", "docutils (==0.16)", "flake8 (>=3.7.7)", "tox (>=3.
 name = "markupsafe"
 version = "2.1.1"
 description = "Safely add untrusted strings to HTML/XML markup."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -669,8 +669,8 @@ python-versions = ">=3.7"
 name = "matplotlib"
 version = "3.6.1"
 description = "Python plotting package"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.8"
 
 [package.dependencies]
@@ -720,8 +720,8 @@ mongomock = ">=3.23.0,<5.0.0"
 name = "motor"
 version = "3.1.1"
 description = "Non-blocking MongoDB driver for Tornado or asyncio"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -793,7 +793,7 @@ python-versions = ">=3.8"
 name = "oauthlib"
 version = "3.2.2"
 description = "A generic, spec-compliant, thorough implementation of the OAuth request-signing logic"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -806,8 +806,8 @@ signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 name = "oscrypto"
 version = "1.3.0"
 description = "TLS (SSL) sockets, key generation, encryption, decryption, signing, verification and KDFs using the OS crypto libraries. Does not require a compiler, and relies on the OS for patching. Works on Windows, OS X and Linux/BSD."
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = "*"
 
 [package.dependencies]
@@ -829,7 +829,7 @@ test = ["pytest", "isort", "black"]
 name = "packaging"
 version = "21.3"
 description = "Core utilities for Python packages"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -875,8 +875,8 @@ python-versions = ">=2.6"
 name = "pillow"
 version = "9.2.0"
 description = "Python Imaging Library (Fork)"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7"
 
 [package.extras]
@@ -1026,16 +1026,16 @@ numpy = ">=1.16.6"
 name = "pycparser"
 version = "2.21"
 description = "C parser in Python"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "pycryptodomex"
 version = "3.15.0"
 description = "Cryptographic library for Python"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
@@ -1068,7 +1068,7 @@ plugins = ["importlib-metadata"]
 name = "pyjwt"
 version = "2.6.0"
 description = "JSON Web Token implementation in Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1105,8 +1105,8 @@ testutils = ["gitpython (>3)"]
 name = "pymongo"
 version = "4.3.2"
 description = "Python driver for MongoDB <http://www.mongodb.org>"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -1124,8 +1124,8 @@ zstd = ["zstandard"]
 name = "pyopenssl"
 version = "22.0.0"
 description = "Python wrapper module around the OpenSSL library"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
@@ -1139,7 +1139,7 @@ test = ["flaky", "pretend", "pytest (>=3.0.1)"]
 name = "pyparsing"
 version = "3.0.9"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6.8"
 
@@ -1293,7 +1293,7 @@ python-versions = ">=3.6"
 name = "requests"
 version = "2.28.1"
 description = "Python HTTP for Humans."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7, <4"
 
@@ -1341,8 +1341,8 @@ jupyter = ["ipywidgets (>=7.5.1,<8.0.0)"]
 name = "scipy"
 version = "1.9.3"
 description = "Fundamental algorithms for scientific computing in Python"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.8"
 
 [package.dependencies]
@@ -1365,7 +1365,7 @@ python-versions = "*"
 name = "setuptools"
 version = "65.5.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1378,8 +1378,8 @@ testing-integration = ["pytest", "pytest-xdist", "pytest-enabler", "virtualenv (
 name = "setuptools-scm"
 version = "7.0.5"
 description = "the blessed package to manage your versions by scm tags"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -1412,8 +1412,8 @@ python-versions = ">=3.6"
 name = "sniffio"
 version = "1.3.0"
 description = "Sniff out which async library your code is running under"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7"
 
 [[package]]
@@ -1428,8 +1428,8 @@ python-versions = "*"
 name = "snowflake-connector-python"
 version = "2.8.0"
 description = "Snowflake Connector for Python"
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -1606,8 +1606,8 @@ python-versions = "*"
 name = "starlette"
 version = "0.20.4"
 description = "The little ASGI library that shines."
-category = "main"
-optional = true
+category = "dev"
+optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -1632,7 +1632,7 @@ pbr = ">=2.0.0,<2.1.0 || >2.1.0"
 name = "tabulate"
 version = "0.9.0"
 description = "Pretty-print tabular data"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1670,7 +1670,7 @@ tomlkit = ">=0.8.0"
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1835,7 +1835,7 @@ python-versions = ">=3.7"
 name = "urllib3"
 version = "1.26.12"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, <4"
 
@@ -1916,12 +1916,12 @@ docs = ["sphinx (>=3.5)", "jaraco.packaging (>=9)", "rst.linker (>=1.9)", "furo"
 testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "flake8 (<5)", "pytest-cov", "pytest-enabler (>=1.3)", "jaraco-itertools", "func-timeout", "jaraco-functools", "more-itertools", "pytest-black (>=0.3.7)", "pytest-mypy (>=0.9.1)"]
 
 [extras]
-server = ["aiofiles", "fastapi", "featurebyte-freeware", "jinja2", "motor", "pymongo", "snowflake-connector-python"]
+server = []
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "3f1abcae8582cb32bd27e5037d1394c4fccfa56f53a59ecd9efd82bec67ef0d6"
+content-hash = "ad965613572a77795ad57bc100764bb2a5b7c26f8a4545f4710eb68c2b406fcf"
 
 [metadata.files]
 about-time = [

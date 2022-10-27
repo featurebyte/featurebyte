@@ -83,9 +83,9 @@ def config_fixture():
     with tempfile.NamedTemporaryFile("w") as file_handle:
         file_handle.write(yaml.dump(config_dict))
         file_handle.flush()
-        with mock.patch("featurebyte.config.Configurations.get_client") as mock_get_client:
+        with mock.patch("featurebyte.config.APIClient.request") as mock_request:
             with TestClient(app) as client:
-                mock_get_client.return_value = client
+                mock_request.side_effect = client.request
                 yield Configurations(config_file_path=file_handle.name)
 
 
@@ -102,18 +102,17 @@ def mock_persistent_fixture():
     """
     Mock mongodb persistent
     """
-    with mock.patch("motor.motor_asyncio.AsyncIOMotorClient.__new__") as mock_new:
-        mongo_client = AsyncMongoMockClient()
-        mock_new.return_value = mongo_client
-        persistent = MongoDB(uri="mongodb://server.example.com:27017", database="test")
+    persistent = MongoDB(
+        uri="mongodb://server.example.com:27017", database="test", client=AsyncMongoMockClient()
+    )
 
-        # skip session in unit tests
-        @asynccontextmanager
-        async def start_transaction() -> AsyncIterator[MongoDB]:
-            yield persistent
+    # skip session in unit tests
+    @asynccontextmanager
+    async def start_transaction() -> AsyncIterator[MongoDB]:
+        yield persistent
 
-        with mock.patch.object(persistent, "start_transaction", start_transaction):
-            yield persistent
+    with mock.patch.object(persistent, "start_transaction", start_transaction):
+        yield persistent
 
 
 @pytest.fixture(name="mock_get_persistent", scope="session")
