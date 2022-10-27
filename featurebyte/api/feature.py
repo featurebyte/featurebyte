@@ -14,10 +14,9 @@ from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject, SavableApiObject
 from featurebyte.api.feature_store import FeatureStore
-from featurebyte.common.utils import run_async
 from featurebyte.config import Configurations
 from featurebyte.core.accessor.count_dict import CdAccessorMixin
-from featurebyte.core.generic import ExtendedFeatureStoreModel, ProtectedColumnsQueryObject
+from featurebyte.core.generic import ProtectedColumnsQueryObject
 from featurebyte.core.series import Series
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.logger import logger
@@ -28,13 +27,11 @@ from featurebyte.models.feature import (
     FeatureNamespaceModel,
     FeatureReadiness,
 )
-from featurebyte.models.feature_store import TabularSource
+from featurebyte.models.feature_store import FeatureStoreModel, TabularSource
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.generic import AliasNode, GroupbyNode, ProjectNode
 from featurebyte.schema.feature import FeatureCreate, FeaturePreview, FeatureSQL, FeatureUpdate
 from featurebyte.schema.feature_namespace import FeatureNamespaceUpdate
-from featurebyte.service.preview import PreviewService
-from featurebyte.utils.credential import get_credential
 
 
 class FeatureNamespace(FeatureNamespaceModel, ApiObject):
@@ -58,7 +55,7 @@ class Feature(
     Feature class
     """
 
-    feature_store: ExtendedFeatureStoreModel = Field(exclude=True, allow_mutation=False)
+    feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
 
     # class variables
     _route = "/feature"
@@ -291,18 +288,11 @@ class Feature(
             point_in_time_and_serving_name=point_in_time_and_serving_name,
         )
 
-        if self.feature_store.details.is_local_source:
-            result = run_async(
-                PreviewService(user=None, persistent=None).preview_feature,
-                feature_preview=payload,
-                get_credential=get_credential,
-            )
-        else:
-            client = Configurations().get_client()
-            response = client.post(url="/feature/preview", json=payload.json_dict())
-            if response.status_code != HTTPStatus.OK:
-                raise RecordRetrievalException(response)
-            result = response.json()
+        client = Configurations().get_client()
+        response = client.post(url="/feature/preview", json=payload.json_dict())
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        result = response.json()
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
@@ -379,6 +369,11 @@ class Feature(
         -------
         str
             Feature SQL
+
+        Raises
+        ------
+        RecordRetrievalException
+            Failed to get feature SQL
         """
         feature = self._get_pruned_feature_model()
 
@@ -387,10 +382,12 @@ class Feature(
             node_name=feature.node_name,
         )
 
+        client = Configurations().get_client()
+        response = client.post("/feature/sql", json=payload.json_dict())
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+
         return cast(
             str,
-            run_async(
-                PreviewService(user=None, persistent=None).feature_sql,
-                feature_sql=payload,
-            ),
+            response.json(),
         )

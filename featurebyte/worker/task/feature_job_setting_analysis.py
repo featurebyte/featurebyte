@@ -12,17 +12,18 @@ from featurebyte_freeware.feature_job_analysis.analysis import (
 from featurebyte_freeware.feature_job_analysis.database import EventDataset
 from featurebyte_freeware.feature_job_analysis.schema import FeatureJobSetting
 
-from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.logger import logger
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisData,
     FeatureJobSettingAnalysisModel,
 )
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBackTestTaskPayload,
     FeatureJobSettingAnalysisTaskPayload,
 )
+from featurebyte.session.manager import SessionManager
 from featurebyte.worker.task.base import BaseTask
 
 
@@ -63,7 +64,7 @@ class FeatureJobSettingAnalysisTask(BaseTask):
         # retrieve feature store
         query_filter = {"_id": event_data.tabular_source.feature_store_id}
         document = await persistent.find_one(
-            collection_name=ExtendedFeatureStoreModel.collection_name(),
+            collection_name=FeatureStoreModel.collection_name(),
             query_filter=query_filter,
             user_id=payload.user_id,
         )
@@ -71,16 +72,17 @@ class FeatureJobSettingAnalysisTask(BaseTask):
             message = "Feature Store not found"
             logger.error(message, extra={"query_filter": query_filter})
             raise ValueError(message)
-        feature_store = ExtendedFeatureStoreModel(**document)
+        feature_store = FeatureStoreModel(**document)
 
         # establish database session
-        db_session = await feature_store.get_session(
+        session_manager = SessionManager(
             credentials={
                 feature_store.name: await self.get_credential(
                     user_id=payload.user_id, feature_store_name=feature_store.name
                 )
             }
         )
+        db_session = await session_manager.get_session(feature_store)
 
         event_dataset = EventDataset(
             database_type=feature_store.type,

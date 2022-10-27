@@ -455,9 +455,7 @@ class TestFeatureListApi(BaseApiTestSuite):
     def test_preview_200(self, test_api_client_persistent, featurelist_preview_payload):
         """Test feature list preview"""
         test_api_client, _ = test_api_client_persistent
-        with patch(
-            "featurebyte.core.generic.ExtendedFeatureStoreModel.get_session"
-        ) as mock_get_session:
+        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
             expected_df = pd.DataFrame({"a": [0, 1, 2]})
             mock_get_session.return_value.execute_query.return_value = expected_df
             response = test_api_client.post(
@@ -490,9 +488,7 @@ class TestFeatureListApi(BaseApiTestSuite):
             _ = query
             yield dataframe_to_arrow_bytes(expected_df)
 
-        with patch(
-            "featurebyte.core.generic.ExtendedFeatureStoreModel.get_session"
-        ) as mock_get_session:
+        with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
             expected_df = pd.DataFrame({"a": [0, 1, 2]})
             mock_get_session.return_value.get_async_query_stream = mock_get_async_query_stream
             mock_get_session.return_value.source_type = SourceType.SNOWFLAKE

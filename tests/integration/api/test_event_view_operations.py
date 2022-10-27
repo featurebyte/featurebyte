@@ -5,71 +5,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import AggFunc, EventData, EventView, FeatureList, SourceType, to_timedelta
+from featurebyte import AggFunc, EventView, FeatureList, SourceType, to_timedelta
 from tests.util.helper import get_lagged_series_pandas
-
-
-def test_query_object_operation_on_sqlite_source(
-    sqlite_session, transaction_data, sqlite_feature_store
-):
-    """
-    Test loading event view from sqlite source
-    """
-    _ = sqlite_session
-    assert sqlite_feature_store.list_tables() == ["test_table"]
-
-    sqlite_database_table = sqlite_feature_store.get_table(
-        database_name=None,
-        schema_name=None,
-        table_name="test_table",
-    )
-    expected_dtypes = pd.Series(
-        {
-            "event_timestamp": "TIMESTAMP",
-            "created_at": "INT",
-            "cust_id": "INT",
-            "user id": "INT",
-            "product_action": "VARCHAR",
-            "session_id": "INT",
-            "amount": "FLOAT",
-        }
-    )
-    pd.testing.assert_series_equal(expected_dtypes, sqlite_database_table.dtypes)
-
-    event_data = EventData.from_tabular_source(
-        tabular_source=sqlite_database_table,
-        name="sqlite_event_data",
-        event_id_column="created_at",
-        event_timestamp_column="event_timestamp",
-    )
-    event_view = EventView.from_event_data(event_data)
-    assert event_view.columns == [
-        "event_timestamp",
-        "created_at",
-        "cust_id",
-        "user id",
-        "product_action",
-        "session_id",
-        "amount",
-    ]
-
-    # need to specify the constant as float, otherwise results will get truncated
-    event_view["cust_id_x_session_id"] = event_view["cust_id"] * event_view["session_id"] / 1000.0
-    event_view["lucky_customer"] = event_view["cust_id_x_session_id"] > 140.0
-
-    # construct expected results
-    expected = transaction_data.copy()
-    expected["cust_id_x_session_id"] = (expected["cust_id"] * expected["session_id"]) / 1000.0
-    expected["lucky_customer"] = (expected["cust_id_x_session_id"] > 140.0).astype(int)
-
-    # check agreement
-    output = event_view.preview(limit=expected.shape[0])
-    # sqlite returns str for timestamp columns, formatted up to %f precision with quirks
-    expected["event_timestamp"] = expected["event_timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
-    expected["event_timestamp"] = expected["event_timestamp"].str.replace(
-        ".000000", "", regex=False
-    )
-    pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
 
 def iet_entropy(view, group_by_col, window, name):

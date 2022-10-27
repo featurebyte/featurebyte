@@ -10,7 +10,6 @@ from bson import ObjectId
 
 from featurebyte import FeatureStore, SourceType
 from featurebyte.common.model_util import get_version
-from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.exception import (
     CredentialsError,
     DocumentConflictError,
@@ -22,7 +21,7 @@ from featurebyte.exception import (
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature_store import SQLiteDetails, TableDetails
+from featurebyte.models.feature_store import FeatureStoreModel, SQLiteDetails, TableDetails
 from featurebyte.schema.feature import FeatureCreate
 from featurebyte.service.feature import FeatureService
 
@@ -58,7 +57,7 @@ async def test_insert_feature_registry__non_snowflake_feature_store(
     """
     Test insert_feature_registry function (when feature store is not snowflake)
     """
-    feature_store = ExtendedFeatureStoreModel(
+    feature_store = FeatureStoreModel(
         name="sq_feature_store",
         type=SourceType.SQLITE,
         details=SQLiteDetails(filename="some_filename"),

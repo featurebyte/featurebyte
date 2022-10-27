@@ -7,10 +7,10 @@ from typing import List, Optional
 
 from pydantic import Field, StrictStr
 
-from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId, VersionIdentifier
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListStatus
+from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 
@@ -21,7 +21,7 @@ class ExtendedFeatureModel(FeatureModel):
     """
 
     is_default: Optional[bool] = Field(allow_mutation=False)
-    feature_store: ExtendedFeatureStoreModel
+    feature_store: FeatureStoreModel
 
     @property
     def tile_specs(self) -> list[TileSpec]:

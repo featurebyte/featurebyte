@@ -21,7 +21,7 @@ from tests.util.helper import assert_equal_with_expected_fixture
 @pytest.fixture(name="mocked_session")
 def mocked_session_fixture():
     """Fixture for a mocked session object"""
-    with patch("featurebyte.core.generic.SessionManager") as session_manager_cls:
+    with patch("featurebyte.service.mixin.SessionManager") as session_manager_cls:
         session_manager = AsyncMock(name="MockedSessionManager")
         mocked_session = Mock(name="MockedSession", sf_schema="FEATUREBYTE")
         mocked_session.register_temp_table = AsyncMock()

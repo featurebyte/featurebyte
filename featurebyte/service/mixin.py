@@ -8,11 +8,11 @@ from typing import Any, Optional, TypeVar
 from bson.objectid import ObjectId
 from pydantic import ValidationError
 
-from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.exception import CredentialsError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.session.base import BaseSession
+from featurebyte.session.manager import SessionManager
 
 Document = TypeVar("Document")
 
@@ -108,14 +108,14 @@ class OpsServiceMixin:
             When the credentials used to access the feature store is missing or invalid
         """
         try:
-            feature_store = ExtendedFeatureStoreModel(**feature_store.dict())
-            return await feature_store.get_session(
+            session_manager = SessionManager(
                 credentials={
                     feature_store.name: await get_credential(
                         user_id=self.user.id, feature_store_name=feature_store.name
                     )
                 }
             )
+            return await session_manager.get_session(feature_store)
         except ValidationError as exc:
             raise CredentialsError(
                 f'Credential used to access FeatureStore (name: "{feature_store.name}") is missing or invalid.'

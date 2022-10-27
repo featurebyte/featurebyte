@@ -13,6 +13,7 @@ from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
 )
+from featurebyte.session.manager import SessionManager
 
 
 @pytest.mark.asyncio
@@ -23,7 +24,9 @@ async def test_get_session(
     Test DatabaseSource.get_session return expected session
     """
     _ = snowflake_connector, snowflake_execute_query
-    session = await snowflake_feature_store.get_session(credentials=config.credentials)
+    session = await SessionManager(credentials=config.credentials).get_session(
+        snowflake_feature_store
+    )
     assert session.dict() == {
         "source_type": "snowflake",
         "account": "sf_account",
