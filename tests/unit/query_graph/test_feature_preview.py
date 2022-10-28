@@ -4,6 +4,7 @@ Tests for feature preview SQL generation
 import pytest
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from tests.util.helper import assert_equal_with_expected_fixture
 
@@ -17,6 +18,7 @@ def test_get_feature_preview_sql(query_graph_with_groupby, update_fixtures):
     graph = query_graph_with_groupby
     node = graph.get_node_by_name("groupby_1")
     preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
         point_in_time_and_serving_name=point_in_time_and_serving_name,
@@ -39,6 +41,7 @@ def test_get_feature_preview_sql__category_groupby(
     graph = query_graph_with_category_groupby
     node = graph.get_node_by_name("groupby_1")
     preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
         point_in_time_and_serving_name=point_in_time_and_serving_name,
@@ -61,6 +64,7 @@ def test_get_feature_preview_sql__multiple_nodes(
     }
     groupby_nodes, graph = query_graph_with_similar_groupby_nodes
     preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=groupby_nodes,
         point_in_time_and_serving_name=point_in_time_and_serving_name,
@@ -81,6 +85,7 @@ def test_get_feature_preview_sql__complex_feature(complex_feature_query_graph, u
     }
     node, graph = complex_feature_query_graph
     preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
         point_in_time_and_serving_name=point_in_time_and_serving_name,
@@ -103,6 +108,7 @@ def test_get_feature_preview_sql_databricks(query_graph_with_groupby, update_fix
     graph = query_graph_with_groupby
     node = graph.get_node_by_name("groupby_1")
     preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
         graph=graph,
         nodes=[node],
         point_in_time_and_serving_name=point_in_time_and_serving_name,

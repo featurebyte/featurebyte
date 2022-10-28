@@ -3,45 +3,15 @@ Test MongoDB persistent backend
 """
 from __future__ import annotations
 
-from typing import AsyncIterator, Tuple
-
-from contextlib import asynccontextmanager
 from datetime import datetime
 from unittest.mock import patch
 
 import pytest
-import pytest_asyncio
 from bson import ObjectId
-from mongomock_motor import AsyncMongoMockClient
 from pymongo.errors import DuplicateKeyError
 
 from featurebyte.models.persistent import AuditActionType
 from featurebyte.persistent import DuplicateDocumentError
-from featurebyte.persistent.mongo import MongoDB
-
-
-@pytest_asyncio.fixture(name="mongo_persistent")
-async def mongo_persistent_fixture() -> Tuple[MongoDB, AsyncMongoMockClient]:
-    """
-    Patched MongoDB fixture for testing
-
-    Returns
-    -------
-    Tuple[MongoDB, AsyncMongoMockClient]
-        Patched MongoDB object and MongoClient
-    """
-    with patch("motor.motor_asyncio.AsyncIOMotorClient.__new__") as mock_new:
-        mongo_client = AsyncMongoMockClient()
-        mock_new.return_value = mongo_client
-        persistent = MongoDB(uri="mongodb://server.example.com:27017", database="test")
-
-        # skip session in unit tests
-        @asynccontextmanager
-        async def start_transaction() -> AsyncIterator[MongoDB]:
-            yield persistent
-
-        with patch.object(persistent, "start_transaction", start_transaction):
-            yield persistent, mongo_client
 
 
 @pytest.mark.asyncio

@@ -2,9 +2,11 @@
 Base info related schema
 """
 # pylint: disable=too-few-public-methods
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from datetime import datetime
+
+from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel, UniqueValuesConstraint
 
@@ -37,3 +39,14 @@ class BaseDocumentServiceUpdateSchema(FeatureByteBaseModel):
         """
 
         unique_constraints: List[UniqueValuesConstraint] = []
+
+
+class PaginationMixin(FeatureByteBaseModel):
+    """
+    Add page and page_size
+    """
+
+    page: int = Field(default=1, gt=0)
+    page_size: int = Field(default=10, gt=0, le=100)
+    total: int
+    data: List[Any]

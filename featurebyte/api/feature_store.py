@@ -10,11 +10,9 @@ from http import HTTPStatus
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
-from featurebyte.common.utils import run_async
 from featurebyte.config import Configurations
-from featurebyte.core.generic import ExtendedFeatureStoreModel
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.models.feature_store import TableDetails, TabularSource
+from featurebyte.models.feature_store import FeatureStoreModel, TableDetails, TabularSource
 from featurebyte.schema.feature_store import FeatureStoreCreate
 
 if TYPE_CHECKING:
@@ -23,7 +21,7 @@ else:
     DatabaseTable = TypeVar("DatabaseTable")
 
 
-class FeatureStore(ExtendedFeatureStoreModel, SavableApiObject):
+class FeatureStore(FeatureStoreModel, SavableApiObject):
     """
     FeatureStore class
     """
@@ -49,10 +47,6 @@ class FeatureStore(ExtendedFeatureStoreModel, SavableApiObject):
         RecordRetrievalException
             Failed to retrieve database list
         """
-        if self.details.is_local_source:
-            session = run_async(self.get_session)
-            return cast(List[str], run_async(session.list_databases))
-
         client = Configurations().get_client()
         response = client.post(url="/feature_store/database", json=self.json_dict())
         if response.status_code == HTTPStatus.OK:
@@ -78,10 +72,6 @@ class FeatureStore(ExtendedFeatureStoreModel, SavableApiObject):
         RecordRetrievalException
             Failed to retrieve database schema list
         """
-        if self.details.is_local_source:
-            session = run_async(self.get_session)
-            return cast(List[str], run_async(session.list_schemas, database_name=database_name))
-
         client = Configurations().get_client()
         response = client.post(
             url=f"/feature_store/schema?database_name={database_name}", json=self.json_dict()
@@ -115,15 +105,6 @@ class FeatureStore(ExtendedFeatureStoreModel, SavableApiObject):
         RecordRetrievalException
             Failed to retrieve database table list
         """
-        if self.details.is_local_source:
-            session = run_async(self.get_session)
-            return cast(
-                List[str],
-                run_async(
-                    session.list_tables, database_name=database_name, schema_name=schema_name
-                ),
-            )
-
         client = Configurations().get_client()
         response = client.post(
             url=f"/feature_store/table?database_name={database_name}&schema_name={schema_name}",

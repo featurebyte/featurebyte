@@ -26,11 +26,7 @@ from featurebyte.api.feature import Feature
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.model_util import get_version
-from featurebyte.common.utils import (
-    dataframe_from_arrow_stream,
-    dataframe_to_arrow_bytes,
-    run_async,
-)
+from featurebyte.common.utils import dataframe_from_arrow_stream, dataframe_to_arrow_bytes
 from featurebyte.config import Configurations
 from featurebyte.core.mixin import ParentMixin
 from featurebyte.exception import (
@@ -49,11 +45,6 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
-from featurebyte.query_graph.sql.feature_historical import (
-    get_historical_features_sql,
-    validate_historical_requests_point_in_time,
-    validate_request_schema,
-)
 from featurebyte.schema.feature_list import (
     FeatureCluster,
     FeatureListCreate,
@@ -64,8 +55,6 @@ from featurebyte.schema.feature_list import (
     FeatureVersionInfo,
 )
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceUpdate
-from featurebyte.service.preview import PreviewService
-from featurebyte.utils.credential import get_credential
 
 
 class BaseFeatureGroup(FeatureByteBaseModel):
@@ -239,18 +228,11 @@ class BaseFeatureGroup(FeatureByteBaseModel):
             point_in_time_and_serving_name=point_in_time_and_serving_name,
         )
 
-        if self._features[0].feature_store.details.is_local_source:
-            result = run_async(
-                PreviewService(user=None, persistent=None).preview_featurelist,
-                featurelist_preview=payload,
-                get_credential=get_credential,
-            )
-        else:
-            client = Configurations().get_client()
-            response = client.post(url="/feature_list/preview", json=payload.json_dict())
-            if response.status_code != HTTPStatus.OK:
-                raise RecordRetrievalException(response)
-            result = response.json()
+        client = Configurations().get_client()
+        response = client.post(url="/feature_list/preview", json=payload.json_dict())
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        result = response.json()
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
@@ -265,17 +247,24 @@ class BaseFeatureGroup(FeatureByteBaseModel):
         -------
         str
             FeatureGroup SQL
+
+        Raises
+        ------
+        RecordRetrievalException
+            Failed to get feature list SQL
         """
         payload = FeatureListSQL(
             feature_clusters=self._get_feature_clusters(),
         )
 
+        client = Configurations().get_client()
+        response = client.post("/feature_list/sql", json=payload.json_dict())
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+
         return cast(
             str,
-            run_async(
-                PreviewService(user=None, persistent=None).featurelist_sql,
-                featurelist_sql=payload,
-            ),
+            response.json(),
         )
 
 
@@ -507,23 +496,29 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         Returns
         -------
         str
+
+        Raises
+        ------
+        RecordRetrievalException
+            Get historical features request failed
         """
-        # Validate request
-        validate_request_schema(training_events)
-        training_events = validate_historical_requests_point_in_time(training_events)
-
-        # multiple feature stores not supported
-        feature_clusters = self._get_feature_clusters()
-        assert len(feature_clusters) == 1
-
-        feature_cluster = feature_clusters[0]
-        source_type = self._features[0].feature_store.type
-        return get_historical_features_sql(
-            graph=feature_cluster.graph,
-            nodes=feature_cluster.nodes,
-            request_table_columns=training_events.columns.tolist(),
+        payload = FeatureListGetHistoricalFeatures(
+            feature_clusters=self._get_feature_clusters(),
             serving_names_mapping=serving_names_mapping,
-            source_type=source_type,
+        )
+
+        client = Configurations().get_client()
+        response = client.post(
+            "/feature_list/historical_features_sql",
+            data={"payload": payload.json()},
+            files={"training_events": dataframe_to_arrow_bytes(training_events)},
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+
+        return cast(
+            str,
+            response.json(),
         )
 
     @typechecked
@@ -557,33 +552,15 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
             serving_names_mapping=serving_names_mapping,
         )
 
-        if self._features[0].feature_store.details.is_local_source:
-
-            async def _get_historical_features(*args: Any, **kwargs: Any) -> bytes:
-                bytestream = await PreviewService(
-                    user=None, persistent=None
-                ).get_historical_features(*args, **kwargs)
-                content = b""
-                async for data in bytestream:
-                    content += data
-                return content
-
-            content = run_async(
-                _get_historical_features,
-                training_events=training_events,
-                featurelist_get_historical_features=payload,
-                get_credential=get_credential,
-            )
-        else:
-            client = Configurations().get_client()
-            response = client.post(
-                "/feature_list/historical_features",
-                data={"payload": payload.json()},
-                files={"training_events": dataframe_to_arrow_bytes(training_events)},
-            )
-            if response.status_code != HTTPStatus.OK:
-                raise RecordRetrievalException(response)
-            content = response.content
+        client = Configurations().get_client()
+        response = client.post(
+            "/feature_list/historical_features",
+            data={"payload": payload.json()},
+            files={"training_events": dataframe_to_arrow_bytes(training_events)},
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        content = response.content
         return dataframe_from_arrow_stream(content)
 
     @typechecked

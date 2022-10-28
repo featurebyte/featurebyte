@@ -47,16 +47,16 @@ install-lock:
 	poetry lock -n
 
 install-main:
-	poetry install -n --only=main
+	poetry install -n --only=main,server
 
 install-dev:
-	poetry install -n --only=dev
+	poetry install -n --only=dev,server
 
 install-lint:
-	poetry install -n --only=lint
+	poetry install -n --only=lint,server
 
 install-docs:
-	poetry install -n --only=docs
+	poetry install -n --only=docs,server
 
 install-databricks-sql-connector:
 	# databricks-sql-connector requires pyarrow = "^9.0.0" but snowflake-connector-python requires
@@ -117,7 +117,7 @@ lint-safety: generate-requirements-file
 
 #* Testing
 test: test-setup
-	@poetry run pytest --timeout=180 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
+	@poetry run pytest --timeout=300 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
 
 	${MAKE} test-teardown
 

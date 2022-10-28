@@ -13,8 +13,7 @@ import pandas as pd
 from pydantic import Field, StrictStr
 from typeguard import typechecked
 
-from featurebyte.common.utils import run_async
-from featurebyte.config import Configurations, Credentials
+from featurebyte.config import Configurations
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import FeatureStoreModel, TabularSource
@@ -22,36 +21,9 @@ from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.schema.feature_store import FeatureStorePreview
-from featurebyte.session.base import BaseSession
-from featurebyte.session.manager import SessionManager
 
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
-
-
-class ExtendedFeatureStoreModel(FeatureStoreModel):
-    """
-    ExtendedFeatureStoreModel class contains method to construct a session
-    """
-
-    async def get_session(self, credentials: Credentials | None = None) -> BaseSession:
-        """
-        Get data source session based on provided configuration
-
-        Parameters
-        ----------
-        credentials: Credentials
-            data source to credential mapping used to initiate a new connection
-
-        Returns
-        -------
-        BaseSession
-        """
-        if credentials is None:
-            config = Configurations()
-            credentials = config.credentials
-        session_manager = SessionManager(credentials=credentials)
-        return await session_manager.get_session(self)
 
 
 QueryObjectT = TypeVar("QueryObjectT", bound="QueryObject")
@@ -66,7 +38,7 @@ class QueryObject(FeatureByteBaseModel):
     node_name: str
     row_index_lineage: Tuple[StrictStr, ...]
     tabular_source: TabularSource = Field(allow_mutation=False)
-    feature_store: ExtendedFeatureStoreModel = Field(exclude=True, allow_mutation=False)
+    feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
 
     @property
     def node(self) -> Node:
@@ -133,10 +105,6 @@ class QueryObject(FeatureByteBaseModel):
         RecordRetrievalException
             Preview request failed
         """
-        if self.feature_store.details.is_local_source:
-            session = run_async(self.feature_store.get_session)
-            return run_async(session.execute_query, self.preview_sql(limit=limit))
-
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = FeatureStorePreview(
             feature_store_name=self.feature_store.name,
@@ -150,28 +118,6 @@ class QueryObject(FeatureByteBaseModel):
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
         return pd.read_json(response.json(), orient="table", convert_dates=False)
-
-    def get_session(self, credentials: Credentials | None = None) -> BaseSession:
-        """
-        Get a session based on underlying tabular source and provided credentials
-
-        Parameters
-        ----------
-        credentials : Credentials
-            data source to credential mapping used to initiate a new connection
-
-        Returns
-        -------
-        BaseSession
-        """
-        if credentials is None:
-            config = Configurations()
-            credentials = config.credentials
-
-        session = cast(
-            BaseSession, run_async(self.feature_store.get_session, credentials=credentials)
-        )
-        return session
 
     def copy(
         self: QueryObjectT,

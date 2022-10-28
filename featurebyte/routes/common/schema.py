@@ -1,24 +1,7 @@
 """
 Common classes mixin for API payload schema
 """
-from typing import Any, List
-
 from fastapi import Query
-from pydantic import Field
-
-from featurebyte.models.base import FeatureByteBaseModel
-
-
-class PaginationMixin(FeatureByteBaseModel):
-    """
-    Add page and page_size
-    """
-
-    page: int = Field(default=1, gt=0)
-    page_size: int = Field(default=10, gt=0, le=100)
-    total: int
-    data: List[Any]
-
 
 # route query parameters
 COLUMN_STR_MAX_LENGTH = 255

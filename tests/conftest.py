@@ -1,10 +1,17 @@
 """
 Common fixture for both unit and integration tests
 """
+from typing import AsyncIterator, Tuple
+
 import os
+from contextlib import asynccontextmanager
 from unittest.mock import patch
 
 import pytest
+import pytest_asyncio
+from mongomock_motor import AsyncMongoMockClient
+
+from featurebyte.persistent.mongo import MongoDB
 
 
 def pytest_configure(config):
@@ -36,3 +43,40 @@ def test_directory_fixture():
     """Test directory"""
     path = os.path.dirname(os.path.abspath(__file__))
     return path
+
+
+@pytest_asyncio.fixture(name="mongo_persistent")
+async def mongo_persistent_fixture() -> Tuple[MongoDB, AsyncMongoMockClient]:
+    """
+    Patched MongoDB fixture for testing
+
+    Returns
+    -------
+    Tuple[MongoDB, AsyncMongoMockClient]
+        Patched MongoDB object and MongoClient
+    """
+    mongo_client = AsyncMongoMockClient()
+    persistent = MongoDB(
+        uri="mongodb://server.example.com:27017", database="test", client=mongo_client
+    )
+
+    # skip session in unit tests
+    @asynccontextmanager
+    async def start_transaction() -> AsyncIterator[MongoDB]:
+        yield persistent
+
+    with patch.object(persistent, "start_transaction", start_transaction):
+        yield persistent, mongo_client
+
+
+@pytest_asyncio.fixture(name="persistent")
+async def persistent_fixture(mongo_persistent) -> MongoDB:
+    """
+    Patched persistent fixture for testing
+
+    Returns
+    -------
+    MongoDB
+    """
+    persistent, _ = mongo_persistent
+    yield persistent

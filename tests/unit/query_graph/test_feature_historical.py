@@ -11,6 +11,7 @@ from featurebyte import exception
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.enum import SourceType
 from featurebyte.models.feature_store import SQLiteDetails
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_historical import (
     get_historical_features,
     get_historical_features_sql,
@@ -21,11 +22,11 @@ from tests.util.helper import assert_equal_with_expected_fixture
 @pytest.fixture(name="mocked_session")
 def mocked_session_fixture():
     """Fixture for a mocked session object"""
-    with patch("featurebyte.core.generic.SessionManager") as session_manager_cls:
+    with patch("featurebyte.service.mixin.SessionManager") as session_manager_cls:
         session_manager = AsyncMock(name="MockedSessionManager")
         mocked_session = Mock(name="MockedSession", sf_schema="FEATUREBYTE")
         mocked_session.register_temp_table = AsyncMock()
-        session_manager.get_session.return_value = mocked_session
+        mocked_session.get_session_unique_id = Mock(return_value="1")
         session_manager_cls.return_value = session_manager
         yield mocked_session
 
@@ -137,6 +138,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     )
     assert df_request.dtypes["POINT_IN_TIME"] == "object"
 
+    mocked_session.get_session_unique_id.return_value = "1"
     _ = await get_historical_features(
         session=mocked_session,
         graph=float_feature.graph,
@@ -158,6 +160,7 @@ def test_get_historical_feature_sql(float_feature, update_fixtures):
     """Test SQL code generated for historical features is expected"""
     request_table_columns = ["POINT_IN_TIME", "cust_id", "A", "B", "C"]
     sql = get_historical_features_sql(
+        request_table_name=REQUEST_TABLE_NAME,
         graph=float_feature.graph,
         nodes=[float_feature.node],
         request_table_columns=request_table_columns,
@@ -173,6 +176,7 @@ def test_get_historical_feature_sql__serving_names_mapping(float_feature, update
     request_table_columns = ["POINT_IN_TIME", "NEW_CUST_ID", "A", "B", "C"]
     serving_names_mapping = {"cust_id": "NEW_CUST_ID"}
     sql = get_historical_features_sql(
+        request_table_name=REQUEST_TABLE_NAME,
         graph=float_feature.graph,
         nodes=[float_feature.node],
         request_table_columns=request_table_columns,

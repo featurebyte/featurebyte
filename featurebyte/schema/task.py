@@ -9,7 +9,7 @@ from uuid import UUID
 from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import PaginationMixin
 
 TaskId = Union[PydanticObjectId, UUID]
 

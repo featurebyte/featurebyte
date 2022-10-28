@@ -116,6 +116,7 @@ class TileCache(ABC):
         self,
         graph: QueryGraph,
         nodes: list[Node],
+        request_id: str,
         serving_names_mapping: dict[str, str] | None = None,
     ) -> None:
         """Check tile status for the provided features and compute missing tiles if required
@@ -128,10 +129,15 @@ class TileCache(ABC):
             List of query graph node
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
+        request_id : str
+            Request ID
         """
         tic = time.time()
         required_requests = await self.get_required_computation(
-            graph=graph, nodes=nodes, serving_names_mapping=serving_names_mapping
+            request_id=request_id,
+            graph=graph,
+            nodes=nodes,
+            serving_names_mapping=serving_names_mapping,
         )
         elapsed = time.time() - tic
         logger.debug(
@@ -171,8 +177,9 @@ class TileCache(ABC):
             await self.session.execute_query(f"DROP TABLE IF EXISTS {temp_table_name}")
         self._materialized_temp_table_names = set()
 
-    async def get_required_computation(
+    async def get_required_computation(  # pylint: disable=too-many-locals
         self,
+        request_id: str,
         graph: QueryGraph,
         nodes: list[Node],
         serving_names_mapping: dict[str, str] | None = None,
@@ -181,6 +188,8 @@ class TileCache(ABC):
 
         Parameters
         ----------
+        request_id : str
+            Request ID
         graph : QueryGraph
             Query graph
         nodes : list[Node]
@@ -206,6 +215,7 @@ class TileCache(ABC):
             unique_tile_infos=unique_tile_infos,
             tile_ids_with_tracker=tile_ids_with_tracker,
             tile_ids_no_tracker=tile_ids_without_tracker,
+            request_id=request_id,
         )
 
         # Create a validity flag for each tile id
@@ -214,7 +224,7 @@ class TileCache(ABC):
             tile_cache_validity[tile_id] = False
         if tile_ids_with_tracker:
             existing_validity = await self._get_tile_cache_validity_from_working_table(
-                tile_ids=tile_ids_with_tracker
+                request_id=request_id, tile_ids=tile_ids_with_tracker
             )
             tile_cache_validity.update(existing_validity)
         elapsed = time.time() - tic
@@ -228,7 +238,8 @@ class TileCache(ABC):
             else:
                 logger.debug(f"Need to recompute cache for {tile_id}")
                 request = self._construct_request_from_working_table(
-                    tile_info=unique_tile_infos[tile_id]
+                    request_id=request_id,
+                    tile_info=unique_tile_infos[tile_id],
                 )
                 requests.append(request)
 
@@ -301,6 +312,7 @@ class TileCache(ABC):
         unique_tile_infos: dict[str, TileGenSql],
         tile_ids_with_tracker: list[str],
         tile_ids_no_tracker: list[str],
+        request_id: str,
     ) -> None:
         """Register a temp table from which we can query whether each (POINT_IN_TIME, ENTITY_ID,
         TILE_ID) pair has updated tile cache: a null value in this table indicates that the pair has
@@ -333,9 +345,11 @@ class TileCache(ABC):
             List of tile ids with existing tracker tables
         tile_ids_no_tracker : list[str]
             List of tile ids without existing tracker table
+        request_id : str
+            Request ID
         """
         # pylint: disable=too-many-locals
-        table_expr = select().from_(f"{REQUEST_TABLE_NAME} AS REQ")
+        table_expr = select().from_(f"{REQUEST_TABLE_NAME}_{request_id} AS REQ")
 
         columns = []
         for table_index, tile_id in enumerate(tile_ids_with_tracker):
@@ -373,18 +387,21 @@ class TileCache(ABC):
         table_expr = table_expr.select("REQ.*", *columns)
         table_sql = sql_to_string(table_expr, source_type=self.source_type)
 
-        await self.session.register_temp_table_with_query(
-            InternalName.TILE_CACHE_WORKING_TABLE.value, table_sql
+        tile_cache_working_table_name = (
+            f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
         )
-        self._materialized_temp_table_names.add(InternalName.TILE_CACHE_WORKING_TABLE)
+        await self.session.register_temp_table_with_query(tile_cache_working_table_name, table_sql)
+        self._materialized_temp_table_names.add(tile_cache_working_table_name)
 
     async def _get_tile_cache_validity_from_working_table(
-        self, tile_ids: list[str]
+        self, request_id: str, tile_ids: list[str]
     ) -> dict[str, bool]:
         """Get a dictionary indicating whether each tile table has updated enough tiles
 
         Parameters
         ----------
+        request_id : str
+            Request ID
         tile_ids : list[str]
             List of tile ids
 
@@ -400,8 +417,11 @@ class TileCache(ABC):
             expr = f"(COUNT({tile_id}) = COUNT(*)) AS {tile_id}"
             validity_exprs.append(expr)
 
+        tile_cache_working_table_name = (
+            f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
+        )
         tile_cache_validity_sql = (
-            select(*validity_exprs).from_(InternalName.TILE_CACHE_WORKING_TABLE.value)
+            select(*validity_exprs).from_(tile_cache_working_table_name)
         ).sql(pretty=True)
         df_validity = await self.session.execute_query(tile_cache_validity_sql)
 
@@ -413,12 +433,14 @@ class TileCache(ABC):
         return out
 
     def _construct_request_from_working_table(
-        self, tile_info: TileGenSql
+        self, request_id: str, tile_info: TileGenSql
     ) -> OnDemandTileComputeRequest:
         """Construct a compute request for a tile table that is known to require computation
 
         Parameters
         ----------
+        request_id : str
+            Request ID
         tile_info : TileGenSql
             Tile table information
 
@@ -450,6 +472,9 @@ class TileCache(ABC):
         # This is the groupby keys used to construct the entity table
         serving_names = [f"{quoted_identifier(col).sql()}" for col in tile_info.serving_names]
 
+        tile_cache_working_table_name = (
+            f"{InternalName.TILE_CACHE_WORKING_TABLE.value}_{request_id}"
+        )
         entity_table_expr = (
             select(
                 *serving_names_to_keys,
@@ -459,7 +484,7 @@ class TileCache(ABC):
                 expressions.alias_(start_date_expr, InternalName.ENTITY_TABLE_START_DATE.value),
                 expressions.alias_(end_date_expr, InternalName.ENTITY_TABLE_END_DATE.value),
             )
-            .from_(InternalName.TILE_CACHE_WORKING_TABLE.value)
+            .from_(tile_cache_working_table_name)
             .where(working_table_filter)
             .group_by(*serving_names)
         )

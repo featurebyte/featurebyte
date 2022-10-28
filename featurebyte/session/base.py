@@ -80,6 +80,7 @@ class BaseSession(BaseModel):
 
     source_type: SourceType
     _connection: Any = PrivateAttr(default=None)
+    _unique_id: int = PrivateAttr(default=0)
 
     async def initialize(self) -> None:
         """
@@ -96,6 +97,16 @@ class BaseSession(BaseModel):
         Any
         """
         return self._connection
+
+    def get_session_unique_id(self) -> str:
+        """Generate unique id within the session
+
+        Returns
+        -------
+        str
+        """
+        self._unique_id += 1
+        return str(self._unique_id)
 
     @abstractmethod
     async def list_databases(self) -> list[str]:
@@ -185,7 +196,7 @@ class BaseSession(BaseModel):
             writer.write_batch(batch)
 
     async def get_async_query_stream(
-        self, query: str, timeout: float = 180
+        self, query: str, timeout: float = 600
     ) -> AsyncGenerator[bytes, None]:
         """
         Stream results from asynchronous query as compressed arrow bytestream
@@ -252,7 +263,7 @@ class BaseSession(BaseModel):
             input_pipe.close()
             thread.join(timeout=0)
 
-    async def execute_query(self, query: str, timeout: float = 0) -> pd.DataFrame | None:
+    async def execute_query(self, query: str, timeout: float = 600) -> pd.DataFrame | None:
         """
         Execute SQL query
 

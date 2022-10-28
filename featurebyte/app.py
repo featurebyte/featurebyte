@@ -6,8 +6,6 @@ from __future__ import annotations
 
 from typing import Callable
 
-import signal
-
 from fastapi import Depends, FastAPI, Request
 
 import featurebyte.routes.entity.api as entity_api
@@ -26,7 +24,7 @@ from featurebyte.middleware import request_handler
 from featurebyte.routes.app_container import AppContainer
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.utils.credential import get_credential
-from featurebyte.utils.persistent import cleanup_persistent, get_persistent
+from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
 
 
@@ -112,27 +110,4 @@ def get_app() -> FastAPI:
     return _app
 
 
-def _sigint_handler(signum, frame):  # type: ignore
-    """
-    Clean up GitDB persistent and raise KeyboardInterrupt as the default SIGINT handler
-
-    Parameters
-    ----------
-    signum : int
-        Signal number
-    frame : frame
-        Frame object
-
-    Raises
-    ------
-    KeyboardInterrupt
-        After performing persistent clean up
-    """
-    cleanup_persistent(signum, frame)
-    raise KeyboardInterrupt
-
-
 app = get_app()
-
-signal.signal(signal.SIGTERM, cleanup_persistent)
-signal.signal(signal.SIGINT, _sigint_handler)

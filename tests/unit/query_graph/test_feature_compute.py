@@ -7,7 +7,7 @@ import textwrap
 import pytest
 
 from featurebyte.enum import SourceType
-from featurebyte.query_graph.sql.common import AggregationSpec, FeatureSpec
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, AggregationSpec, FeatureSpec
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner, RequestTablePlan
 
 
@@ -79,7 +79,7 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
         == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
     )
 
-    ctes = plan.construct_request_tile_indices_ctes()
+    ctes = plan.construct_request_tile_indices_ctes(request_table_name=REQUEST_TABLE_NAME)
     assert len(ctes) == 1
 
     cte = ctes[0]
@@ -115,7 +115,7 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
         == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
     )
 
-    ctes = plan.construct_request_tile_indices_ctes()
+    ctes = plan.construct_request_tile_indices_ctes(request_table_name=REQUEST_TABLE_NAME)
     assert len(ctes) == 2
 
     # check expanded table for 2h

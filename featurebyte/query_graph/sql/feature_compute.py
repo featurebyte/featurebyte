@@ -19,7 +19,6 @@ from featurebyte.query_graph.sql.ast.count_dict import MISSING_VALUE_REPLACEMENT
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
-    REQUEST_TABLE_NAME,
     AggregationSpec,
     FeatureSpec,
     SQLType,
@@ -132,8 +131,16 @@ class RequestTablePlan(ABC):
         )
         return unique_tile_indices_id
 
-    def construct_request_tile_indices_ctes(self) -> list[tuple[str, expressions.Select]]:
+    def construct_request_tile_indices_ctes(
+        self,
+        request_table_name: str,
+    ) -> list[tuple[str, expressions.Select]]:
         """Construct SQL statements that build the expanded request tables
+
+        Parameters
+        ----------
+        request_table_name : str
+            Name of request table to use
 
         Returns
         -------
@@ -153,6 +160,7 @@ class RequestTablePlan(ABC):
                 frequency=frequency,
                 time_modulo_frequency=time_modulo_frequency,
                 serving_names=list(serving_names),
+                request_table_name=request_table_name,
             )
             expanded_request_ctes.append((quoted_identifier(table_name).sql(), expanded_table_sql))
         return expanded_request_ctes
@@ -163,6 +171,7 @@ class RequestTablePlan(ABC):
         frequency: int,
         time_modulo_frequency: int,
         serving_names: list[str],
+        request_table_name: str,
     ) -> expressions.Select:
         """Construct SQL for expanded SQLs
 
@@ -176,6 +185,8 @@ class RequestTablePlan(ABC):
             Time modulo frequency in feature job setting
         serving_names: list[str]
             List of serving names corresponding to entities
+        request_table_name: str
+            Name of request table to use
 
         Returns
         -------
@@ -188,7 +199,7 @@ class RequestTablePlan(ABC):
         select_distinct_expr = (
             expressions.Select(distinct=True)
             .select(SpecialColumnName.POINT_IN_TIME.value, *quoted_serving_names)
-            .from_(REQUEST_TABLE_NAME)
+            .from_(request_table_name)
         )
         num_tiles = window_size // frequency
         point_in_time_epoch_expr = self.adapter.to_epoch_seconds(
@@ -544,12 +555,17 @@ class FeatureExecutionPlan(ABC):
         return updated_table_expr, agg_result_name_aliases
 
     def construct_combined_aggregation_cte(
-        self, point_in_time_column: str, request_table_columns: Optional[list[str]]
+        self,
+        request_table_name: str,
+        point_in_time_column: str,
+        request_table_columns: Optional[list[str]],
     ) -> tuple[str, expressions.Select]:
         """Construct SQL code for all aggregations
 
         Parameters
         ----------
+        request_table_name : str
+            Name of request table to use
         point_in_time_column : str
             Point in time column
         request_table_columns : Optional[list[str]]
@@ -560,7 +576,7 @@ class FeatureExecutionPlan(ABC):
         tuple[str, expressions.Select]
             Tuple of table name and SQL expression
         """
-        table_expr = select().from_(f"{REQUEST_TABLE_NAME} AS REQ")
+        table_expr = select().from_(f"{request_table_name} AS REQ")
         qualified_aggregation_names = []
 
         for i, agg_specs in enumerate(self.aggregation_spec_set.get_grouped_aggregation_specs()):
@@ -644,6 +660,7 @@ class FeatureExecutionPlan(ABC):
 
     def construct_combined_sql(
         self,
+        request_table_name: str,
         point_in_time_column: str,
         request_table_columns: list[str],
         prior_cte_statements: Optional[list[tuple[str, expressions.Select]]] = None,
@@ -652,6 +669,8 @@ class FeatureExecutionPlan(ABC):
 
         Parameters
         ----------
+        request_table_name : str
+            Name of request table to use
         point_in_time_column : str
             Point in time column
         request_table_columns : list[str]
@@ -669,9 +688,15 @@ class FeatureExecutionPlan(ABC):
             assert isinstance(prior_cte_statements, list)
             cte_statements.extend(prior_cte_statements)
 
-        cte_statements.extend(self.request_table_plan.construct_request_tile_indices_ctes())
+        cte_statements.extend(
+            self.request_table_plan.construct_request_tile_indices_ctes(request_table_name)
+        )
         cte_statements.append(
-            self.construct_combined_aggregation_cte(point_in_time_column, request_table_columns)
+            self.construct_combined_aggregation_cte(
+                request_table_name,
+                point_in_time_column,
+                request_table_columns,
+            )
         )
         cte_context = construct_cte_sql(cte_statements)
 

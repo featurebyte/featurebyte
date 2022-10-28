@@ -87,29 +87,24 @@ repository = "https://github.com/featurebyte/featurebyte"
 version = "0.1.0"
 
 [tool.poetry.dependencies]
-GitPython = "^3.1.27"
 PyYAML = "^6.0"
-aiofiles = "^22.1.0"
 alive-progress = "^2.4.1"
 asyncache = "^0.1.1"
-cachetools = "^5.2.0"
-databricks-cli = "^0.17.3"
-fastapi = "^0.85.1"
-featurebyte-freeware = { version = "^0.1.0", allow-prereleases = true, source = "featurebyte_np" }
 importlib_metadata = {version = "^4.5.0", python = "^3.8"}
-jinja2 = "^3.1.2"
 lazy-object-proxy = "^1.7.1"
 loguru = "^0.6.0"
-motor = "^3.0.0"
 pandas = "^1.4.2"
 pyarrow = "^8.0.0,<9.0"   # "9.0.0" causes seg faults
 pydantic = "^1.9.1"
 pymongo = "^4.1.1"
 python = ">=3.8,<3.11"
 python-multipart = "^0.0.5"
-snowflake-connector-python = "^2.7.7"
+requests = "^2.27.1"
 sqlglot = "^2.3.2,<3.0"   # ^3.0.0 causes test failure maybe due to syntax changes
 typeguard = "^2.13.3"
+
+[tool.poetry.extras]
+server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
@@ -124,7 +119,6 @@ pytest-cov = "^4.0.0"
 pytest-timeout = "^2.1.0"
 pytest-xdist = "^3.0.2"
 pyupgrade = "^2.37.2"
-requests = "^2.27.1"
 toml-sort = "^0.20.0"
 uvicorn = "^0.18.2"
 
@@ -158,6 +152,16 @@ types-tzlocal = "^4.2.2"
 types-ujson = "^5.4.0"
 types-urllib3 = "^1.26.16"
 
+[tool.poetry.group.server.dependencies]
+aiofiles = "^22.1.0"
+cachetools = "^5.2.0"
+databricks-cli = "^0.17.3"
+fastapi = "^0.85.1"
+featurebyte-freeware = { version = "^0.1.0", allow-prereleases = true, source = "featurebyte_np" }
+jinja2 = "^3.1.2"
+motor = "^3.0.0"
+snowflake-connector-python = "^2.7.7"
+
 [[tool.poetry.source]]
 name = "featurebyte_np"
 secondary = true
@@ -165,6 +169,7 @@ url = "https://us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featureby
 
 [tool.pylint.classes]  # https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml
 max-args = 10
+max-locals = 20
 
 [tool.pylint.design]
 max-attributes = 8

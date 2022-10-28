@@ -13,7 +13,11 @@ from featurebyte.enum import SpecialColumnName
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.generic import GroupbyNode
-from featurebyte.query_graph.sql.feature_historical import get_historical_features
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.sql.feature_historical import (
+    get_historical_features,
+    get_historical_features_sql,
+)
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.schema.feature import FeaturePreview, FeatureSQL
@@ -89,7 +93,7 @@ class PreviewService(OpsServiceMixin):
         preview_sql = GraphInterpreter(
             preview.graph, source_type=feature_store.type
         ).construct_preview_sql(node_name=preview.node_name, num_rows=limit)
-        result = await db_session.execute_query(preview_sql, timeout=180)
+        result = await db_session.execute_query(preview_sql)
         return self._convert_dataframe_as_json(result)
 
     async def preview_feature(self, feature_preview: FeaturePreview, get_credential: Any) -> str:
@@ -139,12 +143,13 @@ class PreviewService(OpsServiceMixin):
             get_credential=get_credential,
         )
         preview_sql = get_feature_preview_sql(
+            request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.get_session_unique_id()}",
             graph=graph,
             nodes=[feature_node],
             point_in_time_and_serving_name=feature_preview.point_in_time_and_serving_name,
             source_type=feature_store.type,
         )
-        result = await db_session.execute_query(preview_sql, timeout=180)
+        result = await db_session.execute_query(preview_sql)
         return self._convert_dataframe_as_json(result)
 
     async def preview_featurelist(
@@ -188,12 +193,13 @@ class PreviewService(OpsServiceMixin):
                 get_credential=get_credential,
             )
             preview_sql = get_feature_preview_sql(
+                request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.get_session_unique_id()}",
                 graph=feature_cluster.graph,
                 nodes=feature_cluster.nodes,
                 point_in_time_and_serving_name=point_in_time_and_serving_name,
                 source_type=feature_store.type,
             )
-            _result = await db_session.execute_query(preview_sql, timeout=180)
+            _result = await db_session.execute_query(preview_sql)
             if result is None:
                 result = _result
             else:
@@ -270,6 +276,7 @@ class PreviewService(OpsServiceMixin):
             feature_sql.node_name
         ).parameters.feature_store_details.type
         preview_sql = get_feature_preview_sql(
+            request_table_name=REQUEST_TABLE_NAME,
             graph=graph,
             nodes=[feature_node],
             source_type=source_type,
@@ -278,7 +285,7 @@ class PreviewService(OpsServiceMixin):
 
     async def featurelist_sql(self, featurelist_sql: FeatureListSQL) -> str:
         """
-        Preview a FeatureList
+        Get FeatureList SQL
 
         Parameters
         ----------
@@ -288,7 +295,7 @@ class PreviewService(OpsServiceMixin):
         Returns
         -------
         str
-            Dataframe converted to json string
+            SQL statements
         """
 
         preview_sqls = []
@@ -297,6 +304,7 @@ class PreviewService(OpsServiceMixin):
                 feature_cluster.node_names[0]
             ).parameters.feature_store_details.type
             preview_sql = get_feature_preview_sql(
+                request_table_name=REQUEST_TABLE_NAME,
                 graph=feature_cluster.graph,
                 nodes=feature_cluster.nodes,
                 source_type=source_type,
@@ -304,3 +312,41 @@ class PreviewService(OpsServiceMixin):
             preview_sqls.append(preview_sql)
 
         return "\n\n".join(preview_sqls)
+
+    async def get_historical_features_sql(
+        self,
+        training_events: pd.DataFrame,
+        featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
+    ) -> str:
+        """
+        Get historical features SQL for Feature List
+
+        Parameters
+        ----------
+        training_events: pd.DataFrame
+            Training events data
+        featurelist_get_historical_features: FeatureListGetHistoricalFeatures
+            FeatureListGetHistoricalFeatures object
+
+        Returns
+        -------
+        str
+            SQL statements
+        """
+        # multiple feature stores not supported
+        feature_clusters = featurelist_get_historical_features.feature_clusters
+        assert len(feature_clusters) == 1
+        feature_cluster = feature_clusters[0]
+
+        source_type = feature_cluster.graph.get_input_node(
+            feature_cluster.node_names[0]
+        ).parameters.feature_store_details.type
+
+        return get_historical_features_sql(
+            request_table_name=REQUEST_TABLE_NAME,
+            graph=feature_cluster.graph,
+            nodes=feature_cluster.nodes,
+            request_table_columns=training_events.columns.tolist(),
+            source_type=source_type,
+            serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
+        )

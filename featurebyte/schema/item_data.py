@@ -6,7 +6,7 @@ from typing import List
 from pydantic import StrictStr
 
 from featurebyte.models.item_data import ItemDataModel
-from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.data import DataCreate, DataUpdate
 
 

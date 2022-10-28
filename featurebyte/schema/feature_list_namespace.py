@@ -11,8 +11,7 @@ from featurebyte.models.feature_list import (
     FeatureReadinessDistribution,
     FeatureTypeFeatureCount,
 )
-from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.feature_namespace import NamespaceInfo
 
 

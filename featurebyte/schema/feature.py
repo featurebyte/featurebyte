@@ -16,8 +16,7 @@ from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature import FeatureModel, FeatureReadiness
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.feature_namespace import FeatureNamespaceInfo
 

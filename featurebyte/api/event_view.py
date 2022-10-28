@@ -175,7 +175,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
     @typechecked
     def from_event_data(cls, event_data: EventData) -> EventView:
         """
-        Construct an EventView object using session object
+        Construct an EventView object
 
         Parameters
         ----------

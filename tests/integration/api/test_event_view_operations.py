@@ -1,75 +1,19 @@
 """
 This module contains session to EventView integration tests
 """
+import json
+import os.path
+from unittest import mock
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from featurebyte import AggFunc, EventData, EventView, FeatureList, SourceType, to_timedelta
+from featurebyte.config import Configurations
+from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.models.feature_store import ColumnSpec
 from tests.util.helper import get_lagged_series_pandas
-
-
-def test_query_object_operation_on_sqlite_source(
-    sqlite_session, transaction_data, sqlite_feature_store
-):
-    """
-    Test loading event view from sqlite source
-    """
-    _ = sqlite_session
-    assert sqlite_feature_store.list_tables() == ["test_table"]
-
-    sqlite_database_table = sqlite_feature_store.get_table(
-        database_name=None,
-        schema_name=None,
-        table_name="test_table",
-    )
-    expected_dtypes = pd.Series(
-        {
-            "event_timestamp": "TIMESTAMP",
-            "created_at": "INT",
-            "cust_id": "INT",
-            "user id": "INT",
-            "product_action": "VARCHAR",
-            "session_id": "INT",
-            "amount": "FLOAT",
-        }
-    )
-    pd.testing.assert_series_equal(expected_dtypes, sqlite_database_table.dtypes)
-
-    event_data = EventData.from_tabular_source(
-        tabular_source=sqlite_database_table,
-        name="sqlite_event_data",
-        event_id_column="created_at",
-        event_timestamp_column="event_timestamp",
-    )
-    event_view = EventView.from_event_data(event_data)
-    assert event_view.columns == [
-        "event_timestamp",
-        "created_at",
-        "cust_id",
-        "user id",
-        "product_action",
-        "session_id",
-        "amount",
-    ]
-
-    # need to specify the constant as float, otherwise results will get truncated
-    event_view["cust_id_x_session_id"] = event_view["cust_id"] * event_view["session_id"] / 1000.0
-    event_view["lucky_customer"] = event_view["cust_id_x_session_id"] > 140.0
-
-    # construct expected results
-    expected = transaction_data.copy()
-    expected["cust_id_x_session_id"] = (expected["cust_id"] * expected["session_id"]) / 1000.0
-    expected["lucky_customer"] = (expected["cust_id_x_session_id"] > 140.0).astype(int)
-
-    # check agreement
-    output = event_view.preview(limit=expected.shape[0])
-    # sqlite returns str for timestamp columns, formatted up to %f precision with quirks
-    expected["event_timestamp"] = expected["event_timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
-    expected["event_timestamp"] = expected["event_timestamp"].str.replace(
-        ".000000", "", regex=False
-    )
-    pd.testing.assert_frame_equal(output, expected[output.columns], check_dtype=False)
 
 
 def iet_entropy(view, group_by_col, window, name):
@@ -166,6 +110,56 @@ def assert_feature_preview_output_equal(actual, expected):
             np.testing.assert_allclose(actual[k], expected[k], rtol=1e-5)
         else:
             assert actual[k] == expected[k]
+
+
+@mock.patch("featurebyte.service.feature_store.FeatureStoreService.list_columns")
+@mock.patch("featurebyte.app.get_persistent")
+def test_feature_list_saving_in_bad_state__feature_id_is_different(
+    mock_persistent, mock_list_columns, mongo_persistent, test_dir
+):
+    """
+    Test feature list saving in bad state due to some feature has been saved (when the feature id is different)
+    """
+    mock_persistent.return_value = mongo_persistent[0]
+    client = Configurations().get_client()
+    route_fixture_path_pairs = [
+        ("/entity", "entity.json"),
+        ("/feature_store", "feature_store.json"),
+        ("/event_data", "event_data.json"),
+    ]
+    base_path = os.path.join(test_dir, "fixtures/request_payloads")
+    for route, fixture_path in route_fixture_path_pairs:
+        with open(f"{base_path}/{fixture_path}") as fhandle:
+            payload = json.loads(fhandle.read())
+            response = client.post(route, json=payload)
+
+            if route == "/event_data":
+                column_specs = [ColumnSpec(**col_info) for col_info in payload["columns_info"]]
+                mock_list_columns.return_value = column_specs
+
+    event_data = EventData.get_by_id(id=response.json()["_id"])
+    event_data.update_default_feature_job_setting(
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
+        )
+    )
+    event_data.cust_id.as_entity("customer")
+    event_view = EventView.from_event_data(event_data)
+    feature_group = event_view.groupby("cust_id").aggregate(
+        method="count",
+        windows=["2h", "24h"],
+        feature_names=["COUNT_2h", "COUNT_24h"],
+    )
+    feature_2h = feature_group["COUNT_2h"] + 123
+    feature_2h.name = "COUNT_2h"
+    feature_2h.save()
+    assert feature_2h.saved
+
+    # resolve the error by retrieving the feature with the same name
+    # (check that ID value are updated after saved)
+    feature_list = FeatureList([feature_group], name="my_fl")
+    feature_list.save(conflict_resolution="retrieve")
+    assert feature_list[feature_2h.name].id == feature_2h.id
 
 
 @pytest.mark.parametrize("event_data", ["databricks", "snowflake"], indirect=True)

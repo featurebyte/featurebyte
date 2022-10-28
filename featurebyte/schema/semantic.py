@@ -9,8 +9,7 @@ from pydantic import Field
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.relationship import Parent
 from featurebyte.models.semantic import SemanticModel
-from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
+from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
 class SemanticCreate(FeatureByteBaseModel):
