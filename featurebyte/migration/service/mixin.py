@@ -27,6 +27,7 @@ class MigrationServiceMixin(Protocol):
         Collection name
         """
 
+    @abstractmethod
     def _construct_list_query_filter(
         self, query_filter: Optional[dict[str, Any]] = None, **kwargs: Any
     ) -> QueryFilter:
