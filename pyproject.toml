@@ -90,7 +90,6 @@ version = "0.1.0"
 PyYAML = "^6.0"
 alive-progress = "^2.4.1"
 asyncache = "^0.1.1"
-cachetools = "^5.2.0"
 importlib_metadata = {version = "^4.5.0", python = "^3.8"}
 lazy-object-proxy = "^1.7.1"
 loguru = "^0.6.0"
@@ -105,7 +104,7 @@ sqlglot = "^2.3.2,<3.0"   # ^3.0.0 causes test failure maybe due to syntax chang
 typeguard = "^2.13.3"
 
 [tool.poetry.extras]
-server = ["aiofiles", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python"]
+server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
@@ -155,6 +154,7 @@ types-urllib3 = "^1.26.16"
 
 [tool.poetry.group.server.dependencies]
 aiofiles = "^22.1.0"
+cachetools = "^5.2.0"
 databricks-cli = "^0.17.3"
 fastapi = "^0.85.1"
 featurebyte-freeware = { version = "^0.1.0", allow-prereleases = true, source = "featurebyte_np" }
