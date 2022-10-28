@@ -1,11 +1,18 @@
 """
 This module contains session to EventView integration tests
 """
+import json
+import os.path
+from unittest import mock
+
 import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import AggFunc, EventView, FeatureList, SourceType, to_timedelta
+from featurebyte import AggFunc, EventData, EventView, FeatureList, SourceType, to_timedelta
+from featurebyte.config import Configurations
+from featurebyte.models.event_data import FeatureJobSetting
+from featurebyte.models.feature_store import ColumnSpec
 from tests.util.helper import get_lagged_series_pandas
 
 
@@ -103,6 +110,56 @@ def assert_feature_preview_output_equal(actual, expected):
             np.testing.assert_allclose(actual[k], expected[k], rtol=1e-5)
         else:
             assert actual[k] == expected[k]
+
+
+@mock.patch("featurebyte.service.feature_store.FeatureStoreService.list_columns")
+@mock.patch("featurebyte.app.get_persistent")
+def test_feature_list_saving_in_bad_state__feature_id_is_different(
+    mock_persistent, mock_list_columns, mongo_persistent, test_dir
+):
+    """
+    Test feature list saving in bad state due to some feature has been saved (when the feature id is different)
+    """
+    mock_persistent.return_value = mongo_persistent[0]
+    client = Configurations().get_client()
+    route_fixture_path_pairs = [
+        ("/entity", "entity.json"),
+        ("/feature_store", "feature_store.json"),
+        ("/event_data", "event_data.json"),
+    ]
+    base_path = os.path.join(test_dir, "fixtures/request_payloads")
+    for route, fixture_path in route_fixture_path_pairs:
+        with open(f"{base_path}/{fixture_path}") as fhandle:
+            payload = json.loads(fhandle.read())
+            response = client.post(route, json=payload)
+
+            if route == "/event_data":
+                column_specs = [ColumnSpec(**col_info) for col_info in payload["columns_info"]]
+                mock_list_columns.return_value = column_specs
+
+    event_data = EventData.get_by_id(id=response.json()["_id"])
+    event_data.update_default_feature_job_setting(
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="10m", frequency="30m", time_modulo_frequency="5m"
+        )
+    )
+    event_data.cust_id.as_entity("customer")
+    event_view = EventView.from_event_data(event_data)
+    feature_group = event_view.groupby("cust_id").aggregate(
+        method="count",
+        windows=["2h", "24h"],
+        feature_names=["COUNT_2h", "COUNT_24h"],
+    )
+    feature_2h = feature_group["COUNT_2h"] + 123
+    feature_2h.name = "COUNT_2h"
+    feature_2h.save()
+    assert feature_2h.saved
+
+    # resolve the error by retrieving the feature with the same name
+    # (check that ID value are updated after saved)
+    feature_list = FeatureList([feature_group], name="my_fl")
+    feature_list.save(conflict_resolution="retrieve")
+    assert feature_list[feature_2h.name].id == feature_2h.id
 
 
 @pytest.mark.parametrize("event_data", ["databricks", "snowflake"], indirect=True)

@@ -639,12 +639,6 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
     assert expected_msg in str(exc.value)
     assert feature_list[feature.name].id == feature.id
 
-    # resolve the error by retrieving the feature with the same name
-    # (check that ID value are updated after saved)
-    feature_list.save(conflict_resolution="retrieve")
-    assert feature_list.saved is True
-    assert feature_list[feature.name].id == production_ready_feature.id
-
 
 @pytest.fixture(name="feature_list")
 def feature_list_fixture(

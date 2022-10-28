@@ -15,6 +15,7 @@ from unittest import mock
 
 import numpy as np
 import pandas as pd
+import pymongo
 import pytest
 import pytest_asyncio
 import yaml
@@ -113,6 +114,19 @@ def mock_persistent_fixture():
 
     with mock.patch.object(persistent, "start_transaction", start_transaction):
         yield persistent
+
+
+@pytest.fixture(name="mongo_persistent")
+def mongo_persistent_fixture():
+    """
+    Mongo persistent fixture
+    """
+    mongo_connection = os.getenv("MONGO_CONNECTION")
+    database_name = f"test_{ObjectId()}"
+    client = pymongo.MongoClient(mongo_connection)
+    persistent = MongoDB(uri=mongo_connection, database=database_name)
+    yield persistent, client[database_name]
+    client.drop_database(database_name)
 
 
 @pytest.fixture(name="mock_get_persistent", scope="session")

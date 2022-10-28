@@ -3,24 +3,7 @@ Test MongoDB persistent backend
 """
 import os
 
-import pymongo
 import pytest
-from bson.objectid import ObjectId
-
-from featurebyte.persistent.mongo import MongoDB
-
-
-@pytest.fixture(name="mongo_persistent")
-def mongo_persistent_fixture():
-    """
-    Mongo persistent fixture
-    """
-    mongo_connection = os.getenv("MONGO_CONNECTION")
-    database_name = f"test_{ObjectId()}"
-    client = pymongo.MongoClient(mongo_connection)
-    persistent = MongoDB(uri=mongo_connection, database=database_name)
-    yield persistent, client[database_name]
-    client.drop_database(database_name)
 
 
 @pytest.mark.skipif(
