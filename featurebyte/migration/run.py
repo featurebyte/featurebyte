@@ -3,7 +3,7 @@ Migration script
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Callable, Iterator, cast
+from typing import Any, AsyncGenerator, Callable, cast
 
 import importlib
 import inspect

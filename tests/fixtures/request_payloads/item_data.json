@@ -1,5 +1,5 @@
 {
-    "_id": "6332fdb21e8f0eeccc414512",
+    "_id": "635b8487bde9b127384c005f",
     "columns_info": [
         {
             "dtype": "INT",
@@ -55,7 +55,7 @@
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
-            "table_name": "sf_table"
+            "table_name": "sf_item_data_table"
         }
     }
 }

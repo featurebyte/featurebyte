@@ -1,12 +1,14 @@
 """
 EventDataMigrationService class
 """
+from __future__ import annotations
+
 from featurebyte.migration.service import migrate
-from featurebyte.models.event_data import EventDataModel
+from featurebyte.migration.service.mixin import MigrationServiceMixin
 from featurebyte.service.event_data import EventDataService
 
 
-class EventDataMigrationService(EventDataService):
+class EventDataMigrationService(EventDataService, MigrationServiceMixin):
     """EventDataMigrationService class"""
 
     @migrate(version=1, description="Rename collection name from event_data to tabular_data")
@@ -16,29 +18,23 @@ class EventDataMigrationService(EventDataService):
             collection_name="event_data", new_collection_name="tabular_data"
         )
 
-        def migrate_func(record):
-            return EventDataModel(**record).dict(by_alias=True)
+        # sample first 10 few records before migration
+        sample_docs_before, total_before = await self.persistent.find(
+            collection_name="tabular_data", query_filter={}, page_size=10
+        )
+        sample_docs_before_map = {doc["_id"]: doc for doc in sample_docs_before}
 
         # migrate all records and audit records
-        to_iterate, page = True, 1
-        while to_iterate:
-            docs = await self.list_documents(page=1)
-            for doc in docs["data"]:
-                await self.persistent.migrate_record(
-                    collection_name="tabular_data",
-                    document_id=doc["_id"],
-                    migrate_func=migrate_func,
-                )
-                await self.persistent.migrate_audit_records(
-                    collection_name="tabular_data",
-                    document_id=doc["_id"],
-                    migrate_func=migrate_func,
-                )
+        await self.migrate_all_records(query_filter={})
 
-            to_iterate = bool(docs["total"] > (page * docs["page_size"]))
-
-        # select a record & check
-        sample_record = await self.persistent.find_one(
-            collection_name="tabular_data", query_filter={}
+        # check the sample records after migration
+        sample_docs_after, total_after = await self.persistent.find(
+            collection_name="tabular_data",
+            query_filter={"_id": {"$in": list(sample_docs_before_map)}},
         )
-        assert sample_record["type"] == "event_data"
+        sample_docs_after_map = {doc["_id"]: doc for doc in sample_docs_after}
+
+        assert total_after == total_before
+        for doc_id, doc_before in sample_docs_after_map.items():
+            doc_after = sample_docs_after_map[doc_id]
+            assert doc_after == {**doc_before, "type": "event_data"}

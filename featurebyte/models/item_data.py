@@ -55,10 +55,3 @@ class ItemDataModel(DataModel):
         return DataModel.validate_column_exists(
             column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
         )
-
-    class Settings(DataModel.Settings):
-        """
-        MongoDB settings
-        """
-
-        collection_name: str = "item_data"

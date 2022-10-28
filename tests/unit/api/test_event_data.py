@@ -30,6 +30,7 @@ from tests.util.helper import patch_import_package
 def event_data_dict_fixture(snowflake_database_table):
     """EventData in serialized dictionary format"""
     return {
+        "type": "event_data",
         "name": "sf_event_data",
         "tabular_source": {
             "feature_store_id": snowflake_database_table.feature_store.id,

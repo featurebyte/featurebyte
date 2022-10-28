@@ -324,7 +324,7 @@ async def test_delete_one(mongo_persistent, test_documents):
     hist_docs = [doc async for _, doc in hist_docs_generator]
     assert hist_docs == [
         test_documents[0],
-        None,
+        {},
     ]
 
     # check migrate audit records (make sure there is no actual changes

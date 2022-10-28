@@ -3,7 +3,18 @@ Persistent base class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Callable, Iterable, List, Literal, Optional, Tuple
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    cast,
+)
 
 import copy
 from abc import ABC, abstractmethod
@@ -409,7 +420,24 @@ class Persistent(ABC):
 
     async def historical_document_generator(
         self, collection_name: str, document_id: ObjectId
-    ) -> AsyncIterator[AuditDocument, Optional[dict[str, Any]]]:
+    ) -> AsyncIterator[tuple[AuditDocument, dict[str, Any]]]:
+        """
+        Traverse the audit history & reconstructed the document records
+
+        Parameters
+        ----------
+        collection_name: str
+            Collection name (non-audit one)
+        document_id: ObjectId
+            Document ID
+
+        Yields
+        ------
+        AuditDocument
+            Audit document
+        dict[str, Any]
+            Document
+        """
         docs, _ = await self.get_audit_logs(
             collection_name=collection_name, document_id=document_id, page=1, page_size=0
         )
@@ -428,7 +456,7 @@ class Persistent(ABC):
                     for key in set(current_values).union(set(doc).difference(previous_values))
                 }
             else:
-                doc = None
+                doc = {}
             yield AuditDocument(**audit_doc), doc
 
     async def migrate_record(
@@ -437,6 +465,18 @@ class Persistent(ABC):
         document_id: ObjectId,
         migrate_func: Callable[[dict[str, Any]], dict[str, Any]],
     ) -> None:
+        """
+        Migrate record
+
+        Parameters
+        ----------
+        collection_name: str
+            Collection name
+        document_id: ObjectId
+            Document ID
+        migrate_func: Callable[[dict[str, Any]], dict[str, Any]]
+            Function to migrate the record from old to new format
+        """
         query_filter = {"_id": document_id}
         original_doc = await self._find_one(
             collection_name=collection_name, query_filter=query_filter
@@ -445,7 +485,7 @@ class Persistent(ABC):
             await self._update_one(
                 collection_name=collection_name,
                 query_filter=query_filter,
-                update={"$set": migrate_func(original_doc)},
+                update={"$set": migrate_func(cast(Dict[str, Any], original_doc))},
             )
 
     async def migrate_audit_records(
@@ -454,10 +494,22 @@ class Persistent(ABC):
         document_id: ObjectId,
         migrate_func: Callable[[dict[str, Any]], dict[str, Any]],
     ) -> None:
+        """
+        Migrate audit records
+
+        Parameters
+        ----------
+        collection_name: str
+            Collection name (non-audit)
+        document_id: ObjectId
+            Document ID
+        migrate_func: Callable[[dict[str, Any]], dict[str, Any]]
+            Function to migrate the record from old to new format
+        """
         doc_generator = self.historical_document_generator(
             collection_name=collection_name, document_id=document_id
         )
-        previous = {}
+        previous: dict[str, Any] = {}
         async for audit_doc, doc_dict in doc_generator:
             doc_dict = migrate_func(doc_dict) if doc_dict else {}
 
@@ -585,5 +637,5 @@ class Persistent(ABC):
         )
 
     @abstractmethod
-    async def _rename_collection(self, collection_name: str, to_name: str) -> None:
+    async def _rename_collection(self, collection_name: str, new_collection_name: str) -> None:
         pass

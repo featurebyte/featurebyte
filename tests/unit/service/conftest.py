@@ -18,6 +18,7 @@ from featurebyte.schema.feature import FeatureCreate
 from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
+from featurebyte.schema.item_data import ItemDataCreate
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.entity import EntityService
@@ -28,6 +29,7 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.version import VersionService
 
@@ -71,6 +73,12 @@ def entity_service_fixture(user, persistent):
 def event_data_service_fixture(user, persistent):
     """EventData service"""
     return EventDataService(user=user, persistent=persistent)
+
+
+@pytest.fixture(name="item_data_service")
+def item_data_service_fixture(user, persistent):
+    """ItemData service"""
+    return ItemDataService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_namespace_service")
@@ -150,6 +158,19 @@ async def event_data_fixture(test_dir, feature_store, event_data_service, user):
             data=EventDataCreate(**payload, user_id=user.id)
         )
         return event_data
+
+
+@pytest_asyncio.fixture(name="item_data")
+async def item_data_fixture(test_dir, feature_store, item_data_service, user):
+    """ItemData model"""
+    _ = feature_store
+    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/item_data.json")
+    with open(fixture_path, encoding="utf") as fhandle:
+        payload = json.loads(fhandle.read())
+        item_data = await item_data_service.create_document(
+            data=ItemDataCreate(**payload, user_id=user.id)
+        )
+        return item_data
 
 
 @pytest_asyncio.fixture(name="entity")

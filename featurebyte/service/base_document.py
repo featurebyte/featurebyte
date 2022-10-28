@@ -616,7 +616,9 @@ class BaseDocumentService(
             return await self.get_document(document_id=document_id)
         return None
 
-    async def historical_document_generator(self, document_id) -> AsyncIterator[Optional[Document]]:
+    async def historical_document_generator(
+        self, document_id: ObjectId
+    ) -> AsyncIterator[Optional[Document]]:
         """
         Reconstruct documents of older history
 
@@ -633,7 +635,7 @@ class BaseDocumentService(
         async for _, audit_doc in self.persistent.historical_document_generator(
             collection_name=self.collection_name, document_id=document_id
         ):
-            if audit_doc is not None:
+            if audit_doc:
                 yield self.document_class(**audit_doc)
             else:
                 yield None

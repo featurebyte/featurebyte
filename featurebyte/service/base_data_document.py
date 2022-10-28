@@ -3,9 +3,13 @@ BaseDataDocumentService class
 """
 from __future__ import annotations
 
-from typing import Any, TypeVar
+from typing import Any, Optional, TypeVar
 
+from bson.objectid import ObjectId
+
+from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.feature_store import DataStatus
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.schema.data import DataCreate, DataUpdate
 from featurebyte.service.base_document import BaseDocumentService, Document
 from featurebyte.service.feature_store import FeatureStoreService
@@ -18,6 +22,72 @@ class BaseDataDocumentService(BaseDocumentService[Document, DocumentCreate, Docu
     """
     BaseDataDocumentService class
     """
+
+    @property
+    def tabular_data_type(self) -> str:
+        """
+        Tabular data type
+
+        Returns
+        -------
+        str
+        """
+        return str(self.document_class.__fields__["type"].default.value)
+
+    @property
+    def class_name(self) -> str:
+        """
+        API Object Class name used to represent the underlying collection name
+
+        Returns
+        -------
+        camel case collection name
+        """
+        return "".join(elem.title() for elem in self.tabular_data_type.split("_"))
+
+    def _construct_get_query_filter(self, document_id: ObjectId, **kwargs: Any) -> QueryFilter:
+        query_filter = super()._construct_get_query_filter(document_id=document_id, **kwargs)
+        query_filter["type"] = self.tabular_data_type
+        return query_filter
+
+    def _construct_list_query_filter(
+        self, query_filter: Optional[dict[str, Any]] = None, **kwargs: Any
+    ) -> QueryFilter:
+        output = super()._construct_list_query_filter(query_filter=query_filter, **kwargs)
+        output["type"] = self.tabular_data_type
+        return output
+
+    def _get_conflict_message(
+        self,
+        conflict_doc: dict[str, Any],
+        conflict_signature: dict[str, Any],
+        resolution_signature: Optional[UniqueConstraintResolutionSignature],
+    ) -> str:
+        tabular_data_type = conflict_doc["type"]
+        formatted_conflict_signature = ", ".join(
+            f'{key}: "{value}"' for key, value in conflict_signature.items()
+        )
+        class_name = (
+            self.class_name if tabular_data_type == self.tabular_data_type else "TabularData"
+        )
+        message = f"{class_name} ({formatted_conflict_signature}) already exists."
+        if resolution_signature:
+            if (
+                resolution_signature
+                in UniqueConstraintResolutionSignature.get_existing_object_type()
+            ):
+                class_name = "".join(elem.title() for elem in tabular_data_type.split("_"))
+                resolution_statement = UniqueConstraintResolutionSignature.get_resolution_statement(
+                    resolution_signature=resolution_signature,
+                    class_name=class_name,
+                    document=conflict_doc,
+                )
+                message += f" Get the existing object by `{resolution_statement}`."
+            if resolution_signature == UniqueConstraintResolutionSignature.RENAME:
+                message += (
+                    f' Please rename object (name: "{conflict_doc["name"]}") to something else.'
+                )
+        return message
 
     async def create_document(self, data: DocumentCreate, get_credential: Any = None) -> Document:
         _ = get_credential

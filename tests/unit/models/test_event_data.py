@@ -46,6 +46,7 @@ def test_event_data_model(snowflake_feature_store, feature_job_setting):
         status=DataStatus.PUBLISHED,
     )
     expected_event_data_dict = {
+        "type": "event_data",
         "user_id": None,
         "created_at": datetime.datetime(2022, 2, 1, 0, 0),
         "updated_at": None,
