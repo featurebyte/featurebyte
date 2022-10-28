@@ -11,8 +11,11 @@ from pydantic import Field, StrictStr
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature import DefaultVersionMode, FeatureNamespaceModel, FeatureReadiness
-from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
+from featurebyte.schema.common.base import (
+    BaseDocumentServiceUpdateSchema,
+    BaseInfo,
+    PaginationMixin,
+)
 from featurebyte.schema.entity import EntityBriefInfoList
 from featurebyte.schema.event_data import EventDataBriefInfoList
 

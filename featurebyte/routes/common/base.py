@@ -8,7 +8,7 @@ from typing import Any, Generic, List, Literal, Optional, Type, TypeVar, cast
 from bson.objectid import ObjectId
 
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
-from featurebyte.routes.common.schema import PaginationMixin
+from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.service.base_document import Document
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService

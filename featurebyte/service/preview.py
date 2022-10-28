@@ -13,7 +13,10 @@ from featurebyte.enum import SpecialColumnName
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.generic import GroupbyNode
-from featurebyte.query_graph.sql.feature_historical import get_historical_features
+from featurebyte.query_graph.sql.feature_historical import (
+    get_historical_features,
+    get_historical_features_sql,
+)
 from featurebyte.query_graph.sql.feature_preview import get_feature_preview_sql
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.schema.feature import FeaturePreview, FeatureSQL
@@ -278,7 +281,7 @@ class PreviewService(OpsServiceMixin):
 
     async def featurelist_sql(self, featurelist_sql: FeatureListSQL) -> str:
         """
-        Preview a FeatureList
+        Get FeatureList SQL
 
         Parameters
         ----------
@@ -288,7 +291,7 @@ class PreviewService(OpsServiceMixin):
         Returns
         -------
         str
-            Dataframe converted to json string
+            SQL statements
         """
 
         preview_sqls = []
@@ -304,3 +307,40 @@ class PreviewService(OpsServiceMixin):
             preview_sqls.append(preview_sql)
 
         return "\n\n".join(preview_sqls)
+
+    async def get_historical_features_sql(
+        self,
+        training_events: pd.DataFrame,
+        featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
+    ) -> str:
+        """
+        Get historical features SQL for Feature List
+
+        Parameters
+        ----------
+        training_events: pd.DataFrame
+            Training events data
+        featurelist_get_historical_features: FeatureListGetHistoricalFeatures
+            FeatureListGetHistoricalFeatures object
+
+        Returns
+        -------
+        str
+            SQL statements
+        """
+        # multiple feature stores not supported
+        feature_clusters = featurelist_get_historical_features.feature_clusters
+        assert len(feature_clusters) == 1
+        feature_cluster = feature_clusters[0]
+
+        source_type = feature_cluster.graph.get_input_node(
+            feature_cluster.node_names[0]
+        ).parameters.feature_store_details.type
+
+        return get_historical_features_sql(
+            graph=feature_cluster.graph,
+            nodes=feature_cluster.nodes,
+            request_table_columns=training_events.columns.tolist(),
+            source_type=source_type,
+            serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
+        )

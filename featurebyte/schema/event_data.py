@@ -11,8 +11,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
 from featurebyte.models.feature_store import DataStatus, TableDetails
-from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
+from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo, PaginationMixin
 from featurebyte.schema.common.operation import DictProject
 from featurebyte.schema.data import DataCreate, DataUpdate
 from featurebyte.schema.entity import EntityBriefInfoList

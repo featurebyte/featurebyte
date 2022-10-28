@@ -45,11 +45,6 @@ from featurebyte.models.feature_list import (
 )
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.pruning_util import get_prune_graph_and_nodes
-from featurebyte.query_graph.sql.feature_historical import (
-    get_historical_features_sql,
-    validate_historical_requests_point_in_time,
-    validate_request_schema,
-)
 from featurebyte.schema.feature_list import (
     FeatureCluster,
     FeatureListCreate,
@@ -501,23 +496,29 @@ class FeatureList(BaseFeatureGroup, FeatureListModel, SavableApiObject):
         Returns
         -------
         str
+
+        Raises
+        ------
+        RecordRetrievalException
+            Get historical features request failed
         """
-        # Validate request
-        validate_request_schema(training_events)
-        training_events = validate_historical_requests_point_in_time(training_events)
-
-        # multiple feature stores not supported
-        feature_clusters = self._get_feature_clusters()
-        assert len(feature_clusters) == 1
-
-        feature_cluster = feature_clusters[0]
-        source_type = self._features[0].feature_store.type
-        return get_historical_features_sql(
-            graph=feature_cluster.graph,
-            nodes=feature_cluster.nodes,
-            request_table_columns=training_events.columns.tolist(),
+        payload = FeatureListGetHistoricalFeatures(
+            feature_clusters=self._get_feature_clusters(),
             serving_names_mapping=serving_names_mapping,
-            source_type=source_type,
+        )
+
+        client = Configurations().get_client()
+        response = client.post(
+            "/feature_list/historical_features_sql",
+            data={"payload": payload.json()},
+            files={"training_events": dataframe_to_arrow_bytes(training_events)},
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+
+        return cast(
+            str,
+            response.json(),
         )
 
     @typechecked

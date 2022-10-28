@@ -16,8 +16,12 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.models.entity import EntityModel, ParentEntity
-from featurebyte.routes.common.schema import PaginationMixin
-from featurebyte.schema.common.base import BaseBriefInfo, BaseDocumentServiceUpdateSchema, BaseInfo
+from featurebyte.schema.common.base import (
+    BaseBriefInfo,
+    BaseDocumentServiceUpdateSchema,
+    BaseInfo,
+    PaginationMixin,
+)
 from featurebyte.schema.common.operation import DictProject
 
 

@@ -97,15 +97,15 @@ loguru = "^0.6.0"
 pandas = "^1.4.2"
 pyarrow = "^8.0.0,<9.0"   # "9.0.0" causes seg faults
 pydantic = "^1.9.1"
+pymongo = "^4.1.1"
 python = ">=3.8,<3.11"
 python-multipart = "^0.0.5"
+requests = "^2.27.1"
 sqlglot = "^2.3.2,<3.0"   # ^3.0.0 causes test failure maybe due to syntax changes
 typeguard = "^2.13.3"
 
 [tool.poetry.extras]
-server = ["aiofiles", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "pymongo", "snowflake-connector-python"]
-
-[tool.poetry.group]
+server = ["aiofiles", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
@@ -120,7 +120,6 @@ pytest-cov = "^4.0.0"
 pytest-timeout = "^2.1.0"
 pytest-xdist = "^3.0.2"
 pyupgrade = "^2.37.2"
-requests = "^2.27.1"
 toml-sort = "^0.20.0"
 uvicorn = "^0.18.2"
 
@@ -161,7 +160,6 @@ fastapi = "^0.85.1"
 featurebyte-freeware = { version = "^0.1.0", allow-prereleases = true, source = "featurebyte_np" }
 jinja2 = "^3.1.2"
 motor = "^3.0.0"
-pymongo = "^4.1.1"
 snowflake-connector-python = "^2.7.7"
 
 [[tool.poetry.source]]

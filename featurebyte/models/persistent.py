@@ -10,8 +10,8 @@ from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
-from featurebyte.routes.common.schema import PaginationMixin
 from featurebyte.routes.common.util import get_utc_now
+from featurebyte.schema.common.base import PaginationMixin
 
 Document = MutableMapping[str, Any]
 QueryFilter = MutableMapping[str, Any]

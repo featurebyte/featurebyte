@@ -281,6 +281,41 @@ class FeatureListController(
         Returns
         -------
         str
-            Dataframe converted to json string
+            SQL statements
         """
         return await self.preview_service.featurelist_sql(featurelist_sql=featurelist_sql)
+
+    async def get_historical_features_sql(
+        self,
+        training_events: UploadFile,
+        featurelist_get_historical_features: FeatureListGetHistoricalFeatures,
+    ) -> str:
+        """
+        Get historical features sql for Feature List
+
+        Parameters
+        ----------
+        training_events: UploadFile
+            Uploaded file
+        featurelist_get_historical_features: FeatureListGetHistoricalFeatures
+            FeatureListGetHistoricalFeatures object
+
+        Returns
+        -------
+        str
+            SQL statements
+
+        Raises
+        ------
+        HTTPException
+            Invalid request payload
+        """
+        try:
+            return await self.preview_service.get_historical_features_sql(
+                training_events=dataframe_from_arrow_stream(training_events.file),
+                featurelist_get_historical_features=featurelist_get_historical_features,
+            )
+        except (MissingPointInTimeColumnError, TooRecentPointInTimeError) as exc:
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
+            ) from exc
