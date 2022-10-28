@@ -6,9 +6,10 @@ from __future__ import annotations
 from typing import Any, List, Optional, Tuple
 
 import pandas as pd
-from pydantic import BaseModel, PrivateAttr
+from pydantic import PrivateAttr
 
 from featurebyte.exception import DuplicatedRegistryError
+from featurebyte.feature_manager.base import BaseFeatureListManager
 from featurebyte.feature_manager.model import ExtendedFeatureListModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_insert_feature_list_registry,
@@ -23,7 +24,7 @@ from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
 
-class FeatureListManagerSnowflake(BaseModel):
+class FeatureListManagerSnowflake(BaseFeatureListManager):
     """
     Snowflake Feature Manager class
     """
@@ -41,8 +42,7 @@ class FeatureListManagerSnowflake(BaseModel):
         kw: Any
             constructor arguments
         """
-        super().__init__(**kw)
-        self._session = session
+        super().__init__(session=session, **kw)
 
     async def insert_feature_list_registry(self, feature_list: ExtendedFeatureListModel) -> None:
         """
