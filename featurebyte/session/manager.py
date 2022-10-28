@@ -26,7 +26,7 @@ SOURCE_TYPE_SESSION_MAP = {
     SourceType.DATABRICKS: DatabricksSession,
 }
 
-session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=900)
+session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=600)
 
 
 @cached(cache=session_cache)
