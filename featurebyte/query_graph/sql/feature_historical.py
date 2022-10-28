@@ -88,6 +88,7 @@ def validate_request_schema(training_events: pd.DataFrame) -> None:
 
 
 def get_historical_features_sql(
+    request_table_name: str,
     graph: QueryGraph,
     nodes: list[Node],
     request_table_columns: list[str],
@@ -98,6 +99,8 @@ def get_historical_features_sql(
 
     Parameters
     ----------
+    request_table_name : str
+        Name of request table to use
     graph : QueryGraph
         Query graph
     nodes : list[Node]
@@ -131,6 +134,7 @@ def get_historical_features_sql(
         )
 
     sql = plan.construct_combined_sql(
+        request_table_name=request_table_name,
         point_in_time_column=SpecialColumnName.POINT_IN_TIME,
         request_table_columns=request_table_columns,
     ).sql(pretty=True)
@@ -174,6 +178,10 @@ async def get_historical_features(
     validate_request_schema(training_events)
     training_events = validate_historical_requests_point_in_time(training_events)
 
+    # use a unique request table name
+    request_id = session.get_session_unique_id()
+    request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
+
     # Generate SQL code that computes the features
     sql = get_historical_features_sql(
         graph=graph,
@@ -181,16 +189,20 @@ async def get_historical_features(
         request_table_columns=training_events.columns.tolist(),
         serving_names_mapping=serving_names_mapping,
         source_type=source_type,
+        request_table_name=request_table_name,
     )
 
     # Execute feature SQL code
-    await session.register_temp_table(REQUEST_TABLE_NAME, training_events)
+    await session.register_temp_table(request_table_name, training_events)
 
     # Compute tiles on demand if required
     tic = time.time()
     tile_cache = get_tile_cache(session=session)
     await tile_cache.compute_tiles_on_demand(
-        graph=graph, nodes=nodes, serving_names_mapping=serving_names_mapping
+        graph=graph,
+        nodes=nodes,
+        request_id=request_id,
+        serving_names_mapping=serving_names_mapping,
     )
     elapsed = time.time() - tic
     logger.debug(f"Checking and computing tiles on demand took {elapsed:.2f}s")

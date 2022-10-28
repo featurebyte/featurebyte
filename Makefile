@@ -117,7 +117,7 @@ lint-safety: generate-requirements-file
 
 #* Testing
 test: test-setup
-	@poetry run pytest --timeout=180 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
+	@poetry run pytest --timeout=300 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
 
 	${MAKE} test-teardown
 

@@ -4,7 +4,7 @@ Tests for Feature route
 from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
@@ -401,7 +401,9 @@ class TestFeatureApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
             expected_df = pd.DataFrame({"a": [0, 1, 2]})
-            mock_get_session.return_value.execute_query.return_value = expected_df
+            mock_session = mock_get_session.return_value
+            mock_session.execute_query.return_value = expected_df
+            mock_session.get_session_unique_id = Mock(return_value="1")
             response = test_api_client.post(
                 f"{self.base_route}/preview", json=feature_preview_payload
             )

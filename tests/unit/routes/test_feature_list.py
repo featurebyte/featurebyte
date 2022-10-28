@@ -4,7 +4,7 @@ Tests for FeatureList route
 import json
 from collections import defaultdict
 from http import HTTPStatus
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
@@ -457,7 +457,9 @@ class TestFeatureListApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
             expected_df = pd.DataFrame({"a": [0, 1, 2]})
-            mock_get_session.return_value.execute_query.return_value = expected_df
+            mock_session = mock_get_session.return_value
+            mock_session.execute_query.return_value = expected_df
+            mock_session.get_session_unique_id = Mock(return_value="1")
             response = test_api_client.post(
                 f"{self.base_route}/preview", json=featurelist_preview_payload
             )
@@ -490,8 +492,11 @@ class TestFeatureListApi(BaseApiTestSuite):
 
         with patch("featurebyte.service.mixin.SessionManager.get_session") as mock_get_session:
             expected_df = pd.DataFrame({"a": [0, 1, 2]})
-            mock_get_session.return_value.get_async_query_stream = mock_get_async_query_stream
-            mock_get_session.return_value.source_type = SourceType.SNOWFLAKE
+
+            mock_session = mock_get_session.return_value
+            mock_session.get_async_query_stream = mock_get_async_query_stream
+            mock_session.source_type = SourceType.SNOWFLAKE
+            mock_session.get_session_unique_id = Mock(return_value="1")
 
             response = test_api_client.post(
                 f"{self.base_route}/historical_features",
