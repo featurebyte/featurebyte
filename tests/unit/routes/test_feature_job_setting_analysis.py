@@ -229,7 +229,7 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
 
         # remove event data creation date column
         await persistent.update_one(
-            collection_name="event_data",
+            collection_name="tabular_data",
             query_filter={},
             update={"$set": {"record_creation_date_column": None}},
             user_id=None,
