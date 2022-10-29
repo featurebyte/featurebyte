@@ -5,6 +5,9 @@ import sys
 from contextlib import contextmanager
 from unittest.mock import Mock
 
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
+
 
 def assert_equal_with_expected_fixture(actual, fixture_filename, update_fixture=False):
     """Utility to check that actual is the same as the pre-generated fixture
@@ -66,3 +69,24 @@ def get_lagged_series_pandas(df, column, timestamp, groupby_key):
 def get_node(graph_dict, node_name):
     """Get node from the data dictionary"""
     return next(node for node in graph_dict["nodes"] if node["name"] == node_name)
+
+
+def add_groupby_operation(graph, groupby_node_params, input_node):
+    """
+    Helper function to add a groupby node
+    """
+    node = graph.add_operation(
+        node_type=NodeType.GROUPBY,
+        node_params={
+            **groupby_node_params,
+            "tile_id": get_tile_table_identifier(
+                {"table_name": "fake_transactions_table"}, groupby_node_params
+            ),
+            "aggregation_id": get_aggregation_identifier(
+                graph.node_name_to_ref[input_node.name], groupby_node_params
+            ),
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[input_node],
+    )
+    return node

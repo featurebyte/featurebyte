@@ -8,28 +8,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph
 from featurebyte.query_graph.node import construct_node
-from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier
-
-
-def add_groupby_operation(graph, groupby_node_params, input_node):
-    """
-    Helper function to add a groupby node
-    """
-    node = graph.add_operation(
-        node_type=NodeType.GROUPBY,
-        node_params={
-            **groupby_node_params,
-            "tile_id": get_tile_table_identifier(
-                {"table_name": "fake_transactions_table"}, groupby_node_params
-            ),
-            "aggregation_id": get_aggregation_identifier(
-                graph.node_name_to_ref[input_node.name], groupby_node_params
-            ),
-        },
-        node_output_type=NodeOutputType.FRAME,
-        input_nodes=[input_node],
-    )
-    return node
+from tests.util.helper import add_groupby_operation
 
 
 @pytest.fixture(name="global_graph")
