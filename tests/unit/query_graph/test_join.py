@@ -188,8 +188,108 @@ def test_item_data_join_event_data_attributes(global_graph, item_data_join_event
 
 
 def test_order_size_feature(global_graph, order_size_feature_join_node):
-    raise
+    sql_graph = SQLOperationGraph(
+        global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+    )
+    sql_tree = sql_graph.build(order_size_feature_join_node).sql
+    expected = textwrap.dedent(
+        """
+        SELECT
+          L."ts" AS "ts",
+          L."cust_id" AS "cust_id",
+          L."order_id" AS "order_id",
+          L."order_method" AS "order_method",
+          R."order_size" AS "order_size"
+        FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "order_id" AS "order_id",
+              "order_method" AS "order_method"
+            FROM "db"."public"."event_table"
+        ) AS L
+        LEFT JOIN (
+            SELECT
+              "order_id",
+              COUNT(*) AS "order_size"
+            FROM (
+                SELECT
+                  "order_id" AS "order_id",
+                  "item_id" AS "item_id",
+                  "item_name" AS "item_name",
+                  "item_type" AS "item_type"
+                FROM "db"."public"."item_table"
+            )
+            GROUP BY
+              "order_id"
+        ) AS R
+          ON L."order_id" = R."order_id"
+       """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
 
 
 def test_double_aggregation(global_graph, order_size_agg_by_cust_id_node):
-    raise
+    sql_graph = SQLOperationGraph(
+        global_graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE
+    )
+    sql_tree = sql_graph.build(order_size_agg_by_cust_id_node).sql
+    expected = textwrap.dedent(
+        """
+        SELECT
+          TO_TIMESTAMP(DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP)) + tile_index * 3600) AS __FB_TILE_START_DATE_COLUMN,
+          "cust_id",
+          SUM("order_size") AS sum_value_avg_73fd02fb35339e2c6c1c9d66494b6d7829fbcb26,
+          COUNT("order_size") AS count_value_avg_73fd02fb35339e2c6c1c9d66494b6d7829fbcb26
+        FROM (
+            SELECT
+              *,
+              FLOOR((DATE_PART(EPOCH_SECOND, "ts") - DATE_PART(EPOCH_SECOND, CAST(__FB_START_DATE AS TIMESTAMP))) / 3600) AS tile_index
+            FROM (
+                SELECT
+                  L."ts" AS "ts",
+                  L."cust_id" AS "cust_id",
+                  L."order_id" AS "order_id",
+                  L."order_method" AS "order_method",
+                  R."order_size" AS "order_size"
+                FROM (
+                    SELECT
+                      *
+                    FROM (
+                        SELECT
+                          "ts" AS "ts",
+                          "cust_id" AS "cust_id",
+                          "order_id" AS "order_id",
+                          "order_method" AS "order_method"
+                        FROM "db"."public"."event_table"
+                    )
+                    WHERE
+                      "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+                      AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+                ) AS L
+                LEFT JOIN (
+                    SELECT
+                      "order_id",
+                      COUNT(*) AS "order_size"
+                    FROM (
+                        SELECT
+                          "order_id" AS "order_id",
+                          "item_id" AS "item_id",
+                          "item_name" AS "item_name",
+                          "item_type" AS "item_type"
+                        FROM "db"."public"."item_table"
+                    )
+                    GROUP BY
+                      "order_id"
+                ) AS R
+                  ON L."order_id" = R."order_id"
+            )
+        )
+        GROUP BY
+          tile_index,
+          "cust_id"
+        ORDER BY
+          tile_index
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected

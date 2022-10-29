@@ -9,10 +9,26 @@ from dataclasses import dataclass
 
 from sqlglot import Expression, expressions, parse_one, select
 
-from featurebyte.enum import InternalName, SourceType
+from featurebyte.enum import InternalName, SourceType, TableDataType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
+
+
+def is_event_data(parameters: dict[str, Any]) -> bool:
+    """
+    Returns whether the input data is an EventData
+
+    Parameters
+    ----------
+    parameters : dict
+        Query node parameters
+
+    Returns
+    -------
+    bool
+    """
+    return parameters["type"] == TableDataType.EVENT_DATA
 
 
 @dataclass
@@ -70,7 +86,10 @@ class InputNode(TableNode):
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> InputNode | None:
-        if context.sql_type in {SQLType.BUILD_TILE, SQLType.BUILD_TILE_ON_DEMAND}:
+        if is_event_data(context.parameters) and context.sql_type in {
+            SQLType.BUILD_TILE,
+            SQLType.BUILD_TILE_ON_DEMAND,
+        }:
             return None
         columns_map = cls.make_input_columns_map(context)
         feature_store = context.parameters["feature_store_details"]
@@ -133,7 +152,8 @@ class BuildTileInputNode(InputNode):
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> BuildTileInputNode | None:
-        if context.sql_type != SQLType.BUILD_TILE:
+        if context.sql_type != SQLType.BUILD_TILE or not is_event_data(context.parameters):
+            # Filtering input data with a date range is only relevant for EventData
             return None
         columns_map = cls.make_input_columns_map(context)
         feature_store = context.parameters["feature_store_details"]
