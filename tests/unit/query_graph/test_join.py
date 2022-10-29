@@ -1,16 +1,29 @@
+import copy
+import textwrap
+
 import pytest
 
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.sql.builder import SQLOperationGraph
+from featurebyte.query_graph.sql.common import SQLType
 from tests.util.helper import add_groupby_operation
 
 
+@pytest.fixture(name="item_data_input_details")
+def item_data_input_details_fixture(input_details):
+    input_details = copy.deepcopy(input_details)
+    input_details["table_details"]["table_name"] = "item_table"
+    return input_details
+
+
 @pytest.fixture(name="item_data_input_node")
-def item_data_input_node_fixture(global_graph, input_details):
+def item_data_input_node_fixture(global_graph, item_data_input_details):
     node_params = {
         "type": "item_data",
         "columns": ["order_id", "item_id", "item_name", "item_type"],
     }
-    node_params.update(input_details)
+    node_params.update(item_data_input_details)
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
         node_params=node_params,
@@ -140,7 +153,38 @@ def order_size_agg_by_cust_id_node_fixture(global_graph, order_size_feature_join
 
 
 def test_item_data_join_event_data_attributes(global_graph, item_data_join_event_data_node):
-    raise
+    sql_graph = SQLOperationGraph(
+        global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
+    )
+    sql_tree = sql_graph.build(item_data_join_event_data_node).sql
+    expected = textwrap.dedent(
+        """
+        SELECT
+          L."order_id" AS "order_id",
+          L."item_id" AS "item_id",
+          L."item_name" AS "item_name",
+          L."item_type" AS "item_type",
+          R."order_method" AS "order_method"
+        FROM (
+            SELECT
+              "order_id" AS "order_id",
+              "item_id" AS "item_id",
+              "item_name" AS "item_name",
+              "item_type" AS "item_type"
+            FROM "db"."public"."item_table"
+        ) AS L
+        LEFT JOIN (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "order_id" AS "order_id",
+              "order_method" AS "order_method"
+            FROM "db"."public"."event_table"
+        ) AS R
+          ON L."order_id" = R."order_id"
+        """
+    ).strip()
+    assert sql_tree.sql(pretty=True) == expected
 
 
 def test_order_size_feature(global_graph, order_size_feature_join_node):
