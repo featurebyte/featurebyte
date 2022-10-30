@@ -81,15 +81,15 @@ lint-safety: generate-requirements-file
 
 #* Testing
 test: test-setup
-	@poetry run pytest --timeout=300 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
+	@poetry run pytest --timeout=180 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
 
 	${MAKE} test-teardown
 
 test-setup:
-	cd docker && docker-compose up -d
+	cd .github/mongoreplicaset && ./startdb.sh
 
 test-teardown:
-	cd docker && docker-compose down
+	cd .github/mongoreplicaset && docker-compose down
 
 test-routes:
 	uvicorn featurebyte.app:app --reload

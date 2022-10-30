@@ -4,9 +4,6 @@ services:
   featurebyte:
     container_name: featurebyte
     image: local/featurebyte:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
     volumes:
       - ~/.featurebyte/mongo:/data
       - ~/.featurebyte:/home/user/.featurebyte

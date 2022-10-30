@@ -65,7 +65,7 @@ class LocalStorageSettings(BaseModel):
     Settings for local file storage
     """
 
-    local_path: Path = Field(default=get_home_path().joinpath("data"))
+    local_path: Path = Field(default_factory=lambda: get_home_path().joinpath("data"))
 
     @validator("local_path")
     @classmethod
