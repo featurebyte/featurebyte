@@ -1,0 +1,4 @@
+# featurebyte configurations
+
+logging:
+  level: INFO

@@ -459,7 +459,7 @@ class TestFeatureListApi(BaseApiTestSuite):
             expected_df = pd.DataFrame({"a": [0, 1, 2]})
             mock_session = mock_get_session.return_value
             mock_session.execute_query.return_value = expected_df
-            mock_session.get_session_unique_id = Mock(return_value="1")
+            mock_session.generate_session_unique_id = Mock(return_value="1")
             response = test_api_client.post(
                 f"{self.base_route}/preview", json=featurelist_preview_payload
             )
@@ -496,7 +496,7 @@ class TestFeatureListApi(BaseApiTestSuite):
             mock_session = mock_get_session.return_value
             mock_session.get_async_query_stream = mock_get_async_query_stream
             mock_session.source_type = SourceType.SNOWFLAKE
-            mock_session.get_session_unique_id = Mock(return_value="1")
+            mock_session.generate_session_unique_id = Mock(return_value="1")
 
             response = test_api_client.post(
                 f"{self.base_route}/historical_features",

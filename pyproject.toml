@@ -104,7 +104,7 @@ sqlglot = "^2.3.2,<3.0"   # ^3.0.0 causes test failure maybe due to syntax chang
 typeguard = "^2.13.3"
 
 [tool.poetry.extras]
-server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python"]
+server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python", "uvicorn"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
@@ -120,7 +120,6 @@ pytest-timeout = "^2.1.0"
 pytest-xdist = "^3.0.2"
 pyupgrade = "^2.37.2"
 toml-sort = "^0.20.0"
-uvicorn = "^0.18.2"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.4.1"
@@ -161,6 +160,7 @@ featurebyte-freeware = { version = "^0.1.0", allow-prereleases = true, source = 
 jinja2 = "^3.1.2"
 motor = "^3.0.0"
 snowflake-connector-python = "^2.7.7"
+uvicorn = "^0.18.2"
 
 [[tool.poetry.source]]
 name = "featurebyte_np"

@@ -143,7 +143,7 @@ class PreviewService(OpsServiceMixin):
             get_credential=get_credential,
         )
         preview_sql = get_feature_preview_sql(
-            request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.get_session_unique_id()}",
+            request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.generate_session_unique_id()}",
             graph=graph,
             nodes=[feature_node],
             point_in_time_and_serving_name=feature_preview.point_in_time_and_serving_name,
@@ -193,7 +193,7 @@ class PreviewService(OpsServiceMixin):
                 get_credential=get_credential,
             )
             preview_sql = get_feature_preview_sql(
-                request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.get_session_unique_id()}",
+                request_table_name=f"{REQUEST_TABLE_NAME}_{db_session.generate_session_unique_id()}",
                 graph=feature_cluster.graph,
                 nodes=feature_cluster.nodes,
                 point_in_time_and_serving_name=point_in_time_and_serving_name,

@@ -1,6 +1,7 @@
 """
 Test FastAPI app
 """
+import os
 import time
 from unittest.mock import patch
 
@@ -27,19 +28,16 @@ async def test_get_credential():
     assert credential == config.credentials[feature_store_name]
 
 
+@patch.dict(os.environ, {"MONGODB_URI": "mongodb://localhost:27022"}, clear=True)
 def test_get_persistent():
     """
     Test get_persistent works as expected
     """
-    config = Configurations("tests/fixtures/config.yaml")
-
-    with patch("featurebyte.utils.persistent.Configurations") as mock_config:
-        mock_config.return_value = config
-        with patch("featurebyte.utils.persistent.MongoDB") as mock_mongodb:
-            with pytest.raises(ValueError):
-                mock_mongodb.side_effect = ValueError()
-                get_persistent()
-    mock_mongodb.assert_called_once_with("mongodb://localhost:27021")
+    with patch("featurebyte.utils.persistent.MongoDB") as mock_mongodb:
+        with pytest.raises(ValueError):
+            mock_mongodb.side_effect = ValueError()
+            get_persistent()
+    mock_mongodb.assert_called_once_with(uri="mongodb://localhost:27022")
 
 
 def test_get_app__loading_time():

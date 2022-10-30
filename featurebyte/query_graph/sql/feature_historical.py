@@ -179,7 +179,7 @@ async def get_historical_features(
     training_events = validate_historical_requests_point_in_time(training_events)
 
     # use a unique request table name
-    request_id = session.get_session_unique_id()
+    request_id = session.generate_session_unique_id()
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
 
     # Generate SQL code that computes the features

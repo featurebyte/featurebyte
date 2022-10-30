@@ -81,13 +81,15 @@ def config_fixture():
         ],
     }
 
-    with tempfile.NamedTemporaryFile("w") as file_handle:
-        file_handle.write(yaml.dump(config_dict))
-        file_handle.flush()
-        with mock.patch("featurebyte.config.APIClient.request") as mock_request:
-            with TestClient(app) as client:
-                mock_request.side_effect = client.request
-                yield Configurations(config_file_path=file_handle.name)
+    with tempfile.TemporaryDirectory() as tempdir:
+        config_file_path = os.path.join(tempdir, "config.yaml")
+        with open(config_file_path, "w") as file_handle:
+            file_handle.write(yaml.dump(config_dict))
+            file_handle.flush()
+            with mock.patch("featurebyte.config.APIClient.request") as mock_request:
+                with TestClient(app) as client:
+                    mock_request.side_effect = client.request
+                    yield Configurations(config_file_path=config_file_path)
 
 
 @pytest.fixture(scope="session")
@@ -201,7 +203,7 @@ def mock_config_path_env_fixture(config):
     """Override default config path for all API tests"""
     with mock.patch.dict(
         os.environ,
-        {"FEATUREBYTE_CONFIG_PATH": str(config.config_file_path)},
+        {"FEATUREBYTE_HOME": str(os.path.dirname(config.config_file_path))},
     ):
         yield
 

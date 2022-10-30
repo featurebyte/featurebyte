@@ -86,15 +86,19 @@ test: test-setup
 	${MAKE} test-teardown
 
 test-setup:
-	cd .github/mongoreplicaset && ./startdb.sh
+	cd docker && docker-compose up -d
 
 test-teardown:
-	cd .github/mongoreplicaset && docker-compose down
+	cd docker && docker-compose down
 
 test-routes:
 	uvicorn featurebyte.app:app --reload
 
+#* Docker
+docker-img-build:
+	docker buildx build -f ./docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" --cache-from "local/featurebyte:latest" -t "local/featurebyte:latest" .
 
+#* Docs Generation
 docs:
 	poetry run mkdocs serve
 

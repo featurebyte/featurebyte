@@ -403,7 +403,7 @@ class TestFeatureApi(BaseApiTestSuite):
             expected_df = pd.DataFrame({"a": [0, 1, 2]})
             mock_session = mock_get_session.return_value
             mock_session.execute_query.return_value = expected_df
-            mock_session.get_session_unique_id = Mock(return_value="1")
+            mock_session.generate_session_unique_id = Mock(return_value="1")
             response = test_api_client.post(
                 f"{self.base_route}/preview", json=feature_preview_payload
             )
