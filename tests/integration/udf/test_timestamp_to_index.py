@@ -19,7 +19,7 @@ def db_session_fixture(request):
     "db_session",
     [
         "snowflake",
-        "databricks",
+        # "databricks",
     ],
     indirect=True,
 )
