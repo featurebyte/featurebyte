@@ -61,60 +61,34 @@ jobs:
         python-version: ["3.8.0"]
     steps:
     - uses: actions/checkout@v3
+
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4.2.0
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Authenticate to Google Cloud
-      id: 'auth'
-      uses: 'google-github-actions/auth@v0'
-      with:
-        credentials_json: '${{ secrets.GCR_PYPI_CREDENTIALS_R }}'
-
     - name: Setup local mongodb for testing
-      run: |
-        cd .github/mongoreplicaset && ./startdb.sh
-
-    - name: Setup cache keys
-      run: |
-        echo "WEEK0=$(date +%U)" >> $GITHUB_ENV
-        echo "WEEK1=$(date +%U -d "7 day ago")" >> $GITHUB_ENV
-        echo "WEEK2=$(date +%U -d "14 day ago")" >> $GITHUB_ENV
-
-    - name: Setup cache keys (PR)
-      if: ${{ github.event_name == 'pull_request' }}
-      run: |
-        echo "TAG=-${GITHUB_HEAD_REF}" >> $GITHUB_ENV
+      run: cd .github/mongoreplicaset && ./startdb.sh
 
     - name: Setup cache
-      uses: actions/cache@v3.0.9
+      uses: actions/cache@v3
       with:
         path: .venv
-        key: featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK0 }}${{ env.TAG }}
-        restore-keys: |
-          featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK0 }}
-          featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK1 }}
-          featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK2 }}
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
 
     - name: Install Poetry
       run: |
-        mkdir -p ~/.config/pip && printf "%s\n" "[global]" "extra-index-url = https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" > ~/.config/pip/pip.conf
-        python -m pip install poetry==1.2.0rc99
-        rm ~/.config/pip/pip.conf
+        python -m pip install --extra-index-url 'https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/' poetry==1.2.0rc99
         poetry config virtualenvs.in-project true
 
     - name: Install dependencies
-      run: |
-        make install-nolock
+      run: make install
 
     - name: Lint Checks
-      run: |
-        make lint
+      run: make lint
 
     - name: Run tests
-      run: |
-        make test
+      run: make test
 
     - name: Test Coverage Report
       id: coverageComment
