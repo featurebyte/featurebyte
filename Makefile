@@ -19,7 +19,7 @@ PERMISSIVE_LICENSES := "\
 
 .PHONY: init
 .PHONY: install install-databricks-sql-connector
-.PHONY: update update-main update-dev update-lint update-docs
+.PHONY: update
 .PHONY: format
 .PHONY: lint lint-style lint-type lint-safety
 .PHONY: test test-setup test-teardown
@@ -50,22 +50,7 @@ generate-requirements-file:
 
 #* Update
 update:
-	${MAKE} update-main
-	${MAKE} update-dev
-	${MAKE} update-lint
-	${MAKE} update-docs
-
-update-main:
-	poetry update --only=main
-
-update-dev:
-	poetry update --only=dev
-
-update-lint:
-	poetry update --only=lint
-
-update-docs:
-	poetry update --only=docs
+	poetry update
 
 #* Formatters
 format:
@@ -108,10 +93,6 @@ test-teardown:
 
 test-routes:
 	uvicorn featurebyte.app:app --reload
-
-#* Docs Generation
-docs:
-	poetry run sphinx-build -b html docs/source docs/build
 
 #* Cleaning
 clean:
