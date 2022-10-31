@@ -66,17 +66,17 @@ def item_data_join_event_data_node_fixture(
     node_params = {
         "left_on": "order_id",
         "right_on": "order_id",
-        "left_input_columns": ["order_id", "item_id", "item_name", "item_type"],
-        "left_output_columns": ["order_id", "item_id", "item_name", "item_type"],
-        "right_input_columns": ["order_method"],
-        "right_output_columns": ["order_method"],
+        "left_input_columns": ["order_method"],
+        "left_output_columns": ["order_method"],
+        "right_input_columns": ["order_id", "item_id", "item_name", "item_type"],
+        "right_output_columns": ["order_id", "item_id", "item_name", "item_type"],
         "join_type": "left",
     }
     node = global_graph.add_operation(
         node_type=NodeType.JOIN,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[item_data_input_node, event_data_input_node],
+        input_nodes=[event_data_input_node, item_data_input_node],
     )
     return node
 
@@ -160,26 +160,26 @@ def test_item_data_join_event_data_attributes(global_graph, item_data_join_event
     expected = textwrap.dedent(
         """
         SELECT
-          L."order_id" AS "order_id",
-          L."item_id" AS "item_id",
-          L."item_name" AS "item_name",
-          L."item_type" AS "item_type",
-          R."order_method" AS "order_method"
+          L."order_method" AS "order_method",
+          R."order_id" AS "order_id",
+          R."item_id" AS "item_id",
+          R."item_name" AS "item_name",
+          R."item_type" AS "item_type"
         FROM (
-            SELECT
-              "order_id" AS "order_id",
-              "item_id" AS "item_id",
-              "item_name" AS "item_name",
-              "item_type" AS "item_type"
-            FROM "db"."public"."item_table"
-        ) AS L
-        LEFT JOIN (
             SELECT
               "ts" AS "ts",
               "cust_id" AS "cust_id",
               "order_id" AS "order_id",
               "order_method" AS "order_method"
             FROM "db"."public"."event_table"
+        ) AS L
+        LEFT JOIN (
+            SELECT
+              "order_id" AS "order_id",
+              "item_id" AS "item_id",
+              "item_name" AS "item_name",
+              "item_type" AS "item_type"
+            FROM "db"."public"."item_table"
         ) AS R
           ON L."order_id" = R."order_id"
         """
