@@ -79,12 +79,7 @@ class MigrationServiceMixin(Protocol):
             for doc in docs:
                 await self.persistent.migrate_record(
                     collection_name=self.collection_name,
-                    document_id=doc["_id"],
-                    migrate_func=self.migrate_document_record,
-                )
-                await self.persistent.migrate_audit_records(
-                    collection_name=self.collection_name,
-                    document_id=doc["_id"],
+                    document=doc,
                     migrate_func=self.migrate_document_record,
                 )
 

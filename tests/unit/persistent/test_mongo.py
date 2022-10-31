@@ -49,7 +49,7 @@ async def test_insert_one(mongo_persistent, test_document):
     # check migrate audit records (make sure there is no actual changes
     # due to identity migration function)
     before = await client["test"]["__audit__data"].find({"document_id": inserted_id}).to_list()
-    await persistent.migrate_audit_records(
+    await persistent._migrate_audit_records(
         collection_name="data", document_id=inserted_id, migrate_func=lambda d: d
     )
     after = await client["test"]["__audit__data"].find({"document_id": inserted_id}).to_list()
@@ -196,7 +196,7 @@ async def test_update_one(mongo_persistent, test_document, test_documents):
     # check migrate audit records (make sure there is no actual changes
     # due to identity migration function)
     before = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
-    await persistent.migrate_audit_records(
+    await persistent._migrate_audit_records(
         collection_name="data", document_id=doc_id, migrate_func=lambda d: d
     )
     after = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
@@ -286,7 +286,7 @@ async def test_replace_one(mongo_persistent, test_document, test_documents):
     # check migrate audit records (make sure there is no actual changes
     # due to identity migration function)
     before = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
-    await persistent.migrate_audit_records(
+    await persistent._migrate_audit_records(
         collection_name="data", document_id=doc_id, migrate_func=lambda d: d
     )
     after = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
@@ -330,7 +330,7 @@ async def test_delete_one(mongo_persistent, test_documents):
     # check migrate audit records (make sure there is no actual changes
     # due to identity migration function)
     before = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
-    await persistent.migrate_audit_records(
+    await persistent._migrate_audit_records(
         collection_name="data", document_id=doc_id, migrate_func=lambda d: d
     )
     after = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()

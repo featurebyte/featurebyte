@@ -462,40 +462,65 @@ class Persistent(ABC):
     async def migrate_record(
         self,
         collection_name: str,
-        document_id: ObjectId,
+        document: Document,
         migrate_func: Callable[[dict[str, Any]], dict[str, Any]],
     ) -> None:
         """
-        Migrate record
+        Migrate record & its audit records
 
         Parameters
         ----------
         collection_name: str
             Collection name
-        document_id: ObjectId
-            Document ID
+        document: Document
+            Document to be migrated
         migrate_func: Callable[[dict[str, Any]], dict[str, Any]]
             Function to migrate the record from old to new format
         """
-        query_filter = {"_id": document_id}
-        original_doc = await self._find_one(
-            collection_name=collection_name, query_filter=query_filter
+        await self._migrate_record(
+            collection_name=collection_name,
+            document=document,
+            migrate_func=migrate_func,
         )
-        if original_doc:
-            await self._update_one(
-                collection_name=collection_name,
-                query_filter=query_filter,
-                update={"$set": migrate_func(cast(Dict[str, Any], original_doc))},
-            )
+        await self._migrate_audit_records(
+            collection_name=collection_name,
+            document_id=document["_id"],
+            migrate_func=migrate_func,
+        )
 
-    async def migrate_audit_records(
+    async def _migrate_record(
+        self,
+        collection_name: str,
+        document: Document,
+        migrate_func: Callable[[dict[str, Any]], dict[str, Any]],
+    ) -> None:
+        """
+        Migrate record helper
+
+        Parameters
+        ----------
+        collection_name: str
+            Collection name
+        document: Document
+            Document to be migrated
+        migrate_func: Callable[[dict[str, Any]], dict[str, Any]]
+            Function to migrate the record from old to new format
+        """
+        query_filter = {"_id": document["_id"]}
+        await self._update_one(
+            collection_name=collection_name,
+            query_filter=query_filter,
+            update={"$set": migrate_func(cast(Dict[str, Any], document))},
+        )
+
+    async def _migrate_audit_records(
         self,
         collection_name: str,
         document_id: ObjectId,
         migrate_func: Callable[[dict[str, Any]], dict[str, Any]],
     ) -> None:
         """
-        Migrate audit records
+        Migrate audit records helper
 
         Parameters
         ----------
