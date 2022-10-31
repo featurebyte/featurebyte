@@ -11,6 +11,7 @@ import inspect
 from featurebyte.common.path_util import import_submodules
 from featurebyte.logger import logger
 from featurebyte.migration.migration_data_service import SchemaMetadataService
+from featurebyte.migration.model import SchemaMetadataModel, SchemaMetadataUpdate
 from featurebyte.migration.service import MigrationInfo
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.persistent.base import Persistent
@@ -84,7 +85,7 @@ def retrieve_all_migration_methods() -> dict[int, Any]:
 
 
 async def migrate_method_generator(
-    user: Any, persistent: Persistent
+    user: Any, persistent: Persistent, schema_metadata: SchemaMetadataModel
 ) -> AsyncGenerator[tuple[BaseDocumentServiceT, Callable[..., Any]], None]:
     """
     Migrate method generator
@@ -95,6 +96,8 @@ async def migrate_method_generator(
         User object contains id information
     persistent: Persistent
         Persistent storage object
+    schema_metadata: SchemaMetadataModel
+        Schema metadata
 
     Yields
     ------
@@ -103,10 +106,7 @@ async def migrate_method_generator(
     migrate_method
         Migration method
     """
-    schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
-    schema_metadata = await schema_metadata_service.get_or_create_document()
     migrate_methods = retrieve_all_migration_methods()
-
     version_start = schema_metadata.version + 1
     for version in range(version_start, len(migrate_methods) + 1):
         migrate_method_data = migrate_methods[version]
@@ -154,7 +154,13 @@ async def run_migration(user: Any, persistent: Persistent) -> None:
     persistent: Persistent
         Persistent object
     """
-    method_generator = migrate_method_generator(user=user, persistent=persistent)
+    schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
+    schema_metadata = await schema_metadata_service.get_or_create_document()
+    method_generator = migrate_method_generator(
+        user=user,
+        persistent=persistent,
+        schema_metadata=schema_metadata,
+    )
     async for service, migrate_method in method_generator:
         marker = _extract_migrate_method_marker(migrate_method)
         logger.info(f"Run migration (version={marker.version}): {marker.description}")
@@ -163,3 +169,9 @@ async def run_migration(user: Any, persistent: Persistent) -> None:
         # perform post migration sanity check
         logger.info("Perform post migration sanity check...")
         await post_migration_sanity_check(service)
+
+        # update schema version after migration
+        await schema_metadata_service.update_document(
+            document_id=schema_metadata.id,
+            data=SchemaMetadataUpdate(version=marker.version, description=marker.description),
+        )

@@ -50,13 +50,16 @@ def test_retrieve_all_migration_methods__duplicated_version(mock_extract_method)
 @pytest.mark.asyncio
 async def test_migrate_method_generator(user, persistent):
     """Test migrate method generator"""
+    schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
+    schema_metadata = await schema_metadata_service.get_or_create_document()
+
     expected_method_num = len(retrieve_all_migration_methods())
-    method_generator = migrate_method_generator(user=user, persistent=persistent)
+    method_generator = migrate_method_generator(
+        user=user, persistent=persistent, schema_metadata=schema_metadata
+    )
     assert len([_ async for _ in method_generator]) == expected_method_num
 
     # bump version to 1
-    schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
-    schema_metadata = await schema_metadata_service.get_or_create_document()
     updated_schema_metadata = await schema_metadata_service.update_document(
         schema_metadata.id, data=SchemaMetadataUpdate(version=1, description="Some description")
     )
@@ -64,7 +67,10 @@ async def test_migrate_method_generator(user, persistent):
     assert updated_schema_metadata.description == "Some description"
 
     # check generator output
-    method_generator = migrate_method_generator(user=user, persistent=persistent)
+    schema_metadata = await schema_metadata_service.get_or_create_document()
+    method_generator = migrate_method_generator(
+        user=user, persistent=persistent, schema_metadata=schema_metadata
+    )
     methods = [method async for method in method_generator]
     assert len(methods) == expected_method_num - 1
     for _, method in methods:
@@ -115,12 +121,23 @@ async def test_post_migration_sanity_check(persistent, user):
 async def test_run_migration(migration_check_persistent, user):
     """Test run migration function"""
     persistent = migration_check_persistent
+    schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
+    schema_metadata = await schema_metadata_service.get_or_create_document()
 
     # perform migration on testing samples to check the migration logic
     await run_migration(user=user, persistent=persistent)
 
     # check that all migrated collections contains some examples for testing
-    async for service, _ in migrate_method_generator(user=user, persistent=persistent):
+    version = 0
+    description = "Initial schema"
+    async for service, migrate_method in migrate_method_generator(
+        user=user, persistent=persistent, schema_metadata=schema_metadata
+    ):
+        marker = _extract_migrate_method_marker(migrate_method)
+        version = max(version, marker.version)
+        if marker.version == version:
+            description = marker.description
+
         docs = await service.list_documents()
         assert docs["total"] > 0
 
@@ -130,3 +147,9 @@ async def test_run_migration(migration_check_persistent, user):
             audit_docs = await service.list_document_audits(document_id=doc["_id"])
             max_audit_record_nums = max(max_audit_record_nums, audit_docs["total"])
         assert max_audit_record_nums > 1
+
+    # check version in schema_metadata after migration
+    schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
+    schema_metadata = await schema_metadata_service.get_or_create_document()
+    assert schema_metadata.version == version
+    assert schema_metadata.description == description
