@@ -1,8 +1,8 @@
 version: '3.8'
 
 services:
-  featurebyte:
-    container_name: featurebyte
+  featurebyte-service:
+    container_name: featurebyte-service
     image: local/featurebyte:latest
     volumes:
       - ~/.featurebyte/mongo:/data

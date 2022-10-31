@@ -43,7 +43,7 @@ RUN poetry config virtualenvs.create false && \
     rm -rf ~/.cache/pypoetry/cache
 
 # Copy project files
-COPY ./docker/rs-init.sh ./docker/entrypoint.sh /scripts/
+COPY ./docker/entrypoint.sh ./docker/migration.py /scripts/
 COPY ./featurebyte /home/$USER/app/featurebyte
 RUN chown "$USER:$USER" -R /home/$USER/app
 
