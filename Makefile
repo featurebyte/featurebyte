@@ -1,6 +1,6 @@
 #* Variables
 MAKE := make
-EXECUTABLES = poetry git
+EXECUTABLES = poetry git docker docker-compose
 PYLINT_DISABLE_FOR_TESTS := redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding,duplicate-code
 POETRY_ENV_PIP := $(shell poetry env info --path)/bin/pip
 PERMISSIVE_LICENSES := "\
@@ -18,8 +18,8 @@ PERMISSIVE_LICENSES := "\
 "
 
 .PHONY: init
-.PHONY: install install-nolock install-lock install-main install-dev install-lint install-docs
-.PHONY: update update-main update-dev update-lint update-docs
+.PHONY: install install-databricks-sql-connector
+.PHONY: update
 .PHONY: format
 .PHONY: lint lint-style lint-type lint-safety
 .PHONY: test test-setup test-teardown
@@ -33,30 +33,9 @@ init:
 	poetry run pre-commit install
 
 #* Installation
-install: install-lock
-	${MAKE} install-nolock
-
-install-nolock:
-	${MAKE} install-main
-	${MAKE} install-dev
-	${MAKE} install-lint
-	${MAKE} install-docs
+install:
+	poetry install -n --sync
 	${MAKE} install-databricks-sql-connector
-
-install-lock:
-	poetry lock -n
-
-install-main:
-	poetry install -n --only=main,server
-
-install-dev:
-	poetry install -n --only=dev,server
-
-install-lint:
-	poetry install -n --only=lint,server
-
-install-docs:
-	poetry install -n --only=docs,server
 
 install-databricks-sql-connector:
 	# databricks-sql-connector requires pyarrow = "^9.0.0" but snowflake-connector-python requires
@@ -71,22 +50,7 @@ generate-requirements-file:
 
 #* Update
 update:
-	${MAKE} update-main
-	${MAKE} update-dev
-	${MAKE} update-lint
-	${MAKE} update-docs
-
-update-main:
-	poetry update --only=main
-
-update-dev:
-	poetry update --only=dev
-
-update-lint:
-	poetry update --only=lint
-
-update-docs:
-	poetry update --only=docs
+	poetry update
 
 #* Formatters
 format:
@@ -112,7 +76,7 @@ lint-type:
 
 lint-safety: generate-requirements-file
 	@poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\--" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
-	@poetry run pip-audit --no-deps -r requirements.txt --ignore-vuln OSV-2022-715
+	@poetry run pip-audit
 	@poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing
@@ -130,9 +94,9 @@ test-teardown:
 test-routes:
 	uvicorn featurebyte.app:app --reload
 
-#* Docs Generation
+
 docs:
-	poetry run sphinx-build -b html docs/source docs/build
+	poetry run mkdocs serve
 
 #* Cleaning
 clean:
@@ -145,4 +109,5 @@ clean:
 	@find . | grep -E ".pytest_cache" | xargs rm -rf|| true
 	@rm pytest-coverage.txt || true
 	@rm pytest.xml || true
-	@rm -rf dist/ docs/build htmlcov/ || true
+	@rm -rf dist/ docs/build htmlcov/ site/ || true
+	@rm requirements.txt || true

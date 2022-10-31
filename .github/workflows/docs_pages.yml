@@ -1,7 +1,7 @@
 name: build-docs
 on:
   # Ignored
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 permissions: write-all
 
@@ -11,7 +11,7 @@ env:
   GCR_PYPI_REPO: featurebyte-pypi
   GCR_PYPI_LOCATION: us-central1
   POETRY_HTTP_BASIC_FEATUREBYTE_NP_USERNAME: _json_key_base64                           # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
-  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }} # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
+  POETRY_HTTP_BASIC_FEATUREBYTE_NP_PASSWORD: ${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}  # Poetry to pull from google artifact factory [references pyproject.toml (tool.poetry.source).name]
 
 
 jobs:
@@ -23,57 +23,20 @@ jobs:
         python-version: ["3.8"]
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v3
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4.2.0
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Setup cache keys
-      run: |
-        echo "WEEK0=$(date +%U)" >> $GITHUB_ENV
-        echo "WEEK1=$(date +%U -d "7 day ago")" >> $GITHUB_ENV
-        echo "WEEK2=$(date +%U -d "14 day ago")" >> $GITHUB_ENV
+      - name: Setup cache
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
 
-    - name: Setup cache keys (PR)
-      if: ${{ github.event_name == 'pull_request' }}
-      run: |
-        echo "TAG=-${GITHUB_HEAD_REF}" >> $GITHUB_ENV
-
-    - name: Setup cache
-      uses: actions/cache@v3.0.9
-      with:
-        path: .venv
-        key: featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK0 }}${{ env.TAG }}
-        restore-keys: |
-          featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK0 }}
-          featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK1 }}
-          featurebyte-venv-${{ matrix.python-version }}-${{ env.WEEK2 }}
-
-    - name: Install Poetry
-      run: |
-        mkdir -p ~/.config/pip && printf "%s\n" "[global]" "extra-index-url = https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" > ~/.config/pip/pip.conf
-        python -m pip install poetry==1.2.0rc99
-        rm ~/.config/pip/pip.conf
-        poetry config virtualenvs.in-project true
-
-    - name: Build documentation
-      env:
-        SPHINX_GITHUB_CHANGELOG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        make install-nolock
-        mkdir gh-pages
-        touch gh-pages/.nojekyll
-        make docs
-        cp -r docs/build/* gh-pages/
-
-    - name: Deploy documentation
-      if: github.event_name == 'push'
-      uses: JamesIves/github-pages-deploy-action@v4.4.0
-      with:
-        branch: gh-pages
-        folder: gh-pages
+      - name: Install Poetry
+        run: |
+          python -m pip install --extra-index-url "https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" poetry==1.2.0rc99
+          poetry config virtualenvs.in-project true
