@@ -18,7 +18,7 @@ PERMISSIVE_LICENSES := "\
 "
 
 .PHONY: init
-.PHONY: install install-nolock install-lock install-main install-dev install-lint install-docs
+.PHONY: install install-databricks-sql-connector
 .PHONY: update update-main update-dev update-lint update-docs
 .PHONY: format
 .PHONY: lint lint-style lint-type lint-safety
@@ -33,30 +33,9 @@ init:
 	poetry run pre-commit install
 
 #* Installation
-install: install-lock
-	${MAKE} install-nolock
-
-install-nolock:
-	${MAKE} install-main
-	${MAKE} install-dev
-	${MAKE} install-lint
-	${MAKE} install-docs
+install:
+	poetry install -n --sync
 	${MAKE} install-databricks-sql-connector
-
-install-lock:
-	poetry lock -n
-
-install-main:
-	poetry install -n --only=main,server
-
-install-dev:
-	poetry install -n --only=dev,server
-
-install-lint:
-	poetry install -n --only=lint,server
-
-install-docs:
-	poetry install -n --only=docs,server
 
 install-databricks-sql-connector:
 	# databricks-sql-connector requires pyarrow = "^9.0.0" but snowflake-connector-python requires
@@ -112,7 +91,7 @@ lint-type:
 
 lint-safety: generate-requirements-file
 	@poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\--" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
-	@poetry run pip-audit --no-deps -r requirements.txt --ignore-vuln OSV-2022-715
+	@poetry run pip-audit
 	@poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 
 #* Testing
@@ -146,3 +125,4 @@ clean:
 	@rm pytest-coverage.txt || true
 	@rm pytest.xml || true
 	@rm -rf dist/ docs/build htmlcov/ || true
+	@rm requirements.txt
