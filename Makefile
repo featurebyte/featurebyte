@@ -1,6 +1,6 @@
 #* Variables
 MAKE := make
-EXECUTABLES = poetry git
+EXECUTABLES = poetry git docker docker-compose
 PYLINT_DISABLE_FOR_TESTS := redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding,duplicate-code
 POETRY_ENV_PIP := $(shell poetry env info --path)/bin/pip
 PERMISSIVE_LICENSES := "\
