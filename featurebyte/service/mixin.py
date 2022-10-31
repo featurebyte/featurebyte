@@ -3,18 +3,27 @@ This module contains mixin class(es) used in the service directory.
 """
 from __future__ import annotations
 
-from typing import Any, Optional, TypeVar
+from typing import Any, Generic, Literal, Optional, Type, TypeVar
+
+from abc import abstractmethod
 
 from bson.objectid import ObjectId
 from pydantic import ValidationError
 
 from featurebyte.exception import CredentialsError
-from featurebyte.models.base import PydanticObjectId
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
+    PydanticObjectId,
+)
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.session.base import BaseSession
 from featurebyte.session.manager import SessionManager
 
-Document = TypeVar("Document")
+GeneralT = TypeVar("GeneralT")
+Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
+DocumentCreateSchema = TypeVar("DocumentCreateSchema", bound=FeatureByteBaseModel)
+SortDir = Literal["asc", "desc"]
 
 
 class OpsServiceMixin:
@@ -65,20 +74,20 @@ class OpsServiceMixin:
         return sorted(ObjectId(doc_id) for doc_id in document_ids if doc_id != document_id)
 
     @staticmethod
-    def conditional_return(document: Document, condition: bool) -> Optional[Document]:
+    def conditional_return(document: GeneralT, condition: bool) -> Optional[GeneralT]:
         """
         Return output only if condition is True
 
         Parameters
         ----------
-        document: Document
+        document: GeneralT
             Document to be returned
         condition: bool
             Flag to control whether to return document
 
         Returns
         -------
-        Optional[Document]
+        Optional[GeneralT]
         """
         if condition:
             return document
@@ -120,3 +129,80 @@ class OpsServiceMixin:
             raise CredentialsError(
                 f'Credential used to access FeatureStore (name: "{feature_store.name}") is missing or invalid.'
             ) from exc
+
+
+class GetOrCreateMixin(Generic[Document, DocumentCreateSchema]):
+    """
+    CreateOrGetMixin class contains method to create a new document if it does not exist when retrieving a document
+    """
+
+    document_class: Type[Document]
+    document_create_class: Type[DocumentCreateSchema]
+
+    @abstractmethod
+    async def create_document(
+        self, data: DocumentCreateSchema, get_credential: Any = None
+    ) -> Document:
+        """
+        Create document at persistent
+
+        Parameters
+        ----------
+        data: DocumentCreateSchema
+            Document creation payload object
+        get_credential: Any
+            Get credential handler function
+
+        Returns
+        -------
+        Document
+        """
+
+    @abstractmethod
+    async def list_documents(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        sort_by: str | None = "created_at",
+        sort_dir: SortDir = "desc",
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """
+        List documents stored at persistent (GitDB or MongoDB)
+
+        Parameters
+        ----------
+        page: int
+            Page number
+        page_size: int
+            Number of items per page
+        sort_by: str | None
+            Key used to sort the returning documents
+        sort_dir: SortDir
+            Sorting the returning documents in ascending order or descending order
+        kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        dict[str, Any]
+            List of documents fulfilled the filtering condition
+        """
+
+    async def get_or_create_document(self, name: str) -> Document:
+        """
+        Retrieve (or create a new one if it does not exist) a document by name
+
+        Parameters
+        ----------
+        name: str
+            Name used to retrieve the document
+
+        Returns
+        -------
+        SemanticModel
+        """
+        documents = await self.list_documents(page=1, page_size=0, query_filter={"name": name})
+        if documents["data"]:
+            return self.document_class(**documents["data"][0])
+        return await self.create_document(data=self.document_create_class(name=name))

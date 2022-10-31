@@ -3,7 +3,7 @@ BaseService class
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Generic, Iterator, List, Literal, Optional, Type, TypeVar, Union
+from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
 
 import copy
 
@@ -15,17 +15,14 @@ from featurebyte.common.dict_util import get_field_path_value
 from featurebyte.exception import DocumentConflictError, DocumentNotFoundError
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
-    FeatureByteBaseModel,
     UniqueConstraintResolutionSignature,
     VersionIdentifier,
 )
 from featurebyte.models.persistent import AuditActionType, FieldValueHistory, QueryFilter
 from featurebyte.persistent.base import Persistent
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, BaseInfo
-from featurebyte.service.mixin import OpsServiceMixin
+from featurebyte.service.mixin import Document, DocumentCreateSchema, OpsServiceMixin, SortDir
 
-Document = TypeVar("Document", bound=FeatureByteBaseDocumentModel)
-DocumentCreateSchema = TypeVar("DocumentCreateSchema", bound=FeatureByteBaseModel)
 DocumentUpdateSchema = TypeVar("DocumentUpdateSchema", bound=BaseDocumentServiceUpdateSchema)
 InfoDocument = TypeVar("InfoDocument", bound=BaseInfo)
 
@@ -214,7 +211,7 @@ class BaseDocumentService(
         page: int = 1,
         page_size: int = 10,
         sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_dir: SortDir = "desc",
         **kwargs: Any,
     ) -> dict[str, Any]:
         """
@@ -228,7 +225,7 @@ class BaseDocumentService(
             Number of items per page
         sort_by: str | None
             Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
+        sort_dir: SortDir
             Sorting the returning documents in ascending order or descending order
         kwargs: Any
             Additional keyword arguments
@@ -280,7 +277,7 @@ class BaseDocumentService(
         page: int = 1,
         page_size: int = 10,
         sort_by: str | None = "created_at",
-        sort_dir: Literal["asc", "desc"] = "desc",
+        sort_dir: SortDir = "desc",
         **kwargs: Any,
     ) -> dict[str, Any]:
         """
@@ -298,7 +295,7 @@ class BaseDocumentService(
             Number of items per page
         sort_by: str | None
             Key used to sort the returning documents
-        sort_dir: "asc" or "desc"
+        sort_dir: SortDir
             Sorting the returning documents in ascending order or descending order
         kwargs: Any
             Additional keyword arguments
@@ -603,3 +600,27 @@ class BaseDocumentService(
         if return_document:
             return await self.get_document(document_id=document_id)
         return None
+
+    async def historical_document_generator(
+        self, document_id: ObjectId
+    ) -> AsyncIterator[Optional[Document]]:
+        """
+        Reconstruct documents of older history
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Document ID
+
+        Yields
+        -------
+        AsyncIterator[Optional[Document]]
+            Async iterator of older historical records
+        """
+        async for _, audit_doc in self.persistent.historical_document_generator(
+            collection_name=self.collection_name, document_id=document_id
+        ):
+            if audit_doc:
+                yield self.document_class(**audit_doc)
+            else:
+                yield None

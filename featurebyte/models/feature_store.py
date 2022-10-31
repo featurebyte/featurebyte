@@ -208,6 +208,7 @@ class DataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
         MongoDB settings
         """
 
+        collection_name: str = "tabular_data"
         unique_constraints: List[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),

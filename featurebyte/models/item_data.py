@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from pydantic import StrictStr, validator
+from pydantic import Field, StrictStr, validator
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.feature_store import DataModel
 
 
@@ -36,6 +36,7 @@ class ItemDataModel(DataModel):
         Datetime when the EventData object was last updated
     """
 
+    type: TableDataType = Field(TableDataType.ITEM_DATA, const=True)
     event_id_column: StrictStr
     item_id_column: StrictStr
 
@@ -54,10 +55,3 @@ class ItemDataModel(DataModel):
         return DataModel.validate_column_exists(
             column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
         )
-
-    class Settings(DataModel.Settings):
-        """
-        MongoDB settings
-        """
-
-        collection_name: str = "item_data"
