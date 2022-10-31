@@ -689,10 +689,12 @@ def event_data_fixture(request):
         kind = "snowflake"
     else:
         kind = request.param
-    assert kind in {"snowflake", "databricks"}
+
+    # assert kind in {"snowflake", "databricks"}
     # if kind == "snowflake":
     #     return request.getfixturevalue("snowflake_event_data")
     #
     # return request.getfixturevalue("databricks_event_data")
 
+    assert kind == "snowflake"
     return request.getfixturevalue("snowflake_event_data")

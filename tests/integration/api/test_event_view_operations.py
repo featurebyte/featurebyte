@@ -162,7 +162,7 @@ def test_feature_list_saving_in_bad_state__feature_id_is_different(
     assert feature_list[feature_2h.name].id == feature_2h.id
 
 
-@pytest.mark.parametrize("event_data", ["databricks", "snowflake"], indirect=True)
+@pytest.mark.parametrize("event_data", ["snowflake"], indirect=True)
 def test_query_object_operation(transaction_data_upper_case, event_data, feature_manager):
     """
     Test EventView operations for an EventData
