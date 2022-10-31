@@ -28,19 +28,20 @@ RUN mkdir -p ~/.config/pip && printf "%s\n" "[global]" "extra-index-url = https:
     pip install poetry==1.2.0rc99 --no-cache-dir && \
     rm -rf ~/.config/pip
 
-# Install requirements
-COPY poetry.lock pyproject.toml ./
-
 # Extend PATH to use pip-installed tools from shell (like alembic)
 ENV PATH="${PATH}:/home/$USER/.local/bin"
 
 # Add non-root user
 RUN adduser --uid $UID --disabled-password --gecos '' $USER
 
+# Install requirements
+COPY poetry.lock pyproject.toml ./
 RUN poetry config virtualenvs.create false && \
     poetry install --only main,server --no-interaction --no-ansi && \
     rm -rf ~/.cache/pypoetry/artifacts && \
     rm -rf ~/.cache/pypoetry/cache
+RUN pip install --no-cache-dir databricks-sql-connector==2.1.0 && \
+    pip install --no-cache-dir pyarrow==8.0.0
 
 # Copy project files
 COPY ./docker/entrypoint.sh ./docker/migration.py /scripts/

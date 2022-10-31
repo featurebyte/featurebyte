@@ -23,12 +23,6 @@ Manage and serve Machine Learning Features for Data Science applications
 pip install -U featurebyte
 ```
 
-Then you can run
-
-```bash
-featurebyte --help
-```
-
 ### Install from source
 
 Checkout the featurebyte repo:

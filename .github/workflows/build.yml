@@ -68,19 +68,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Setup local mongodb for testing
-      run: |
-        cd .github/mongoreplicaset && ./startdb.sh
-
-    - name: Setup cache keys
-      run: |
-        echo "WEEK0=$(date +%U)" >> $GITHUB_ENV
-        echo "WEEK1=$(date +%U -d "7 day ago")" >> $GITHUB_ENV
-        echo "WEEK2=$(date +%U -d "14 day ago")" >> $GITHUB_ENV
-
-    - name: Setup cache keys (PR)
-      if: ${{ github.event_name == 'pull_request' }}
-      run: |
-        echo "TAG=-${GITHUB_HEAD_REF}" >> $GITHUB_ENV
+      run: cd .github/mongoreplicaset && ./startdb.sh
 
     - name: Setup cache
       uses: actions/cache@v3

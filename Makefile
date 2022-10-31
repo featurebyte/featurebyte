@@ -98,7 +98,7 @@ test-routes:
 docker-img-build:
 	docker buildx build -f ./docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" --cache-from "local/featurebyte:latest" -t "local/featurebyte:latest" .
 
-start-service:
+start-service: docker-img-build
 	cd docker && docker-compose up -d
 
 stop-service:
