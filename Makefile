@@ -94,6 +94,10 @@ test-teardown:
 test-routes:
 	uvicorn featurebyte.app:app --reload
 
+
+docs:
+	poetry run mkdocs serve
+
 #* Cleaning
 clean:
 	@echo "Running Clean"
@@ -105,5 +109,5 @@ clean:
 	@find . | grep -E ".pytest_cache" | xargs rm -rf|| true
 	@rm pytest-coverage.txt || true
 	@rm pytest.xml || true
-	@rm -rf dist/ docs/build htmlcov/ || true
-	@rm requirements.txt
+	@rm -rf dist/ docs/build htmlcov/ site/ || true
+	@rm requirements.txt || true

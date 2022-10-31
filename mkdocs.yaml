@@ -1,0 +1,10 @@
+site_name: Featurebyte
+nav:
+    - Home: index.md
+    - Reference:
+        - worker: reference/worker/index.md
+theme: material
+
+plugins:
+  - search
+  - mkdocstrings

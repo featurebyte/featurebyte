@@ -124,6 +124,8 @@ uvicorn = "^0.18.2"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.4.1"
+mkdocs-material = "^8.5.7"
+mkdocstrings = {version = "^0.19.0", extras = ["python"]}
 
 [tool.poetry.group.lint.dependencies]
 bandit = "^1.7.4"
