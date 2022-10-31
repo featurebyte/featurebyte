@@ -9,7 +9,6 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.schema.common.base import PaginationMixin
-from featurebyte.service.base_document import Document
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
@@ -19,6 +18,7 @@ from featurebyte.service.feature_list_namespace import FeatureListNamespaceServi
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
+from featurebyte.service.mixin import Document
 from featurebyte.service.relationship import ParentT, RelationshipService
 from featurebyte.service.semantic import SemanticService
 

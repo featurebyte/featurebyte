@@ -11,8 +11,9 @@ from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.schema.data import DataCreate, DataUpdate
-from featurebyte.service.base_document import BaseDocumentService, Document
+from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.mixin import Document
 
 DocumentCreate = TypeVar("DocumentCreate", bound=DataCreate)
 DocumentUpdate = TypeVar("DocumentUpdate", bound=DataUpdate)

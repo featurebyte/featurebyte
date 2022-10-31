@@ -51,15 +51,15 @@ class SchemaMetadataModel(BaseMigrationMetadataModel):
     """SchemaMetadata model"""
 
     name: str = Field(MigrationMetadata.SCHEMA_METADATA, const=True)
-    version: int = Field(default=0)
-    description: str = Field(default="Initial schema")
+    version: int
+    description: str
 
 
 class SchemaMetadataCreate(FeatureByteBaseModel):
     """SchemaMetadata creation payload"""
 
-    version: int
-    description: str
+    version: int = Field(default=0)
+    description: str = Field(default="Initial schema")
 
 
 class SchemaMetadataUpdate(BaseDocumentServiceUpdateSchema):

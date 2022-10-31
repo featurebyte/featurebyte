@@ -33,8 +33,6 @@ class EventDataMigrationService(EventDataService, MigrationServiceMixin):
             query_filter={"_id": {"$in": list(sample_docs_before_map)}},
         )
         sample_docs_after_map = {doc["_id"]: doc for doc in sample_docs_after}
-
-        assert total_after == total_before
-        for doc_id, doc_before in sample_docs_after_map.items():
-            doc_after = sample_docs_after_map[doc_id]
-            assert doc_after == {**doc_before, "type": "event_data"}
+        assert total_before == total_after
+        for doc in sample_docs_after_map.values():
+            assert doc["type"] == "event_data"

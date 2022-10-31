@@ -11,7 +11,7 @@ import inspect
 from featurebyte.common.path_util import import_submodules
 from featurebyte.logger import logger
 from featurebyte.migration.migration_data_service import SchemaMetadataService
-from featurebyte.migration.model import SchemaMetadataModel, SchemaMetadataUpdate
+from featurebyte.migration.model import MigrationMetadata, SchemaMetadataModel, SchemaMetadataUpdate
 from featurebyte.migration.service import MigrationInfo
 from featurebyte.models.base import FeatureByteBaseDocumentModel, FeatureByteBaseModel
 from featurebyte.persistent.base import Persistent
@@ -155,7 +155,9 @@ async def run_migration(user: Any, persistent: Persistent) -> None:
         Persistent object
     """
     schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
-    schema_metadata = await schema_metadata_service.get_or_create_document()
+    schema_metadata = await schema_metadata_service.get_or_create_document(
+        name=MigrationMetadata.SCHEMA_METADATA.value
+    )
     method_generator = migrate_method_generator(
         user=user,
         persistent=persistent,

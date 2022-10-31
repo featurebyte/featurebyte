@@ -4,6 +4,7 @@ Test migration related service(s)
 import pytest
 
 from featurebyte.migration.migration_data_service import SchemaMetadataService
+from featurebyte.migration.model import MigrationMetadata
 from featurebyte.migration.service import migrate
 
 
@@ -19,13 +20,17 @@ async def test_get_or_create_document(schema_metadata_service):
     docs = await schema_metadata_service.list_documents()
     assert len(docs["data"]) == 0
 
-    created_doc = await schema_metadata_service.get_or_create_document()
+    created_doc = await schema_metadata_service.get_or_create_document(
+        name=MigrationMetadata.SCHEMA_METADATA.value
+    )
     assert created_doc.version == 0
     docs = await schema_metadata_service.list_documents()
     assert len(docs["data"]) == 1
     assert docs["data"][0] == created_doc.dict(by_alias=True)
 
-    retrieved_doc = await schema_metadata_service.get_or_create_document()
+    retrieved_doc = await schema_metadata_service.get_or_create_document(
+        name=MigrationMetadata.SCHEMA_METADATA.value
+    )
     assert retrieved_doc == created_doc
     docs = await schema_metadata_service.list_documents()
     assert len(docs["data"]) == 1

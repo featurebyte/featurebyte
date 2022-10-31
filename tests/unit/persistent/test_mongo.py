@@ -301,7 +301,6 @@ async def test_delete_one(mongo_persistent, test_documents):
     user_id = ObjectId()
     persistent, client = mongo_persistent
     await persistent.insert_many(collection_name="data", documents=test_documents, user_id=user_id)
-    # await client["test"]["data"].insert_many(test_documents)
     result = await persistent.delete_one(user_id=user_id, collection_name="data", query_filter={})
     # expect only one document to be deleted
     assert result == 1

@@ -10,7 +10,7 @@ import pytest_asyncio
 from bson import json_util
 
 from featurebyte.migration.migration_data_service import SchemaMetadataService
-from featurebyte.migration.model import SchemaMetadataUpdate
+from featurebyte.migration.model import MigrationMetadata, SchemaMetadataUpdate
 from featurebyte.migration.run import (
     _extract_migrate_method_marker,
     _extract_migrate_methods,
@@ -51,7 +51,9 @@ def test_retrieve_all_migration_methods__duplicated_version(mock_extract_method)
 async def test_migrate_method_generator(user, persistent):
     """Test migrate method generator"""
     schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
-    schema_metadata = await schema_metadata_service.get_or_create_document()
+    schema_metadata = await schema_metadata_service.get_or_create_document(
+        name=MigrationMetadata.SCHEMA_METADATA.value
+    )
 
     expected_method_num = len(retrieve_all_migration_methods())
     method_generator = migrate_method_generator(
@@ -67,7 +69,9 @@ async def test_migrate_method_generator(user, persistent):
     assert updated_schema_metadata.description == "Some description"
 
     # check generator output
-    schema_metadata = await schema_metadata_service.get_or_create_document()
+    schema_metadata = await schema_metadata_service.get_or_create_document(
+        name=MigrationMetadata.SCHEMA_METADATA.value
+    )
     method_generator = migrate_method_generator(
         user=user, persistent=persistent, schema_metadata=schema_metadata
     )
@@ -122,7 +126,9 @@ async def test_run_migration(migration_check_persistent, user):
     """Test run migration function"""
     persistent = migration_check_persistent
     schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
-    schema_metadata = await schema_metadata_service.get_or_create_document()
+    schema_metadata = await schema_metadata_service.get_or_create_document(
+        name=MigrationMetadata.SCHEMA_METADATA.value
+    )
 
     # perform migration on testing samples to check the migration logic
     await run_migration(user=user, persistent=persistent)
@@ -150,6 +156,8 @@ async def test_run_migration(migration_check_persistent, user):
 
     # check version in schema_metadata after migration
     schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
-    schema_metadata = await schema_metadata_service.get_or_create_document()
+    schema_metadata = await schema_metadata_service.get_or_create_document(
+        name=MigrationMetadata.SCHEMA_METADATA.value
+    )
     assert schema_metadata.version == version
     assert schema_metadata.description == description
