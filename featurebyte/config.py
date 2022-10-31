@@ -186,10 +186,10 @@ class Configurations:
         if not self._config_file_path.exists() and home_path == DEFAULT_HOME_PATH:
             self._config_file_path.parent.mkdir(parents=True, exist_ok=True)
             self._config_file_path.write_text(
-                "# featurebyte configurations\n\n"
+                "# featurebyte configuration\n\n"
                 "profile:\n"
                 "  - name: local\n"
-                "    api_url: http://localhost:8088\n"
+                "    api_url: http://localhost:8088\n\n"
                 "logging:\n"
                 "  level: INFO\n"
             )
