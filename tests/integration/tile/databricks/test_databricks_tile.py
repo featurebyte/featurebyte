@@ -2,6 +2,8 @@ import pytest
 
 from featurebyte.models.tile import TileType
 
+pytest.skip(allow_module_level=True)
+
 
 @pytest.mark.asyncio
 async def test_databricks_generate_tile(

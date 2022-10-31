@@ -161,6 +161,7 @@ def snowflake_feature_store_fixture(mock_get_persistent):
     return feature_store
 
 
+@pytest.mark.skip
 @pytest.fixture(name="databricks_feature_store", scope="session")
 def databricks_feature_store_fixture(mock_get_persistent):
     """
@@ -315,6 +316,7 @@ async def snowflake_session_fixture(transaction_data_upper_case, config, snowfla
     )
 
 
+@pytest.mark.skip
 @pytest_asyncio.fixture(name="databricks_session", scope="session")
 async def databricks_session_fixture(config, databricks_feature_store):
     """
@@ -383,6 +385,7 @@ async def snowflake_tile(snowflake_session):
     await snowflake_session.execute_query(f"DROP TASK IF EXISTS SHELL_TASK_{tile_id}_OFFLINE")
 
 
+@pytest.mark.skip
 @pytest_asyncio.fixture
 async def databricks_tile_spec(databricks_session):
     """
@@ -422,6 +425,7 @@ def tile_manager(snowflake_session):
     return TileManagerSnowflake(session=snowflake_session)
 
 
+@pytest.mark.skip
 @pytest.fixture
 def tile_manager_databricks(databricks_session):
     """
@@ -580,6 +584,7 @@ def feature_list_manager(snowflake_session):
     return FeatureListManagerSnowflake(session=snowflake_session)
 
 
+@pytest.mark.skip
 @pytest.fixture
 def feature_list_manager_databricks(databricks_session):
     """
@@ -660,6 +665,7 @@ def snowflake_event_data_fixture(snowflake_session, snowflake_feature_store, use
     return event_data
 
 
+@pytest.mark.skip
 @pytest.fixture(name="databricks_event_data", scope="session")
 def databricks_event_data_fixture(databricks_session, databricks_feature_store, user_entity):
     """Fixture for an EventData in integration tests"""
@@ -684,6 +690,9 @@ def event_data_fixture(request):
     else:
         kind = request.param
     assert kind in {"snowflake", "databricks"}
-    if kind == "snowflake":
-        return request.getfixturevalue("snowflake_event_data")
-    return request.getfixturevalue("databricks_event_data")
+    # if kind == "snowflake":
+    #     return request.getfixturevalue("snowflake_event_data")
+    #
+    # return request.getfixturevalue("databricks_event_data")
+
+    return request.getfixturevalue("snowflake_event_data")

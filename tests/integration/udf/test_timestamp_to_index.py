@@ -10,8 +10,8 @@ from featurebyte.session.base import BaseSession
 def db_session_fixture(request):
     if request.param == "snowflake":
         return request.getfixturevalue("snowflake_session")
-    elif request.param == "databricks":
-        return request.getfixturevalue("databricks_session")
+    # elif request.param == "databricks":
+    #     return request.getfixturevalue("databricks_session")
     raise NotImplementedError(f"{request.param}")
 
 
@@ -19,7 +19,7 @@ def db_session_fixture(request):
     "db_session",
     [
         "snowflake",
-        "databricks",
+        # "databricks",
     ],
     indirect=True,
 )

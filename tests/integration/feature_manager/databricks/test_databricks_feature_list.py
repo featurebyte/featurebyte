@@ -5,6 +5,8 @@ import pytest
 
 from featurebyte.enum import InternalName
 
+pytest.skip(allow_module_level=True)
+
 
 @pytest.mark.asyncio
 async def test_generate_tiles_on_demand(
