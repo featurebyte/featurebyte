@@ -614,3 +614,15 @@ async def test_execute_query_no_data(snowflake_connector, snowflake_session_dict
     cursor.fetch_pandas_all.return_value = empty_df
     result = await session.execute_query(query)
     assert_frame_equal(result, empty_df)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("is_schema_missing", [False])
+@pytest.mark.parametrize("is_functions_missing", [False])
+@pytest.mark.parametrize("is_procedures_missing", [False])
+@pytest.mark.parametrize("is_tables_missing", [False])
+async def test_should_update_schema(patched_snowflake_session_cls):
+    session = patched_snowflake_session_cls()
+    snowflake_schema_initializer = SnowflakeSchemaInitializer(session)
+    should_update = await snowflake_schema_initializer.should_update_schema()
+    assert should_update

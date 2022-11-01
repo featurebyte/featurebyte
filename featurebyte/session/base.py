@@ -386,6 +386,10 @@ class SqlObjectType(StrEnum):
 
 
 class BaseSchemaInitializer(ABC):
+
+    CURRENT_WORKING_SCHEMA_VERSION = 1
+    SCHEMA_NOT_REGISTERED = -1
+
     """Responsible for initializing featurebyte schema
 
     Parameters
@@ -422,6 +426,46 @@ class BaseSchemaInitializer(ABC):
             await self.create_schema()
 
         await self.register_missing_objects()
+
+    async def get_working_schema_version(self) -> int:
+        """Retrieves the working schema version from the table registered in the
+        working schema.
+
+        If no working schema version is found, return -1. This should indicate
+        to callers that we probably want to initialize the working schema.
+        """
+        query = "SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"
+        results = await self.session.execute_query(query)
+        if not results:
+            return self.SCHEMA_NOT_REGISTERED
+        return results[0]
+
+    def get_current_working_schema_version(self) -> int:
+        """Returns the current working schema version.
+
+        We should increase this value if we want to re-run the session
+        initialization functions (eg. registering new functions, procedures
+        and tables).
+
+        We can consider moving this to a config/json file down the line, but
+        opting to keep it simple for now.
+        """
+        return self.CURRENT_WORKING_SCHEMA_VERSION
+
+    async def should_update_schema(self) -> bool:
+        """Compares the working_schema_version defined in the codebase, with
+        what is registered in working schema table.
+
+        This function will return true if:
+        - there is no working schema defined, or
+        - the working_schema_version defined in the code base is greater than the version number
+          registered in the working schema table.
+        """
+        registered_working_schema_version = await self.get_working_schema_version()
+        if registered_working_schema_version == self.SCHEMA_NOT_REGISTERED:
+            return True
+        current_version = self.get_current_working_schema_version()
+        return current_version > registered_working_schema_version
 
     async def schema_exists(self) -> bool:
         """Check whether the featurebyte schema exists
