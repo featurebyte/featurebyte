@@ -7,7 +7,6 @@ from collections import defaultdict
 import pytest
 from bson.objectid import ObjectId
 
-import tests.util.helper
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalGraphState, GlobalQueryGraph, QueryGraph
@@ -384,7 +383,7 @@ def test_query_graph__add_groupby_operation(graph_single_node, groupby_node_para
     graph, node_input = graph_single_node
     assert "tile_id" not in groupby_node_params
     assert "aggregation_id" not in groupby_node_params
-    groupby_node = tests.util.helper.add_groupby_operation(
+    groupby_node = graph.add_groupby_operation(
         node_params=groupby_node_params, input_node=node_input
     )
     tile_id = "transaction_f3600_m1800_b900_8a2a4064239908696910f175aa0f4b69105997f3"
