@@ -444,7 +444,7 @@ class BaseSchemaInitializer(ABC):
             return self.SCHEMA_NOT_REGISTERED
         if not results:
             return self.SCHEMA_NOT_REGISTERED
-        return results[0]
+        return int(results[0])
 
     def get_current_working_schema_version(self) -> int:
         """Gets the current working schema version.
