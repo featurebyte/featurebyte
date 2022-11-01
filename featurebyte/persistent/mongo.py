@@ -3,7 +3,7 @@ Persistent storage using MongoDB
 """
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Iterable, List, Literal, Optional, Tuple
+from typing import Any, AsyncIterator, Iterable, List, Literal, Optional, Tuple, cast
 
 from contextlib import asynccontextmanager
 
@@ -296,8 +296,8 @@ class MongoDB(Persistent):
         )
         return result.deleted_count
 
-    async def list_collection_names(self) -> list[str]:
-        return await self._db.list_collection_names()
+    async def list_collection_names(self) -> List[str]:
+        return cast(List[str], await self._db.list_collection_names())
 
     async def _rename_collection(self, collection_name: str, new_collection_name: str) -> None:
         """
