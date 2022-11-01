@@ -50,6 +50,7 @@ class InputNode(BaseNode):
         """ItemDataParameters"""
 
         type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
+        id: Optional[PydanticObjectId] = Field(default=None)
 
     type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
