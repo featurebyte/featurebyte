@@ -156,7 +156,7 @@ async def run_migration(user: Any, persistent: Persistent) -> None:
     """
     schema_metadata_service = SchemaMetadataService(user=user, persistent=persistent)
     schema_metadata = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA.value
+        name=MigrationMetadata.SCHEMA_METADATA
     )
     method_generator = migrate_method_generator(
         user=user,
