@@ -40,7 +40,7 @@ def test_item_data_join_event_data_attributes(global_graph, item_data_join_event
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_order_size_feature(global_graph, order_size_feature_join_node):
+def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature_join_node):
     sql_graph = SQLOperationGraph(
         global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
     )

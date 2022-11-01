@@ -3,7 +3,7 @@ Module for input data sql generation
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from dataclasses import dataclass
 
@@ -28,7 +28,7 @@ def is_event_data(parameters: dict[str, Any]) -> bool:
     -------
     bool
     """
-    return parameters["type"] == TableDataType.EVENT_DATA
+    return cast(bool, parameters["type"] == TableDataType.EVENT_DATA)
 
 
 @dataclass

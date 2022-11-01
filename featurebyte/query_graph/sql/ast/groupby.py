@@ -3,13 +3,13 @@ Module for groupby operation (non-time aware) sql generation
 """
 from __future__ import annotations
 
-from typing import Literal, Optional, cast
+from typing import cast
 
 from dataclasses import dataclass
 
 from sqlglot import Expression, expressions, parse_one, select
 
-from featurebyte.api.agg_func import AggFunc
+from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import quoted_identifier
@@ -17,6 +17,9 @@ from featurebyte.query_graph.sql.common import quoted_identifier
 
 @dataclass
 class ItemGroupby(TableNode):
+    """
+    ItemGroupby SQLNode
+    """
 
     input_node: TableNode
     keys: list[str]
@@ -59,6 +62,20 @@ class ItemGroupby(TableNode):
 
     @classmethod
     def get_agg_expr(cls, agg_func: AggFunc, input_column: str) -> Expression:
+        """
+        Convert an AggFunc and input column name to a SQL expression to be used in GROUP BY
+
+        Parameters
+        ----------
+        agg_func : AggFunc
+            Aggregation function
+        input_column : str
+            Input column name
+
+        Returns
+        -------
+        Expression
+        """
         agg_func_sql_mapping = {
             AggFunc.SUM: "SUM",
             AggFunc.AVG: "AVG",

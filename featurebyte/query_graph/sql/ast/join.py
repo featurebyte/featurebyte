@@ -16,6 +16,9 @@ from featurebyte.query_graph.sql.common import quoted_identifier
 
 @dataclass
 class Join(TableNode):
+    """
+    Join SQLNode
+    """
 
     left_node: TableNode
     right_node: TableNode
