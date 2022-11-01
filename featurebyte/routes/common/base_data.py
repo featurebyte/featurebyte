@@ -3,20 +3,22 @@ BaseDataController for API routes
 """
 from __future__ import annotations
 
-from typing import Type, TypeVar, Union, overload
+from typing import Any, Type, TypeVar, cast
+
+from abc import abstractmethod
 
 from bson.objectid import ObjectId
 
 from featurebyte.models.event_data import EventDataModel
+from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.models.item_data import ItemDataModel
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.schema.data import DataUpdate
-from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
-from featurebyte.schema.item_data import ItemDataCreate, ItemDataUpdate
 from featurebyte.service.data_update import DataDocumentService, DataUpdateService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.info import InfoService
 from featurebyte.service.item_data import ItemDataService
+from featurebyte.service.semantic import SemanticService
 
 DataDocumentT = TypeVar("DataDocumentT", EventDataModel, ItemDataModel)
 DataDocumentServiceT = TypeVar("DataDocumentServiceT", EventDataService, ItemDataService)
@@ -35,49 +37,76 @@ class BaseDataDocumentController(
         self,
         service: DataDocumentService,
         data_update_service: DataUpdateService,
+        semantic_service: SemanticService,
         info_service: InfoService,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.data_update_service = data_update_service
+        self.semantic_service = semantic_service
         self.info_service = info_service
 
-    @overload
-    async def create_data(self, data: EventDataCreate) -> EventDataModel:
-        ...
+    @abstractmethod
+    async def _get_column_semantic_map(self, document: DataDocumentT) -> dict[str, Any]:
+        """
+        Construct column name to semantic mapping
 
-    @overload
-    async def create_data(self, data: ItemDataCreate) -> ItemDataModel:
-        ...
+        Parameters
+        ----------
+        document: DataDocumentT
+            Newly created document
 
-    async def create_data(
-        self, data: Union[EventDataCreate, ItemDataCreate]
-    ) -> Union[EventDataModel, ItemDataModel]:
+        Returns
+        -------
+        dict[str, Any]
+        """
+
+    async def _add_semantic_tags(self, document: DataDocumentT) -> DataDocumentT:
+        """
+        Add semantic tags to newly created document
+
+        Parameters
+        ----------
+        document: DataDocumentT
+            Newly created document
+
+        Returns
+        -------
+        DataDocumentT
+        """
+        column_semantic_map = await self._get_column_semantic_map(document=document)
+        columns_info = []
+        for col_info in document.columns_info:
+            semantic = column_semantic_map.get(col_info.name)
+            if semantic:
+                columns_info.append(ColumnInfo(**{**col_info.dict(), "semantic_id": semantic.id}))
+            else:
+                columns_info.append(col_info)
+
+        output = await self.service.update_document(
+            document_id=document.id,
+            data=self.document_update_schema_class(columns_info=columns_info),  # type: ignore
+            return_document=True,
+        )
+        return cast(DataDocumentT, output)
+
+    async def create_data(self, data: DataDocumentT) -> DataDocumentT:
         """
         Create Data at persistent
 
         Parameters
         ----------
-        data: Union[EventDataCreate, ItemDataCreate]
+        data: DataDocumentT
             EventData or ItemData creation payload
 
         Returns
         -------
-        Union[EventDataModel, ItemDataModel]
+        DataDocumentT
             Newly created data object
         """
-        return await self.service.create_document(data)  # type: ignore[arg-type]
+        document = await self.service.create_document(data)  # type: ignore[arg-type]
+        return await self._add_semantic_tags(document=document)  # type: ignore
 
-    @overload
-    async def update_data(self, document_id: ObjectId, data: EventDataUpdate) -> EventDataModel:
-        ...
-
-    @overload
-    async def update_data(self, document_id: ObjectId, data: ItemDataUpdate) -> ItemDataModel:
-        ...
-
-    async def update_data(
-        self, document_id: ObjectId, data: Union[EventDataUpdate, ItemDataUpdate]
-    ) -> Union[EventDataModel, ItemDataModel]:
+    async def update_data(self, document_id: ObjectId, data: DataUpdate) -> DataDocumentT:
         """
         Update EventData (for example, to update scheduled task) at persistent (GitDB or MongoDB)
 
@@ -85,26 +114,26 @@ class BaseDataDocumentController(
         ----------
         document_id: ObjectId
             Data document ID
-        data: Union[EventDataUpdate, ItemDataUpdate]
+        data: DataUpdate
             Data update payload
 
         Returns
         -------
-        Union[EventDataModel, ItemDataModel]
+        DataDocumentT
             Data object with updated attribute(s)
         """
         if data.columns_info:
             await self.data_update_service.update_columns_info(
                 service=self.service,
                 document_id=document_id,
-                data=data,
+                data=data,  # type: ignore
             )
 
         if data.status:
             await self.data_update_service.update_data_status(
                 service=self.service,
                 document_id=document_id,
-                data=data,
+                data=data,  # type: ignore
             )
 
         update_dict = data.dict(exclude={"status": True, "columns_info": True}, exclude_none=True)

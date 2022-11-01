@@ -3,14 +3,13 @@ This module contains Tile related models
 """
 from typing import Any, Dict, List, Optional
 
-from enum import Enum
-
 from pydantic import Field, root_validator, validator
 
+from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel
 
 
-class TileType(str, Enum):
+class TileType(StrEnum):
     """Tile Type"""
 
     ONLINE = "ONLINE"

@@ -4,14 +4,13 @@ Document model for stored credentials
 # pylint: disable=too-few-public-methods
 from typing import Union
 
-from enum import Enum
-
 from pydantic import StrictStr
 
+from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel
 
 
-class CredentialType(str, Enum):
+class CredentialType(StrEnum):
     """
     Credential Type
     """

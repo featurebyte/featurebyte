@@ -1,10 +1,10 @@
 """
 This module contains all the enums used for query graph.
 """
-from enum import Enum
+from featurebyte.enum import StrEnum
 
 
-class NodeType(str, Enum):
+class NodeType(StrEnum):
     """
     Query graph node type
     """
@@ -78,7 +78,7 @@ class NodeType(str, Enum):
     INPUT = "input"
 
 
-class NodeOutputType(str, Enum):
+class NodeOutputType(StrEnum):
     """
     Query graph node output type
     """

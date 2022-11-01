@@ -19,6 +19,7 @@ from featurebyte.schema.feature_list import FeatureListCreate
 from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.schema.item_data import ItemDataCreate
+from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.entity import EntityService
@@ -31,6 +32,7 @@ from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.online_enable import OnlineEnableService
+from featurebyte.service.semantic import SemanticService
 from featurebyte.service.version import VersionService
 
 
@@ -69,6 +71,12 @@ def entity_service_fixture(user, persistent):
     return EntityService(user=user, persistent=persistent)
 
 
+@pytest.fixture(name="semantic_service")
+def semantic_service_fixture(user, persistent):
+    """Semantic service"""
+    return SemanticService(user=user, persistent=persistent)
+
+
 @pytest.fixture(name="event_data_service")
 def event_data_service_fixture(user, persistent):
     """EventData service"""
@@ -103,6 +111,12 @@ def feature_list_namespace_service_fixture(user, persistent):
 def feature_list_service_fixture(user, persistent):
     """FeatureListService fixture"""
     return FeatureListService(user=user, persistent=persistent)
+
+
+@pytest.fixture(name="data_update_service")
+def data_update_service_fixture(user, persistent):
+    """DataUpdateService fixture"""
+    return DataUpdateService(user=user, persistent=persistent)
 
 
 @pytest.fixture(name="feature_readiness_service")

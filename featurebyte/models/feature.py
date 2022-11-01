@@ -6,13 +6,11 @@ from __future__ import annotations
 
 from typing import Any, List, Optional, Tuple
 
-from enum import Enum
-
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
 
 from featurebyte.common.model_util import convert_version_string_to_dict
-from featurebyte.enum import DBVarType, OrderedStrEnum
+from featurebyte.enum import DBVarType, OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -35,7 +33,7 @@ class FeatureReadiness(OrderedStrEnum):
     PRODUCTION_READY = "PRODUCTION_READY"
 
 
-class DefaultVersionMode(str, Enum):
+class DefaultVersionMode(StrEnum):
     """Default feature setting mode"""
 
     AUTO = "AUTO"

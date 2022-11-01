@@ -185,16 +185,14 @@ class BaseApiTestSuite:
         doc_id = ObjectId(result["_id"])
         assert result["user_id"] == str(user_id)
         assert datetime.fromisoformat(result["created_at"]) < datetime.utcnow()
-        assert result["updated_at"] is None
 
         # test get audit record
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.get(f"{self.base_route}/audit/{doc_id}")
         response_dict = response.json()
         assert response.status_code == HTTPStatus.OK
-        assert response_dict["total"] == 1
-        assert [record["action_type"] for record in response_dict["data"]] == ["INSERT"]
-        assert [record["previous_values"] for record in response_dict["data"]] == [{}]
+        assert response_dict["data"][-1]["action_type"] == "INSERT"
+        assert response_dict["data"][-1]["previous_values"] == {}
 
     def test_create_409(
         self,
@@ -235,7 +233,6 @@ class BaseApiTestSuite:
         assert response.status_code == HTTPStatus.OK
         assert response_dict["_id"] == doc_id
         assert datetime.fromisoformat(response_dict["created_at"]) < datetime.utcnow()
-        assert response_dict["updated_at"] is None
         assert response_dict["user_id"] == str(user_id)
         assert response_dict["name"] == self.payload["name"]
 
@@ -614,7 +611,7 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
                 (
                     f"1 validation error for {self.class_name}Model\n"
                     f"record_creation_date_column\n  "
-                    f"Column \"item_id\" is expected to have type(s): ['DBVarType.TIMESTAMP'] (type=value_error)"
+                    f"Column \"item_id\" is expected to have type(s): ['TIMESTAMP'] (type=value_error)"
                 ),
             ),
         ]
@@ -674,16 +671,21 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
     def column_info_fixture(self):
         """Fixture for columns info"""
         return [
-            {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
-            {"name": "another_created_at", "dtype": "TIMESTAMP", "entity_id": None},
-            {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
-            {"name": "event_id", "dtype": "INT", "entity_id": None},
-            {"name": "item_id", "dtype": "INT", "entity_id": None},
+            {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
+            {
+                "name": "another_created_at",
+                "dtype": "TIMESTAMP",
+                "entity_id": None,
+                "semantic_id": None,
+            },
+            {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
+            {"name": "event_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
+            {"name": "item_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
         ]
 
     @pytest.fixture(name="data_response")
     def data_response_fixture(
-        self, test_api_client_persistent, data_model_dict, snowflake_feature_store
+        self, test_api_client_persistent, data_model_dict, columns_info, snowflake_feature_store
     ):
         """
         Event data response fixture
@@ -693,9 +695,9 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         response = test_api_client.post("/feature_store", json=snowflake_feature_store.json_dict())
         assert response.status_code == HTTPStatus.CREATED
 
-        response = test_api_client.post(
-            self.base_route, json=self.data_create_schema_class(**data_model_dict).json_dict()
-        )
+        payload = self.data_create_schema_class(**data_model_dict).json_dict()
+        payload["columns_info"] = columns_info
+        response = test_api_client.post(self.base_route, json=payload)
         assert response.status_code == HTTPStatus.CREATED
         assert response.json()["_id"] == data_model_dict["_id"]
         return response
@@ -737,13 +739,13 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
 
     def test_update_status_only(self, test_api_client_persistent, data_response):
         """
-        Update Event Data status only
+        Update Tabular Data status only
         """
         # insert a record
         test_api_client, _ = test_api_client_persistent
         current_data = data_response.json()
         assert current_data.pop("status") == "DRAFT"
-        assert current_data.pop("updated_at") is None
+        assert current_data.pop("updated_at") is not None
 
         response = test_api_client.patch(
             f"{self.base_route}/{current_data['_id']}",
@@ -764,10 +766,15 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         response = test_api_client.get(f"{self.base_route}/audit/{current_data['_id']}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
-        assert results["total"] == 2
-        assert [record["action_type"] for record in results["data"]] == ["UPDATE", "INSERT"]
+        assert results["total"] == 3
+        assert [record["action_type"] for record in results["data"]] == [
+            "UPDATE",
+            "UPDATE",
+            "INSERT",
+        ]
         assert [record["previous_values"].get("status") for record in results["data"]] == [
             "DRAFT",
+            None,
             None,
         ]
 
@@ -799,7 +806,7 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == (
-            f"Entity IDs [ObjectId('{unknown_entity_id}')] not found for columns ['item_id']."
+            f"Entity IDs ['{unknown_entity_id}'] not found for columns ['item_id']."
         )
 
     def test_update_record_creation_date(

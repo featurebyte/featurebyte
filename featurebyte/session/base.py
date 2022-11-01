@@ -19,7 +19,6 @@ import os
 import threading
 import time
 from abc import ABC, abstractmethod
-from enum import Enum
 
 import aiofiles
 import pandas as pd
@@ -32,7 +31,7 @@ from featurebyte.common.utils import (
     dataframe_from_arrow_stream,
     pa_table_to_record_batches,
 )
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logger import logger
 
@@ -378,7 +377,7 @@ class BaseSession(BaseModel):
         """
 
 
-class SqlObjectType(str, Enum):
+class SqlObjectType(StrEnum):
     """Enum for type of SQL objects to initialize in Snowflake"""
 
     FUNCTION = "function"

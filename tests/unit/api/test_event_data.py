@@ -41,15 +41,20 @@ def event_data_dict_fixture(snowflake_database_table):
             },
         },
         "columns_info": [
-            {"entity_id": None, "name": "col_int", "dtype": "INT"},
-            {"entity_id": None, "name": "col_float", "dtype": "FLOAT"},
-            {"entity_id": None, "name": "col_char", "dtype": "CHAR"},
-            {"entity_id": None, "name": "col_text", "dtype": "VARCHAR"},
-            {"entity_id": None, "name": "col_binary", "dtype": "BINARY"},
-            {"entity_id": None, "name": "col_boolean", "dtype": "BOOL"},
-            {"entity_id": None, "name": "event_timestamp", "dtype": "TIMESTAMP"},
-            {"entity_id": None, "name": "created_at", "dtype": "TIMESTAMP"},
-            {"entity_id": None, "name": "cust_id", "dtype": "INT"},
+            {"entity_id": None, "name": "col_int", "dtype": "INT", "semantic_id": None},
+            {"entity_id": None, "name": "col_float", "dtype": "FLOAT", "semantic_id": None},
+            {"entity_id": None, "name": "col_char", "dtype": "CHAR", "semantic_id": None},
+            {"entity_id": None, "name": "col_text", "dtype": "VARCHAR", "semantic_id": None},
+            {"entity_id": None, "name": "col_binary", "dtype": "BINARY", "semantic_id": None},
+            {"entity_id": None, "name": "col_boolean", "dtype": "BOOL", "semantic_id": None},
+            {
+                "entity_id": None,
+                "name": "event_timestamp",
+                "dtype": "TIMESTAMP",
+                "semantic_id": None,
+            },
+            {"entity_id": None, "name": "created_at", "dtype": "TIMESTAMP", "semantic_id": None},
+            {"entity_id": None, "name": "cust_id", "dtype": "INT", "semantic_id": None},
         ],
         "event_timestamp_column": "event_timestamp",
         "event_id_column": "col_int",
@@ -607,7 +612,9 @@ def test_update_record_creation_date_column__saved_object(saved_event_data):
 
     with pytest.raises(RecordUpdateException) as exc:
         saved_event_data.update_record_creation_date_column("col_float")
-    expected_msg = "Column \"col_float\" is expected to have type(s): ['DBVarType.TIMESTAMP'] (type=value_error)"
+    expected_msg = (
+        "Column \"col_float\" is expected to have type(s): ['TIMESTAMP'] (type=value_error)"
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -708,10 +715,10 @@ def test_default_feature_job_setting_history(saved_event_data):
 
     # check audit history
     audit_history = saved_event_data.audit()
-    expected_pagination_info = {"page": 1, "page_size": 10, "total": 3}
+    expected_pagination_info = {"page": 1, "page_size": 10, "total": 4}
     assert audit_history.items() > expected_pagination_info.items()
     history_data = audit_history["data"]
-    assert len(history_data) == 3
+    assert len(history_data) == 4
     assert (
         history_data[0].items()
         > {
@@ -744,7 +751,10 @@ def test_default_feature_job_setting_history(saved_event_data):
         > {
             "name": 'update: "sf_event_data"',
             "action_type": "UPDATE",
-            "previous_values": {"default_feature_job_setting": None, "updated_at": None},
+            "previous_values": {
+                "default_feature_job_setting": None,
+                "updated_at": history_data[1]["previous_values"]["updated_at"],
+            },
         }.items()
     )
     assert (
@@ -758,7 +768,7 @@ def test_default_feature_job_setting_history(saved_event_data):
         }.items()
     )
     assert (
-        history_data[2].items()
+        history_data[3].items()
         > {
             "name": 'insert: "sf_event_data"',
             "action_type": "INSERT",
@@ -766,7 +776,7 @@ def test_default_feature_job_setting_history(saved_event_data):
         }.items()
     )
     assert (
-        history_data[2]["current_values"].items()
+        history_data[3]["current_values"].items()
         > {
             "name": "sf_event_data",
             "event_timestamp_column": "event_timestamp",

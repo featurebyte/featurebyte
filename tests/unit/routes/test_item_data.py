@@ -1,11 +1,15 @@
 """
 Tests for ItemData routes
 """
+from unittest import mock
+
 import pytest
 from bson.objectid import ObjectId
 
+from featurebyte.enum import SemanticType
 from featurebyte.models.item_data import ItemDataModel
 from featurebyte.schema.item_data import ItemDataCreate
+from featurebyte.service.semantic import SemanticService
 from tests.unit.routes.base import BaseDataApiTestSuite
 
 
@@ -71,7 +75,21 @@ class TestItemDataApi(BaseDataApiTestSuite):
 
     @pytest.fixture(name="data_update_dict")
     def data_update_dict_fixture(self):
-        """
-        Item data update dict object
-        """
+        """Item data update dict object"""
         return {"status": "PUBLISHED"}
+
+    @pytest.mark.asyncio
+    async def test_item_id_semantic(self, user_id, persistent, data_response):
+        """Test item id semantic is set correctly"""
+        user = mock.Mock()
+        user.id = user_id
+        semantic_service = SemanticService(user=user, persistent=persistent)
+        item_id_semantic = await semantic_service.get_or_create_document(name=SemanticType.ITEM_ID)
+
+        # check the that semantic ID is set correctly
+        item_id_semantic_id = None
+        response_dict = data_response.json()
+        for col_info in response_dict["columns_info"]:
+            if col_info["name"] == "item_id":
+                item_id_semantic_id = col_info["semantic_id"]
+        assert item_id_semantic_id == str(item_id_semantic.id)

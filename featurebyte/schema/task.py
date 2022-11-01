@@ -3,31 +3,31 @@ TaskStatus API payload schema
 """
 from typing import Any, Dict, List, Optional, Union
 
-from enum import Enum
 from uuid import UUID
 
 from pydantic import Field
 
+from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.schema.common.base import PaginationMixin
 
 TaskId = Union[PydanticObjectId, UUID]
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     """
     TaskStatus enum
     """
 
-    PENDING = ("PENDING",)
-    RECEIVED = ("RECEIVED",)
-    STARTED = ("STARTED",)
-    SUCCESS = ("SUCCESS",)
-    FAILURE = ("FAILURE",)
-    REVOKED = ("REVOKED",)
-    REJECTED = ("REJECTED",)
-    RETRY = ("RETRY",)
-    IGNORED = ("IGNORED",)
+    PENDING = "PENDING"
+    RECEIVED = "RECEIVED"
+    STARTED = "STARTED"
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+    REVOKED = "REVOKED"
+    REJECTED = "REJECTED"
+    RETRY = "RETRY"
+    IGNORED = "IGNORED"
 
 
 class Task(FeatureByteBaseModel):

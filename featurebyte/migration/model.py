@@ -4,10 +4,9 @@ This module contains schema related model
 # pylint: disable=too-few-public-methods
 from typing import List
 
-from enum import Enum
-
 from pydantic import Field
 
+from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -41,7 +40,7 @@ class BaseMigrationMetadataModel(FeatureByteBaseDocumentModel):
         ]
 
 
-class MigrationMetadata(str, Enum):
+class MigrationMetadata(StrEnum):
     """Migration metadata enum"""
 
     SCHEMA_METADATA = "schema_metadata"
