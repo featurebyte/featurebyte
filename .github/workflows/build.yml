@@ -50,7 +50,7 @@ env:
   SLACK_OAUTH: ${{ secrets.SLACK_OAUTH }}
   # Testing
   MONGO_CONNECTION: mongodb://localhost:27021
-  GIT_SSH_KEY_PATH: "/tmp/git_key"
+  FEATUREBYTE_HOME: "/tmp/featurebyte"
 
 jobs:
   build:

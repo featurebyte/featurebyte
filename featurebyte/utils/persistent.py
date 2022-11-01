@@ -3,7 +3,8 @@ Utility functions for persistent
 """
 from __future__ import annotations
 
-from featurebyte.config import Configurations
+import os
+
 from featurebyte.persistent.base import Persistent
 from featurebyte.persistent.mongo import MongoDB
 
@@ -21,5 +22,5 @@ def get_persistent() -> Persistent:
     """
     global PERSISTENT  # pylint: disable=global-statement
     if not PERSISTENT:
-        PERSISTENT = MongoDB("mongodb://localhost:27021")
+        PERSISTENT = MongoDB(uri=os.environ.get("MONGODB_URI", "mongodb://localhost:27021"))
     return PERSISTENT

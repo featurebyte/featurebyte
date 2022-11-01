@@ -52,15 +52,15 @@ def config_file_fixture():
     Config file for unit testing
     """
     config_dict = {
-        "featurestore": [
+        "credential": [
             {
-                "name": "sf_featurestore",
+                "feature_store": "sf_featurestore",
                 "credential_type": "USERNAME_PASSWORD",
                 "username": "sf_user",
                 "password": "sf_password",
             },
             {
-                "name": "sq_featurestore",
+                "feature_store": "sq_featurestore",
             },
         ],
         "profile": [
@@ -71,10 +71,12 @@ def config_file_fixture():
             },
         ],
     }
-    with tempfile.NamedTemporaryFile("w") as file_handle:
-        file_handle.write(yaml.dump(config_dict))
-        file_handle.flush()
-        yield file_handle.name
+    with tempfile.TemporaryDirectory() as tempdir:
+        config_file_path = os.path.join(tempdir, "config.yaml")
+        with open(config_file_path, "w") as file_handle:
+            file_handle.write(yaml.dump(config_dict))
+            file_handle.flush()
+            yield config_file_path
 
 
 @pytest.fixture(name="config")
@@ -88,12 +90,12 @@ def config_fixture(config_file):
 @pytest.fixture(name="mock_config_path_env")
 def mock_config_path_env_fixture(config_file):
     """
-    Mock FEATUREBYTE_CONFIG_PATH in featurebyte/config.py
+    Mock FEATUREBYTE_HOME in featurebyte/config.py
     """
 
     def mock_env_side_effect(*args, **kwargs):
-        if args[0] == "FEATUREBYTE_CONFIG_PATH":
-            return config_file
+        if args[0] == "FEATUREBYTE_HOME":
+            return os.path.dirname(config_file)
         env = dict(os.environ)
         return env.get(*args, **kwargs)
 

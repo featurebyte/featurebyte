@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  featurebyte-service:
+    container_name: featurebyte-service
+    image: local/featurebyte:latest
+    volumes:
+      - ~/.featurebyte/mongo:/data
+      - ~/.featurebyte:/home/user/.featurebyte
+      - /tmp:/tmp
+    environment:
+      MONGODB_URI: mongodb://localhost:27021/?replicaSet=rs0
+      API_HOST: 0.0.0.0
+      API_PORT: 8088
+      WORKERS: 3
+    ports:
+      - 27021:27021
+      - 27022:27022
+      - 8088:8088

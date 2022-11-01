@@ -97,7 +97,7 @@ class BaseSession(BaseModel):
         """
         return self._connection
 
-    def get_session_unique_id(self) -> str:
+    def generate_session_unique_id(self) -> str:
         """Generate unique id within the session
 
         Returns

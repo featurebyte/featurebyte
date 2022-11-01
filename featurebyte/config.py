@@ -21,8 +21,19 @@ from featurebyte.models.credential import Credential
 Credentials = Dict[str, Optional[Credential]]
 
 # default local location
-DEFAULT_LOCAL_PATH = Path.home().joinpath(".featurebyte")
-DEFAULT_CONFIG_PATH = DEFAULT_LOCAL_PATH.joinpath("config.yaml")
+DEFAULT_HOME_PATH = Path.home().joinpath(".featurebyte")
+
+
+def get_home_path() -> Path:
+    """
+    Get Featurebyte Home path
+
+    Returns
+    -------
+    Path
+        Featurebyte Home path
+    """
+    return Path(os.environ.get("FEATUREBYTE_HOME", str(DEFAULT_HOME_PATH)))
 
 
 class LogLevel(StrEnum):
@@ -54,7 +65,7 @@ class LocalStorageSettings(BaseModel):
     Settings for local file storage
     """
 
-    local_path: Path = Field(default=Path(os.path.join(DEFAULT_LOCAL_PATH, "data")))
+    local_path: Path = Field(default_factory=lambda: get_home_path().joinpath("data"))
 
     @validator("local_path")
     @classmethod
@@ -82,7 +93,7 @@ class Profile(BaseModel):
 
     name: str
     api_url: AnyHttpUrl
-    api_token: str
+    api_token: Optional[str]
 
 
 class ProfileList(BaseModel):
@@ -98,7 +109,7 @@ class APIClient(requests.Session):
     Http client for accessing the FeatureByte Application API
     """
 
-    def __init__(self, api_url: str, api_token: str) -> None:
+    def __init__(self, api_url: str, api_token: Optional[str]) -> None:
         """
         Initialize api settings
 
@@ -106,18 +117,18 @@ class APIClient(requests.Session):
         ----------
         api_url: str
             URL of FeatureByte API service
-        api_token: str
+        api_token: Optional[str]
             API token to used for authentication
         """
         super().__init__()
         self.base_url = api_url
-        self.headers.update(
-            {
-                "user-agent": "Python SDK",
-                "accept": "application/json",
-                "Authorization": f"Bearer {api_token}",
-            }
-        )
+        additional_headers = {
+            "user-agent": "Python SDK",
+            "accept": "application/json",
+        }
+        if api_token:
+            additional_headers["Authorization"] = f"Bearer {api_token}"
+        self.headers.update(additional_headers)
 
     def request(
         self,
@@ -166,18 +177,21 @@ class Configurations:
         config_file_path: str | None
             Path to read configurations from
         """
-        self._config_file_path = Path(
-            str(
-                config_file_path
-                or os.environ.get("FEATUREBYTE_CONFIG_PATH", str(DEFAULT_CONFIG_PATH))
-            )
+        home_path = get_home_path()
+        self._config_file_path = (
+            Path(config_file_path) if config_file_path else home_path.joinpath("config.yaml")
         )
 
         # create config file if it does not exist
-        if not self._config_file_path.exists() and self._config_file_path == DEFAULT_CONFIG_PATH:
+        if not self._config_file_path.exists() and home_path == DEFAULT_HOME_PATH:
             self._config_file_path.parent.mkdir(parents=True, exist_ok=True)
             self._config_file_path.write_text(
-                "# featurebyte configurations\n\nlogging:\n  level: INFO\n"
+                "# featurebyte configuration\n\n"
+                "profile:\n"
+                "  - name: local\n"
+                "    api_url: http://localhost:8088\n\n"
+                "logging:\n"
+                "  level: INFO\n"
             )
 
         self.storage: LocalStorageSettings = LocalStorageSettings()
@@ -220,23 +234,22 @@ class Configurations:
         with open(path, encoding="utf-8") as file_obj:
             self.settings = yaml.safe_load(file_obj)
 
-        feature_stores = self.settings.pop("featurestore", [])
-        for feature_store_details in feature_stores:
-            name = feature_store_details.pop("name", "unnamed")
+        credentials = self.settings.pop("credential", [])
+        for credential in credentials:
+            name = credential.pop("feature_store", "unnamed")
             try:
                 # parse and store credentials
-                credentials = None
-                if "credential_type" in feature_store_details:
-                    # credentials are stored together with feature store name in the config file,
-                    # Credential pydantic model will use only the relevant fields
-                    credentials = Credential(
+                try:
+                    new_credential = Credential(
                         name=name,
-                        credential_type=feature_store_details["credential_type"],
-                        credential=feature_store_details,
+                        credential_type=credential["credential_type"],
+                        credential=credential,
                     )
-                self.credentials[name] = credentials
+                except KeyError:
+                    new_credential = None
+                self.credentials[name] = new_credential
             except ValidationError as exc:
-                raise InvalidSettingsError(f"Invalid settings for datasource: {name}") from exc
+                raise InvalidSettingsError(f"Invalid settings for feature store: {name}") from exc
 
         logging_settings = self.settings.pop("logging", None)
         if logging_settings:

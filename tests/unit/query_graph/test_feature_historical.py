@@ -26,7 +26,7 @@ def mocked_session_fixture():
         session_manager = AsyncMock(name="MockedSessionManager")
         mocked_session = Mock(name="MockedSession", sf_schema="FEATUREBYTE")
         mocked_session.register_temp_table = AsyncMock()
-        mocked_session.get_session_unique_id = Mock(return_value="1")
+        mocked_session.generate_session_unique_id = Mock(return_value="1")
         session_manager_cls.return_value = session_manager
         yield mocked_session
 
@@ -138,7 +138,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     )
     assert df_request.dtypes["POINT_IN_TIME"] == "object"
 
-    mocked_session.get_session_unique_id.return_value = "1"
+    mocked_session.generate_session_unique_id.return_value = "1"
     _ = await get_historical_features(
         session=mocked_session,
         graph=float_feature.graph,

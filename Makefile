@@ -81,7 +81,7 @@ lint-safety: generate-requirements-file
 
 #* Testing
 test: test-setup
-	@poetry run pytest --timeout=300 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
+	@poetry run pytest --timeout=180 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
 
 	${MAKE} test-teardown
 
@@ -94,7 +94,17 @@ test-teardown:
 test-routes:
 	uvicorn featurebyte.app:app --reload
 
+#* Docker
+docker-img-build:
+	docker buildx build -f ./docker/Dockerfile --build-arg FEATUREBYTE_NP_PASSWORD="$$FEATUREBYTE_NP_PASSWORD" --cache-from "local/featurebyte:latest" -t "local/featurebyte:latest" .
 
+start-service: docker-img-build
+	cd docker && docker-compose up -d
+
+stop-service:
+	cd docker && docker-compose down
+
+#* Docs Generation
 docs:
 	poetry run mkdocs serve
 

@@ -70,7 +70,7 @@ async def test_snowflake_tile_cache(
         }
     )
 
-    request_id = snowflake_session.get_session_unique_id()
+    request_id = snowflake_session.generate_session_unique_id()
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
     await snowflake_session.register_temp_table(request_table_name, df_training_events)
 
@@ -133,7 +133,7 @@ async def test_snowflake_tile_cache(
         }
     )
 
-    request_id = snowflake_session.get_session_unique_id()
+    request_id = snowflake_session.generate_session_unique_id()
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
     await snowflake_session.register_temp_table(request_table_name, df_training_events)
     requests = await tile_cache.get_required_computation(

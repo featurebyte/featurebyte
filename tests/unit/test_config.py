@@ -1,12 +1,14 @@
 """
 Test config parser
 """
+import os
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from featurebyte.config import (
+    DEFAULT_HOME_PATH,
     APIClient,
     Configurations,
     LocalStorageSettings,
@@ -112,7 +114,9 @@ def test_default_local_storage():
     Test default local storage location if not specified
     """
     config = Configurations("tests/fixtures/config_no_profile.yaml")
-    assert config.storage.local_path == Path("~/.featurebyte/data").expanduser()
+    assert config.storage.local_path == Path(
+        os.environ.get("FEATUREBYTE_HOME", str(DEFAULT_HOME_PATH))
+    ).joinpath("data")
 
 
 @patch("requests.Session.send")
