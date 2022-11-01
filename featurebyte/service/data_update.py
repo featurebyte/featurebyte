@@ -74,6 +74,7 @@ class DataUpdateService(BaseService):
         service: Union[EntityService, SemanticService],
         field_class_name: str,
     ) -> None:
+        assert data.columns_info is not None
         id_values = [
             getattr(col_info, field_name)
             for col_info in data.columns_info
