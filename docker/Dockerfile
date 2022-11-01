@@ -3,7 +3,6 @@ FROM python:3.8-slim
 ARG USER=user
 ARG UID=1000
 
-# FEATUREBYTE_NP_PASSWORD == base64 encoded serviceaccount key
 ARG FEATUREBYTE_NP_PASSWORD
 ARG FEATUREBYTE_REPOSITORY=us-central1-python.pkg.dev/vpc-host-nonprod-xa739-xz970/featurebyte-pypi
 ARG FEATUREBYTE_NP_USERNAME=_json_key_base64

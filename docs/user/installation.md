@@ -13,7 +13,7 @@ It’s generally a good practice to use a virtual environment for installing pyt
 ### pip
 If you use `pip`, you can install FeatureByte with:
 ```python
-pip install -U featurebyte
+pip install featurebyte
 ```
 
 ### Configuration
@@ -35,7 +35,11 @@ The API service can be set up in a local environment, or on a server for remote 
 To setup the service, check out the source code from the [FeatureByte repository](https://github.com/featurebyte/featurebyte).
 
 ### Quick start
-**Note:** Customization is needed to setup the service on a Windows machine
+!!! note "Installation on Windows machine"
+    [Customization](#customization) is needed to set up the service on a Windows machine
+
+!!! note "Authentication with FeatureByte PyPI repository"
+    The environment variable `FEATUREBYTE_NP_PASSWORD` must be set using the value from [here](https://featurebyte.atlassian.net/wiki/spaces/DEV/pages/15728827/Poetry).
 
 Start the service using the following command
 ```commandline

@@ -34,4 +34,4 @@ EOF
 PYTHONPATH=$PWD python /scripts/migration.py
 
 # start featurebyte service
-uvicorn featurebyte.app:app --host=0.0.0.0 --port=$API_PORT --workers=$WORKERS --timeout-keep-alive=300
+uvicorn featurebyte.app:app --host=$API_HOST --port=$API_PORT --workers=$WORKERS --timeout-keep-alive=300

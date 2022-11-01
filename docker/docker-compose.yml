@@ -10,6 +10,7 @@ services:
       - /tmp:/tmp
     environment:
       MONGODB_URI: mongodb://localhost:27021/?replicaSet=rs0
+      API_HOST: 0.0.0.0
       API_PORT: 8088
       WORKERS: 3
     ports:

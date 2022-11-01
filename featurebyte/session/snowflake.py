@@ -177,7 +177,7 @@ class SnowflakeSession(BaseSession):
             """
         )
         dataframe = self._prep_dataframe_before_write_pandas(dataframe)
-        write_pandas(self._connection, dataframe, table_name, table_type="temp")
+        write_pandas(self._connection, dataframe, table_name)
 
     @staticmethod
     def _convert_to_internal_variable_type(snowflake_var_info: dict[str, Any]) -> DBVarType:

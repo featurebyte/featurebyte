@@ -1,6 +1,6 @@
 # What is FeatureByte
 
-FeatureBytes is a suite of tools that makes it easy to define, deploy, share and maintain features for Machine Learning applications using data sources that resides in scalable cloud data platforms such as SnowFlake and DataBricks.
+FeatureBytes is a suite of tools that makes it easy to define, deploy, share and maintain features for Machine Learning applications using data sources that resides in scalable cloud data platforms such as Snowflake and Databricks.
 
 ## Registering feature stores
 A Feature Store is a database residing on a data platform that is created specifically for storing feature metadata.
@@ -64,7 +64,6 @@ Create feature lists from a group of features for training and serving.
 feature_list = FeatureList(
     items=[recent_spending_features],
     name="Credit Card Recent Spending",
-    conflict_resolution = "retrieve"
 )
 feature_list.save()
 ```
