@@ -46,10 +46,17 @@ class InputNode(BaseNode):
                 values["feature_store_details"] = values["feature_store"]
             return values
 
+    class ItemDataParameters(BaseParameters):
+        """ItemDataParameters"""
+
+        type: Literal[TableDataType.ITEM_DATA] = Field(TableDataType.ITEM_DATA, const=True)
+        id: Optional[PydanticObjectId] = Field(default=None)
+
     type: Literal[NodeType.INPUT] = Field(NodeType.INPUT, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Annotated[
-        Union[EventDataParameters, GenericParameters], Field(discriminator="type")
+        Union[EventDataParameters, ItemDataParameters, GenericParameters],
+        Field(discriminator="type"),
     ]
 
     @root_validator(pre=True)
@@ -172,4 +179,38 @@ class GroupbyNode(BaseNode):
         aggregation_id: Optional[str]
 
     type: Literal[NodeType.GROUPBY] = Field(NodeType.GROUPBY, const=True)
+    parameters: Parameters
+
+
+class ItemGroupbyNode(BaseNode):
+    """ItemGroupbyNode class"""
+
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        keys: List[InColumnStr]
+        parent: Optional[InColumnStr]
+        agg_func: AggFunc
+        names: List[str]
+        serving_names: List[str]
+
+    type: Literal[NodeType.ITEM_GROUPBY] = Field(NodeType.ITEM_GROUPBY, const=True)
+    parameters: Parameters
+
+
+class Join(BaseNode):
+    """Join class"""
+
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        left_on: str
+        right_on: str
+        left_input_columns: List[InColumnStr]
+        left_output_columns: List[OutColumnStr]
+        right_input_columns: List[InColumnStr]
+        right_output_columns: List[OutColumnStr]
+        join_type: Literal["left", "inner"]
+
+    type: Literal[NodeType.JOIN] = Field(NodeType.JOIN, const=True)
     parameters: Parameters

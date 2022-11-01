@@ -42,6 +42,8 @@ class NodeType(StrEnum):
     PROJECT = "project"
     FILTER = "filter"
     GROUPBY = "groupby"
+    ITEM_GROUPBY = "item_groupby"
+    JOIN = "join"
 
     # other operations
     ASSIGN = "assign"
