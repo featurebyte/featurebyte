@@ -142,6 +142,9 @@ class SourceType(StrEnum):
     SQLITE = "sqlite"
     DATABRICKS = "databricks"
 
+    # TEST source type should only be used for mocking in unit tests.
+    TEST = "test"
+
 
 class SpecialColumnName(StrEnum):
     """
