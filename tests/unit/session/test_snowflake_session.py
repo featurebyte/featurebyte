@@ -162,6 +162,7 @@ EXPECTED_PROCEDURES = [
 EXPECTED_TABLES = [
     "FEATURE_LIST_REGISTRY",
     "FEATURE_REGISTRY",
+    "METADATA_SCHEMA",
     "TILE_REGISTRY",
     "TILE_MONITOR_SUMMARY",
 ]
@@ -324,6 +325,11 @@ def test_schema_initializer__sql_objects(
             "identifier": "TILE_MONITOR_SUMMARY",
             "type": "table",
         },
+        {
+            "filename": "T_METADATA_SCHEMA.sql",
+            "identifier": "METADATA_SCHEMA",
+            "type": "table",
+        },
     ]
 
     def _sorted_result(lst):
@@ -377,8 +383,15 @@ async def test_schema_initializer__everything_exists(
     # Nothing to do except checking schemas and existing objects
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     assert session.execute_query.call_args_list == [
+        call("SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"),
         call("SHOW USER FUNCTIONS IN DATABASE sf_database"),
         call("SHOW PROCEDURES IN DATABASE sf_database"),
+        call(
+            "SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA WHERE WORKING_SCHEMA_NAME = 'FEATUREBYTE'"
+        ),
+        call(
+            "INSERT INTO METADATA_SCHEMA (WORKING_SCHEMA_VERSION, WORKING_SCHEMA_NAME) VALUES (1, 'FEATUREBYTE')"
+        ),
     ]
     assert session.list_tables.call_args_list == [
         call(database_name="sf_database", schema_name="FEATUREBYTE")
@@ -410,9 +423,8 @@ async def test_schema_initializer__all_missing(
     await SnowflakeSchemaInitializer(session).initialize()
     # Should create schema if not exists
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
-    assert session.execute_query.call_args_list[:1] == [
-        call("CREATE SCHEMA FEATUREBYTE"),
-    ]
+    assert session.execute_query.call_args_list[1] == call("CREATE SCHEMA FEATUREBYTE")
+
     # Should register custom functions and procedures
     counts = check_create_commands(session)
     assert counts == {
