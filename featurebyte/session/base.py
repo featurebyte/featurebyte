@@ -386,10 +386,6 @@ class SqlObjectType(StrEnum):
 
 
 class BaseSchemaInitializer(ABC):
-
-    CURRENT_WORKING_SCHEMA_VERSION = 1
-    SCHEMA_NOT_REGISTERED = -1
-
     """Responsible for initializing featurebyte schema
 
     Parameters
@@ -397,6 +393,9 @@ class BaseSchemaInitializer(ABC):
     session : BaseSession
         Session object
     """
+
+    CURRENT_WORKING_SCHEMA_VERSION = 1
+    SCHEMA_NOT_REGISTERED = -1
 
     def __init__(self, session: BaseSession):
         self.session = session
