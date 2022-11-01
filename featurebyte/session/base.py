@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, AsyncGenerator, OrderedDict
 
-import asyncio
-
 try:
     # fcntl is not available on Windows
     import fcntl
@@ -15,6 +13,7 @@ try:
 except ImportError:
     FCNTL_AVAILABLE = False
 
+import asyncio
 import os
 import threading
 import time
@@ -24,6 +23,7 @@ import aiofiles
 import pandas as pd
 import pyarrow as pa
 from pydantic import BaseModel, PrivateAttr
+from snowflake.connector.errors import ProgrammingError
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.common.utils import (
@@ -420,6 +420,8 @@ class BaseSchemaInitializer(ABC):
 
     async def initialize(self) -> None:
         """Entry point to set up the featurebyte working schema"""
+        if not await self.should_update_schema():
+            return
 
         if not await self.schema_exists():
             logger.debug(f"Initializing schema {self.session.schema_name}")
@@ -435,7 +437,10 @@ class BaseSchemaInitializer(ABC):
         to callers that we probably want to initialize the working schema.
         """
         query = "SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"
-        results = await self.session.execute_query(query)
+        try:
+            results = await self.session.execute_query(query)
+        except ProgrammingError:
+            return self.SCHEMA_NOT_REGISTERED
         if not results:
             return self.SCHEMA_NOT_REGISTERED
         return results[0]
@@ -478,6 +483,31 @@ class BaseSchemaInitializer(ABC):
             await self.session.list_schemas(database_name=self.session.database_name)
         )
         return self._normalize_casing(self.session.schema_name) in available_schemas
+
+    async def register_metadata_schema(self) -> None:
+        """Inserts, or updates, the WORKING_SCHEMA_VERSION to the current value."""
+        check_if_schema_version_exists_query = (
+            f"SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA "
+            f"WHERE WORKING_SCHEMA_NAME = '{self.session.schema_name}'"
+        )
+        does_version_exist_result = await self.session.execute_query(
+            check_if_schema_version_exists_query
+        )
+        if not does_version_exist_result.empty:
+            update_value_query = (
+                f"UPDATE METADATA_SCHEMA "
+                f"SET WORKING_SCHEMA_VERSION = {self.CURRENT_WORKING_SCHEMA_VERSION} "
+                f"WHERE WORKING_SCHEMA_NAME = '{self.session.schema_name}'"
+            )
+            await self.session.execute_query(update_value_query)
+        else:
+            insert_value_query = (
+                f"INSERT INTO METADATA_SCHEMA "
+                f"(WORKING_SCHEMA_VERSION, WORKING_SCHEMA_NAME) "
+                f"VALUES ({self.CURRENT_WORKING_SCHEMA_VERSION}, '{self.session.schema_name}')"
+            )
+            await self.session.execute_query(insert_value_query)
+        return
 
     async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
         """Register functions defined in the snowflake sql directory
@@ -533,6 +563,7 @@ class BaseSchemaInitializer(ABC):
         await self.register_missing_functions(sql_objects_by_type[SqlObjectType.FUNCTION])
         await self.register_missing_procedures(sql_objects_by_type[SqlObjectType.PROCEDURE])
         await self.create_missing_tables(sql_objects_by_type[SqlObjectType.TABLE])
+        await self.register_metadata_schema()
 
     async def _register_sql_objects(self, items: list[dict[str, Any]]) -> None:
         for item in items:
