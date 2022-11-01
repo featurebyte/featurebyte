@@ -4,11 +4,11 @@ Pydantic Model for persistent storage
 from typing import Any, Dict, List, Mapping, MutableMapping, Optional
 
 from datetime import datetime
-from enum import Enum
 
 from bson import ObjectId
 from pydantic import Field
 
+from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.routes.common.util import get_utc_now
 from featurebyte.schema.common.base import PaginationMixin
@@ -18,7 +18,7 @@ QueryFilter = MutableMapping[str, Any]
 DocumentUpdate = Mapping[str, Any]
 
 
-class AuditTransactionMode(str, Enum):
+class AuditTransactionMode(StrEnum):
     """
     Audit logging mode
     """
@@ -27,7 +27,7 @@ class AuditTransactionMode(str, Enum):
     MULTI = "MULTI"
 
 
-class AuditActionType(str, Enum):
+class AuditActionType(StrEnum):
     """
     Database or data warehouse source type
     """

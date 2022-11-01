@@ -132,12 +132,22 @@ app_container_config = {
         {
             "name": "event_data_controller",
             "clazz": EventDataController,
-            "depends": ["event_data_service", "data_update_service", "info_service"],
+            "depends": [
+                "event_data_service",
+                "data_update_service",
+                "semantic_service",
+                "info_service",
+            ],
         },
         {
             "name": "item_data_controller",
             "clazz": ItemDataController,
-            "depends": ["item_data_service", "data_update_service", "info_service"],
+            "depends": [
+                "item_data_service",
+                "data_update_service",
+                "semantic_service",
+                "info_service",
+            ],
         },
         {
             "name": "feature_controller",

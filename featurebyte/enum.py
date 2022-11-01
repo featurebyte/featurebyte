@@ -75,7 +75,19 @@ class OrderedStrEnum(OrderedEnum):
         return str(self.value)
 
 
-class DBVarType(str, Enum):
+class StrEnum(str, Enum):
+    """
+    StrEnum class
+    """
+
+    def __repr__(self) -> str:
+        return str(self.value)
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
+class DBVarType(StrEnum):
     """
     Database variable type
     """
@@ -97,7 +109,7 @@ class DBVarType(str, Enum):
     STRUCT = "STRUCT"
 
 
-class AggFunc(str, Enum):
+class AggFunc(StrEnum):
     """
     Supported aggregation functions in groupby
     """
@@ -110,9 +122,6 @@ class AggFunc(str, Enum):
     NA_COUNT = "na_count"
     STD = "std"
 
-    def __repr__(self) -> str:
-        return str(self.value)
-
     @classmethod
     def all(cls) -> list[str]:
         """List all defined aggregation function names
@@ -124,7 +133,7 @@ class AggFunc(str, Enum):
         return [c.value for c in cls]
 
 
-class SourceType(str, Enum):
+class SourceType(StrEnum):
     """
     Database or data warehouse source type
     """
@@ -134,7 +143,7 @@ class SourceType(str, Enum):
     DATABRICKS = "databricks"
 
 
-class SpecialColumnName(str, Enum):
+class SpecialColumnName(StrEnum):
     """
     Special column names such as POINT_IN_TIME
     """
@@ -142,7 +151,7 @@ class SpecialColumnName(str, Enum):
     POINT_IN_TIME = "POINT_IN_TIME"
 
 
-class InternalName(str, Enum):
+class InternalName(StrEnum):
     """
     Names reserved for featurebyte's internal usage
     """
@@ -164,7 +173,7 @@ class InternalName(str, Enum):
     FIRST_TILE_INDEX = "__FB_FIRST_TILE_INDEX"
 
 
-class WorkerCommand(str, Enum):
+class WorkerCommand(StrEnum):
     """
     Command names for worker tasks
     """
@@ -173,7 +182,7 @@ class WorkerCommand(str, Enum):
     FEATURE_JOB_SETTING_ANALYSIS_BACKTEST = "FEATURE_JOB_SETTING_ANALYSIS_BACKTEST"
 
 
-class TableDataType(str, Enum):
+class TableDataType(StrEnum):
     """
     TableDataType enum
     """
@@ -181,3 +190,13 @@ class TableDataType(str, Enum):
     GENERIC = "generic"
     EVENT_DATA = "event_data"
     ITEM_DATA = "item_data"
+
+
+class SemanticType(StrEnum):
+    """
+    Builtin semantic enum
+    """
+
+    EVENT_TIMESTAMP = "event_timestamp"
+    EVENT_ID = "event_id"
+    ITEM_ID = "item_id"

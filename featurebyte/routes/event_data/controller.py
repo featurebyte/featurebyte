@@ -3,8 +3,11 @@ EventData API route controller
 """
 from __future__ import annotations
 
+from typing import Any
+
 from bson.objectid import ObjectId
 
+from featurebyte.enum import SemanticType
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.routes.common.base_data import BaseDataDocumentController
 from featurebyte.schema.event_data import EventDataInfo, EventDataList, EventDataUpdate
@@ -20,6 +23,17 @@ class EventDataController(
 
     paginated_document_class = EventDataList
     document_update_schema_class = EventDataUpdate
+
+    async def _get_column_semantic_map(self, document: EventDataModel) -> dict[str, Any]:
+        event_timestamp = await self.semantic_service.get_or_create_document(
+            name=SemanticType.EVENT_TIMESTAMP
+        )
+        event_id = await self.semantic_service.get_or_create_document(name=SemanticType.EVENT_ID)
+        assert document.event_id_column is not None
+        return {
+            document.event_timestamp_column: event_timestamp,
+            document.event_id_column: event_id,
+        }
 
     async def get_info(
         self,

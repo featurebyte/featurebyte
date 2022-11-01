@@ -5,10 +5,9 @@ from __future__ import annotations
 
 from typing import Any, Literal, Optional, Union, overload
 
-from enum import Enum
-
 from bson.objectid import ObjectId
 
+from featurebyte.enum import StrEnum
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
@@ -56,7 +55,7 @@ DocumentModel = Union[
 ]
 
 
-class DocServiceName(str, Enum):
+class DocServiceName(StrEnum):
     """
     Document service enum
     """

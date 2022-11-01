@@ -4,7 +4,6 @@ Read configurations from ini file
 from typing import Any, Dict, List, Optional, Union
 
 import os
-from enum import Enum
 from pathlib import Path
 
 # pylint: disable=too-few-public-methods
@@ -14,6 +13,7 @@ from pydantic import AnyHttpUrl, BaseModel, Field, validator
 from pydantic.error_wrappers import ValidationError
 from requests import Response
 
+from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.models.credential import Credential
 
@@ -25,7 +25,7 @@ DEFAULT_LOCAL_PATH = Path.home().joinpath(".featurebyte")
 DEFAULT_CONFIG_PATH = DEFAULT_LOCAL_PATH.joinpath("config.yaml")
 
 
-class LogLevel(str, Enum):
+class LogLevel(StrEnum):
     """
     Log levels
     """

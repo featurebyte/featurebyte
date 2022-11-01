@@ -8,12 +8,13 @@ from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 import json
 from datetime import datetime
-from enum import Enum
 
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
 from pydantic import BaseModel, Field, StrictStr, validator
 from pydantic.errors import DictError, PydanticTypeError
+
+from featurebyte.enum import StrEnum
 
 Model = TypeVar("Model", bound="FeatureByteBaseModel")
 
@@ -113,7 +114,7 @@ class FeatureByteBaseModel(BaseModel):
         json_encoders = {ObjectId: str}
 
 
-class UniqueConstraintResolutionSignature(str, Enum):
+class UniqueConstraintResolutionSignature(StrEnum):
     """
     UniqueConstraintResolutionSignature
     """

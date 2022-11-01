@@ -9,6 +9,7 @@ import pytest_asyncio
 from bson import ObjectId
 from mongomock_motor import AsyncMongoMockClient
 
+from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.persistent.mongo import MongoDB
 
 
@@ -34,3 +35,9 @@ async def persistent_fixture():
 
         with patch.object(persistent, "start_transaction", start_transaction):
             yield persistent
+
+
+@pytest.fixture(name="schema_metadata_service")
+def schema_metadata_service_fixture(user, persistent):
+    """Schema metadata service fixture"""
+    return SchemaMetadataService(user=user, persistent=persistent)

@@ -2,13 +2,16 @@
 Tests for EventData routes
 """
 from http import HTTPStatus
+from unittest import mock
 
 import pytest
+import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.schema.event_data import EventDataCreate
+from featurebyte.service.semantic import SemanticService
 from tests.unit.routes.base import BaseDataApiTestSuite
 
 
@@ -55,13 +58,35 @@ class TestEventDataApi(BaseDataApiTestSuite):
     ]
     update_unprocessable_payload_expected_detail_pairs = []
 
+    @pytest_asyncio.fixture(name="event_timestamp_id_semantic_ids")
+    async def event_timestamp_id_semantic_fixture(self, user_id, persistent):
+        """Event timestamp & event ID semantic IDs fixture"""
+        user = mock.Mock()
+        user.id = user_id
+        semantic_service = SemanticService(user=user, persistent=persistent)
+        event_timestamp = await semantic_service.get_or_create_document("event_timestamp")
+        event_id = await semantic_service.get_or_create_document("event_id")
+        return event_timestamp.id, event_id.id
+
     @pytest.fixture(name="data_model_dict")
-    def data_model_dict_fixture(self, tabular_source, columns_info, user_id):
+    def data_model_dict_fixture(
+        self, tabular_source, columns_info, user_id, event_timestamp_id_semantic_ids
+    ):
         """Fixture for a Event Data dict"""
+        event_timestamp_semantic_id, event_id_semantic_id = event_timestamp_id_semantic_ids
+        cols_info = []
+        for col_info in columns_info:
+            col = col_info.copy()
+            if col["name"] == "event_date":
+                col["semantic_id"] = event_timestamp_semantic_id
+            elif col["name"] == "event_id":
+                col["semantic_id"] = event_id_semantic_id
+            cols_info.append(col)
+
         event_data_dict = {
             "name": "订单表",
             "tabular_source": tabular_source,
-            "columns_info": columns_info,
+            "columns_info": cols_info,
             "event_id_column": "event_id",
             "event_timestamp_column": "event_date",
             "record_creation_date_column": "created_at",
@@ -128,12 +153,16 @@ class TestEventDataApi(BaseDataApiTestSuite):
         response = test_api_client.get(f"/event_data/audit/{insert_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
-        assert results["total"] == 2
-        assert [record["action_type"] for record in results["data"]] == ["UPDATE", "INSERT"]
+        assert results["total"] == 3
+        assert [record["action_type"] for record in results["data"]] == [
+            "UPDATE",
+            "UPDATE",
+            "INSERT",
+        ]
         assert [
             record["previous_values"].get("default_feature_job_setting")
             for record in results["data"]
-        ] == [{"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"}, None]
+        ] == [{"blind_spot": "10m", "frequency": "30m", "time_modulo_frequency": "5m"}, None, None]
 
         # test get default_feature_job_setting_history
         response = test_api_client.get(
@@ -243,7 +272,6 @@ class TestEventDataApi(BaseDataApiTestSuite):
         )
         expected_info_response = {
             "name": "sf_event_data",
-            "updated_at": None,
             "event_timestamp_column": "event_timestamp",
             "record_creation_date_column": "created_at",
             "table_details": {

@@ -24,10 +24,10 @@ def feature_job_setting_fixture():
 def test_event_data_model(snowflake_feature_store, feature_job_setting):
     """Test creation, serialization and deserialization of an EventData"""
     columns_info = [
-        {"name": "col", "dtype": "INT", "entity_id": None},
-        {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None},
-        {"name": "event_id", "dtype": "INT", "entity_id": None},
-        {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None},
+        {"name": "col", "dtype": "INT", "entity_id": None, "semantic_id": None},
+        {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
+        {"name": "event_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
+        {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
     ]
     event_data = EventDataModel(
         name="my_event_data",

@@ -6,13 +6,13 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, Optional, Type
 
 import json
-from enum import Enum
 from multiprocessing import Process, Queue
 
 from bson.objectid import ObjectId
 from cachetools import FIFOCache
 
 from featurebyte.common.singleton import SingletonMeta
+from featurebyte.enum import StrEnum
 from featurebyte.schema.task import TaskStatus
 from featurebyte.worker.enum import Command
 from featurebyte.worker.progress import GlobalProgress
@@ -25,7 +25,7 @@ class ProcessStore(metaclass=SingletonMeta):
     """
 
     _store: FIFOCache[tuple[Optional[ObjectId], ObjectId], Dict[str, Any]] = FIFOCache(maxsize=128)
-    _command_class: Type[Enum] = Command
+    _command_class: Type[StrEnum] = Command
     _task_executor: Callable[..., Any] = TaskExecutor
 
     async def submit(self, payload: str, output_path: Optional[str]) -> ObjectId:

@@ -1,10 +1,10 @@
 """
-This module contains all the enums used in workder directory.
+This module contains all the enums used in worker directory.
 """
-from enum import Enum
+from featurebyte.enum import StrEnum
 
 
-class Command(str, Enum):
+class Command(StrEnum):
     """
     Task command enum
     """

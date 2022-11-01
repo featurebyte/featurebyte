@@ -132,6 +132,7 @@ class ColumnInfo(ColumnSpec):
     """
 
     entity_id: Optional[PydanticObjectId] = Field(default=None)
+    semantic_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class DataStatus(OrderedStrEnum):

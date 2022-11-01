@@ -8,14 +8,13 @@ from typing import Any, List
 
 import functools
 from collections import defaultdict
-from enum import Enum
 
 from bson.objectid import ObjectId
 from pydantic import Field, root_validator, validator
 from typeguard import typechecked
 
 from featurebyte.common.model_util import convert_version_string_to_dict
-from featurebyte.enum import DBVarType, OrderedStrEnum
+from featurebyte.enum import DBVarType, OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -36,7 +35,7 @@ class FeatureListStatus(OrderedStrEnum):
     PUBLISHED = "PUBLISHED"
 
 
-class FeatureListNewVersionMode(str, Enum):
+class FeatureListNewVersionMode(StrEnum):
     """New feature list version mode"""
 
     AUTO = "auto"

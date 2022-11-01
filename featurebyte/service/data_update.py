@@ -12,8 +12,10 @@ from featurebyte.models.feature_store import DataStatus
 from featurebyte.schema.event_data import EventDataUpdate
 from featurebyte.schema.item_data import ItemDataUpdate
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.item_data import ItemDataService
+from featurebyte.service.semantic import SemanticService
 
 DataDocumentService = Union[EventDataService, ItemDataService]
 DataUpdateSchema = Union[EventDataUpdate, ItemDataUpdate]
@@ -65,6 +67,38 @@ class DataUpdateService(BaseService):
                 return_document=False,
             )
 
+    @staticmethod
+    async def _validate_column_info_id_field_values(
+        data: DataUpdateSchema,
+        field_name: str,
+        service: Union[EntityService, SemanticService],
+        field_class_name: str,
+    ) -> None:
+        assert data.columns_info is not None
+        id_values = [
+            getattr(col_info, field_name)
+            for col_info in data.columns_info
+            if getattr(col_info, field_name)
+        ]
+        docs = await service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": id_values}}
+        )
+        found_id_values = [ObjectId(doc["_id"]) for doc in docs["data"]]
+        missing_id_values = sorted(set(id_values).difference(found_id_values))
+        if missing_id_values:
+            column_name_id_pairs = sorted(
+                [
+                    (col_info.name, getattr(col_info, field_name))
+                    for col_info in data.columns_info
+                    if getattr(col_info, field_name) in missing_id_values
+                ]
+            )
+            col_names, id_vals = zip(*column_name_id_pairs)
+            id_vals = [str(id_val) for id_val in id_vals]
+            raise DocumentUpdateError(
+                f"{field_class_name} IDs {list(id_vals)} not found for columns {list(col_names)}."
+            )
+
     async def update_columns_info(
         self, service: DataDocumentService, document_id: ObjectId, data: DataUpdateSchema
     ) -> None:
@@ -79,33 +113,24 @@ class DataUpdateService(BaseService):
             Document ID
         data: DataUpdateSchema
             Data upload payload
-
-        Raises
-        ------
-        DocumentUpdateError
-            When there exists some entity IDs cannot be found
         """
         document = await service.get_document(document_id=document_id)
 
         if data.columns_info is not None and data.columns_info != document.columns_info:
-            # check existence of the entity ids
-            entity_ids = [column.entity_id for column in data.columns_info if column.entity_id]
-            entities = await self.entity_service.list_documents(
-                page=1, page_size=0, query_filter={"_id": {"$in": entity_ids}}
+            # check existence of the entities & semantics
+            await self._validate_column_info_id_field_values(
+                data=data,
+                field_name="entity_id",
+                service=self.entity_service,
+                field_class_name="Entity",
             )
-            found_entities = [ObjectId(doc["_id"]) for doc in entities["data"]]
-            missing_entities = sorted(set(entity_ids).difference(found_entities))
-            if missing_entities:
-                column_names = sorted(
-                    [
-                        column.name
-                        for column in data.columns_info
-                        if column.entity_id in missing_entities
-                    ]
-                )
-                raise DocumentUpdateError(
-                    f"Entity IDs {missing_entities} not found for columns {column_names}."
-                )
+            await self._validate_column_info_id_field_values(
+                data=data,
+                field_name="semantic_id",
+                service=self.semantic_service,
+                field_class_name="Semantic",
+            )
+
             await service.update_document(
                 document_id=document_id,
                 data=type(data)(columns_info=data.columns_info),  # type: ignore

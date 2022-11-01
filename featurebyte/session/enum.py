@@ -1,10 +1,10 @@
 """
 This module contains all the enums used for session specific tasks.
 """
-from enum import Enum
+from featurebyte.enum import StrEnum
 
 
-class SnowflakeDataType(str, Enum):
+class SnowflakeDataType(StrEnum):
     """
     Snowflake data type
     """
