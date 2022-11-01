@@ -56,18 +56,15 @@ def config_fixture():
     Config object for integration testing
     """
     config_dict = {
-        "featurestore": [
+        "credential": [
             {
-                "name": "snowflake_featurestore",
+                "feature_store": "snowflake_featurestore",
                 "credential_type": "USERNAME_PASSWORD",
                 "username": os.getenv("SNOWFLAKE_USER"),
                 "password": os.getenv("SNOWFLAKE_PASSWORD"),
             },
             {
-                "name": "sqlite_datasource",
-            },
-            {
-                "name": "databricks_featurestore",
+                "feature_store": "databricks_featurestore",
                 "credential_type": "ACCESS_TOKEN",
                 "access_token": os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
             },

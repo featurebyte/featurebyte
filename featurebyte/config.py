@@ -234,23 +234,19 @@ class Configurations:
         with open(path, encoding="utf-8") as file_obj:
             self.settings = yaml.safe_load(file_obj)
 
-        feature_stores = self.settings.pop("featurestore", [])
-        for feature_store_details in feature_stores:
-            name = feature_store_details.pop("name", "unnamed")
+        credentials = self.settings.pop("credential", [])
+        for credential in credentials:
+            name = credential.pop("feature_store", "unnamed")
             try:
                 # parse and store credentials
-                credentials = None
-                if "credential_type" in feature_store_details:
-                    # credentials are stored together with feature store name in the config file,
-                    # Credential pydantic model will use only the relevant fields
-                    credentials = Credential(
-                        name=name,
-                        credential_type=feature_store_details["credential_type"],
-                        credential=feature_store_details,
-                    )
+                credentials = Credential(
+                    name=name,
+                    credential_type=credential["credential_type"],
+                    credential=credential,
+                )
                 self.credentials[name] = credentials
             except ValidationError as exc:
-                raise InvalidSettingsError(f"Invalid settings for datasource: {name}") from exc
+                raise InvalidSettingsError(f"Invalid settings for feature store: {name}") from exc
 
         logging_settings = self.settings.pop("logging", None)
         if logging_settings:

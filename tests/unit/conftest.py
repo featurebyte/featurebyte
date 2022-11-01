@@ -52,15 +52,12 @@ def config_file_fixture():
     Config file for unit testing
     """
     config_dict = {
-        "featurestore": [
+        "credential": [
             {
-                "name": "sf_featurestore",
+                "feature_store": "sf_featurestore",
                 "credential_type": "USERNAME_PASSWORD",
                 "username": "sf_user",
                 "password": "sf_password",
-            },
-            {
-                "name": "sq_featurestore",
             },
         ],
         "profile": [

@@ -1,14 +1,3 @@
-featurestore:
-  - name: "Snowflake FeatureStøre"
-    source_type: snowflake
-    account:  sf_account
-    warehouse: COMPUTE_WH
-    database: FEATUREBYTE
-    sf_schema: FEATUREBYTE
-    credential_type: USERNAME_PASSWORD
-    username: user
-    password: password
-
 profile:
   - name: featurebyte1
     api_url: https://app1.featurebyte.com/api/v1
@@ -20,6 +9,12 @@ profile:
 logging:
   level: INFO
   serialize: True
+
+credential:
+  - feature_store: "Snowflake FeatureStøre"
+    credential_type: USERNAME_PASSWORD
+    username: user
+    password: password
 
 storage:
   local_path: ~/.featurebyte_custom/data

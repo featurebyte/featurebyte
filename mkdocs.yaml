@@ -1,10 +1,18 @@
-site_name: Featurebyte
+site_name: FeatureByte
 nav:
     - Home: index.md
+    - User Guide:
+        - About: user/about.md
+        - Installation: user/installation.md
     - Reference:
         - worker: reference/worker/index.md
 theme: material
-
 plugins:
   - search
   - mkdocstrings
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
