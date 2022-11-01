@@ -432,6 +432,8 @@ class BaseSchemaInitializer(ABC):
         """Retrieves the working schema version from the table registered in the
         working schema.
 
+        Returns
+        -------
         If no working schema version is found, return -1. This should indicate
         to callers that we probably want to initialize the working schema.
         """
@@ -445,7 +447,7 @@ class BaseSchemaInitializer(ABC):
         return results[0]
 
     def get_current_working_schema_version(self) -> int:
-        """Returns the current working schema version.
+        """Gets the current working schema version.
 
         We should increase this value if we want to re-run the session
         initialization functions (eg. registering new functions, procedures
@@ -453,6 +455,10 @@ class BaseSchemaInitializer(ABC):
 
         We can consider moving this to a config/json file down the line, but
         opting to keep it simple for now.
+
+        Returns
+        -------
+        int that is the current working schema version.
         """
         return self.CURRENT_WORKING_SCHEMA_VERSION
 
@@ -460,6 +466,8 @@ class BaseSchemaInitializer(ABC):
         """Compares the working_schema_version defined in the codebase, with
         what is registered in working schema table.
 
+        Returns
+        -------
         This function will return true if:
         - there is no working schema defined, or
         - the working_schema_version defined in the code base is greater than the version number
