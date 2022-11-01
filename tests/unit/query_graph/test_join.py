@@ -1,3 +1,6 @@
+"""
+Tests for Join SQLNode
+"""
 import textwrap
 
 from featurebyte.enum import SourceType
