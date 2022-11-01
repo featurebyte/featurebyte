@@ -9,6 +9,9 @@ from featurebyte.query_graph.sql.common import SQLType
 
 
 def test_item_data_join_event_data_attributes(global_graph, item_data_join_event_data_node):
+    """
+    Test SQL generation for ItemData joined with EventData
+    """
     sql_graph = SQLOperationGraph(
         global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
     )
@@ -44,6 +47,9 @@ def test_item_data_join_event_data_attributes(global_graph, item_data_join_event
 
 
 def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature_join_node):
+    """
+    Test SQL generation for non-time aware feature in ItemData joined into EventView
+    """
     sql_graph = SQLOperationGraph(
         global_graph, sql_type=SQLType.EVENT_VIEW_PREVIEW, source_type=SourceType.SNOWFLAKE
     )
@@ -86,6 +92,9 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
 
 
 def test_double_aggregation(global_graph, order_size_agg_by_cust_id_node):
+    """
+    Test aggregating a non-time aware feature derived from ItemData
+    """
     sql_graph = SQLOperationGraph(
         global_graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE
     )
