@@ -14,6 +14,11 @@ class EventDataMigrationService(EventDataService, MigrationServiceMixin):
     @migrate(version=1, description="Rename collection name from event_data to tabular_data")
     async def change_collection_name_from_event_data_to_table_data(self) -> None:
         """Change collection name from event data to tabular_data"""
+        collection_names = await self.persistent.list_collection_names()
+        if "event_data" not in collection_names:
+            # do nothing if the collection does not exist
+            return
+
         await self.persistent.rename_collection(
             collection_name="event_data", new_collection_name="tabular_data"
         )

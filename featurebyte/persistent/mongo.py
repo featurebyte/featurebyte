@@ -296,6 +296,9 @@ class MongoDB(Persistent):
         )
         return result.deleted_count
 
+    async def list_collection_names(self) -> list[str]:
+        return await self._db.list_collection_names()
+
     async def _rename_collection(self, collection_name: str, new_collection_name: str) -> None:
         """
         Rename collection name

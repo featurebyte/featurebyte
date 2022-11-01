@@ -3,15 +3,8 @@ Test migration related service(s)
 """
 import pytest
 
-from featurebyte.migration.migration_data_service import SchemaMetadataService
 from featurebyte.migration.model import MigrationMetadata
 from featurebyte.migration.service import migrate
-
-
-@pytest.fixture(name="schema_metadata_service")
-def schema_metadata_service_fixture(user, persistent):
-    """Schema metadata service fixture"""
-    return SchemaMetadataService(user=user, persistent=persistent)
 
 
 @pytest.mark.asyncio
@@ -21,7 +14,7 @@ async def test_get_or_create_document(schema_metadata_service):
     assert len(docs["data"]) == 0
 
     created_doc = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA.value
+        name=MigrationMetadata.SCHEMA_METADATA
     )
     assert created_doc.version == 0
     docs = await schema_metadata_service.list_documents()
@@ -29,7 +22,7 @@ async def test_get_or_create_document(schema_metadata_service):
     assert docs["data"][0] == created_doc.dict(by_alias=True)
 
     retrieved_doc = await schema_metadata_service.get_or_create_document(
-        name=MigrationMetadata.SCHEMA_METADATA.value
+        name=MigrationMetadata.SCHEMA_METADATA
     )
     assert retrieved_doc == created_doc
     docs = await schema_metadata_service.list_documents()

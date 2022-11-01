@@ -644,6 +644,16 @@ class Persistent(ABC):
     async def _delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
         pass
 
+    @abstractmethod
+    async def list_collection_names(self) -> list[str]:
+        """
+        List collection names
+
+        Returns
+        -------
+        list[str]
+        """
+
     async def rename_collection(self, collection_name: str, new_collection_name: str) -> None:
         """
         Rename collection
