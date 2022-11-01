@@ -239,12 +239,15 @@ class Configurations:
             name = credential.pop("feature_store", "unnamed")
             try:
                 # parse and store credentials
-                credentials = Credential(
-                    name=name,
-                    credential_type=credential["credential_type"],
-                    credential=credential,
-                )
-                self.credentials[name] = credentials
+                try:
+                    new_credential = Credential(
+                        name=name,
+                        credential_type=credential["credential_type"],
+                        credential=credential,
+                    )
+                except KeyError:
+                    new_credential = None
+                self.credentials[name] = new_credential
             except ValidationError as exc:
                 raise InvalidSettingsError(f"Invalid settings for feature store: {name}") from exc
 

@@ -5,6 +5,9 @@ mkdir -p /data/db1 /data/db2
 /usr/bin/mongod --port=27021 --dbpath=/data/db1 --bind_ip_all --replSet rs0 -v --logpath /data/db1.log --logRotate reopen --logappend &
 /usr/bin/mongod --port=27022 --dbpath=/data/db2 --bind_ip_all --replSet rs0 -v --logpath /data/db2.log --logRotate reopen --logappend &
 
+# wait for mongo service to be up
+mongosh --port=27021 --eval exit || sleep 1
+
 # setup replica set
 mongosh --port=27021 <<EOF
 var config = {

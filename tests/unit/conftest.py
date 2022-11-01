@@ -59,6 +59,9 @@ def config_file_fixture():
                 "username": "sf_user",
                 "password": "sf_password",
             },
+            {
+                "feature_store": "sq_featurestore",
+            },
         ],
         "profile": [
             {

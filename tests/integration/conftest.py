@@ -64,6 +64,9 @@ def config_fixture():
                 "password": os.getenv("SNOWFLAKE_PASSWORD"),
             },
             {
+                "feature_store": "sqlite_datasource",
+            },
+            {
                 "feature_store": "databricks_featurestore",
                 "credential_type": "ACCESS_TOKEN",
                 "access_token": os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
