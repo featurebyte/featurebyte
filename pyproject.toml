@@ -109,11 +109,11 @@ python-multipart = "^0.0.5"
 requests = "^2.27.1"
 snowflake-connector-python = { version = "^2.7.7", optional = true }
 sqlglot = "^2.3.2,<3.0"   # ^3.0.0 causes test failure maybe due to syntax changes
-typeguard = { version = "^2.13.3", optional = true }
+typeguard = "^2.13.3"
 uvicorn = { version = "^0.18.2", optional = true }
 
 [tool.poetry.extras]
-server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python", "uvicorn", "typeguard"]
+server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python", "uvicorn"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
