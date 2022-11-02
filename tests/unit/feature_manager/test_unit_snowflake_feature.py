@@ -20,7 +20,6 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_upsert_tile_feature_mapping,
 )
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.tile import OnlineFeatureSpec
 
 
