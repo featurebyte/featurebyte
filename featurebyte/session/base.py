@@ -444,6 +444,9 @@ class BaseSchemaInitializer(ABC):
     async def initialize(self) -> None:
         """Entry point to set up the featurebyte working schema"""
 
+        if not await self.should_update_schema():
+            return
+
         if not await self.schema_exists():
             logger.debug(f"Initializing schema {self.session.schema_name}")
             await self.create_schema()
@@ -557,9 +560,13 @@ class BaseSchemaInitializer(ABC):
         for sql_object in sql_objects:
             sql_objects_by_type[sql_object["type"]].append(sql_object)
 
+        await self.metadata_schema_initializer.create_metadata_table()
         await self.register_missing_functions(sql_objects_by_type[SqlObjectType.FUNCTION])
         await self.register_missing_procedures(sql_objects_by_type[SqlObjectType.PROCEDURE])
         await self.create_missing_tables(sql_objects_by_type[SqlObjectType.TABLE])
+        await self.metadata_schema_initializer.update_metadata_schema_version(
+            self.current_working_schema_version
+        )
 
     async def _register_sql_objects(self, items: list[dict[str, Any]]) -> None:
         for item in items:
