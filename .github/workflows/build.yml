@@ -161,11 +161,9 @@ jobs:
         poetry config repositories.featurebyte_np https://${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}
         poetry publish --build -r featurebyte_np | tee output.txt
 
+        # Slack outputs
         export OUTPUT=$(cat output.txt)
-
-        # Set BASE_REF and HEAD_REF
-        export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
-        export GITHUB_BASE_REF=MERGE
+        export GITHUB_HEAD_REF=main
 
         # Sending Slack Message
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
@@ -217,8 +215,7 @@ jobs:
       if: ${{ failure() }}
       run: |
         if [[ ${GITHUB_EVENT_NAME} == "push" ]]; then
-          export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
-          export GITHUB_BASE_REF=MERGE
+          export GITHUB_HEAD_REF=main
         fi
 
         # Get the last committed email address

@@ -1,68 +1,24 @@
 {
   "channel": "${AUTHOR_ID}",
-  "text": "Workflow Passed ${GITHUB_WORKFLOW} for ${GITHUB_REPOSITORY}",
+  "text": "🟢 Passed Action ${GITHUB_WORKFLOW} for ${GITHUB_REPOSITORY}:${GITHUB_HEAD_REF}",
   "blocks": [
     {
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "*Workflow Passed* `${GITHUB_WORKFLOW}` for `${GITHUB_REPOSITORY}`"
+        "text": "🟢 *Passed Action* `${GITHUB_WORKFLOW}` for `${GITHUB_REPOSITORY}`:`${GITHUB_HEAD_REF}`\n*Coverage:* `${COVERAGE_PERCENTAGE}`"
+      },
+      "accessory": {
+        "type": "button",
+        "text": {
+          "type": "plain_text",
+          "text": "Run",
+          "emoji": true
+        },
+        "style": "primary",
+        "value": "btn-run",
+        "url": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
       }
-    },
-    {
-      "type": "section",
-      "fields": [
-        {
-          "type": "mrkdwn",
-          "text": "*Repository:*\n`${GITHUB_REPOSITORY}`"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Branch:*\n`${GITHUB_HEAD_REF}`"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Workflow:*\n`${GITHUB_JOB}`"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Base Branch:*\n`${GITHUB_BASE_REF}`"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Author:*\n`${AUTHOR_EMAIL}`"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Coverage:*\n`${COVERAGE_PERCENTAGE}`"
-        }
-      ]
-    },
-    {
-      "type": "actions",
-      "elements": [
-        {
-          "type": "button",
-          "text": {
-            "type": "plain_text",
-            "emoji": true,
-            "text": "Job Summary"
-          },
-          "style": "primary",
-          "value": "btn-run",
-          "url": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-        },
-        {
-          "type": "button",
-          "text": {
-            "type": "plain_text",
-            "emoji": true,
-            "text": "Repository"
-          },
-          "value": "btn_repo",
-          "url": "https://github.com/${GITHUB_REPOSITORY}"
-        }
-      ]
     }
   ]
 }
