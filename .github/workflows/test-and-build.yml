@@ -1,4 +1,4 @@
-name: test
+name: build
 
 # SECRETS NAME                   | Description                     | PERMISSIONS
 # ------------------------------ | ------------------------------- | ----------------------------------------------------
@@ -52,7 +52,7 @@ env:
   FEATUREBYTE_HOME: "/tmp/featurebyte"
 
 jobs:
-  test_flags:
+  flags:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -70,8 +70,14 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' }}
         run: echo "PYTHON_CHANGES=1" >> $GITHUB_OUTPUT
 
+      - name: Summarize
+        run: |
+          echo "### Changelog" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          git diff --name-only origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | sed -e 's/^/- /g'  >> $GITHUB_STEP_SUMMARY
+
   test:
-    needs: [test_flags]
+    needs: [flags]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -94,21 +100,21 @@ jobs:
         key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
 
     - name: Install Poetry
-      if: ${{ needs.test_flags.outputs.changes != 0 }}
+      if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
         python -m pip install --extra-index-url "https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" poetry==1.2.0rc99
         poetry config virtualenvs.in-project true
 
     - name: Install dependencies
-      if: ${{ needs.test_flags.outputs.changes != 0 }}
+      if: ${{ needs.flags.outputs.changes != 0 }}
       run: make install
 
     - name: Run tests
-      if: ${{ needs.test_flags.outputs.changes != 0 }}
+      if: ${{ needs.flags.outputs.changes != 0 }}
       run: make test
 
     - name: Test Coverage Report
-      if: ${{ needs.test_flags.outputs.changes != 0 }}
+      if: ${{ needs.flags.outputs.changes != 0 }}
       id: coverageComment
       uses: MishaKav/pytest-coverage-comment@main
       with:
@@ -116,7 +122,7 @@ jobs:
         junitxml-path: ./pytest.xml
 
     - name: Check test output
-      if: ${{ needs.test_flags.outputs.changes != 0 }}
+      if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
         if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
           cat pytest-coverage.txt
@@ -239,6 +245,74 @@ jobs:
         if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
           export AUTHOR_ID=C03D81HC6Q5  # Send to `developer` Channel
         elif [ -z ${AUTHOR_EMAIL+x} ]; then
+          export AUTHOR_ID=U03P1DE5R8V  # Send to `Chester`
+        else
+          # Lookup email address and export to AUTHOR_ID
+          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+        fi
+
+        cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
+          -H "Authorization: Bearer ${SLACK_OAUTH}" \
+          -H 'Content-type: application/json; charset=utf-8' \
+          --data-binary @- https://slack.com/api/chat.postMessage
+
+
+  lint:
+    needs: [flags]
+    if: ${{ needs.flags.outputs.changes != 0 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version: ["3.8.0"]
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Setup cache
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+
+    - name: Install Poetry
+      run: |
+        python -m pip install --extra-index-url "https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" poetry==1.2.0rc99
+        poetry config virtualenvs.in-project true
+
+    - name: Install dependencies
+      run: make install
+
+    - name: Lint Checks
+      run: make lint
+
+    - name: Set up defaults
+      run: |
+        echo "REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
+
+
+    # IF unable to find author email
+    #   Send message to chester
+    # ELSE
+    #   Send message to commit author
+    - name: Slack Message failure
+      if: ${{ failure() }}
+      run: |
+        # Get Coverage data
+        #   default to: N.A.
+        export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
+        export COVERAGE_PERCENTAGE=${COVERAGE_PERCENTAGE:-N.A.}
+
+        # Get the last committed email address
+        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
+
+        if [ -z ${AUTHOR_EMAIL+x} ]; then
           export AUTHOR_ID=U03P1DE5R8V  # Send to `Chester`
         else
           # Lookup email address and export to AUTHOR_ID

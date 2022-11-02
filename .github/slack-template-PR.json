@@ -1,12 +1,12 @@
 {
   "channel": "${AUTHOR_ID}",
-  "text": "🟢 Passed Action ${GITHUB_WORKFLOW} for ${REPOSITORY}:${GITHUB_HEAD_REF}",
+  "text": "🟢 Passed Action ${GITHUB_JOB} for ${REPOSITORY}:${GITHUB_HEAD_REF}",
   "blocks": [
     {
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "🟢 *Passed Action* `${GITHUB_WORKFLOW}` for `${REPOSITORY}`:`${GITHUB_HEAD_REF}`\n*Coverage:* `${COVERAGE_PERCENTAGE}`"
+        "text": "🟢 *Passed Action* `${GITHUB_JOB}` for `${REPOSITORY}`:`${GITHUB_HEAD_REF}`\n*Coverage:* `${COVERAGE_PERCENTAGE}`"
       },
       "accessory": {
         "type": "button",
