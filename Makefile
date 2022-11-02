@@ -58,6 +58,7 @@ format:
 	@poetry run isort .
 	@poetry run black .
 	@poetry run toml-sort pyproject.toml --all --in-place
+	@poetry run toml-sort poetry.lock --all --in-place
 
 #* Linting
 lint: lint-style lint-type lint-safety
