@@ -4,18 +4,28 @@ nav:
     - User Guide:
         - About: user/about.md
         - Installation: user/installation.md
+        - Quick Start: user/quickstart.md
+        - Fundamentals:
+            - Feature Store: user/fundamentals/feature_store.md
+            - Data Source: user/fundamentals/data_source.md
+            - Data View: user/fundamentals/data_view.md
+            - Feature: user/fundamentals/feature.md
+            - Feature List: user/fundamentals/feature_list.md
     - Reference:
         - worker: reference/worker/index.md
-theme: material
+theme:
+    name: material
+    homepage: https://featurebyte.com
+    favicon: https://featurebyte.com/wp-content/uploads/2022/06/favicon_1.png
+    logo: https://featurebyte.com/wp-content/uploads/2022/06/favicon_1.png
 plugins:
-  - search
-  - mkdocstrings
+    - search
+    - mkdocstrings
 markdown_extensions:
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.superfences
-  - admonition
-  - pymdownx.details
-  - pymdownx.superfences
+    - pymdownx.highlight:
+        anchor_linenums: true
+    - pymdownx.inlinehilite
+    - pymdownx.snippets
+    - admonition
+    - pymdownx.details
+    - pymdownx.superfences

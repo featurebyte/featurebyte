@@ -4,15 +4,7 @@ For full documentation visit [featurebyte](https://github.com/featurebyte/featur
 
 Version: 0.1.0
 
-Useful links: [Installation](user/installation.md) | [Source Repository](https://github.com/featurebyte/featurebyte) | [Issue Tracker](https://github.com/featurebyte/featurebyte/issues)
-
-## Quickstart
-
-### Simple Installation
-
-```shell
-pip install featurebyte
-```
+Useful links: [Installation](user/installation.md) | [User Guide](user/about.md) | [Quick Start](user/quickstart.md) | [Source Repository](https://github.com/featurebyte/featurebyte) | [Issue Tracker](https://github.com/featurebyte/featurebyte/issues)
 
 ## Project layout
 
