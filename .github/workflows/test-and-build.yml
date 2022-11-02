@@ -73,8 +73,9 @@ jobs:
       - name: Summarize
         run: |
           echo "### Changelog" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\n```" >> $GITHUB_STEP_SUMMARY
           git diff --name-only origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | sed -e 's/^/- /g'  >> $GITHUB_STEP_SUMMARY
+          echo "```" >> $GITHUB_STEP_SUMMARY
 
   test:
     needs: [flags]
@@ -197,9 +198,12 @@ jobs:
       if: ${{ github.event_name == 'pull_request' }}
       run: |
         # Get Coverage data
-        #   default to: N.A.
         export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
-        export COVERAGE_PERCENTAGE=${COVERAGE_PERCENTAGE:-N.A.}
+        if [[ "$COVERAGE_PERCENTAGE" != "" ]]; then
+          export COVERAGE='\n*Coverage:* `${COVERAGE_PERCENTAGE}`'
+        else
+          export COVERAGE=''
+        fi
 
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
         export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
@@ -231,7 +235,11 @@ jobs:
         # Get Coverage data
         #   default to: N.A.
         export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
-        export COVERAGE_PERCENTAGE=${COVERAGE_PERCENTAGE:-N.A.}
+        if [[ "$COVERAGE_PERCENTAGE" != "" ]]; then
+          export COVERAGE='\n*Coverage:* `${COVERAGE_PERCENTAGE}`'
+        else
+          export COVERAGE=''
+        fi
 
         if [[ ${GITHUB_EVENT_NAME} == "push" ]]; then
           export GITHUB_HEAD_REF=main

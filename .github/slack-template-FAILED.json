@@ -6,7 +6,7 @@
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "🔴 *Failed Action* `${GITHUB_JOB}` for `${REPOSITORY}`:`${GITHUB_HEAD_REF}`\n*Coverage:* `${COVERAGE_PERCENTAGE}`"
+        "text": "🔴 *Failed Action* `${GITHUB_JOB}` for `${REPOSITORY}`:`${GITHUB_HEAD_REF}`${COVERAGE}"
       },
       "accessory": {
         "type": "button",

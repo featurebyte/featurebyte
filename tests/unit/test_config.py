@@ -21,6 +21,9 @@ from featurebyte.models.credential import CredentialType
 
 
 def test_configurations():
+    """
+    Test creating configuration from config file
+    """
     config = Configurations("tests/fixtures/config.yaml")
 
     # one credential with db source as key
@@ -34,7 +37,7 @@ def test_configurations():
 
     # logging settings
     assert config.logging == LoggingSettings(
-        level="INF",
+        level="INFO",
         serialize=True,
     )
 
