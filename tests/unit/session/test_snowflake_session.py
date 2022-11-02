@@ -162,6 +162,7 @@ EXPECTED_PROCEDURES = [
 EXPECTED_TABLES = [
     "FEATURE_LIST_REGISTRY",
     "FEATURE_REGISTRY",
+    "METADATA_SCHEMA",
     "TILE_REGISTRY",
     "TILE_MONITOR_SUMMARY",
 ]
@@ -322,6 +323,11 @@ def test_schema_initializer__sql_objects(
         {
             "filename": "T_TILE_MONITOR_SUMMARY.sql",
             "identifier": "TILE_MONITOR_SUMMARY",
+            "type": "table",
+        },
+        {
+            "filename": "T_METADATA_SCHEMA.sql",
+            "identifier": "METADATA_SCHEMA",
             "type": "table",
         },
     ]
