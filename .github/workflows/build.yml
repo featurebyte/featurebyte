@@ -63,12 +63,16 @@ jobs:
       with:
         fetch-depth: '0'  # Used for checking diff
 
-    - name: Skip Generation
+    - name: Set up defaults
+      run: |
+        echo "REPOSITORY=$(grep -oP '/\K.+' <<< ${{ GITHUB_REPOSITORY }})" >> $GITHUB_ENV
+
+    - name: Workflow Flags
       run: |
         echo "PYTHON_CHANGES=$(git diff origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | wc -l) " >> $GITHUB_ENV
         echo "PYTHON_EXT_CHANGES=$(git diff origin/main..HEAD -- tests/ pyproject.toml poetry.lock | wc -l)" >> $GITHUB_ENV
 
-    - name: Skip Generation (Force on merging to main)
+    - name: Workflow Flags Override [push to main]
       if: ${{ github.ref == 'refs/heads/main' }}
       run: |
         echo "PYTHON_CHANGES=1" >> $GITHUB_ENV
