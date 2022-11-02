@@ -399,8 +399,8 @@ def order_size_feature_join_node_fixture(
     return node
 
 
-@pytest.fixture(name="order_size_agg_by_cust_id_node")
-def order_size_agg_by_cust_id_node_fixture(global_graph, order_size_feature_join_node):
+@pytest.fixture(name="order_size_agg_by_cust_id_graph")
+def order_size_agg_by_cust_id_graph_fixture(global_graph, order_size_feature_join_node):
     """
     Fixture of a groupby node using a non-time aware feature as the parent
     """
@@ -418,7 +418,7 @@ def order_size_agg_by_cust_id_node_fixture(global_graph, order_size_feature_join
         "windows": ["30d"],
     }
     node = add_groupby_operation(global_graph, node_params, order_size_feature_join_node)
-    return node
+    return global_graph, node
 
 
 @pytest.fixture(name="mixed_point_in_time_and_item_aggregations")

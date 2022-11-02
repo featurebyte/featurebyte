@@ -91,14 +91,15 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_double_aggregation(global_graph, order_size_agg_by_cust_id_node):
+def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
     """
     Test aggregating a non-time aware feature derived from ItemData
     """
     sql_graph = SQLOperationGraph(
         global_graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE
     )
-    sql_tree = sql_graph.build(order_size_agg_by_cust_id_node).sql
+    _, node = order_size_agg_by_cust_id_graph
+    sql_tree = sql_graph.build(node).sql
     expected = textwrap.dedent(
         """
         SELECT
