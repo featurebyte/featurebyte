@@ -7,8 +7,9 @@ import textwrap
 import pytest
 
 from featurebyte.enum import SourceType
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, AggregationSpec, FeatureSpec
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner, RequestTablePlan
+from featurebyte.query_graph.sql.specs import AggregationSpec, FeatureSpec
 
 
 @pytest.fixture(name="agg_spec_template")

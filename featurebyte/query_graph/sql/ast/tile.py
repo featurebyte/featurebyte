@@ -10,7 +10,8 @@ from sqlglot import Expression, expressions, parse_one, select
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
-from featurebyte.query_graph.sql.common import AggregationSpec, SQLType, quoted_identifier
+from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
+from featurebyte.query_graph.sql.specs import AggregationSpec
 from featurebyte.query_graph.sql.tiling import TileSpec, get_aggregator
 
 

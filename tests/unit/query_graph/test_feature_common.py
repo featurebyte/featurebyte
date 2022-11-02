@@ -2,7 +2,7 @@
 Tests for featurebyte.query_graph.feature_common
 """
 
-from featurebyte.query_graph.sql.common import AggregationSpec
+from featurebyte.query_graph.sql.specs import AggregationSpec
 
 
 def test_aggregation_spec__from_groupby_query_node(
