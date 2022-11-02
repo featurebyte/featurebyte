@@ -24,6 +24,7 @@ import aiofiles
 import pandas as pd
 import pyarrow as pa
 from pydantic import BaseModel, PrivateAttr
+from snowflake.connector.errors import ProgrammingError
 
 from featurebyte.common.path_util import get_package_root
 from featurebyte.common.utils import (
@@ -34,6 +35,14 @@ from featurebyte.common.utils import (
 from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.exception import QueryExecutionTimeOut
 from featurebyte.logger import logger
+
+EXPECTED_ERRORS: list[type[Exception]] = [ProgrammingError]
+try:
+    from databricks.sql.exc import ServerOperationError
+
+    EXPECTED_ERRORS.append(ServerOperationError)
+except ImportError:
+    pass
 
 
 class RunThread(threading.Thread):
@@ -396,6 +405,7 @@ class BaseSchemaInitializer(ABC):
 
     def __init__(self, session: BaseSession):
         self.session = session
+        self.metadata_schema_initializer = MetadataSchemaInitializer(session)
 
     @abstractmethod
     async def create_schema(self) -> None:
@@ -439,6 +449,50 @@ class BaseSchemaInitializer(ABC):
             await self.create_schema()
 
         await self.register_missing_objects()
+
+    async def get_working_schema_version(self) -> int:
+        """Retrieves the working schema version from the table registered in the
+        working schema.
+
+        Returns
+        -------
+        If no working schema version is found, return -1. This should indicate
+        to callers that we probably want to initialize the working schema.
+        """
+
+        query = "SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"
+        try:
+            results = await self.session.execute_query(query)
+        except tuple(EXPECTED_ERRORS):
+            # Snowflake and Databricks will error if the table is not initialized
+            # We will need to catch more errors here if/when we add support for
+            # more platforms.
+            return MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED
+
+        # Check the working schema version if it is already initialized.
+        if results is None or results.empty:
+            return MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND
+        return int(results["WORKING_SCHEMA_VERSION"][0])
+
+    async def should_update_schema(self) -> bool:
+        """Compares the working_schema_version defined in the codebase, with
+        what is registered in working schema table.
+
+        Returns
+        -------
+        This function will return true if:
+        - there is no working schema defined, or
+        - the working_schema_version defined in the code base is greater than the version number
+          registered in the working schema table.
+        """
+        registered_working_schema_version = await self.get_working_schema_version()
+        if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED:
+            return True
+        if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND:
+            logger.debug(f"No results found for the working schema {self.session.schema_name}")
+            return False
+        current_version = self.current_working_schema_version
+        return current_version > registered_working_schema_version
 
     async def schema_exists(self) -> bool:
         """Check whether the featurebyte schema exists
@@ -564,3 +618,50 @@ class BaseSchemaInitializer(ABC):
     @classmethod
     def _normalize_casings(cls, identifiers: list[str]) -> list[str]:
         return [cls._normalize_casing(x) for x in identifiers]
+
+
+class MetadataSchemaInitializer:
+    """Responsible for initializing the metadata schema table
+    in the working schema.
+
+    Parameters
+    ----------
+    session : BaseSession
+        Session object
+    """
+
+    SCHEMA_NOT_REGISTERED = -1
+    SCHEMA_NO_RESULTS_FOUND = -2
+
+    def __init__(self, session: BaseSession):
+        self.session = session
+
+    async def update_metadata_schema_version(self, new_version: int) -> None:
+        """Inserts default information into the metadata schema.
+
+        Parameters
+        ----------
+        new_version : int
+            New version to update the working schema to
+        """
+        update_version_query = (
+            f"""UPDATE METADATA_SCHEMA SET WORKING_SCHEMA_VERSION = {new_version}"""
+        )
+        await self.session.execute_query(update_version_query)
+
+    async def create_metadata_table(self) -> None:
+        """Creates metadata schema table. This will be used to help
+        optimize and validate parts of the session initialization.
+        """
+        create_metadata_table_query = (
+            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
+            "WORKING_SCHEMA_VERSION INT, "
+            "FEATURE_STORE_ID VARCHAR, "
+            "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
+            ") AS "
+            "SELECT 0 AS WORKING_SCHEMA_VERSION, "
+            "NULL AS FEATURE_STORE_ID, "
+            "SYSDATE() AS CREATED_AT;"
+        )
+        await self.session.execute_query(create_metadata_table_query)
+        logger.debug("Creating METADATA_SCHEMA table")

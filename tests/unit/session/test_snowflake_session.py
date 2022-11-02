@@ -15,6 +15,7 @@ from snowflake.connector.errors import DatabaseError, NotSupportedError, Operati
 from featurebyte.common.utils import dataframe_from_arrow_stream
 from featurebyte.enum import DBVarType
 from featurebyte.exception import CredentialsError, QueryExecutionTimeOut
+from featurebyte.session.base import MetadataSchemaInitializer
 from featurebyte.session.snowflake import SnowflakeSchemaInitializer, SnowflakeSession
 
 
@@ -614,3 +615,53 @@ async def test_execute_query_no_data(snowflake_connector, snowflake_session_dict
     cursor.fetch_pandas_all.return_value = empty_df
     result = await session.execute_query(query)
     assert_frame_equal(result, empty_df)
+
+
+@pytest.mark.parametrize("is_schema_missing", [False])
+@pytest.mark.parametrize("is_functions_missing", [False])
+@pytest.mark.parametrize("is_procedures_missing", [False])
+@pytest.mark.parametrize("is_tables_missing", [False])
+@pytest.mark.asyncio
+async def test_create_metadata_table(
+    patched_snowflake_session_cls,
+    is_schema_missing,
+    is_functions_missing,
+    is_procedures_missing,
+    is_tables_missing,
+):
+    session = patched_snowflake_session_cls()
+    initializer = MetadataSchemaInitializer(session)
+    await initializer.create_metadata_table()
+    assert session.execute_query.call_args_list == [
+        call(
+            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
+            "WORKING_SCHEMA_VERSION INT, "
+            "FEATURE_STORE_ID VARCHAR, "
+            "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
+            ") AS "
+            "SELECT 0 AS WORKING_SCHEMA_VERSION, "
+            "NULL AS FEATURE_STORE_ID, "
+            "SYSDATE() AS CREATED_AT;"
+        ),
+    ]
+
+
+@pytest.mark.parametrize("is_schema_missing", [False])
+@pytest.mark.parametrize("is_functions_missing", [False])
+@pytest.mark.parametrize("is_procedures_missing", [False])
+@pytest.mark.parametrize("is_tables_missing", [False])
+@pytest.mark.asyncio
+async def test_update_metadata_schema_version(
+    patched_snowflake_session_cls,
+    is_schema_missing,
+    is_functions_missing,
+    is_procedures_missing,
+    is_tables_missing,
+):
+    session = patched_snowflake_session_cls()
+    initializer = MetadataSchemaInitializer(session)
+    version_number = 3
+    await initializer.update_metadata_schema_version(version_number)
+    assert session.execute_query.call_args_list == [
+        call(f"UPDATE METADATA_SCHEMA SET WORKING_SCHEMA_VERSION = {version_number}"),
+    ]
