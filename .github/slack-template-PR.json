@@ -31,6 +31,10 @@
         {
           "type": "mrkdwn",
           "text": "*Author:*\n`${AUTHOR_EMAIL}`"
+        },
+        {
+          "type": "mrkdwn",
+          "text": "*Coverage:*\n`{COVERAGE_PERCENTAGE}`"
         }
       ]
     },
@@ -57,38 +61,6 @@
           },
           "value": "btn_repo",
           "url": "https://github.com/${GITHUB_REPOSITORY}"
-        }
-      ]
-    },
-    {
-      "type": "divider"
-    },
-    {
-      "type": "header",
-      "text": {
-        "type": "plain_text",
-        "text": "Coverage Report: [${COVERAGE_PERCENTAGE}]",
-        "emoji": true
-      }
-    },
-    {
-      "type": "section",
-      "fields": [
-        {
-          "type": "mrkdwn",
-          "text": "*[WARN|SKIP]:*\n`[${COVERAGE_WARNING}|${COVERAGE_SKIPPED}]`"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*[ERRR|FAIL]:*\n`[${COVERAGE_ERRORS}|${COVERAGE_FAILURES}]`"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*No. Tests:*\n`${COVERAGE_TESTS}`"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Time Taken:*\n`${COVERAGE_TIME}`"
         }
       ]
     }

@@ -60,6 +60,19 @@ jobs:
         python-version: ["3.8.0"]
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: '0'  # Used for checking diff
+
+    - name: Skip Generation
+      run: |
+        echo "PYTHON_CHANGES=$(git diff origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | wc -l) " >> $GITHUB_ENV
+        echo "PYTHON_EXT_CHANGES=$(git diff origin/main..HEAD -- tests/ pyproject.toml poetry.lock | wc -l)" >> $GITHUB_ENV
+
+    - name: Skip Generation (Force on merging to main)
+      if: ${{ github.ref == 'refs/heads/main' }}
+      run: |
+        echo "PYTHON_CHANGES=1" >> $GITHUB_ENV
+        echo "PYTHON_EXT_CHANGES=1" >> $GITHUB_ENV
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
@@ -84,12 +97,15 @@ jobs:
       run: make install
 
     - name: Lint Checks
+      if: ${{ env.PYTHON_CHANGES != 0 }}
       run: make lint
 
     - name: Run tests
+      if: ${{ env.PYTHON_CHANGES != 0 || env.PYTHON_EXT_CHANGES != 0 }}
       run: make test
 
     - name: Test Coverage Report
+      if: ${{ env.PYTHON_CHANGES != 0 || env.PYTHON_EXT_CHANGES != 0 }}
       id: coverageComment
       uses: MishaKav/pytest-coverage-comment@main
       with:
@@ -97,6 +113,7 @@ jobs:
         junitxml-path: ./pytest.xml
 
     - name: Check test output
+      if: ${{ env.PYTHON_CHANGES != 0 || env.PYTHON_EXT_CHANGES != 0 }}
       run: |
         if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
           cat pytest-coverage.txt
@@ -110,7 +127,7 @@ jobs:
         fi
 
     - name: Update Coverage Badge
-      if: github.event_name == 'push'
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       uses: schneegans/dynamic-badges-action@v1.6.0
       with:
         auth: ${{ secrets.GIST_SECRET }}
@@ -165,17 +182,11 @@ jobs:
           --data-binary @- https://slack.com/api/chat.postMessage
 
 
-    - name: Slack Message PR
+    - name: Slack Message Pull Request
       if: ${{ github.event_name == 'pull_request' }}
       run: |
         # Get data
         export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
-        export COVERAGE_WARNING=${{ steps.coverageComment.outputs.warnings }}
-        export COVERAGE_ERRORS=${{ steps.coverageComment.outputs.errors }}
-        export COVERAGE_FAILURES=${{ steps.coverageComment.outputs.failures }}
-        export COVERAGE_SKIPPED=${{ steps.coverageComment.outputs.skipped }}
-        export COVERAGE_TESTS=${{ steps.coverageComment.outputs.tests }}
-        export COVERAGE_TIME=${{ steps.coverageComment.outputs.time }}
 
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
         export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
@@ -195,45 +206,33 @@ jobs:
           -H 'Content-type: application/json; charset=utf-8' \
           --data-binary @- https://slack.com/api/chat.postMessage
 
+    # IF its a MERGE to main branch
+    #   Send message to developer channel
+    # IF unable to find author email
+    #   Send message to chester
+    # ELSE
+    #   Send message to commit author
     - name: Slack Message failure
       if: ${{ failure() }}
       run: |
         if [[ ${GITHUB_EVENT_NAME} == "push" ]]; then
-        export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
-        export GITHUB_BASE_REF=MERGE
+          export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
+          export GITHUB_BASE_REF=MERGE
         fi
+
         # Get the last committed email address
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
         export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
-        if [ -z ${AUTHOR_EMAIL+x} ]; then
-          # Route message to Chester
-          export AUTHOR_ID=U03P1DE5R8V
+        if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+          export AUTHOR_ID=C03D81HC6Q5  # Send to `developer` Channel
+        elif [ -z ${AUTHOR_EMAIL+x} ]; then
+          export AUTHOR_ID=U03P1DE5R8V  # Send to `Chester`
         else
           # Lookup email address and export to AUTHOR_ID
           export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
         fi
-        echo "AUTHOR_ID=${AUTHOR_ID}"
-
-        cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
-          -H "Authorization: Bearer ${SLACK_OAUTH}" \
-          -H 'Content-type: application/json; charset=utf-8' \
-          --data-binary @- https://slack.com/api/chat.postMessage
-
-    - name: Slack Message failure (MERGE ERROR)
-      if: ${{ failure() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      run: |
-        export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
-        export GITHUB_BASE_REF=MERGE
-
-        # Get the last committed email address
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
-        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
-
-        # Route message to featurebyte developer channel
-        export AUTHOR_ID=C03D81HC6Q5
 
         cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
           -H "Authorization: Bearer ${SLACK_OAUTH}" \
