@@ -65,7 +65,7 @@ jobs:
 
     - name: Set up defaults
       run: |
-        echo "REPOSITORY=$(grep -oP '/\K.+' <<< ${{ GITHUB_REPOSITORY }})" >> $GITHUB_ENV
+        echo "REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
 
     - name: Workflow Flags
       run: |
@@ -77,6 +77,10 @@ jobs:
       run: |
         echo "PYTHON_CHANGES=1" >> $GITHUB_ENV
         echo "PYTHON_EXT_CHANGES=1" >> $GITHUB_ENV
+
+    - name: Fail
+      run: |
+        exit 1
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
@@ -218,6 +222,11 @@ jobs:
     - name: Slack Message failure
       if: ${{ failure() }}
       run: |
+        # Get Coverage data
+        #   default to: N.A.
+        export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
+        export COVERAGE_PERCENTAGE=${COVERAGE_PERCENTAGE:-N.A.}
+
         if [[ ${GITHUB_EVENT_NAME} == "push" ]]; then
           export GITHUB_HEAD_REF=main
         fi
