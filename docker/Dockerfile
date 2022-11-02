@@ -36,7 +36,7 @@ RUN adduser --uid $UID --disabled-password --gecos '' $USER
 # Install requirements
 COPY poetry.lock pyproject.toml ./
 RUN poetry config virtualenvs.create false && \
-    poetry install --only main,server --no-interaction --no-ansi && \
+    poetry install --only main --extras "server" --no-interaction --no-ansi && \
     rm -rf ~/.cache/pypoetry/artifacts && \
     rm -rf ~/.cache/pypoetry/cache
 RUN pip install --no-cache-dir databricks-sql-connector==2.1.0 && \

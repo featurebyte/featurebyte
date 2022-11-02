@@ -88,11 +88,18 @@ version = "0.1.0"
 
 [tool.poetry.dependencies]
 PyYAML = "^6.0"
+aiofiles = { version = "^22.1.0", optional = true }
 alive-progress = "^2.4.1"
 asyncache = "^0.1.1"
-importlib_metadata = {version = "^4.5.0", python = "^3.8"}
+cachetools = { version = "^5.2.0", optional = true }
+databricks-cli = { version = "^0.17.3", optional = true }
+fastapi = { version =  "^0.85.1", optional = true }
+featurebyte-freeware = { version = "^0.1.0", allow-prereleases = true, source = "featurebyte_np", optional = true }
+importlib_metadata = { version = "^4.5.0", python = "^3.8"}
+jinja2 = { version = "^3.1.2", optional = true }
 lazy-object-proxy = "^1.7.1"
 loguru = "^0.6.0"
+motor = { version = "^3.0.0", optional = true }
 pandas = "^1.4.2"
 pyarrow = "^8.0.0,<9.0"   # "9.0.0" causes seg faults
 pydantic = "^1.9.1"
@@ -100,8 +107,10 @@ pymongo = "^4.1.1"
 python = ">=3.8,<3.11"
 python-multipart = "^0.0.5"
 requests = "^2.27.1"
+snowflake-connector-python = { version = "^2.7.7", optional = true }
 sqlglot = "^2.3.2,<3.0"   # ^3.0.0 causes test failure maybe due to syntax changes
 typeguard = "^2.13.3"
+uvicorn = { version = "^0.18.2", optional = true }
 
 [tool.poetry.extras]
 server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python", "uvicorn"]
@@ -124,7 +133,7 @@ toml-sort = "^0.20.0"
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.4.1"
 mkdocs-material = "^8.5.7"
-mkdocstrings = {version = "^0.19.0", extras = ["python"]}
+mkdocstrings = { version = "^0.19.0", extras = ["python"]}
 
 [tool.poetry.group.lint.dependencies]
 bandit = "^1.7.4"
@@ -150,17 +159,6 @@ types-toml = "^0.10.0"
 types-tzlocal = "^4.2.2"
 types-ujson = "^5.4.0"
 types-urllib3 = "^1.26.16"
-
-[tool.poetry.group.server.dependencies]
-aiofiles = "^22.1.0"
-cachetools = "^5.2.0"
-databricks-cli = "^0.17.3"
-fastapi = "^0.85.1"
-featurebyte-freeware = { version = "^0.1.0", allow-prereleases = true, source = "featurebyte_np" }
-jinja2 = "^3.1.2"
-motor = "^3.0.0"
-snowflake-connector-python = "^2.7.7"
-uvicorn = "^0.18.2"
 
 [[tool.poetry.source]]
 name = "featurebyte_np"
