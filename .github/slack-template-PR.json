@@ -34,7 +34,7 @@
         },
         {
           "type": "mrkdwn",
-          "text": "*Coverage:*\n`{COVERAGE_PERCENTAGE}`"
+          "text": "*Coverage:*\n`${COVERAGE_PERCENTAGE}`"
         }
       ]
     },
