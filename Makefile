@@ -34,7 +34,7 @@ init:
 
 #* Installation
 install:
-	poetry install -n --sync
+	poetry install -n --sync --extras=server
 	${MAKE} install-databricks-sql-connector
 
 install-databricks-sql-connector:

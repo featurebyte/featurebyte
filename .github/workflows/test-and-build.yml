@@ -73,9 +73,7 @@ jobs:
       - name: Summarize
         run: |
           echo "### Changelog" >> $GITHUB_STEP_SUMMARY
-          echo "\n```" >> $GITHUB_STEP_SUMMARY
           git diff --name-only origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | sed -e 's/^/- /g'  >> $GITHUB_STEP_SUMMARY
-          echo "```" >> $GITHUB_STEP_SUMMARY
 
   test:
     needs: [flags]
@@ -154,9 +152,6 @@ jobs:
       with:
         credentials_json: '${{ secrets.GCR_PYPI_CREDENTIALS_R }}'
 
-    - name: Set up slack default env
-      run: |
-        echo "REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
 
     - name: 'Build and Publish with .dev[.N] | Send Push Slack Message'
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -177,6 +172,7 @@ jobs:
         poetry publish --build -r featurebyte_np | tee output.txt
 
         # Slack outputs
+        export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
         export OUTPUT=$(cat output.txt)
         export GITHUB_HEAD_REF=main
 
@@ -207,6 +203,7 @@ jobs:
 
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
         export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
         if [ -z ${AUTHOR_EMAIL+x} ]; then
@@ -233,7 +230,6 @@ jobs:
       if: ${{ failure() }}
       run: |
         # Get Coverage data
-        #   default to: N.A.
         export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
         if [[ "$COVERAGE_PERCENTAGE" != "" ]]; then
           export COVERAGE='\n*Coverage:* `${COVERAGE_PERCENTAGE}`'
@@ -248,6 +244,7 @@ jobs:
         # Get the last committed email address
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
         export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
         if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
@@ -298,11 +295,6 @@ jobs:
     - name: Lint Checks
       run: make lint
 
-    - name: Set up defaults
-      run: |
-        echo "REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
-
-
     # IF unable to find author email
     #   Send message to chester
     # ELSE
@@ -311,13 +303,17 @@ jobs:
       if: ${{ failure() }}
       run: |
         # Get Coverage data
-        #   default to: N.A.
         export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
-        export COVERAGE_PERCENTAGE=${COVERAGE_PERCENTAGE:-N.A.}
+        if [[ "$COVERAGE_PERCENTAGE" != "" ]]; then
+          export COVERAGE='\n*Coverage:* `${COVERAGE_PERCENTAGE}`'
+        else
+          export COVERAGE=''
+        fi
 
         # Get the last committed email address
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
         export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
         echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
 
         if [ -z ${AUTHOR_EMAIL+x} ]; then

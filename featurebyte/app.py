@@ -27,8 +27,6 @@ from featurebyte.utils.credential import get_credential
 from featurebyte.utils.persistent import get_persistent
 from featurebyte.utils.storage import get_storage, get_temp_storage
 
-a = 1
-
 
 class User:
     """
