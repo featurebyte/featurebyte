@@ -414,6 +414,23 @@ class BaseSchemaInitializer(ABC):
     def sql_directory_name(self) -> str:
         """Directory name containing the SQL initialization scripts"""
 
+    @property
+    @abstractmethod
+    def current_working_schema_version(self) -> int:
+        """Gets the current working schema version.
+
+        We should increase this value if we want to re-run the session
+        initialization functions (eg. registering new functions, procedures
+        and tables).
+
+        We can consider moving this to a config/json file down the line, but
+        opting to keep it simple for now.
+
+        Returns
+        -------
+        int that is the current working schema version.
+        """
+
     async def initialize(self) -> None:
         """Entry point to set up the featurebyte working schema"""
 

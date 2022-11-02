@@ -152,6 +152,10 @@ class DatabricksSchemaInitializer(BaseSchemaInitializer):
     def sql_directory_name(self) -> str:
         return "databricks"
 
+    @property
+    def current_working_schema_version(self) -> int:
+        return 1
+
     async def create_schema(self) -> None:
         create_schema_query = f"CREATE SCHEMA {self.session.schema_name}"
         await self.session.execute_query(create_schema_query)
