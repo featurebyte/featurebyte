@@ -89,5 +89,8 @@ $$
     result.next()
     debug = debug + " - SP_TILE_GENERATE: " + result.getColumnValue(1)
 
+    // update related online feature store
+    snowflake.execute({sqlText: `call SP_TILE_SCHEDULE_ONLINE_STORE('${table_name}')`})
+
     return debug
 $$;
