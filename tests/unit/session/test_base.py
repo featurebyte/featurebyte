@@ -6,13 +6,15 @@ from __future__ import annotations
 from typing import OrderedDict
 
 import collections
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
 from pydantic import Field
+from snowflake.connector.errors import ProgrammingError
 
 from featurebyte.enum import DBVarType, SourceType
-from featurebyte.session.base import BaseSchemaInitializer, BaseSession
+from featurebyte.session.base import BaseSchemaInitializer, BaseSession, MetadataSchemaInitializer
 
 CURRENT_WORKING_SCHEMA_VERSION_TEST = 1
 
@@ -99,3 +101,36 @@ def test_get_current_working_schema_version(base_schema_initializer_test, base_s
         base_schema_initializer.current_working_schema_version
         == CURRENT_WORKING_SCHEMA_VERSION_TEST
     )
+
+
+@pytest.mark.asyncio
+async def test_get_working_schema_version(base_schema_initializer_test, base_session_test):
+    base_session = base_session_test()
+    base_schema_initializer = base_schema_initializer_test(base_session)
+
+    async def mocked_execute_query(self, query: str) -> pd.DataFrame | None:
+        return None
+
+    with patch.object(BaseSession, "execute_query", mocked_execute_query):
+        version = await base_schema_initializer.get_working_schema_version()
+    assert version == MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND
+
+    schema_version = 2
+
+    async def mocked_execute_query_with_version(self, query: str) -> pd.DataFrame | None:
+        return pd.DataFrame(
+            {
+                "WORKING_SCHEMA_VERSION": [schema_version],
+            }
+        )
+
+    with patch.object(BaseSession, "execute_query", mocked_execute_query_with_version):
+        version = await base_schema_initializer.get_working_schema_version()
+    assert version == schema_version
+
+    async def mocked_execute_query_with_exception(self, query: str) -> pd.DataFrame | None:
+        raise ProgrammingError
+
+    with patch.object(BaseSession, "execute_query", mocked_execute_query_with_exception):
+        version = await base_schema_initializer.get_working_schema_version()
+    assert version == MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED
