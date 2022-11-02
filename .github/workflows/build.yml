@@ -52,7 +52,26 @@ env:
   FEATUREBYTE_HOME: "/tmp/featurebyte"
 
 jobs:
-  build:
+  test_flags:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      changes: ${{ steps.workflow_flags.outputs.PYTHON_CHANGES }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'  # Used for checking diff
+
+      - name: Workflow Flags
+        id: workflow_flags
+        run: echo "PYTHON_CHANGES=$(git diff origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | wc -l) " >> $GITHUB_OUTPUT
+
+      - name: Workflow Flags Override [push to main]
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: echo "PYTHON_CHANGES=1" >> $GITHUB_OUTPUT
+
+  test:
+    needs: [test_flags]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -62,25 +81,6 @@ jobs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: '0'  # Used for checking diff
-
-    - name: Set up defaults
-      run: |
-        echo "REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
-
-    - name: Workflow Flags
-      run: |
-        echo "PYTHON_CHANGES=$(git diff origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | wc -l) " >> $GITHUB_ENV
-        echo "PYTHON_EXT_CHANGES=$(git diff origin/main..HEAD -- tests/ pyproject.toml poetry.lock | wc -l)" >> $GITHUB_ENV
-
-    - name: Workflow Flags Override [push to main]
-      if: ${{ github.ref == 'refs/heads/main' }}
-      run: |
-        echo "PYTHON_CHANGES=1" >> $GITHUB_ENV
-        echo "PYTHON_EXT_CHANGES=1" >> $GITHUB_ENV
-
-    - name: Fail
-      run: |
-        exit 1
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
@@ -94,25 +94,21 @@ jobs:
         key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
 
     - name: Install Poetry
-      if: ${{ env.PYTHON_CHANGES != 0 || env.PYTHON_EXT_CHANGES != 0 }}
+      if: ${{ needs.lint_flags.outputs.changes != 0 }}
       run: |
         python -m pip install --extra-index-url "https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" poetry==1.2.0rc99
         poetry config virtualenvs.in-project true
 
     - name: Install dependencies
-      if: ${{ env.PYTHON_CHANGES != 0 || env.PYTHON_EXT_CHANGES != 0 }}
+      if: ${{ needs.lint_flags.outputs.changes != 0 }}
       run: make install
 
-    - name: Lint Checks
-      if: ${{ env.PYTHON_CHANGES != 0 }}
-      run: make lint
-
     - name: Run tests
-      if: ${{ env.PYTHON_CHANGES != 0 || env.PYTHON_EXT_CHANGES != 0 }}
+      if: ${{ needs.lint_flags.outputs.changes != 0 }}
       run: make test
 
     - name: Test Coverage Report
-      if: ${{ env.PYTHON_CHANGES != 0 || env.PYTHON_EXT_CHANGES != 0 }}
+      if: ${{ needs.lint_flags.outputs.changes != 0 }}
       id: coverageComment
       uses: MishaKav/pytest-coverage-comment@main
       with:
@@ -120,7 +116,7 @@ jobs:
         junitxml-path: ./pytest.xml
 
     - name: Check test output
-      if: ${{ env.PYTHON_CHANGES != 0 || env.PYTHON_EXT_CHANGES != 0 }}
+      if: ${{ needs.lint_flags.outputs.changes != 0 }}
       run: |
         if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
           cat pytest-coverage.txt
@@ -150,6 +146,10 @@ jobs:
       uses: 'google-github-actions/auth@v0'
       with:
         credentials_json: '${{ secrets.GCR_PYPI_CREDENTIALS_R }}'
+
+    - name: Set up slack default env
+      run: |
+        echo "REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)" >> $GITHUB_ENV
 
     - name: 'Build and Publish with .dev[.N] | Send Push Slack Message'
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
