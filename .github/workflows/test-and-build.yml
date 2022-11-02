@@ -196,9 +196,9 @@ jobs:
         # Get Coverage data
         export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
         if [[ "$COVERAGE_PERCENTAGE" != "" ]]; then
-          export COVERAGE='\n*Coverage:* `${COVERAGE_PERCENTAGE}`'
+          export COVERAGE=:"\n*Coverage:* \`${COVERAGE_PERCENTAGE}\`"
         else
-          export COVERAGE=''
+          export COVERAGE=""
         fi
 
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
@@ -232,9 +232,9 @@ jobs:
         # Get Coverage data
         export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
         if [[ "$COVERAGE_PERCENTAGE" != "" ]]; then
-          export COVERAGE='\n*Coverage:* `${COVERAGE_PERCENTAGE}`'
+          export COVERAGE=:"\n*Coverage:* \`${COVERAGE_PERCENTAGE}\`"
         else
-          export COVERAGE=''
+          export COVERAGE=""
         fi
 
         if [[ ${GITHUB_EVENT_NAME} == "push" ]]; then
@@ -305,9 +305,9 @@ jobs:
         # Get Coverage data
         export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
         if [[ "$COVERAGE_PERCENTAGE" != "" ]]; then
-          export COVERAGE='\n*Coverage:* `${COVERAGE_PERCENTAGE}`'
+          export COVERAGE=:"\n*Coverage:* \`${COVERAGE_PERCENTAGE}\`"
         else
-          export COVERAGE=''
+          export COVERAGE=""
         fi
 
         # Get the last committed email address
