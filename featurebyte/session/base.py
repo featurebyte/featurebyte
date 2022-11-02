@@ -227,7 +227,7 @@ class BaseSession(BaseModel):
             # set pipe to non-blocking if fcntl is available
             fcntl.fcntl(input_pipe, fcntl.F_SETFL, os.O_NONBLOCK)
         thread = RunThread(cursor, query, out_fd, self.fetch_query_stream_impl)
-        thread.setDaemon(True)
+        thread.daemon = True
         thread.start()
 
         start_time = time.time()
