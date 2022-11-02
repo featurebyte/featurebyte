@@ -590,7 +590,6 @@ async def test_execute_query_no_data(snowflake_connector, snowflake_session_dict
 
     def mock_fetch_arrow_batches_empty():
         return
-        yield
 
     # empty dataframe, no batch data from fetch_arrow_batches
     cursor.description = True
