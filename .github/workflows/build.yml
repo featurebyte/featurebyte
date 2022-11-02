@@ -2,7 +2,6 @@ name: build
 
 # SECRETS NAME                   | Description                     | PERMISSIONS
 # ------------------------------ | ------------------------------- | ----------------------------------------------------
-## GCR_PYPI_CREDENTIALS_R        | GCloud ServiceAccount JSON      | [Artifact Registry | Python     ] read
 ## GCR_PYPI_CREDENTIALS_RW_B64   | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Python     ] read write
 ## GCR_DOCKER_CREDENTIALS_R_B64  | GCloud ServiceAccount B64 JSON  | [Artifact Registry | Docker     ] read
 ## SLACK_OAUTH                   | Slack App OAUTH Token           | [Slack                          ] write message
@@ -120,6 +119,13 @@ jobs:
         label: coverage
         message: ${{ steps.coverageComment.outputs.coverage }}
         color: ${{ steps.coverageComment.outputs.color }}
+
+    - name: Authenticate to Google Cloud
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      id: 'auth'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GCR_PYPI_CREDENTIALS_RW }}'
 
     - name: 'Build and Publish with .dev[.N] | Send Push Slack Message'
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
