@@ -26,8 +26,6 @@ class BaseFeatureListManager(BaseModel):
 
         Parameters
         ----------
-        session: BaseSession
-            input session for datasource
         kw: Any
             constructor arguments
         """

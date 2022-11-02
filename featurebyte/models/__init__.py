@@ -17,3 +17,4 @@ all_models = [
 ]
 
 __all__ = all_models
+test = 123

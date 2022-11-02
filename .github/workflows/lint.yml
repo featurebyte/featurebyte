@@ -20,9 +20,6 @@ jobs:
     timeout-minutes: 30
     outputs:
       changes: ${{ steps.workflow_flags.outputs.CHANGES }}
-    strategy:
-      matrix:
-        python-version: [ "3.8.0" ]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -68,3 +65,34 @@ jobs:
 
     - name: Lint Checks
       run: make lint
+
+    # IF its a MERGE to main branch
+    #   Send message to developer channel
+    # IF unable to find author email
+    #   Send message to chester
+    # ELSE
+    #   Send message to commit author
+    - name: Slack Message failure
+      if: ${{ failure() }}
+      run: |
+        # Get Coverage data
+        #   default to: N.A.
+        export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
+        export COVERAGE_PERCENTAGE=${COVERAGE_PERCENTAGE:-N.A.}
+
+        # Get the last committed email address
+        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
+
+        if [ -z ${AUTHOR_EMAIL+x} ]; then
+          export AUTHOR_ID=U03P1DE5R8V  # Send to `Chester`
+        else
+          # Lookup email address and export to AUTHOR_ID
+          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+        fi
+
+        cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
+          -H "Authorization: Bearer ${SLACK_OAUTH}" \
+          -H 'Content-type: application/json; charset=utf-8' \
+          --data-binary @- https://slack.com/api/chat.postMessage
