@@ -59,183 +59,182 @@ jobs:
       matrix:
         python-version: ["3.8.0"]
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Setup local mongodb for testing
-      run: cd .github/mongoreplicaset && ./startdb.sh
-
-    - name: Setup cache
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
-
-    - name: Install Poetry
-      run: |
-        python -m pip install --extra-index-url "https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" poetry==1.2.0rc99
-        poetry config virtualenvs.in-project true
-
-    - name: Install dependencies
-      run: make install
-
-    - name: Lint Checks
-      run: make lint
-
-    - name: Run tests
-      run: make test
-
-    - name: Test Coverage Report
-      id: coverageComment
-      uses: MishaKav/pytest-coverage-comment@main
-      with:
-        pytest-coverage-path: ./pytest-coverage.txt
-        junitxml-path: ./pytest.xml
-
-    - name: Check test output
-      run: |
-        if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
-          cat pytest-coverage.txt
-          echo "Errors found in pytest"
-          exit 1
-        fi
-        if [ "${{ steps.coverageComment.outputs.errors }}" == '' ] || [ "${{ steps.coverageComment.outputs.failures }}" == '' ]; then
-          cat pytest-coverage.txt
-          echo "Weird Error has occurred"
-          exit 1
-        fi
-
-    - name: Update Coverage Badge
-      if: github.event_name == 'push'
-      uses: schneegans/dynamic-badges-action@v1.6.0
-      with:
-        auth: ${{ secrets.GIST_SECRET }}
-        gistID: 773e2960183c0a6fe24c644d95d71fdb
-        filename: coverage.json
-        label: coverage
-        message: ${{ steps.coverageComment.outputs.coverage }}
-        color: ${{ steps.coverageComment.outputs.color }}
+#    - uses: actions/checkout@v3
+#
+#    - name: Set up Python ${{ matrix.python-version }}
+#      uses: actions/setup-python@v4
+#      with:
+#        python-version: ${{ matrix.python-version }}
+#
+#    - name: Setup local mongodb for testing
+#      run: cd .github/mongoreplicaset && ./startdb.sh
+#
+#    - name: Setup cache
+#      uses: actions/cache@v3
+#      with:
+#        path: .venv
+#        key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+#
+#    - name: Install Poetry
+#      run: |
+#        python -m pip install --extra-index-url "https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" poetry==1.2.0rc99
+#        poetry config virtualenvs.in-project true
+#
+#    - name: Install dependencies
+#      run: make install
+#
+#    - name: Lint Checks
+#      run: make lint
+#
+#    - name: Run tests
+#      run: make test
+#
+#    - name: Test Coverage Report
+#      id: coverageComment
+#      uses: MishaKav/pytest-coverage-comment@main
+#      with:
+#        pytest-coverage-path: ./pytest-coverage.txt
+#        junitxml-path: ./pytest.xml
+#
+#    - name: Check test output
+#      run: |
+#        if [ "${{ steps.coverageComment.outputs.errors }}" -gt '0' ] || [ "${{ steps.coverageComment.outputs.failures }}" -gt '0' ]; then
+#          cat pytest-coverage.txt
+#          echo "Errors found in pytest"
+#          exit 1
+#        fi
+#        if [ "${{ steps.coverageComment.outputs.errors }}" == '' ] || [ "${{ steps.coverageComment.outputs.failures }}" == '' ]; then
+#          cat pytest-coverage.txt
+#          echo "Weird Error has occurred"
+#          exit 1
+#        fi
+#
+#    - name: Update Coverage Badge
+#      if: github.event_name == 'push'
+#      uses: schneegans/dynamic-badges-action@v1.6.0
+#      with:
+#        auth: ${{ secrets.GIST_SECRET }}
+#        gistID: 773e2960183c0a6fe24c644d95d71fdb
+#        filename: coverage.json
+#        label: coverage
+#        message: ${{ steps.coverageComment.outputs.coverage }}
+#        color: ${{ steps.coverageComment.outputs.color }}
 
     - name: Authenticate to Google Cloud
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       id: 'auth'
       uses: 'google-github-actions/auth@v0'
       with:
         credentials_json: '${{ secrets.GCR_PYPI_CREDENTIALS_R }}'
 
-    - name: 'Build and Publish with .dev[.N] | Send Push Slack Message'
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      run: |
-        export PACKAGE=$(poetry version --no-ansi | cut -d ' ' -f1)
-        export VERSION=$(poetry version --no-ansi --short | grep -oP '\d+[.]\d+[.]\d+')
-        export DEV_VERSION=$(gcloud artifacts versions list --project ${GCR_PYPI_PROJECT_ID} --repository=${GCR_PYPI_REPO} --location=${GCR_PYPI_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' | \
-            sort --version-sort -r | \
-            grep -P "${VERSION}.dev" | \
-            head -n 1 | \
-            grep -oP "\d+$"
-        )
-        export DEV_VERSION=${DEV_VERSION:-0}  # Set .dev to 0 if not exist
-        export PUBLISH_VERSION="${VERSION}.dev$((DEV_VERSION+=1))"
-        sed -i -E "s|^version = \"[^\"]+\"|version = \"${PUBLISH_VERSION}\"|g" pyproject.toml
-
-        poetry config repositories.featurebyte_np https://${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}
-        poetry publish --build -r featurebyte_np | tee output.txt
-
-        export OUTPUT=$(cat output.txt)
-
-        # Set BASE_REF and HEAD_REF
-        export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
-        export GITHUB_BASE_REF=MERGE
-
-        # Sending Slack Message
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
-        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
-
-        # Lookup email address and export to AUTHOR_ID
-        export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
-
-        cat .github/slack-template-PUSH.json | envsubst | curl -X POST \
-          -H "Authorization: Bearer ${SLACK_OAUTH}" \
-          -H 'Content-type: application/json; charset=utf-8' \
-          --data-binary @- https://slack.com/api/chat.postMessage
-
-
-    - name: Slack Message PR
-      if: ${{ github.event_name == 'pull_request' }}
-      run: |
-        # Get data
-        export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
-        export COVERAGE_WARNING=${{ steps.coverageComment.outputs.warnings }}
-        export COVERAGE_ERRORS=${{ steps.coverageComment.outputs.errors }}
-        export COVERAGE_FAILURES=${{ steps.coverageComment.outputs.failures }}
-        export COVERAGE_SKIPPED=${{ steps.coverageComment.outputs.skipped }}
-        export COVERAGE_TESTS=${{ steps.coverageComment.outputs.tests }}
-        export COVERAGE_TIME=${{ steps.coverageComment.outputs.time }}
-
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
-        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
-
-        if [ -z ${AUTHOR_EMAIL+x} ]; then
-          # Route message to Chester
-          export AUTHOR_ID=U03P1DE5R8V
-        else
-          # Lookup email address and export to AUTHOR_ID
-          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
-        fi
-        echo "AUTHOR_ID=${AUTHOR_ID}"
-
-        cat .github/slack-template-PR.json | envsubst | curl -X POST \
-          -H "Authorization: Bearer ${SLACK_OAUTH}" \
-          -H 'Content-type: application/json; charset=utf-8' \
-          --data-binary @- https://slack.com/api/chat.postMessage
-
-    - name: Slack Message failure
-      if: ${{ failure() }}
-      run: |
-        if [[ ${GITHUB_EVENT_NAME} == "push" ]]; then
-        export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
-        export GITHUB_BASE_REF=MERGE
-        fi
-        # Get the last committed email address
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
-        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
-
-        if [ -z ${AUTHOR_EMAIL+x} ]; then
-          # Route message to Chester
-          export AUTHOR_ID=U03P1DE5R8V
-        else
-          # Lookup email address and export to AUTHOR_ID
-          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
-        fi
-        echo "AUTHOR_ID=${AUTHOR_ID}"
-
-        cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
-          -H "Authorization: Bearer ${SLACK_OAUTH}" \
-          -H 'Content-type: application/json; charset=utf-8' \
-          --data-binary @- https://slack.com/api/chat.postMessage
-
-    - name: Slack Message failure (MERGE ERROR)
-      if: ${{ failure() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      run: |
-        export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
-        export GITHUB_BASE_REF=MERGE
-
-        # Get the last committed email address
-        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
-        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
-        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
-
-        # Route message to featurebyte developer channel
-        export AUTHOR_ID=C03D81HC6Q5
-
-        cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
-          -H "Authorization: Bearer ${SLACK_OAUTH}" \
-          -H 'Content-type: application/json; charset=utf-8' \
-          --data-binary @- https://slack.com/api/chat.postMessage
+#    - name: 'Build and Publish with .dev[.N] | Send Push Slack Message'
+#      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+#      run: |
+#        export PACKAGE=$(poetry version --no-ansi | cut -d ' ' -f1)
+#        export VERSION=$(poetry version --no-ansi --short | grep -oP '\d+[.]\d+[.]\d+')
+#        export DEV_VERSION=$(gcloud artifacts versions list --project ${GCR_PYPI_PROJECT_ID} --repository=${GCR_PYPI_REPO} --location=${GCR_PYPI_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' | \
+#            sort --version-sort -r | \
+#            grep -P "${VERSION}.dev" | \
+#            head -n 1 | \
+#            grep -oP "\d+$"
+#        )
+#        export DEV_VERSION=${DEV_VERSION:-0}  # Set .dev to 0 if not exist
+#        export PUBLISH_VERSION="${VERSION}.dev$((DEV_VERSION+=1))"
+#        sed -i -E "s|^version = \"[^\"]+\"|version = \"${PUBLISH_VERSION}\"|g" pyproject.toml
+#
+#        poetry config repositories.featurebyte_np https://${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}
+#        poetry publish --build -r featurebyte_np | tee output.txt
+#
+#        export OUTPUT=$(cat output.txt)
+#
+#        # Set BASE_REF and HEAD_REF
+#        export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
+#        export GITHUB_BASE_REF=MERGE
+#
+#        # Sending Slack Message
+#        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+#        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+#        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
+#
+#        # Lookup email address and export to AUTHOR_ID
+#        export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+#
+#        cat .github/slack-template-PUSH.json | envsubst | curl -X POST \
+#          -H "Authorization: Bearer ${SLACK_OAUTH}" \
+#          -H 'Content-type: application/json; charset=utf-8' \
+#          --data-binary @- https://slack.com/api/chat.postMessage
+#
+#
+#    - name: Slack Message PR
+#      if: ${{ github.event_name == 'pull_request' }}
+#      run: |
+#        # Get data
+#        export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
+#        export COVERAGE_WARNING=${{ steps.coverageComment.outputs.warnings }}
+#        export COVERAGE_ERRORS=${{ steps.coverageComment.outputs.errors }}
+#        export COVERAGE_FAILURES=${{ steps.coverageComment.outputs.failures }}
+#        export COVERAGE_SKIPPED=${{ steps.coverageComment.outputs.skipped }}
+#        export COVERAGE_TESTS=${{ steps.coverageComment.outputs.tests }}
+#        export COVERAGE_TIME=${{ steps.coverageComment.outputs.time }}
+#
+#        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+#        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+#        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
+#
+#        if [ -z ${AUTHOR_EMAIL+x} ]; then
+#          # Route message to Chester
+#          export AUTHOR_ID=U03P1DE5R8V
+#        else
+#          # Lookup email address and export to AUTHOR_ID
+#          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+#        fi
+#        echo "AUTHOR_ID=${AUTHOR_ID}"
+#
+#        cat .github/slack-template-PR.json | envsubst | curl -X POST \
+#          -H "Authorization: Bearer ${SLACK_OAUTH}" \
+#          -H 'Content-type: application/json; charset=utf-8' \
+#          --data-binary @- https://slack.com/api/chat.postMessage
+#
+#    - name: Slack Message failure
+#      if: ${{ failure() }}
+#      run: |
+#        if [[ ${GITHUB_EVENT_NAME} == "push" ]]; then
+#        export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
+#        export GITHUB_BASE_REF=MERGE
+#        fi
+#        # Get the last committed email address
+#        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+#        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+#        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
+#
+#        if [ -z ${AUTHOR_EMAIL+x} ]; then
+#          # Route message to Chester
+#          export AUTHOR_ID=U03P1DE5R8V
+#        else
+#          # Lookup email address and export to AUTHOR_ID
+#          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${SLACK_OAUTH}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+#        fi
+#        echo "AUTHOR_ID=${AUTHOR_ID}"
+#
+#        cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
+#          -H "Authorization: Bearer ${SLACK_OAUTH}" \
+#          -H 'Content-type: application/json; charset=utf-8' \
+#          --data-binary @- https://slack.com/api/chat.postMessage
+#
+#    - name: Slack Message failure (MERGE ERROR)
+#      if: ${{ failure() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+#      run: |
+#        export GITHUB_HEAD_REF=${GITHUB_REF_NAME}
+#        export GITHUB_BASE_REF=MERGE
+#
+#        # Get the last committed email address
+#        git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
+#        export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")
+#        echo "AUTHOR_EMAIL=${AUTHOR_EMAIL}"
+#
+#        # Route message to featurebyte developer channel
+#        export AUTHOR_ID=C03D81HC6Q5
+#
+#        cat .github/slack-template-FAILED.json | envsubst | curl -X POST \
+#          -H "Authorization: Bearer ${SLACK_OAUTH}" \
+#          -H 'Content-type: application/json; charset=utf-8' \
+#          --data-binary @- https://slack.com/api/chat.postMessage
