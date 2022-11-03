@@ -9,13 +9,13 @@ import pytest
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner, RequestTablePlan
-from featurebyte.query_graph.sql.specs import AggregationSpec, FeatureSpec
+from featurebyte.query_graph.sql.specs import FeatureSpec, PointInTimeAggregationSpec
 
 
 @pytest.fixture(name="agg_spec_template")
 def agg_spec_template_fixture():
     """Fixture for an AggregationSpec"""
-    agg_spec = AggregationSpec(
+    agg_spec = PointInTimeAggregationSpec(
         window=86400,
         frequency=3600,
         blind_spot=120,
@@ -161,9 +161,9 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     planner = FeatureExecutionPlanner(query_graph_with_groupby, source_type=SourceType.SNOWFLAKE)
     plan = planner.generate_plan([groupby_node])
-    assert list(plan.aggregation_spec_set.get_grouped_aggregation_specs()) == [
+    assert list(plan.point_in_time_aggregation_spec_set.get_grouped_aggregation_specs()) == [
         [
-            AggregationSpec(
+            PointInTimeAggregationSpec(
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -181,7 +181,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
             )
         ],
         [
-            AggregationSpec(
+            PointInTimeAggregationSpec(
                 window=172800,
                 frequency=3600,
                 blind_spot=900,
@@ -221,9 +221,9 @@ def test_feature_execution_planner__serving_names_mapping(
         query_graph_with_groupby, serving_names_mapping=mapping, source_type=SourceType.SNOWFLAKE
     )
     plan = planner.generate_plan([groupby_node])
-    assert list(plan.aggregation_spec_set.get_grouped_aggregation_specs()) == [
+    assert list(plan.point_in_time_aggregation_spec_set.get_grouped_aggregation_specs()) == [
         [
-            AggregationSpec(
+            PointInTimeAggregationSpec(
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -241,7 +241,7 @@ def test_feature_execution_planner__serving_names_mapping(
             )
         ],
         [
-            AggregationSpec(
+            PointInTimeAggregationSpec(
                 window=172800,
                 frequency=3600,
                 blind_spot=900,

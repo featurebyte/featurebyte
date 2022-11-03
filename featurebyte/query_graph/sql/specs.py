@@ -1,3 +1,6 @@
+"""
+Module for data structures that describe different types of aggregations that form features
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,8 +15,8 @@ from featurebyte.query_graph.sql.tiling import get_aggregator
 
 
 @dataclass
-class AggregationSpec:
-    """Aggregation specification"""
+class PointInTimeAggregationSpec:
+    """Point-in-time aggregation specification"""
 
     # pylint: disable=too-many-instance-attributes
 
@@ -45,7 +48,7 @@ class AggregationSpec:
         cls,
         groupby_node: Node,
         serving_names_mapping: dict[str, str] | None = None,
-    ) -> list[AggregationSpec]:
+    ) -> list[PointInTimeAggregationSpec]:
         """Construct an AggregationSpec from a query graph and groupby node
 
         Parameters
@@ -57,7 +60,7 @@ class AggregationSpec:
 
         Returns
         -------
-        list[AggregationSpec]
+        list[PointInTimeAggregationSpec]
             List of AggregationSpec
         """
         assert isinstance(groupby_node, GroupbyNode)
