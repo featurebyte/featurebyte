@@ -664,7 +664,7 @@ class FeatureExecutionPlan(ABC):
     @staticmethod
     def construct_left_join_sql(
         index: int,
-        point_in_time_column: str,
+        point_in_time_column: str | None,
         agg_result_names: list[str],
         serving_names: list[str],
         table_expr: expressions.Select,
@@ -676,8 +676,8 @@ class FeatureExecutionPlan(ABC):
         ----------
         index : int
             Index of the current left join
-        point_in_time_column : str
-            Point in time column
+        point_in_time_column : str | None
+            Point in time column. When None, only join on the serving names.
         agg_result_names : list[str]
             Column names of the aggregated results
         serving_names : list[str]
@@ -697,9 +697,11 @@ class FeatureExecutionPlan(ABC):
             f'"{agg_table_alias}"."{agg_result_name}" AS "{agg_result_name}"'
             for agg_result_name in agg_result_names
         ]
-        join_conditions_lst = [
-            f"REQ.{point_in_time_column} = {agg_table_alias}.{point_in_time_column}",
-        ]
+        join_conditions_lst = []
+        if point_in_time_column is not None:
+            join_conditions_lst.append(
+                f"REQ.{point_in_time_column} = {agg_table_alias}.{point_in_time_column}"
+            )
         for serving_name in serving_names:
             join_conditions_lst += [
                 f"REQ.{quoted_identifier(serving_name).sql()} = {agg_table_alias}.{quoted_identifier(serving_name).sql()}"
@@ -774,7 +776,7 @@ class FeatureExecutionPlan(ABC):
             agg_result_names = [item_agg_spec.feature_name]
             table_expr, agg_result_name_aliases = self.construct_left_join_sql(
                 index=agg_table_index,
-                point_in_time_column=point_in_time_column,
+                point_in_time_column=None,
                 agg_result_names=agg_result_names,
                 serving_names=item_agg_spec.serving_names,
                 table_expr=table_expr,

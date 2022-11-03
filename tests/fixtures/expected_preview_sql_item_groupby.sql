@@ -140,8 +140,7 @@ WITH fake_transactions_table_f3600_m1800_b900_fa69ec6e12d9162469e8796a5d93c8a1e7
         ) AS ITEM_AGG
           ON REQ."order_id" = ITEM_AGG."order_id"
     ) AS T2
-      ON REQ.POINT_IN_TIME = T2.POINT_IN_TIME
-      AND REQ."order_id" = T2."order_id"
+      ON REQ."order_id" = T2."order_id"
 )
 SELECT
   AGG."POINT_IN_TIME",
