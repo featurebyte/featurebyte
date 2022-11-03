@@ -33,7 +33,7 @@ from featurebyte.common.utils import (
     pa_table_to_record_batches,
 )
 from featurebyte.enum import DBVarType, SourceType, StrEnum
-from featurebyte.exception import QueryExecutionTimeOut
+from featurebyte.exception import FeatureStoreSchemaCollisionError, QueryExecutionTimeOut
 from featurebyte.logger import logger
 
 EXPECTED_ERRORS: list[type[Exception]] = [ProgrammingError]
@@ -93,6 +93,11 @@ class BaseSession(BaseModel):
     async def initialize(self, feature_store_id: str) -> None:
         """
         Initialize session
+
+        Parameters
+        ----------
+        feature_store_id: str
+            feature store id
         """
 
     @property
@@ -436,6 +441,11 @@ class BaseSchemaInitializer(ABC):
         We can consider moving this to a config/json file down the line, but
         opting to keep it simple for now.
 
+        Parameters
+        ----------
+        feature_store_id: str
+            feature store id
+
         Returns
         -------
         int that is the current working schema version.
@@ -444,7 +454,7 @@ class BaseSchemaInitializer(ABC):
     async def initialize(self, feature_store_id: str) -> None:
         """Entry point to set up the featurebyte working schema"""
 
-        if not await self.should_update_schema():
+        if not await self.should_update_schema(feature_store_id):
             return
 
         if not await self.schema_exists():
@@ -477,9 +487,14 @@ class BaseSchemaInitializer(ABC):
             return MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND, ""
         return int(results["WORKING_SCHEMA_VERSION"][0]), str(results["FEATURE_STORE_ID"][0])
 
-    async def should_update_schema(self) -> bool:
+    async def should_update_schema(self, users_feature_store_id: str) -> bool:
         """Compares the working_schema_version defined in the codebase, with
         what is registered in working schema table.
+
+        Parameters
+        ----------
+        users_feature_store_id: str
+            feature store id
 
         Returns
         -------
@@ -492,6 +507,10 @@ class BaseSchemaInitializer(ABC):
             registered_working_schema_version,
             registered_feature_store_id,
         ) = await self.get_working_schema_metadata()
+        # Check that a feature store ID has been registered, and whether they're the same.
+        if registered_feature_store_id and users_feature_store_id != registered_feature_store_id:
+            raise FeatureStoreSchemaCollisionError
+
         if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED:
             return True
         if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND:
@@ -553,7 +572,13 @@ class BaseSchemaInitializer(ABC):
         await self._register_sql_objects(items)
 
     async def register_missing_objects(self, feature_store_id: str) -> None:
-        """Detect database objects that are missing and register them"""
+        """Detect database objects that are missing and register them
+
+        Parameters
+        ----------
+        feature_store_id: str
+            feature store id
+        """
         sql_objects = self.get_sql_objects()
         sql_objects_by_type: dict[SqlObjectType, list[dict[str, Any]]] = {
             SqlObjectType.FUNCTION: [],
@@ -662,6 +687,11 @@ class MetadataSchemaInitializer:
     async def create_metadata_table(self, feature_store_id: str) -> None:
         """Creates metadata schema table. This will be used to help
         optimize and validate parts of the session initialization.
+
+        Parameters
+        ----------
+        feature_store_id: str
+            feature store id
         """
         create_metadata_table_query = (
             f"CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
