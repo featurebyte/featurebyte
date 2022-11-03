@@ -129,7 +129,7 @@ jobs:
         restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}   # Restore from `cache` job
 
     - name: Install Poetry
-      if: ${{ needs.flags.outputs.changes != 0 || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+      if: ${{ needs.flags.outputs.changes != 0 }}
       run: |
         pip install --extra-index-url "https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}@${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}/simple/" poetry==1.2.0rc99
         poetry config virtualenvs.in-project true
@@ -294,7 +294,6 @@ jobs:
 
   lint:
     needs: [flags, cache]
-    # if: ${{ needs.flags.outputs.changes != 0 }}   # Ask kenny to change this
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
