@@ -12,7 +12,6 @@ from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.exception import (
     DuplicatedRegistryError,
-    DuplicateTileTaskError,
     InvalidFeatureRegistryOperationError,
     MissingFeatureRegistryError,
     MissingTileSpecError,
@@ -219,8 +218,6 @@ class FeatureManagerSnowflake(BaseModel):
         ----------
         MissingTileSpecError
             when there is no tile_spec
-        DuplicateTileTaskError
-            when the tile task already exists
         """
 
         if not feature_spec.tile_specs:
@@ -235,15 +232,17 @@ class FeatureManagerSnowflake(BaseModel):
 
             exist_flag = await tile_mgr.tile_task_exists(TileType.ONLINE, tile_spec)
             if exist_flag:
-                raise DuplicateTileTaskError("tile task already exists")
+                logger.warning(
+                    f"Ignore online_enable. Tile task already exists: {tile_spec.tile_id}"
+                )
+            else:
+                # enable online tiles scheduled job
+                await tile_mgr.schedule_online_tiles(tile_spec=tile_spec)
+                logger.debug(f"Done schedule_online_tiles for {tile_spec}")
 
-            # enable online tiles scheduled job
-            await tile_mgr.schedule_online_tiles(tile_spec=tile_spec)
-            logger.debug(f"Done schedule_online_tiles for {tile_spec}")
-
-            # enable offline tiles scheduled job
-            await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
-            logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
+                # enable offline tiles scheduled job
+                await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
+                logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
 
         # insert records into tile-feature mapping table
         for tile_id in feature_spec.tile_ids:

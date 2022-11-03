@@ -9,7 +9,6 @@ import pytest
 
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import (
-    DuplicateTileTaskError,
     InvalidFeatureRegistryOperationError,
     MissingFeatureRegistryError,
     MissingTileSpecError,
@@ -286,10 +285,10 @@ async def test_online_enable_duplicate_tile_task(
         tile_specs=mock_snowflake_feature.tile_specs,
     )
 
-    with pytest.raises(DuplicateTileTaskError) as excinfo:
-        await feature_manager.online_enable(online_feature_spec)
+    await feature_manager.online_enable(online_feature_spec)
 
-    assert str(excinfo.value) == "tile task already exists"
+    mock_schedule_online_tiles.assert_not_called()
+    mock_schedule_offline_tiles.assert_not_called()
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
