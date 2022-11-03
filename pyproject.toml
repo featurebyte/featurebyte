@@ -132,8 +132,17 @@ toml-sort = "^0.20.0"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "^1.4.1"
+mkdocs-awesome-pages-plugin = "^2.8.0"
+mkdocs-enumerate-headings-plugin = "^0.5.0"
+mkdocs-git-authors-plugin = "^0.6.5"
+mkdocs-git-revision-date-localized-plugin = "^1.1.0"
 mkdocs-material = "^8.5.7"
-mkdocstrings = { version = "^0.19.0", extras = ["python"]}
+mkdocs-minify-plugin = "^0.6.1"
+mkdocs-print-site-plugin = "^2.3.4"
+mkdocs-table-reader-plugin = "^1.1.1"
+mkdocstrings = "^0.19.0"
+mkdocstrings-python = "^0.7.1"
+mknotebooks = "^0.7.1"
 
 [tool.poetry.group.lint.dependencies]
 bandit = "^1.7.4"
