@@ -490,7 +490,7 @@ class BaseSchemaInitializer(ABC):
             return True
         if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND:
             logger.debug(f"No results found for the working schema {self.session.schema_name}")
-            return False
+            return True
         current_version = self.current_working_schema_version
         return current_version > registered_working_schema_version
 
