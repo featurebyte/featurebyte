@@ -375,7 +375,7 @@ async def test_schema_initializer__dont_reinitialize(
     # Nothing to do except checking schemas and existing objects
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     original_call_list = [
-        call("SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"),
+        call("SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"),
         call(
             "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA "
             "( WORKING_SCHEMA_VERSION INT, FEATURE_STORE_ID VARCHAR, "
@@ -394,7 +394,7 @@ async def test_schema_initializer__dont_reinitialize(
     mocked_execute_query = session.execute_query.side_effect
 
     def new_mock_execute_query(query):
-        if query.startswith("SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"):
+        if query.startswith("SELECT WORKING_SCHEMA_VERSION"):
             return pd.DataFrame(
                 {
                     # TODO (jevon.yeoh): make sure these versions are updated accordingly
@@ -411,7 +411,7 @@ async def test_schema_initializer__dont_reinitialize(
     assert len(session.execute_query.call_args_list) == len(original_call_list) + 1
     # verify that the new call is the one to check the working version
     assert session.execute_query.call_args_list[-1:] == [
-        call("SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"),
+        call("SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"),
     ]
 
 
@@ -439,7 +439,7 @@ async def test_schema_initializer__everything_exists(
     # Nothing to do except checking schemas and existing objects
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     assert session.execute_query.call_args_list == [
-        call("SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"),
+        call("SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"),
         call(
             "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA "
             "( WORKING_SCHEMA_VERSION INT, FEATURE_STORE_ID VARCHAR, "

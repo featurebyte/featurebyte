@@ -463,7 +463,7 @@ class BaseSchemaInitializer(ABC):
         to callers that we probably want to initialize the working schema.
         """
 
-        query = "SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"
+        query = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
         try:
             results = await self.session.execute_query(query)
         except tuple(EXPECTED_ERRORS):
