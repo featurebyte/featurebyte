@@ -199,11 +199,10 @@ jobs:
         sed -i -E "s|^version = \"[^\"]+\"|version = \"${PUBLISH_VERSION}\"|g" pyproject.toml
 
         poetry config repositories.featurebyte_np https://${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}
-        poetry publish --build -r featurebyte_np | tee output.txt
+        poetry publish --build -r featurebyte_np
 
         # Slack outputs
         export REPOSITORY=$(grep -oP '/\K.+' <<< $GITHUB_REPOSITORY)
-        export OUTPUT=$(cat output.txt)
         export GITHUB_HEAD_REF=main
 
         # Sending Slack Message
@@ -226,7 +225,7 @@ jobs:
         # Get Coverage data
         export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
         if [[ "$COVERAGE_PERCENTAGE" != "" ]]; then
-          export COVERAGE=:"\n*Coverage:* \`${COVERAGE_PERCENTAGE}\`"
+          export COVERAGE="\n*Coverage:* \`${COVERAGE_PERCENTAGE}\`"
         else
           export COVERAGE=""
         fi
@@ -262,7 +261,7 @@ jobs:
         # Get Coverage data
         export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
         if [[ "$COVERAGE_PERCENTAGE" != "" ]]; then
-          export COVERAGE=:"\n*Coverage:* \`${COVERAGE_PERCENTAGE}\`"
+          export COVERAGE="\n*Coverage:* \`${COVERAGE_PERCENTAGE}\`"
         else
           export COVERAGE=""
         fi
@@ -338,14 +337,6 @@ jobs:
     - name: Slack Message failure
       if: ${{ failure() }}
       run: |
-        # Get Coverage data
-        export COVERAGE_PERCENTAGE=${{ steps.coverageComment.outputs.coverage }}
-        if [[ "$COVERAGE_PERCENTAGE" != "" ]]; then
-          export COVERAGE=:"\n*Coverage:* \`${COVERAGE_PERCENTAGE}\`"
-        else
-          export COVERAGE=""
-        fi
-
         # Get the last committed email address
         git fetch --no-recurse-submodules --prune origin ${GITHUB_HEAD_REF}
         export AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")

@@ -54,35 +54,34 @@ update:
 
 #* Formatters
 format:
-	@poetry run pyupgrade --py38-plus **/*.py
-	@poetry run isort .
-	@poetry run black .
-	@poetry run toml-sort --all --in-place pyproject.toml poetry.lock
+	poetry run pyupgrade --py38-plus **/*.py
+	poetry run isort .
+	poetry run black .
+	poetry run toml-sort --all --in-place pyproject.toml poetry.lock
 
 #* Linting
 lint: lint-style lint-type lint-safety
 
 lint-style:
-	@poetry run toml-sort --check poetry.lock pyproject.toml    # Check if user been using pre-commit hook
-	@poetry run isort --diff --check-only --settings-path pyproject.toml .
-	@poetry run black --diff --check .
-	@poetry run pylint --rcfile pyproject.toml featurebyte
-	@poetry run pylint --disable=${PYLINT_DISABLE_FOR_TESTS} --rcfile pyproject.toml tests
+	poetry run toml-sort --check poetry.lock pyproject.toml    # Check if user been using pre-commit hook
+	poetry run isort --diff --check-only --settings-path pyproject.toml .
+	poetry run black --diff --check .
+	poetry run pylint --rcfile pyproject.toml featurebyte
+	poetry run pylint --disable=${PYLINT_DISABLE_FOR_TESTS} --rcfile pyproject.toml tests
 
-	@find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" | xargs poetry run darglint --verbosity 2
-	@find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs poetry run darglint --verbosity 2
+	find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" | xargs poetry run darglint --verbosity 2
+	find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs poetry run darglint --verbosity 2
 
 lint-type:
-	@poetry run mypy --install-types --non-interactive --config-file pyproject.toml .
+	poetry run mypy --install-types --non-interactive --config-file pyproject.toml .
 
 lint-safety: generate-requirements-file
-	@poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\--" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
-	@poetry run pip-audit
-	@poetry run bandit -c pyproject.toml -ll --recursive featurebyte
-
+	poetry run pip-licenses --packages $(shell cut -d= -f 1 requirements.txt | grep -v "\--" | tr "\n" " ") --allow-only=${PERMISSIVE_LICENSES}
+	poetry run pip-audit
+	poetry run bandit -c pyproject.toml -ll --recursive featurebyte
 #* Testing
 test: test-setup
-	@poetry run pytest --timeout=180 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
+	poetry run pytest --timeout=180 --junitxml=pytest.xml -n auto --cov=featurebyte tests featurebyte | tee pytest-coverage.txt
 
 	${MAKE} test-teardown
 
