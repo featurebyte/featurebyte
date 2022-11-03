@@ -23,7 +23,7 @@ PERMISSIVE_LICENSES := "\
 .PHONY: format
 .PHONY: lint lint-style lint-type lint-safety
 .PHONY: test test-setup test-teardown
-.PHONY: docs
+.PHONY: docs docs-build
 .PHONY: clean
 
 #* Initialize
@@ -107,6 +107,9 @@ stop-service:
 #* Docs Generation
 docs:
 	poetry run mkdocs serve
+
+docs-build:
+	poetry run mkdocs build
 
 #* Cleaning
 clean:
