@@ -1,9 +1,10 @@
 """
 Module with logic related to feature SQL generation
 """
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional, Tuple, cast
 
 from abc import ABC, abstractmethod
 
@@ -14,8 +15,9 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.count_dict import MISSING_VALUE_REPLACEMENT
-from featurebyte.query_graph.sql.ast.generic import AliasNode, Project, TableNode
+from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, quoted_identifier
 from featurebyte.query_graph.sql.specs import (
@@ -217,22 +219,57 @@ class RequestTablePlan(ABC):
 
 
 class NonTimeAwareRequestTablePlan:
-    def __init__(self):
+    """SQL generation for request table in non-time aware aggregations
+
+    In non-time aware aggregations such as ItemData groupby, the feature value can be determined by
+    entity columns. The point in time is irrelevant.
+    """
+
+    def __init__(self) -> None:
         self.request_table_names: dict[AggSpecEntityIDs, str] = {}
         self.agg_specs: dict[AggSpecEntityIDs, ItemAggregationSpec] = {}
 
     def add_aggregation_spec(self, agg_spec: ItemAggregationSpec) -> None:
+        """Update state given an ItemAggregationSpec
+
+        Parameters
+        ----------
+        agg_spec: ItemAggregationSpec
+            ItemAggregationSpec object
+        """
         key = self.get_key(agg_spec)
         request_table_name = f"REQUEST_TABLE_{'_'.join(agg_spec.serving_names)}"
         self.request_table_names[key] = request_table_name
         self.agg_specs[key] = agg_spec
 
-    def get_request_table_name(self, agg_spec: ItemAggregationSpec):
+    def get_request_table_name(self, agg_spec: ItemAggregationSpec) -> str:
+        """Get the processed request table name corresponding to an aggregation spec
+
+        Parameters
+        ----------
+        agg_spec: ItemAggregationSpec
+            ItemAggregationSpec object
+
+        Returns
+        -------
+        str
+        """
         key = self.get_key(agg_spec)
         return self.request_table_names[key]
 
     @classmethod
     def get_key(cls, agg_spec: ItemAggregationSpec) -> AggSpecEntityIDs:
+        """Get an internal key used to determine request table sharing
+
+        Parameters
+        ----------
+        agg_spec: ItemAggregationSpec
+            ItemAggregationSpec object
+
+        Returns
+        -------
+        AggSpecEntityIDs
+        """
         return tuple(agg_spec.serving_names)
 
     def construct_request_table_ctes(
@@ -263,6 +300,19 @@ class NonTimeAwareRequestTablePlan:
         agg_spec: ItemAggregationSpec,
         request_table_name: str,
     ) -> expressions.Select:
+        """Construct a Select statement that forms the processed request table
+
+        Parameters
+        ----------
+        agg_spec: ItemAggregationSpec
+            ItemAggregationSpec object
+        request_table_name: str
+            Name of the original request table that is determined at runtime
+
+        Returns
+        -------
+        expressions.Select
+        """
         quoted_serving_names = [quoted_identifier(x) for x in agg_spec.serving_names]
         select_distinct_expr = (
             expressions.Select(distinct=True)
@@ -571,7 +621,21 @@ class FeatureExecutionPlan(ABC):
         """
 
     def construct_item_aggregation_sql(self, agg_spec: ItemAggregationSpec) -> expressions.Select:
+        """Construct SQL for non-time aware item aggregation
 
+        The required item groupby statement is contained in the ItemAggregationSpec object. This
+        simply needs to perform an inner join between the corresponding request table with the item
+        aggregation subquery.
+
+        Parameters
+        ----------
+        agg_spec: ItemAggregationSpec
+            ItemAggregationSpec object
+
+        Returns
+        -------
+        expressions.Select
+        """
         join_conditions_lst = []
         select_cols = [
             f"ITEM_AGG.{quoted_identifier(agg_spec.feature_name).sql()}"
@@ -584,11 +648,12 @@ class FeatureExecutionPlan(ABC):
             select_cols.append(f"REQ.{serving_name} AS {serving_name}")
 
         request_table_name = self.non_time_aware_request_table_plan.get_request_table_name(agg_spec)
+        item_agg_expr = cast(expressions.Select, agg_spec.agg_expr)
         agg_expr = (
             select(*select_cols)
             .from_(expressions.alias_(quoted_identifier(request_table_name), alias="REQ"))
             .join(
-                agg_spec.agg_expr.subquery(),
+                item_agg_expr.subquery(),
                 join_type="inner",
                 join_alias="ITEM_AGG",
                 on=expressions.and_(*join_conditions_lst),
@@ -935,6 +1000,13 @@ class FeatureExecutionPlanner:
             self.plan.add_aggregation_spec(agg_spec)
 
     def parse_and_update_specs_from_item_groupby(self, node: Node) -> None:
+        """Update FeatureExecutionPlan with an item groupby query node
+
+        Parameters
+        ----------
+        node : Node
+            Query graph node
+        """
         sql_node = SQLOperationGraph(
             self.graph, SQLType.NON_TILE_AGGREGATION, source_type=self.source_type
         ).build(node)
