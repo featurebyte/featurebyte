@@ -18,6 +18,10 @@ theme:
     homepage: https://featurebyte.com
     favicon: https://featurebyte.com/wp-content/uploads/2022/06/favicon_1.png
     logo: https://featurebyte.com/wp-content/uploads/2022/06/favicon_1.png
+    features:
+      - navigation.tabs
+      - navigation.tabs.sticky
+      - instant
 plugins:
     - search
     - mkdocstrings
