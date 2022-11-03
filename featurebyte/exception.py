@@ -123,6 +123,18 @@ class InvalidFeatureRegistryOperationError(Exception):
     """
 
 
+class MissingTileSpecError(Exception):
+    """
+    Raised for missing tile spec when online enable
+    """
+
+
+class DuplicateTileTaskError(Exception):
+    """
+    Raised for missing tile spec when online enable
+    """
+
+
 class ObjectHasBeenSavedError(Exception):
     """
     Raise when the object has been saved before

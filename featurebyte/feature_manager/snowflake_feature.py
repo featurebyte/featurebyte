@@ -12,8 +12,10 @@ from pydantic import BaseModel, PrivateAttr
 
 from featurebyte.exception import (
     DuplicatedRegistryError,
+    DuplicateTileTaskError,
     InvalidFeatureRegistryOperationError,
     MissingFeatureRegistryError,
+    MissingTileSpecError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
@@ -28,7 +30,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
 )
 from featurebyte.logger import logger
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.tile import OnlineFeatureSpec
+from featurebyte.models.tile import OnlineFeatureSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 
@@ -212,32 +214,49 @@ class FeatureManagerSnowflake(BaseModel):
         ----------
         feature_spec: OnlineFeatureSpec
             input feature instance
+
+        Raises
+        ----------
+        MissingTileSpecError
+            when there is no tile_spec
+        DuplicateTileTaskError
+            when the tile task already exists
         """
-        if feature_spec.tile_specs:
 
-            for tile_spec in feature_spec.tile_specs:
-                logger.info(f"tile_spec: {tile_spec}")
-                tile_mgr = TileManagerSnowflake(
-                    session=self._session,
-                )
-                # enable online tiles scheduled job
-                await tile_mgr.schedule_online_tiles(tile_spec=tile_spec)
-                logger.debug(f"Done schedule_online_tiles for {tile_spec}")
+        if not feature_spec.tile_specs:
+            raise MissingTileSpecError("Missing tile_spec for online_enable")
 
-                # enable offline tiles scheduled job
-                await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
-                logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
+        # enable tile generation with scheduled jobs
+        for tile_spec in feature_spec.tile_specs:
+            logger.info(f"tile_spec: {tile_spec}")
+            tile_mgr = TileManagerSnowflake(
+                session=self._session,
+            )
 
-            for tile_id in feature_spec.tile_ids:
-                entity_column_names_str = ",".join(sorted(feature_spec.entity_column_names))
-                upsert_sql = tm_upsert_tile_feature_mapping.render(
-                    tile_id=tile_id,
-                    feature_spec=feature_spec,
-                    entity_column_names_str=entity_column_names_str,
-                )
+            exist_flag = await tile_mgr.tile_task_exists(TileType.ONLINE, tile_spec)
+            if exist_flag:
+                raise DuplicateTileTaskError("tile task already exists")
 
-                logger.debug(f"tile_feature_mapping upsert_sql: {upsert_sql}")
-                await self._session.execute_query(upsert_sql)
+            # enable online tiles scheduled job
+            await tile_mgr.schedule_online_tiles(tile_spec=tile_spec)
+            logger.debug(f"Done schedule_online_tiles for {tile_spec}")
+
+            # enable offline tiles scheduled job
+            await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
+            logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
+
+        # insert records into tile-feature mapping table
+        for tile_id in feature_spec.tile_ids:
+            entity_column_names_str = ",".join(sorted(feature_spec.entity_column_names))
+            upsert_sql = tm_upsert_tile_feature_mapping.render(
+                tile_id=tile_id,
+                feature_spec=feature_spec,
+                entity_column_names_str=entity_column_names_str,
+            )
+
+            logger.debug(f"tile_feature_mapping upsert_sql: {upsert_sql}")
+            await self._session.execute_query(upsert_sql)
+            logger.debug(f"Done insert tile_feature_mapping for {tile_id}")
 
     async def retrieve_last_tile_index(self, feature: ExtendedFeatureModel) -> pd.DataFrame:
         """

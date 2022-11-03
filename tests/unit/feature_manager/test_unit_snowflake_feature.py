@@ -8,7 +8,12 @@ import pandas as pd
 import pytest
 
 from featurebyte.common.model_util import get_version
-from featurebyte.exception import InvalidFeatureRegistryOperationError, MissingFeatureRegistryError
+from featurebyte.exception import (
+    DuplicateTileTaskError,
+    InvalidFeatureRegistryOperationError,
+    MissingFeatureRegistryError,
+    MissingTileSpecError,
+)
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_feature_tile_monitor,
@@ -20,7 +25,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_upsert_tile_feature_mapping,
 )
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.tile import OnlineFeatureSpec
+from featurebyte.models.tile import OnlineFeatureSpec, TileSpec, TileType
 
 
 @pytest.fixture(name="mock_snowflake_feature")
@@ -219,7 +224,8 @@ async def test_online_enable(
 
     mock_schedule_online_tiles.assert_called_once()
     mock_schedule_offline_tiles.assert_called_once()
-    mock_execute_query.assert_called_once()
+
+    assert mock_execute_query.call_count == 2
 
     entity_column_names_str = ",".join(sorted(online_feature_spec.entity_column_names))
     upsert_sql = tm_upsert_tile_feature_mapping.render(
@@ -228,6 +234,62 @@ async def test_online_enable(
         entity_column_names_str=entity_column_names_str,
     )
     mock_execute_query.assert_called_with(upsert_sql)
+
+
+@pytest.mark.asyncio
+async def test_online_enable_missing_tile_spec(
+    mock_snowflake_feature,
+    feature_manager,
+):
+    """
+    Test online_enable
+    """
+
+    online_feature_spec = OnlineFeatureSpec(
+        feature_name=mock_snowflake_feature.name,
+        feature_version=mock_snowflake_feature.version.to_str(),
+        feature_sql="select * from temp",
+        feature_store_table_name="feature_store_table_1",
+        tile_specs=[],
+    )
+
+    with pytest.raises(MissingTileSpecError) as excinfo:
+        await feature_manager.online_enable(online_feature_spec)
+
+    assert str(excinfo.value) == "Missing tile_spec for online_enable"
+
+
+@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.tile_task_exists")
+@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_online_tiles")
+@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_offline_tiles")
+@pytest.mark.asyncio
+async def test_online_enable_duplicate_tile_task(
+    mock_schedule_offline_tiles,
+    mock_schedule_online_tiles,
+    mock_tile_task_exists,
+    mock_snowflake_feature,
+    feature_manager,
+):
+    """
+    Test online_enable
+    """
+    _ = mock_schedule_offline_tiles
+    _ = mock_schedule_online_tiles
+
+    mock_tile_task_exists.return_value = True
+
+    online_feature_spec = OnlineFeatureSpec(
+        feature_name=mock_snowflake_feature.name,
+        feature_version=mock_snowflake_feature.version.to_str(),
+        feature_sql="select * from temp",
+        feature_store_table_name="feature_store_table_1",
+        tile_specs=mock_snowflake_feature.tile_specs,
+    )
+
+    with pytest.raises(DuplicateTileTaskError) as excinfo:
+        await feature_manager.online_enable(online_feature_spec)
+
+    assert str(excinfo.value) == "tile task already exists"
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
