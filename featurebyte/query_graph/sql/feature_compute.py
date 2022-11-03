@@ -1010,7 +1010,7 @@ class FeatureExecutionPlanner:
             Query graph node
         """
         sql_node = SQLOperationGraph(
-            self.graph, SQLType.NON_TILE_AGGREGATION, source_type=self.source_type
+            self.graph, SQLType.AGGREGATION, source_type=self.source_type
         ).build(node)
         agg_expr = sql_node.sql
         agg_spec = ItemAggregationSpec.from_item_groupby_query_node(
