@@ -90,7 +90,7 @@ class BaseSession(BaseModel):
     _connection: Any = PrivateAttr(default=None)
     _unique_id: int = PrivateAttr(default=0)
 
-    async def initialize(self) -> None:
+    async def initialize(self, feature_store_id: str) -> None:
         """
         Initialize session
         """
@@ -441,7 +441,7 @@ class BaseSchemaInitializer(ABC):
         int that is the current working schema version.
         """
 
-    async def initialize(self) -> None:
+    async def initialize(self, feature_store_id: str) -> None:
         """Entry point to set up the featurebyte working schema"""
 
         if not await self.should_update_schema():
@@ -451,7 +451,7 @@ class BaseSchemaInitializer(ABC):
             logger.debug(f"Initializing schema {self.session.schema_name}")
             await self.create_schema()
 
-        await self.register_missing_objects()
+        await self.register_missing_objects(feature_store_id)
 
     async def get_working_schema_version(self) -> int:
         """Retrieves the working schema version from the table registered in the
@@ -549,7 +549,7 @@ class BaseSchemaInitializer(ABC):
         items = [item for item in tables if item["identifier"] not in existing]
         await self._register_sql_objects(items)
 
-    async def register_missing_objects(self) -> None:
+    async def register_missing_objects(self, feature_store_id: str) -> None:
         """Detect database objects that are missing and register them"""
         sql_objects = self.get_sql_objects()
         sql_objects_by_type: dict[SqlObjectType, list[dict[str, Any]]] = {
@@ -560,7 +560,7 @@ class BaseSchemaInitializer(ABC):
         for sql_object in sql_objects:
             sql_objects_by_type[sql_object["type"]].append(sql_object)
 
-        await self.metadata_schema_initializer.create_metadata_table()
+        await self.metadata_schema_initializer.create_metadata_table(feature_store_id)
         await self.register_missing_functions(sql_objects_by_type[SqlObjectType.FUNCTION])
         await self.register_missing_procedures(sql_objects_by_type[SqlObjectType.PROCEDURE])
         await self.create_missing_tables(sql_objects_by_type[SqlObjectType.TABLE])
@@ -656,18 +656,18 @@ class MetadataSchemaInitializer:
         )
         await self.session.execute_query(update_version_query)
 
-    async def create_metadata_table(self) -> None:
+    async def create_metadata_table(self, feature_store_id: str) -> None:
         """Creates metadata schema table. This will be used to help
         optimize and validate parts of the session initialization.
         """
         create_metadata_table_query = (
-            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
+            f"CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
             "WORKING_SCHEMA_VERSION INT, "
             "FEATURE_STORE_ID VARCHAR, "
             "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
             ") AS "
             "SELECT 0 AS WORKING_SCHEMA_VERSION, "
-            "NULL AS FEATURE_STORE_ID, "
+            f"{feature_store_id} AS FEATURE_STORE_ID, "
             "SYSDATE() AS CREATED_AT;"
         )
         await self.session.execute_query(create_metadata_table_query)

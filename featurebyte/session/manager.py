@@ -52,7 +52,7 @@ async def get_session(item: str, credential_params: str) -> BaseSession:
     session = SOURCE_TYPE_SESSION_MAP[item_dict["type"]](  # type: ignore
         **item_dict["details"], **credential_params_dict
     )
-    await session.initialize()
+    await session.initialize(item_dict["id"])
     return session
 
 
@@ -86,7 +86,11 @@ class SessionManager(BaseModel):
             credential = self.credentials[item.name]
             credential_params = credential.credential.dict() if credential else {}
             session = await get_session(
-                item=json.dumps(item.dict(include={"type": True, "details": True}), sort_keys=True),
+                item=json.dumps(
+                    item.dict(include={"type": True, "details": True, "id": True}),
+                    sort_keys=True,
+                    default=str,
+                ),
                 credential_params=json.dumps(credential_params, sort_keys=True),
             )
             assert isinstance(session, BaseSession)

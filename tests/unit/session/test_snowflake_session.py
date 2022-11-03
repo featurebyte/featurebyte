@@ -371,7 +371,7 @@ async def test_schema_initializer__dont_reinitialize(
 
     session = patched_snowflake_session_cls()
     snowflake_initializer = SnowflakeSchemaInitializer(session)
-    await snowflake_initializer.initialize()
+    await snowflake_initializer.initialize("test_store_id")
     # Nothing to do except checking schemas and existing objects
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     original_call_list = [
@@ -380,7 +380,7 @@ async def test_schema_initializer__dont_reinitialize(
             "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA "
             "( WORKING_SCHEMA_VERSION INT, FEATURE_STORE_ID VARCHAR, "
             "CREATED_AT TIMESTAMP DEFAULT SYSDATE() ) AS "
-            "SELECT 0 AS WORKING_SCHEMA_VERSION, NULL AS FEATURE_STORE_ID, "
+            "SELECT 0 AS WORKING_SCHEMA_VERSION, test_store_id AS FEATURE_STORE_ID, "
             "SYSDATE() AS CREATED_AT;"
         ),
         call("SHOW USER FUNCTIONS IN DATABASE sf_database"),
@@ -406,7 +406,7 @@ async def test_schema_initializer__dont_reinitialize(
     session.execute_query.side_effect = new_mock_execute_query
 
     # re-initialize
-    await snowflake_initializer.initialize()
+    await snowflake_initializer.initialize("test_store_id")
     # verify that only one additional call is made
     assert len(session.execute_query.call_args_list) == len(original_call_list) + 1
     # verify that the new call is the one to check the working version
@@ -435,7 +435,7 @@ async def test_schema_initializer__everything_exists(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    await SnowflakeSchemaInitializer(session).initialize()
+    await SnowflakeSchemaInitializer(session).initialize("test_store_id")
     # Nothing to do except checking schemas and existing objects
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     assert session.execute_query.call_args_list == [
@@ -444,7 +444,7 @@ async def test_schema_initializer__everything_exists(
             "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA "
             "( WORKING_SCHEMA_VERSION INT, FEATURE_STORE_ID VARCHAR, "
             "CREATED_AT TIMESTAMP DEFAULT SYSDATE() ) AS "
-            "SELECT 0 AS WORKING_SCHEMA_VERSION, NULL AS FEATURE_STORE_ID, "
+            "SELECT 0 AS WORKING_SCHEMA_VERSION, test_store_id AS FEATURE_STORE_ID, "
             "SYSDATE() AS CREATED_AT;"
         ),
         call("SHOW USER FUNCTIONS IN DATABASE sf_database"),
@@ -478,7 +478,7 @@ async def test_schema_initializer__all_missing(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    await SnowflakeSchemaInitializer(session).initialize()
+    await SnowflakeSchemaInitializer(session).initialize("test_store_id")
     # Should create schema if not exists
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     assert session.execute_query.call_args_list[1:2] == [
@@ -513,7 +513,7 @@ async def test_schema_initializer__partial_missing(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    await SnowflakeSchemaInitializer(session).initialize()
+    await SnowflakeSchemaInitializer(session).initialize("test_store_id")
     # Should register custom functions and procedures
     counts = check_create_commands(session)
     expected_counts = {"schema": 0, "functions": 0, "procedures": 0, "tables": 1}
@@ -701,7 +701,7 @@ async def test_create_metadata_table(
 ):
     session = patched_snowflake_session_cls()
     initializer = MetadataSchemaInitializer(session)
-    await initializer.create_metadata_table()
+    await initializer.create_metadata_table("test_store_id")
     assert session.execute_query.call_args_list == [
         call(
             "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
@@ -710,7 +710,7 @@ async def test_create_metadata_table(
             "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
             ") AS "
             "SELECT 0 AS WORKING_SCHEMA_VERSION, "
-            "NULL AS FEATURE_STORE_ID, "
+            "test_store_id AS FEATURE_STORE_ID, "
             "SYSDATE() AS CREATED_AT;"
         ),
     ]
