@@ -223,13 +223,11 @@ class FeatureManagerSnowflake(BaseModel):
         if not feature_spec.tile_specs:
             raise MissingTileSpecError("Missing tile_spec for online_enable")
 
+        tile_mgr = TileManagerSnowflake(session=self._session)
+
         # enable tile generation with scheduled jobs
         for tile_spec in feature_spec.tile_specs:
             logger.info(f"tile_spec: {tile_spec}")
-            tile_mgr = TileManagerSnowflake(
-                session=self._session,
-            )
-
             exist_flag = await tile_mgr.tile_task_exists(TileType.ONLINE, tile_spec)
             if exist_flag:
                 logger.warning(
