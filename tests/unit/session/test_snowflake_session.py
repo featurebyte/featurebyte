@@ -163,6 +163,7 @@ EXPECTED_PROCEDURES = [
 EXPECTED_TABLES = [
     "FEATURE_LIST_REGISTRY",
     "FEATURE_REGISTRY",
+    "METADATA_SCHEMA",
     "TILE_REGISTRY",
     "TILE_MONITOR_SUMMARY",
 ]
@@ -359,6 +360,66 @@ def check_create_commands(mock_session):
 @pytest.mark.parametrize("is_procedures_missing", [False])
 @pytest.mark.parametrize("is_tables_missing", [False])
 @pytest.mark.asyncio
+async def test_schema_initializer__dont_reinitialize(
+    patched_snowflake_session_cls,
+    is_schema_missing,
+    is_functions_missing,
+    is_procedures_missing,
+    is_tables_missing,
+):
+    """Test SchemaInitializer doesn't re-run all the queries when re-initialized."""
+
+    session = patched_snowflake_session_cls()
+    snowflake_initializer = SnowflakeSchemaInitializer(session)
+    await snowflake_initializer.initialize()
+    # Nothing to do except checking schemas and existing objects
+    assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
+    original_call_list = [
+        call("SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"),
+        call(
+            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA "
+            "( WORKING_SCHEMA_VERSION INT, FEATURE_STORE_ID VARCHAR, "
+            "CREATED_AT TIMESTAMP DEFAULT SYSDATE() ) AS "
+            "SELECT 0 AS WORKING_SCHEMA_VERSION, NULL AS FEATURE_STORE_ID, "
+            "SYSDATE() AS CREATED_AT;"
+        ),
+        call("SHOW USER FUNCTIONS IN DATABASE sf_database"),
+        call("SHOW PROCEDURES IN DATABASE sf_database"),
+        # TODO (jevon.yeoh): make sure these versions are updated accordingly
+        call("UPDATE METADATA_SCHEMA SET WORKING_SCHEMA_VERSION = 1"),
+    ]
+    assert session.execute_query.call_args_list == original_call_list
+
+    # update mock to have new return value for execute query
+    mocked_execute_query = session.execute_query.side_effect
+
+    def new_mock_execute_query(query):
+        if query.startswith("SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"):
+            return pd.DataFrame(
+                {
+                    # TODO (jevon.yeoh): make sure these versions are updated accordingly
+                    "WORKING_SCHEMA_VERSION": [1],
+                }
+            )
+        return mocked_execute_query(query)
+
+    session.execute_query.side_effect = new_mock_execute_query
+
+    # re-initialize
+    await snowflake_initializer.initialize()
+    # verify that only one additional call is made
+    assert len(session.execute_query.call_args_list) == len(original_call_list) + 1
+    # verify that the new call is the one to check the working version
+    assert session.execute_query.call_args_list[-1:] == [
+        call("SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"),
+    ]
+
+
+@pytest.mark.parametrize("is_schema_missing", [False])
+@pytest.mark.parametrize("is_functions_missing", [False])
+@pytest.mark.parametrize("is_procedures_missing", [False])
+@pytest.mark.parametrize("is_tables_missing", [False])
+@pytest.mark.asyncio
 async def test_schema_initializer__everything_exists(
     patched_snowflake_session_cls,
     is_schema_missing,
@@ -378,14 +439,23 @@ async def test_schema_initializer__everything_exists(
     # Nothing to do except checking schemas and existing objects
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     assert session.execute_query.call_args_list == [
+        call("SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"),
+        call(
+            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA "
+            "( WORKING_SCHEMA_VERSION INT, FEATURE_STORE_ID VARCHAR, "
+            "CREATED_AT TIMESTAMP DEFAULT SYSDATE() ) AS "
+            "SELECT 0 AS WORKING_SCHEMA_VERSION, NULL AS FEATURE_STORE_ID, "
+            "SYSDATE() AS CREATED_AT;"
+        ),
         call("SHOW USER FUNCTIONS IN DATABASE sf_database"),
         call("SHOW PROCEDURES IN DATABASE sf_database"),
+        call("UPDATE METADATA_SCHEMA SET WORKING_SCHEMA_VERSION = 1"),
     ]
     assert session.list_tables.call_args_list == [
         call(database_name="sf_database", schema_name="FEATUREBYTE")
     ]
     counts = check_create_commands(session)
-    assert counts == {"schema": 0, "functions": 0, "procedures": 0, "tables": 0}
+    assert counts == {"schema": 0, "functions": 0, "procedures": 0, "tables": 1}
 
 
 @pytest.mark.parametrize("is_schema_missing", [True])
@@ -411,7 +481,7 @@ async def test_schema_initializer__all_missing(
     await SnowflakeSchemaInitializer(session).initialize()
     # Should create schema if not exists
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
-    assert session.execute_query.call_args_list[:1] == [
+    assert session.execute_query.call_args_list[1:2] == [
         call("CREATE SCHEMA FEATUREBYTE"),
     ]
     # Should register custom functions and procedures
@@ -446,7 +516,7 @@ async def test_schema_initializer__partial_missing(
     await SnowflakeSchemaInitializer(session).initialize()
     # Should register custom functions and procedures
     counts = check_create_commands(session)
-    expected_counts = {"schema": 0, "functions": 0, "procedures": 0, "tables": 0}
+    expected_counts = {"schema": 0, "functions": 0, "procedures": 0, "tables": 1}
     if is_functions_missing:
         expected_counts["functions"] = len(EXPECTED_FUNCTIONS)
     if is_procedures_missing:
