@@ -1,70 +1,23 @@
 {
   "channel": "${AUTHOR_ID}",
-  "text": "Workflow PASSED ${GITHUB_WORKFLOW} for ${GITHUB_REPOSITORY}",
+  "text": "☝️ Bumped featurebyte:${PUBLISH_VERSION}",
   "blocks": [
     {
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "*Workflow PASSED* `${GITHUB_WORKFLOW}` for `${GITHUB_REPOSITORY}`"
-      }
-    },
-    {
-      "type": "section",
-      "fields": [
-        {
-          "type": "mrkdwn",
-          "text": "*Repository:*\n`${GITHUB_REPOSITORY}`"
+        "text": "️☝️ Bumped `featurebyte:${PUBLISH_VERSION}`"
+      },
+      "accessory": {
+        "type": "button",
+        "text": {
+          "type": "plain_text",
+          "text": "Run",
+          "emoji": true
         },
-        {
-          "type": "mrkdwn",
-          "text": "*Branch:*\n`${GITHUB_HEAD_REF}`"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Workflow:*\n`${GITHUB_JOB}`"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Base Branch:*\n`${GITHUB_BASE_REF}`"
-        },
-        {
-          "type": "mrkdwn",
-          "text": "*Author:*\n`${AUTHOR_EMAIL}`"
-        }
-      ]
-    },
-    {
-      "type": "actions",
-      "elements": [
-        {
-          "type": "button",
-          "text": {
-            "type": "plain_text",
-            "emoji": true,
-            "text": "Passed Action"
-          },
-          "style": "primary",
-          "value": "btn-run",
-          "url": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-        },
-        {
-          "type": "button",
-          "text": {
-            "type": "plain_text",
-            "emoji": true,
-            "text": "Repository"
-          },
-          "value": "btn_repo",
-          "url": "https://github.com/${GITHUB_REPOSITORY}"
-        }
-      ]
-    },
-    {
-      "type": "section",
-      "text": {
-        "type": "mrkdwn",
-        "text": "```${OUTPUT}```"
+        "style": "primary",
+        "value": "btn-run",
+        "url": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
       }
     }
   ]
