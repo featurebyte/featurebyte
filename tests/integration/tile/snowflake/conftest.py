@@ -34,4 +34,7 @@ async def tile_task_online_store_prep(snowflake_session):
     assert result["TILE_ID"].iloc[0] == tile_id
     assert result["FEATURE_NAME"].iloc[0] == feature_name
 
-    return tile_id, feature_store_table_name, feature_name, entity_col_names
+    yield tile_id, feature_store_table_name, feature_name, entity_col_names
+
+    await snowflake_session.execute_query("DELETE FROM TILE_FEATURE_MAPPING")
+    await snowflake_session.execute_query(f"DELETE FROM {feature_store_table_name}")
