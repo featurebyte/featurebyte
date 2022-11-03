@@ -57,13 +57,13 @@ format:
 	@poetry run pyupgrade --py38-plus **/*.py
 	@poetry run isort .
 	@poetry run black .
-	@poetry run toml-sort pyproject.toml --all --in-place
-	@poetry run toml-sort poetry.lock --all --in-place
+	@poetry run toml-sort --all --in-place pyproject.toml poetry.lock
 
 #* Linting
 lint: lint-style lint-type lint-safety
 
 lint-style:
+	@poetry run toml-sort --check poetry.lock pyproject.toml    # Check if user been using pre-commit hook
 	@poetry run isort --diff --check-only --settings-path pyproject.toml .
 	@poetry run black --diff --check .
 	@poetry run pylint --rcfile pyproject.toml featurebyte
