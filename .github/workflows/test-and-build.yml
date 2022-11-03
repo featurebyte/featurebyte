@@ -64,11 +64,14 @@ jobs:
 
       - name: Workflow Flags
         id: workflow_flags
-        run: echo "PYTHON_CHANGES=$(git diff origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | wc -l) " >> $GITHUB_OUTPUT
+        run: |
+          # Override if pushing to main
+          if [[ '${{ github.event_name }}' == 'push' && '${{ github.ref }}' == 'refs/heads/main' ]]; then
+            echo "PYTHON_CHANGES=1" >> $GITHUB_OUTPUT
+          else
+            echo "PYTHON_CHANGES=$(git diff origin/main..HEAD -- featurebyte/ tests/ pyproject.toml poetry.lock | wc -l) " >> $GITHUB_OUTPUT
+          fi
 
-      - name: Workflow Flags Override [push to main]
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: echo "PYTHON_CHANGES=1" >> $GITHUB_OUTPUT
 
       - name: Summarize
         run: |
