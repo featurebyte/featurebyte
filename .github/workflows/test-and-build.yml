@@ -68,7 +68,7 @@ jobs:
 
       - name: Workflow Flags Override [push to main]
         if: ${{ github.ref == 'refs/heads/main' }}
-        run: echo "PYTHON_CHANGES=1" >> $GITHUB_OUTPUT
+        run: echo "PYTHON_CHANGES=1" > $GITHUB_OUTPUT   # Make sure what ever you declared above is overridden here
 
       - name: Summarize
         run: |
