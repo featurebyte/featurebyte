@@ -98,8 +98,8 @@ class ItemAggregationSpec:
 
     keys: list[str]
     serving_names: list[str]
-    agg_expr: Select
     feature_name: str
+    agg_expr: Select | None
 
     @property
     def agg_result_name(self) -> str:
@@ -110,13 +110,16 @@ class ItemAggregationSpec:
         str
             Column name of the aggregated result
         """
+        # Note: Ideally, this internal aggregated result name should be based on a unique identifier
+        # that uniquely identifies the aggregation, instead of directly using the feature_name.
+        # Should be fixed when aggregation_id is added to the parameters of ItemGroupby query node.
         return self.feature_name
 
     @classmethod
     def from_item_groupby_query_node(
         cls,
         node: Node,
-        agg_expr: Select,
+        agg_expr: Select | None = None,
         serving_names_mapping: dict[str, str] | None = None,
     ) -> ItemAggregationSpec:
         assert isinstance(node, ItemGroupbyNode)
@@ -127,8 +130,8 @@ class ItemAggregationSpec:
         out = ItemAggregationSpec(
             keys=params["keys"],
             serving_names=serving_names,
-            agg_expr=agg_expr,
             feature_name=params["names"][0],
+            agg_expr=agg_expr,
         )
         return out
 

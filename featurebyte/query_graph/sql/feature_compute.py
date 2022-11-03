@@ -3,7 +3,7 @@ Module with logic related to feature SQL generation
 """
 from __future__ import annotations
 
-from typing import Iterable, Optional, Tuple, cast
+from typing import Iterable, Optional, Tuple
 
 from abc import ABC, abstractmethod
 
@@ -15,9 +15,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.count_dict import MISSING_VALUE_REPLACEMENT
-from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
-from featurebyte.query_graph.sql.ast.groupby import ItemGroupby
-from featurebyte.query_graph.sql.ast.tile import AggregatedTilesNode
+from featurebyte.query_graph.sql.ast.generic import AliasNode, Project, TableNode
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql, quoted_identifier
 from featurebyte.query_graph.sql.specs import AggregationSpec, FeatureSpec, ItemAggregationSpec
@@ -699,7 +697,7 @@ class FeatureExecutionPlan(ABC):
 
         for item_agg_spec in self.item_aggregation_specs:
             agg_expr = self.construct_item_aggregation_sql(item_agg_spec)
-            agg_result_names = [item_agg_spec.agg_result_name]
+            agg_result_names = [item_agg_spec.feature_name]
             table_expr, agg_result_name_aliases = self.construct_left_join_sql(
                 index=agg_table_index,
                 point_in_time_column=point_in_time_column,
@@ -929,7 +927,7 @@ class FeatureExecutionPlanner:
 
     def parse_and_update_specs_from_item_groupby(self, node: Node) -> None:
         sql_node = SQLOperationGraph(
-            self.graph, SQLType.GENERATE_FEATURE, source_type=self.source_type
+            self.graph, SQLType.NON_TILE_AGGREGATION, source_type=self.source_type
         ).build(node)
         agg_expr = sql_node.sql
         agg_spec = ItemAggregationSpec.from_item_groupby_query_node(
@@ -946,25 +944,19 @@ class FeatureExecutionPlanner:
             Query graph node
         """
         sql_graph = SQLOperationGraph(
-            self.graph, SQLType.GENERATE_FEATURE, source_type=self.source_type
+            self.graph, SQLType.POST_AGGREGATION, source_type=self.source_type
         )
         sql_node = sql_graph.build(node)
 
-        if isinstance(sql_node, AggregatedTilesNode):
-            # sql_node corresponds to a FeatureGroup that results from point in time aggregation
+        if isinstance(sql_node, TableNode):
+            # sql_node corresponds to a FeatureGroup that results from point-in-time groupby or item
+            # groupby (e.g. AggregatedTilesNode, AggregatedItemGroupby nodes)
             for feature_name, feature_expr in sql_node.columns_map.items():
                 feature_spec = FeatureSpec(
                     feature_name=feature_name,
                     feature_expr=feature_expr.sql(),
                 )
                 self.plan.add_feature_spec(feature_spec)
-        elif isinstance(sql_node, ItemGroupby):
-            # TODO: this is currently unhinged from ItemAggregationSpec
-            feature_spec = FeatureSpec(
-                feature_name=sql_node.output_name,
-                feature_expr=sql_node.columns_map[sql_node.output_name].sql(),
-            )
-            self.plan.add_feature_spec(feature_spec)
         else:
             if isinstance(sql_node, Project):
                 feature_name = sql_node.column_name

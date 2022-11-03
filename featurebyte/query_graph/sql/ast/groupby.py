@@ -12,7 +12,8 @@ from sqlglot import Expression, expressions, parse_one, select
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
+from featurebyte.query_graph.sql.specs import ItemAggregationSpec
 
 
 @dataclass
@@ -40,7 +41,9 @@ class ItemGroupby(TableNode):
         return expr
 
     @classmethod
-    def build(cls, context: SQLNodeContext) -> ItemGroupby:
+    def build(cls, context: SQLNodeContext) -> ItemGroupby | None:
+        if context.sql_type == SQLType.POST_AGGREGATION:
+            return None
         parameters = context.parameters
         agg_expr = cls.get_agg_expr(
             agg_func=parameters["agg_func"], input_column=parameters["parent"]
@@ -103,3 +106,30 @@ class ItemGroupby(TableNode):
                     this=expressions.Cast(this=expr_is_null, to=parse_one("INTEGER"))
                 )
         return expr
+
+
+@dataclass
+class AggregatedItemGroupby(TableNode):
+    """Node with ItemData already aggregated
+
+    The purpose of this node is to allow feature SQL generation to retrieve the post-aggregation
+    feature transform expression. The columns_map of this node has the mapping from user defined
+    feature names to internal aggregated column names. The feature expression can be obtained by
+    calling get_column_expr().
+    """
+
+    query_node_type = NodeType.ITEM_GROUPBY
+
+    @property
+    def sql(self) -> Expression:
+        # This will not be called anywhere
+        raise NotImplementedError()
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> AggregatedItemGroupby | None:
+        sql_node = None
+        if context.sql_type == SQLType.POST_AGGREGATION:
+            agg_spec = ItemAggregationSpec.from_item_groupby_query_node(context.query_node)
+            columns_map = {agg_spec.feature_name: quoted_identifier(agg_spec.agg_result_name)}
+            sql_node = AggregatedItemGroupby(context=context, columns_map=columns_map)
+        return sql_node

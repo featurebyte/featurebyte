@@ -144,7 +144,7 @@ class AggregatedTilesNode(TableNode):
     @classmethod
     def build(cls, context: SQLNodeContext) -> AggregatedTilesNode | None:
         sql_node = None
-        if context.sql_type == SQLType.GENERATE_FEATURE:
+        if context.sql_type == SQLType.POST_AGGREGATION:
             agg_specs = AggregationSpec.from_groupby_query_node(context.query_node)
             columns_map = {}
             for agg_spec in agg_specs:
