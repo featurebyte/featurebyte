@@ -321,6 +321,7 @@ def test_feature_execution_planner__item_aggregation(global_graph, order_size_fe
     plan = planner.generate_plan([order_size_feature_group_node])
 
     # Check item aggregation specs
+    item_aggregation_specs = plan.item_aggregation_specs
     assert len(item_aggregation_specs) == 1
     spec_dict = asdict(item_aggregation_specs[0])
     agg_expr = spec_dict.pop("agg_expr")
@@ -350,4 +351,3 @@ def test_feature_execution_planner__item_aggregation(global_graph, order_size_fe
     assert plan.feature_specs == {
         "order_size": FeatureSpec(feature_name="order_size", feature_expr='"order_size"')
     }
-    item_aggregation_specs = plan.item_aggregation_specs
