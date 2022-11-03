@@ -40,7 +40,7 @@ $$
 
     var tile_type = TYPE.toUpperCase()
     var lookback_period = FREQUENCY_MINUTE * (MONITOR_PERIODS + 1)
-    var table_name = TILE_ID.toUpperCase()
+    var tile_id = TILE_ID.toUpperCase()
 
     if (tile_type === "OFFLINE") {
         // offline schedule
@@ -64,7 +64,7 @@ $$
     debug = debug + " - monitor_tile_end_ts_str: " + monitor_tile_end_ts_str
 
     var monitor_input_sql = SQL.replaceAll(`${TILE_START_DATE_PLACEHOLDER}`, "''"+tile_start_ts_str+"''").replaceAll(`${TILE_END_DATE_PLACEHOLDER}`, "''"+monitor_tile_end_ts_str+"''")
-    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', '${TILE_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${table_name}', '${tile_type}')`
+    var monitor_stored_proc = `call SP_TILE_MONITOR('${monitor_input_sql}', '${TILE_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${tile_id}', '${tile_type}')`
     result = snowflake.execute(
         {
             sqlText: monitor_stored_proc
@@ -80,7 +80,7 @@ $$
     last_tile_start_ts.setMinutes(last_tile_start_ts.getMinutes() - FREQUENCY_MINUTE)
     last_tile_start_ts_str = last_tile_start_ts.toISOString()
 
-    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', '${TILE_START_DATE_COLUMN}', '${TILE_LAST_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${table_name}', '${tile_type}', '${last_tile_start_ts_str}')`
+    var generate_stored_proc = `call SP_TILE_GENERATE('${generate_input_sql}', '${TILE_START_DATE_COLUMN}', '${TILE_LAST_START_DATE_COLUMN}', ${TIME_MODULO_FREQUENCY_SECONDS}, ${BLIND_SPOT_SECONDS}, ${FREQUENCY_MINUTE}, '${ENTITY_COLUMN_NAMES}', '${VALUE_COLUMN_NAMES}', '${tile_id}', '${tile_type}', '${last_tile_start_ts_str}')`
     var result = snowflake.execute(
         {
             sqlText: generate_stored_proc
@@ -90,7 +90,7 @@ $$
     debug = debug + " - SP_TILE_GENERATE: " + result.getColumnValue(1)
 
     // update related online feature store
-    snowflake.execute({sqlText: `call SP_TILE_SCHEDULE_ONLINE_STORE('${table_name}')`})
+    snowflake.execute({sqlText: `call SP_TILE_SCHEDULE_ONLINE_STORE('${tile_id}')`})
 
     return debug
 $$;
