@@ -132,10 +132,10 @@ tm_upsert_tile_feature_mapping = Template(
     USING (
         SELECT
             '{{tile_id}}' AS TILE_ID,
-            '{{feature_spec.feature_name}}' as FEATURE_NAME,
-            '{{feature_spec.feature_version}}' as FEATURE_VERSION,
-            '{{feature_spec.feature_sql}}' as FEATURE_SQL,
-            '{{feature_spec.feature_store_table_name}}' as FEATURE_STORE_TABLE_NAME,
+            '{{feature_name}}' as FEATURE_NAME,
+            '{{feature_version}}' as FEATURE_VERSION,
+            '{{feature_sql}}' as FEATURE_SQL,
+            '{{feature_store_table_name}}' as FEATURE_STORE_TABLE_NAME,
             '{{entity_column_names_str}}' as FEATURE_ENTITY_COLUMN_NAMES
     ) b
     ON

@@ -32,6 +32,7 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.tile import OnlineFeatureSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
+from featurebyte.utils.sql import escape_column_names
 
 
 class FeatureManagerSnowflake(BaseModel):
@@ -242,13 +243,20 @@ class FeatureManagerSnowflake(BaseModel):
                 await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
 
+        feature_sql = feature_spec.feature_sql.replace("'", "''")
+        logger.debug(f"feature_sql: {feature_sql}")
+
         # insert records into tile-feature mapping table
         for tile_id in feature_spec.tile_ids:
-            entity_column_names_str = ",".join(sorted(feature_spec.entity_column_names))
             upsert_sql = tm_upsert_tile_feature_mapping.render(
                 tile_id=tile_id,
-                feature_spec=feature_spec,
-                entity_column_names_str=entity_column_names_str,
+                feature_name=feature_spec.feature_name,
+                feature_version=feature_spec.feature_version,
+                feature_sql=feature_sql,
+                feature_store_table_name=feature_spec.feature_store_table_name,
+                entity_column_names_str=",".join(
+                    escape_column_names(feature_spec.entity_column_names)
+                ),
             )
 
             logger.debug(f"tile_feature_mapping upsert_sql: {upsert_sql}")
