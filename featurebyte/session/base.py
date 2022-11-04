@@ -510,28 +510,32 @@ class BaseSchemaInitializer(ABC):
         return self._normalize_casing(self.session.schema_name) in available_schemas
 
     async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
-        """Register functions defined in the snowflake sql directory
+        """Register functions defined in the snowflake sql directory.
+
+        Note that this will overwrite any existing functions. We should be look to handle this
+        properly in the future (potentially by versioning) to prevent breaking changes from
+        being released automatically.
 
         Parameters
         ----------
         functions : list[dict[str, Any]]
             List of functions to register
         """
-        existing = self._normalize_casings(await self.list_functions())
-        items = [item for item in functions if item["identifier"] not in existing]
-        await self._register_sql_objects(items)
+        await self._register_sql_objects(list(functions))
 
     async def register_missing_procedures(self, procedures: list[dict[str, Any]]) -> None:
         """Register procedures defined in the snowflake sql directory
+
+        Note that this will overwrite any existing procedures. We should be look to handle this
+        properly in the future (potentially by versioning) to prevent breaking changes from
+        being released automatically.
 
         Parameters
         ----------
         procedures: list[dict[str, Any]]
             List of procedures to register
         """
-        existing = self._normalize_casings(await self.list_procedures())
-        items = [item for item in procedures if item["identifier"] not in existing]
-        await self._register_sql_objects(items)
+        await self._register_sql_objects(list(procedures))
 
     async def create_missing_tables(self, tables: list[dict[str, Any]]) -> None:
         """Create tables defined in snowflake sql directory
