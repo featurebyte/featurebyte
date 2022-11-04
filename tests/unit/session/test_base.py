@@ -3,7 +3,7 @@ Unit test for base snowflake session.
 """
 from __future__ import annotations
 
-from typing import OrderedDict
+from typing import OrderedDict, Tuple
 
 import collections
 from unittest.mock import patch
@@ -115,7 +115,7 @@ async def test_get_working_schema_version__no_data(base_schema_initializer):
         return None
 
     with patch.object(BaseSession, "execute_query", mocked_execute_query):
-        version = await base_schema_initializer.get_working_schema_version()
+        version, _ = await base_schema_initializer.get_working_schema_metadata()
     assert version == MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND
 
 
@@ -127,11 +127,12 @@ async def test_get_working_schema_version__with_version_set(base_schema_initiali
         return pd.DataFrame(
             {
                 "WORKING_SCHEMA_VERSION": [schema_version],
+                "FEATURE_STORE_ID": "test_store_id",
             }
         )
 
     with patch.object(BaseSession, "execute_query", mocked_execute_query_with_version):
-        version = await base_schema_initializer.get_working_schema_version()
+        version, _ = await base_schema_initializer.get_working_schema_metadata()
     assert version == schema_version
 
 
@@ -141,13 +142,13 @@ async def test_get_working_schema_version__schema_not_registered(base_schema_ini
         raise ProgrammingError
 
     with patch.object(BaseSession, "execute_query", mocked_execute_query_with_exception):
-        version = await base_schema_initializer.get_working_schema_version()
+        version, _ = await base_schema_initializer.get_working_schema_metadata()
     assert version == MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED
 
 
 def get_mocked_working_schema_version(version: int):
-    async def mocked_get_working_schema_version(self) -> int:
-        return version
+    async def mocked_get_working_schema_version(self) -> Tuple[int, str]:
+        return version, ""
 
     return mocked_get_working_schema_version
 
@@ -161,7 +162,7 @@ async def test_should_update_schema__users_version_gt_code(base_schema_initializ
     )
 
     with patch.object(
-        BaseSchemaInitializer, "get_working_schema_version", mocked_get_working_schema_version
+        BaseSchemaInitializer, "get_working_schema_metadata", mocked_get_working_schema_version
     ):
         should_update_schema = await base_schema_initializer.should_update_schema()
     assert not should_update_schema
@@ -176,7 +177,7 @@ async def test_should_update_schema__users_version_equals_code(base_schema_initi
     )
 
     with patch.object(
-        BaseSchemaInitializer, "get_working_schema_version", mocked_get_working_schema_version
+        BaseSchemaInitializer, "get_working_schema_metadata", mocked_get_working_schema_version
     ):
         should_update_schema = await base_schema_initializer.should_update_schema()
     assert not should_update_schema
@@ -191,7 +192,7 @@ async def test_should_update_schema__users_version_lt_code(base_schema_initializ
     )
 
     with patch.object(
-        BaseSchemaInitializer, "get_working_schema_version", mocked_get_working_schema_version
+        BaseSchemaInitializer, "get_working_schema_metadata", mocked_get_working_schema_version
     ):
         should_update_schema = await base_schema_initializer.should_update_schema()
     assert should_update_schema
@@ -205,7 +206,7 @@ async def test_should_update_schema__not_registered(base_schema_initializer):
     )
 
     with patch.object(
-        BaseSchemaInitializer, "get_working_schema_version", mocked_get_working_schema_version
+        BaseSchemaInitializer, "get_working_schema_metadata", mocked_get_working_schema_version
     ):
         should_update_schema = await base_schema_initializer.should_update_schema()
     assert should_update_schema
@@ -219,7 +220,7 @@ async def test_should_update_schema__no_results_found(base_schema_initializer):
     )
 
     with patch.object(
-        BaseSchemaInitializer, "get_working_schema_version", mocked_get_working_schema_version
+        BaseSchemaInitializer, "get_working_schema_metadata", mocked_get_working_schema_version
     ):
         should_update_schema = await base_schema_initializer.should_update_schema()
     assert should_update_schema

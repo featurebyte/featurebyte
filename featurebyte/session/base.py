@@ -3,7 +3,7 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, OrderedDict
+from typing import Any, AsyncGenerator, OrderedDict, Tuple
 
 import asyncio
 
@@ -453,7 +453,7 @@ class BaseSchemaInitializer(ABC):
 
         await self.register_missing_objects()
 
-    async def get_working_schema_version(self) -> int:
+    async def get_working_schema_metadata(self) -> Tuple[int, str]:
         """Retrieves the working schema version from the table registered in the
         working schema.
 
@@ -463,19 +463,19 @@ class BaseSchemaInitializer(ABC):
         to callers that we probably want to initialize the working schema.
         """
 
-        query = "SELECT WORKING_SCHEMA_VERSION FROM METADATA_SCHEMA"
+        query = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
         try:
             results = await self.session.execute_query(query)
         except tuple(EXPECTED_ERRORS):
             # Snowflake and Databricks will error if the table is not initialized
             # We will need to catch more errors here if/when we add support for
             # more platforms.
-            return MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED
+            return MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED, ""
 
         # Check the working schema version if it is already initialized.
         if results is None or results.empty:
-            return MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND
-        return int(results["WORKING_SCHEMA_VERSION"][0])
+            return MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND, ""
+        return int(results["WORKING_SCHEMA_VERSION"][0]), str(results["FEATURE_STORE_ID"][0])
 
     async def should_update_schema(self) -> bool:
         """Compares the working_schema_version defined in the codebase, with
@@ -488,7 +488,7 @@ class BaseSchemaInitializer(ABC):
         - the working_schema_version defined in the code base is greater than the version number
           registered in the working schema table.
         """
-        registered_working_schema_version = await self.get_working_schema_version()
+        registered_working_schema_version, _ = await self.get_working_schema_metadata()
         if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED:
             return True
         if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND:
