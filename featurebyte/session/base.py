@@ -3,7 +3,7 @@ Session class
 """
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, OrderedDict, Tuple
+from typing import Any, AsyncGenerator, OrderedDict
 
 import asyncio
 
