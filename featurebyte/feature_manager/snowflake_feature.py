@@ -14,7 +14,6 @@ from featurebyte.exception import (
     DuplicatedRegistryError,
     InvalidFeatureRegistryOperationError,
     MissingFeatureRegistryError,
-    MissingTileSpecError,
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
@@ -32,7 +31,7 @@ from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.tile import OnlineFeatureSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
-from featurebyte.utils.sql import escape_column_names
+from featurebyte.utils.snowflake.sql import escape_column_names
 
 
 class FeatureManagerSnowflake(BaseModel):
@@ -214,16 +213,7 @@ class FeatureManagerSnowflake(BaseModel):
         ----------
         feature_spec: OnlineFeatureSpec
             input feature instance
-
-        Raises
-        ----------
-        MissingTileSpecError
-            when there is no tile_spec
         """
-
-        if not feature_spec.tile_specs:
-            raise MissingTileSpecError("Missing tile_spec for online_enable")
-
         tile_mgr = TileManagerSnowflake(session=self._session)
 
         # enable tile generation with scheduled jobs

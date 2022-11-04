@@ -121,7 +121,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     feature_version: str
     feature_sql: str
     feature_store_table_name: str
-    tile_specs: List[TileSpec]
+    tile_specs: List[TileSpec] = Field(min_items=1)
 
     @property
     def tile_ids(self) -> List[str]:

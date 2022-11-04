@@ -17,6 +17,7 @@ from featurebyte.exception import (
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
 from featurebyte.models.tile import OnlineFeatureSpec
+from featurebyte.utils.snowflake.sql import escape_column_names
 
 
 @pytest.mark.asyncio
@@ -212,12 +213,15 @@ async def test_online_enable(
     """
     Test online_enable
     """
+    feature_sql = "SELECT *, 'test_quote' FROM TEMP_TABLE"
+    feature_store_table_name = "feature_store_table_1"
     expected_tile_id = snowflake_feature_expected_tile_spec_dict["tile_id"]
+
     online_feature_spec = OnlineFeatureSpec(
         feature_name=snowflake_feature.name,
         feature_version=snowflake_feature.version.to_str(),
-        feature_sql="select * from temp",
-        feature_store_table_name="feature_store_table_1",
+        feature_sql=feature_sql,
+        feature_store_table_name=feature_store_table_name,
         tile_specs=snowflake_feature.tile_specs,
     )
 
@@ -234,9 +238,21 @@ async def test_online_enable(
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
     result = await snowflake_session.execute_query(sql)
-    assert len(result["FEATURE_NAME"]) == 1
-    assert result["TILE_ID"].iloc[0] == online_feature_spec.tile_ids[0]
-    assert result["FEATURE_NAME"].iloc[0] == snowflake_feature.name
+    assert len(result) == 1
+    expected_df = pd.DataFrame(
+        {
+            "TILE_ID": [online_feature_spec.tile_ids[0]],
+            "FEATURE_NAME": [snowflake_feature.name],
+            "FEATURE_VERSION": [snowflake_feature.version.to_str()],
+            "FEATURE_SQL": [feature_sql],
+            "FEATURE_STORE_TABLE_NAME": [feature_store_table_name],
+            "FEATURE_ENTITY_COLUMN_NAMES": [
+                ",".join(escape_column_names(online_feature_spec.entity_column_names))
+            ],
+        }
+    )
+    result = result.drop(columns=["CREATED_AT"])
+    assert_frame_equal(result, expected_df)
 
 
 @pytest.mark.asyncio

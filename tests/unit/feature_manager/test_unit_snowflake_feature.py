@@ -6,13 +6,10 @@ from unittest import mock
 
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 
 from featurebyte.common.model_util import get_version
-from featurebyte.exception import (
-    InvalidFeatureRegistryOperationError,
-    MissingFeatureRegistryError,
-    MissingTileSpecError,
-)
+from featurebyte.exception import InvalidFeatureRegistryOperationError, MissingFeatureRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
     tm_feature_tile_monitor,
@@ -25,7 +22,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
 )
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.tile import OnlineFeatureSpec
-from featurebyte.utils.sql import escape_column_names
+from featurebyte.utils.snowflake.sql import escape_column_names
 
 
 @pytest.fixture(name="mock_snowflake_feature")
@@ -247,18 +244,17 @@ async def test_online_enable_missing_tile_spec(
     Test online_enable
     """
 
-    online_feature_spec = OnlineFeatureSpec(
-        feature_name=mock_snowflake_feature.name,
-        feature_version=mock_snowflake_feature.version.to_str(),
-        feature_sql="select * from temp",
-        feature_store_table_name="feature_store_table_1",
-        tile_specs=[],
-    )
+    with pytest.raises(ValidationError) as excinfo:
+        OnlineFeatureSpec(
+            feature_name=mock_snowflake_feature.name,
+            feature_version=mock_snowflake_feature.version.to_str(),
+            feature_sql="select * from temp",
+            feature_store_table_name="feature_store_table_1",
+            tile_specs=[],
+        )
 
-    with pytest.raises(MissingTileSpecError) as excinfo:
-        await feature_manager.online_enable(online_feature_spec)
-
-    assert str(excinfo.value) == "Missing tile_spec for online_enable"
+    assert "1 validation error for OnlineFeatureSpec" in str(excinfo.value)
+    assert "tile_specs" in str(excinfo.value)
 
 
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.tile_task_exists")

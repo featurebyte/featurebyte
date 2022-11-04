@@ -19,7 +19,7 @@ from featurebyte.tile.snowflake_sql_template import (
     tm_tile_entity_tracking,
     tm_update_tile_registry,
 )
-from featurebyte.utils.sql import escape_column_names
+from featurebyte.utils.snowflake.sql import escape_column_names
 
 
 class TileManagerSnowflake(BaseModel):
