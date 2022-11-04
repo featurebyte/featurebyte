@@ -693,14 +693,15 @@ class MetadataSchemaInitializer:
         feature_store_id: str
             feature store id
         """
+        feature_store_id_to_use = f"'{feature_store_id}'" if feature_store_id else "NULL"
         create_metadata_table_query = (
-            f"CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
+            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
             "WORKING_SCHEMA_VERSION INT, "
             "FEATURE_STORE_ID VARCHAR, "
             "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
             ") AS "
             "SELECT 0 AS WORKING_SCHEMA_VERSION, "
-            f"{feature_store_id} AS FEATURE_STORE_ID, "
+            f"{feature_store_id_to_use} AS FEATURE_STORE_ID, "
             "SYSDATE() AS CREATED_AT;"
         )
         await self.session.execute_query(create_metadata_table_query)
