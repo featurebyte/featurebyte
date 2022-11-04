@@ -464,7 +464,7 @@ class BaseSchemaInitializer(ABC):
 
         await self.register_missing_objects(feature_store_id)
 
-    async def get_working_schema_metadata(self) -> [int, str]:
+    async def get_working_schema_metadata(self) -> (int, str):
         """Retrieves the working schema version from the table registered in the
         working schema.
 
