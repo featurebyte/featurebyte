@@ -494,7 +494,7 @@ class BaseSchemaInitializer(ABC):
           registered in the working schema table.
         """
         metadata = await self.get_working_schema_metadata()
-        registered_working_schema_version = metadata["version"]
+        registered_working_schema_version = int(metadata["version"])
         if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED:
             return True
         if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND:
