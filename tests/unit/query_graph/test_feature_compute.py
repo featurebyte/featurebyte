@@ -3,18 +3,29 @@ Tests for featurebyte.query_graph.feature_compute
 """
 import copy
 import textwrap
+from dataclasses import asdict
 
 import pytest
+from sqlglot import select
 
 from featurebyte.enum import SourceType
-from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, AggregationSpec, FeatureSpec
-from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner, RequestTablePlan
+from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.sql.feature_compute import (
+    FeatureExecutionPlanner,
+    NonTimeAwareRequestTablePlan,
+    RequestTablePlan,
+)
+from featurebyte.query_graph.sql.specs import (
+    FeatureSpec,
+    ItemAggregationSpec,
+    PointInTimeAggregationSpec,
+)
 
 
 @pytest.fixture(name="agg_spec_template")
 def agg_spec_template_fixture():
     """Fixture for an AggregationSpec"""
-    agg_spec = AggregationSpec(
+    agg_spec = PointInTimeAggregationSpec(
         window=86400,
         frequency=3600,
         blind_spot=120,
@@ -54,6 +65,17 @@ def agg_spec_max_2h_fixture(agg_spec_template):
     agg_spec.window = 7200
     agg_spec.merge_expr = "MAX(value)"
     agg_spec.tile_table_id = "max_2h_tile_id"
+    return agg_spec
+
+
+@pytest.fixture(name="item_agg_spec")
+def item_agg_spec_fixture():
+    agg_spec = ItemAggregationSpec(
+        keys=["order_id"],
+        serving_names=["OID"],
+        feature_name="Order Size",
+        agg_expr=select("*").from_("tab"),
+    )
     return agg_spec
 
 
@@ -155,14 +177,32 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     assert_sql_equal(sql.sql(pretty=True), expected_sql)
 
 
+def test_non_time_aware_request_table_plan(item_agg_spec):
+    """
+    Test NonTimeAwareRequestTablePlan
+    """
+    plan = NonTimeAwareRequestTablePlan()
+    plan.add_aggregation_spec(item_agg_spec)
+    assert plan.get_request_table_name(item_agg_spec) == "REQUEST_TABLE_OID"
+    ctes = plan.construct_request_table_ctes(REQUEST_TABLE_NAME)
+    assert len(ctes) == 1
+    name, sql = ctes[0]
+    expected_sql = """
+    SELECT DISTINCT
+      "OID"
+    FROM REQUEST_TABLE
+    """
+    assert_sql_equal(sql.sql(pretty=True), expected_sql)
+
+
 def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggregation_id):
     """Test FeatureExecutionPlanner generates the correct plan from groupby node"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     planner = FeatureExecutionPlanner(query_graph_with_groupby, source_type=SourceType.SNOWFLAKE)
     plan = planner.generate_plan([groupby_node])
-    assert list(plan.aggregation_spec_set.get_grouped_aggregation_specs()) == [
+    assert list(plan.point_in_time_aggregation_spec_set.get_grouped_aggregation_specs()) == [
         [
-            AggregationSpec(
+            PointInTimeAggregationSpec(
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -180,7 +220,7 @@ def test_feature_execution_planner(query_graph_with_groupby, groupby_node_aggreg
             )
         ],
         [
-            AggregationSpec(
+            PointInTimeAggregationSpec(
                 window=172800,
                 frequency=3600,
                 blind_spot=900,
@@ -220,9 +260,9 @@ def test_feature_execution_planner__serving_names_mapping(
         query_graph_with_groupby, serving_names_mapping=mapping, source_type=SourceType.SNOWFLAKE
     )
     plan = planner.generate_plan([groupby_node])
-    assert list(plan.aggregation_spec_set.get_grouped_aggregation_specs()) == [
+    assert list(plan.point_in_time_aggregation_spec_set.get_grouped_aggregation_specs()) == [
         [
-            AggregationSpec(
+            PointInTimeAggregationSpec(
                 window=7200,
                 frequency=3600,
                 blind_spot=900,
@@ -240,7 +280,7 @@ def test_feature_execution_planner__serving_names_mapping(
             )
         ],
         [
-            AggregationSpec(
+            PointInTimeAggregationSpec(
                 window=172800,
                 frequency=3600,
                 blind_spot=900,
@@ -267,4 +307,47 @@ def test_feature_execution_planner__serving_names_mapping(
             feature_name="a_48h_average",
             feature_expr=f'"agg_w172800_avg_{groupby_node_aggregation_id}"',
         ),
+    }
+
+
+def test_feature_execution_planner__item_aggregation(global_graph, order_size_feature_group_node):
+    """
+    Test FeatureExecutionPlanner on an ItemGroupby node
+    """
+    mapping = {"order_id": "NEW_ORDER_ID"}
+    planner = FeatureExecutionPlanner(
+        global_graph, serving_names_mapping=mapping, source_type=SourceType.SNOWFLAKE
+    )
+    plan = planner.generate_plan([order_size_feature_group_node])
+
+    # Check item aggregation specs
+    item_aggregation_specs = plan.item_aggregation_specs
+    assert len(item_aggregation_specs) == 1
+    spec_dict = asdict(item_aggregation_specs[0])
+    agg_expr = spec_dict.pop("agg_expr")
+    expected_agg_expr = """
+    SELECT
+      "order_id",
+      COUNT(*) AS "order_size"
+    FROM (
+        SELECT
+          "order_id" AS "order_id",
+          "item_id" AS "item_id",
+          "item_name" AS "item_name",
+          "item_type" AS "item_type"
+        FROM "db"."public"."item_table"
+    )
+    GROUP BY
+      "order_id"
+    """
+    assert_sql_equal(agg_expr.sql(pretty=True), expected_agg_expr)
+    assert spec_dict == {
+        "keys": ["order_id"],
+        "serving_names": ["NEW_ORDER_ID"],
+        "feature_name": "order_size",
+    }
+
+    # Check feature specs
+    assert plan.feature_specs == {
+        "order_size": FeatureSpec(feature_name="order_size", feature_expr='"order_size"')
     }

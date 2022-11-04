@@ -399,8 +399,8 @@ def order_size_feature_join_node_fixture(
     return node
 
 
-@pytest.fixture(name="order_size_agg_by_cust_id_node")
-def order_size_agg_by_cust_id_node_fixture(global_graph, order_size_feature_join_node):
+@pytest.fixture(name="order_size_agg_by_cust_id_graph")
+def order_size_agg_by_cust_id_graph_fixture(global_graph, order_size_feature_join_node):
     """
     Fixture of a groupby node using a non-time aware feature as the parent
     """
@@ -418,7 +418,32 @@ def order_size_agg_by_cust_id_node_fixture(global_graph, order_size_feature_join
         "windows": ["30d"],
     }
     node = add_groupby_operation(global_graph, node_params, order_size_feature_join_node)
-    return node
+    return global_graph, node
+
+
+@pytest.fixture(name="mixed_point_in_time_and_item_aggregations")
+def mixed_point_in_time_and_item_aggregations_fixture(
+    query_graph_with_groupby, item_data_input_node
+):
+    """
+    Fixture for a graph with both point in time and item (non-time aware) aggregations
+    """
+    graph = query_graph_with_groupby
+    node_params = {
+        "keys": ["order_id"],
+        "serving_names": ["order_id"],
+        "parent": None,
+        "agg_func": "count",
+        "names": ["order_size"],
+    }
+    item_groupby_node = graph.add_operation(
+        node_type=NodeType.ITEM_GROUPBY,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[item_data_input_node],
+    )
+    groupby_node = graph.get_node_by_name("groupby_1")
+    return graph, groupby_node, item_groupby_node
 
 
 @pytest.fixture(name="graph_single_node")

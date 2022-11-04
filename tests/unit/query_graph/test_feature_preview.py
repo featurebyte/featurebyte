@@ -99,7 +99,7 @@ def test_get_feature_preview_sql__complex_feature(complex_feature_query_graph, u
 
 
 @pytest.mark.parametrize("input_details", ["databricks"], indirect=True)
-def test_get_feature_preview_sql_databricks(query_graph_with_groupby, update_fixtures):
+def test_get_feature_preview_sql__databricks(query_graph_with_groupby, update_fixtures):
     """Test generated preview SQL is as expected"""
     point_in_time_and_serving_name = {
         "POINT_IN_TIME": "2022-04-20 10:00:00",
@@ -118,5 +118,56 @@ def test_get_feature_preview_sql_databricks(query_graph_with_groupby, update_fix
     assert_equal_with_expected_fixture(
         preview_sql,
         "tests/fixtures/expected_preview_sql_databricks.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_get_feature_preview_sql__item_groupby(
+    mixed_point_in_time_and_item_aggregations,
+    update_fixtures,
+):
+    """Test case for preview SQL for a feature list with both point-in-time and item aggregations"""
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    graph, groupby_node, item_groupby_node = mixed_point_in_time_and_item_aggregations
+    preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=graph,
+        nodes=[groupby_node, item_groupby_node],
+        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_item_groupby.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_get_feature_preview_sql__double_aggregation(
+    global_graph,
+    order_size_agg_by_cust_id_graph,
+    update_fixtures,
+):
+    """
+    Test case for preview SQL for a feature involving double aggregation
+    """
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    graph, node = order_size_agg_by_cust_id_graph
+    preview_sql = get_feature_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=graph,
+        nodes=[node],
+        point_in_time_and_serving_name=point_in_time_and_serving_name,
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_double_aggregation.sql",
         update_fixture=update_fixtures,
     )
