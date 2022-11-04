@@ -684,7 +684,7 @@ async def test_create_metadata_table(
 ):
     session = patched_snowflake_session_cls()
     initializer = MetadataSchemaInitializer(session)
-    await initializer.create_metadata_table()
+    await initializer.create_metadata_table("")
     assert session.execute_query.call_args_list == [
         call(
             "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
@@ -694,6 +694,36 @@ async def test_create_metadata_table(
             ") AS "
             "SELECT 0 AS WORKING_SCHEMA_VERSION, "
             "NULL AS FEATURE_STORE_ID, "
+            "SYSDATE() AS CREATED_AT;"
+        ),
+    ]
+
+
+@pytest.mark.parametrize("is_schema_missing", [False])
+@pytest.mark.parametrize("is_functions_missing", [False])
+@pytest.mark.parametrize("is_procedures_missing", [False])
+@pytest.mark.parametrize("is_tables_missing", [False])
+@pytest.mark.asyncio
+async def test_create_metadata_table_with_feature_store_id(
+    patched_snowflake_session_cls,
+    is_schema_missing,
+    is_functions_missing,
+    is_procedures_missing,
+    is_tables_missing,
+):
+    session = patched_snowflake_session_cls()
+    initializer = MetadataSchemaInitializer(session)
+    test_feature_store_id = "test_store_id"
+    await initializer.create_metadata_table(test_feature_store_id)
+    assert session.execute_query.call_args_list == [
+        call(
+            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
+            "WORKING_SCHEMA_VERSION INT, "
+            "FEATURE_STORE_ID VARCHAR, "
+            "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
+            ") AS "
+            "SELECT 0 AS WORKING_SCHEMA_VERSION, "
+            f"'{test_feature_store_id}' AS FEATURE_STORE_ID, "
             "SYSDATE() AS CREATED_AT;"
         ),
     ]

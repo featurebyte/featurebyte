@@ -570,7 +570,7 @@ class BaseSchemaInitializer(ABC):
         for sql_object in sql_objects:
             sql_objects_by_type[sql_object["type"]].append(sql_object)
 
-        await self.metadata_schema_initializer.create_metadata_table()
+        await self.metadata_schema_initializer.create_metadata_table("")
         await self.register_missing_functions(sql_objects_by_type[SqlObjectType.FUNCTION])
         await self.register_missing_procedures(sql_objects_by_type[SqlObjectType.PROCEDURE])
         await self.create_missing_tables(sql_objects_by_type[SqlObjectType.TABLE])
@@ -666,10 +666,16 @@ class MetadataSchemaInitializer:
         )
         await self.session.execute_query(update_version_query)
 
-    async def create_metadata_table(self) -> None:
+    async def create_metadata_table(self, feature_store_id: str) -> None:
         """Creates metadata schema table. This will be used to help
         optimize and validate parts of the session initialization.
+
+        Parameters
+        ----------
+        feature_store_id: str
+            feature store id
         """
+        feature_store_id_to_use = f"'{feature_store_id}'" if feature_store_id else "NULL"
         create_metadata_table_query = (
             "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
             "WORKING_SCHEMA_VERSION INT, "
@@ -677,7 +683,7 @@ class MetadataSchemaInitializer:
             "CREATED_AT TIMESTAMP DEFAULT SYSDATE() "
             ") AS "
             "SELECT 0 AS WORKING_SCHEMA_VERSION, "
-            "NULL AS FEATURE_STORE_ID, "
+            f"{feature_store_id_to_use} AS FEATURE_STORE_ID, "
             "SYSDATE() AS CREATED_AT;"
         )
         await self.session.execute_query(create_metadata_table_query)
