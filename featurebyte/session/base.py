@@ -453,7 +453,7 @@ class BaseSchemaInitializer(ABC):
 
         await self.register_missing_objects()
 
-    async def get_working_schema_metadata(self) -> Tuple[int, str]:
+    async def get_working_schema_metadata(self) -> dict[str, Any]:
         """Retrieves the working schema version from the table registered in the
         working schema.
 
@@ -470,12 +470,17 @@ class BaseSchemaInitializer(ABC):
             # Snowflake and Databricks will error if the table is not initialized
             # We will need to catch more errors here if/when we add support for
             # more platforms.
-            return MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED, ""
+            return {
+                "version": MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED,
+            }
 
         # Check the working schema version if it is already initialized.
         if results is None or results.empty:
-            return MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND, ""
-        return int(results["WORKING_SCHEMA_VERSION"][0]), str(results["FEATURE_STORE_ID"][0])
+            return {"version": MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND}
+        return {
+            "version": int(results["WORKING_SCHEMA_VERSION"][0]),
+            "feature_store_id": str(results["FEATURE_STORE_ID"][0]),
+        }
 
     async def should_update_schema(self) -> bool:
         """Compares the working_schema_version defined in the codebase, with
@@ -488,7 +493,8 @@ class BaseSchemaInitializer(ABC):
         - the working_schema_version defined in the code base is greater than the version number
           registered in the working schema table.
         """
-        registered_working_schema_version, _ = await self.get_working_schema_metadata()
+        metadata = await self.get_working_schema_metadata()
+        registered_working_schema_version = metadata["version"]
         if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED:
             return True
         if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND:

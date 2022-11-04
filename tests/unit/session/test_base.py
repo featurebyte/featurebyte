@@ -3,7 +3,7 @@ Unit test for base snowflake session.
 """
 from __future__ import annotations
 
-from typing import OrderedDict, Tuple
+from typing import Any, OrderedDict
 
 import collections
 from unittest.mock import patch
@@ -115,8 +115,8 @@ async def test_get_working_schema_version__no_data(base_schema_initializer):
         return None
 
     with patch.object(BaseSession, "execute_query", mocked_execute_query):
-        version, _ = await base_schema_initializer.get_working_schema_metadata()
-    assert version == MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND
+        metadata = await base_schema_initializer.get_working_schema_metadata()
+    assert metadata["version"] == MetadataSchemaInitializer.SCHEMA_NO_RESULTS_FOUND
 
 
 @pytest.mark.asyncio
@@ -132,8 +132,8 @@ async def test_get_working_schema_version__with_version_set(base_schema_initiali
         )
 
     with patch.object(BaseSession, "execute_query", mocked_execute_query_with_version):
-        version, _ = await base_schema_initializer.get_working_schema_metadata()
-    assert version == schema_version
+        metadata = await base_schema_initializer.get_working_schema_metadata()
+    assert metadata["version"] == schema_version
 
 
 @pytest.mark.asyncio
@@ -142,13 +142,13 @@ async def test_get_working_schema_version__schema_not_registered(base_schema_ini
         raise ProgrammingError
 
     with patch.object(BaseSession, "execute_query", mocked_execute_query_with_exception):
-        version, _ = await base_schema_initializer.get_working_schema_metadata()
-    assert version == MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED
+        metadata = await base_schema_initializer.get_working_schema_metadata()
+    assert metadata["version"] == MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED
 
 
 def get_mocked_working_schema_version(version: int):
-    async def mocked_get_working_schema_version(self) -> Tuple[int, str]:
-        return version, ""
+    async def mocked_get_working_schema_version(self) -> dict[str, Any]:
+        return {"version": version}
 
     return mocked_get_working_schema_version
 
