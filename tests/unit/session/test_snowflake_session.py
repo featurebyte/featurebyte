@@ -393,12 +393,15 @@ async def test_schema_initializer__dont_reinitialize(
     # update mock to have new return value for execute query
     mocked_execute_query = session.execute_query.side_effect
 
+    feature_store_id_test = "test_store_id"
+
     def new_mock_execute_query(query):
         if query.startswith("SELECT WORKING_SCHEMA_VERSION"):
             return pd.DataFrame(
                 {
                     # TODO (jevon.yeoh): make sure these versions are updated accordingly
                     "WORKING_SCHEMA_VERSION": [1],
+                    "FEATURE_STORE_ID": feature_store_id_test,
                 }
             )
         return mocked_execute_query(query)
@@ -406,7 +409,7 @@ async def test_schema_initializer__dont_reinitialize(
     session.execute_query.side_effect = new_mock_execute_query
 
     # re-initialize
-    await snowflake_initializer.initialize("test_store_id")
+    await snowflake_initializer.initialize(feature_store_id_test)
     # verify that only one additional call is made
     assert len(session.execute_query.call_args_list) == len(original_call_list) + 1
     # verify that the new call is the one to check the working version
