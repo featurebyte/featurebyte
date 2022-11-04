@@ -510,7 +510,11 @@ class BaseSchemaInitializer(ABC):
         return self._normalize_casing(self.session.schema_name) in available_schemas
 
     async def register_missing_functions(self, functions: list[dict[str, Any]]) -> None:
-        """Register functions defined in the snowflake sql directory
+        """Register functions defined in the snowflake sql directory.
+
+        Note that this will overwrite any existing functions. We should be look to handle this
+        properly in the future (potentially by versioning) to prevent breaking changes from
+        being released automatically.
 
         Parameters
         ----------
@@ -521,6 +525,10 @@ class BaseSchemaInitializer(ABC):
 
     async def register_missing_procedures(self, procedures: list[dict[str, Any]]) -> None:
         """Register procedures defined in the snowflake sql directory
+
+        Note that this will overwrite any existing procedures. We should be look to handle this
+        properly in the future (potentially by versioning) to prevent breaking changes from
+        being released automatically.
 
         Parameters
         ----------
