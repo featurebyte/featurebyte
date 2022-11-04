@@ -441,18 +441,19 @@ class BaseSchemaInitializer(ABC):
         We can consider moving this to a config/json file down the line, but
         opting to keep it simple for now.
 
-        Parameters
-        ----------
-        feature_store_id: str
-            feature store id
-
         Returns
         -------
         int that is the current working schema version.
         """
 
     async def initialize(self, feature_store_id: str) -> None:
-        """Entry point to set up the featurebyte working schema"""
+        """Entry point to set up the featurebyte working schema
+
+        Parameters
+        ----------
+        feature_store_id: str
+            feature store id
+        """
 
         if not await self.should_update_schema(feature_store_id):
             return
@@ -502,6 +503,12 @@ class BaseSchemaInitializer(ABC):
         - there is no working schema defined, or
         - the working_schema_version defined in the code base is greater than the version number
           registered in the working schema table.
+
+        Raises
+        ------
+        FeatureStoreSchemaCollisionError
+            if the feature store id of the user is different from the one that is
+            registered in the working schema.
         """
         (
             registered_working_schema_version,
