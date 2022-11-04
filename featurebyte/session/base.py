@@ -451,7 +451,7 @@ class BaseSchemaInitializer(ABC):
             logger.debug(f"Initializing schema {self.session.schema_name}")
             await self.create_schema()
 
-        await self.register_missing_objects()
+        await self.register_missing_objects("")
 
     async def get_working_schema_metadata(self) -> dict[str, Any]:
         """Retrieves the working schema version from the table registered in the
@@ -559,8 +559,14 @@ class BaseSchemaInitializer(ABC):
         items = [item for item in tables if item["identifier"] not in existing]
         await self._register_sql_objects(items)
 
-    async def register_missing_objects(self) -> None:
-        """Detect database objects that are missing and register them"""
+    async def register_missing_objects(self, feature_store_id: str) -> None:
+        """Detect database objects that are missing and register them
+
+        Parameters
+        ----------
+        feature_store_id: str
+            feature store ids
+        """
         sql_objects = self.get_sql_objects()
         sql_objects_by_type: dict[SqlObjectType, list[dict[str, Any]]] = {
             SqlObjectType.FUNCTION: [],
@@ -570,7 +576,7 @@ class BaseSchemaInitializer(ABC):
         for sql_object in sql_objects:
             sql_objects_by_type[sql_object["type"]].append(sql_object)
 
-        await self.metadata_schema_initializer.create_metadata_table("")
+        await self.metadata_schema_initializer.create_metadata_table(feature_store_id)
         await self.register_missing_functions(sql_objects_by_type[SqlObjectType.FUNCTION])
         await self.register_missing_procedures(sql_objects_by_type[SqlObjectType.PROCEDURE])
         await self.create_missing_tables(sql_objects_by_type[SqlObjectType.TABLE])
