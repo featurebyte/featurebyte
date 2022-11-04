@@ -49,6 +49,7 @@
     ],
     "event_id_column": "col_int",
     "item_id_column": "cust_id",
+    "event_data_id": "63653f33a170799463a57fa7",
     "name": "sf_item_data",
     "tabular_source": {
         "feature_store_id": "6332fdb21e8f0eeccc414510",
