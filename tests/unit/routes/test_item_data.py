@@ -59,16 +59,17 @@ class TestItemDataApi(BaseDataApiTestSuite):
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(self, tabular_source, columns_info, user_id):
         """Fixture for a Item Data dict"""
-        event_data_dict = {
+        item_data_dict = {
             "name": "订单表",
             "tabular_source": tabular_source,
             "columns_info": columns_info,
             "event_id_column": "event_id",
             "item_id_column": "item_id",
+            "event_data_id": str(ObjectId()),
             "status": "PUBLISHED",
             "user_id": str(user_id),
         }
-        output = ItemDataModel(**event_data_dict).json_dict()
+        output = ItemDataModel(**item_data_dict).json_dict()
         assert output.pop("created_at") is None
         assert output.pop("updated_at") is None
         return output
