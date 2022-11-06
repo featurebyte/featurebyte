@@ -90,9 +90,14 @@ class BaseSession(BaseModel):
     _connection: Any = PrivateAttr(default=None)
     _unique_id: int = PrivateAttr(default=0)
 
-    async def initialize(self) -> None:
+    async def initialize(self, feature_store_id: str) -> None:
         """
         Initialize session
+
+        Parameters
+        ----------
+        feature_store_id: str
+            feature store ids
         """
 
     @property

@@ -50,7 +50,7 @@ class SnowflakeSession(BaseSession):
         except (OperationalError, DatabaseError) as exc:
             raise CredentialsError("Invalid credentials provided.") from exc
 
-    async def initialize(self) -> None:
+    async def initialize(self, feature_store_id: str) -> None:
         # If the featurebyte schema does not exist, the self._connection can still be created
         # without errors. Below checks whether the schema actually exists. If not, it will be
         # created and initialized with custom functions and procedures.

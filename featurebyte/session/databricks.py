@@ -49,7 +49,7 @@ class DatabricksSession(BaseSession):
             schema=self.featurebyte_schema,
         )
 
-    async def initialize(self) -> None:
+    async def initialize(self, feature_store_id: str) -> None:
         await DatabricksSchemaInitializer(self).initialize()
 
     @property
