@@ -33,7 +33,7 @@ from featurebyte.common.utils import (
     pa_table_to_record_batches,
 )
 from featurebyte.enum import DBVarType, SourceType, StrEnum
-from featurebyte.exception import QueryExecutionTimeOut
+from featurebyte.exception import FeatureStoreSchemaCollisionError, QueryExecutionTimeOut
 from featurebyte.logger import logger
 
 EXPECTED_ERRORS: list[type[Exception]] = [ProgrammingError]
@@ -455,7 +455,7 @@ class BaseSchemaInitializer(ABC):
             feature store id
         """
 
-        if not await self.should_update_schema():
+        if not await self.should_update_schema(feature_store_id):
             return
 
         if not await self.schema_exists():
@@ -493,9 +493,14 @@ class BaseSchemaInitializer(ABC):
             "feature_store_id": str(results["FEATURE_STORE_ID"][0]),
         }
 
-    async def should_update_schema(self) -> bool:
+    async def should_update_schema(self, users_feature_store_id: str) -> bool:
         """Compares the working_schema_version defined in the codebase, with
         what is registered in working schema table.
+
+        Parameters
+        ----------
+        users_feature_store_id: str
+            feature store id
 
         Returns
         -------
@@ -503,8 +508,18 @@ class BaseSchemaInitializer(ABC):
         - there is no working schema defined, or
         - the working_schema_version defined in the code base is greater than the version number
           registered in the working schema table.
+
+        Raises
+        ------
+        FeatureStoreSchemaCollisionError
+            if the feature store id of the user is different from the one that is
+            registered in the working schema.
         """
         metadata = await self.get_working_schema_metadata()
+        registered_feature_store_id = metadata.get("feature_store_id", "")
+        # Check that a feature store ID has been registered, and whether they're the same.
+        if registered_feature_store_id and users_feature_store_id != registered_feature_store_id:
+            raise FeatureStoreSchemaCollisionError
         registered_working_schema_version = int(metadata["version"])
         if registered_working_schema_version == MetadataSchemaInitializer.SCHEMA_NOT_REGISTERED:
             return True

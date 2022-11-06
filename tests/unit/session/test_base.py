@@ -164,7 +164,7 @@ async def test_should_update_schema__users_version_gt_code(base_schema_initializ
     with patch.object(
         BaseSchemaInitializer, "get_working_schema_metadata", mocked_get_working_schema_version
     ):
-        should_update_schema = await base_schema_initializer.should_update_schema()
+        should_update_schema = await base_schema_initializer.should_update_schema("")
     assert not should_update_schema
 
 
@@ -179,7 +179,7 @@ async def test_should_update_schema__users_version_equals_code(base_schema_initi
     with patch.object(
         BaseSchemaInitializer, "get_working_schema_metadata", mocked_get_working_schema_version
     ):
-        should_update_schema = await base_schema_initializer.should_update_schema()
+        should_update_schema = await base_schema_initializer.should_update_schema("")
     assert not should_update_schema
 
 
@@ -194,7 +194,7 @@ async def test_should_update_schema__users_version_lt_code(base_schema_initializ
     with patch.object(
         BaseSchemaInitializer, "get_working_schema_metadata", mocked_get_working_schema_version
     ):
-        should_update_schema = await base_schema_initializer.should_update_schema()
+        should_update_schema = await base_schema_initializer.should_update_schema("")
     assert should_update_schema
 
 
@@ -208,7 +208,7 @@ async def test_should_update_schema__not_registered(base_schema_initializer):
     with patch.object(
         BaseSchemaInitializer, "get_working_schema_metadata", mocked_get_working_schema_version
     ):
-        should_update_schema = await base_schema_initializer.should_update_schema()
+        should_update_schema = await base_schema_initializer.should_update_schema("")
     assert should_update_schema
 
 
@@ -222,5 +222,5 @@ async def test_should_update_schema__no_results_found(base_schema_initializer):
     with patch.object(
         BaseSchemaInitializer, "get_working_schema_metadata", mocked_get_working_schema_version
     ):
-        should_update_schema = await base_schema_initializer.should_update_schema()
+        should_update_schema = await base_schema_initializer.should_update_schema("")
     assert should_update_schema
