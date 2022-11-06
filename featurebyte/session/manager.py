@@ -52,7 +52,7 @@ async def get_session(item: str, credential_params: str) -> BaseSession:
     session = SOURCE_TYPE_SESSION_MAP[item_dict["type"]](  # type: ignore
         **item_dict["details"], **credential_params_dict
     )
-    await session.initialize()
+    await session.initialize(item_dict["id"])
     return session
 
 

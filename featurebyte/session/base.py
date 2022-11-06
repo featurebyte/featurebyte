@@ -446,8 +446,14 @@ class BaseSchemaInitializer(ABC):
         int that is the current working schema version.
         """
 
-    async def initialize(self) -> None:
-        """Entry point to set up the featurebyte working schema"""
+    async def initialize(self, feature_store_id: str) -> None:
+        """Entry point to set up the featurebyte working schema
+
+        Parameters
+        ----------
+        feature_store_id: str
+            feature store id
+        """
 
         if not await self.should_update_schema():
             return
@@ -456,7 +462,7 @@ class BaseSchemaInitializer(ABC):
             logger.debug(f"Initializing schema {self.session.schema_name}")
             await self.create_schema()
 
-        await self.register_missing_objects("")
+        await self.register_missing_objects(feature_store_id)
 
     async def get_working_schema_metadata(self) -> dict[str, Any]:
         """Retrieves the working schema version from the table registered in the

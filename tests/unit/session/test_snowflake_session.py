@@ -385,7 +385,7 @@ async def test_schema_initializer__dont_reinitialize(
 
     session = patched_snowflake_session_cls()
     snowflake_initializer = SnowflakeSchemaInitializer(session)
-    await snowflake_initializer.initialize()
+    await snowflake_initializer.initialize("")
     # Nothing to do except checking schemas and existing objects
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     assert session.execute_query.call_args_list[:2] == [
@@ -427,7 +427,7 @@ async def test_schema_initializer__dont_reinitialize(
     session.execute_query.side_effect = new_mock_execute_query
 
     # re-initialize
-    await snowflake_initializer.initialize()
+    await snowflake_initializer.initialize("")
     # verify that only one additional call is made
     number_of_metadata_calls = 3
     expected_number_of_calls = (
@@ -460,7 +460,7 @@ async def test_schema_initializer__all_missing(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    await SnowflakeSchemaInitializer(session).initialize()
+    await SnowflakeSchemaInitializer(session).initialize("")
     # Should create schema if not exists
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     assert session.execute_query.call_args_list[1:2] == [
@@ -495,7 +495,7 @@ async def test_schema_initializer__partial_missing(
     _ = is_tables_missing
 
     session = patched_snowflake_session_cls()
-    await SnowflakeSchemaInitializer(session).initialize()
+    await SnowflakeSchemaInitializer(session).initialize("")
     # Should register custom functions and procedures
     counts = check_create_commands(session)
     expected_counts = {

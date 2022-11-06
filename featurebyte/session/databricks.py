@@ -50,7 +50,7 @@ class DatabricksSession(BaseSession):
         )
 
     async def initialize(self, feature_store_id: str) -> None:
-        await DatabricksSchemaInitializer(self).initialize()
+        await DatabricksSchemaInitializer(self).initialize(feature_store_id)
 
     @property
     def schema_name(self) -> str:

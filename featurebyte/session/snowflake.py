@@ -54,7 +54,7 @@ class SnowflakeSession(BaseSession):
         # If the featurebyte schema does not exist, the self._connection can still be created
         # without errors. Below checks whether the schema actually exists. If not, it will be
         # created and initialized with custom functions and procedures.
-        await SnowflakeSchemaInitializer(self).initialize()
+        await SnowflakeSchemaInitializer(self).initialize(feature_store_id)
 
     @property
     def schema_name(self) -> str:
