@@ -191,7 +191,6 @@ class TableDataType(StrEnum):
     """
 
     GENERIC = "generic"
-    DATA = "data"
     EVENT_DATA = "event_data"
     ITEM_DATA = "item_data"
 

@@ -87,6 +87,14 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         # make sure list of ids is sorted
         return sorted(value)
 
+    @root_validator(pre=True)
+    @classmethod
+    def _validate_tabular_data_ids(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # DEV-727: refactor event_data_ids to tabular_data_ids
+        if "event_data_ids" in values:
+            values["tabular_data_ids"] = values.pop("event_data_ids")
+        return values
+
     class Settings:
         """
         MongoDB settings
@@ -162,6 +170,14 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     deployed_feature_list_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
+
+    @root_validator(pre=True)
+    @classmethod
+    def _validate_tabular_data_ids(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # DEV-727: refactor event_data_ids to tabular_data_ids
+        if "event_data_ids" in values:
+            values["tabular_data_ids"] = values.pop("event_data_ids")
+        return values
 
     def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
         """
