@@ -131,6 +131,7 @@ pyupgrade = "^2.37.2"
 toml-sort = "^0.20.0"
 
 [tool.poetry.group.docs.dependencies]
+jupyter-core = "^5.0.0rc0"  # PYSEC-2022-42974
 mkdocs = "^1.4.1"
 mkdocs-awesome-pages-plugin = "^2.8.0"
 mkdocs-enumerate-headings-plugin = "^0.5.0"
