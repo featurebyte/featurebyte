@@ -2,7 +2,7 @@
 server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python"]
 
 [metadata]
-content-hash = "4db677e9534c40afd406f9b1c9735b20c8151099d4aa4ef341d9ad4f9570c957"
+content-hash = "5982af9949235c40e6c053178e95c91f1d251fca54b2b58480d4aa05f72783e2"
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
 
@@ -764,6 +764,10 @@ mkdocs-minify-plugin = [
 mkdocs-print-site-plugin = [
     {file = "mkdocs-print-site-plugin-2.3.4.tar.gz", hash = "sha256:40c8c918a58f66c1f44b97512433fefd28a7ae74f8aa6c1633ddf14a6c04aa7f"},
     {file = "mkdocs_print_site_plugin-2.3.4-py3-none-any.whl", hash = "sha256:a74540cc3098695ae4623effc2c0be1631d0d1061344dcce283e775044cca0b4"},
+]
+mkdocs-section-index = [
+    {file = "mkdocs-section-index-0.3.4.tar.gz", hash = "sha256:050151bfe7c0e374f197335e0ecb19c45b53dbafc0f817aa203f0cc24bcf7d10"},
+    {file = "mkdocs_section_index-0.3.4-py3-none-any.whl", hash = "sha256:214f7a6df9d35a5772e9577f3899ff3edd90044064589e6dd4d84615b72a8024"},
 ]
 mkdocs-table-reader-plugin = [
     {file = "mkdocs-table-reader-plugin-1.2.tar.gz", hash = "sha256:7a15949aca8d877d3d72e1245d0e28f4cbd90def64256afe6041c4580a98a690"},
@@ -3017,6 +3021,17 @@ version = "2.3.4"
 
 [package.dependencies]
 mkdocs-material = ">=7.3.0"
+
+[[package]]
+category = "dev"
+description = "MkDocs plugin to allow clickable sections that lead to an index page"
+name = "mkdocs-section-index"
+optional = false
+python-versions = ">=3.6,<4.0"
+version = "0.3.4"
+
+[package.dependencies]
+mkdocs = ">=1.1,<2.0"
 
 [[package]]
 category = "dev"
