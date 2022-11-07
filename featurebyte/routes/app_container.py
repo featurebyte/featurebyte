@@ -21,6 +21,7 @@ from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
+from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
@@ -45,6 +46,10 @@ app_container_config = {
         {
             "name": "entity_service",
             "clazz": EntityService,
+        },
+        {
+            "name": "dimension_data_service",
+            "clazz": DimensionDataService,
         },
         {
             "name": "event_data_service",
