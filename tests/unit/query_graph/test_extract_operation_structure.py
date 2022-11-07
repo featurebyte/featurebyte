@@ -193,17 +193,57 @@ def test_extract_operation__groupby(query_graph_with_groupby):
         "groupby_type": "groupby",
         "type": "aggregation",
     }
-    assert op_struct.columns == [
+    expected_columns = [
         {"name": "ts", **common_column_params},
         {"name": "cust_id", **common_column_params},
         {"name": "a", **common_column_params},
     ]
+    assert op_struct.columns == expected_columns
     assert op_struct.aggregations == [
         {"name": "a_2h_average", "window": "2h", **common_aggregation_params},
         {"name": "a_48h_average", "window": "48h", **common_aggregation_params},
     ]
     assert op_struct.output_category == "feature"
     assert op_struct.output_type == "frame"
+
+    # check project on feature group
+    project_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_2h_average"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[groupby_node],
+    )
+    op_struct = graph.extract_operation_structure(node=project_node)
+    assert op_struct.columns == expected_columns
+    assert op_struct.aggregations == [
+        {"name": "a_2h_average", "window": "2h", **common_aggregation_params}
+    ]
+    assert op_struct.output_category == "feature"
+    assert op_struct.output_type == "series"
+
+    # check filter on feature
+    eq_node = graph.add_operation(
+        node_type=NodeType.EQ,
+        node_params={"value": 1},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[project_node],
+    )
+    filter_node = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[project_node, eq_node],
+    )
+    op_struct = graph.extract_operation_structure(node=filter_node)
+    assert op_struct.columns == expected_columns
+    assert op_struct.aggregations == [
+        {
+            "name": "a_2h_average",
+            "type": "post_aggregation",
+            "transforms": [{"node_type": "filter", "parameters": {}}],
+            "columns": [{"name": "a_2h_average", "window": "2h", **common_aggregation_params}],
+        }
+    ]
 
 
 def test_extract_operation__item_groupby(
