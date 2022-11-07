@@ -1,0 +1,10 @@
+/*
+  Allows users to select code without the prompts >>>
+  >>> print("hello")
+  hello
+
+  will only allow the user to highlight `print("hello")` instead of `>>> print("hello")`
+*/
+.highlight .gp, .highlight .go { /* Generic.Prompt, Generic.Output */
+    user-select: none;
+}
