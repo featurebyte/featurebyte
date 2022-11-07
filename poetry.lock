@@ -2,7 +2,7 @@
 server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python"]
 
 [metadata]
-content-hash = "5982af9949235c40e6c053178e95c91f1d251fca54b2b58480d4aa05f72783e2"
+content-hash = "1904fa81f31278118dab88163ed78f7f118f3e0d89062face424ea1aed67d6f6"
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
 
@@ -1651,6 +1651,10 @@ typeguard = [
     {file = "typeguard-2.13.3-py3-none-any.whl", hash = "sha256:5e3e3be01e887e7eafae5af63d1f36c849aaa94e3a0112097312aabfa16284f1"},
     {file = "typeguard-2.13.3.tar.gz", hash = "sha256:00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4"},
 ]
+types-aiofiles = [
+    {file = "types-aiofiles-22.1.0.1.tar.gz", hash = "sha256:0419591be8ffe36bd4f374b5b605768290e2ed45348ce9857d8eb52f5e996008"},
+    {file = "types_aiofiles-22.1.0.1-py3-none-any.whl", hash = "sha256:a73ab534601e31bff6380dc0df97cbb7a02328c5be2e3ea932abcd79b921c550"},
+]
 types-backports = [
     {file = "types-backports-0.1.3.tar.gz", hash = "sha256:f4b7206c073df88d6200891e3d27506185fd60cda66fb289737b2fa92c0010cf"},
     {file = "types_backports-0.1.3-py2.py3-none-any.whl", hash = "sha256:dafcd61848081503e738a7768872d1dd6c018401b4d2a1cfb608ea87ec9864b9"},
@@ -1666,6 +1670,10 @@ types-chardet = [
 types-cryptography = [
     {file = "types-cryptography-3.3.23.1.tar.gz", hash = "sha256:f108e7a7161eedd9fe391e1a8ae5a98d40c1da2f0418bc0812a9119990272314"},
     {file = "types_cryptography-3.3.23.1-py3-none-any.whl", hash = "sha256:b9f8aa93d9e4d7ff920961cdce3dc7cca479946890924d68356b66f15f4f35e3"},
+]
+types-markdown = [
+    {file = "types-Markdown-3.4.2.1.tar.gz", hash = "sha256:03c0904cf5886a7d8193e2f50bcf842afc89e0ab80f060f389f6c2635c65628f"},
+    {file = "types_Markdown-3.4.2.1-py3-none-any.whl", hash = "sha256:b2333f6f4b8f69af83de359e10a097e4a3f14bbd6d2484e1829d9b0ec56fa0cb"},
 ]
 types-pyopenssl = [
     {file = "types-pyOpenSSL-22.1.0.1.tar.gz", hash = "sha256:f5fa9bb2123cd93a1a4e567d1c192a0ceb00882c4bc52e6162186e75cf86acdf"},
@@ -4177,6 +4185,14 @@ test = ["mypy", "typing-extensions", "pytest"]
 
 [[package]]
 category = "dev"
+description = "Typing stubs for aiofiles"
+name = "types-aiofiles"
+optional = false
+python-versions = "*"
+version = "22.1.0.1"
+
+[[package]]
+category = "dev"
 description = "Typing stubs for backports"
 name = "types-backports"
 optional = false
@@ -4206,6 +4222,14 @@ name = "types-cryptography"
 optional = false
 python-versions = "*"
 version = "3.3.23.1"
+
+[[package]]
+category = "dev"
+description = "Typing stubs for Markdown"
+name = "types-markdown"
+optional = false
+python-versions = "*"
+version = "3.4.2.1"
 
 [[package]]
 category = "dev"
