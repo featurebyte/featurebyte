@@ -612,6 +612,7 @@ class QueryGraph(FeatureByteBaseModel):
     def _extract_operation_structure(
         self,
         node: Node,
+        visited_node_types: Set[NodeType],
         topological_order_map: Dict[str, int],
     ) -> OperationStructure:
         input_node_names = self.backward_edges_map.get(node.name, [])
@@ -622,10 +623,13 @@ class QueryGraph(FeatureByteBaseModel):
             input_node = self.nodes_map[input_node_name]
             input_node_map[input_node_name] = self._extract_operation_structure(
                 node=input_node,
+                visited_node_types=visited_node_types.union([node.type]),
                 topological_order_map=topological_order_map,
             )
+
         return node.derive_node_operation_info(
-            inputs=[input_node_map[node_name] for node_name in input_node_names]
+            inputs=[input_node_map[node_name] for node_name in input_node_names],
+            visited_node_types=visited_node_types,
         )
 
     def extract_operation_structure(self, node: Node) -> OperationStructure:
@@ -642,7 +646,9 @@ class QueryGraph(FeatureByteBaseModel):
         OperationStructure
         """
         return self._extract_operation_structure(
-            node=node, topological_order_map=self.node_topological_order_map
+            node=node,
+            visited_node_types=set(),
+            topological_order_map=self.node_topological_order_map,
         )
 
 

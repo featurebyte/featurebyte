@@ -2,7 +2,7 @@
 This module contains SQL operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Set, Union
 from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field, root_validator
@@ -80,7 +80,10 @@ class InputNode(BaseNode):
                 values["parameters"]["type"] = TableDataType.EVENT_DATA
         return values
 
-    def derive_node_operation_info(self, inputs: List[OperationStructure]) -> OperationStructure:
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        _ = visited_node_types
         return OperationStructure(
             columns=[
                 SourceDataColumn(
@@ -106,7 +109,10 @@ class ProjectNode(BaseNode):
     type: Literal[NodeType.PROJECT] = Field(NodeType.PROJECT, const=True)
     parameters: Parameters
 
-    def derive_node_operation_info(self, inputs: List[OperationStructure]) -> OperationStructure:
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        _ = visited_node_types
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
         names = set(self.get_required_input_columns())
@@ -132,7 +138,10 @@ class FilterNode(BaseNode):
     type: Literal[NodeType.FILTER] = Field(NodeType.FILTER, const=True)
     parameters: BaseModel = Field(default=BaseModel(), const=True)
 
-    def derive_node_operation_info(self, inputs: List[OperationStructure]) -> OperationStructure:
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        _ = visited_node_types
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
         node_kwargs: Dict[str, Any] = {}
@@ -172,7 +181,10 @@ class AssignNode(BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def derive_node_operation_info(self, inputs: List[OperationStructure]) -> OperationStructure:
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        _ = visited_node_types
         input_operation_info, series_operation_info = inputs
         new_column_name = self.parameters.name
         new_column = DerivedDataColumn.create(
@@ -291,7 +303,10 @@ class Join(BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-    def derive_node_operation_info(self, inputs: List[OperationStructure]) -> OperationStructure:
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        _ = visited_node_types
         left_output_columns = set(self.parameters.left_output_columns)
         right_output_columns = set(self.parameters.right_output_columns)
         left_columns = [col for col in inputs[0].columns if col.name in left_output_columns]

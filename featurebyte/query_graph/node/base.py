@@ -2,7 +2,7 @@
 Base classes required for constructing query graph nodes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, List, Optional, Type, Union
+from typing import Any, List, Optional, Set, Type, Union
 
 from abc import abstractmethod
 
@@ -48,7 +48,7 @@ class BaseNode(BaseModel):
         -------
         NodeTransform
         """
-        return NodeTransform(node_type=self.type, parameters=self.parameters)
+        return NodeTransform(node_type=self.type, parameters=self.parameters.dict())
 
     @classmethod
     def _extract_column_str_values(
@@ -92,7 +92,9 @@ class BaseNode(BaseModel):
         return self._extract_column_str_values(self.parameters.dict(), OutColumnStr)
 
     @abstractmethod
-    def derive_node_operation_info(self, inputs: List[OperationStructure]) -> OperationStructure:
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
         """
         Derive node operation info
 
@@ -100,6 +102,8 @@ class BaseNode(BaseModel):
         ----------
         inputs: List[OperationStructure]
             List of input nodes' operation info
+        visited_node_types: Set[NodeType]
+            Set of visited nodes when doing backward traversal
 
         Returns
         -------
