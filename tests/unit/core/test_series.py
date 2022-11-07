@@ -299,14 +299,18 @@ def test_logical_operators(bool_series, int_series):
     assert expected_msg in str(exc.value)
 
 
-def _check_node_equality(left_node, right_node, exclude, has_value_params=False):
+def _check_node_equality(
+    left_node, right_node, exclude, has_value_params=False, expected_value=None
+):
     """
     Check left node & right node equality
     """
     left_node_dict = left_node.dict(exclude=exclude)
     assert left_node_dict == right_node.dict(exclude=exclude)
     if has_value_params:
-        assert "value" in left_node_dict["parameters"]
+        parameters = left_node_dict["parameters"]
+        assert "value" in parameters
+        assert parameters["value"] == expected_value
 
 
 def test_relational_operators__series_other(bool_series, int_series, float_series, varchar_series):
@@ -397,48 +401,56 @@ def test_relational_operators__scalar_other(bool_series, int_series, float_serie
         construct_node(name="eq_1", type=NodeType.EQ, parameters={"value": 1.234}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value=1.234,
     )
     _check_node_equality(
         scalar_varchar_ne.node,
         construct_node(name="ne_1", type=NodeType.NE, parameters={"value": "hello"}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value="hello",
     )
     _check_node_equality(
         scalar_bool_lt.node,
         construct_node(name="lt_1", type=NodeType.LT, parameters={"value": True}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value=True,
     )
     _check_node_equality(
         scalar_int_le.node,
         construct_node(name="le_1", type=NodeType.LE, parameters={"value": 100}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value=100,
     )
     _check_node_equality(
         scalar_int_le_float.node,
         construct_node(name="le_2", type=NodeType.LE, parameters={"value": 100.0}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value=100.0,
     )
     _check_node_equality(
         scalar_float_gt.node,
         construct_node(name="gt_1", type=NodeType.GT, parameters={"value": 1.234}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value=1.234,
     )
     _check_node_equality(
         scalar_float_gt_int.node,
         construct_node(name="gt_2", type=NodeType.GT, parameters={"value": 1}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value=1,
     )
     _check_node_equality(
         scalar_varchar_ge.node,
         construct_node(name="ge_1", type=NodeType.GE, parameters={"value": "world"}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value="world",
     )
 
     with pytest.raises(TypeError) as exc:
@@ -517,24 +529,28 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         construct_node(name="add_2", type=NodeType.ADD, parameters={"value": 1.23}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value=1.23,
     )
     _check_node_equality(
         scalar_int_int_sub.node,
         construct_node(name="sub_2", type=NodeType.SUB, parameters={"value": 1}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value=1,
     )
     _check_node_equality(
         scalar_float_int_mul.node,
         construct_node(name="mul_2", type=NodeType.MUL, parameters={"value": 2}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value=2,
     )
     _check_node_equality(
         scalar_float_float_div.node,
         construct_node(name="div_2", type=NodeType.DIV, parameters={"value": 2.34}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value=2.34,
     )
     _check_node_equality(
         scalar_varchar_varchar_add.node,
@@ -543,12 +559,14 @@ def test_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        expected_value="hello",
     )
     _check_node_equality(
         scalar_int_int_mod.node,
         construct_node(name="mod_2", type=NodeType.MOD, parameters={"value": 3}, **kwargs),
         exclude=exclude,
         has_value_params=True,
+        expected_value=3,
     )
 
 
@@ -576,6 +594,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        expected_value=1.23,
     )
     _check_node_equality(
         scalar_int_int_sub.node,
@@ -584,6 +603,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        expected_value=1,
     )
     _check_node_equality(
         scalar_float_int_mul.node,
@@ -592,6 +612,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        expected_value=2,
     )
     _check_node_equality(
         scalar_float_float_div.node,
@@ -600,6 +621,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        expected_value=2.34,
     )
     _check_node_equality(
         scalar_varchar_varchar_add.node,
@@ -611,6 +633,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        expected_value="abc",
     )
     _check_node_equality(
         scalar_int_int_mod.node,
@@ -622,6 +645,7 @@ def test_right_arithmetic_operators(int_series, float_series, varchar_series):
         ),
         exclude=exclude,
         has_value_params=True,
+        expected_value=1234,
     )
 
 

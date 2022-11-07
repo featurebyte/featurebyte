@@ -217,7 +217,7 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         blind_spot: int
         time_modulo_frequency: int
         frequency: int
-        names: List[OutColumnStr]
+        names: List[str]  # do not use `OutColumnStr` here as the output is feature but not view
         serving_names: List[str]
         tile_id: Optional[str]
         aggregation_id: Optional[str]
@@ -250,7 +250,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
         keys: List[InColumnStr]
         parent: Optional[InColumnStr]
         agg_func: AggFunc
-        names: List[OutColumnStr]
+        names: List[str]
         serving_names: List[str]
 
     type: Literal[NodeType.ITEM_GROUPBY] = Field(NodeType.ITEM_GROUPBY, const=True)
