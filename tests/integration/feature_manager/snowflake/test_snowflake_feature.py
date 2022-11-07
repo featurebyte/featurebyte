@@ -16,6 +16,8 @@ from featurebyte.exception import (
 )
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.tile import OnlineFeatureSpec
+from featurebyte.utils.snowflake.sql import escape_column_names
 
 
 @pytest.mark.asyncio
@@ -202,51 +204,6 @@ async def test_retrieve_features_multiple(snowflake_feature, feature_manager):
 
 
 @pytest.mark.asyncio
-async def test_online_enable_no_feature(snowflake_feature, feature_manager):
-    """
-    Test online_enable no feature
-    """
-    snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
-    with pytest.raises(MissingFeatureRegistryError) as excinfo:
-        await feature_manager.online_enable(snowflake_feature)
-
-    assert (
-        str(excinfo.value)
-        == f"feature {snowflake_feature.name} with version {snowflake_feature.version.to_str()} does not exist"
-    )
-
-
-@pytest.mark.asyncio
-async def test_online_enable_not_production_ready(snowflake_feature, feature_manager):
-    """
-    Test online_enable not production_ready
-    """
-    await feature_manager.insert_feature_registry(snowflake_feature)
-    with pytest.raises(InvalidFeatureRegistryOperationError) as excinfo:
-        await feature_manager.online_enable(snowflake_feature)
-
-    assert str(excinfo.value) == "feature readiness has to be PRODUCTION_READY before online_enable"
-
-
-@pytest.mark.asyncio
-async def test_online_enable_already_online_enabled(snowflake_feature, feature_manager):
-    """
-    Test online_enable already online_enabled
-    """
-    snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
-    await feature_manager.insert_feature_registry(snowflake_feature)
-    await feature_manager.online_enable(snowflake_feature)
-
-    with pytest.raises(InvalidFeatureRegistryOperationError) as excinfo:
-        await feature_manager.online_enable(snowflake_feature)
-
-    assert str(excinfo.value) == (
-        f"feature {snowflake_feature.name} with version {snowflake_feature.version.to_str()} "
-        f"is already online enabled"
-    )
-
-
-@pytest.mark.asyncio
 async def test_online_enable(
     snowflake_session,
     snowflake_feature,
@@ -256,30 +213,19 @@ async def test_online_enable(
     """
     Test online_enable
     """
-    snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY.value
-    await feature_manager.insert_feature_registry(snowflake_feature)
-    result = await snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
-    assert len(result) == 1
-    assert result.iloc[0]["NAME"] == "sum_30m"
-    assert result.iloc[0]["VERSION"] == "v1"
-    assert bool(result.iloc[0]["ONLINE_ENABLED"]) is False
-
-    await feature_manager.online_enable(snowflake_feature)
-
-    tile_registry = await snowflake_session.execute_query("SELECT * FROM TILE_REGISTRY")
-    assert len(tile_registry) == 1
+    feature_sql = "SELECT *, 'test_quote' FROM TEMP_TABLE"
+    feature_store_table_name = "feature_store_table_1"
     expected_tile_id = snowflake_feature_expected_tile_spec_dict["tile_id"]
-    assert tile_registry.iloc[0]["TILE_ID"] == expected_tile_id
-    assert (
-        tile_registry.iloc[0]["TILE_SQL"] == snowflake_feature_expected_tile_spec_dict["tile_sql"]
-    )
-    assert bool(tile_registry.iloc[0]["IS_ENABLED"]) is True
 
-    result = await snowflake_session.execute_query("SELECT * FROM FEATURE_REGISTRY")
-    assert len(result) == 1
-    assert result.iloc[0]["NAME"] == "sum_30m"
-    assert result.iloc[0]["VERSION"] == "v1"
-    assert bool(result.iloc[0]["ONLINE_ENABLED"]) is True
+    online_feature_spec = OnlineFeatureSpec(
+        feature_name=snowflake_feature.name,
+        feature_version=snowflake_feature.version.to_str(),
+        feature_sql=feature_sql,
+        feature_store_table_name=feature_store_table_name,
+        tile_specs=snowflake_feature.tile_specs,
+    )
+
+    await feature_manager.online_enable(online_feature_spec)
 
     tasks = await snowflake_session.execute_query("SHOW TASKS")
     assert len(tasks) > 1
@@ -289,6 +235,24 @@ async def test_online_enable(
     assert tasks["name"].iloc[1] == f"SHELL_TASK_{expected_tile_id.upper()}_ONLINE"
     assert tasks["schedule"].iloc[1] == "USING CRON 5-59/30 * * * * UTC"
     assert tasks["state"].iloc[1] == "started"
+
+    sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
+    result = await snowflake_session.execute_query(sql)
+    assert len(result) == 1
+    expected_df = pd.DataFrame(
+        {
+            "TILE_ID": [online_feature_spec.tile_ids[0]],
+            "FEATURE_NAME": [snowflake_feature.name],
+            "FEATURE_VERSION": [snowflake_feature.version.to_str()],
+            "FEATURE_SQL": [feature_sql],
+            "FEATURE_STORE_TABLE_NAME": [feature_store_table_name],
+            "FEATURE_ENTITY_COLUMN_NAMES": [
+                ",".join(escape_column_names(online_feature_spec.entity_column_names))
+            ],
+        }
+    )
+    result = result.drop(columns=["CREATED_AT"])
+    assert_frame_equal(result, expected_df)
 
 
 @pytest.mark.asyncio

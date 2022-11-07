@@ -158,6 +158,7 @@ EXPECTED_PROCEDURES = [
     "SP_TILE_MONITOR",
     "SP_TILE_TRIGGER_GENERATE_SCHEDULE",
     "SP_TILE_GENERATE_ENTITY_TRACKING",
+    "SP_TILE_SCHEDULE_ONLINE_STORE",
 ]
 
 EXPECTED_TABLES = [
@@ -166,6 +167,7 @@ EXPECTED_TABLES = [
     "METADATA_SCHEMA",
     "TILE_REGISTRY",
     "TILE_MONITOR_SUMMARY",
+    "TILE_FEATURE_MAPPING",
 ]
 
 METADATA_QUERY = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
@@ -271,6 +273,11 @@ def test_schema_initializer__sql_objects(
         {"filename": "SP_TILE_REGISTRY.sql", "identifier": "SP_TILE_REGISTRY", "type": "procedure"},
         {"filename": "SP_TILE_MONITOR.sql", "identifier": "SP_TILE_MONITOR", "type": "procedure"},
         {
+            "filename": "SP_TILE_SCHEDULE_ONLINE_STORE.sql",
+            "identifier": "SP_TILE_SCHEDULE_ONLINE_STORE",
+            "type": "procedure",
+        },
+        {
             "filename": "F_TIMESTAMP_TO_INDEX.sql",
             "identifier": "F_TIMESTAMP_TO_INDEX",
             "type": "function",
@@ -326,6 +333,11 @@ def test_schema_initializer__sql_objects(
         {
             "filename": "T_TILE_MONITOR_SUMMARY.sql",
             "identifier": "TILE_MONITOR_SUMMARY",
+            "type": "table",
+        },
+        {
+            "filename": "T_TILE_FEATURE_MAPPING.sql",
+            "identifier": "TILE_FEATURE_MAPPING",
             "type": "table",
         },
     ]

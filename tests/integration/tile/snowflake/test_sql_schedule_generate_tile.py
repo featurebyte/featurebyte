@@ -10,14 +10,16 @@ from featurebyte.enum import InternalName
 
 
 @pytest.mark.asyncio
-async def test_schedule_generate_tile_online(snowflake_session):
+async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep):
     """
     Test the stored procedure of generating tiles
     """
+
+    tile_id, feature_store_table_name, _, _ = tile_task_prep
+
     entity_col_names = 'PRODUCT_ACTION,CUST_ID,"客户"'
     value_col_names = "VALUE"
     table_name = "TEMP_TABLE"
-    tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     tile_monitor = 10
     tile_end_ts = "2022-06-05T23:58:00Z"
     tile_sql = (
@@ -51,6 +53,11 @@ async def test_schedule_generate_tile_online(snowflake_session):
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}"
     result = await snowflake_session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == (tile_monitor + 1)
+
+    # verify that feature store has been updated
+    sql = f"SELECT COUNT(*) as COUNT FROM {feature_store_table_name}"
+    result = await snowflake_session.execute_query(sql)
+    assert result["COUNT"].iloc[0] == 2
 
 
 @pytest.mark.asyncio

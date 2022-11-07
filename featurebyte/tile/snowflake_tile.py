@@ -10,7 +10,6 @@ from pydantic import BaseModel, PrivateAttr
 from featurebyte.enum import InternalName
 from featurebyte.logger import logger
 from featurebyte.models.tile import TileSpec, TileType
-from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_sql_template import (
     tm_generate_tile,
@@ -20,21 +19,7 @@ from featurebyte.tile.snowflake_sql_template import (
     tm_tile_entity_tracking,
     tm_update_tile_registry,
 )
-
-
-def escape_column_names(column_names: list[str]) -> list[str]:
-    """Enclose provided column names with quotes
-
-    Parameters
-    ----------
-    column_names : list[str]
-        Column names
-
-    Returns
-    -------
-    list[str]
-    """
-    return [quoted_identifier(x).sql() for x in column_names]
+from featurebyte.utils.snowflake.sql import escape_column_names
 
 
 class TileManagerSnowflake(BaseModel):
@@ -201,6 +186,30 @@ class TileManagerSnowflake(BaseModel):
         await self._session.execute_query(sql)
 
         return sql
+
+    async def tile_task_exists(self, tile_type: TileType, tile_spec: TileSpec) -> bool:
+        """
+        Check whether tile task already exists
+
+        Parameters
+        ----------
+        tile_type: TileType
+            ONLINE or OFFLINE
+
+        tile_spec: TileSpec
+            tile spec
+
+        Returns
+        -------
+            whether tile task already exists
+        """
+        task_name = "TILE_TASK_" + tile_type + "_" + tile_spec.tile_id
+        result = await self._session.execute_query(f"SHOW TASKS LIKE '{task_name}'")
+
+        if result is not None and len(result) > 0:
+            return True
+
+        return False
 
     async def schedule_online_tiles(
         self,

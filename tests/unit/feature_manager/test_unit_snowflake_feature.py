@@ -6,6 +6,7 @@ from unittest import mock
 
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import InvalidFeatureRegistryOperationError, MissingFeatureRegistryError
@@ -17,9 +18,11 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_select_feature_registry,
     tm_update_feature_registry,
     tm_update_feature_registry_default_false,
+    tm_upsert_tile_feature_mapping,
 )
 from featurebyte.models.base import PydanticObjectId
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.tile import OnlineFeatureSpec
+from featurebyte.utils.snowflake.sql import escape_column_names
 
 
 @pytest.fixture(name="mock_snowflake_feature")
@@ -192,14 +195,12 @@ async def test_update_feature_list(mock_execute_query, mock_snowflake_feature, f
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.insert_tile_registry")
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_online_tiles")
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_offline_tiles")
 @pytest.mark.asyncio
 async def test_online_enable(
     mock_schedule_offline_tiles,
     mock_schedule_online_tiles,
-    mock_insert_tile_registry,
     mock_execute_query,
     mock_snowflake_feature,
     feature_manager,
@@ -207,20 +208,86 @@ async def test_online_enable(
     """
     Test online_enable
     """
-    mock_execute_query.return_value = pd.DataFrame.from_dict(
-        {
-            "NAME": ["sum_30m"],
-            "VERSION": ["v1"],
-            "ONLINE_ENABLED": [False],
-        }
+
+    feature_spec = OnlineFeatureSpec(
+        feature_name=mock_snowflake_feature.name,
+        feature_version=mock_snowflake_feature.version.to_str(),
+        feature_sql="select * from temp",
+        feature_store_table_name="feature_store_table_1",
+        tile_specs=mock_snowflake_feature.tile_specs,
     )
 
-    mock_snowflake_feature.__dict__["readiness"] = FeatureReadiness.PRODUCTION_READY
-    await feature_manager.online_enable(mock_snowflake_feature)
+    await feature_manager.online_enable(feature_spec)
 
-    mock_insert_tile_registry.assert_called_once()
     mock_schedule_online_tiles.assert_called_once()
     mock_schedule_offline_tiles.assert_called_once()
+
+    assert mock_execute_query.call_count == 2
+
+    upsert_sql = tm_upsert_tile_feature_mapping.render(
+        tile_id=feature_spec.tile_ids[0],
+        feature_name=feature_spec.feature_name,
+        feature_version=feature_spec.feature_version,
+        feature_sql=feature_spec.feature_sql.replace("'", "''"),
+        feature_store_table_name=feature_spec.feature_store_table_name,
+        entity_column_names_str=",".join(escape_column_names(feature_spec.entity_column_names)),
+    )
+    mock_execute_query.assert_called_with(upsert_sql)
+
+
+@pytest.mark.asyncio
+async def test_online_enable_missing_tile_spec(
+    mock_snowflake_feature,
+    feature_manager,
+):
+    """
+    Test online_enable
+    """
+
+    with pytest.raises(ValidationError) as excinfo:
+        OnlineFeatureSpec(
+            feature_name=mock_snowflake_feature.name,
+            feature_version=mock_snowflake_feature.version.to_str(),
+            feature_sql="select * from temp",
+            feature_store_table_name="feature_store_table_1",
+            tile_specs=[],
+        )
+
+    assert "1 validation error for OnlineFeatureSpec" in str(excinfo.value)
+    assert "tile_specs" in str(excinfo.value)
+
+
+@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.tile_task_exists")
+@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_online_tiles")
+@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_offline_tiles")
+@pytest.mark.asyncio
+async def test_online_enable_duplicate_tile_task(
+    mock_schedule_offline_tiles,
+    mock_schedule_online_tiles,
+    mock_tile_task_exists,
+    mock_snowflake_feature,
+    feature_manager,
+):
+    """
+    Test online_enable
+    """
+    _ = mock_schedule_offline_tiles
+    _ = mock_schedule_online_tiles
+
+    mock_tile_task_exists.return_value = True
+
+    online_feature_spec = OnlineFeatureSpec(
+        feature_name=mock_snowflake_feature.name,
+        feature_version=mock_snowflake_feature.version.to_str(),
+        feature_sql="select * from temp",
+        feature_store_table_name="feature_store_table_1",
+        tile_specs=mock_snowflake_feature.tile_specs,
+    )
+
+    await feature_manager.online_enable(online_feature_spec)
+
+    mock_schedule_online_tiles.assert_not_called()
+    mock_schedule_offline_tiles.assert_not_called()
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")

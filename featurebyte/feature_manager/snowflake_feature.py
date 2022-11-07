@@ -24,12 +24,14 @@ from featurebyte.feature_manager.snowflake_sql_template import (
     tm_select_feature_registry,
     tm_update_feature_registry,
     tm_update_feature_registry_default_false,
+    tm_upsert_tile_feature_mapping,
 )
 from featurebyte.logger import logger
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.feature import FeatureReadiness
+from featurebyte.models.tile import OnlineFeatureSpec, TileType
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
+from featurebyte.utils.snowflake.sql import escape_column_names
 
 
 class FeatureManagerSnowflake(BaseModel):
@@ -203,54 +205,26 @@ class FeatureManagerSnowflake(BaseModel):
         logger.debug(f"update_sql: {update_sql}")
         await self._session.execute_query(update_sql)
 
-    async def online_enable(self, feature: ExtendedFeatureModel) -> None:
+    async def online_enable(self, feature_spec: OnlineFeatureSpec) -> None:
         """
         Schedule both online and offline tile jobs
 
         Parameters
         ----------
-        feature: ExtendedFeatureModel
+        feature_spec: OnlineFeatureSpec
             input feature instance
-
-        Raises
-        ----------
-        InvalidFeatureRegistryOperationError
-            when the input feature readiness is not PRODUCTION_READY
-            when the feature registry record is already online enabled
-        MissingFeatureRegistryError
-            when the feature registry record does not exist
         """
-        if feature.tile_specs:
-            if feature.readiness is None or feature.readiness != FeatureReadiness.PRODUCTION_READY:
-                raise InvalidFeatureRegistryOperationError(
-                    "feature readiness has to be PRODUCTION_READY before online_enable"
+        tile_mgr = TileManagerSnowflake(session=self._session)
+
+        # enable tile generation with scheduled jobs
+        for tile_spec in feature_spec.tile_specs:
+            logger.info(f"tile_spec: {tile_spec}")
+            exist_flag = await tile_mgr.tile_task_exists(TileType.ONLINE, tile_spec)
+            if exist_flag:
+                logger.warning(
+                    f"Ignore online_enable. Tile task already exists: {tile_spec.tile_id}"
                 )
-
-            # check whether the feature exists
-            feature_versions = await self.retrieve_feature_registries(
-                feature=feature, version=feature.version
-            )
-
-            if len(feature_versions) == 0:
-                raise MissingFeatureRegistryError(
-                    f"feature {feature.name} with version {feature.version.to_str()} does not exist"
-                )
-
-            if feature_versions["ONLINE_ENABLED"].iloc[0]:
-                raise InvalidFeatureRegistryOperationError(
-                    f"feature {feature.name} with version {feature.version.to_str()} is already online enabled"
-                )
-
-            # insert Tile Specs
-            for tile_spec in feature.tile_specs:
-                logger.info(f"tile_spec: {tile_spec}")
-                tile_mgr = TileManagerSnowflake(
-                    session=self._session,
-                )
-                # insert tile_registry record
-                await tile_mgr.insert_tile_registry(tile_spec=tile_spec)
-                logger.debug(f"Done insert_tile_registry for {tile_spec}")
-
+            else:
                 # enable online tiles scheduled job
                 await tile_mgr.schedule_online_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_online_tiles for {tile_spec}")
@@ -259,8 +233,25 @@ class FeatureManagerSnowflake(BaseModel):
                 await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
                 logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
 
-            # update ONLINE_ENABLED of the feature registry record to True
-            await self.update_feature_registry(feature, to_online_enable=True)
+        feature_sql = feature_spec.feature_sql.replace("'", "''")
+        logger.debug(f"feature_sql: {feature_sql}")
+
+        # insert records into tile-feature mapping table
+        for tile_id in feature_spec.tile_ids:
+            upsert_sql = tm_upsert_tile_feature_mapping.render(
+                tile_id=tile_id,
+                feature_name=feature_spec.feature_name,
+                feature_version=feature_spec.feature_version,
+                feature_sql=feature_sql,
+                feature_store_table_name=feature_spec.feature_store_table_name,
+                entity_column_names_str=",".join(
+                    escape_column_names(feature_spec.entity_column_names)
+                ),
+            )
+
+            logger.debug(f"tile_feature_mapping upsert_sql: {upsert_sql}")
+            await self._session.execute_query(upsert_sql)
+            logger.debug(f"Done insert tile_feature_mapping for {tile_id}")
 
     async def retrieve_last_tile_index(self, feature: ExtendedFeatureModel) -> pd.DataFrame:
         """

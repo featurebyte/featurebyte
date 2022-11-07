@@ -124,3 +124,39 @@ tm_feature_tile_monitor = Template(
     AND t_m.CREATED_AT <= '{{query_end_ts}}'
 """
 )
+
+
+tm_upsert_tile_feature_mapping = Template(
+    """
+    MERGE INTO TILE_FEATURE_MAPPING a
+    USING (
+        SELECT
+            '{{tile_id}}' AS TILE_ID,
+            '{{feature_name}}' as FEATURE_NAME,
+            '{{feature_version}}' as FEATURE_VERSION,
+            '{{feature_sql}}' as FEATURE_SQL,
+            '{{feature_store_table_name}}' as FEATURE_STORE_TABLE_NAME,
+            '{{entity_column_names_str}}' as FEATURE_ENTITY_COLUMN_NAMES
+    ) b
+    ON
+        a.TILE_ID = b.TILE_ID
+        AND a.FEATURE_NAME = b.FEATURE_NAME
+        AND a.FEATURE_VERSION = b.FEATURE_VERSION
+    WHEN NOT MATCHED THEN
+        INSERT (
+            TILE_ID,
+            FEATURE_NAME,
+            FEATURE_VERSION,
+            FEATURE_SQL,
+            FEATURE_STORE_TABLE_NAME,
+            FEATURE_ENTITY_COLUMN_NAMES
+        ) VALUES (
+            b.TILE_ID,
+            b.FEATURE_NAME,
+            b.FEATURE_VERSION,
+            b.FEATURE_SQL,
+            b.FEATURE_STORE_TABLE_NAME,
+            b.FEATURE_ENTITY_COLUMN_NAMES
+        )
+"""
+)
