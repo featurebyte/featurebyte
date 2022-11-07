@@ -15,7 +15,7 @@ async def tile_task_online_store_prep(snowflake_session):
     table_name = "TEMP_TABLE"
     tile_id = f"TEMP_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
 
-    number_records = 5
+    number_records = 2
     insert_mapping_sql = f"""
             insert into TILE_FEATURE_MAPPING(
                 TILE_ID, FEATURE_NAME, FEATURE_VERSION, FEATURE_SQL, FEATURE_STORE_TABLE_NAME, FEATURE_ENTITY_COLUMN_NAMES

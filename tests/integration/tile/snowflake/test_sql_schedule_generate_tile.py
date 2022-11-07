@@ -57,7 +57,7 @@ async def test_schedule_generate_tile_online(snowflake_session, tile_task_prep):
     # verify that feature store has been updated
     sql = f"SELECT COUNT(*) as COUNT FROM {feature_store_table_name}"
     result = await snowflake_session.execute_query(sql)
-    assert result["COUNT"].iloc[0] == 5
+    assert result["COUNT"].iloc[0] == 2
 
 
 @pytest.mark.asyncio

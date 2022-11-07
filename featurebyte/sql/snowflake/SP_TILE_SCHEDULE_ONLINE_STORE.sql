@@ -57,6 +57,17 @@ $$
             entity_insert_cols_str = entity_insert_cols.join(",")
             entity_filter_cols_str = entity_filter_cols.join(" AND ")
 
+
+            // remove feature values for entities that are not in entity universe
+            var remove_values_sql = `
+                update ${fs_table} set ${f_name} = NULL
+                    where (${f_entity_columns}) not in
+                    (select ${f_entity_columns} from (${f_sql}))
+            `
+            debug = debug + " - remove_values_sql: " + remove_values_sql
+            snowflake.execute({sqlText: remove_values_sql})
+
+            // update or insert feature values for entities that are in entity universe
             var merge_sql = `
                 merge into ${fs_table} a using (${f_sql}) b
                     on ${entity_filter_cols_str}
@@ -66,8 +77,8 @@ $$
                         insert (${f_entity_columns}, ${f_name})
                             values (${entity_insert_cols_str}, ${f_name})
             `
-            snowflake.execute({sqlText: merge_sql})
             debug = debug + " - merge_sql: " + merge_sql
+            snowflake.execute({sqlText: merge_sql})
         }
     }
 
