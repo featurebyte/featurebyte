@@ -93,7 +93,7 @@ class FeatureManagerSnowflake(BaseModel):
                 tile_specs_str = "[]"
 
             logger.debug("Start inserting feature registry")
-            event_ids = [str(e_id) for e_id in feature.event_data_ids]
+            event_ids = [str(e_id) for e_id in feature.tabular_data_ids]
             sql = tm_insert_feature_registry.render(
                 feature=feature,
                 tile_specs_str=tile_specs_str,

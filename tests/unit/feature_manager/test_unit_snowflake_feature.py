@@ -44,7 +44,7 @@ async def test_insert_feature_registry(mock_execute_query, mock_snowflake_featur
     Test insert_feature_registry
     """
     mock_execute_query.size_effect = None
-    mock_snowflake_feature.__dict__["event_data_ids"] = [
+    mock_snowflake_feature.__dict__["tabular_data_ids"] = [
         PydanticObjectId("62d8d944d01041a098785131")
     ]
     await feature_manager.insert_feature_registry(mock_snowflake_feature)

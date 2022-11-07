@@ -16,7 +16,7 @@ def feature_name_space_dict_fixture():
     """Fixture for a FixtureNameSpace dict"""
     feature_ids = [ObjectId("631b00277280fc9aa9522794"), ObjectId("631b00277280fc9aa9522793")]
     entity_ids = [ObjectId("631b00277280fc9aa9522790"), ObjectId("631b00277280fc9aa9522789")]
-    event_data_ids = [ObjectId("631b00277280fc9aa9522792"), ObjectId("631b00277280fc9aa9522791")]
+    tabular_data_ids = [ObjectId("631b00277280fc9aa9522792"), ObjectId("631b00277280fc9aa9522791")]
     return {
         "name": "some_feature_name",
         "dtype": "FLOAT",
@@ -28,7 +28,7 @@ def feature_name_space_dict_fixture():
         "default_feature_id": feature_ids[0],
         "default_version_mode": "MANUAL",
         "entity_ids": entity_ids,
-        "event_data_ids": event_data_ids,
+        "tabular_data_ids": tabular_data_ids,
         "user_id": None,
     }
 
@@ -55,7 +55,7 @@ def test_feature_model(feature_model_dict, test_dir):
         "deployed_feature_list_ids": [],
         "dtype": "FLOAT",
         "entity_ids": [ObjectId("6332fdb21e8f0eeccc414513")],
-        "event_data_ids": [ObjectId("6332fdb21e8f0eeccc414512")],
+        "tabular_data_ids": [ObjectId("6332fdb21e8f0eeccc414512")],
         "feature_list_ids": [],
         "feature_namespace_id": ObjectId("6332fdb31e8f0eeccc414516"),
         "graph": {

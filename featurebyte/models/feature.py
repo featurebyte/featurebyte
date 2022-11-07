@@ -64,8 +64,8 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         Default feature version mode
     entity_ids: List[PydanticObjectId]
         Entity IDs used by the feature
-    event_data_ids: List[PydanticObjectId]
-        EventData IDs used for the feature version
+    tabular_data_ids: List[PydanticObjectId]
+        Tabular data IDs used for the feature
     """
 
     dtype: DBVarType = Field(allow_mutation=False)
@@ -79,9 +79,9 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
         default=DefaultVersionMode.AUTO, allow_mutation=False
     )
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
-    @validator("feature_ids", "entity_ids", "event_data_ids")
+    @validator("feature_ids", "entity_ids", "tabular_data_ids")
     @classmethod
     def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
         # make sure list of ids is sorted
@@ -133,8 +133,8 @@ class FeatureModel(FeatureByteBaseDocumentModel):
         Whether to make this feature version online enabled
     entity_ids: List[PydanticObjectId]
         Entity IDs used by the feature
-    event_data_ids: List[PydanticObjectId]
-        EventData IDs used for the feature version
+    tabular_data_ids: List[PydanticObjectId]
+        Tabular data IDs used for the feature version
     feature_namespace_id: PydanticObjectId
         Feature namespace id of the object
     feature_list_ids: List[PydanticObjectId]
@@ -156,7 +156,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     version: VersionIdentifier = Field(allow_mutation=False, default=None)
     online_enabled: bool = Field(allow_mutation=False, default=False)
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     feature_namespace_id: PydanticObjectId = Field(allow_mutation=False, default_factory=ObjectId)
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
     deployed_feature_list_ids: List[PydanticObjectId] = Field(
@@ -210,7 +210,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
                 values["node_name"] = values["node"]["name"]
         return values
 
-    @validator("entity_ids", "event_data_ids")
+    @validator("entity_ids", "tabular_data_ids")
     @classmethod
     def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
         # make sure list of ids is sorted

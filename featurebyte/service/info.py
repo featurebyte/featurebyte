@@ -6,8 +6,9 @@ from __future__ import annotations
 from bson.objectid import ObjectId
 
 from featurebyte.schema.common.operation import DictProject
+from featurebyte.schema.data import DataBriefInfoList
 from featurebyte.schema.entity import EntityBriefInfoList, EntityInfo
-from featurebyte.schema.event_data import EventDataBriefInfoList, EventDataColumnInfo, EventDataInfo
+from featurebyte.schema.event_data import EventDataColumnInfo, EventDataInfo
 from featurebyte.schema.feature import FeatureBriefInfoList, FeatureInfo
 from featurebyte.schema.feature_list import FeatureListBriefInfoList, FeatureListInfo
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceInfo
@@ -185,15 +186,15 @@ class InfoService(BaseService):
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
 
-        event_data = await self.event_data_service.list_documents(
-            page=1, page_size=0, query_filter={"_id": {"$in": namespace.event_data_ids}}
+        tabular_data = await self.data_service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
         )
         return FeatureNamespaceInfo(
             name=namespace.name,
             created_at=namespace.created_at,
             updated_at=namespace.updated_at,
             entities=EntityBriefInfoList.from_paginated_data(entities),
-            event_data=EventDataBriefInfoList.from_paginated_data(event_data),
+            tabular_data=DataBriefInfoList.from_paginated_data(tabular_data),
             default_version_mode=namespace.default_version_mode,
             default_feature_id=namespace.default_feature_id,
             dtype=namespace.dtype,
@@ -274,15 +275,15 @@ class InfoService(BaseService):
             page=1, page_size=0, query_filter={"_id": {"$in": namespace.entity_ids}}
         )
 
-        event_data = await self.event_data_service.list_documents(
-            page=1, page_size=0, query_filter={"_id": {"$in": namespace.event_data_ids}}
+        tabular_data = await self.data_service.list_documents(
+            page=1, page_size=0, query_filter={"_id": {"$in": namespace.tabular_data_ids}}
         )
         return FeatureListNamespaceInfo(
             name=namespace.name,
             created_at=namespace.created_at,
             updated_at=namespace.updated_at,
             entities=EntityBriefInfoList.from_paginated_data(entities),
-            event_data=EventDataBriefInfoList.from_paginated_data(event_data),
+            tabular_data=DataBriefInfoList.from_paginated_data(tabular_data),
             default_version_mode=namespace.default_version_mode,
             default_feature_list_id=namespace.default_feature_list_id,
             dtype_distribution=namespace.dtype_distribution,

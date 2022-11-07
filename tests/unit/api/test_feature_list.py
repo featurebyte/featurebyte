@@ -382,12 +382,10 @@ def saved_feature_list_fixture(
     snowflake_feature_store,
     snowflake_event_data,
     float_feature,
-    mock_insert_feature_registry,
 ):
     """
     Saved feature list fixture
     """
-    _ = mock_insert_feature_registry
     snowflake_feature_store.save()
     snowflake_event_data.save()
     assert float_feature.tabular_source.feature_store_id == snowflake_feature_store.id
@@ -448,7 +446,7 @@ def test_info(saved_feature_list):
         "name": "my_feature_list",
         "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
         "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-        "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+        "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
         "default_version_mode": "AUTO",
         "status": "DRAFT",
         "feature_count": 1,
@@ -558,7 +556,6 @@ def test_feature_list__feature_list_saving_in_bad_state(
     draft_feature,
     quarantine_feature,
     deprecated_feature,
-    mock_insert_feature_registry,
 ):
     """Test feature list saving in bad state due to some feature has been saved (when the feature id is the same)"""
     snowflake_feature_store.save()
@@ -607,7 +604,6 @@ def test_feature_list__feature_list_saving_in_bad_state__feature_id_is_different
     draft_feature,
     quarantine_feature,
     deprecated_feature,
-    mock_insert_feature_registry,
 ):
     """Test feature list saving in bad state due to some feature has been saved (when the feature id is different)"""
     snowflake_feature_store.save()

@@ -411,9 +411,9 @@ def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_da
     )
     assert isinstance(feature_group, FeatureGroup)
     for feature in feature_group.feature_objects.values():
-        assert grouped_event_view.obj.event_data_id in feature.event_data_ids
+        assert grouped_event_view.obj.event_data_id in feature.tabular_data_ids
         assert id(feature.graph.nodes) == id(global_graph.nodes)
-        assert feature.event_data_ids == [snowflake_event_data_with_entity.id]
+        assert feature.tabular_data_ids == [snowflake_event_data_with_entity.id]
         assert feature.entity_ids == [cust_id_entity.id]
     yield feature_group
 
@@ -427,7 +427,7 @@ def float_feature_fixture(feature_group):
     assert isinstance(feature, Feature)
     assert feature.protected_columns == {"cust_id"}
     assert feature.inherited_columns == {"cust_id"}
-    assert feature_group["sum_1d"].event_data_ids == feature.event_data_ids
+    assert feature_group["sum_1d"].tabular_data_ids == feature.tabular_data_ids
     global_graph = GlobalQueryGraph()
     assert id(feature.graph.nodes) == id(global_graph.nodes)
     yield feature
@@ -442,7 +442,7 @@ def bool_feature_fixture(float_feature):
     assert isinstance(bool_feature, Feature)
     assert bool_feature.protected_columns == float_feature.protected_columns
     assert bool_feature.inherited_columns == float_feature.inherited_columns
-    assert bool_feature.event_data_ids == float_feature.event_data_ids
+    assert bool_feature.tabular_data_ids == float_feature.tabular_data_ids
     yield bool_feature
 
 
@@ -679,7 +679,7 @@ def test_save_payload_fixtures(
         readiness=FeatureReadiness.DRAFT,
         default_feature_id=feature_sum_30m.id,
         entity_ids=feature_sum_30m.entity_ids,
-        event_data_ids=feature_sum_30m.event_data_ids,
+        tabular_data_ids=feature_sum_30m.tabular_data_ids,
     )
     feature_list_namespace = FeatureListNamespaceModel(
         _id=ObjectId(),
@@ -690,7 +690,7 @@ def test_save_payload_fixtures(
         default_feature_list_id=feature_list_multiple.id,
         default_version_mode=DefaultVersionMode.AUTO,
         entity_ids=feature_sum_30m.entity_ids,
-        event_data_ids=feature_sum_30m.event_data_ids,
+        tabular_data_ids=feature_sum_30m.tabular_data_ids,
         feature_namespace_ids=[
             feature_sum_30m.feature_namespace_id,
             feature_sum_2h.feature_namespace_id,

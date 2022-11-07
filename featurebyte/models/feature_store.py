@@ -8,7 +8,7 @@ from typing import Any, ClassVar, List, Optional, Union
 
 from pydantic import Field, StrictStr
 
-from featurebyte.enum import DBVarType, OrderedStrEnum, SourceType
+from featurebyte.enum import DBVarType, OrderedStrEnum, SourceType, TableDataType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -157,6 +157,7 @@ class DataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
         Record creation date column name
     """
 
+    type: TableDataType
     columns_info: List[ColumnInfo]
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
     record_creation_date_column: Optional[StrictStr]

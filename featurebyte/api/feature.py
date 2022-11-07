@@ -230,15 +230,15 @@ class Feature(
         -------
         dict[str, Any]
         """
-        event_data_ids = set(self.event_data_ids)
+        tabular_data_ids = set(self.tabular_data_ids)
         entity_ids = set(self.entity_ids)
         if other is not None:
-            event_data_ids = event_data_ids.union(getattr(other, "event_data_ids", []))
+            tabular_data_ids = tabular_data_ids.union(getattr(other, "tabular_data_ids", []))
             entity_ids = entity_ids.union(getattr(other, "entity_ids", []))
-        return {"event_data_ids": sorted(event_data_ids), "entity_ids": sorted(entity_ids)}
+        return {"tabular_data_ids": sorted(tabular_data_ids), "entity_ids": sorted(entity_ids)}
 
     def unary_op_series_params(self) -> dict[str, Any]:
-        return {"event_data_ids": self.event_data_ids, "entity_ids": self.entity_ids}
+        return {"tabular_data_ids": self.tabular_data_ids, "entity_ids": self.entity_ids}
 
     def _get_pruned_feature_model(self) -> FeatureModel:
         """

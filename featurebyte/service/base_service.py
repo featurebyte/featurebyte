@@ -13,10 +13,11 @@ from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
 from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAnalysisModel
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
-from featurebyte.models.feature_store import FeatureStoreModel
+from featurebyte.models.feature_store import DataModel, FeatureStoreModel
 from featurebyte.models.item_data import ItemDataModel
 from featurebyte.models.semantic import SemanticModel
 from featurebyte.persistent.base import Persistent
+from featurebyte.service.data import DataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
@@ -30,6 +31,7 @@ from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.semantic import SemanticService
 
 DocumentService = Union[
+    DataService,
     FeatureStoreService,
     EntityService,
     SemanticService,
@@ -42,6 +44,7 @@ DocumentService = Union[
     FeatureJobSettingAnalysisService,
 ]
 DocumentModel = Union[
+    DataModel,
     FeatureStoreModel,
     EntityModel,
     SemanticModel,
@@ -60,6 +63,7 @@ class DocServiceName(StrEnum):
     Document service enum
     """
 
+    DATA = "data"
     FEATURE_STORE = "feature_store"
     ENTITY = "entity"
     SEMANTIC = "semantic"
@@ -80,6 +84,17 @@ class BaseService(OpsServiceMixin):
     def __init__(self, user: Any, persistent: Persistent):
         self.user = user
         self.persistent = persistent
+
+    @property
+    def data_service(self) -> DataService:
+        """
+        DataService object
+
+        Returns
+        -------
+        DataService
+        """
+        return DataService(user=self.user, persistent=self.persistent)
 
     @property
     def feature_store_service(self) -> FeatureStoreService:
@@ -192,6 +207,10 @@ class BaseService(OpsServiceMixin):
         return FeatureJobSettingAnalysisService(user=self.user, persistent=self.persistent)
 
     @overload
+    def as_service(self, doc_service_name: Literal[DocServiceName.DATA]) -> DataService:
+        ...
+
+    @overload
     def as_service(
         self, doc_service_name: Literal[DocServiceName.FEATURE_STORE]
     ) -> FeatureStoreService:
@@ -255,6 +274,7 @@ class BaseService(OpsServiceMixin):
         DocumentServiceT
         """
         doc_service_name_map: dict[DocServiceName, DocumentService] = {
+            DocServiceName.DATA: self.data_service,
             DocServiceName.FEATURE_STORE: self.feature_store_service,
             DocServiceName.ENTITY: self.entity_service,
             DocServiceName.SEMANTIC: self.semantic_service,
@@ -267,6 +287,15 @@ class BaseService(OpsServiceMixin):
             DocServiceName.FEATURE_JOB_SETTING_ANALYSIS: self.feature_job_setting_analysis_service,
         }
         return doc_service_name_map[doc_service_name]
+
+    @overload
+    async def get_document(
+        self,
+        doc_service_name: Literal[DocServiceName.DATA],
+        document_id: ObjectId,
+        document: Optional[DataModel] = None,
+    ) -> DataModel:
+        ...
 
     @overload
     async def get_document(
@@ -361,6 +390,7 @@ class BaseService(OpsServiceMixin):
     async def get_document(
         self,
         doc_service_name: Literal[
+            DocServiceName.DATA,
             DocServiceName.FEATURE_STORE,
             DocServiceName.ENTITY,
             DocServiceName.SEMANTIC,
