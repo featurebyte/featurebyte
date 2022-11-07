@@ -19,17 +19,17 @@ async def test_schedule_update_feature_store__update_feature_value(
     sql = f"call SP_TILE_SCHEDULE_ONLINE_STORE('{tile_id}')"
     await snowflake_session.execute_query(sql)
 
-    sql = f"SELECT * FROM {feature_store_table_name}"
+    sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
     result = await snowflake_session.execute_query(sql)
     assert len(result) == 2
     expected_df = pd.DataFrame(
         {
             "__FB_TILE_START_DATE_COLUMN": pd.to_datetime(
-                ["2022-06-05 23:58:00", "2022-06-05 23:53:00"]
+                ["2022-06-05 23:53:00", "2022-06-05 23:58:00"]
             ),
             "PRODUCT_ACTION": ["view", "view"],
             "CUST_ID": np.array([1, 1], dtype=np.int8),
-            "FEATURE_1": np.array([5, 2], dtype=np.int8),
+            "FEATURE_1": np.array([3, 6], dtype=np.int8),
         }
     )
     assert_frame_equal(result, expected_df)
@@ -82,7 +82,7 @@ async def test_schedule_update_feature_store__insert_remove_feature_value(
             ),
             "PRODUCT_ACTION": ["view", "view"],
             "CUST_ID": np.array([1, 1], dtype=np.int8),
-            "FEATURE_1": np.array([2, 5], dtype=np.int8),
+            "FEATURE_1": np.array([3, 6], dtype=np.int8),
         }
     )
     assert_frame_equal(result, expected_df)
