@@ -41,3 +41,6 @@ markdown_extensions:
     - admonition
     - pymdownx.details
     - pymdownx.superfences
+
+extra_css:
+    - css/code_select.css
