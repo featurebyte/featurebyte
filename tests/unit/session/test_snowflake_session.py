@@ -427,7 +427,7 @@ async def test_schema_initializer__dont_reinitialize(
     session.execute_query.side_effect = new_mock_execute_query
 
     # re-initialize
-    await snowflake_initializer.initialize("")
+    await snowflake_initializer.initialize("test_store_id")
     # verify that only one additional call is made
     number_of_metadata_calls = 3
     expected_number_of_calls = (
