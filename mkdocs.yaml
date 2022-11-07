@@ -11,8 +11,9 @@ nav:
             - Data View: user/fundamentals/data_view.md
             - Feature: user/fundamentals/feature.md
             - Feature List: user/fundamentals/feature_list.md
-    - Reference:
-        - worker: reference/worker/index.md
+    - Code Reference: reference/
+watch:
+  - featurebyte
 theme:
     name: material
     homepage: https://featurebyte.com
@@ -25,6 +26,12 @@ theme:
 plugins:
     - search
     - mkdocstrings
+    - gen-files:
+        scripts:
+          - docs/gen_ref_pages.py
+    - literate-nav:
+        nav_file: SUMMARY.md
+
 markdown_extensions:
     - pymdownx.highlight:
         anchor_linenums: true

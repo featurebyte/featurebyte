@@ -2,7 +2,7 @@
 server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python"]
 
 [metadata]
-content-hash = "b3ba2178aa95fb188cd3e418c6ac96a993f592465b213dda32a812e8fc819397"
+content-hash = "4db677e9534c40afd406f9b1c9735b20c8151099d4aa4ef341d9ad4f9570c957"
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
 
@@ -733,6 +733,10 @@ mkdocs-enumerate-headings-plugin = [
     {file = "mkdocs-enumerate-headings-plugin-0.5.0.tar.gz", hash = "sha256:9c31f52046b03352eca6d9de912ed20dcad54f703cf3f5eff62e06aeeb15ef81"},
     {file = "mkdocs_enumerate_headings_plugin-0.5.0-py3-none-any.whl", hash = "sha256:6e1dff955ceaf06d0bb3eae26af0e643a9323111ba636cad1901a96f2c83e588"},
 ]
+mkdocs-gen-files = [
+    {file = "mkdocs-gen-files-0.4.0.tar.gz", hash = "sha256:377bff8ee8e93515916689f483d971643f83a94eed7e92318854da8f344f0163"},
+    {file = "mkdocs_gen_files-0.4.0-py3-none-any.whl", hash = "sha256:3241a4c947ecd11763ca77cc645015305bf71a0e1b9b886801c114fcf9971e71"},
+]
 mkdocs-git-authors-plugin = [
     {file = "mkdocs-git-authors-plugin-0.6.5.tar.gz", hash = "sha256:5e10d1685745e128b0bc88e229c13cf62bab2b5a1b716b68301216b94e206bd4"},
     {file = "mkdocs_git_authors_plugin-0.6.5-py3-none-any.whl", hash = "sha256:b82aad1a476a673d0746e8ce5ccccbd39822fc730ef0a6a113ec8517d30016fc"},
@@ -740,6 +744,10 @@ mkdocs-git-authors-plugin = [
 mkdocs-git-revision-date-localized-plugin = [
     {file = "mkdocs-git-revision-date-localized-plugin-1.1.0.tar.gz", hash = "sha256:38517e2084229da1a1b9460e846c2748d238c2d79efd405d1b9174a87bd81d79"},
     {file = "mkdocs_git_revision_date_localized_plugin-1.1.0-py3-none-any.whl", hash = "sha256:4ba0e49abea3e9f6ee26e2623ff7283873da657471c61f1d0cfbb986f403316d"},
+]
+mkdocs-literate-nav = [
+    {file = "mkdocs-literate-nav-0.5.0.tar.gz", hash = "sha256:c63d4385bb2b520baede25badad2d0936acebff3da175922c600d0a91902d8ff"},
+    {file = "mkdocs_literate_nav-0.5.0-py3-none-any.whl", hash = "sha256:b41149172af38c1a1df5e8d63292cbe7ed2a1431cd5daf884289036f2a9c7cca"},
 ]
 mkdocs-material = [
     {file = "mkdocs_material-8.5.7-py3-none-any.whl", hash = "sha256:07fc70dfa325a8019b99a124751c43e4c1c2a739ed1b0b82c00f823f31c9a1e2"},
@@ -2916,6 +2924,17 @@ mkdocs = ">=1.0.4"
 
 [[package]]
 category = "dev"
+description = "MkDocs plugin to programmatically generate documentation pages during the build"
+name = "mkdocs-gen-files"
+optional = false
+python-versions = ">=3.7,<4.0"
+version = "0.4.0"
+
+[package.dependencies]
+mkdocs = ">=1.0.3,<2.0.0"
+
+[[package]]
+category = "dev"
 description = "Mkdocs plugin to display git authors of a page"
 name = "mkdocs-git-authors-plugin"
 optional = false
@@ -2937,6 +2956,17 @@ version = "1.1.0"
 GitPython = "*"
 babel = ">=2.7.0"
 mkdocs = ">=1.0"
+
+[[package]]
+category = "dev"
+description = "MkDocs plugin to specify the navigation in Markdown instead of YAML"
+name = "mkdocs-literate-nav"
+optional = false
+python-versions = ">=3.6,<4.0"
+version = "0.5.0"
+
+[package.dependencies]
+mkdocs = ">=1.0.3,<2.0.0"
 
 [[package]]
 category = "dev"
