@@ -70,6 +70,7 @@ class CastNode(BaseSeriesOutputNode):
         from_dtype: DBVarType
 
     type: Literal[NodeType.CAST] = Field(NodeType.CAST, const=True)
+    parameters: Parameters
 
 
 class AliasNode(BaseSeriesOutputNode):

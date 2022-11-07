@@ -10,6 +10,7 @@ from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.count_dict import CountDictTransformNode
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
+from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 
 
 @pytest.fixture(name="node")
@@ -33,6 +34,11 @@ def node_fixture():
 
         type: Literal["type"] = Field("node_type", const=True)
         parameters: NodeParams
+
+        def derive_node_operation_info(self, inputs):
+            return OperationStructure(
+                output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
+            )
 
     return Node(
         name="node_name",
