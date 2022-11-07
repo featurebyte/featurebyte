@@ -104,6 +104,11 @@ async def test_schedule_update_feature_store__insert_remove_feature_value(
     sql = f"SELECT * FROM {feature_store_table_name} order by __FB_TILE_START_DATE_COLUMN"
     result = await snowflake_session.execute_query(sql)
     assert len(result) == 3
+    assert np.isnan(
+        result[result.__FB_TILE_START_DATE_COLUMN == "2022-06-05 23:58:00"][
+            feature_name.upper()
+        ].iloc[0]
+    )
 
     expected_df = pd.DataFrame(
         {
