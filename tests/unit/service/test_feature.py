@@ -49,8 +49,16 @@ def sqlite_feature_store_fixture(mock_get_persistent):
     )
 
 
+@pytest.fixture(name="mock_execute_query", autouse=True)
+def execute_query_fixture():
+    """
+    Execute query fixture
+    """
+    with patch("featurebyte.session.base.BaseSession.execute_query") as mock_execute_query:
+        yield mock_execute_query
+
+
 @pytest.mark.asyncio
-@patch("featurebyte.session.base.BaseSession.execute_query")
 async def test_insert_feature_registry__non_snowflake_feature_store(
     mock_execute_query, feature_model_dict, get_credential, sqlite_feature_store
 ):
@@ -75,7 +83,6 @@ async def test_insert_feature_registry__non_snowflake_feature_store(
 
 
 @pytest.mark.asyncio
-@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 async def test_insert_feature_registry(
     mock_execute_query,
     feature_model_dict,
