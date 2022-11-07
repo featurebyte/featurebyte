@@ -7,8 +7,9 @@ import pytest
 from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.enum import NodeOutputType
-from featurebyte.query_graph.node.base import BaseNode, InColumnStr, OutColumnStr
+from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.count_dict import CountDictTransformNode
+from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
 
 
 @pytest.fixture(name="node")

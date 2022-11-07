@@ -6,27 +6,24 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.base import BaseNode
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.base import (
+    BaseSeriesOutputNode,
+    BaseSeriesOutputWithScalarInputSeriesOutputNode,
+)
 
 Side = Literal["left", "right", "both"]
 Case = Literal["upper", "lower"]
 
 
-class BaseStringOpNode(BaseNode):
-    """Base class for string operation node"""
-
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-
-
-class LengthNode(BaseStringOpNode):
+class LengthNode(BaseSeriesOutputNode):
     """LengthNode class"""
 
     type: Literal[NodeType.LENGTH] = Field(NodeType.LENGTH, const=True)
     parameters: BaseModel = Field(default=BaseModel(), const=True)
 
 
-class TrimNode(BaseStringOpNode):
+class TrimNode(BaseSeriesOutputNode):
     """TrimNode class"""
 
     class Parameters(BaseModel):
@@ -39,7 +36,7 @@ class TrimNode(BaseStringOpNode):
     parameters: Parameters
 
 
-class ReplaceNode(BaseStringOpNode):
+class ReplaceNode(BaseSeriesOutputNode):
     """ReplaceNode class"""
 
     class Parameters(BaseModel):
@@ -52,7 +49,7 @@ class ReplaceNode(BaseStringOpNode):
     parameters: Parameters
 
 
-class PadNode(BaseStringOpNode):
+class PadNode(BaseSeriesOutputNode):
     """PadNode class"""
 
     class Parameters(BaseModel):
@@ -66,7 +63,7 @@ class PadNode(BaseStringOpNode):
     parameters: Parameters
 
 
-class StringCaseNode(BaseStringOpNode):
+class StringCaseNode(BaseSeriesOutputNode):
     """StringCaseNode class"""
 
     class Parameters(BaseModel):
@@ -78,13 +75,12 @@ class StringCaseNode(BaseStringOpNode):
     parameters: Parameters
 
 
-class StringContainsNode(BaseStringOpNode):
+class StringContainsNode(BaseSeriesOutputNode):
     """StringContainsNode class"""
 
     class Parameters(BaseModel):
         """Parameters"""
 
-        # FIXME: should we change it to case_sensitive?
         pattern: str
         case: bool
 
@@ -92,7 +88,7 @@ class StringContainsNode(BaseStringOpNode):
     parameters: Parameters
 
 
-class SubStringNode(BaseStringOpNode):
+class SubStringNode(BaseSeriesOutputNode):
     """SubStringNode class"""
 
     class Parameters(BaseModel):
@@ -105,7 +101,7 @@ class SubStringNode(BaseStringOpNode):
     parameters: Parameters
 
 
-class ConcatNode(BaseStringOpNode):
+class ConcatWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
     """ConcatNode class"""
 
     type: Literal[NodeType.CONCAT] = Field(NodeType.CONCAT, const=True)

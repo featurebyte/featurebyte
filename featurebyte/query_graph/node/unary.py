@@ -2,64 +2,86 @@
 This module contains unary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.base import BaseNode
+from featurebyte.enum import DBVarType
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.base import BaseSeriesOutputNode
+from featurebyte.query_graph.node.metadata.column import OutColumnStr
 
 
-class BaseUnaryOpNode(BaseNode):
-    """Base class for unary operation node"""
-
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-    parameters: BaseModel = Field(default=BaseModel(), const=True)
-
-
-class NotNode(BaseUnaryOpNode):
+class NotNode(BaseSeriesOutputNode):
     """NotNode class"""
 
     type: Literal[NodeType.NOT] = Field(NodeType.NOT, const=True)
 
 
-class AbsoluteNode(BaseUnaryOpNode):
+class AbsoluteNode(BaseSeriesOutputNode):
     """AbsoluteNode class"""
 
     type: Literal[NodeType.ABS] = Field(NodeType.ABS, const=True)
 
 
-class SquareRootNode(BaseUnaryOpNode):
+class SquareRootNode(BaseSeriesOutputNode):
     """SquareRootNode class"""
 
     type: Literal[NodeType.SQRT] = Field(NodeType.SQRT, const=True)
 
 
-class FloorNode(BaseUnaryOpNode):
+class FloorNode(BaseSeriesOutputNode):
     """FloorNode class"""
 
     type: Literal[NodeType.FLOOR] = Field(NodeType.FLOOR, const=True)
 
 
-class CeilNode(BaseUnaryOpNode):
+class CeilNode(BaseSeriesOutputNode):
     """CeilNode class"""
 
     type: Literal[NodeType.CEIL] = Field(NodeType.CEIL, const=True)
 
 
-class LogNode(BaseUnaryOpNode):
+class LogNode(BaseSeriesOutputNode):
     """LogNode class"""
 
     type: Literal[NodeType.LOG] = Field(NodeType.LOG, const=True)
 
 
-class ExponentialNode(BaseUnaryOpNode):
+class ExponentialNode(BaseSeriesOutputNode):
     """ExponentialNode class"""
 
     type: Literal[NodeType.EXP] = Field(NodeType.EXP, const=True)
 
 
-class IsNullNode(BaseUnaryOpNode):
+class IsNullNode(BaseSeriesOutputNode):
     """IsNullNode class"""
 
     type: Literal[NodeType.IS_NULL] = Field(NodeType.IS_NULL, const=True)
+
+
+class CastNode(BaseSeriesOutputNode):
+    """CastNode class"""
+
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        type: Literal["int", "float", "str"]
+        from_dtype: DBVarType
+
+    type: Literal[NodeType.CAST] = Field(NodeType.CAST, const=True)
+
+
+class AliasNode(BaseSeriesOutputNode):
+    """AliasNode class"""
+
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        name: OutColumnStr
+
+    type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
+    parameters: Parameters
+
+    def _get_output_name(self) -> Optional[str]:
+        return self.parameters.name

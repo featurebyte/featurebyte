@@ -7,17 +7,11 @@ from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field
 
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.base import BaseNode
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.base import BaseSeriesOutputNode
 
 
-class BaseCountDictOpNode(BaseNode):
-    """Base class for count dictionary operation node"""
-
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-
-
-class CountDictTransformNode(BaseCountDictOpNode):
+class CountDictTransformNode(BaseSeriesOutputNode):
     """CountDictTransformNode class"""
 
     class Parameters(BaseModel):
@@ -37,7 +31,7 @@ class CountDictTransformNode(BaseCountDictOpNode):
     ]
 
 
-class CosineSimilarityNode(BaseCountDictOpNode):
+class CosineSimilarityNode(BaseSeriesOutputNode):
     """CosineSimilarityNode class"""
 
     type: Literal[NodeType.COSINE_SIMILARITY] = Field(NodeType.COSINE_SIMILARITY, const=True)
