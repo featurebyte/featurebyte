@@ -4,7 +4,7 @@ This module contains EventData related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from datetime import datetime
 
@@ -100,7 +100,7 @@ class EventDataModel(DataModel):
         Datetime when the EventData object was last updated
     """
 
-    type: TableDataType = Field(TableDataType.EVENT_DATA, const=True)
+    type: Literal[TableDataType.EVENT_DATA] = Field(TableDataType.EVENT_DATA, const=True)
     event_id_column: Optional[StrictStr] = Field(default=None)  # DEV-556: this should be compulsory
     event_timestamp_column: StrictStr
     default_feature_job_setting: Optional[FeatureJobSetting]

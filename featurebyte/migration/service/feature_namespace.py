@@ -24,7 +24,7 @@ class FeatureNamespaceMigrationService(FeatureNamespaceService, MigrationService
         await self.migrate_all_records(query_filter={})
 
         # drop old field
-        await self.persistent._update_many(
+        await self.persistent._update_many(  # pylint: disable=protected-access
             collection_name="feature_namespace",
             query_filter={},
             update={"$unset": {"event_data_ids": 1}},
