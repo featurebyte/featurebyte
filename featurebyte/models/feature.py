@@ -92,7 +92,7 @@ class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
     def _validate_tabular_data_ids(cls, values: dict[str, Any]) -> dict[str, Any]:
         # DEV-727: refactor event_data_ids to tabular_data_ids
         if "event_data_ids" in values:
-            values["tabular_data_ids"] = values.pop("event_data_ids")
+            values["tabular_data_ids"] = values.pop("event_data_ids", [])
         return values
 
     class Settings:
@@ -176,7 +176,7 @@ class FeatureModel(FeatureByteBaseDocumentModel):
     def _validate_tabular_data_ids(cls, values: dict[str, Any]) -> dict[str, Any]:
         # DEV-727: refactor event_data_ids to tabular_data_ids
         if "event_data_ids" in values:
-            values["tabular_data_ids"] = values.pop("event_data_ids")
+            values["tabular_data_ids"] = values.pop("event_data_ids", [])
         return values
 
     def extract_pruned_graph_and_node(self) -> tuple[QueryGraph, Node]:
