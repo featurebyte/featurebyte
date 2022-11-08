@@ -101,7 +101,7 @@ class SubStringNode(BaseSeriesOutputNode):
     parameters: Parameters
 
 
-class ConcatWithScalarInputWithAScalarParamNode(BaseSeriesOutputWithAScalarParamNode):
+class ConcatNode(BaseSeriesOutputWithAScalarParamNode):
     """ConcatNode class"""
 
     type: Literal[NodeType.CONCAT] = Field(NodeType.CONCAT, const=True)
