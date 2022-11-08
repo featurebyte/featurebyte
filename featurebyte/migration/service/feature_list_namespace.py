@@ -23,13 +23,6 @@ class FeatureListNamespaceMigrationService(FeatureListNamespaceService, Migratio
         # migrate all records and audit records
         await self.migrate_all_records(query_filter={})
 
-        # drop old field
-        await self.persistent._update_many(  # pylint: disable=protected-access
-            collection_name="feature_list_namespace",
-            query_filter={},
-            update={"$unset": {"event_data_ids": 1}},
-        )
-
         # check the sample records after migration
         sample_docs_after, total_after = await self.persistent.find(
             collection_name="feature_list_namespace",
