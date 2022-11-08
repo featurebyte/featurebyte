@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
-    BaseSeriesOutputWithScalarInputSeriesOutputNode,
+    BaseSeriesOutputWithAScalarParamNode,
 )
 
 Side = Literal["left", "right", "both"]
@@ -101,7 +101,7 @@ class SubStringNode(BaseSeriesOutputNode):
     parameters: Parameters
 
 
-class ConcatWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class ConcatWithScalarInputWithAScalarParamNode(BaseSeriesOutputWithAScalarParamNode):
     """ConcatNode class"""
 
     type: Literal[NodeType.CONCAT] = Field(NodeType.CONCAT, const=True)

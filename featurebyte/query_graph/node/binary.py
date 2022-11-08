@@ -7,94 +7,94 @@ from typing import Literal
 from pydantic import Field
 
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.node.base import BaseSeriesOutputWithScalarInputSeriesOutputNode
+from featurebyte.query_graph.node.base import BaseSeriesOutputWithAScalarParamNode
 
 
-class AndWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class AndNode(BaseSeriesOutputWithAScalarParamNode):
     """AndNode class"""
 
     type: Literal[NodeType.AND] = Field(NodeType.AND, const=True)
 
 
-class OrWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class OrNode(BaseSeriesOutputWithAScalarParamNode):
     """OrNode class"""
 
     type: Literal[NodeType.OR] = Field(NodeType.OR, const=True)
 
 
-class EqualWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class EqualNode(BaseSeriesOutputWithAScalarParamNode):
     """EqualNode class"""
 
     type: Literal[NodeType.EQ] = Field(NodeType.EQ, const=True)
 
 
-class NotEqualWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class NotNode(BaseSeriesOutputWithAScalarParamNode):
     """NotEqualNode class"""
 
     type: Literal[NodeType.NE] = Field(NodeType.NE, const=True)
 
 
-class GreaterThanWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class GreaterThanNode(BaseSeriesOutputWithAScalarParamNode):
     """GreaterThanNode class"""
 
     type: Literal[NodeType.GT] = Field(NodeType.GT, const=True)
 
 
-class GreaterEqualWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class GreaterEqualNode(BaseSeriesOutputWithAScalarParamNode):
     """GreaterEqualNode class"""
 
     type: Literal[NodeType.GE] = Field(NodeType.GE, const=True)
 
 
-class LessThanWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class LessThanNode(BaseSeriesOutputWithAScalarParamNode):
     """LessThanNode class"""
 
     type: Literal[NodeType.LT] = Field(NodeType.LT, const=True)
 
 
-class LessEqualWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class LessEqualNode(BaseSeriesOutputWithAScalarParamNode):
     """LessEqualNode class"""
 
     type: Literal[NodeType.LE] = Field(NodeType.LE, const=True)
 
 
-class AddWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class AddNode(BaseSeriesOutputWithAScalarParamNode):
     """AddNode class"""
 
     type: Literal[NodeType.ADD] = Field(NodeType.ADD, const=True)
 
 
-class SubtractWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class SubtractNode(BaseSeriesOutputWithAScalarParamNode):
     """SubtractNode class"""
 
     type: Literal[NodeType.SUB] = Field(NodeType.SUB, const=True)
 
 
-class MultiplyWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class MultiplyNode(BaseSeriesOutputWithAScalarParamNode):
     """MultiplyNode class"""
 
     type: Literal[NodeType.MUL] = Field(NodeType.MUL, const=True)
 
 
-class DivideWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class DivideNode(BaseSeriesOutputWithAScalarParamNode):
     """DivideNode class"""
 
     type: Literal[NodeType.DIV] = Field(NodeType.DIV, const=True)
 
 
-class ModuloWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class ModuloNode(BaseSeriesOutputWithAScalarParamNode):
     """ModuloNode class"""
 
     type: Literal[NodeType.MOD] = Field(NodeType.MOD, const=True)
 
 
-class PowerWithScalarInputNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class PowerNode(BaseSeriesOutputWithAScalarParamNode):
     """PowerNode class"""
 
     type: Literal[NodeType.POWER] = Field(NodeType.POWER, const=True)
 
 
-class ConditionalNode(BaseSeriesOutputWithScalarInputSeriesOutputNode):
+class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     """ConditionalNode class"""
 
     type: Literal[NodeType.CONDITIONAL] = Field(NodeType.CONDITIONAL, const=True)

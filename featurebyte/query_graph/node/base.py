@@ -114,12 +114,12 @@ class BaseNode(BaseModel):
 class BaseSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode):
     """Base class for node produces series output"""
 
-    parameters: BaseModel = Field(default=BaseModel(), const=True)
     output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
+    parameters: BaseModel = Field(default=BaseModel(), const=True)
 
 
-class BaseSeriesOutputWithScalarInputSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode):
-    """Base class for binary operation (second input could be scalar) node"""
+class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNode):
+    """Base class for node produces series output & contain a single scalar parameter"""
 
     class Parameters(BaseModel):
         """Parameters"""

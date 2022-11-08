@@ -2,7 +2,7 @@
 This module contains SQL operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Set, Union
+from typing import Any, Dict, List, Literal, Optional, Set, Union
 from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field, root_validator
@@ -267,7 +267,6 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
 
     type: Literal[NodeType.ITEM_GROUPBY] = Field(NodeType.ITEM_GROUPBY, const=True)
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
-    output_category: ClassVar[NodeOutputCategory] = NodeOutputCategory.FEATURE
     parameters: Parameters
 
     def _get_aggregations(self, columns: List[ViewDataColumn]) -> List[AggregationColumn]:

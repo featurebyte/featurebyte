@@ -1,13 +1,7 @@
 """
 Unit tests for query graph operation structure extraction
 """
-import pytest
-from bson.objectid import ObjectId
-
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node.binary import GreaterThanWithScalarInputNode
-from featurebyte.query_graph.node.generic import InputNode, ProjectNode
 
 
 def test_extract_operation__single_input_node(global_graph, input_node):
