@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 import pytest
+import pytest_asyncio
 from pandas.testing import assert_frame_equal
 
 from featurebyte.enum import InternalName
@@ -203,7 +204,7 @@ async def test_retrieve_features_multiple(snowflake_feature, feature_manager):
     assert f_reg_df.iloc[1]["READINESS"] == "PRODUCTION_READY"
 
 
-@pytest.mark.asyncio
+@pytest_asyncio.fixture(name="online_enable_prep")
 async def test_online_enable(
     snowflake_session,
     snowflake_feature,
@@ -253,6 +254,33 @@ async def test_online_enable(
     )
     result = result.drop(columns=["CREATED_AT"])
     assert_frame_equal(result, expected_df)
+
+    return online_feature_spec
+
+
+@pytest.mark.asyncio
+async def test_online_disable(
+    snowflake_session,
+    snowflake_feature_expected_tile_spec_dict,
+    feature_manager,
+    online_enable_prep,
+):
+    """
+    Test online_disable
+    """
+    online_feature_spec = online_enable_prep
+
+    await feature_manager.online_disable(online_feature_spec)
+
+    tile_id = online_feature_spec.tile_ids[0]
+    sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}'"
+    result = await snowflake_session.execute_query(sql)
+    assert len(result) == 0
+
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
+    assert len(result) == 2
+    assert result.iloc[0]["state"] == "suspended"
+    assert result.iloc[1]["state"] == "suspended"
 
 
 @pytest.mark.asyncio

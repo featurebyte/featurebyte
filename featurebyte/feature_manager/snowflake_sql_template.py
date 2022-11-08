@@ -160,3 +160,12 @@ tm_upsert_tile_feature_mapping = Template(
         )
 """
 )
+
+tm_delete_tile_feature_mapping = Template(
+    """
+    DELETE FROM TILE_FEATURE_MAPPING
+    WHERE TILE_ID = '{{tile_id}}'
+    AND FEATURE_NAME = '{{feature_name}}'
+    AND FEATURE_VERSION = '{{feature_version}}'
+"""
+)
