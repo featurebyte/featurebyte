@@ -133,6 +133,7 @@ app_container_config = {
             "name": "event_data_controller",
             "clazz": EventDataController,
             "depends": [
+                "random_service",
                 "event_data_service",
                 "data_update_service",
                 "semantic_service",
