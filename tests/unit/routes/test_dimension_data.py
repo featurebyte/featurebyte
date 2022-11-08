@@ -61,17 +61,36 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
     ]
     update_unprocessable_payload_expected_detail_pairs = []
 
+    @pytest_asyncio.fixture(name="dimension_data_semantic_ids")
+    async def dimension_data_semantic_ids_fixture(self, user_id, persistent):
+        """Dimension ID semantic IDs fixture"""
+        user = mock.Mock()
+        user.id = user_id
+        semantic_service = SemanticService(user=user, persistent=persistent)
+        dimension_data = await semantic_service.get_or_create_document("dimension_id")
+        return dimension_data.id
+
     @pytest.fixture(name="data_model_dict")
-    def data_model_dict_fixture(self, tabular_source, columns_info, user_id):
+    def data_model_dict_fixture(
+        self, tabular_source, columns_info, user_id, dimension_data_semantic_ids
+    ):
         """Fixture for a Dimension Data dict"""
+        dimension_data_id = dimension_data_semantic_ids
+        cols_info = []
+        for col_info in columns_info:
+            col = col_info.copy()
+            if col["name"] == "dimension_id":
+                col["semantic_id"] = dimension_data_id
+            cols_info.append(col)
+
         dimension_data_dict = {
             "name": "订单表",
             "tabular_source": tabular_source,
-            "columns_info": columns_info,
+            "columns_info": cols_info,
             "record_creation_date_column": "created_at",
             "status": "PUBLISHED",
             "user_id": str(user_id),
-            "dimension_data_id_column": "primary_key_column",
+            "dimension_data_id_column": "dimension_id",  # this value needs to match the column name used in test data
         }
         output = DimensionDataModel(**dimension_data_dict).json_dict()
         assert output.pop("created_at") is None
@@ -97,10 +116,13 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
         """
         Update Dimension Data
         """
+        # data_response takes in a data_model_dict (the one arbitrarily defined in tests), adds on some default
+        # columns info, and writes it into the DB
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
         insert_id = response_dict["_id"]
 
+        # data_update_dict contains the input to the request here
         response = test_api_client.patch(f"{self.base_route}/{insert_id}", json=data_update_dict)
         assert response.status_code == HTTPStatus.OK
         update_response_dict = response.json()
@@ -110,52 +132,20 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
 
         # the other fields should be unchanged
         data_model_dict["status"] = DataStatus.DRAFT
+        # update_response_dict (which is the explicit request to patch)
+        #   doesn't have the updated semantic_id on dimension_id
+        # data_model_dict is the fixture that is a generic dimension data struct
         assert update_response_dict == data_model_dict
 
         # test get audit records
         response = test_api_client.get(f"/dimension_data/audit/{insert_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
-        assert results["total"] == 3
+        assert results["total"] == 2
         assert [record["action_type"] for record in results["data"]] == [
-            "UPDATE",
             "UPDATE",
             "INSERT",
         ]
-
-    def test_update_excludes_unsupported_fields(
-        self,
-        test_api_client_persistent,
-        data_response,
-        data_update_dict,
-        data_model_dict,
-    ):
-        """
-        Update Dimension Data only updates job settings even if other fields are provided
-        """
-        test_api_client, _ = test_api_client_persistent
-        response_dict = data_response.json()
-        insert_id = response_dict["_id"]
-        assert insert_id
-
-        # expect status to be draft
-        assert response_dict["status"] == DataStatus.DRAFT
-
-        data_update_dict["name"] = "Some other name"
-        data_update_dict["source"] = "Some other source"
-        data_update_dict["status"] = DataStatus.PUBLISHED.value
-        response = test_api_client.patch(f"/dimension_data/{insert_id}", json=data_update_dict)
-        assert response.status_code == HTTPStatus.OK
-        data = response.json()
-        assert data["_id"] == insert_id
-        data.pop("created_at")
-        data.pop("updated_at")
-
-        # the other fields should be unchanged
-        assert data == data_model_dict
-
-        # expect status to be updated to published
-        assert data["status"] == DataStatus.PUBLISHED
 
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):
@@ -174,7 +164,6 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
                 "schema_name": "sf_schema",
                 "table_name": "sf_table",
             },
-            "dimension_data_id_column": "primary_key_column",
             "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
         }
         assert response.status_code == HTTPStatus.OK, response.text

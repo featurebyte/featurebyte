@@ -30,7 +30,7 @@ class DimensionDataController(
 
     async def _get_column_semantic_map(self, document: DimensionDataModel) -> dict[str, Any]:
         dimension_data_id = await self.semantic_service.get_or_create_document(
-            name=SemanticType.DIMENSION_DATA_ID
+            name=SemanticType.DIMENSION_ID
         )
         assert document.dimension_data_id_column is not None
         return {
