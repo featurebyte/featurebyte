@@ -3,17 +3,13 @@ DimensionDataData API payload schema
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List
 
-from pydantic import Field, StrictStr
+from pydantic import StrictStr
 
-from featurebyte.enum import DBVarType
-from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.dimension_data import DimensionDataModel
-from featurebyte.models.feature_store import TableDetails
-from featurebyte.schema.common.base import BaseInfo, PaginationMixin
+from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.data import DataCreate, DataUpdate
-from featurebyte.schema.entity import EntityBriefInfoList
 
 
 class DimensionDataCreate(DataCreate):
