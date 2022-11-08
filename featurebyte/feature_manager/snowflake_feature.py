@@ -29,7 +29,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
 )
 from featurebyte.logger import logger
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.tile import OnlineFeatureSpec, TileType
+from featurebyte.models.tile import OnlineFeatureSpec
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 from featurebyte.utils.snowflake.sql import escape_column_names

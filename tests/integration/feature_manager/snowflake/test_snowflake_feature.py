@@ -1,6 +1,7 @@
 """
 This module contains integration tests for FeatureSnowflake
 """
+import copy
 import json
 from datetime import datetime, timedelta
 
@@ -228,8 +229,10 @@ async def test_online_enable(
 
     await feature_manager.online_enable(online_feature_spec)
 
-    tasks = await snowflake_session.execute_query("SHOW TASKS")
-    assert len(tasks) > 1
+    tasks = await snowflake_session.execute_query(
+        f"SHOW TASKS LIKE '%{snowflake_feature.tile_specs[0].tile_id}%'"
+    )
+    assert len(tasks) == 2
     assert tasks["name"].iloc[0] == f"SHELL_TASK_{expected_tile_id.upper()}_OFFLINE"
     assert tasks["schedule"].iloc[0] == "USING CRON 5 0 * * * UTC"
     assert tasks["state"].iloc[0] == "started"
@@ -269,18 +272,47 @@ async def test_online_disable(
     Test online_disable
     """
     online_feature_spec = online_enable_prep
+    tile_id = online_feature_spec.tile_ids[0]
 
     await feature_manager.online_disable(online_feature_spec)
-
-    tile_id = online_feature_spec.tile_ids[0]
-    sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}'"
-    result = await snowflake_session.execute_query(sql)
-    assert len(result) == 0
 
     result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
     assert len(result) == 2
     assert result.iloc[0]["state"] == "suspended"
     assert result.iloc[1]["state"] == "suspended"
+
+    sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}'"
+    result = await snowflake_session.execute_query(sql)
+    assert len(result) == 0
+
+
+@pytest.mark.asyncio
+async def test_online_disable_tile_in_use(
+    snowflake_session,
+    snowflake_feature_expected_tile_spec_dict,
+    feature_manager,
+    online_enable_prep,
+):
+    """
+    Test online_disable
+    """
+    online_feature_spec = online_enable_prep
+    tile_id = online_feature_spec.tile_ids[0]
+
+    online_feature_spec_2 = copy.deepcopy(online_feature_spec)
+    online_feature_spec_2.feature_name = online_feature_spec_2.feature_name + "_2"
+    await feature_manager.online_enable(online_feature_spec_2)
+
+    await feature_manager.online_disable(online_feature_spec)
+
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
+    assert len(result) == 2
+    assert result.iloc[0]["state"] == "started"
+    assert result.iloc[1]["state"] == "started"
+
+    sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}'"
+    result = await snowflake_session.execute_query(sql)
+    assert len(result) == 1
 
 
 @pytest.mark.asyncio

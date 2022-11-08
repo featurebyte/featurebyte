@@ -80,33 +80,6 @@ async def test_generate_tiles(mock_execute_query, mock_snowflake_tile, tile_mana
 
 @pytest.mark.asyncio
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
-async def test_check_tile_task_exists(mock_execute_query, mock_snowflake_tile, tile_manager):
-    """
-    Test schedule_online_tiles method in TileSnowflake
-    """
-    mock_execute_query.return_value = ["task_1"]
-
-    flag = await tile_manager.tile_task_exists(TileType.ONLINE, mock_snowflake_tile)
-    assert flag is True
-    mock_execute_query.assert_called_once()
-    task_name = "TILE_TASK_" + TileType.ONLINE + "_" + mock_snowflake_tile.tile_id
-    mock_execute_query.assert_called_with(f"SHOW TASKS LIKE '{task_name}'")
-
-    mock_execute_query.return_value = []
-    flag = await tile_manager.tile_task_exists(TileType.OFFLINE, mock_snowflake_tile)
-    assert flag is False
-    task_name = "TILE_TASK_" + TileType.OFFLINE + "_" + mock_snowflake_tile.tile_id
-    mock_execute_query.assert_called_with(f"SHOW TASKS LIKE '{task_name}'")
-
-    mock_execute_query.return_value = None
-    flag = await tile_manager.tile_task_exists(TileType.ONLINE, mock_snowflake_tile)
-    assert flag is False
-    task_name = "TILE_TASK_" + TileType.ONLINE + "_" + mock_snowflake_tile.tile_id
-    mock_execute_query.assert_called_with(f"SHOW TASKS LIKE '{task_name}'")
-
-
-@pytest.mark.asyncio
-@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 async def test_schedule_online_tiles(mock_execute_query, mock_snowflake_tile, tile_manager):
     """
     Test schedule_online_tiles method in TileSnowflake
