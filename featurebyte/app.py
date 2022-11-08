@@ -8,6 +8,7 @@ from typing import Callable
 
 from fastapi import Depends, FastAPI, Request
 
+import featurebyte.routes.dimension_data.api as dimension_data_api
 import featurebyte.routes.entity.api as entity_api
 import featurebyte.routes.event_data.api as event_data_api
 import featurebyte.routes.feature.api as feature_api
@@ -86,6 +87,7 @@ def get_app() -> FastAPI:
 
     # add routers into the app
     resource_apis = [
+        dimension_data_api,
         event_data_api,
         item_data_api,
         entity_api,
