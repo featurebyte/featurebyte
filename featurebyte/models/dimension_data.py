@@ -20,7 +20,7 @@ class DimensionDataModel(DataModel):
     """
 
     type: TableDataType = Field(TableDataType.DIMENSION_DATA, const=True)
-    dimension_data_id_column: StrictStr = Field(default=None)
+    dimension_data_id_column: StrictStr
 
     @validator("record_creation_date_column")
     @classmethod
@@ -29,4 +29,11 @@ class DimensionDataModel(DataModel):
     ) -> Optional[str]:
         return DataModel.validate_column_exists(
             column_name=value, values=values, expected_types={DBVarType.TIMESTAMP}
+        )
+
+    @validator("dimension_data_id_column")
+    @classmethod
+    def _check_id_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
+        return DataModel.validate_column_exists(
+            column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
         )

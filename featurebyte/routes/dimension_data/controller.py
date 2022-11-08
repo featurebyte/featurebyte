@@ -32,7 +32,6 @@ class DimensionDataController(
         dimension_data_id = await self.semantic_service.get_or_create_document(
             name=SemanticType.DIMENSION_ID
         )
-        assert document.dimension_data_id_column is not None
         return {
             document.dimension_data_id_column: dimension_data_id,
         }
