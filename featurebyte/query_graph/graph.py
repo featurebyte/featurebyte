@@ -28,6 +28,7 @@ from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node, construct_node
 from featurebyte.query_graph.node.generic import AssignNode, GroupbyNode, InputNode
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.util import (
     get_aggregation_identifier,
     get_tile_table_identifier,
@@ -60,6 +61,18 @@ class QueryGraph(FeatureByteBaseModel):
     node_type_counter: Dict[str, int] = Field(default=defaultdict(int), exclude=True)
     node_name_to_ref: Dict[str, str] = Field(default_factory=dict, exclude=True)
     ref_to_node_name: Dict[str, str] = Field(default_factory=dict, exclude=True)
+
+    @property
+    def node_topological_order_map(self) -> Dict[str, int]:
+        """
+        Node name to topological sort order index mapping
+
+        Returns
+        -------
+        Dict[int, str]
+        """
+        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
+        return {value: idx for idx, value in enumerate(sorted_node_names)}
 
     def get_input_node(self, node_name: str) -> InputNode:
         """
@@ -386,9 +399,8 @@ class QueryGraph(FeatureByteBaseModel):
         pruned_graph: "QueryGraph",
         processed_node_names: Set[str],
         node_name_map: Dict[str, str],
-        index_map: Dict[str, int],
+        topological_order_map: Dict[str, int],
     ) -> "QueryGraph":
-        # pylint: disable=too-many-locals
         # pruning: move backward from target node to the input node
         to_prune_target_node = False
         input_node_names = self.backward_edges_map.get(target_node.name, [])
@@ -417,15 +429,16 @@ class QueryGraph(FeatureByteBaseModel):
         # Here, "groupby_1" node have 2 input_node_names ("assign_1" and "project_1"), reverse topological
         # sort makes sure we travel "project_1" first (filled up target_columns) and then travel assign node.
         # If the assign node's new columns are not in "target_columns", we can safely remove the node.
-        for input_node_name in sorted(input_node_names, key=lambda x: index_map[x], reverse=True):
-            input_node = self.nodes_map[input_node_name]
+        for input_node_name in sorted(
+            input_node_names, key=lambda x: topological_order_map[x], reverse=True
+        ):
             pruned_graph = self._prune(
-                target_node=input_node,
+                target_node=self.nodes_map[input_node_name],
                 target_columns=target_columns,
                 pruned_graph=pruned_graph,
                 processed_node_names=processed_node_names,
                 node_name_map=node_name_map,
-                index_map=index_map,
+                topological_order_map=topological_order_map,
             )
 
         if to_prune_target_node:
@@ -482,15 +495,13 @@ class QueryGraph(FeatureByteBaseModel):
         QueryGraph, node_name_map
         """
         node_name_map: Dict[str, str] = {}
-        sorted_node_names = topological_sort(list(self.nodes_map), self.edges_map)
-        index_map = {value: idx for idx, value in enumerate(sorted_node_names)}
         pruned_graph = self._prune(
             target_node=target_node,
             target_columns=target_columns,
             pruned_graph=QueryGraph(),
             processed_node_names=set(),
             node_name_map=node_name_map,
-            index_map=index_map,
+            topological_order_map=self.node_topological_order_map,
         )
         return pruned_graph, node_name_map
 
@@ -597,6 +608,48 @@ class QueryGraph(FeatureByteBaseModel):
                     input_nodes=input_nodes,
                 )
         return output
+
+    def _extract_operation_structure(
+        self,
+        node: Node,
+        visited_node_types: Set[NodeType],
+        topological_order_map: Dict[str, int],
+    ) -> OperationStructure:
+        input_node_names = self.backward_edges_map.get(node.name, [])
+        input_node_map = {}
+        for input_node_name in sorted(
+            input_node_names, key=lambda x: topological_order_map[x], reverse=True
+        ):
+            input_node = self.nodes_map[input_node_name]
+            input_node_map[input_node_name] = self._extract_operation_structure(
+                node=input_node,
+                visited_node_types=visited_node_types.union([node.type]),
+                topological_order_map=topological_order_map,
+            )
+
+        return node.derive_node_operation_info(
+            inputs=[input_node_map[node_name] for node_name in input_node_names],
+            visited_node_types=visited_node_types,
+        )
+
+    def extract_operation_structure(self, node: Node) -> OperationStructure:
+        """
+        Extract operation structure from the graph given target node
+
+        Parameters
+        ----------
+        node: Node
+            Target node used to construct the operation structure
+
+        Returns
+        -------
+        OperationStructure
+        """
+        return self._extract_operation_structure(
+            node=node,
+            visited_node_types=set(),
+            topological_order_map=self.node_topological_order_map,
+        )
 
 
 class GraphState(TypedDict):

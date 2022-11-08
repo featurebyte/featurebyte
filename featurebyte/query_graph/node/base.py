@@ -2,53 +2,16 @@
 Base classes required for constructing query graph nodes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import TYPE_CHECKING, Any, List, Type, Union
+from typing import Any, List, Optional, Set, Type, Union
 
-from pydantic import BaseModel
+from abc import abstractmethod
+
+from pydantic import BaseModel, Field
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-
-if TYPE_CHECKING:
-    from pydantic.typing import CallableGenerator
-
-
-class ColumnStr(str):
-    """
-    ColumnStr validator class
-    """
-
-    @classmethod
-    def __get_validators__(cls) -> "CallableGenerator":
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: Any) -> "ColumnStr":
-        """
-        Validate value
-
-        Parameters
-        ----------
-        value: Any
-            Input to the ColumnStr class
-
-        Returns
-        -------
-        ColumnStr
-        """
-        return cls(str(value))
-
-
-class OutColumnStr(ColumnStr):
-    """
-    OutColumnStr is used to type newly generated column string
-    """
-
-
-class InColumnStr(ColumnStr):
-    """
-    InColumnStr is used to type required input column string
-    """
-
+from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
+from featurebyte.query_graph.node.metadata.operation import NodeTransform, OperationStructure
+from featurebyte.query_graph.node.mixin import SeriesOutputNodeOpStructMixin
 
 NODE_TYPES = []
 
@@ -75,6 +38,17 @@ class BaseNode(BaseModel):
         if repr(cls.__fields__["type"].type_).startswith("typing.Literal"):
             # only add node type class to NODE_TYPES if the type variable is a literal (to filter out base classes)
             NODE_TYPES.append(cls)
+
+    @property
+    def transform_info(self) -> NodeTransform:
+        """
+        Construct from node transform object from this node
+
+        Returns
+        -------
+        NodeTransform
+        """
+        return NodeTransform(node_type=self.type, parameters=self.parameters.dict())
 
     @classmethod
     def _extract_column_str_values(
@@ -116,3 +90,41 @@ class BaseNode(BaseModel):
         list[str]
         """
         return self._extract_column_str_values(self.parameters.dict(), OutColumnStr)
+
+    @abstractmethod
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        """
+        Derive node operation info
+
+        Parameters
+        ----------
+        inputs: List[OperationStructure]
+            List of input nodes' operation info
+        visited_node_types: Set[NodeType]
+            Set of visited nodes when doing backward traversal
+
+        Returns
+        -------
+        OperationStructure
+        """
+
+
+class BaseSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode):
+    """Base class for node produces series output"""
+
+    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
+    parameters: BaseModel = Field(default=BaseModel(), const=True)
+
+
+class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNode):
+    """Base class for node produces series output & contain a single scalar parameter"""
+
+    class Parameters(BaseModel):
+        """Parameters"""
+
+        value: Optional[Any]
+
+    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
+    parameters: Parameters

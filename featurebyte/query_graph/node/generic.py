@@ -2,16 +2,27 @@
 This module contains SQL operation related node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Set, Union
 from typing_extensions import Annotated
 
 from pydantic import BaseModel, Field, root_validator
 
-from featurebyte.enum import AggFunc, DBVarType, TableDataType
+from featurebyte.enum import AggFunc, TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.base import BaseNode, InColumnStr, OutColumnStr
+from featurebyte.query_graph.node.base import BaseNode, BaseSeriesOutputNode
+from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
+from featurebyte.query_graph.node.metadata.operation import (
+    AggregationColumn,
+    DerivedDataColumn,
+    NodeOutputCategory,
+    OperationStructure,
+    PostAggregationColumn,
+    SourceDataColumn,
+    ViewDataColumn,
+)
+from featurebyte.query_graph.node.mixin import GroupbyNodeOpStructMixin
 
 
 class InputNode(BaseNode):
@@ -28,6 +39,7 @@ class InputNode(BaseNode):
         """GenericParameters"""
 
         type: Literal[TableDataType.GENERIC] = Field(TableDataType.GENERIC)
+        id: Optional[PydanticObjectId] = Field(default=None)
 
     class EventDataParameters(BaseParameters):
         """EventDataParameters"""
@@ -68,6 +80,23 @@ class InputNode(BaseNode):
                 values["parameters"]["type"] = TableDataType.EVENT_DATA
         return values
 
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        _ = visited_node_types
+        return OperationStructure(
+            columns=[
+                SourceDataColumn(
+                    name=column,
+                    tabular_data_id=self.parameters.id,
+                    tabular_data_type=self.parameters.type,
+                )
+                for column in self.parameters.columns
+            ],
+            output_type=NodeOutputType.FRAME,
+            output_category=NodeOutputCategory.VIEW,
+        )
+
 
 class ProjectNode(BaseNode):
     """ProjectNode class"""
@@ -80,12 +109,63 @@ class ProjectNode(BaseNode):
     type: Literal[NodeType.PROJECT] = Field(NodeType.PROJECT, const=True)
     parameters: Parameters
 
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        _ = visited_node_types
+        input_operation_info = inputs[0]
+        output_category = input_operation_info.output_category
+        names = set(self.get_required_input_columns())
+        node_kwargs: Dict[str, Any] = {}
+        if output_category == NodeOutputCategory.VIEW:
+            node_kwargs["columns"] = [
+                col for col in input_operation_info.columns if col.name in names
+            ]
+        else:
+            node_kwargs["columns"] = input_operation_info.columns
+            node_kwargs["aggregations"] = [
+                col for col in input_operation_info.aggregations if col.name in names
+            ]
+
+        return OperationStructure(
+            **node_kwargs, output_type=self.output_type, output_category=output_category
+        )
+
 
 class FilterNode(BaseNode):
     """FilterNode class"""
 
     type: Literal[NodeType.FILTER] = Field(NodeType.FILTER, const=True)
     parameters: BaseModel = Field(default=BaseModel(), const=True)
+
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        _ = visited_node_types
+        input_operation_info = inputs[0]
+        output_category = input_operation_info.output_category
+        node_kwargs: Dict[str, Any] = {}
+        if output_category == NodeOutputCategory.VIEW:
+            node_kwargs["columns"] = [
+                DerivedDataColumn.create(
+                    name=col.name, columns=[col], transform=self.transform_info
+                )
+                for col in input_operation_info.columns
+            ]
+        else:
+            node_kwargs["columns"] = input_operation_info.columns
+            node_kwargs["aggregations"] = [
+                PostAggregationColumn.create(
+                    name=col.name, columns=[col], transform=self.transform_info
+                )
+                for col in input_operation_info.aggregations
+            ]
+
+        return OperationStructure(
+            **node_kwargs,
+            output_type=input_operation_info.output_type,
+            output_category=output_category,
+        )
 
 
 class AssignNode(BaseNode):
@@ -101,49 +181,25 @@ class AssignNode(BaseNode):
     output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
-
-class ConditionalNode(BaseNode):
-    """ConditionalNode class"""
-
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        value: Optional[Any]
-
-    type: Literal[NodeType.CONDITIONAL] = Field(NodeType.CONDITIONAL, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-    parameters: Parameters
-
-
-class AliasNode(BaseNode):
-    """AliasNode class"""
-
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        # FIXME: should we include input column name also?
-        name: OutColumnStr
-
-    type: Literal[NodeType.ALIAS] = Field(NodeType.ALIAS, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-    parameters: Parameters
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        _ = visited_node_types
+        input_operation_info, series_operation_info = inputs
+        new_column_name = self.parameters.name
+        new_column = DerivedDataColumn.create(
+            name=new_column_name,
+            columns=series_operation_info.columns,
+            transform=self.transform_info,
+        )
+        return OperationStructure(
+            columns=input_operation_info.columns + [new_column],
+            output_type=NodeOutputType.FRAME,
+            output_category=NodeOutputCategory.VIEW,
+        )
 
 
-class CastNode(BaseNode):
-    """CastNode class"""
-
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        type: Literal["int", "float", "str"]
-        from_dtype: DBVarType
-
-    type: Literal[NodeType.CAST] = Field(NodeType.CAST, const=True)
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-    parameters: Parameters
-
-
-class LagNode(BaseNode):
+class LagNode(BaseSeriesOutputNode):
     """LagNode class"""
 
     class Parameters(BaseModel):
@@ -154,11 +210,11 @@ class LagNode(BaseNode):
         offset: int
 
     type: Literal[NodeType.LAG] = Field(NodeType.LAG, const=True)
-    output_type = NodeOutputType = Field(NodeOutputType.SERIES, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
     parameters: Parameters
 
 
-class GroupbyNode(BaseNode):
+class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     """GroupbyNode class"""
 
     class Parameters(BaseModel):
@@ -173,16 +229,31 @@ class GroupbyNode(BaseNode):
         blind_spot: int
         time_modulo_frequency: int
         frequency: int
-        names: List[str]
+        names: List[str]  # do not use `OutColumnStr` here as the output is feature but not view
         serving_names: List[str]
         tile_id: Optional[str]
         aggregation_id: Optional[str]
 
     type: Literal[NodeType.GROUPBY] = Field(NodeType.GROUPBY, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
 
+    def _get_aggregations(self, columns: List[ViewDataColumn]) -> List[AggregationColumn]:
+        return [
+            AggregationColumn(
+                name=name,
+                method=self.parameters.agg_func,
+                groupby=self.parameters.keys,
+                window=window,
+                category=self.parameters.value_by,
+                columns=columns,
+                groupby_type=self.type,
+            )
+            for name, window in zip(self.parameters.names, self.parameters.windows)
+        ]
 
-class ItemGroupbyNode(BaseNode):
+
+class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     """ItemGroupbyNode class"""
 
     class Parameters(BaseModel):
@@ -195,7 +266,22 @@ class ItemGroupbyNode(BaseNode):
         serving_names: List[str]
 
     type: Literal[NodeType.ITEM_GROUPBY] = Field(NodeType.ITEM_GROUPBY, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
+
+    def _get_aggregations(self, columns: List[ViewDataColumn]) -> List[AggregationColumn]:
+        return [
+            AggregationColumn(
+                name=name,
+                method=self.parameters.agg_func,
+                groupby=self.parameters.keys,
+                window=None,
+                category=None,
+                columns=columns,
+                groupby_type=self.type,
+            )
+            for name in self.parameters.names
+        ]
 
 
 class Join(BaseNode):
@@ -213,4 +299,19 @@ class Join(BaseNode):
         join_type: Literal["left", "inner"]
 
     type: Literal[NodeType.JOIN] = Field(NodeType.JOIN, const=True)
+    output_type: NodeOutputType = Field(NodeOutputType.FRAME, const=True)
     parameters: Parameters
+
+    def derive_node_operation_info(
+        self, inputs: List[OperationStructure], visited_node_types: Set[NodeType]
+    ) -> OperationStructure:
+        _ = visited_node_types
+        left_output_columns = set(self.parameters.left_output_columns)
+        right_output_columns = set(self.parameters.right_output_columns)
+        left_columns = [col for col in inputs[0].columns if col.name in left_output_columns]
+        right_columns = [col for col in inputs[1].columns if col.name in right_output_columns]
+        return OperationStructure(
+            columns=left_columns + right_columns,
+            output_type=NodeOutputType.FRAME,
+            output_category=NodeOutputCategory.VIEW,
+        )

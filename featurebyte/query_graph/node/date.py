@@ -7,17 +7,11 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 from featurebyte.common.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.base import BaseNode
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.base import BaseSeriesOutputNode
 
 
-class BaseDatetimeOpNode(BaseNode):
-    """Base class for datetime operation node"""
-
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-
-
-class DatetimeExtractNode(BaseDatetimeOpNode):
+class DatetimeExtractNode(BaseSeriesOutputNode):
     """DatetimeExtractNode class"""
 
     class Parameters(BaseModel):
@@ -25,12 +19,11 @@ class DatetimeExtractNode(BaseDatetimeOpNode):
 
         property: DatetimeSupportedPropertyType
 
-    # FIXME: should we rename DT_EXTRACT to DATETIME_EXTRACT
     type: Literal[NodeType.DT_EXTRACT] = Field(NodeType.DT_EXTRACT, const=True)
     parameters: Parameters
 
 
-class TimeDeltaExtractNode(BaseDatetimeOpNode):
+class TimeDeltaExtractNode(BaseSeriesOutputNode):
     """TimeDeltaExtractNode class"""
 
     class Parameters(BaseModel):
@@ -42,13 +35,13 @@ class TimeDeltaExtractNode(BaseDatetimeOpNode):
     parameters: Parameters
 
 
-class DateDifference(BaseDatetimeOpNode):
+class DateDifference(BaseSeriesOutputNode):
     """DateDifference class"""
 
     type: Literal[NodeType.DATE_DIFF] = Field(NodeType.DATE_DIFF, const=True)
 
 
-class TimeDelta(BaseDatetimeOpNode):
+class TimeDelta(BaseSeriesOutputNode):
     """TimeDelta class"""
 
     class Parameters(BaseModel):
@@ -56,12 +49,11 @@ class TimeDelta(BaseDatetimeOpNode):
 
         unit: TimedeltaSupportedUnitType
 
-    # FIXME: should we rename TimeDelta to TO_TIMEDELTA?
     type: Literal[NodeType.TIMEDELTA] = Field(NodeType.TIMEDELTA, const=True)
     parameters: Parameters
 
 
-class DateAdd(BaseDatetimeOpNode):
+class DateAdd(BaseSeriesOutputNode):
     """DateAdd class"""
 
     class Parameters(BaseModel):

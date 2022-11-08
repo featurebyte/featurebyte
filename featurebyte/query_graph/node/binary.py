@@ -2,105 +2,99 @@
 This module contains binary operation node classes
 """
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, Literal, Optional
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.base import BaseNode
-
-
-class BaseBinaryOpNode(BaseNode):
-    """Base class for binary operation node"""
-
-    class Parameters(BaseModel):
-        """Parameters"""
-
-        value: Optional[Any]
-
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-    parameters: Parameters
+from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.base import BaseSeriesOutputWithAScalarParamNode
 
 
-class AndNode(BaseBinaryOpNode):
+class AndNode(BaseSeriesOutputWithAScalarParamNode):
     """AndNode class"""
 
     type: Literal[NodeType.AND] = Field(NodeType.AND, const=True)
 
 
-class OrNode(BaseBinaryOpNode):
+class OrNode(BaseSeriesOutputWithAScalarParamNode):
     """OrNode class"""
 
     type: Literal[NodeType.OR] = Field(NodeType.OR, const=True)
 
 
-class EqualNode(BaseBinaryOpNode):
+class EqualNode(BaseSeriesOutputWithAScalarParamNode):
     """EqualNode class"""
 
     type: Literal[NodeType.EQ] = Field(NodeType.EQ, const=True)
 
 
-class NotEqualNode(BaseBinaryOpNode):
+class NotEqualNode(BaseSeriesOutputWithAScalarParamNode):
     """NotEqualNode class"""
 
     type: Literal[NodeType.NE] = Field(NodeType.NE, const=True)
 
 
-class GreaterThanNode(BaseBinaryOpNode):
+class GreaterThanNode(BaseSeriesOutputWithAScalarParamNode):
     """GreaterThanNode class"""
 
     type: Literal[NodeType.GT] = Field(NodeType.GT, const=True)
 
 
-class GreaterEqualNode(BaseBinaryOpNode):
+class GreaterEqualNode(BaseSeriesOutputWithAScalarParamNode):
     """GreaterEqualNode class"""
 
     type: Literal[NodeType.GE] = Field(NodeType.GE, const=True)
 
 
-class LessThanNode(BaseBinaryOpNode):
+class LessThanNode(BaseSeriesOutputWithAScalarParamNode):
     """LessThanNode class"""
 
     type: Literal[NodeType.LT] = Field(NodeType.LT, const=True)
 
 
-class LessEqualNode(BaseBinaryOpNode):
+class LessEqualNode(BaseSeriesOutputWithAScalarParamNode):
     """LessEqualNode class"""
 
     type: Literal[NodeType.LE] = Field(NodeType.LE, const=True)
 
 
-class AddNode(BaseBinaryOpNode):
+class AddNode(BaseSeriesOutputWithAScalarParamNode):
     """AddNode class"""
 
     type: Literal[NodeType.ADD] = Field(NodeType.ADD, const=True)
 
 
-class SubtractNode(BaseBinaryOpNode):
+class SubtractNode(BaseSeriesOutputWithAScalarParamNode):
     """SubtractNode class"""
 
     type: Literal[NodeType.SUB] = Field(NodeType.SUB, const=True)
 
 
-class MultiplyNode(BaseBinaryOpNode):
+class MultiplyNode(BaseSeriesOutputWithAScalarParamNode):
     """MultiplyNode class"""
 
     type: Literal[NodeType.MUL] = Field(NodeType.MUL, const=True)
 
 
-class DivideNode(BaseBinaryOpNode):
+class DivideNode(BaseSeriesOutputWithAScalarParamNode):
     """DivideNode class"""
 
     type: Literal[NodeType.DIV] = Field(NodeType.DIV, const=True)
 
 
-class ModuloNode(BaseBinaryOpNode):
+class ModuloNode(BaseSeriesOutputWithAScalarParamNode):
     """ModuloNode class"""
 
     type: Literal[NodeType.MOD] = Field(NodeType.MOD, const=True)
 
 
-class PowerNode(BaseBinaryOpNode):
+class PowerNode(BaseSeriesOutputWithAScalarParamNode):
     """PowerNode class"""
 
     type: Literal[NodeType.POWER] = Field(NodeType.POWER, const=True)
+
+
+class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
+    """ConditionalNode class"""
+
+    type: Literal[NodeType.CONDITIONAL] = Field(NodeType.CONDITIONAL, const=True)
