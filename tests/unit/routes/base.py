@@ -680,6 +680,7 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
             },
             {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
             {"name": "event_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
+            {"name": "dimension_data_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
             {"name": "item_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
         ]
 

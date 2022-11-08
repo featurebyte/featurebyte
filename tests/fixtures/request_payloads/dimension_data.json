@@ -57,5 +57,5 @@
             "table_name": "sf_table"
         }
     },
-    "dimension_data_primary_key_column": "primary_key_column"
+    "dimension_data_id_column": "primary_key_column"
 }

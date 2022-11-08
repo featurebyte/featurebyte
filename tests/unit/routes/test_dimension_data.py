@@ -71,7 +71,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
             "record_creation_date_column": "created_at",
             "status": "PUBLISHED",
             "user_id": str(user_id),
-            "dimension_data_primary_key_column": "primary_key_column",
+            "dimension_data_id_column": "primary_key_column",
         }
         output = DimensionDataModel(**dimension_data_dict).json_dict()
         assert output.pop("created_at") is None
@@ -131,7 +131,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
         data_model_dict,
     ):
         """
-        Update Dimension Data Data only updates job settings even if other fields are provided
+        Update Dimension Data only updates job settings even if other fields are provided
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
@@ -174,7 +174,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
                 "schema_name": "sf_schema",
                 "table_name": "sf_table",
             },
-            "dimension_data_primary_key_column": "primary_key_column",
+            "dimension_data_id_column": "primary_key_column",
             "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
         }
         assert response.status_code == HTTPStatus.OK, response.text

@@ -21,7 +21,7 @@ class DimensionDataCreate(DataCreate):
     DimensionData Creation Schema
     """
 
-    dimension_data_primary_key_column: StrictStr
+    dimension_data_id_column: StrictStr
 
 
 class DimensionDataList(PaginationMixin):
@@ -60,7 +60,7 @@ class DimensionDataInfo(BaseInfo):
     DimensionData info schema
     """
 
-    dimension_data_primary_key_column: str
+    dimension_data_id_column: str
     record_creation_date_column: Optional[str]
     table_details: TableDetails
     entities: EntityBriefInfoList
