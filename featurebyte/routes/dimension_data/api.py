@@ -3,7 +3,7 @@ DimensionData API routes
 """
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Optional
 
 from http import HTTPStatus
 
@@ -20,11 +20,9 @@ from featurebyte.routes.common.schema import (
     SearchQuery,
     SortByQuery,
     SortDirQuery,
-    VerboseQuery,
 )
 from featurebyte.schema.dimension_data import (
     DimensionDataCreate,
-    DimensionDataInfo,
     DimensionDataList,
     DimensionDataUpdate,
 )
@@ -121,20 +119,3 @@ async def list_dimension_data_audit_logs(
         search=search,
     )
     return audit_doc_list
-
-
-@router.get("/{dimension_data_id}/info", response_model=DimensionDataInfo)
-async def get_dimension_data_info(
-    request: Request,
-    dimension_data_id: PydanticObjectId,
-    verbose: bool = VerboseQuery,
-) -> DimensionDataInfo:
-    """
-    Retrieve DimensionData info
-    """
-    controller = request.state.app_container.dimension_data_controller
-    info = await controller.get_info(
-        document_id=dimension_data_id,
-        verbose=verbose,
-    )
-    return cast(DimensionDataInfo, info)

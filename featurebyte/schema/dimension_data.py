@@ -36,32 +36,3 @@ class DimensionDataUpdate(DataUpdate):
     """
     DimensionData Update Schema
     """
-
-
-class DimensionDataColumnInfo(FeatureByteBaseModel):
-    """
-    EventDataColumnInfo for storing column information
-
-    name: str
-        Column name
-    dtype: DBVarType
-        Variable type of the column
-    entity: str
-        Entity name associated with the column
-    """
-
-    name: StrictStr
-    dtype: DBVarType
-    entity: Optional[str] = Field(default=None)
-
-
-class DimensionDataInfo(BaseInfo):
-    """
-    DimensionData info schema
-    """
-
-    dimension_data_id_column: str
-    record_creation_date_column: Optional[str]
-    table_details: TableDetails
-    entities: EntityBriefInfoList
-    columns_info: Optional[List[DimensionDataColumnInfo]]
