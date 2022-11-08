@@ -14,6 +14,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    overload,
 )
 from typing_extensions import Annotated
 
@@ -205,6 +206,15 @@ FeatureDataColumn = Annotated[
 ]
 
 
+class GroupOperationStructure(BaseFrozenModel):
+    """StandardOperationStructure class"""
+
+    input_columns: List[ViewDataColumn] = Field(default_factory=list)
+    derived_columns: List[ViewDataColumn] = Field(default_factory=list)
+    aggregations: List[FeatureDataColumn] = Field(default_factory=list)
+    post_aggregation: Optional[PostAggregationColumn]
+
+
 class OperationStructure(BaseFrozenModel):
     """NodeOperationStructure class"""
 
@@ -221,3 +231,56 @@ class OperationStructure(BaseFrozenModel):
             if obj not in output:
                 output[obj] = None
         return list(output)
+
+    @overload
+    def _split_column_by_type(
+        self, columns: List[Union[SourceDataColumn, DerivedDataColumn]]
+    ) -> Tuple[List[SourceDataColumn], List[DerivedDataColumn]]:
+        ...
+
+    @overload
+    def _split_column_by_type(
+        self, columns: List[Union[AggregationColumn, PostAggregationColumn]]
+    ) -> Tuple[List[AggregationColumn], List[PostAggregationColumn]]:
+        ...
+
+    def _split_column_by_type(
+        self,
+        columns: Union[
+            List[Union[SourceDataColumn, DerivedDataColumn]],
+            List[Union[AggregationColumn, PostAggregationColumn]],
+        ],
+    ) -> Union[
+        Tuple[List[SourceDataColumn], List[DerivedDataColumn]],
+        Tuple[List[AggregationColumn], List[PostAggregationColumn]],
+    ]:
+        _ = self
+        input_column_map: Dict[Any, None] = {}
+        derived_column_map: Dict[Any, None] = {}
+        for column in columns:
+            if isinstance(column, (DerivedDataColumn, PostAggregationColumn)):
+                derived_column_map[column] = None
+                for inner_column in column.columns:
+                    input_column_map[inner_column] = None
+            else:
+                input_column_map[column] = None
+        return list(input_column_map), list(derived_column_map)
+
+    def to_group_operation_structure(self) -> GroupOperationStructure:
+        """
+        Convert the OperationStructure format to group structure format
+
+        Returns
+        -------
+        GroupOperationStructure
+        """
+        # pylint: disable=unpacking-non-sequence
+        input_columns, derived_columns = self._split_column_by_type(columns=self.columns)
+        aggregations, post_aggregations = self._split_column_by_type(columns=self.aggregations)
+        assert len(post_aggregations) <= 1
+        return GroupOperationStructure(
+            input_columns=input_columns,
+            derived_columns=derived_columns,
+            aggregations=aggregations,
+            post_aggregations=next(iter(post_aggregations), None),
+        )

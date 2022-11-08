@@ -4,7 +4,7 @@ This module contains Feature related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from bson.objectid import ObjectId
 from pydantic import Field, StrictStr, root_validator, validator
@@ -22,12 +22,7 @@ from featurebyte.models.base import (
 from featurebyte.models.feature_store import TabularSource
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.metadata.operation import (
-    AggregationColumn,
-    DerivedDataColumn,
-    PostAggregationColumn,
-    SourceDataColumn,
-)
+from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 
 
 class FeatureReadiness(OrderedStrEnum):
@@ -44,15 +39,6 @@ class DefaultVersionMode(StrEnum):
 
     AUTO = "AUTO"
     MANUAL = "MANUAL"
-
-
-class FeatureOperationStructure(FeatureByteBaseModel):
-    """Feature operation structure info"""
-
-    input_columns: List[SourceDataColumn]
-    derived_columns: List[DerivedDataColumn]
-    aggregations: List[AggregationColumn]
-    post_aggregation: Optional[PostAggregationColumn]
 
 
 class FeatureNamespaceModel(FeatureByteBaseDocumentModel):
@@ -263,45 +249,17 @@ class FeatureModel(FeatureByteBaseDocumentModel):
             return convert_version_string_to_dict(value)
         return value
 
-    def extract_operation_structure(self) -> FeatureOperationStructure:
+    def extract_operation_structure(self) -> GroupOperationStructure:
         """
         Extract feature operation structure based on query graph.
 
         Returns
         -------
-        FeatureOperationStructure
+        GroupOperationStructure
         """
         # group the view columns by source columns & derived columns
         operation_structure = self.graph.extract_operation_structure(self.node)
-        input_column_map: Dict[SourceDataColumn, None] = {}
-        derived_column_map: Dict[DerivedDataColumn, None] = {}
-        for column in operation_structure.columns:
-            if isinstance(column, SourceDataColumn):
-                input_column_map[column] = None
-            if isinstance(column, DerivedDataColumn):
-                derived_column_map[column] = None
-                for inner_column in column.columns:
-                    input_column_map[inner_column] = None
-
-        # group the feature columns by aggregations & post aggregation
-        aggregation_map: Dict[AggregationColumn, None] = {}
-        post_aggregation_map: Dict[PostAggregationColumn, None] = {}
-        for aggregation in operation_structure.aggregations:
-            if isinstance(aggregation, AggregationColumn):
-                aggregation_map[aggregation] = None
-            if isinstance(aggregation, PostAggregationColumn):
-                post_aggregation_map[aggregation] = None
-                for inner_aggregation in aggregation.columns:
-                    aggregation_map[inner_aggregation] = None
-
-        post_aggregations = list(post_aggregation_map.keys())
-        assert len(post_aggregations) <= 1
-        return FeatureOperationStructure(
-            input_columns=list(input_column_map.keys()),
-            derived_columns=list(derived_column_map.keys()),
-            aggregations=list(aggregation_map.keys()),
-            post_aggregation=next(iter(post_aggregations), None),
-        )
+        return operation_structure.to_group_operation_structure()
 
     class Settings:
         """
