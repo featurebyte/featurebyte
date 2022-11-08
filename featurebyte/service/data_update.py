@@ -9,16 +9,18 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_store import DataStatus
+from featurebyte.schema.dimension_data import DimensionDataUpdate
 from featurebyte.schema.event_data import EventDataUpdate
 from featurebyte.schema.item_data import ItemDataUpdate
 from featurebyte.service.base_service import BaseService
+from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.semantic import SemanticService
 
-DataDocumentService = Union[EventDataService, ItemDataService]
-DataUpdateSchema = Union[EventDataUpdate, ItemDataUpdate]
+DataDocumentService = Union[EventDataService, ItemDataService, DimensionDataService]
+DataUpdateSchema = Union[EventDataUpdate, ItemDataUpdate, DimensionDataUpdate]
 
 
 class DataUpdateService(BaseService):
