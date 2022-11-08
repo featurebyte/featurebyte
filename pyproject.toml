@@ -113,7 +113,7 @@ typeguard = "^2.13.3"
 uvicorn = { version = "^0.18.2", extras = ["standard"], optional = true }
 
 [tool.poetry.extras]
-server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python", "uvicorn[standard]"]
+server = ["aiofiles", "cachetools", "databricks-cli", "fastapi", "featurebyte-freeware", "jinja2", "motor", "snowflake-connector-python", "uvicorn"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
