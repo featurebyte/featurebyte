@@ -3,9 +3,11 @@ This module contains DimensionData related models
 """
 from __future__ import annotations
 
-from pydantic import Field, StrictStr
+from typing import Any, Optional
 
-from featurebyte.enum import TableDataType
+from pydantic import Field, StrictStr, validator
+
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.feature_store import DataModel
 
 
@@ -19,3 +21,12 @@ class DimensionDataModel(DataModel):
 
     type: TableDataType = Field(TableDataType.DIMENSION_DATA, const=True)
     dimension_data_primary_key_column: StrictStr = Field(default=None)
+
+    @validator("record_creation_date_column")
+    @classmethod
+    def _check_timestamp_column_exists(
+        cls, value: Optional[str], values: dict[str, Any]
+    ) -> Optional[str]:
+        return DataModel.validate_column_exists(
+            column_name=value, values=values, expected_types={DBVarType.TIMESTAMP}
+        )

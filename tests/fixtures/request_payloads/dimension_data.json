@@ -40,6 +40,11 @@
             "dtype": "INT",
             "entity_id": "6332fdb21e8f0eeccc414513",
             "name": "cust_id"
+        },
+        {
+            "dtype": "VARCHAR",
+            "entity_id": null,
+            "name": "primary_key_column"
         }
     ],
     "name": "sf_dimension_data",

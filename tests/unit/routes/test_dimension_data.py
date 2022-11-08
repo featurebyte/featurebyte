@@ -113,7 +113,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
         assert update_response_dict == data_model_dict
 
         # test get audit records
-        response = test_api_client.get(f"/event_data/audit/{insert_id}")
+        response = test_api_client.get(f"/dimension_data/audit/{insert_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert results["total"] == 3
@@ -131,7 +131,7 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
         data_model_dict,
     ):
         """
-        Update Event Data only updates job settings even if other fields are provided
+        Update Dimension Data Data only updates job settings even if other fields are provided
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
@@ -174,10 +174,8 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
                 "schema_name": "sf_schema",
                 "table_name": "sf_table",
             },
-            "status": "DRAFT",
-            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "column_count": 9,
             "dimension_data_primary_key_column": "primary_key_column",
+            "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
         }
         assert response.status_code == HTTPStatus.OK, response.text
         response_dict = response.json()

@@ -155,7 +155,13 @@ class InfoService(BaseService):
                 )
 
         return DimensionDataInfo(
+            name=dimension_data.name,
+            created_at=dimension_data.created_at,
+            updated_at=dimension_data.updated_at,
             dimension_data_primary_key_column=dimension_data.dimension_data_primary_key_column,
+            record_creation_date_column=dimension_data.record_creation_date_column,
+            table_details=dimension_data.tabular_source.table_details,
+            entities=EntityBriefInfoList.from_paginated_data(entities),
             columns_info=columns_info,
         )
 

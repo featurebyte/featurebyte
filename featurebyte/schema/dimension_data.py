@@ -10,8 +10,10 @@ from pydantic import Field, StrictStr
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.dimension_data import DimensionDataModel
+from featurebyte.models.feature_store import TableDetails
 from featurebyte.schema.common.base import BaseInfo, PaginationMixin
 from featurebyte.schema.data import DataCreate, DataUpdate
+from featurebyte.schema.entity import EntityBriefInfoList
 
 
 class DimensionDataCreate(DataCreate):
@@ -36,15 +38,6 @@ class DimensionDataUpdate(DataUpdate):
     """
 
 
-class DimensionDataInfo(BaseInfo):
-    """
-    DimensionData info schema
-    """
-
-    dimension_data_primary_key_column: str
-    columns_info: Optional[List[DimensionDataColumnInfo]]
-
-
 class DimensionDataColumnInfo(FeatureByteBaseModel):
     """
     EventDataColumnInfo for storing column information
@@ -60,3 +53,15 @@ class DimensionDataColumnInfo(FeatureByteBaseModel):
     name: StrictStr
     dtype: DBVarType
     entity: Optional[str] = Field(default=None)
+
+
+class DimensionDataInfo(BaseInfo):
+    """
+    DimensionData info schema
+    """
+
+    dimension_data_primary_key_column: str
+    record_creation_date_column: Optional[str]
+    table_details: TableDetails
+    entities: EntityBriefInfoList
+    columns_info: Optional[List[DimensionDataColumnInfo]]
