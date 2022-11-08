@@ -181,9 +181,9 @@ async def test_create_new_feature_version__document_error(version_service, featu
 
 
 @pytest_asyncio.fixture(name="feature_sum_2h")
-async def feature_sum_2h_fixture(test_dir, feature_service, feature, mock_insert_feature_registry):
+async def feature_sum_2h_fixture(test_dir, feature_service, feature):
     """Feature sum_2h fixture"""
-    _ = mock_insert_feature_registry, feature
+    _ = feature
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_2h.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())

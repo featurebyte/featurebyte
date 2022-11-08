@@ -111,7 +111,7 @@ async def test_get_feature_info(info_service, production_ready_feature, feature_
     expected_info = FeatureInfo(
         name="sum_30m",
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        event_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
+        tabular_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -152,7 +152,7 @@ async def test_get_feature_namespace_info(info_service, feature_namespace):
     expected_info = FeatureNamespaceInfo(
         name="sum_30m",
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        event_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
+        tabular_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -175,7 +175,7 @@ async def test_get_feature_list_info(info_service, feature_list, feature_list_na
     expected_info = FeatureListInfo(
         name="sf_feature_list",
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        event_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
+        tabular_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
@@ -215,7 +215,7 @@ async def test_get_feature_list_namespace_info(info_service, feature_list_namesp
     expected_info = FeatureListNamespaceInfo(
         name="sf_feature_list",
         entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"])],
-        event_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
+        tabular_data=[EventDataBriefInfo(name="sf_event_data", status="DRAFT")],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],

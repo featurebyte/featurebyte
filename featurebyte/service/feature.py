@@ -6,16 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 from featurebyte.common.model_util import get_version
-from featurebyte.enum import SourceType
-from featurebyte.exception import (
-    DocumentConflictError,
-    DocumentInconsistencyError,
-    DocumentNotFoundError,
-    DuplicatedRegistryError,
-)
-from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.feature_manager.snowflake_feature import FeatureManagerSnowflake
-from featurebyte.logger import logger
+from featurebyte.exception import DocumentInconsistencyError, DocumentNotFoundError
 from featurebyte.models.base import VersionIdentifier
 from featurebyte.models.feature import (
     DefaultVersionMode,
@@ -29,7 +20,7 @@ from featurebyte.schema.feature_namespace import (
     FeatureNamespaceServiceUpdate,
 )
 from featurebyte.service.base_document import BaseDocumentService
-from featurebyte.service.event_data import EventDataService
+from featurebyte.service.data import DataService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 
 
@@ -51,7 +42,7 @@ async def validate_feature_version_and_namespace_consistency(
     DocumentInconsistencyError
         If the inconsistency between version & namespace found
     """
-    attrs = ["name", "dtype", "entity_ids", "event_data_ids"]
+    attrs = ["name", "dtype", "entity_ids", "tabular_data_ids"]
     for attr in attrs:
         version_attr = getattr(feature, attr)
         namespace_attr = getattr(feature_namespace, attr)
@@ -80,50 +71,6 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
 
     document_class = FeatureModel
 
-    async def _insert_feature_registry(
-        self, document: ExtendedFeatureModel, get_credential: Any
-    ) -> None:
-        """
-        Insert feature registry into feature store
-
-        Parameters
-        ----------
-        document: ExtendedFeatureModel
-            Feature document
-        get_credential: Any
-            Get credential handler function
-
-        Raises
-        ------
-        DocumentConflictError
-            When the feature registry already exists at the feature store
-        Exception
-            Other errors during registry insertion / removal
-        """
-        feature_store = document.feature_store
-        if feature_store.type == SourceType.SNOWFLAKE:
-            db_session = await self._get_feature_store_session(
-                feature_store=feature_store,
-                get_credential=get_credential,
-            )
-            feature_manager = FeatureManagerSnowflake(session=db_session)
-            try:
-                await feature_manager.insert_feature_registry(document)
-            except DuplicatedRegistryError as exc:
-                # someone else already registered the feature at snowflake
-                # do not remove the current registry & raise error to remove persistent record
-                raise DocumentConflictError(
-                    f'Feature (name: "{document.name}") has been registered by '
-                    f"other feature at Snowflake feature store."
-                ) from exc
-            except Exception as exc:  # pylint: disable=broad-except
-                logger.error(f"error with insert_feature_registry: {exc}")
-                # for other exceptions, cleanup feature registry record & persistent record
-                try:
-                    await feature_manager.remove_feature_registry(document)
-                except Exception as remove_exc:  # pylint: disable=broad-except
-                    raise remove_exc from exc
-
     async def _get_feature_version(self, name: str) -> VersionIdentifier:
         version_name = get_version()
         _, count = await self.persistent.find(
@@ -148,10 +95,10 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
             # check any conflict with existing documents
             await self._check_document_unique_constraints(document=document)
 
-            # check event_data has been saved at persistent storage or not
-            event_data_service = EventDataService(user=self.user, persistent=self.persistent)
-            for event_data_id in data.event_data_ids:
-                _ = await event_data_service.get_document(document_id=event_data_id)
+            # check whether data has been saved at persistent storage
+            data_service = DataService(user=self.user, persistent=self.persistent)
+            for tabular_data_id in data.tabular_data_ids:
+                _ = await data_service.get_document(document_id=tabular_data_id)
 
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
@@ -190,7 +137,7 @@ class FeatureService(BaseDocumentService[FeatureModel, FeatureCreate, FeatureSer
                         default_feature_id=insert_id,
                         default_version_mode=DefaultVersionMode.AUTO,
                         entity_ids=sorted(document.entity_ids),
-                        event_data_ids=sorted(document.event_data_ids),
+                        tabular_data_ids=sorted(document.tabular_data_ids),
                     ),
                 )
         return await self.get_document(document_id=insert_id)

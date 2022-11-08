@@ -507,10 +507,10 @@ class Persistent(ABC):
             Function to migrate the record from old to new format
         """
         query_filter = {"_id": document["_id"]}
-        await self._update_one(
+        await self._replace_one(
             collection_name=collection_name,
             query_filter=query_filter,
-            update={"$set": migrate_func(cast(Dict[str, Any], document))},
+            replacement=migrate_func(cast(Dict[str, Any], document)),
         )
 
     async def _migrate_audit_records(

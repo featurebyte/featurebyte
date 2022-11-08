@@ -243,8 +243,8 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         Feature list status
     entity_ids: List[PydanticObjectId]
         Entity IDs used in the feature list
-    event_data_ids: List[PydanticObjectId]
-        EventData IDs used in the feature list
+    tabular_data_ids: List[PydanticObjectId]
+        Tabular data IDs used in the feature list
     """
 
     feature_list_ids: List[PydanticObjectId] = Field(allow_mutation=False)
@@ -260,7 +260,15 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
     )
     status: FeatureListStatus = Field(allow_mutation=False, default=FeatureListStatus.DRAFT)
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    event_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
+
+    @root_validator(pre=True)
+    @classmethod
+    def _validate_tabular_data_ids(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # DEV-727: refactor event_data_ids to tabular_data_ids
+        if "event_data_ids" in values:
+            values["tabular_data_ids"] = values.pop("event_data_ids", [])
+        return values
 
     @staticmethod
     def derive_feature_namespace_ids(features: List[FeatureModel]) -> List[PydanticObjectId]:
@@ -320,9 +328,9 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
         return sorted(set(entity_ids))
 
     @staticmethod
-    def derive_event_data_ids(features: List[FeatureModel]) -> List[ObjectId]:
+    def derive_tabular_data_ids(features: List[FeatureModel]) -> List[ObjectId]:
         """
-        Derive event data ids from features
+        Derive tabular data ids from features
 
         Parameters
         ----------
@@ -331,12 +339,12 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
 
         Returns
         -------
-        List of event data ids
+        List of tabular data ids
         """
-        event_data_ids = []
+        tabular_data_ids = []
         for feature in features:
-            event_data_ids.extend(feature.event_data_ids)
-        return sorted(set(event_data_ids))
+            tabular_data_ids.extend(feature.tabular_data_ids)
+        return sorted(set(tabular_data_ids))
 
     @root_validator(pre=True)
     @classmethod
@@ -348,10 +356,10 @@ class FeatureListNamespaceModel(FeatureByteBaseDocumentModel):
             values["feature_namespace_ids"] = cls.derive_feature_namespace_ids(features)
             values["dtype_distribution"] = cls.derive_dtype_distribution(features)
             values["entity_ids"] = cls.derive_entity_ids(features)
-            values["event_data_ids"] = cls.derive_event_data_ids(features)
+            values["tabular_data_ids"] = cls.derive_tabular_data_ids(features)
         return values
 
-    @validator("feature_list_ids", "feature_namespace_ids", "entity_ids", "event_data_ids")
+    @validator("feature_list_ids", "feature_namespace_ids", "entity_ids", "tabular_data_ids")
     @classmethod
     def _validate_ids(cls, value: List[ObjectId]) -> List[ObjectId]:
         # make sure list of ids always sorted

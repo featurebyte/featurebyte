@@ -120,12 +120,3 @@ def snowflake_event_data_fixture(
             record_creation_date_column="created_at",
             _id=snowflake_event_data_id,
         )
-
-
-@pytest.fixture(name="mock_insert_feature_registry")
-def mock_insert_feature_registry_fixture():
-    """
-    Mock insert feature registry at the controller level
-    """
-    with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
-        yield mock

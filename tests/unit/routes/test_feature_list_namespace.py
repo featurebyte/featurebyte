@@ -3,7 +3,7 @@ Test for FeatureListNamespace route
 """
 import time
 from http import HTTPStatus
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 import pytest_asyncio
@@ -32,14 +32,6 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
     def class_name_to_save(self):
         """Class name used to save the object"""
         return "FeatureList"
-
-    @pytest.fixture(autouse=True)
-    def mock_insert_feature_registry_fixture(self):
-        """
-        Mock insert feature registry at the controller level
-        """
-        with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
-            yield mock
 
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
@@ -178,7 +170,7 @@ class TestFeatureListNamespaceApi(BaseApiTestSuite):
             "created_at": response_dict["created_at"],
             "updated_at": None,
             "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
             "default_version_mode": "AUTO",
             "default_feature_list_id": response_dict["default_feature_list_id"],
             "dtype_distribution": [{"count": 2, "dtype": "FLOAT"}],

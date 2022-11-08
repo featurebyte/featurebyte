@@ -16,8 +16,8 @@ from featurebyte.schema.common.base import (
     BaseInfo,
     PaginationMixin,
 )
+from featurebyte.schema.data import DataBriefInfoList
 from featurebyte.schema.entity import EntityBriefInfoList
-from featurebyte.schema.event_data import EventDataBriefInfoList
 
 
 class FeatureNamespaceCreate(FeatureByteBaseModel):
@@ -33,7 +33,7 @@ class FeatureNamespaceCreate(FeatureByteBaseModel):
     default_feature_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
     entity_ids: List[PydanticObjectId]
-    event_data_ids: List[PydanticObjectId]
+    tabular_data_ids: List[PydanticObjectId]
 
 
 class FeatureNamespaceList(PaginationMixin):
@@ -69,7 +69,7 @@ class NamespaceInfo(BaseInfo):
     """
 
     entities: EntityBriefInfoList
-    event_data: EventDataBriefInfoList
+    tabular_data: DataBriefInfoList
     default_version_mode: DefaultVersionMode
     version_count: int
 

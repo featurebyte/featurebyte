@@ -14,7 +14,6 @@ from featurebyte.models.feature_list import FeatureListNewVersionMode
 def feature_group_fixture(
     snowflake_feature_store,
     snowflake_event_data_with_entity,
-    mock_insert_feature_registry,
 ):
     """
     Feature group fixture

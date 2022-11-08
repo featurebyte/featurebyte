@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import os.path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 import pytest_asyncio
@@ -197,21 +197,10 @@ async def entity_fixture(test_dir, entity_service, user):
         return entity
 
 
-@pytest.fixture(name="mock_insert_feature_registry")
-def mock_insert_feature_registry_fixture():
-    """
-    Mock insert feature registry at the controller level
-    """
-    with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
-        yield mock
-
-
 @pytest_asyncio.fixture(name="feature")
-async def feature_fixture(
-    test_dir, event_data, entity, feature_service, mock_insert_feature_registry
-):
+async def feature_fixture(test_dir, event_data, entity, feature_service):
     """Feature model"""
-    _ = event_data, entity, mock_insert_feature_registry
+    _ = event_data, entity
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())

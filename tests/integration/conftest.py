@@ -455,7 +455,7 @@ async def snowflake_feature(feature_model_dict, snowflake_session, snowflake_fea
             "readiness": FeatureReadiness.DRAFT,
             "is_default": True,
             "online_enabled": False,
-            "event_data_ids": [
+            "tabular_data_ids": [
                 ObjectId("626bccb9697a12204fb22ea3"),
                 ObjectId("726bccb9697a12204fb22ea3"),
             ],

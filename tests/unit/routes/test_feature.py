@@ -75,10 +75,10 @@ class TestFeatureApi(BaseApiTestSuite):
             ],
         ),
         (
-            {**payload, "event_data_ids": []},
+            {**payload, "tabular_data_ids": []},
             [
                 {
-                    "loc": ["body", "event_data_ids"],
+                    "loc": ["body", "tabular_data_ids"],
                     "msg": "ensure this value has at least 1 items",
                     "type": "value_error.list.min_items",
                     "ctx": {"limit_value": 1},
@@ -91,8 +91,9 @@ class TestFeatureApi(BaseApiTestSuite):
             ],
         ),
         (
-            {**payload, "_id": object_id, "name": "random_name", "event_data_ids": [object_id]},
-            f'EventData (id: "{object_id}") not found. ' f"Please save the EventData object first.",
+            {**payload, "_id": object_id, "name": "random_name", "tabular_data_ids": [object_id]},
+            f'TabularData (id: "{object_id}") not found. '
+            f"Please save the TabularData object first.",
         ),
         (
             {**payload, "_id": object_id, "name": "random_name"},
@@ -114,14 +115,6 @@ class TestFeatureApi(BaseApiTestSuite):
             ),
         ),
     ]
-
-    @pytest.fixture(autouse=True)
-    def mock_insert_feature_registry_fixture(self):
-        """
-        Mock insert feature registry at the controller level
-        """
-        with patch("featurebyte.service.feature.FeatureService._insert_feature_registry") as mock:
-            yield mock
 
     def setup_creation_route(self, api_client):
         """
@@ -351,7 +344,7 @@ class TestFeatureApi(BaseApiTestSuite):
         expected_info_response = {
             "name": "sum_30m",
             "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-            "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+            "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
             "dtype": "FLOAT",
             "default_version_mode": "AUTO",
             "version_count": 1,

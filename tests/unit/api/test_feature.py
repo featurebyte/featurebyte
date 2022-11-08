@@ -229,12 +229,10 @@ def saved_feature_fixture(
     snowflake_feature_store,
     snowflake_event_data,
     float_feature,
-    mock_insert_feature_registry,
 ):
     """
     Saved feature fixture
     """
-    _ = mock_insert_feature_registry
     event_data_id_before = snowflake_event_data.id
     snowflake_feature_store.save()
     snowflake_event_data.save()
@@ -262,7 +260,7 @@ def test_info(saved_feature):
         "name": "sum_1d",
         "dtype": "FLOAT",
         "entities": [{"name": "customer", "serving_names": ["cust_id"]}],
-        "event_data": [{"name": "sf_event_data", "status": "DRAFT"}],
+        "tabular_data": [{"name": "sf_event_data", "status": "DRAFT"}],
         "default_version_mode": "AUTO",
         "default_feature_id": str(saved_feature.id),
         "readiness": {"this": "DRAFT", "default": "DRAFT"},
@@ -295,8 +293,8 @@ def test_feature_save__exception_due_to_event_data_not_saved(float_feature, snow
     with pytest.raises(RecordCreationException) as exc:
         float_feature.save()
     expected_msg = (
-        f'EventData (id: "{snowflake_event_data.id}") not found. '
-        f"Please save the EventData object first."
+        f'TabularData (id: "{snowflake_event_data.id}") not found. '
+        f"Please save the TabularData object first."
     )
     assert expected_msg in str(exc.value)
 
@@ -413,10 +411,10 @@ def test_get_feature(saved_feature):
 
 def test_unary_op_inherits_event_data_id(float_feature):
     """
-    Test unary operation inherits event_data_ids
+    Test unary operation inherits tabular_data_ids
     """
     new_feature = float_feature.isnull()
-    assert new_feature.event_data_ids == float_feature.event_data_ids
+    assert new_feature.tabular_data_ids == float_feature.tabular_data_ids
 
 
 def test_feature__default_version_info_retrieval(saved_feature):

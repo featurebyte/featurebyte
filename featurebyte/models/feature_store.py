@@ -4,11 +4,11 @@ This module contains DatabaseSource related models
 # pylint: disable=too-few-public-methods
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Union
+from typing import Any, ClassVar, List, Literal, Optional, Union
 
 from pydantic import Field, StrictStr
 
-from featurebyte.enum import DBVarType, OrderedStrEnum, SourceType
+from featurebyte.enum import DBVarType, OrderedStrEnum, SourceType, TableDataType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -157,6 +157,7 @@ class DataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
         Record creation date column name
     """
 
+    type: Literal[TableDataType.EVENT_DATA, TableDataType.ITEM_DATA]
     columns_info: List[ColumnInfo]
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
     record_creation_date_column: Optional[StrictStr]

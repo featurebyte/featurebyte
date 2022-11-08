@@ -238,7 +238,7 @@ class EventViewGroupBy(OpsMixin):
                 node_name=feature_node.name,
                 dtype=var_type,
                 row_index_lineage=(groupby_node.name,),
-                event_data_ids=[self.obj.event_data_id],
+                tabular_data_ids=[self.obj.event_data_id],
                 entity_ids=self.entity_ids,
             )
             # Count features should be 0 instead of NaN when there are no records
