@@ -28,7 +28,7 @@ class EqualNode(BaseSeriesOutputWithAScalarParamNode):
     type: Literal[NodeType.EQ] = Field(NodeType.EQ, const=True)
 
 
-class NotNode(BaseSeriesOutputWithAScalarParamNode):
+class NotEqualNode(BaseSeriesOutputWithAScalarParamNode):
     """NotEqualNode class"""
 
     type: Literal[NodeType.NE] = Field(NodeType.NE, const=True)

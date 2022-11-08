@@ -860,18 +860,24 @@ def test_series_copy(float_series):
     assert id(new_feat.graph.nodes) == id(feat.graph.nodes) == id(float_series.graph.nodes)
 
 
-def test_varchar_series_concat(varchar_series):
+@pytest.mark.parametrize(
+    "scalar_input, expected_literal", [(True, "'scalar_value'"), (False, '"PRODUCT_ACTION"')]
+)
+def test_varchar_series_concat(varchar_series, scalar_input, expected_literal):
     """
     Test varchar series concat
     """
-    output_series = varchar_series + varchar_series
+    if scalar_input:
+        output_series = varchar_series + "scalar_value"
+    else:
+        output_series = varchar_series + varchar_series
     output_sql = output_series.preview_sql()
     assert (
         output_sql
         == textwrap.dedent(
-            """
+            f"""
         SELECT
-          (CONCAT("PRODUCT_ACTION", "PRODUCT_ACTION"))
+          (CONCAT("PRODUCT_ACTION", {expected_literal}))
         FROM (
             SELECT
               "CUST_ID" AS "CUST_ID",
