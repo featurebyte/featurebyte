@@ -211,6 +211,18 @@ def mock_snowflake_execute_query():
                     "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
                 },
             ],
+            'SHOW COLUMNS IN "sf_database"."sf_schema"."items_table"': [
+                {"column_name": "event_id_col", "data_type": json.dumps({"type": "FIXED"})},
+                {
+                    "column_name": "item_id_col",
+                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                },
+                {
+                    "column_name": "item_type",
+                    "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                },
+                {"column_name": "item_amount", "data_type": json.dumps({"type": "REAL"})},
+            ],
             "SHOW SCHEMAS": [
                 {"name": "PUBLIC"},
             ],
@@ -269,6 +281,12 @@ def snowflake_event_data_id_fixture():
     return ObjectId("6337f9651050ee7d5980660d")
 
 
+@pytest.fixture(name="snowflake_item_data_id")
+def snowflake_item_data_id_fixture():
+    """Snowflake event data ID"""
+    return ObjectId("6337f9651050ee7d5980662d")
+
+
 @pytest.fixture(name="snowflake_event_data")
 def snowflake_event_data_fixture(snowflake_database_table, snowflake_event_data_id):
     """EventData object fixture"""
@@ -290,6 +308,16 @@ def cust_id_entity_fixture():
     Customer ID entity fixture
     """
     entity = Entity(name="customer", serving_names=["cust_id"])
+    entity.save()
+    yield entity
+
+
+@pytest.fixture(name="item_id_entity")
+def item_id_entity_fixture():
+    """
+    Item ID entity fixture
+    """
+    entity = Entity(name="item", serving_names=["item_id"])
     entity.save()
     yield entity
 

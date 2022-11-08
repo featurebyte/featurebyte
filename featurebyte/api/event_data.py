@@ -10,55 +10,17 @@ from http import HTTPStatus
 from bson.objectid import ObjectId
 from typeguard import typechecked
 
-from featurebyte.api.api_object import SavableApiObject
+from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
-from featurebyte.api.entity import Entity
 from featurebyte.common.env_util import display_html_in_notebook
 from featurebyte.config import Configurations
-from featurebyte.core.mixin import GetAttrMixin, ParentMixin
 from featurebyte.enum import TableDataType
 from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
-from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
-from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 
 
-class EventDataColumn(FeatureByteBaseModel, ParentMixin):
-    """
-    EventDataColumn class to set metadata like entity
-    """
-
-    info: ColumnInfo
-
-    @typechecked
-    def as_entity(self, entity_name: Optional[str]) -> None:
-        """
-        Set the column as the specified entity
-
-        Parameters
-        ----------
-        entity_name: Optional[str]
-            Associate column name to the entity, remove association if entity name is None
-        """
-        if entity_name is None:
-            entity_id = None
-        else:
-            entity = Entity.get(entity_name)
-            entity_id = entity.id
-
-        columns_info = []
-        for col in self.parent.columns_info:
-            if col.name == self.info.name:
-                self.info = ColumnInfo(**{**col.dict(), "entity_id": entity_id})
-                columns_info.append(self.info)
-            else:
-                columns_info.append(col)
-
-        self.parent.update(update_payload={"columns_info": columns_info}, allow_update_local=True)
-
-
-class EventData(EventDataModel, DatabaseTable, SavableApiObject, GetAttrMixin):
+class EventData(EventDataModel, DataApiObject):
     """
     EventData class
     """
@@ -66,9 +28,6 @@ class EventData(EventDataModel, DatabaseTable, SavableApiObject, GetAttrMixin):
     # class variables
     _route = "/event_data"
     _update_schema_class = EventDataUpdate
-
-    def _get_init_params_from_object(self) -> dict[str, Any]:
-        return {"feature_store": self.feature_store}
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = EventDataCreate(**self.json_dict())
@@ -145,35 +104,6 @@ class EventData(EventDataModel, DatabaseTable, SavableApiObject, GetAttrMixin):
                 response, f'EventData (event_data.name: "{name}") exists in saved record.'
             )
         raise RecordRetrievalException(response)
-
-    @typechecked
-    def __getitem__(self, item: str) -> EventDataColumn:
-        """
-        Retrieve column from the table
-
-        Parameters
-        ----------
-        item: str
-            Column name
-
-        Returns
-        -------
-        EventDataColumn
-
-        Raises
-        ------
-        KeyError
-            when accessing non-exist column
-        """
-        info = None
-        for col in self.columns_info:
-            if col.name == item:
-                info = col
-        if info is None:
-            raise KeyError(f'Column "{item}" does not exist!')
-        output = EventDataColumn(info=info)
-        output.set_parent(self)
-        return output
 
     @typechecked
     def update_record_creation_date_column(self, record_creation_date_column: str) -> None:

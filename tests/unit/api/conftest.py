@@ -2,11 +2,15 @@
 Common test fixtures used across api test directories
 """
 import textwrap
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
+from bson.objectid import ObjectId
 
 from featurebyte.api.event_data import EventData
+from featurebyte.api.item_data import ItemData
+from featurebyte.models.feature_store import DataStatus
 
 
 @pytest.fixture()
@@ -27,6 +31,24 @@ def expected_snowflake_table_preview_query() -> str:
           "created_at" AS "created_at",
           "cust_id" AS "cust_id"
         FROM "sf_database"."sf_schema"."sf_table"
+        LIMIT 10
+        """
+    ).strip()
+
+
+@pytest.fixture()
+def expected_item_data_table_preview_query() -> str:
+    """
+    Expected preview_sql output
+    """
+    return textwrap.dedent(
+        """
+        SELECT
+          "event_id_col" AS "event_id_col",
+          "item_id_col" AS "item_id_col",
+          "item_type" AS "item_type",
+          "item_amount" AS "item_amount"
+        FROM "sf_database"."sf_schema"."items_table"
         LIMIT 10
         """
     ).strip()
@@ -120,3 +142,59 @@ def snowflake_event_data_fixture(
             record_creation_date_column="created_at",
             _id=snowflake_event_data_id,
         )
+
+
+@pytest.fixture(name="saved_event_data")
+def saved_event_data_fixture(snowflake_feature_store, snowflake_event_data):
+    """
+    Saved event data fixture
+    """
+    snowflake_feature_store.save()
+    previous_id = snowflake_event_data.id
+    assert snowflake_event_data.saved is False
+    snowflake_event_data.save()
+    assert snowflake_event_data.saved is True
+    assert snowflake_event_data.id == previous_id
+    assert snowflake_event_data.status == DataStatus.DRAFT
+    assert isinstance(snowflake_event_data.created_at, datetime)
+    assert isinstance(snowflake_event_data.tabular_source.feature_store_id, ObjectId)
+
+    # test list event data
+    assert EventData.list() == ["sf_event_data"]
+    yield snowflake_event_data
+
+
+@pytest.fixture(name="snowflake_database_table_item_data")
+def snowflake_database_table_item_data_fixture(
+    snowflake_connector, snowflake_execute_query, snowflake_feature_store
+):
+    """
+    DatabaseTable object fixture for ItemData (using config object)
+    """
+    _ = snowflake_connector, snowflake_execute_query
+    yield snowflake_feature_store.get_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="items_table",
+    )
+
+
+@pytest.fixture(name="snowflake_item_data")
+def snowflake_item_data_fixture(
+    snowflake_database_table_item_data,
+    mock_get_persistent,
+    snowflake_item_data_id,
+    saved_event_data,
+):
+    """
+    Snowflake ItemData object fixture (using config object)
+    """
+    _ = mock_get_persistent
+    yield ItemData.from_tabular_source(
+        tabular_source=snowflake_database_table_item_data,
+        name="sf_item_data",
+        event_id_column="event_id_col",
+        item_id_column="item_id_col",
+        event_data_name=saved_event_data.name,
+        _id=snowflake_item_data_id,
+    )
