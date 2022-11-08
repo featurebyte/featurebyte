@@ -29,10 +29,12 @@ class DimensionDataController(
     document_update_schema_class = DimensionDataUpdate
 
     async def _get_column_semantic_map(self, document: DimensionDataModel) -> dict[str, Any]:
-        event_id = await self.semantic_service.get_or_create_document(name=SemanticType.EVENT_ID)
+        dimension_data_id = await self.semantic_service.get_or_create_document(
+            name=SemanticType.DIMENSION_DATA_ID
+        )
         assert document.dimension_data_primary_key_column is not None
         return {
-            document.dimension_data_primary_key_column: event_id,
+            document.dimension_data_primary_key_column: dimension_data_id,
         }
 
     async def get_info(

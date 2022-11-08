@@ -204,3 +204,4 @@ class SemanticType(StrEnum):
     EVENT_TIMESTAMP = "event_timestamp"
     EVENT_ID = "event_id"
     ITEM_ID = "item_id"
+    DIMENSION_DATA_ID = "dimension_data_id"
