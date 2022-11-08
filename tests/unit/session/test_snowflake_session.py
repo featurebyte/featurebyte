@@ -398,9 +398,9 @@ async def test_schema_initializer__dont_reinitialize(
             "SYSDATE() AS CREATED_AT;"
         ),
     ]
+    working_schema_version = snowflake_initializer.current_working_schema_version
     assert session.execute_query.call_args_list[-1:] == [
-        # TODO (jevon.yeoh): make sure these versions are updated accordingly
-        call("UPDATE METADATA_SCHEMA SET WORKING_SCHEMA_VERSION = 1"),
+        call(f"UPDATE METADATA_SCHEMA SET WORKING_SCHEMA_VERSION = {working_schema_version}"),
     ]
     counts = check_create_commands(session)
     assert counts == {
@@ -417,8 +417,7 @@ async def test_schema_initializer__dont_reinitialize(
         if query == METADATA_QUERY:
             return pd.DataFrame(
                 {
-                    # TODO (jevon.yeoh): make sure these versions are updated accordingly
-                    "WORKING_SCHEMA_VERSION": [1],
+                    "WORKING_SCHEMA_VERSION": [working_schema_version],
                     "FEATURE_STORE_ID": "test_store_id",
                 }
             )
