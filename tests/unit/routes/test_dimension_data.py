@@ -106,47 +106,6 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
             "record_creation_date_column": "created_at",
         }
 
-    def test_update_success(
-        self,
-        test_api_client_persistent,
-        data_response,
-        data_update_dict,
-        data_model_dict,
-    ):
-        """
-        Update Dimension Data
-        """
-        # data_response takes in a data_model_dict (the one arbitrarily defined in tests), adds on some default
-        # columns info, and writes it into the DB
-        test_api_client, _ = test_api_client_persistent
-        response_dict = data_response.json()
-        insert_id = response_dict["_id"]
-
-        # data_update_dict contains the input to the request here
-        response = test_api_client.patch(f"{self.base_route}/{insert_id}", json=data_update_dict)
-        assert response.status_code == HTTPStatus.OK
-        update_response_dict = response.json()
-        assert update_response_dict["_id"] == insert_id
-        update_response_dict.pop("created_at")
-        update_response_dict.pop("updated_at")
-
-        # the other fields should be unchanged
-        data_model_dict["status"] = DataStatus.DRAFT
-        # update_response_dict (which is the explicit request to patch)
-        #   doesn't have the updated semantic_id on dimension_id
-        # data_model_dict is the fixture that is a generic dimension data struct
-        assert update_response_dict == data_model_dict
-
-        # test get audit records
-        response = test_api_client.get(f"/dimension_data/audit/{insert_id}")
-        assert response.status_code == HTTPStatus.OK
-        results = response.json()
-        assert results["total"] == 2
-        assert [record["action_type"] for record in results["data"]] == [
-            "UPDATE",
-            "INSERT",
-        ]
-
     @pytest.mark.asyncio
     async def test_get_info_200(self, test_api_client_persistent, create_success_response):
         """Test retrieve info"""
