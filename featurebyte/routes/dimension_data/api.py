@@ -11,7 +11,9 @@ from fastapi import APIRouter, Request
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.dimension_data import DimensionDataModel
+from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.routes.common.schema import (
+    AuditLogSortByQuery,
     NameQuery,
     PageQuery,
     PageSizeQuery,
@@ -94,6 +96,31 @@ async def update_dimension_data(
         data=data,
     )
     return dimension_data
+
+
+@router.get("/audit/{dimension_data_id}", response_model=AuditDocumentList)
+async def list_event_data_audit_logs(
+    request: Request,
+    dimension_data_id: PydanticObjectId,
+    page: int = PageQuery,
+    page_size: int = PageSizeQuery,
+    sort_by: Optional[str] = AuditLogSortByQuery,
+    sort_dir: Optional[str] = SortDirQuery,
+    search: Optional[str] = SearchQuery,
+) -> AuditDocumentList:
+    """
+    List Event Data audit logs
+    """
+    controller = request.state.app_container.dimension_data_controller
+    audit_doc_list: AuditDocumentList = await controller.list_audit(
+        document_id=dimension_data_id,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        search=search,
+    )
+    return audit_doc_list
 
 
 @router.get("/{dimension_data_primary_key_id}/info", response_model=DimensionDataInfo)
