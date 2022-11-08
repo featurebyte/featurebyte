@@ -1,5 +1,5 @@
 """
-EventData API routes
+DimensionData API routes
 """
 from __future__ import annotations
 
