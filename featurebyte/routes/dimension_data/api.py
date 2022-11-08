@@ -36,12 +36,12 @@ async def create_dimension_data(request: Request, data: DimensionDataCreate) -> 
     Create Dimension Data
     """
     controller = request.state.app_container.dimension_data_controller
-    event_data: DimensionDataModel = await controller.create_data(data=data)
-    return event_data
+    dimension_data: DimensionDataModel = await controller.create_data(data=data)
+    return dimension_data
 
 
 @router.get("", response_model=DimensionDataList)
-async def list_event_data(
+async def list_dimension_data(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
@@ -66,7 +66,7 @@ async def list_event_data(
 
 
 @router.get("/{dimension_data_primary_key_id}", response_model=DimensionDataModel)
-async def get_event_data(
+async def get_dimension_data(
     request: Request, dimension_data_primary_key_id: str
 ) -> DimensionDataModel:
     """
@@ -86,7 +86,7 @@ async def update_dimension_data(
     data: DimensionDataUpdate,
 ) -> DimensionDataModel:
     """
-    Update Event Data
+    Update Dimension Data
     """
     controller = request.state.app_container.dimension_data_controller
     dimension_data: DimensionDataModel = await controller.update_data(
