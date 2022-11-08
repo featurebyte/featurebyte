@@ -3,7 +3,7 @@ This module contains DimensionData related models
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import Field, StrictStr, validator
 
@@ -19,7 +19,7 @@ class DimensionDataModel(DataModel):
         The primary key of the dimension data table in the DWH
     """
 
-    type: TableDataType = Field(TableDataType.DIMENSION_DATA, const=True)
+    type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.DIMENSION_DATA, const=True)
     dimension_data_id_column: StrictStr
 
     @validator("record_creation_date_column")
