@@ -16,6 +16,7 @@ from featurebyte.routes.feature_list_namespace.controller import FeatureListName
 from featurebyte.routes.feature_namespace.controller import FeatureNamespaceController
 from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.item_data.controller import ItemDataController
+from featurebyte.routes.scd_data.controller import SCDDataController
 from featurebyte.routes.semantic.controller import SemanticController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
@@ -165,6 +166,16 @@ app_container_config = {
             "clazz": ItemDataController,
             "depends": [
                 "item_data_service",
+                "data_update_service",
+                "semantic_service",
+                "info_service",
+            ],
+        },
+        {
+            "name": "scd_data_controller",
+            "clazz": SCDDataController,
+            "depends": [
+                "scd_data_service",
                 "data_update_service",
                 "semantic_service",
                 "info_service",
