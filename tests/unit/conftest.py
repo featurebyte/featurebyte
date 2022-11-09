@@ -312,16 +312,6 @@ def cust_id_entity_fixture():
     yield entity
 
 
-@pytest.fixture(name="item_id_entity")
-def item_id_entity_fixture():
-    """
-    Item ID entity fixture
-    """
-    entity = Entity(name="item", serving_names=["item_id"])
-    entity.save()
-    yield entity
-
-
 @pytest.fixture(name="snowflake_event_data_with_entity")
 def snowflake_event_data_with_entity_fixture(snowflake_event_data, cust_id_entity):
     """
