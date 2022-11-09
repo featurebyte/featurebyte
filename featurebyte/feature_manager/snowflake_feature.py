@@ -17,6 +17,7 @@ from featurebyte.exception import (
 )
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
+    tm_delete_tile_feature_mapping,
     tm_feature_tile_monitor,
     tm_insert_feature_registry,
     tm_last_tile_index,
@@ -28,7 +29,7 @@ from featurebyte.feature_manager.snowflake_sql_template import (
 )
 from featurebyte.logger import logger
 from featurebyte.models.base import VersionIdentifier
-from featurebyte.models.tile import OnlineFeatureSpec, TileType
+from featurebyte.models.tile import OnlineFeatureSpec
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.snowflake_tile import TileManagerSnowflake
 from featurebyte.utils.snowflake.sql import escape_column_names
@@ -216,27 +217,9 @@ class FeatureManagerSnowflake(BaseModel):
         """
         tile_mgr = TileManagerSnowflake(session=self._session)
 
-        # enable tile generation with scheduled jobs
-        for tile_spec in feature_spec.tile_specs:
-            logger.info(f"tile_spec: {tile_spec}")
-            exist_flag = await tile_mgr.tile_task_exists(TileType.ONLINE, tile_spec)
-            if exist_flag:
-                logger.warning(
-                    f"Ignore online_enable. Tile task already exists: {tile_spec.tile_id}"
-                )
-            else:
-                # enable online tiles scheduled job
-                await tile_mgr.schedule_online_tiles(tile_spec=tile_spec)
-                logger.debug(f"Done schedule_online_tiles for {tile_spec}")
-
-                # enable offline tiles scheduled job
-                await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
-                logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
-
+        # insert records into tile-feature mapping table
         feature_sql = feature_spec.feature_sql.replace("'", "''")
         logger.debug(f"feature_sql: {feature_sql}")
-
-        # insert records into tile-feature mapping table
         for tile_id in feature_spec.tile_ids:
             upsert_sql = tm_upsert_tile_feature_mapping.render(
                 tile_id=tile_id,
@@ -248,10 +231,70 @@ class FeatureManagerSnowflake(BaseModel):
                     escape_column_names(feature_spec.entity_column_names)
                 ),
             )
-
             logger.debug(f"tile_feature_mapping upsert_sql: {upsert_sql}")
             await self._session.execute_query(upsert_sql)
             logger.debug(f"Done insert tile_feature_mapping for {tile_id}")
+
+        # enable tile generation with scheduled jobs
+        for tile_spec in feature_spec.tile_specs:
+            logger.info(f"tile_spec: {tile_spec}")
+
+            exist_tasks = await self._session.execute_query(
+                f"SHOW TASKS LIKE '%{tile_spec.tile_id}%'"
+            )
+            if exist_tasks is not None and len(exist_tasks) > 0:
+                logger.warning(f"The tile jobs exist. Enable existing jobs: {tile_spec.tile_id}")
+                # enable existing online/offline tiles scheduled job
+                for _, row in exist_tasks.iterrows():
+                    await self._session.execute_query(f"ALTER TASK IF EXISTS {row['name']} RESUME")
+            else:
+                # enable online tiles scheduled job
+                await tile_mgr.schedule_online_tiles(tile_spec=tile_spec)
+                logger.debug(f"Done schedule_online_tiles for {tile_spec}")
+
+                # enable offline tiles scheduled job
+                await tile_mgr.schedule_offline_tiles(tile_spec=tile_spec)
+                logger.debug(f"Done schedule_offline_tiles for {tile_spec}")
+
+    async def online_disable(self, feature_spec: OnlineFeatureSpec) -> None:
+        """
+        Schedule both online and offline tile jobs
+
+        Parameters
+        ----------
+        feature_spec: OnlineFeatureSpec
+            input feature instance
+        """
+        # delete records from tile-feature mapping table
+        for tile_id in feature_spec.tile_ids:
+            delete_sql = tm_delete_tile_feature_mapping.render(
+                tile_id=tile_id,
+                feature_name=feature_spec.feature_name,
+                feature_version=feature_spec.feature_version,
+            )
+            logger.debug(f"tile_feature_mapping delete_sql: {delete_sql}")
+            await self._session.execute_query(delete_sql)
+            logger.debug(f"Done delete tile_feature_mapping for {tile_id}")
+
+        # disable tile scheduled jobs
+        for tile_spec in feature_spec.tile_specs:
+            logger.info(f"tile_spec: {tile_spec}")
+
+            exist_mapping = await self._session.execute_query(
+                f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_spec.tile_id}'"
+            )
+            # only disable tile jobs when there is no tile-feature mapping records for the particular tile
+            if exist_mapping is None or len(exist_mapping) == 0:
+
+                exist_tasks = await self._session.execute_query(
+                    f"SHOW TASKS LIKE '%{tile_spec.tile_id}%'"
+                )
+                if exist_tasks is not None and len(exist_tasks) > 0:
+                    logger.warning(f"Start disabling jobs for {tile_spec.tile_id}")
+                    for _, row in exist_tasks.iterrows():
+                        await self._session.execute_query(
+                            f"ALTER TASK IF EXISTS {row['name']} SUSPEND"
+                        )
 
     async def retrieve_last_tile_index(self, feature: ExtendedFeatureModel) -> pd.DataFrame:
         """

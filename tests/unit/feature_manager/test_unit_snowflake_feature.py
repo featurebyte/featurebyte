@@ -12,6 +12,7 @@ from featurebyte.common.model_util import get_version
 from featurebyte.exception import InvalidFeatureRegistryOperationError, MissingFeatureRegistryError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.snowflake_sql_template import (
+    tm_delete_tile_feature_mapping,
     tm_feature_tile_monitor,
     tm_insert_feature_registry,
     tm_remove_feature_registry,
@@ -232,7 +233,7 @@ async def test_online_enable(
         feature_store_table_name=feature_spec.feature_store_table_name,
         entity_column_names_str=",".join(escape_column_names(feature_spec.entity_column_names)),
     )
-    mock_execute_query.assert_called_with(upsert_sql)
+    assert mock_execute_query.call_args_list[0] == mock.call(upsert_sql)
 
 
 @pytest.mark.asyncio
@@ -257,14 +258,14 @@ async def test_online_enable_missing_tile_spec(
     assert "tile_specs" in str(excinfo.value)
 
 
-@mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.tile_task_exists")
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_online_tiles")
 @mock.patch("featurebyte.tile.snowflake_tile.TileManagerSnowflake.schedule_offline_tiles")
 @pytest.mark.asyncio
 async def test_online_enable_duplicate_tile_task(
     mock_schedule_offline_tiles,
     mock_schedule_online_tiles,
-    mock_tile_task_exists,
+    mock_execute_query,
     mock_snowflake_feature,
     feature_manager,
 ):
@@ -274,8 +275,6 @@ async def test_online_enable_duplicate_tile_task(
     _ = mock_schedule_offline_tiles
     _ = mock_schedule_online_tiles
 
-    mock_tile_task_exists.return_value = True
-
     online_feature_spec = OnlineFeatureSpec(
         feature_name=mock_snowflake_feature.name,
         feature_version=mock_snowflake_feature.version.to_str(),
@@ -284,10 +283,41 @@ async def test_online_enable_duplicate_tile_task(
         tile_specs=mock_snowflake_feature.tile_specs,
     )
 
+    mock_execute_query.side_effect = [None, pd.DataFrame.from_dict({"name": ["task_1"]}), None]
     await feature_manager.online_enable(online_feature_spec)
 
     mock_schedule_online_tiles.assert_not_called()
     mock_schedule_offline_tiles.assert_not_called()
+
+
+@mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+@pytest.mark.asyncio
+async def test_online_disable(
+    mock_execute_query,
+    mock_snowflake_feature,
+    feature_manager,
+):
+    """
+    Test online_enable
+    """
+
+    feature_spec = OnlineFeatureSpec(
+        feature_name=mock_snowflake_feature.name,
+        feature_version=mock_snowflake_feature.version.to_str(),
+        feature_sql="select * from temp",
+        feature_store_table_name="feature_store_table_1",
+        tile_specs=mock_snowflake_feature.tile_specs,
+    )
+
+    mock_execute_query.side_effect = [None, None, None]
+    await feature_manager.online_disable(feature_spec)
+
+    delete_sql = tm_delete_tile_feature_mapping.render(
+        tile_id=feature_spec.tile_specs[0].tile_id,
+        feature_name=feature_spec.feature_name,
+        feature_version=feature_spec.feature_version,
+    )
+    assert mock_execute_query.call_args_list[0] == mock.call(delete_sql)
 
 
 @mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")

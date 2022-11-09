@@ -187,30 +187,6 @@ class TileManagerSnowflake(BaseModel):
 
         return sql
 
-    async def tile_task_exists(self, tile_type: TileType, tile_spec: TileSpec) -> bool:
-        """
-        Check whether tile task already exists
-
-        Parameters
-        ----------
-        tile_type: TileType
-            ONLINE or OFFLINE
-
-        tile_spec: TileSpec
-            tile spec
-
-        Returns
-        -------
-            whether tile task already exists
-        """
-        task_name = "TILE_TASK_" + tile_type + "_" + tile_spec.tile_id
-        result = await self._session.execute_query(f"SHOW TASKS LIKE '{task_name}'")
-
-        if result is not None and len(result) > 0:
-            return True
-
-        return False
-
     async def schedule_online_tiles(
         self,
         tile_spec: TileSpec,
