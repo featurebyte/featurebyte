@@ -157,7 +157,12 @@ class DataModel(DatabaseTableModel, FeatureByteBaseDocumentModel):
         Record creation date column name
     """
 
-    type: Literal[TableDataType.EVENT_DATA, TableDataType.ITEM_DATA, TableDataType.DIMENSION_DATA]
+    type: Literal[
+        TableDataType.EVENT_DATA,
+        TableDataType.ITEM_DATA,
+        TableDataType.DIMENSION_DATA,
+        TableDataType.SCD_DATA,
+    ]
     columns_info: List[ColumnInfo]
     status: DataStatus = Field(default=DataStatus.DRAFT, allow_mutation=False)
     record_creation_date_column: Optional[StrictStr]
