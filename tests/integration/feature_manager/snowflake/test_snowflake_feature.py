@@ -205,8 +205,8 @@ async def test_retrieve_features_multiple(snowflake_feature, feature_manager):
     assert f_reg_df.iloc[1]["READINESS"] == "PRODUCTION_READY"
 
 
-@pytest_asyncio.fixture(name="online_enable_prep")
-async def test_online_enable(
+@pytest_asyncio.fixture(name="online_enabled_feature_spec")
+async def online_enabled_feature_spec_fixture(
     snowflake_session,
     snowflake_feature,
     snowflake_feature_expected_tile_spec_dict,
@@ -258,7 +258,11 @@ async def test_online_enable(
     result = result.drop(columns=["CREATED_AT"])
     assert_frame_equal(result, expected_df)
 
-    return online_feature_spec
+    yield online_feature_spec
+
+    await snowflake_session.execute_query(
+        f"DELETE FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{online_feature_spec.tile_ids[0]}'"
+    )
 
 
 @pytest.mark.asyncio
@@ -266,12 +270,12 @@ async def test_online_disable(
     snowflake_session,
     snowflake_feature_expected_tile_spec_dict,
     feature_manager,
-    online_enable_prep,
+    online_enabled_feature_spec,
 ):
     """
     Test online_disable
     """
-    online_feature_spec = online_enable_prep
+    online_feature_spec = online_enabled_feature_spec
     tile_id = online_feature_spec.tile_ids[0]
 
     await feature_manager.online_disable(online_feature_spec)
@@ -291,12 +295,12 @@ async def test_online_disable__tile_in_use(
     snowflake_session,
     snowflake_feature_expected_tile_spec_dict,
     feature_manager,
-    online_enable_prep,
+    online_enabled_feature_spec,
 ):
     """
     Test online_disable
     """
-    online_feature_spec = online_enable_prep
+    online_feature_spec = online_enabled_feature_spec
     tile_id = online_feature_spec.tile_ids[0]
 
     online_feature_spec_2 = copy.deepcopy(online_feature_spec)
@@ -320,12 +324,12 @@ async def test_online_disable___re_enable(
     snowflake_session,
     snowflake_feature_expected_tile_spec_dict,
     feature_manager,
-    online_enable_prep,
+    online_enabled_feature_spec,
 ):
     """
     Test online_disable
     """
-    online_feature_spec = online_enable_prep
+    online_feature_spec = online_enabled_feature_spec
     tile_id = online_feature_spec.tile_ids[0]
 
     await feature_manager.online_disable(online_feature_spec)
@@ -349,6 +353,7 @@ async def test_online_disable___re_enable(
 
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}'"
     result = await snowflake_session.execute_query(sql)
+
     assert len(result) == 1
     expected_df = pd.DataFrame(
         {
