@@ -194,6 +194,7 @@ class TableDataType(StrEnum):
     EVENT_DATA = "event_data"
     ITEM_DATA = "item_data"
     DIMENSION_DATA = "dimension_data"
+    SCD_DATA = "scd_data"
 
 
 class SemanticType(StrEnum):
