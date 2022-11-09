@@ -3,13 +3,17 @@ DataStatusService
 """
 from __future__ import annotations
 
-from typing import Union
+from typing import List, Union, cast
+
+from collections import defaultdict
 
 from bson.objectid import ObjectId
 
+from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_store import DataStatus
 from featurebyte.schema.dimension_data import DimensionDataUpdate
+from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.event_data import EventDataUpdate
 from featurebyte.schema.item_data import ItemDataUpdate
 from featurebyte.service.base_service import BaseService
@@ -138,3 +142,57 @@ class DataUpdateService(BaseService):
                 data=type(data)(columns_info=data.columns_info),  # type: ignore
                 return_document=False,
             )
+
+            # update data references in affected entities
+            primary_keys_cols_mapping = {
+                TableDataType.EVENT_DATA: ["event_id_column"],
+                TableDataType.ITEM_DATA: [],
+            }
+            primary_keys_cols = cast(List[str], primary_keys_cols_mapping.get(document.type, []))
+            primary_keys = [getattr(document, key_col) for key_col in primary_keys_cols]
+
+            entity_update: dict[ObjectId, int] = defaultdict(int)
+            primary_entity_update: dict[ObjectId, int] = defaultdict(int)
+            for column_info in document.columns_info:
+                if column_info.entity_id:
+                    # flag for removal from entity
+                    entity_update[column_info.entity_id] -= 1
+                    if column_info.name in primary_keys:
+                        primary_entity_update[column_info.entity_id] -= 1
+            for column_info in data.columns_info:
+                if column_info.entity_id:
+                    # flag for addition to entity
+                    entity_update[column_info.entity_id] += 1
+                    if column_info.name in primary_keys:
+                        primary_entity_update[column_info.entity_id] += 1
+
+            for entity_id, update_flag in entity_update.items():
+                primary_update_flag = primary_entity_update.get(entity_id, 0)
+                if update_flag == 0 and primary_update_flag == 0:
+                    continue
+
+                # data reference update is needed
+                entity = await self.entity_service.get_document(entity_id)
+                update_values = {}
+                if update_flag != 0:
+                    # data references updated in entity
+                    update_action = (
+                        self.include_object_id if update_flag > 0 else self.exclude_object_id
+                    )
+                    update_values["tabular_data_ids"] = update_action(
+                        document_ids=entity.tabular_data_ids, document_id=document_id
+                    )
+                if primary_update_flag != 0:
+                    # primary data references updated in entity
+                    update_action = (
+                        self.include_object_id
+                        if primary_update_flag > 0
+                        else self.exclude_object_id
+                    )
+                    update_values["primary_tabular_data_ids"] = update_action(
+                        document_ids=entity.primary_tabular_data_ids, document_id=document_id
+                    )
+                await self.entity_service.update_document(
+                    document_id=entity_id,
+                    data=EntityServiceUpdate(**update_values),
+                )

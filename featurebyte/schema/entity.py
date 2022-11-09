@@ -59,6 +59,8 @@ class EntityServiceUpdate(BaseDocumentServiceUpdateSchema):
     name: Optional[str]
     ancestor_ids: Optional[List[PydanticObjectId]]
     parents: Optional[List[ParentEntity]]
+    tabular_data_ids: Optional[List[PydanticObjectId]]
+    primary_tabular_data_ids: Optional[List[PydanticObjectId]]
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """

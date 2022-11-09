@@ -14,7 +14,7 @@ class FeatureMigrationService(FeatureService, MigrationServiceMixin):
     @migrate(version=2, description="Rename field event_data_ids to tabular_data_ids")
     async def change_field_name_from_event_data_ids_to_tabular_data_ids(self) -> None:
         """Change field name from event_data_ids to tabular_data_ids"""
-        # sample first 10 few records before migration
+        # sample first 10 records before migration
         sample_docs_before, total_before = await self.persistent.find(
             collection_name="feature", query_filter={}, page_size=10
         )
