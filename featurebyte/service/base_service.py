@@ -16,6 +16,7 @@ from featurebyte.models.feature_job_setting_analysis import FeatureJobSettingAna
 from featurebyte.models.feature_list import FeatureListModel, FeatureListNamespaceModel
 from featurebyte.models.feature_store import DataModel, FeatureStoreModel
 from featurebyte.models.item_data import ItemDataModel
+from featurebyte.models.scd_data import SCDDataModel
 from featurebyte.models.semantic import SemanticModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.dimension_data import DimensionDataService
@@ -29,6 +30,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.mixin import OpsServiceMixin
+from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.tabular_data import DataService
 
@@ -39,6 +41,7 @@ DocumentService = Union[
     SemanticService,
     EventDataService,
     DimensionDataService,
+    SCDDataService,
     ItemDataService,
     FeatureService,
     FeatureNamespaceService,
@@ -53,6 +56,7 @@ DocumentModel = Union[
     SemanticModel,
     DimensionDataModel,
     EventDataModel,
+    SCDDataModel,
     ItemDataModel,
     FeatureModel,
     FeatureNamespaceModel,
@@ -74,6 +78,7 @@ class DocServiceName(StrEnum):
     DIMENSION_DATA = "dimension_data"
     EVENT_DATA = "event_data"
     ITEM_DATA = "item_data"
+    SCD_DATA = "scd_data"
     FEATURE = "feature"
     FEATURE_NAMESPACE = "feature_namespace"
     FEATURE_LIST = "feature_list"
@@ -144,6 +149,17 @@ class BaseService(OpsServiceMixin):
         DimensionDataService
         """
         return DimensionDataService(user=self.user, persistent=self.persistent)
+
+    @property
+    def scd_data_service(self) -> SCDDataService:
+        """
+        SCDDataService object
+
+        Returns
+        -------
+        SCDDataService
+        """
+        return SCDDataService(user=self.user, persistent=self.persistent)
 
     @property
     def event_data_service(self) -> EventDataService:
@@ -247,6 +263,10 @@ class BaseService(OpsServiceMixin):
         ...
 
     @overload
+    def as_service(self, doc_service_name: Literal[DocServiceName.SCD_DATA]) -> SCDDataService:
+        ...
+
+    @overload
     def as_service(self, doc_service_name: Literal[DocServiceName.EVENT_DATA]) -> EventDataService:
         ...
 
@@ -301,6 +321,7 @@ class BaseService(OpsServiceMixin):
             DocServiceName.ENTITY: self.entity_service,
             DocServiceName.SEMANTIC: self.semantic_service,
             DocServiceName.DIMENSION_DATA: self.dimension_data_service,
+            DocServiceName.SCD_DATA: self.scd_data_service,
             DocServiceName.EVENT_DATA: self.event_data_service,
             DocServiceName.ITEM_DATA: self.item_data_service,
             DocServiceName.FEATURE: self.feature_service,
@@ -368,6 +389,15 @@ class BaseService(OpsServiceMixin):
     @overload
     async def get_document(
         self,
+        doc_service_name: Literal[DocServiceName.SCD_DATA],
+        document_id: ObjectId,
+        document: Optional[SCDDataModel] = None,
+    ) -> SCDDataModel:
+        ...
+
+    @overload
+    async def get_document(
+        self,
         doc_service_name: Literal[DocServiceName.ITEM_DATA],
         document_id: ObjectId,
         document: Optional[ItemDataModel] = None,
@@ -427,6 +457,7 @@ class BaseService(OpsServiceMixin):
             DocServiceName.ENTITY,
             DocServiceName.SEMANTIC,
             DocServiceName.DIMENSION_DATA,
+            DocServiceName.SCD_DATA,
             DocServiceName.EVENT_DATA,
             DocServiceName.ITEM_DATA,
             DocServiceName.FEATURE,
