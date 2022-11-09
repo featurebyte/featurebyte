@@ -47,7 +47,8 @@ def expected_item_data_table_preview_query() -> str:
           "event_id_col" AS "event_id_col",
           "item_id_col" AS "item_id_col",
           "item_type" AS "item_type",
-          "item_amount" AS "item_amount"
+          "item_amount" AS "item_amount",
+          "created_at" AS "created_at"
         FROM "sf_database"."sf_schema"."items_table"
         LIMIT 10
         """

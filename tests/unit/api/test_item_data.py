@@ -18,6 +18,7 @@ from featurebyte.exception import (
     ObjectHasBeenSavedError,
     RecordCreationException,
     RecordRetrievalException,
+    RecordUpdateException,
 )
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.models.feature_store import DataStatus
@@ -32,6 +33,7 @@ def item_data_dict_fixture(snowflake_database_table_item_data):
             {"dtype": "VARCHAR", "entity_id": None, "name": "item_id_col", "semantic_id": None},
             {"dtype": "VARCHAR", "entity_id": None, "name": "item_type", "semantic_id": None},
             {"dtype": "FLOAT", "entity_id": None, "name": "item_amount", "semantic_id": None},
+            {"dtype": "TIMESTAMP", "entity_id": None, "name": "created_at", "semantic_id": None},
         ],
         "created_at": None,
         "event_data_id": ObjectId("6337f9651050ee7d5980660d"),
@@ -195,6 +197,7 @@ def test_item_data_column__not_exists(snowflake_item_data):
         "item_id_col",
         "item_type",
         "item_amount",
+        "created_at",
     }
 
 
@@ -251,6 +254,32 @@ def test_event_data__record_creation_exception(snowflake_item_data):
     with pytest.raises(RecordCreationException):
         with patch("featurebyte.api.api_object.Configurations"):
             snowflake_item_data.save()
+
+
+def test_update_record_creation_date_column__unsaved_object(snowflake_item_data):
+    """Test update record creation date column (unsaved ItemData)"""
+    assert snowflake_item_data.record_creation_date_column is None
+    snowflake_item_data.update_record_creation_date_column("created_at")
+    assert snowflake_item_data.record_creation_date_column == "created_at"
+
+
+def test_update_record_creation_date_column__saved_object(saved_item_data):
+    """Test update record creation date column (saved ItemData)"""
+    saved_item_data.update_record_creation_date_column("created_at")
+    assert saved_item_data.record_creation_date_column == "created_at"
+
+    # check that validation logic works
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_item_data.update_record_creation_date_column("random_column_name")
+    expected_msg = 'Column "random_column_name" not found in the table! (type=value_error)'
+    assert expected_msg in str(exc.value)
+
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_item_data.update_record_creation_date_column("item_id_col")
+    expected_msg = (
+        "Column \"item_id_col\" is expected to have type(s): ['TIMESTAMP'] (type=value_error)"
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test_get_item_data(saved_item_data, snowflake_item_data):

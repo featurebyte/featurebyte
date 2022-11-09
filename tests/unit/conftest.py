@@ -222,6 +222,7 @@ def mock_snowflake_execute_query():
                     "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
                 },
                 {"column_name": "item_amount", "data_type": json.dumps({"type": "REAL"})},
+                {"column_name": "created_at", "data_type": json.dumps({"type": "TIMESTAMP_TZ"})},
             ],
             "SHOW SCHEMAS": [
                 {"name": "PUBLIC"},

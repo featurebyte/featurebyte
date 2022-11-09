@@ -106,21 +106,6 @@ class EventData(EventDataModel, DataApiObject):
         raise RecordRetrievalException(response)
 
     @typechecked
-    def update_record_creation_date_column(self, record_creation_date_column: str) -> None:
-        """
-        Update record creation date column
-
-        Parameters
-        ----------
-        record_creation_date_column: str
-            Record creation date column used to perform feature job setting analysis
-        """
-        self.update(
-            update_payload={"record_creation_date_column": record_creation_date_column},
-            allow_update_local=True,
-        )
-
-    @typechecked
     def update_default_feature_job_setting(
         self, feature_job_setting: Optional[FeatureJobSetting] = None
     ) -> None:

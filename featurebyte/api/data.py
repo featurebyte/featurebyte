@@ -94,3 +94,18 @@ class DataApiObject(DatabaseTable, SavableApiObject, GetAttrMixin):
         output = DataColumn(info=info)
         output.set_parent(self)
         return output
+
+    @typechecked
+    def update_record_creation_date_column(self, record_creation_date_column: str) -> None:
+        """
+        Update record creation date column
+
+        Parameters
+        ----------
+        record_creation_date_column: str
+            Record creation date column used to perform feature job setting analysis
+        """
+        self.update(
+            update_payload={"record_creation_date_column": record_creation_date_column},
+            allow_update_local=True,
+        )
