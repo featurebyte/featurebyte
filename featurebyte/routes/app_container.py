@@ -37,6 +37,7 @@ from featurebyte.service.item_data import ItemDataService
 from featurebyte.service.online_enable import OnlineEnableService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
+from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.task_manager import AbstractTaskManager
 from featurebyte.service.version import VersionService
@@ -59,6 +60,10 @@ app_container_config = {
         {
             "name": "item_data_service",
             "clazz": ItemDataService,
+        },
+        {
+            "name": "scd_data_service",
+            "clazz": SCDDataService,
         },
         {
             "name": "feature_service",
