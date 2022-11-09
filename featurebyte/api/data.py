@@ -75,14 +75,14 @@ class DataApiObject(DatabaseTable, SavableApiObject, GetAttrMixin):
         **kwargs: Any,
     ) -> DataApiObjectT:
         """
-        Create EventData object from tabular source
+        Create derived instances of DataApiObject from tabular source
 
         Parameters
         ----------
         tabular_source: DatabaseTable
             DatabaseTable object constructed from FeatureStore
         name: str
-            Event data name
+            Object name
         record_creation_date_column: str
             Record creation datetime column from the given tabular source
         _id: Optional[ObjectId]
@@ -92,7 +92,7 @@ class DataApiObject(DatabaseTable, SavableApiObject, GetAttrMixin):
 
         Returns
         -------
-        EventData
+        DataApiObjectT
 
         Raises
         ------
