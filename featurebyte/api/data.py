@@ -3,7 +3,7 @@ DataColumn class
 """
 from __future__ import annotations
 
-from typing import Any, List, Optional, Protocol
+from typing import Any, Optional
 
 from typeguard import typechecked
 
@@ -50,14 +50,6 @@ class DataColumn(FeatureByteBaseModel, ParentMixin):
         self.parent.update(update_payload={"columns_info": columns_info}, allow_update_local=True)
 
 
-class DataProtocol(Protocol):  # pylint: disable=too-few-public-methods
-    """
-    Class with columns_info attribute
-    """
-
-    columns_info: List[ColumnInfo]
-
-
 class DataApiObject(DatabaseTable, SavableApiObject, GetAttrMixin):
     """
     Base class for all Data objects
@@ -67,7 +59,7 @@ class DataApiObject(DatabaseTable, SavableApiObject, GetAttrMixin):
         return {"feature_store": self.feature_store}
 
     @typechecked
-    def __getitem__(self: DataProtocol, item: str) -> DataColumn:
+    def __getitem__(self, item: str) -> DataColumn:
         """
         Retrieve column from the table
 
