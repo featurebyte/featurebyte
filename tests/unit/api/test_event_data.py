@@ -123,7 +123,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table):
     Test EventData creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
-        with patch("featurebyte.api.event_data.Configurations"):
+        with patch("featurebyte.api.data.Configurations"):
             EventData.from_tabular_source(
                 tabular_source=snowflake_database_table,
                 name="sf_event_data",

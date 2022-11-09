@@ -3,16 +3,23 @@ DataColumn class
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional, Type, TypeVar
 
+from http import HTTPStatus
+
+from bson.objectid import ObjectId
 from typeguard import typechecked
 
 from featurebyte.api.api_object import SavableApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.api.entity import Entity
+from featurebyte.config import Configurations
 from featurebyte.core.mixin import GetAttrMixin, ParentMixin
+from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import ColumnInfo
+
+DataApiObjectT = TypeVar("DataApiObjectT", bound="DataApiObject")
 
 
 class DataColumn(FeatureByteBaseModel, ParentMixin):
@@ -54,6 +61,70 @@ class DataApiObject(DatabaseTable, SavableApiObject, GetAttrMixin):
     """
     Base class for all Data objects
     """
+
+    _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
+
+    @classmethod
+    @typechecked
+    def create(
+        cls: Type[DataApiObjectT],
+        tabular_source: DatabaseTable,
+        name: str,
+        record_creation_date_column: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+        **kwargs: Any,
+    ) -> DataApiObjectT:
+        """
+        Create EventData object from tabular source
+
+        Parameters
+        ----------
+        tabular_source: DatabaseTable
+            DatabaseTable object constructed from FeatureStore
+        name: str
+            Event data name
+        record_creation_date_column: str
+            Record creation datetime column from the given tabular source
+        _id: Optional[ObjectId]
+            Identity value for constructed object
+        **kwargs: Any
+            Additional parameters specific to variants of DataApiObject
+
+        Returns
+        -------
+        EventData
+
+        Raises
+        ------
+        DuplicatedRecordException
+            When record with the same key exists at the persistent layer
+        RecordRetrievalException
+            When unexpected retrieval failure
+        """
+        assert cls._create_schema_class is not None
+        data = cls._create_schema_class(  # pylint: disable=not-callable
+            _id=_id or ObjectId(),
+            name=name,
+            tabular_source=tabular_source.tabular_source,
+            columns_info=tabular_source.columns_info,
+            record_creation_date_column=record_creation_date_column,
+            **kwargs,
+        )
+        client = Configurations().get_client()
+        response = client.get(url=cls._route, params={"name": name})
+        if response.status_code == HTTPStatus.OK:
+            response_dict = response.json()
+            if not response_dict["data"]:
+                return cls(
+                    **data.json_dict(),
+                    feature_store=tabular_source.feature_store,
+                )
+            existing_record = response_dict["data"][0]
+            raise DuplicatedRecordException(
+                response,
+                f'{cls.__name__} ({existing_record["type"]}.name: "{name}") exists in saved record.',
+            )
+        raise RecordRetrievalException(response)
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}

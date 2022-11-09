@@ -135,7 +135,7 @@ def test_from_tabular_source__retrieval_exception(snowflake_database_table_item_
     Test ItemData creation failure due to retrieval exception
     """
     with pytest.raises(RecordRetrievalException):
-        with patch("featurebyte.api.item_data.Configurations"):
+        with patch("featurebyte.api.data.Configurations"):
             ItemData.from_tabular_source(
                 tabular_source=snowflake_database_table_item_data,
                 name="sf_item_data",

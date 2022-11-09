@@ -5,17 +5,13 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from http import HTTPStatus
-
 from bson.objectid import ObjectId
 from typeguard import typechecked
 
 from featurebyte.api.data import DataApiObject
 from featurebyte.api.database_table import DatabaseTable
 from featurebyte.common.env_util import display_html_in_notebook
-from featurebyte.config import Configurations
 from featurebyte.enum import TableDataType
-from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
 from featurebyte.models.event_data import EventDataModel, FeatureJobSetting
 from featurebyte.schema.event_data import EventDataCreate, EventDataUpdate
 
@@ -28,6 +24,7 @@ class EventData(EventDataModel, DataApiObject):
     # class variables
     _route = "/event_data"
     _update_schema_class = EventDataUpdate
+    _create_schema_class = EventDataCreate
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = EventDataCreate(**self.json_dict())
@@ -74,36 +71,15 @@ class EventData(EventDataModel, DataApiObject):
         Returns
         -------
         EventData
-
-        Raises
-        ------
-        DuplicatedRecordException
-            When record with the same key exists at the persistent layer
-        RecordRetrievalException
-            When unexpected retrieval failure
         """
-        data = EventDataCreate(
-            _id=_id or ObjectId(),
+        return super().create(
+            tabular_source=tabular_source,
             name=name,
-            tabular_source=tabular_source.tabular_source,
-            columns_info=tabular_source.columns_info,
+            record_creation_date_column=record_creation_date_column,
+            _id=_id,
             event_timestamp_column=event_timestamp_column,
             event_id_column=event_id_column,
-            record_creation_date_column=record_creation_date_column,
         )
-        client = Configurations().get_client()
-        response = client.get(url=cls._route, params={"name": name})
-        if response.status_code == HTTPStatus.OK:
-            response_dict = response.json()
-            if not response_dict["data"]:
-                return EventData(
-                    **data.json_dict(),
-                    feature_store=tabular_source.feature_store,
-                )
-            raise DuplicatedRecordException(
-                response, f'EventData (event_data.name: "{name}") exists in saved record.'
-            )
-        raise RecordRetrievalException(response)
 
     @typechecked
     def update_default_feature_job_setting(
