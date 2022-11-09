@@ -27,7 +27,7 @@ class SCDDataModel(DataModel):
         The current status of the data.
     """
 
-    type: Literal[TableDataType.DIMENSION_DATA] = Field(TableDataType.SCD_DATA, const=True)
+    type: Literal[TableDataType.SCD_DATA] = Field(TableDataType.SCD_DATA, const=True)
     natural_key_column: StrictStr
     surrogate_key_column: StrictStr
     effective_timestamp_column: StrictStr
