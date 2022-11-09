@@ -13,6 +13,7 @@ from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import ColumnInfo
 from featurebyte.models.item_data import ItemDataModel
+from featurebyte.models.scd_data import SCDDataModel
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.schema.tabular_data import DataUpdate
 from featurebyte.service.data_update import DataDocumentService, DataUpdateService
@@ -20,11 +21,14 @@ from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.info import InfoService
 from featurebyte.service.item_data import ItemDataService
+from featurebyte.service.scd_data import SCDDataService
 from featurebyte.service.semantic import SemanticService
 
-DataDocumentT = TypeVar("DataDocumentT", EventDataModel, ItemDataModel, DimensionDataModel)
+DataDocumentT = TypeVar(
+    "DataDocumentT", EventDataModel, ItemDataModel, DimensionDataModel, SCDDataModel
+)
 DataDocumentServiceT = TypeVar(
-    "DataDocumentServiceT", EventDataService, ItemDataService, DimensionDataService
+    "DataDocumentServiceT", EventDataService, ItemDataService, DimensionDataService, SCDDataService
 )
 
 
