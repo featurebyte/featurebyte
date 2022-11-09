@@ -136,7 +136,7 @@ def test_extract_operation_structure(feature_model_dict):
         SourceDataColumn(name="event_timestamp", **common_source_col_params),
         SourceDataColumn(name="cust_id", **common_source_col_params),
     ]
-    assert op_struct.input_columns == expected_columns
+    assert op_struct.source_columns == expected_columns
     assert op_struct.derived_columns == []
     assert op_struct.aggregations == [
         AggregationColumn(

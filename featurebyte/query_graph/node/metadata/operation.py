@@ -209,7 +209,7 @@ FeatureDataColumn = Annotated[
 class GroupOperationStructure(BaseFrozenModel):
     """StandardOperationStructure class"""
 
-    input_columns: List[ViewDataColumn] = Field(default_factory=list)
+    source_columns: List[ViewDataColumn] = Field(default_factory=list)
     derived_columns: List[ViewDataColumn] = Field(default_factory=list)
     aggregations: List[FeatureDataColumn] = Field(default_factory=list)
     post_aggregation: Optional[PostAggregationColumn]
@@ -275,12 +275,12 @@ class OperationStructure(BaseFrozenModel):
         GroupOperationStructure
         """
         # pylint: disable=unpacking-non-sequence
-        input_columns, derived_columns = self._split_column_by_type(columns=self.columns)
+        source_columns, derived_columns = self._split_column_by_type(columns=self.columns)
         aggregations, post_aggregations = self._split_column_by_type(columns=self.aggregations)
         assert len(post_aggregations) <= 1
         return GroupOperationStructure(
-            input_columns=input_columns,
+            source_columns=source_columns,
             derived_columns=derived_columns,
             aggregations=aggregations,
-            post_aggregations=next(iter(post_aggregations), None),
+            post_aggregation=next(iter(post_aggregations), None),
         )
