@@ -8,6 +8,7 @@ from typing import Any, Literal, Optional, Union, overload
 from bson.objectid import ObjectId
 
 from featurebyte.enum import StrEnum
+from featurebyte.models.dimension_data import DimensionDataModel
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature import FeatureModel, FeatureNamespaceModel
@@ -18,6 +19,7 @@ from featurebyte.models.item_data import ItemDataModel
 from featurebyte.models.semantic import SemanticModel
 from featurebyte.persistent.base import Persistent
 from featurebyte.service.data import DataService
+from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
@@ -36,6 +38,7 @@ DocumentService = Union[
     EntityService,
     SemanticService,
     EventDataService,
+    DimensionDataService,
     ItemDataService,
     FeatureService,
     FeatureNamespaceService,
@@ -48,6 +51,7 @@ DocumentModel = Union[
     FeatureStoreModel,
     EntityModel,
     SemanticModel,
+    DimensionDataModel,
     EventDataModel,
     ItemDataModel,
     FeatureModel,
@@ -67,6 +71,7 @@ class DocServiceName(StrEnum):
     FEATURE_STORE = "feature_store"
     ENTITY = "entity"
     SEMANTIC = "semantic"
+    DIMENSION_DATA = "dimension_data"
     EVENT_DATA = "event_data"
     ITEM_DATA = "item_data"
     FEATURE = "feature"
@@ -128,6 +133,17 @@ class BaseService(OpsServiceMixin):
         SemanticService
         """
         return SemanticService(user=self.user, persistent=self.persistent)
+
+    @property
+    def dimension_data_service(self) -> DimensionDataService:
+        """
+        DimensionDataService object
+
+        Returns
+        -------
+        DimensionDataService
+        """
+        return DimensionDataService(user=self.user, persistent=self.persistent)
 
     @property
     def event_data_service(self) -> EventDataService:
@@ -225,6 +241,12 @@ class BaseService(OpsServiceMixin):
         ...
 
     @overload
+    def as_service(
+        self, doc_service_name: Literal[DocServiceName.DIMENSION_DATA]
+    ) -> DimensionDataService:
+        ...
+
+    @overload
     def as_service(self, doc_service_name: Literal[DocServiceName.EVENT_DATA]) -> EventDataService:
         ...
 
@@ -278,6 +300,7 @@ class BaseService(OpsServiceMixin):
             DocServiceName.FEATURE_STORE: self.feature_store_service,
             DocServiceName.ENTITY: self.entity_service,
             DocServiceName.SEMANTIC: self.semantic_service,
+            DocServiceName.DIMENSION_DATA: self.dimension_data_service,
             DocServiceName.EVENT_DATA: self.event_data_service,
             DocServiceName.ITEM_DATA: self.item_data_service,
             DocServiceName.FEATURE: self.feature_service,
@@ -331,6 +354,15 @@ class BaseService(OpsServiceMixin):
         document_id: ObjectId,
         document: Optional[EventDataModel] = None,
     ) -> EventDataModel:
+        ...
+
+    @overload
+    async def get_document(
+        self,
+        doc_service_name: Literal[DocServiceName.DIMENSION_DATA],
+        document_id: ObjectId,
+        document: Optional[DimensionDataModel] = None,
+    ) -> DimensionDataModel:
         ...
 
     @overload
@@ -394,6 +426,7 @@ class BaseService(OpsServiceMixin):
             DocServiceName.FEATURE_STORE,
             DocServiceName.ENTITY,
             DocServiceName.SEMANTIC,
+            DocServiceName.DIMENSION_DATA,
             DocServiceName.EVENT_DATA,
             DocServiceName.ITEM_DATA,
             DocServiceName.FEATURE,

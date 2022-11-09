@@ -9,6 +9,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.models.persistent import AuditDocumentList, FieldValueHistory, QueryFilter
 from featurebyte.schema.common.base import PaginationMixin
+from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
@@ -28,6 +29,7 @@ DocumentServiceT = TypeVar(
     FeatureStoreService,
     EntityService,
     SemanticService,
+    DimensionDataService,
     EventDataService,
     ItemDataService,
     FeatureService,

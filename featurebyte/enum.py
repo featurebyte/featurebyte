@@ -193,6 +193,7 @@ class TableDataType(StrEnum):
     GENERIC = "generic"
     EVENT_DATA = "event_data"
     ITEM_DATA = "item_data"
+    DIMENSION_DATA = "dimension_data"
 
 
 class SemanticType(StrEnum):
@@ -203,3 +204,4 @@ class SemanticType(StrEnum):
     EVENT_TIMESTAMP = "event_timestamp"
     EVENT_ID = "event_id"
     ITEM_ID = "item_id"
+    DIMENSION_ID = "dimension_id"

@@ -4,6 +4,7 @@ Container for Controller objects to enable Dependency Injection
 from typing import Any, Dict
 
 from featurebyte.persistent import Persistent
+from featurebyte.routes.dimension_data.controller import DimensionDataController
 from featurebyte.routes.entity.controller import EntityController
 from featurebyte.routes.event_data.controller import EventDataController
 from featurebyte.routes.feature.controller import FeatureController
@@ -21,6 +22,7 @@ from featurebyte.routes.temp_data.controller import TempDataController
 from featurebyte.service.data_update import DataUpdateService
 from featurebyte.service.default_version_mode import DefaultVersionModeService
 from featurebyte.service.deploy import DeployService
+from featurebyte.service.dimension_data import DimensionDataService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_data import EventDataService
 from featurebyte.service.feature import FeatureService
@@ -45,6 +47,10 @@ app_container_config = {
         {
             "name": "entity_service",
             "clazz": EntityService,
+        },
+        {
+            "name": "dimension_data_service",
+            "clazz": DimensionDataService,
         },
         {
             "name": "event_data_service",
@@ -134,6 +140,16 @@ app_container_config = {
             "clazz": EventDataController,
             "depends": [
                 "event_data_service",
+                "data_update_service",
+                "semantic_service",
+                "info_service",
+            ],
+        },
+        {
+            "name": "dimension_data_controller",
+            "clazz": DimensionDataController,
+            "depends": [
+                "dimension_data_service",
                 "data_update_service",
                 "semantic_service",
                 "info_service",
