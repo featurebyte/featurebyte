@@ -385,7 +385,7 @@ def snowflake_event_view_fixture(
     assert event_view.protected_columns == {"event_timestamp"}
     assert event_view.inherited_columns == {"event_timestamp"}
     assert event_view.timestamp_column == "event_timestamp"
-    assert event_view.event_data_id == snowflake_event_data.id
+    assert event_view.tabular_data_ids == [snowflake_event_data.id]
     yield event_view
 
 
@@ -406,7 +406,7 @@ def grouped_event_view_fixture(snowflake_event_view_with_entity):
     """
     grouped = snowflake_event_view_with_entity.groupby("cust_id")
     assert isinstance(grouped, EventViewGroupBy)
-    assert snowflake_event_view_with_entity.event_data_id == grouped.obj.event_data_id
+    assert snowflake_event_view_with_entity.tabular_data_ids == grouped.obj.tabular_data_ids
     yield grouped
 
 
@@ -430,7 +430,7 @@ def feature_group_fixture(grouped_event_view, cust_id_entity, snowflake_event_da
     )
     assert isinstance(feature_group, FeatureGroup)
     for feature in feature_group.feature_objects.values():
-        assert grouped_event_view.obj.event_data_id in feature.tabular_data_ids
+        assert grouped_event_view.obj.tabular_data_ids == feature.tabular_data_ids
         assert id(feature.graph.nodes) == id(global_graph.nodes)
         assert feature.tabular_data_ids == [snowflake_event_data_with_entity.id]
         assert feature.entity_ids == [cust_id_entity.id]

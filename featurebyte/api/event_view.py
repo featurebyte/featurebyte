@@ -30,7 +30,7 @@ class EventViewColumn(Series):
     """
 
     _parent: Optional[EventView] = PrivateAttr(default=None)
-    event_data_id: PydanticObjectId = Field(allow_mutation=False)
+    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
     def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
         """
@@ -46,10 +46,10 @@ class EventViewColumn(Series):
         dict[str, Any]
         """
         _ = other
-        return {"event_data_id": self.event_data_id}
+        return {"tabular_data_ids": self.tabular_data_ids}
 
     def unary_op_series_params(self) -> dict[str, Any]:
-        return {"event_data_id": self.event_data_id}
+        return {"tabular_data_ids": self.tabular_data_ids}
 
     @typechecked
     def lag(self, entity_columns: Union[str, List[str]], offset: int = 1) -> EventViewColumn:
@@ -113,7 +113,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
     _series_class = EventViewColumn
 
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
-    event_data_id: PydanticObjectId = Field(allow_mutation=False)
+    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node.name={self.node.name}, timestamp_column={self.timestamp_column})"
@@ -197,7 +197,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
             },
             row_index_lineage=tuple(event_data.row_index_lineage),
             default_feature_job_setting=event_data.default_feature_job_setting,
-            event_data_id=event_data.id,
+            tabular_data_ids=[event_data.id],
         )
 
     @property
@@ -211,7 +211,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         """
         return {
             "default_feature_job_setting": self.default_feature_job_setting,
-            "event_data_id": self.event_data_id,
+            "tabular_data_ids": self.tabular_data_ids,
         }
 
     @property
@@ -223,7 +223,7 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         -------
         dict[str, Any]
         """
-        return {"event_data_id": self.event_data_id}
+        return {"tabular_data_ids": self.tabular_data_ids}
 
     @typechecked
     def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, Frame]:
