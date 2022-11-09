@@ -243,9 +243,7 @@ class FeatureManagerSnowflake(BaseModel):
                 f"SHOW TASKS LIKE '%{tile_spec.tile_id}%'"
             )
             if exist_tasks is not None and len(exist_tasks) > 0:
-                logger.warning(
-                    f"Ignore online_enable scheduling. Enable existing jobs: {tile_spec.tile_id}"
-                )
+                logger.warning(f"The tile jobs exist. Enable existing jobs: {tile_spec.tile_id}")
                 # enable existing online/offline tiles scheduled job
                 for _, row in exist_tasks.iterrows():
                     await self._session.execute_query(f"ALTER TASK IF EXISTS {row['name']} RESUME")

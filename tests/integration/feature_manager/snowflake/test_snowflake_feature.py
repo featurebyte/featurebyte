@@ -287,7 +287,7 @@ async def test_online_disable(
 
 
 @pytest.mark.asyncio
-async def test_online_disable_tile_in_use(
+async def test_online_disable__tile_in_use(
     snowflake_session,
     snowflake_feature_expected_tile_spec_dict,
     feature_manager,
@@ -313,6 +313,57 @@ async def test_online_disable_tile_in_use(
     sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}'"
     result = await snowflake_session.execute_query(sql)
     assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_online_disable___re_enable(
+    snowflake_session,
+    snowflake_feature_expected_tile_spec_dict,
+    feature_manager,
+    online_enable_prep,
+):
+    """
+    Test online_disable
+    """
+    online_feature_spec = online_enable_prep
+    tile_id = online_feature_spec.tile_ids[0]
+
+    await feature_manager.online_disable(online_feature_spec)
+
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
+    assert len(result) == 2
+    assert result.iloc[0]["state"] == "suspended"
+    assert result.iloc[1]["state"] == "suspended"
+
+    sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}'"
+    result = await snowflake_session.execute_query(sql)
+    assert len(result) == 0
+
+    # re-enable the feature jobs
+    await feature_manager.online_enable(online_feature_spec)
+
+    result = await snowflake_session.execute_query(f"SHOW TASKS LIKE '%{tile_id}%'")
+    assert len(result) == 2
+    assert result.iloc[0]["state"] == "started"
+    assert result.iloc[1]["state"] == "started"
+
+    sql = f"SELECT * FROM TILE_FEATURE_MAPPING WHERE TILE_ID = '{tile_id}'"
+    result = await snowflake_session.execute_query(sql)
+    assert len(result) == 1
+    expected_df = pd.DataFrame(
+        {
+            "TILE_ID": [tile_id],
+            "FEATURE_NAME": [online_feature_spec.feature_name],
+            "FEATURE_VERSION": [online_feature_spec.feature_version],
+            "FEATURE_SQL": [online_feature_spec.feature_sql],
+            "FEATURE_STORE_TABLE_NAME": [online_feature_spec.feature_store_table_name],
+            "FEATURE_ENTITY_COLUMN_NAMES": [
+                ",".join(escape_column_names(online_feature_spec.entity_column_names))
+            ],
+        }
+    )
+    result = result.drop(columns=["CREATED_AT"])
+    assert_frame_equal(result, expected_df)
 
 
 @pytest.mark.asyncio
