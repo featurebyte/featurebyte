@@ -5,15 +5,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional, TypeVar, Union, cast
 
-from pydantic import Field, PrivateAttr
+from pydantic import Field
 from typeguard import typechecked
 
 from featurebyte.api.event_data import EventData
-from featurebyte.core.frame import Frame
-from featurebyte.core.generic import ProtectedColumnsQueryObject
-from featurebyte.core.series import Series
+from featurebyte.api.view import View, ViewColumn
 from featurebyte.enum import TableDataType
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.event_data import FeatureJobSetting
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.generic import InputNode
@@ -24,32 +21,10 @@ else:
     EventViewGroupBy = TypeVar("EventViewGroupBy")
 
 
-class EventViewColumn(Series):
+class EventViewColumn(ViewColumn):
     """
     EventViewColumn class
     """
-
-    _parent: Optional[EventView] = PrivateAttr(default=None)
-    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-
-    def binary_op_series_params(self, other: Series | None = None) -> dict[str, Any]:
-        """
-        Parameters that will be passed to series-like constructor in _binary_op method
-
-        Parameters
-        ----------
-        other: Series
-            Other Series object
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        _ = other
-        return {"tabular_data_ids": self.tabular_data_ids}
-
-    def unary_op_series_params(self) -> dict[str, Any]:
-        return {"tabular_data_ids": self.tabular_data_ids}
 
     @typechecked
     def lag(self, entity_columns: Union[str, List[str]], offset: int = 1) -> EventViewColumn:
@@ -105,7 +80,7 @@ class EventViewColumn(Series):
         )
 
 
-class EventView(ProtectedColumnsQueryObject, Frame):
+class EventView(View):
     """
     EventView class
     """
@@ -113,13 +88,6 @@ class EventView(ProtectedColumnsQueryObject, Frame):
     _series_class = EventViewColumn
 
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
-    tabular_data_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-
-    def __repr__(self) -> str:
-        return f"{type(self).__name__}(node.name={self.node.name}, timestamp_column={self.timestamp_column})"
-
-    def __str__(self) -> str:
-        return repr(self)
 
     @property
     def protected_attributes(self) -> list[str]:
@@ -131,17 +99,6 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         list[str]
         """
         return ["timestamp_column", "entity_columns"]
-
-    @property
-    def entity_columns(self) -> list[str]:
-        """
-        List of entity columns
-
-        Returns
-        -------
-        list[str]
-        """
-        return [col.name for col in self.columns_info if col.entity_id]
 
     @property
     def timestamp_column(self) -> str:
@@ -187,17 +144,8 @@ class EventView(ProtectedColumnsQueryObject, Frame):
         EventView
             constructed EventView object
         """
-        return EventView(
-            feature_store=event_data.feature_store,
-            tabular_source=event_data.tabular_source,
-            columns_info=event_data.columns_info,
-            node_name=event_data.node_name,
-            column_lineage_map={
-                col.name: (event_data.node.name,) for col in event_data.columns_info
-            },
-            row_index_lineage=tuple(event_data.row_index_lineage),
-            default_feature_job_setting=event_data.default_feature_job_setting,
-            tabular_data_ids=[event_data.id],
+        return cls.from_data(
+            event_data, default_feature_job_setting=event_data.default_feature_job_setting
         )
 
     @property
@@ -213,30 +161,6 @@ class EventView(ProtectedColumnsQueryObject, Frame):
             "default_feature_job_setting": self.default_feature_job_setting,
             "tabular_data_ids": self.tabular_data_ids,
         }
-
-    @property
-    def _getitem_series_params(self) -> dict[str, Any]:
-        """
-        Parameters that will be passed to series-like class constructor in __getitem__ method
-
-        Returns
-        -------
-        dict[str, Any]
-        """
-        return {"tabular_data_ids": self.tabular_data_ids}
-
-    @typechecked
-    def __getitem__(self, item: Union[str, List[str], Series]) -> Union[Series, Frame]:
-        if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
-            item = sorted(self.inherited_columns.union(item))
-        output = super().__getitem__(item)
-        return output
-
-    @typechecked
-    def __setitem__(self, key: str, value: Union[int, float, str, bool, Series]) -> None:
-        if key in self.protected_columns:
-            raise ValueError(f"Timestamp or entity column '{key}' cannot be modified!")
-        super().__setitem__(key, value)
 
     @typechecked
     def groupby(

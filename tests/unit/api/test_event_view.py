@@ -133,7 +133,7 @@ def test_setitem__override_protected_column(snowflake_event_view, column):
     assert column in snowflake_event_view.protected_columns
     with pytest.raises(ValueError) as exc:
         snowflake_event_view[column] = 1
-    expected_msg = f"Timestamp or entity column '{column}' cannot be modified!"
+    expected_msg = f"Column '{column}' cannot be modified!"
     assert expected_msg in str(exc.value)
 
 
