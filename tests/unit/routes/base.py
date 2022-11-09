@@ -207,7 +207,7 @@ class BaseApiTestSuite:
         conflict_payload, expected_message = create_conflict_payload_expected_detail
         response = test_api_client.post(f"{self.base_route}", json=conflict_payload)
         assert response.status_code == HTTPStatus.CONFLICT
-        assert response.json()["detail"] == expected_message
+        assert response.json()["detail"].lower() == expected_message.lower()
 
     def test_create_422(
         self,
@@ -246,7 +246,7 @@ class BaseApiTestSuite:
             f'{self.class_name} (id: "{unknown_id}") not found.'
             f" Please save the {self.class_name_to_save} object first."
         )
-        assert response.json()["detail"] == error_message
+        assert response.json()["detail"].lower() == error_message.lower()
 
     def test_get_422(self, test_api_client_persistent):
         """Test get (unprocessable)"""
@@ -681,6 +681,8 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
             {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
             {"name": "event_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
             {"name": "dimension_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
+            {"name": "surrogate_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
+            {"name": "natural_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
             {"name": "item_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
         ]
 
@@ -860,4 +862,4 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
             json=unprocessible_entity_payload,
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == expected_message
+        assert response.json()["detail"].lower() == expected_message.lower()

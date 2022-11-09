@@ -37,12 +37,12 @@
             "name": "created_at"
         },
         {
-            "dtype": "VARCHAR",
+            "dtype": "INT",
             "entity_id": null,
             "name": "natural_id"
         },
         {
-            "dtype": "VARCHAR",
+            "dtype": "INT",
             "entity_id": null,
             "name": "surrogate_id"
         },

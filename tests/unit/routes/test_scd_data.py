@@ -18,7 +18,7 @@ class TestSCDDataApi(BaseDataApiTestSuite):
     TestSCDDataApi class
     """
 
-    class_name = "SCDData"
+    class_name = "ScdData"
     base_route = "/scd_data"
     data_create_schema_class = SCDDataCreate
     payload = BaseDataApiTestSuite.load_payload("tests/fixtures/request_payloads/scd_data.json")
@@ -63,18 +63,21 @@ class TestSCDDataApi(BaseDataApiTestSuite):
         user = mock.Mock()
         user.id = user_id
         semantic_service = SemanticService(user=user, persistent=persistent)
-        scd_data = await semantic_service.get_or_create_document("scd_id")
-        return scd_data.id
+        natural_data = await semantic_service.get_or_create_document("natural_id")
+        surrogate_data = await semantic_service.get_or_create_document("surrogate_id")
+        return natural_data.id, surrogate_data.id
 
     @pytest.fixture(name="data_model_dict")
     def data_model_dict_fixture(self, tabular_source, columns_info, user_id, scd_data_semantic_ids):
         """Fixture for a SCD Data dict"""
-        scd_data_id = scd_data_semantic_ids
+        natural_id, surrogate_id = scd_data_semantic_ids
         cols_info = []
         for col_info in columns_info:
             col = col_info.copy()
-            if col["name"] == "scd_id":
-                col["semantic_id"] = scd_data_id
+            if col["name"] == "natural_id":
+                col["semantic_id"] = natural_id
+            elif col["name"] == "surrogate_id":
+                col["semantic_id"] = surrogate_id
             cols_info.append(col)
 
         scd_data_dict = {
@@ -102,7 +105,7 @@ class TestSCDDataApi(BaseDataApiTestSuite):
         """
         return {
             "record_creation_date_column": "created_at",
-            "natural_key_column": "scd_id",
+            "natural_key_column": "natural_id",
             "surrogate_key_column": "surrogate_id",
             "effective_timestamp_column": "effective_at",
             "end_timestamp_column": "end_at",

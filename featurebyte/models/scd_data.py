@@ -43,9 +43,9 @@ class SCDDataModel(DataModel):
             column_name=value, values=values, expected_types={DBVarType.TIMESTAMP}
         )
 
-    # @validator("natural_key_column", "surrogate_key_column")
-    # @classmethod
-    # def _check_id_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
-    #     return DataModel.validate_column_exists(
-    #         column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
-    #     )
+    @validator("natural_key_column", "surrogate_key_column")
+    @classmethod
+    def _check_id_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
+        return DataModel.validate_column_exists(
+            column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
+        )
