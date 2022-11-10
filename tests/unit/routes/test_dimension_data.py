@@ -28,20 +28,20 @@ class TestDimensionDataApi(BaseDataApiTestSuite):
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
-            f'DimensionData (id: "{payload["_id"]}") already exists. '
-            f'Get the existing object by `DimensionData.get(name="{document_name}")`.',
+            f'{class_name} (id: "{payload["_id"]}") already exists. '
+            f'Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
         (
             {**payload, "_id": str(ObjectId())},
-            f'DimensionData (name: "{document_name}") already exists. '
-            f'Get the existing object by `DimensionData.get(name="{document_name}")`.',
+            f'{class_name} (name: "{document_name}") already exists. '
+            f'Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
         (
             {**payload, "_id": str(ObjectId()), "name": "other_name"},
-            f"DimensionData (tabular_source: \"{{'feature_store_id': "
+            f"{class_name} (tabular_source: \"{{'feature_store_id': "
             f'ObjectId(\'{payload["tabular_source"]["feature_store_id"]}\'), \'table_details\': '
             "{'database_name': 'sf_database', 'schema_name': 'sf_schema', 'table_name': 'sf_table'}}\") "
-            f'already exists. Get the existing object by `DimensionData.get(name="{document_name}")`.',
+            f'already exists. Get the existing object by `{class_name}.get(name="{document_name}")`.',
         ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
