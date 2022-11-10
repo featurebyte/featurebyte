@@ -1,3 +1,6 @@
+"""
+View class
+"""
 from __future__ import annotations
 
 from typing import Any, List, Optional, TypeVar, Union
@@ -61,7 +64,7 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
     @typechecked
     def from_data(cls: type[ViewT], data: DataApiObject, **kwargs: Any) -> ViewT:
         """
-        Construct an EventView object
+        Construct a View object
 
         Parameters
         ----------
@@ -72,8 +75,8 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
 
         Returns
         -------
-        EventView
-            constructed EventView object
+        ViewT
+            constructed View object
         """
         return cls(
             feature_store=data.feature_store,

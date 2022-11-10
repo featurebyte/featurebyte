@@ -19,10 +19,11 @@ class ItemViewColumn(ViewColumn):
     ItemViewColumn class
     """
 
-    pass
-
 
 class ItemView(View):
+    """
+    ItemView class
+    """
 
     _series_class = ItemViewColumn
 
