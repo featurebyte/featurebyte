@@ -98,6 +98,28 @@ class View(ProtectedColumnsQueryObject, Frame, ABC):
         return [col.name for col in self.columns_info if col.entity_id]
 
     @property
+    def protected_attributes(self) -> list[str]:
+        """
+        List of protected attributes used to extract protected_columns
+
+        Returns
+        -------
+        list[str]
+        """
+        return ["entity_columns"] + self.additional_protected_attributes
+
+    @property
+    def additional_protected_attributes(self) -> list[str]:
+        """
+        Additional protected attributes to be defined in subclasses
+
+        Returns
+        -------
+        list[str]
+        """
+        return []
+
+    @property
     def _getitem_frame_params(self) -> dict[str, Any]:
         """
         Parameters that will be passed to frame-like class constructor in __getitem__ method

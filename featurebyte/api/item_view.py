@@ -31,14 +31,6 @@ class ItemView(View):
     event_data_id: PydanticObjectId = Field(allow_mutation=False)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
 
-    @property
-    def protected_attributes(self) -> list[str]:
-        return ["event_id_column", "item_id_column", "entity_columns"]
-
-    @property
-    def inherited_columns(self) -> set[str]:
-        return set()
-
     @classmethod
     @typechecked
     def from_item_data(cls, item_data: ItemData) -> ItemView:
@@ -62,3 +54,11 @@ class ItemView(View):
             event_data_id=item_data.event_data_id,
             default_feature_job_setting=item_data.default_feature_job_setting,
         )
+
+    @property
+    def additional_protected_attributes(self) -> list[str]:
+        return ["event_id_column", "item_id_column"]
+
+    @property
+    def inherited_columns(self) -> set[str]:
+        return set()

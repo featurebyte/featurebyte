@@ -90,17 +90,6 @@ class EventView(View):
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(allow_mutation=False)
 
     @property
-    def protected_attributes(self) -> list[str]:
-        """
-        List of protected attributes used to extract protected_columns
-
-        Returns
-        -------
-        list[str]
-        """
-        return ["timestamp_column", "entity_columns"]
-
-    @property
     def timestamp_column(self) -> str:
         """
         Timestamp column of the event data
@@ -127,6 +116,10 @@ class EventView(View):
         set[str]
         """
         return {self.timestamp_column}
+
+    @property
+    def additional_protected_attributes(self) -> list[str]:
+        return ["timestamp_column"]
 
     @classmethod
     @typechecked
