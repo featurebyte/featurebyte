@@ -213,6 +213,8 @@ async def test_online_enable(
     feature_spec = OnlineFeatureSpec(
         feature_name=mock_snowflake_feature.name,
         feature_version=mock_snowflake_feature.version.to_str(),
+        feature_readiness=mock_snowflake_feature.readiness,
+        feature_tabular_data_ids=mock_snowflake_feature.tabular_data_ids,
         feature_sql="select * from temp",
         feature_store_table_name="feature_store_table_1",
         tile_specs=mock_snowflake_feature.tile_specs,
@@ -229,9 +231,14 @@ async def test_online_enable(
         tile_id=feature_spec.tile_ids[0],
         feature_name=feature_spec.feature_name,
         feature_version=feature_spec.feature_version,
+        feature_readiness=str(mock_snowflake_feature.readiness),
+        feature_tabular_data_ids=",".join(
+            [str(i) for i in mock_snowflake_feature.tabular_data_ids]
+        ),
         feature_sql=feature_spec.feature_sql.replace("'", "''"),
         feature_store_table_name=feature_spec.feature_store_table_name,
         entity_column_names_str=",".join(escape_column_names(feature_spec.entity_column_names)),
+        is_deleted=False,
     )
     assert mock_execute_query.call_args_list[0] == mock.call(upsert_sql)
 
@@ -249,6 +256,8 @@ async def test_online_enable_missing_tile_spec(
         OnlineFeatureSpec(
             feature_name=mock_snowflake_feature.name,
             feature_version=mock_snowflake_feature.version.to_str(),
+            feature_readiness=mock_snowflake_feature.readiness,
+            feature_tabular_data_ids=mock_snowflake_feature.tabular_data_ids,
             feature_sql="select * from temp",
             feature_store_table_name="feature_store_table_1",
             tile_specs=[],
@@ -278,6 +287,8 @@ async def test_online_enable_duplicate_tile_task(
     online_feature_spec = OnlineFeatureSpec(
         feature_name=mock_snowflake_feature.name,
         feature_version=mock_snowflake_feature.version.to_str(),
+        feature_readiness=mock_snowflake_feature.readiness,
+        feature_tabular_data_ids=mock_snowflake_feature.tabular_data_ids,
         feature_sql="select * from temp",
         feature_store_table_name="feature_store_table_1",
         tile_specs=mock_snowflake_feature.tile_specs,
@@ -304,6 +315,8 @@ async def test_online_disable(
     feature_spec = OnlineFeatureSpec(
         feature_name=mock_snowflake_feature.name,
         feature_version=mock_snowflake_feature.version.to_str(),
+        feature_readiness=mock_snowflake_feature.readiness,
+        feature_tabular_data_ids=mock_snowflake_feature.tabular_data_ids,
         feature_sql="select * from temp",
         feature_store_table_name="feature_store_table_1",
         tile_specs=mock_snowflake_feature.tile_specs,

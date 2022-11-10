@@ -6,7 +6,8 @@ from typing import Any, Dict, List, Optional
 from pydantic import Field, root_validator, validator
 
 from featurebyte.enum import StrEnum
-from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.feature import FeatureReadiness
 
 
 class TileType(StrEnum):
@@ -119,6 +120,8 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
 
     feature_name: str
     feature_version: str
+    feature_readiness: FeatureReadiness
+    feature_tabular_data_ids: List[PydanticObjectId]
     feature_sql: str
     feature_store_table_name: str
     tile_specs: List[TileSpec] = Field(min_items=1)
