@@ -8,7 +8,7 @@ from typing_extensions import Annotated
 
 from pydantic import Field, parse_obj_as
 
-from featurebyte.models import EventDataModel
+from featurebyte.models.event_data import EventDataModel
 from featurebyte.models.feature_store import DataModel as BaseDataModel
 from featurebyte.models.item_data import ItemDataModel
 

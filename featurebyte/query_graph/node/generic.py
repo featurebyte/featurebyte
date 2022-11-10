@@ -236,7 +236,8 @@ class GroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     parameters: Parameters
 
     def _exclude_source_columns(self) -> List[str]:
-        return self.parameters.keys + [self.parameters.timestamp]
+        cols = self.parameters.keys + [self.parameters.timestamp]
+        return [str(col) for col in cols]
 
     def _get_aggregations(self, columns: List[ViewDataColumn]) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
@@ -272,7 +273,7 @@ class ItemGroupbyNode(GroupbyNodeOpStructMixin, BaseNode):
     parameters: Parameters
 
     def _exclude_source_columns(self) -> List[str]:
-        return self.parameters.keys
+        return [str(key) for key in self.parameters.keys]
 
     def _get_aggregations(self, columns: List[ViewDataColumn]) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
@@ -341,7 +342,7 @@ class AliasNode(BaseNode):
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
 
-        node_kwargs = {}
+        node_kwargs: Dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             last_column = input_operation_info.columns[-1]
             new_last_column = type(last_column)(

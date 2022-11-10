@@ -3,6 +3,8 @@ InfoService class
 """
 from __future__ import annotations
 
+from typing import Any, Optional
+
 from bson.objectid import ObjectId
 
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
@@ -109,7 +111,7 @@ class InfoService(BaseService):
             for column_info in event_data.columns_info:
                 columns_info.append(
                     EventDataColumnInfo(
-                        **column_info.dict(), entity=entity_map.get(column_info.entity_id)
+                        **column_info.dict(), entity=entity_map.get(column_info.entity_id)  # type: ignore
                     )
                 )
 
@@ -127,7 +129,7 @@ class InfoService(BaseService):
             columns_info=columns_info,
         )
 
-    async def _extract_feature_metadata(self, op_struct: GroupOperationStructure):
+    async def _extract_feature_metadata(self, op_struct: GroupOperationStructure) -> dict[str, Any]:
         # retrieve related tabular data & semantic
         list_res = await self.data_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": op_struct.tabular_data_ids}}
@@ -139,18 +141,18 @@ class InfoService(BaseService):
         semantic_list = SemanticList(**{**list_res, "page_size": 1})
 
         # prepare column mapping
-        column_map = {}
+        column_map: dict[tuple[Optional[ObjectId], str], Any] = {}
         semantic_map = {semantic.id: semantic.name for semantic in semantic_list.data}
         for tabular_data in tabular_data_list.data:
             for column in tabular_data.columns_info:
                 column_map[(tabular_data.id, column.name)] = {
                     "data_name": tabular_data.name,
-                    "semantic": semantic_map.get(column.semantic_id),
+                    "semantic": semantic_map.get(column.semantic_id),  # type: ignore
                 }
 
         # construct feature metadata
         source_columns = {}
-        reference_map = {}
+        reference_map: dict[Any, str] = {}
         for idx, src_col in enumerate(op_struct.source_columns):
             column_metadata = column_map[(src_col.tabular_data_id, src_col.name)]
             reference_map[src_col] = f"Input{idx}"

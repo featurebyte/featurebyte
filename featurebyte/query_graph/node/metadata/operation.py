@@ -212,7 +212,7 @@ class GroupOperationStructure(BaseFrozenModel):
 
     source_columns: List[SourceDataColumn] = Field(default_factory=list)
     derived_columns: List[DerivedDataColumn] = Field(default_factory=list)
-    aggregations: List[FeatureDataColumn] = Field(default_factory=list)
+    aggregations: List[AggregationColumn] = Field(default_factory=list)
     post_aggregation: Optional[PostAggregationColumn]
 
     @property
