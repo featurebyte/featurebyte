@@ -1,22 +1,22 @@
 """
-FeatureNamespaceMigrationService class
+EntityMigrationService class
 """
 from __future__ import annotations
 
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import MigrationServiceMixin
-from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.entity import EntityService
 
 
-class FeatureNamespaceMigrationService(FeatureNamespaceService, MigrationServiceMixin):
-    """FeatureNamespaceMigrationService class"""
+class EntityMigrationService(EntityService, MigrationServiceMixin):
+    """EntityMigrationService class"""
 
-    @migrate(version=3, description="Rename field event_data_ids to tabular_data_ids")
-    async def change_field_name_from_event_data_ids_to_tabular_data_ids(self) -> None:
-        """Change field name from event_data_ids to tabular_data_ids"""
+    @migrate(version=5, description="Add fields tabular_data_ids and primary_tabular_data_ids")
+    async def add_field_tabular_data_ids_and_primary_tabular_data_ids(self) -> None:
+        """Add field name from tabular_data_ids and primary_tabular_data_ids"""
         # sample first 10 records before migration
         sample_docs_before, total_before = await self.persistent.find(
-            collection_name="feature_namespace", query_filter={}, page_size=10
+            collection_name="entity", query_filter={}, page_size=10
         )
         sample_docs_before_map = {doc["_id"]: doc for doc in sample_docs_before}
 
@@ -25,11 +25,11 @@ class FeatureNamespaceMigrationService(FeatureNamespaceService, MigrationService
 
         # check the sample records after migration
         sample_docs_after, total_after = await self.persistent.find(
-            collection_name="feature_namespace",
+            collection_name="entity",
             query_filter={"_id": {"$in": list(sample_docs_before_map)}},
         )
         sample_docs_after_map = {doc["_id"]: doc for doc in sample_docs_after}
         assert total_before == total_after
         for doc in sample_docs_after_map.values():
-            assert "event_data_ids" not in doc
             assert "tabular_data_ids" in doc
+            assert "primary_tabular_data_ids" in doc

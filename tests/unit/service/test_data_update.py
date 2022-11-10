@@ -6,7 +6,7 @@ from bson.objectid import ObjectId
 
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_store import DataStatus
-from featurebyte.schema.entity import EntityCreate
+from featurebyte.schema.entity import EntityCreate, EntityServiceUpdate
 from featurebyte.schema.event_data import EventDataUpdate
 
 
@@ -60,6 +60,14 @@ async def test_update_columns_info(
     new_entity = await entity_service.create_document(
         data=EntityCreate(name="an_entity", serving_name="a_name")
     )
+    other_data_id = ObjectId("6332fdb21e8f0aabbb414512")
+    await entity_service.update_document(
+        document_id=new_entity.id,
+        data=EntityServiceUpdate(
+            tabular_data_ids=[other_data_id],
+            primary_tabular_data_ids=[other_data_id],
+        ),
+    )
     new_semantic = await semantic_service.get_or_create_document(name="a_semantic")
     columns_info = event_data.dict()["columns_info"]
     columns_info[0]["entity_id"] = new_entity.id
@@ -76,6 +84,34 @@ async def test_update_columns_info(
     updated_doc = await event_data_service.get_document(document_id=event_data.id)
     assert updated_doc.columns_info[0].entity_id == new_entity.id
     assert updated_doc.columns_info[0].semantic_id == new_semantic.id
+
+    # check dataset is tracked in entity
+    new_entity = await entity_service.get_document(document_id=new_entity.id)
+    assert new_entity.tabular_data_ids == [other_data_id, event_data.id]
+    assert new_entity.primary_tabular_data_ids == [other_data_id, event_data.id]
+
+    # move entity to non-primary key
+    columns_info[0]["entity_id"] = None
+    columns_info[1]["entity_id"] = new_entity.id
+    await data_update_service.update_columns_info(
+        service=event_data_service,
+        document_id=event_data.id,
+        data=EventDataUpdate(columns_info=columns_info),
+    )
+    new_entity = await entity_service.get_document(document_id=new_entity.id)
+    assert new_entity.tabular_data_ids == [other_data_id, event_data.id]
+    assert new_entity.primary_tabular_data_ids == [other_data_id]
+
+    # remove entity
+    columns_info[1]["entity_id"] = None
+    await data_update_service.update_columns_info(
+        service=event_data_service,
+        document_id=event_data.id,
+        data=EventDataUpdate(columns_info=columns_info),
+    )
+    new_entity = await entity_service.get_document(document_id=new_entity.id)
+    assert new_entity.tabular_data_ids == [other_data_id]
+    assert new_entity.primary_tabular_data_ids == [other_data_id]
 
     # test unknown entity ID
     unknown_id = ObjectId()

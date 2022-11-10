@@ -3,13 +3,17 @@ DataStatusService
 """
 from __future__ import annotations
 
-from typing import Union
+from typing import List, Union, cast
+
+from collections import defaultdict
 
 from bson.objectid import ObjectId
 
+from featurebyte.enum import TableDataType
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.feature_store import DataStatus
+from featurebyte.models.feature_store import DataModel, DataStatus
 from featurebyte.schema.dimension_data import DimensionDataUpdate
+from featurebyte.schema.entity import EntityServiceUpdate
 from featurebyte.schema.event_data import EventDataUpdate
 from featurebyte.schema.item_data import ItemDataUpdate
 from featurebyte.service.base_service import BaseService
@@ -133,8 +137,81 @@ class DataUpdateService(BaseService):
                 field_class_name="Semantic",
             )
 
-            await service.update_document(
-                document_id=document_id,
-                data=type(data)(columns_info=data.columns_info),  # type: ignore
-                return_document=False,
+            async with self.persistent.start_transaction():
+
+                await service.update_document(
+                    document_id=document_id,
+                    data=type(data)(columns_info=data.columns_info),  # type: ignore
+                    return_document=False,
+                )
+
+                await self.update_entity_data_references(document, data)
+
+    async def update_entity_data_references(
+        self, document: DataModel, data: DataUpdateSchema
+    ) -> None:
+        """
+        Update data columns info
+
+        Parameters
+        ----------
+        document: DataModel
+            DataModel object
+        data: DataUpdateSchema
+            Data upload payload
+        """
+        if not data.columns_info:
+            return
+
+        # update data references in affected entities
+        primary_keys_cols_mapping = {
+            TableDataType.EVENT_DATA: ["event_id_column"],
+            TableDataType.ITEM_DATA: [],
+            TableDataType.DIMENSION_DATA: ["dimension_data_id_column"],
+        }
+        primary_keys_cols = cast(List[str], primary_keys_cols_mapping.get(document.type, []))
+        primary_keys = [getattr(document, key_col) for key_col in primary_keys_cols]
+
+        entity_update: dict[ObjectId, int] = defaultdict(int)
+        primary_entity_update: dict[ObjectId, int] = defaultdict(int)
+        for column_info in document.columns_info:
+            if column_info.entity_id:
+                # flag for removal from entity
+                entity_update[column_info.entity_id] -= 1
+                if column_info.name in primary_keys:
+                    primary_entity_update[column_info.entity_id] -= 1
+        for column_info in data.columns_info:
+            if column_info.entity_id:
+                # flag for addition to entity
+                entity_update[column_info.entity_id] += 1
+                if column_info.name in primary_keys:
+                    primary_entity_update[column_info.entity_id] += 1
+
+        for entity_id, update_flag in entity_update.items():
+            primary_update_flag = primary_entity_update.get(entity_id, 0)
+            if update_flag == 0 and primary_update_flag == 0:
+                continue
+
+            # data reference update is needed
+            entity = await self.entity_service.get_document(entity_id)
+            update_values = {}
+            if update_flag != 0:
+                # data references updated in entity
+                update_action = (
+                    self.include_object_id if update_flag > 0 else self.exclude_object_id
+                )
+                update_values["tabular_data_ids"] = update_action(
+                    document_ids=entity.tabular_data_ids, document_id=document.id
+                )
+            if primary_update_flag != 0:
+                # primary data references updated in entity
+                update_action = (
+                    self.include_object_id if primary_update_flag > 0 else self.exclude_object_id
+                )
+                update_values["primary_tabular_data_ids"] = update_action(
+                    document_ids=entity.primary_tabular_data_ids, document_id=document.id
+                )
+            await self.entity_service.update_document(
+                document_id=entity_id,
+                data=EntityServiceUpdate(**update_values),
             )
