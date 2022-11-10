@@ -34,8 +34,8 @@ class SCDDataModel(DataModel):
     end_timestamp_column: Optional[StrictStr] = Field(default=None)
     current_flag: Optional[StrictStr] = Field(default=None)
 
-    @validator("record_creation_date_column")
     @classmethod
+    @validator("record_creation_date_column", "effective_timestamp_column", "end_timestamp_column")
     def _check_timestamp_column_exists(
         cls, value: Optional[str], values: dict[str, Any]
     ) -> Optional[str]:
@@ -43,8 +43,8 @@ class SCDDataModel(DataModel):
             column_name=value, values=values, expected_types={DBVarType.TIMESTAMP}
         )
 
-    @validator("natural_key_column", "surrogate_key_column")
     @classmethod
+    @validator("natural_key_column", "surrogate_key_column")
     def _check_id_column_exists(cls, value: Optional[str], values: dict[str, Any]) -> Optional[str]:
         return DataModel.validate_column_exists(
             column_name=value, values=values, expected_types={DBVarType.VARCHAR, DBVarType.INT}
