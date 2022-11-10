@@ -347,7 +347,7 @@ class AliasNode(BaseNode):
             new_last_column = type(last_column)(
                 **{**last_column.dict(), "name": self.parameters.name}
             )
-            node_kwargs["columns"] = [col for col in input_operation_info.columns]
+            node_kwargs["columns"] = list(input_operation_info.columns)
             node_kwargs["columns"][-1] = new_last_column
         else:
             last_aggregation = input_operation_info.aggregations[-1]
@@ -355,7 +355,7 @@ class AliasNode(BaseNode):
                 **{**last_aggregation.dict(), "name": self.parameters.name}
             )
             node_kwargs["columns"] = input_operation_info.columns
-            node_kwargs["aggregations"] = [agg for agg in input_operation_info.aggregations]
+            node_kwargs["aggregations"] = list(input_operation_info.aggregations)
             node_kwargs["aggregations"][-1] = new_last_aggregation
 
         return OperationStructure(

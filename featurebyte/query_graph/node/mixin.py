@@ -2,7 +2,7 @@
 This module contains mixins used in node classes
 """
 # pylint: disable=too-few-public-methods
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Set
 
 from abc import abstractmethod
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from bson.objectid import ObjectId
 
-from featurebyte.models.feature import FeatureModel
+from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.schema.feature import FeatureBriefInfoList
 from featurebyte.schema.info import (
     DataBriefInfoList,
@@ -127,19 +127,16 @@ class InfoService(BaseService):
             columns_info=columns_info,
         )
 
-    async def _extract_feature_metadata(self, feature: FeatureModel):
-        # extract graph operation structure
-        op_struct = feature.extract_operation_structure()
-
+    async def _extract_feature_metadata(self, op_struct: GroupOperationStructure):
         # retrieve related tabular data & semantic
-        tabular_data_res = await self.data_service.list_documents(
+        list_res = await self.data_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": op_struct.tabular_data_ids}}
         )
-        tabular_data_list = TabularDataList(**tabular_data_res)
-        semantic_list_res = await self.semantic_service.list_documents(
+        tabular_data_list = TabularDataList(**list_res)
+        list_res = await self.semantic_service.list_documents(
             page=1, page_size=0, query_filter={"_id": {"$in": tabular_data_list.semantic_ids}}
         )
-        semantic_list = SemanticList(**{**semantic_list_res, "page_size": 1})
+        semantic_list = SemanticList(**{**list_res, "page_size": 1})
 
         # prepare column mapping
         column_map = {}
@@ -239,7 +236,9 @@ class InfoService(BaseService):
                 )
             )
 
-        metadata = await self._extract_feature_metadata(feature=feature)
+        metadata = await self._extract_feature_metadata(
+            op_struct=feature.extract_operation_structure()
+        )
         return FeatureInfo(
             **namespace_info.dict(),
             version={"this": feature.version.to_str(), "default": default_feature.version.to_str()},
