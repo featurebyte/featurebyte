@@ -37,6 +37,16 @@
             "name": "created_at"
         },
         {
+            "dtype": "TIMESTAMP",
+            "entity_id": null,
+            "name": "effective_at"
+        },
+        {
+            "dtype": "TIMESTAMP",
+            "entity_id": null,
+            "name": "end_at"
+        },
+        {
             "dtype": "INT",
             "entity_id": null,
             "name": "natural_id"
@@ -64,7 +74,7 @@
     },
     "natural_key_column": "col_text",
     "surrogate_key_column": "col_text",
-    "effective_timestamp_column": "col_text",
-    "end_timestamp_column": "col_text",
+    "effective_timestamp_column": "effective_at",
+    "end_timestamp_column": "end_at",
     "current_flag": "col_text"
 }

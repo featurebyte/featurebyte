@@ -672,6 +672,8 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         """Fixture for columns info"""
         return [
             {"name": "created_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
+            {"name": "effective_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
+            {"name": "end_at", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
             {
                 "name": "another_created_at",
                 "dtype": "TIMESTAMP",
