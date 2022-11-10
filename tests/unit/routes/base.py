@@ -800,14 +800,17 @@ class BaseDataApiTestSuite(BaseApiTestSuite):
         data_response_dict = data_response.json()
 
         unknown_entity_id = str(ObjectId())
-        columns_info[-1]["entity_id"] = unknown_entity_id
+        column = "item_id"
+        column_to_update = columns_info[-1]
+        assert column_to_update["name"] == column
+        column_to_update["entity_id"] = unknown_entity_id
         response = test_api_client.patch(
             f"{self.base_route}/{data_response_dict['_id']}",
             json={"columns_info": columns_info},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == (
-            f"Entity IDs ['{unknown_entity_id}'] not found for columns ['item_id']."
+            f"Entity IDs ['{unknown_entity_id}'] not found for columns ['{column}']."
         )
 
     def test_update_record_creation_date(
